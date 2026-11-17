@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PlayerSearch",
+  "type": "object",
+  "properties": {
+    "account_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "character_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ip_hash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "limit": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 100,
+      "minimum": 1
+    },
+    "name_prefix": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "limit"
+  ]
+}

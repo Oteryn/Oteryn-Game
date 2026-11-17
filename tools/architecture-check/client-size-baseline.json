@@ -55,8 +55,8 @@
     "central_registrations": 0
   },
   "crates/platform-client/src/native_login.rs": {
-    "lines": 928,
-    "bytes": 31841,
+    "lines": 947,
+    "bytes": 32569,
     "central_registrations": 0
   },
   "crates/renderer/src/batch.rs": {

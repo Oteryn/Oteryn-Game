@@ -15,6 +15,18 @@ def source(path, text):
 
 
 class RaidCatalogueTest(unittest.TestCase):
+    def test_feroxa_global_lua_timeline_uses_source_spawn_and_announcements(self):
+        variant = raids.feroxa_raid.variant(raids.ROOT, raids.area_anchor)
+        self.assertEqual([a["delay_ms"] for a in variant["announcements"]], [0, 2_700_000, 3_600_000])
+        self.assertEqual(len(variant["waves"]), 1)
+        wave = variant["waves"][0]
+        self.assertEqual(wave["delay_ms"], 4_500_000)
+        entry = wave["entries"][0]
+        self.assertEqual(entry["area"]["from"], dict(x=33380, y=31537, floor=11))
+        self.assertEqual(entry["area"]["from"], entry["area"]["to"])
+        self.assertEqual(entry["source"]["revision"], raids.feroxa_raid.REVISION)
+        self.assertEqual(entry["source"]["path"], raids.feroxa_raid.LIB)
+
     def test_apply_plan_verifies_every_sha_before_any_output(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -160,16 +172,28 @@ class RaidCatalogueTest(unittest.TestCase):
         self.assertEqual(orshabaal["variants"][0]["waves"][0]["delay_ms"], 400000)
         self.assertEqual(orshabaal["wiki_records"], ["oteryn:raid.edron_raids.orshabaal_raid_near_edron"])
 
-    def test_inactive_flower_month_retains_all_source_areas_and_shared_budget(self):
+    def test_flower_month_admits_owner_selected_donor_cycle_and_shared_budget(self):
         rows = json.loads(raids.outputs(raids.ROOT, register=False)[raids.CATALOGUE])["records"]
         flower = next(r for r in rows if r["key"].endswith("dryad_invasion"))
-        self.assertFalse(flower["active"])
+        self.assertTrue(flower["active"])
+        self.assertEqual(flower["inactive_reasons"], [])
+        self.assertTrue(flower["schedule"]["repeat"])
+        self.assertEqual(flower["schedule"]["interval_ms"], 3600000)
+        self.assertEqual([wave["delay_ms"] for wave in flower["variants"][0]["waves"]], [0, 900000, 1800000, 2700000])
+        self.assertTrue(all(wave["entries"][0]["spawn_mode"] == "shared_area" for wave in flower["variants"][0]["waves"]))
         cycle = flower["donor_cycle"]
         self.assertEqual(cycle["interval_ms"], 900000)
         self.assertEqual(len(cycle["areas"]), 4)
         self.assertEqual(cycle["requested_per_wave"], 25)
         self.assertEqual(cycle["shared_attempt_budget"], 250)
         self.assertTrue(all(area["area"]["regions"] for area in cycle["areas"]))
+
+    def test_furyosa_retains_source_schedule_and_requires_native_fury_activation(self):
+        rows = json.loads(raids.outputs(raids.ROOT, register=False)[raids.CATALOGUE])["records"]
+        furyosa = next(row for row in rows if row["key"] == "raid:furyfate.furyosa")
+        self.assertEqual(furyosa["requires_world_change"], {"key": "fury_gates", "variant": None})
+        self.assertEqual(furyosa["schedule"]["interval_s"], 86400)
+        self.assertEqual(furyosa["schedule"]["margin_ms"], 21600000)
 
     def test_crystal_bosstiary_marks_horned_fox_case_insensitively(self):
         rows = json.loads(raids.outputs(raids.ROOT, register=False)[raids.CATALOGUE])["records"]

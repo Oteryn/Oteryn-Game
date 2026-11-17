@@ -12,12 +12,18 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Mutex;
 
 #[derive(Default)]
-pub(super) struct TutorialSessions(Mutex<HashMap<GameSessionId, VecDeque<TutorialNotice>>>);
+struct TutorialSession {
+    notices: VecDeque<TutorialNotice>,
+    inventory_changed: bool,
+}
+
+#[derive(Default)]
+pub(super) struct TutorialSessions(Mutex<HashMap<GameSessionId, TutorialSession>>);
 
 impl TutorialSessions {
     pub(super) fn notice(&self, session: GameSessionId, notice: TutorialNotice) {
         if let Ok(mut sessions) = self.0.lock() {
-            let queue = sessions.entry(session).or_default();
+            let queue = &mut sessions.entry(session).or_default().notices;
             // A slow client cannot turn repeated hole attempts into an unbounded queue.
             if queue.len() < 8 {
                 queue.push_back(notice);
@@ -26,7 +32,21 @@ impl TutorialSessions {
     }
 
     pub(super) fn take(&self, session: GameSessionId) -> Option<TutorialNotice> {
-        self.0.lock().ok()?.get_mut(&session)?.pop_front()
+        self.0.lock().ok()?.get_mut(&session)?.notices.pop_front()
+    }
+
+    pub(super) fn inventory_changed(&self, session: GameSessionId) {
+        if let Ok(mut sessions) = self.0.lock() {
+            sessions.entry(session).or_default().inventory_changed = true;
+        }
+    }
+
+    pub(super) fn take_inventory_changed(&self, session: GameSessionId) -> bool {
+        self.0.lock().is_ok_and(|mut sessions| {
+            sessions
+                .get_mut(&session)
+                .is_some_and(|state| std::mem::take(&mut state.inventory_changed))
+        })
     }
 
     pub(super) fn forget(&self, session: GameSessionId) {

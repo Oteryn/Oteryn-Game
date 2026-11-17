@@ -1,5 +1,10 @@
 //! Raid placement borrows the existing physical Item/Map transaction and the
 //! current Channel creature owner. No detached map snapshot grants a spawn.
+mod cake;
+mod feroxa_map;
+mod feroxa_spectators;
+pub(in crate::gameplay_transport) use feroxa_spectators::FeroxaSpectators;
+
 use super::ComposedFreshAdmission;
 use crate::durability::DurabilityError;
 use crate::durability::raid_runner::{
@@ -61,14 +66,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(());
         }
-        let room = self.rooms.gate_monster_ai().ok_or(())?;
+        let room = self.rooms().gate_monster_ai().ok_or(())?;
         let native = self
             .active_generation
             .and_then(|generation| generation.native_gameplay())
             .ok_or(())?;
         let pass = self.root.try_issue_semantic_pass().map_err(|_| ())?;
         let mut context = (self, &mut *runtime, &permit, room, native, step, selected);
-        pass.run_with_context(&mut context, move |holder, deadline, context| {
+        let (outcomes, moves) = pass.run_with_context(&mut context, move |holder, deadline, context| {
             Box::pin(async move {
                 use crate::durability::spell_item_transaction::{
                     assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
@@ -86,16 +91,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &mut tx, owner.holder, step, owner.world_id, owner.reset_epoch,
                     index.map().overlay.base().digest(),
                 ).await? { return Err(DurabilityError::Unavailable); }
+                // Identity comes from the currently locked firing, never a creature name
+                // or a retained proposal. The existing owner already proved this effect's
+                // world, reset, content, Channel generation and native action body above.
+                let raid_key: String = sqlx::query_scalar("SELECT raid_key FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid")
+                    .bind(step.identity.firing_id.as_slice()).fetch_one(&mut *tx).await?;
+                let grimvale = raid_key == "raid:edron.feroxa";
+                if grimvale && !crate::durability::world_event::changes::callbacks::require(
+                    &mut tx, owner.world_id, owner.reset_epoch,
+                    "oteryn:quest-callback/grimvale-full-moon-entry",
+                ).await? {
+                    // Refusal is denial-only: revoke a retained local entry too.
+                    let _ = project_grimvale_portal(index.map(), false);
+                    return Err(DurabilityError::Unavailable);
+                }
                 let objects = owner.door.lock().await;
                 let mut map = CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 let random = RaidRandom::new(seed, step.identity.firing_id);
+                let stamp = runtime.issue_owner_work().map_err(|_| DurabilityError::Unavailable)?;
                 let mut placement = PlacementContext {
                     random: &random, selected, bundle: index.map(),
                     remaining_reads: usize::from(MAX_CREATURES) * usize::from(RAID_PLACEMENT_ATTEMPTS),
+                    stamp, firing: step.identity.firing_id,
                 };
                 let retained: BTreeSet<_> = runtime.raid_creatures(step.identity.firing_id)
                     .map_err(|_| DurabilityError::Unavailable)?.into_iter().map(|row| row.identity).collect();
-                let stamp = runtime.issue_owner_work().map_err(|_| DurabilityError::Unavailable)?;
+
                 let CommittedRaidAction::Wave { creatures, .. } = &step.action else {
                     return Err(DurabilityError::InvalidStoredState);
                 };
@@ -130,11 +151,142 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Every live consumer finished while the physical Item lock
                 // was held. This transaction only read current world facts.
                 drop(map);
+                let mut moves = Vec::new();
+                if grimvale && is_final_wave(selected, match &step.action { CommittedRaidAction::Wave { wave, .. } => *wave, _ => return Err(DurabilityError::InvalidStoredState) })
+                    && !grimvale_portal_is_open(index.map())
+                {
+                    // Crystal grimvale.lua final(): current players within the
+                    // same-floor 18-tile spectator square leave before entry opens.
+                    let players: Vec<_> = runtime.positioned_melee_census()
+                        .map_err(|_| DurabilityError::Unavailable)?.into_iter()
+                        .filter_map(|(actor, position, session)| {
+                            let at = position.position();
+                            session.filter(|_| at.floor == 11
+                                && (33412..=33448).contains(&at.x)
+                                && (31519..=31555).contains(&at.y))
+                                .map(|session| (actor, position, session))
+                        }).collect();
+                    let closed = crate::map::floor::BundleDoors(index.map().facts.doors());
+                    let destination = MovementLocalPosition { x: 33419, y: 31539, floor: 10 };
+                    let proofs = players.iter().map(|(actor, position, session)|
+                        crate::map::floor::prepare_quest_encounter_ejection(
+                            runtime, owner.movement_cells(), *actor, *session, *position,
+                            destination, &closed,
+                        ).map_err(|_| DurabilityError::Unavailable)
+                    ).collect::<Result<Vec<_>, _>>()?;
+                    let snapshots = runtime.commit_quest_relocation(proofs, ||
+                        project_grimvale_portal(index.map(), true)
+                    ).map_err(|_| DurabilityError::Unavailable)?;
+                    moves.extend(players.into_iter().zip(snapshots).map(|((actor, position, session), to)|
+                        (actor, session, position.position(), to.position())));
+                }
                 tx.rollback().await.map_err(|_| DurabilityError::Unavailable)?;
-                Ok(outcomes)
+                Ok((outcomes, moves))
             })
-        }).await.map_err(|_| ())
+        }).await.map_err(|_| ())?;
+        if !moves.is_empty() {
+            let map = self.bundle_map().ok_or(())?;
+            let mut states = self.states.spell_states.lock().await;
+            for (actor, session, from, to) in moves {
+                states.stage_special_movement_step(
+                    &runtime,
+                    map,
+                    actor,
+                    session,
+                    self.owner_now().get(),
+                    Some(from),
+                    to,
+                    None,
+                );
+                states.stage_underwater_step(
+                    &runtime,
+                    actor,
+                    session,
+                    self.owner_now().get(),
+                    super::paced_movement::underwater_drown::underwater(map, from),
+                    super::paced_movement::underwater_drown::underwater(map, to),
+                );
+            }
+        }
+        Ok(outcomes)
     }
+}
+
+/// Crystal grimvale.lua final() ejects players and opens entry even if
+/// Game.createMonster subsequently fails. A failed spawn remains a failed receipt.
+/// Until-reset completion retains this projection; revocation restores1949 travel.
+fn is_final_wave(selected: &SelectedRaid, wave: u16) -> bool {
+    usize::from(wave).checked_add(1) == Some(selected.definition.waves.len())
+}
+
+fn grimvale_portal_is_open(bundle: &crate::map::boot::BundleMap) -> bool {
+    bundle
+        .facts
+        .base_entry(
+            crate::map::overlay::TilePos {
+                x: 33430,
+                y: 31537,
+                floor: -11,
+            },
+            1,
+            1949,
+        )
+        .is_some_and(|entry| entry.appearance_id == 22761)
+}
+
+pub(super) fn project_grimvale_portal(bundle: &crate::map::boot::BundleMap, open: bool) -> bool {
+    use crate::map::view::placement_key;
+    let at = crate::map::overlay::TilePos {
+        x: 33430,
+        y: 31537,
+        floor: -11,
+    };
+    if bundle.facts.house_tile(at) {
+        return false;
+    }
+    let Some(tile) = bundle.overlay.base().tile(at.x, at.y, at.floor) else {
+        return false;
+    };
+    // Native B3: ground11038, then the bound1949 source teleport at ordinal1.
+    let ordinal = 1;
+    let Some((&id, _)) = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(usize::from(ordinal))
+    else {
+        return false;
+    };
+    let Some(key) = placement_key(at, ordinal) else {
+        return false;
+    };
+    if bundle.facts.base_hidden(key) {
+        return false;
+    }
+    let Some(before) = bundle.facts.base_entry(at, ordinal, id) else {
+        return false;
+    };
+    if !matches!(before.appearance_id, 1949 | 22761) {
+        return false;
+    }
+    let appearance = if open { 22761 } else { 1949 };
+    if before.appearance_id == appearance {
+        return true;
+    }
+    let Some(mut after) = bundle.facts.movement_item_facts(appearance) else {
+        return false;
+    };
+    after.bound = before.bound;
+    bundle.facts.apply_quest_callback(
+        key,
+        bundle.facts.object_revision(key),
+        after,
+        &[],
+        &[],
+        false,
+        None,
+    )
 }
 
 fn local(at: RaidPosition) -> MovementLocalPosition {
@@ -166,6 +318,8 @@ struct PlacementContext<'a> {
     selected: &'a SelectedRaid,
     bundle: &'a crate::map::boot::BundleMap,
     remaining_reads: usize,
+    stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
+    firing: [u8; 16],
 }
 
 impl PlacementContext<'_> {
@@ -189,7 +343,7 @@ impl PlacementContext<'_> {
     async fn select(
         &mut self,
         map: &mut CurrentMonsterMap<'_, '_>,
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         plan: &RaidCreaturePlan,
     ) -> Result<Option<RaidPosition>, DurabilityError> {
         let area = *self
@@ -219,6 +373,26 @@ impl PlacementContext<'_> {
                 for attempt in 0..RAID_PLACEMENT_ATTEMPTS {
                     let at = area
                         .candidate(
+                            self.random,
+                            identity.wave,
+                            identity.entry,
+                            identity.index,
+                            attempt,
+                        )
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if self.admits(map, runtime, at).await? {
+                        return Ok(Some(at));
+                    }
+                }
+                Ok(None)
+            }
+            CatalogueSpawnMode::SharedArea => {
+                while let Some(attempt) = runtime
+                    .spend_raid_shared_attempt(self.stamp, self.firing, identity.wave)
+                    .map_err(|_| DurabilityError::Unavailable)?
+                {
+                    let at = area
+                        .candidate_shared(
                             self.random,
                             identity.wave,
                             identity.entry,

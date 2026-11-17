@@ -1,0 +1,18 @@
+{
+  "mechanic": "0474-task-board-weekly-results",
+  "kind": "handlers",
+  "id": "0474-task-board-weekly-results",
+  "status": "supported",
+  "commands": [
+    6172
+  ],
+  "direction": "client_to_server",
+  "capability": 474,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "Monday rewards and task generation are server-owned.",
+    "input": "Admission triggers the query; the result window chooses the next difficulty.",
+    "state": "The existing TaskBoardPanel owns weekly results and command pending state.",
+    "view": "The Task Board feature owns the separate native Weekly Results window."
+  }
+}

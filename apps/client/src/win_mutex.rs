@@ -49,9 +49,9 @@ impl Display for InstanceError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::SetupInProgress => formatter.write_str(
-                "an Oteryn install or uninstall is in progress; start Oteryn again when it has finished",
+                tr!("an Oteryn install or uninstall is in progress; start Oteryn again when it has finished"),
             ),
-            Self::Os(error) => write!(formatter, "cannot check for a running install: {error}"),
+            Self::Os(error) => lwrite!(formatter, "cannot check for a running install: {error}",error=error),
         }
     }
 }
@@ -161,7 +161,7 @@ pub fn current_user_sid() -> io::Result<String> {
 /// Shows a modal error dialog titled `Oteryn` and returns when the user closes it.
 pub fn show_error(message: &str) {
     let text = wide(message);
-    let caption = wide("Oteryn");
+    let caption = wide(tr!("Oteryn"));
     // SAFETY: both strings are NUL-terminated UTF-16 that outlive the call; a null owner window
     // makes the dialog top-level.
     unsafe {

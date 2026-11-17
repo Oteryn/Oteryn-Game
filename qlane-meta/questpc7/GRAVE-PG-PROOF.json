@@ -1,0 +1,276 @@
+{
+  "quest": "oteryn:quest.grave_danger_quest",
+  "test": "questpc7_grave_whole_native_journey_and_reward",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 40.799342316,
+    "log": "/tmp/questpc7-grave-red.log",
+    "reason": "missing complete selected native journey after real PG harness creation"
+  },
+  "pre_pg_authoring_error": {
+    "milliseconds": 7.966186,
+    "reason": "STEP activation is unsupported; not counted as PG evidence. Reuse retained Cobra access STEP followed by phase-specific USE inspection."
+  },
+  "expanded_red": [
+    {
+      "seconds": 54.06573,
+      "log": "/tmp/questpc7-grave-green2.log",
+      "reason": "all12 graves and8 native deaths reached; helper continued after valid short reward teleport"
+    },
+    {
+      "seconds": 54.294620025,
+      "log": "/tmp/questpc7-grave-green3.log",
+      "reason": "rewards/completion/exact replay pass; final inactive overlay returns native NothingToUse, not test-assumed Rejected. Test now asserts exact native result plus unchanged completion revision and grant counts."
+    }
+  ],
+  "green": {
+    "seconds": 56.924504294,
+    "log": "/tmp/questpc7-grave-green4.log",
+    "marker": "QUESTPC7_GRAVE POSTGRES_CASE_COMPLETED duration=56.924504294s success=true",
+    "passed": 1,
+    "failed": 0
+  },
+  "state": "QUALIFIED",
+  "assertions": [
+    "fresh native level250/Premium subject; no quest progress seeds",
+    "12 distinct retained physical grave sites, exact native journey destinations",
+    "current Premium refusal at first grave and final reward",
+    "five Lich Knight encounters with both Sirs mandatory",
+    "King Zelos and typed native Zelos-door entitlement earned",
+    "retained Cobra access STEP and flag, selected investigation USE, native Scarlett death",
+    "base Hand of Inquisition, Inquisition's Hand and canonical completion in one transaction",
+    "exact command replay; inactive new-command use preserves native armour behavior with unchanged grants and completion revision",
+    "ordinary appearance command selects earned base outfit"
+  ],
+  "boundary": "Whole selected finite programme. Seven literal upstream grave coordinates; five documented conservative native grave bindings in named regions. Original raid/global/cooldown/party logic and optional corpse loot remain outside proof.",
+  "validation": {
+    "state": "GREEN",
+    "gates": [
+      {
+        "check": "ferumbras-pg",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-dispatch",
+          "--lib",
+          "questpc7_ferumbras_full_native_seals_and_reward_bundle",
+          "--",
+          "--nocapture",
+          "--test-threads=1"
+        ],
+        "seconds": 102.704,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-ferumbras-pg.log"
+      },
+      {
+        "check": "loader-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "--lib",
+          "loader::tests::"
+        ],
+        "seconds": 12.421,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-loader-units.log"
+      },
+      {
+        "check": "world-callback-units",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "--lib",
+          "world_callbacks::"
+        ],
+        "seconds": 2.72,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-world-callback-units.log"
+      },
+      {
+        "check": "author",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/content-schema/quest-authoring",
+          "-p",
+          "test_qengine_rewards.py"
+        ],
+        "seconds": 16.317,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-author.log"
+      },
+      {
+        "check": "item-author",
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/content-migration",
+          "-p",
+          "test_qengine_reward_item_profiles.py"
+        ],
+        "seconds": 0.224,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-item-author.log"
+      },
+      {
+        "check": "item-generation",
+        "command": [
+          "python3",
+          "tools/content-migration/register_spell_families.py",
+          "--check"
+        ],
+        "seconds": 70.865,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-item-generation.log"
+      },
+      {
+        "check": "generation",
+        "command": [
+          "python3",
+          "tools/content-schema/quest-authoring/qengine_rewards.py",
+          "--check"
+        ],
+        "seconds": 9.571,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-generation.log"
+      },
+      {
+        "check": "check",
+        "command": [
+          "cargo",
+          "check",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "-p",
+          "oteryn-gameplay-dispatch"
+        ],
+        "seconds": 85.01,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-check.log"
+      },
+      {
+        "check": "clippy",
+        "command": [
+          "cargo",
+          "clippy",
+          "--locked",
+          "-p",
+          "oteryn-gameplay-quests",
+          "-p",
+          "oteryn-gameplay-dispatch",
+          "--all-targets",
+          "--all-features",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "seconds": 181.614,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-clippy.log"
+      },
+      {
+        "check": "pin-refresh",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-refresh",
+          "."
+        ],
+        "seconds": 115.178,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-pin-refresh.log"
+      },
+      {
+        "check": "pin-check",
+        "command": [
+          "cargo",
+          "run",
+          "--locked",
+          "-p",
+          "oteryn-world-bundle-compiler",
+          "--",
+          "pin-check",
+          ".",
+          "/tmp/questpc7-grave-pin-check"
+        ],
+        "seconds": 139.952,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-pin-check.log"
+      },
+      {
+        "check": "content",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "integration_rest",
+          "content_"
+        ],
+        "seconds": 135.846,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-content.log"
+      },
+      {
+        "check": "world",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "oteryn-game-server",
+          "--test",
+          "content_world_project_repository"
+        ],
+        "seconds": 48.497,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-world.log"
+      },
+      {
+        "check": "fmt",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "seconds": 10.953,
+        "exit_code": 0,
+        "log": "/tmp/questpc7-grave-fmt.log"
+      }
+    ],
+    "test_counts": {
+      "retained_ferumbras_pg": 1,
+      "loader": 9,
+      "world_callbacks": 22,
+      "quest_authoring": 25,
+      "item_authoring": 3,
+      "content": 123,
+      "world": 5
+    },
+    "retained_ferumbras_postgres_seconds": 52.552991663
+  },
+  "review": "Reviewed complete programme and source bindings: twelve distinct physical sites, five documented conservative bindings, eight actual native deaths with both Sirs, native original Cobra step preserved, only USE phase activation, typed native access and existing fenced world grants. Exact repeat outcome and unchanged value/completion asserted; short teleport detection is precise. No new migration or relaxed bounds; no blocking findings."
+}

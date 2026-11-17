@@ -1,0 +1,123 @@
+{
+  "checkpoint": "33890c3f3e1fdeb66ec4daf44688dc3406b934ad",
+  "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-8e26004e3bb99eec",
+  "binary_sha256": "ba575678661d9a2cff33a1a898d727a2f33c7b7f10200a21069d85ee7d2813cf",
+  "build_context": "Rust test source unchanged from checkpoint; BUILD_SHA metadata predates commit. Runtime content includes newly regenerated book2824 speed fact, not yet committed. Producer and bounded golden-refresh tests ran separately.",
+  "cases": [
+    {
+      "name": "gameplay_transport::capabilities::tests::selection_tests::the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6",
+      "suffix": "the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6",
+      "exit_code": 0,
+      "success": true,
+      "duration_seconds": 0.016287,
+      "postgres_case": false,
+      "log": "/tmp/questpc2b-main-b386-case-the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6.log",
+      "log_sha256": "00d8a601ee56928ecb22d376a5a59aa75c40db22eb3af2e1ff9e980363f5124f"
+    },
+    {
+      "name": "gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
+      "suffix": "equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
+      "exit_code": 0,
+      "success": true,
+      "duration_seconds": 46.583283,
+      "postgres_case": false,
+      "log": "/tmp/questpc2b-main-b386-case-equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes.log",
+      "log_sha256": "62652bd3759614c9cc5ae980d1565f8c3368e31a2f11ba888fa7e933657054c4"
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::questpc2_hero_rathleton::questpc2_hero_four_pipe_greetings_grant_only_their_own_access_once",
+      "suffix": "questpc2_hero_four_pipe_greetings_grant_only_their_own_access_once",
+      "exit_code": 0,
+      "success": true,
+      "duration_seconds": 73.054972,
+      "postgres_case": true,
+      "log": "/tmp/questpc2b-main-b386-case-questpc2_hero_four_pipe_greetings_grant_only_their_own_access_once.log",
+      "log_sha256": "ff0150e848c56a8db7b75494184cfb3c8cf903d6d132caf8cd07d2c9183854a2"
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_source_acceptance_is_atomic_and_replay_bound",
+      "suffix": "catalogue_npc_source_acceptance_is_atomic_and_replay_bound",
+      "exit_code": 0,
+      "success": true,
+      "duration_seconds": 65.960226,
+      "postgres_case": true,
+      "log": "/tmp/questpc2b-main-b386-case-catalogue_npc_source_acceptance_is_atomic_and_replay_bound.log",
+      "log_sha256": "3c57c53a571f02527d9324487547aa0528156dc287245382ad6d1f64774ebe75"
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_general_xp_handin_runs_in_real_dispatch",
+      "suffix": "catalogue_npc_general_xp_handin_runs_in_real_dispatch",
+      "exit_code": 0,
+      "success": true,
+      "duration_seconds": 67.659854,
+      "postgres_case": true,
+      "log": "/tmp/questpc2b-main-b386-case-catalogue_npc_general_xp_handin_runs_in_real_dispatch.log",
+      "log_sha256": "d911351838e4399f26b6f323c176603e89ebe811fa7c8412f042af6d74ba901b"
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::boss_activity::l3_instance_endgame_rotten_blood_native_death_progresses_once",
+      "suffix": "l3_instance_endgame_rotten_blood_native_death_progresses_once",
+      "exit_code": 0,
+      "success": true,
+      "duration_seconds": 59.529838,
+      "postgres_case": true,
+      "log": "/tmp/questpc2b-main-b386-case-l3_instance_endgame_rotten_blood_native_death_progresses_once.log",
+      "log_sha256": "0e2289f6ee04d55612dc0a836dc0f2269872908db901d3e37cf14ae48bff9dfe"
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::annihilator_route::annihilator_source_route_genuine_party_entry",
+      "suffix": "annihilator_source_route_genuine_party_entry",
+      "exit_code": 0,
+      "success": true,
+      "duration_seconds": 73.098494,
+      "postgres_case": true,
+      "log": "/tmp/questpc2b-main-b386-case-annihilator_source_route_genuine_party_entry.log",
+      "log_sha256": "1f62a03c65aa94f1282566b2970fa5692aa60d808d25ddd0c30af8d4bf86a852"
+    }
+  ],
+  "all_passed": true,
+  "total_seconds": 215.213458,
+  "lane": "questpc2",
+  "state": "GREEN_FOCUSED_BATCH",
+  "whole_quest_qualification_added": false,
+  "change": "Propagate the already qualified zero-speed fact for existing native loot book2824 only; preserve all accepted known attributes. Rust source unchanged from33890c3f3.",
+  "postgres_server_version": 180006,
+  "pg_cases": 5,
+  "pure_rust_cases": 2,
+  "python_checks": "16PASS33.306s: producer, strict outside-six closure and bounded fingerprint guards",
+  "red_proof": {
+    "producer": "None!=0,8.235s",
+    "rust_profile": "None!=Some(0) for2824,4.993s"
+  },
+  "generation": "45registered native outputs regenerated; central lists and pins regenerated",
+  "fingerprints": {
+    "canonical_outside": "a36cccacd5536b476e508e0b1d2936657c80485d62c9f0df962c3865c2876130",
+    "native_outside": "3beba9c66db1323f5b69ef6570888e5900a0a366eb1b7cf02d16276411966fc9",
+    "refresh_tool": "questpc2_book_speed_fingerprint.py: verifies previous committed proof, exact one-record/one-leaf delta, source-qualified zero and unchanged canonical definitions before refreshing the literal"
+  },
+  "source": "Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b:items.xml5813-5817, SHA1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; existing pinned importer already produces speed0",
+  "workspace_all_targets": "PASS3m21s",
+  "fmt": "PASS",
+  "clippy": "Tencrate all-target/all-feature PASS9m55s at33890c3f3; no Rust/Cargo source changes in this data/Python batch",
+  "full_suites": "Pending CI under owner cadence exception; no full unit success claim",
+  "pin_refresh": {
+    "client_placements": "fc57111b3571b7d2e92e26708ee92605ef1b82a21b8dbea77c445aff9c8fb9d2",
+    "inputs_digest": "a4c260430670588bcabc752be8cf1f2a594fd7c24340f99aa60f3f3171857623",
+    "pins": [
+      {
+        "digest": "6b4be39d9f386b9f86327de020750bb5077ab5f8fd1ec82e874840fa9216617a",
+        "previous": "6b4be39d9f386b9f86327de020750bb5077ab5f8fd1ec82e874840fa9216617a",
+        "world": "oteryn"
+      }
+    ]
+  },
+  "proof_logs_sha256": {
+    "/tmp/questpc2b-book-speed-red.log": "80193d62d493555dec666e7148b98fe999a3c1b9247c2b637b90a6925abc4ae9",
+    "/tmp/questpc2b-book-speed-rust-red.log": "1901e06f9cffe64e068ac79492d63f5e6b51c71bf6cb35f4c2e3d822ccf9f3b2",
+    "/tmp/questpc2b-book-speed-all-python.log": "0227c80b8f9758c1511b2c883eb475d0444d117de25ef8da734eecd00bd03c51",
+    "/tmp/questpc2b-book-speed-generation.log": "b44149dd0638e96a799a2ce87c407b00139f4ba66534a3d0c8ab8ebec583fb2f",
+    "/tmp/questpc2b-book-speed-fingerprint.log": "db620be40f9cfe8ef68599b450d7f14375f82a8fa82f43a63d28cade78d5f8b2",
+    "/tmp/questpc2b-book-speed-workspace-check.log": "155b76504309241f06b2d4aa408b1f2bb0a158e8c210dd15bfa39d02fc2bea2e",
+    "/tmp/questpc2b-book-speed-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

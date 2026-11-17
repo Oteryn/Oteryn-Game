@@ -1,0 +1,14 @@
+{
+  "module": "monster_ai",
+  "owner": "crates",
+  "events": [
+    {
+      "event": "ai_budget_exceeded",
+      "level": "warn",
+      "span": false,
+      "fields": ["units", "budget", "count"],
+      "codes": [],
+      "note": "Power-of-two sample of counted AI evaluation budget refusals."
+    }
+  ]
+}

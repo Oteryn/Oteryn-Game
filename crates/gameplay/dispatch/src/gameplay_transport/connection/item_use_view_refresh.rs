@@ -22,6 +22,7 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
     let changed = view.inventory_committed(inventory);
     admitted.continuity.item_view = view.continuity();
     let mut deltas: Vec<_> = changed.ok()?.into_iter().collect();
+    view.inventory_refresh_pending = false;
     if let Some(views) = views {
         let refreshed = super::super::container_view::refresh::refresh(
             authority,
@@ -41,6 +42,27 @@ pub(super) async fn refresh<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         admitted.continuity.server_sequence = *sequence;
         write_frame(stream, &frame).await.ok()?;
     }
-    view.inventory_refresh_pending = false;
+    Some(())
+}
+
+/// Publish a committed Newhaven kit through the ordinary inventory/container delta owner.
+/// A failed read retains the existing pending-refresh retry; no lane/Runtime lock is held.
+pub(in crate::gameplay_transport) async fn refresh_newhaven_inventory<
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+>(
+    stream: &mut S,
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &mut AdmittedSession,
+    view: Option<&mut SessionItemView>,
+    views: Option<&mut ContainerViewState>,
+    sequence: &mut u64,
+) -> Option<()> {
+    if authority.take_newhaven_inventory_changed(admitted.game_session_id)
+        && let Some(view) = view
+    {
+        refresh(stream, authority, actor, admitted, view, views, sequence).await?;
+    }
     Some(())
 }

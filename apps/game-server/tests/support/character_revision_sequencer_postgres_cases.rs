@@ -49,11 +49,13 @@ use crate::foundation::admission_authority_publication::{
 };
 use crate::foundation::{ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+use sha2::{Digest, Sha256};
 use sqlx::postgres::PgConnection;
 use sqlx::{Connection, Executor};
 use std::collections::BTreeMap;
 use std::future::Future;
 use std::task::Poll;
+use std::time::{Duration, Instant};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -107,6 +109,14 @@ struct Database {
 
 impl Database {
     async fn create(admin_url: String, name: &str) -> TestResult<Self> {
+        Self::create_from(admin_url, name, None).await
+    }
+
+    async fn create_from(
+        admin_url: String,
+        name: &str,
+        template: Option<&str>,
+    ) -> TestResult<Self> {
         if !admin_url.starts_with("postgresql://oteryn_test_admin:")
             || !admin_url.rsplit_once('@').is_some_and(|(_, host)| {
                 host.strip_prefix("127.0.0.1:")
@@ -123,9 +133,27 @@ impl Database {
             .as_nanos();
         let name = format!("crs_{name}_{suffix}");
         let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+        let version: String = sqlx::query_scalar("SHOW server_version_num")
+            .fetch_one(&mut admin)
+            .await?;
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "canonical target is PostgreSQL 18.6"
+        );
+        let template = match template {
+            Some(template) => template.to_owned(),
+            // No tokio timer here: several suites run with paused tokio time, where a timer
+            // would fire while this waits on the database. The job timeout bounds it.
+            None => Self::migrated_template(&mut admin, &admin_url).await?,
+        };
+        Self::clone_database(&mut admin, &name, &template).await?;
+        // Clones share the template's random decision roots; tests must not depend on them differing between databases.
+        // CREATE DATABASE copies schema ACLs, but not the database's own
+        // ACL. Preserve migration 0006's cross-database isolation boundary.
         admin
             .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE DATABASE {name}"
+                "REVOKE CONNECT ON DATABASE {name} FROM PUBLIC"
             ))))
             .await?;
         admin.close().await?;
@@ -134,23 +162,146 @@ impl Database {
             .ok_or("invalid admin URL")?;
         let url = format!("{prefix}/{name}");
         let mut connection = sqlx::PgConnection::connect(&url).await?;
-        let version: String = sqlx::query_scalar("SHOW server_version_num")
-            .fetch_one(&mut connection)
-            .await?;
-        assert_eq!(
-            version,
-            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
-            "canonical target is PostgreSQL 18.6"
-        );
+        // The clone already has every migration; retain checksum/ledger validation.
         oteryn_gameplay_durability::GAME_MIGRATOR
             .run(&mut connection)
             .await?;
+        Self::refresh_migration_seeds(&mut connection).await?;
+        let public_connect: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM pg_database d, \
+             LATERAL aclexplode(COALESCE(d.datacl,acldefault('d',d.datdba))) a \
+             WHERE d.datname=current_database() AND a.grantee=0 AND a.privilege_type='CONNECT')",
+        )
+        .fetch_one(&mut connection)
+        .await?;
+        assert!(
+            !public_connect,
+            "fixture databases deny cross-database PUBLIC access"
+        );
         connection.close().await?;
         Ok(Self {
             admin_url,
             name,
             url,
         })
+    }
+
+    async fn refresh_migration_seeds(connection: &mut PgConnection) -> TestResult {
+        // Migration 2833 seeds this at migration time; give each clone a fresh resync start.
+        sqlx::query(
+            "UPDATE game_character_service_feed \
+             SET resync_started_at_ms = floor(extract(epoch FROM transaction_timestamp())*1000)::bigint \
+             WHERE singleton AND phase = 1",
+        )
+        .execute(connection)
+        .await?;
+        Ok(())
+    }
+
+    async fn migrated_template(admin: &mut PgConnection, admin_url: &str) -> TestResult<String> {
+        let mut hash = Sha256::new();
+        for migration in oteryn_gameplay_durability::GAME_MIGRATOR.iter() {
+            hash.update(migration.version.to_be_bytes());
+            hash.update(migration.checksum.as_ref());
+        }
+        let digest = hash.finalize();
+        let template = format!(
+            "oteryn_tpl_{:016x}",
+            u64::from_be_bytes(digest[..8].try_into()?)
+        );
+        // nextest uses separate processes. This session lock serializes publication
+        // across all of them; closing the admin connection also releases it on error.
+        sqlx::query("SELECT pg_advisory_lock(hashtextextended($1, 0))")
+            .bind(&template)
+            .execute(&mut *admin)
+            .await?;
+        let is_template: Option<bool> =
+            sqlx::query_scalar("SELECT datistemplate FROM pg_database WHERE datname = $1")
+                .bind(&template)
+                .fetch_optional(&mut *admin)
+                .await?;
+        if is_template.is_none() {
+            let building = format!("{template}_building");
+            // Recover an interrupted build without ever publishing a partial schema.
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "DROP DATABASE IF EXISTS {building} WITH (FORCE)"
+                ))))
+                .await?;
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE DATABASE {building}"
+                ))))
+                .await?;
+            let prefix = admin_url
+                .strip_suffix("/postgres")
+                .ok_or("invalid admin URL")?;
+            let mut connection = PgConnection::connect(&format!("{prefix}/{building}")).await?;
+            oteryn_gameplay_durability::GAME_MIGRATOR
+                .run(&mut connection)
+                .await?;
+            connection.close().await?;
+            // Keep future connections (including autovacuum) off the clone source.
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "ALTER DATABASE {building} ALLOW_CONNECTIONS false"
+                ))))
+                .await?;
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "ALTER DATABASE {building} RENAME TO {template}"
+                ))))
+                .await?;
+        }
+        // Also finishes publication if the creating process died just after rename.
+        // Templates live for the cluster's lifetime; CI clusters are throwaway.
+        if is_template != Some(true) {
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "ALTER DATABASE {template} IS_TEMPLATE true"
+                ))))
+                .await?;
+        }
+        sqlx::query("SELECT pg_advisory_unlock(hashtextextended($1, 0))")
+            .bind(&template)
+            .execute(&mut *admin)
+            .await?;
+        eprintln!(
+            "PGTPL {} {template}",
+            if is_template.is_some() {
+                "reused"
+            } else {
+                "created"
+            }
+        );
+        Ok(template)
+    }
+
+    async fn clone_database(admin: &mut PgConnection, name: &str, template: &str) -> TestResult {
+        let deadline = Instant::now() + Duration::from_secs(15);
+        loop {
+            match admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE DATABASE {name} TEMPLATE {template}"
+                ))))
+                .await
+            {
+                Ok(_) => return Ok(()),
+                Err(error)
+                    if error
+                        .as_database_error()
+                        .and_then(|error| error.code())
+                        .as_deref()
+                        == Some("55006")
+                        && Instant::now() < deadline =>
+                {
+                    // A just-closed source connection may still be exiting on the server.
+                    // A real sleep: tokio time may be paused in the calling test.
+                    std::thread::sleep(Duration::from_millis(50));
+                }
+                Err(error) => return Err(error.into()),
+            }
+        }
     }
 
     async fn cleanup(self) -> TestResult {
@@ -193,6 +344,28 @@ async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationP
         .map_err(debug)
 }
 
+/// A fully migrated, unseeded database, scoped to one catalogue sweep. Every
+/// clone is an independent database and still verifies the migration ledger.
+#[allow(
+    dead_code,
+    reason = "only catalogue sweep targets share migration setup"
+)]
+pub(super) struct MigratedDatabaseTemplate(Database);
+
+#[allow(
+    dead_code,
+    reason = "only catalogue sweep targets share migration setup"
+)]
+impl MigratedDatabaseTemplate {
+    pub(super) async fn create(admin: String) -> TestResult<Self> {
+        Ok(Self(Database::create(admin, "catalogue_template").await?))
+    }
+
+    pub(super) async fn cleanup(self) -> TestResult {
+        self.0.cleanup().await
+    }
+}
+
 pub(super) struct Harness {
     database: Database,
     pub(super) root: DurabilityRoot,
@@ -216,16 +389,89 @@ impl Harness {
         initialized: bool,
         seed_session: bool,
     ) -> TestResult<Self> {
-        Self::create_seeded(admin, tag, initialized, seed_session, false).await
+        Self::create_seeded(
+            admin,
+            tag,
+            initialized,
+            seed_session,
+            CreationFixture::Historical,
+        )
+        .await
+    }
+    #[allow(
+        dead_code,
+        reason = "C19b native dispatch scenarios create a root under the new interpretation"
+    )]
+    pub(super) async fn create_newhaven(admin: String, tag: &str) -> TestResult<Self> {
+        Self::create_seeded_with_starter(
+            admin,
+            tag,
+            false,
+            false,
+            CreationFixture::Historical,
+            "newhaven-starter-r1",
+        )
+        .await
     }
     async fn create_seeded(
         admin: String,
         tag: &str,
         initialized: bool,
         seed_session: bool,
-        appearance: bool,
+        creation: CreationFixture,
+    ) -> TestResult<Self> {
+        Self::create_seeded_with_starter(
+            admin,
+            tag,
+            initialized,
+            seed_session,
+            creation,
+            "starter-1",
+        )
+        .await
+    }
+    async fn create_seeded_with_starter(
+        admin: String,
+        tag: &str,
+        initialized: bool,
+        seed_session: bool,
+        creation: CreationFixture,
+        starter: &str,
     ) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
+        Self::create_on_database(database, initialized, seed_session, creation, starter).await
+    }
+
+    #[allow(
+        dead_code,
+        reason = "only catalogue sweep targets share migration setup"
+    )]
+    pub(super) async fn create_from_template(
+        admin: String,
+        tag: &str,
+        template: &MigratedDatabaseTemplate,
+    ) -> TestResult<Self> {
+        if admin != template.0.admin_url {
+            return Err("migration template belongs to another PostgreSQL cluster".into());
+        }
+        let database = Database::create_from(admin, tag, Some(&template.0.name)).await?;
+        Self::create_on_database(
+            database,
+            false,
+            false,
+            CreationFixture::Historical,
+            "starter-1",
+        )
+        .await
+    }
+
+    async fn create_on_database(
+        database: Database,
+        initialized: bool,
+        seed_session: bool,
+        creation: CreationFixture,
+        starter: &str,
+    ) -> TestResult<Self> {
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
         let pool = sqlx::PgPool::connect(&database.url).await?;
@@ -246,11 +492,8 @@ impl Harness {
             &node,
             initialized,
             seed_session,
-            if appearance {
-                CreationFixture::Own
-            } else {
-                CreationFixture::Historical
-            },
+            creation,
+            starter,
         )
         .await?;
         Ok(Self {
@@ -280,7 +523,9 @@ impl Harness {
     }
 }
 
-fn bootstrap_binding(appearance: bool, observer: bool) -> Vec<u8> {
+fn bootstrap_binding(creation: CreationFixture, starter: &str) -> Vec<u8> {
+    let appearance = creation != CreationFixture::Historical;
+    let observer = creation == CreationFixture::Observer;
     let original_id = id;
     let id = |tag| {
         original_id(if observer && ![42, 43].contains(&tag) {
@@ -302,7 +547,7 @@ fn bootstrap_binding(appearance: bool, observer: bool) -> Vec<u8> {
     binding.extend_from_slice(&id(42));
     binding.extend_from_slice(&1_i64.to_be_bytes());
     binding.extend_from_slice(&120_i64.to_be_bytes());
-    for value in ["profile-1", "ruleset-1", "content-1", "starter-1"] {
+    for value in ["profile-1", "ruleset-1", "content-1", starter] {
         binding.extend_from_slice(&u16::try_from(value.len()).expect("length").to_be_bytes());
         binding.extend_from_slice(value.as_bytes());
     }
@@ -313,8 +558,8 @@ fn bootstrap_binding(appearance: bool, observer: bool) -> Vec<u8> {
             .to_be_bytes(),
     );
     binding.extend_from_slice(name.as_bytes());
-    if appearance {
-        binding.push(2);
+    if let Some(sex) = creation.sex() {
+        binding.push(sex as u8);
     }
     binding
 }
@@ -393,8 +638,8 @@ async fn seed_character(
     initialized: bool,
     seed_session: bool,
     creation: CreationFixture,
+    starter: &str,
 ) -> TestResult {
-    let appearance = creation != CreationFixture::Historical;
     let observer = creation == CreationFixture::Observer;
     let original_id = id;
     let id = |tag| {
@@ -410,12 +655,19 @@ async fn seed_character(
         "Fixture Hero"
     };
     if !observer {
-        sqlx::query(
-            "INSERT INTO game_character_interpretations VALUES \
-         (1,'profile-1','ruleset-1','content-1','starter-1',1)",
-        )
-        .execute(pool)
-        .await?;
+        if starter == "starter-1" {
+            sqlx::query(
+                "INSERT INTO game_character_interpretations VALUES \
+             (1,'profile-1','ruleset-1','content-1','starter-1',1)",
+            )
+            .execute(pool)
+            .await?;
+        } else {
+            // The operator's actual append-only interpretation owner selects the new
+            // template before root creation; no immutable existing root is rewritten.
+            sqlx::query("SELECT game_character_configure_interpretation('profile-1','ruleset-1','content-1',$1)")
+                .bind(starter).execute(pool).await?;
+        }
     }
     sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")
         .bind(id(40).as_slice())
@@ -424,13 +676,14 @@ async fn seed_character(
     sqlx::query(
         "INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
-          1,1,'profile-1','ruleset-1','content-1','starter-1',$5,$4)",
+          1,1,'profile-1','ruleset-1','content-1',$6,$5,$4)",
     )
     .bind(id(41).as_slice())
     .bind(id(40).as_slice())
     .bind(id(42).as_slice())
-    .bind(if appearance { Some(2_i16) } else { None })
+    .bind(creation.sex())
     .bind(name)
+    .bind(starter)
     .execute(pool)
     .await?;
     sqlx::query(
@@ -443,7 +696,7 @@ async fn seed_character(
            encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,1,120)",
     )
     .bind(id(30).as_slice())
-    .bind(bootstrap_binding(appearance, observer))
+    .bind(bootstrap_binding(creation, starter))
     .bind(id(40).as_slice())
     .bind(id(41).as_slice())
     .bind(id(42).as_slice())
@@ -458,7 +711,7 @@ async fn seed_character(
          (1,$3,encode($1,'hex')::uuid,$2) ON CONFLICT(issuer_scope) DO UPDATE SET source_revision=EXCLUDED.source_revision,issuer_decision_id=EXCLUDED.issuer_decision_id,intent_binding=EXCLUDED.intent_binding",
     )
     .bind(id(31).as_slice())
-    .bind(bootstrap_binding(appearance, observer))
+    .bind(bootstrap_binding(creation, starter))
     .bind(if observer { 2_i64 } else { 1_i64 })
     .execute(pool)
     .await?;
@@ -693,7 +946,7 @@ impl CharmFacts for Facts {
     }
 }
 
-fn xp_request(tag: u8) -> TestResult<ExperienceAwardRequest<2>> {
+pub(super) fn xp_request(tag: u8) -> TestResult<ExperienceAwardRequest<2>> {
     let context = ProgressionRevisionContext {
         profile: "profile-1".into(),
         ruleset: "ruleset-1".into(),
@@ -739,10 +992,13 @@ where
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
+    // Keep the executor's stack frame and monomorphization independent of the
+    // scenario's future size. Every scenario still runs to completion here.
+    let future: std::pin::Pin<Box<dyn Future<Output = TestResult> + '_>> = Box::pin(body(admin));
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
-        .block_on(body(admin))
+        .block_on(future)
 }
 
 async fn revision(pool: &sqlx::PgPool) -> TestResult<u64> {
@@ -771,6 +1027,7 @@ fn kill(tag: u8) -> TestResult<BestiaryKillRequest> {
 fn death(tag: u8) -> TestResult<CharacterDeathRequest<2>> {
     let xp = xp_request(tag)?;
     Ok(CharacterDeathRequest {
+        public_cause: None,
         pvp_contributors: Vec::new(),
         occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
         context: xp.context,

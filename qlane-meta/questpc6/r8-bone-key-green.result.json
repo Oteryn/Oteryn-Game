@@ -1,0 +1,5 @@
+{
+  "command": "python3 -m unittest discover -s tools/content-migration -p test_quest_callback_profiles.py -v",
+  "exit": 1,
+  "duration_seconds": 68.324
+}

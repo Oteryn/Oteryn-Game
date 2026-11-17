@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python3",
+    "tools/content-schema/quest-authoring/quest_reward_only_binding_candidates.py"
+  ],
+  "exit_code": 0,
+  "seconds": 0.609,
+  "log": ".questpc7/hoist-reward-candidates.log"
+}

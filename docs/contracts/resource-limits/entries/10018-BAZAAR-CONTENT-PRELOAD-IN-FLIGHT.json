@@ -1,0 +1,21 @@
+{
+  "id": "BAZAAR-CONTENT-PRELOAD-IN-FLIGHT",
+  "owner_contract": "OTERYN_GAME_BAZAAR_AUTHORITY_V1.md",
+  "resource": "Local Bazaar artifact blocking readers per process",
+  "unit": "workers",
+  "hard_maximum": 1,
+  "configurable_range": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "The permit is moved into the blocking reader, so timeout never accumulates orphan readers. Independent command consumers may wait only within the preload deadline.",
+  "client_visible": false,
+  "boundary_tests": [
+    "bazaar_items_native_postgres_custody_split_replay_and_terminal_races"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/bazaar/preload.rs"
+  ],
+  "notes": "The permit is moved into the blocking reader, so timeout never accumulates orphan readers. Independent command consumers may wait only within the preload deadline."
+}

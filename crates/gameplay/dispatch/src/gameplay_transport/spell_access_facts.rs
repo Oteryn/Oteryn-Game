@@ -6,9 +6,9 @@
 )]
 use crate::content::ActiveGeneration;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
-use crate::durability::character_equipment::{
-    EquipmentError, assert_equipment_authority_in_transaction,
-};
+#[cfg(test)]
+use crate::durability::character_equipment::assert_equipment_authority_in_transaction;
+use crate::durability::character_equipment::{EquipmentError, read_cast_equipment_in_transaction};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::durability::{DurabilityError, DurabilityRoot};
@@ -91,6 +91,7 @@ impl<A: CurrentSpellAccessOwner> CurrentSpellAccessOwner for WheelCastAccess<'_,
         now: u64,
     ) -> Result<AccessProjections, AccessFactsError> {
         let mut projections = self.other.read_current(binding, now)?;
+        projections.learned = None;
         projections.wheel = None;
         projections.wheel_effects = None;
         projections.wheel_promoted = false;
@@ -108,6 +109,12 @@ impl<A: CurrentSpellAccessOwner> CurrentSpellAccessOwner for WheelCastAccess<'_,
             ));
         }
         if wheel_raw_matches_binding(read, binding) {
+            projections.learned = Some(CurrentProjection {
+                binding: binding.clone(),
+                authority_revision: binding.character_revision,
+                valid_until_micros: u64::MAX,
+                value: read.learned.clone(),
+            });
             projections.wheel = project_wheel_stages(
                 self.ruleset,
                 self.read.allocation(),
@@ -306,7 +313,7 @@ pub async fn read_owned_cast_facts_in_transaction(
     let native = active
         .native_gameplay()
         .ok_or(AccessFactsError::Unavailable("active gameplay artifact"))?;
-    let authority = assert_equipment_authority_in_transaction(
+    let reader = read_cast_equipment_in_transaction(
         tx,
         root,
         recovery,
@@ -318,20 +325,14 @@ pub async fn read_owned_cast_facts_in_transaction(
     .await?;
     // An uninitialized equipment owner is unavailable. Initialization belongs to its independent
     // admission/Item command, never to a rejected cast's hidden side effects.
-    let raw =
-        crate::durability::character_equipment::read_raw_cast_facts_in_transaction(tx, &authority)
-            .await?;
+    let raw = reader.read_facts(tx).await?;
     let ruleset = crate::wheel_gem_data::WheelGemData::embedded()
         .ok()
         .and_then(|data| data.wheel_ruleset().ok());
     let wheel = match ruleset {
-        Some(ruleset) => retain_wheel_read(
-            crate::durability::character_wheel::read_current_allocation_in_transaction(
-                tx, &authority, &ruleset,
-            )
-            .await,
-        )?
-        .map(|read| (read, ruleset)),
+        Some(ruleset) => {
+            retain_wheel_read(reader.read_wheel(tx, &ruleset).await)?.map(|read| (read, ruleset))
+        }
         None => None,
     };
     Ok(OwnedCastRead { raw, wheel })
@@ -849,6 +850,7 @@ mod wheel_projection_tests {
             0x01, 0x90, 0, 0, 0, 0x36, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 0x36,
         ];
         let raw = crate::durability::character_equipment::RawCastDurableFacts {
+            learned: Default::default(),
             account: [6; 16],
             loyalty_points: 0,
             equipment: crate::durability::character_equipment::EquipmentSnapshot {
@@ -1032,10 +1034,14 @@ mod progression_dispatch_tests {
                 .vitals();
             let fed_seconds = if fed { second.min(6) } else { 0 };
             let hungry_seconds = second - fed_seconds;
-            let expected = (
-                100 + fed_seconds / 3 + hungry_seconds / 4,
-                100 + 2 * (fed_seconds / 5 + (hungry_seconds + fed_seconds % 5) / 6),
-            );
+            // REGEN-PCT-4: fed ticks every 3 s for both pools, hungry 4 s (health)
+            // and 6 s (mana); progress carries across the food change. Knight
+            // 185 max health: 10 bp is below the Global floor of 1 HP / 6 s, so
+            // each tick credits half a point. 200 max mana: 8 bp is below the
+            // floor of 2 mana / 6 s, so each tick credits one point.
+            let health_ticks = fed_seconds / 3 + (hungry_seconds + fed_seconds % 3) / 4;
+            let mana_ticks = fed_seconds / 3 + (hungry_seconds + fed_seconds % 3) / 6;
+            let expected = (100 + health_ticks / 2, 100 + mana_ticks);
             assert_eq!(
                 (u64::from(vitals.health), u64::from(vitals.mana)),
                 expected,

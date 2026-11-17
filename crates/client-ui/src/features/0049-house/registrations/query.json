@@ -1,0 +1,16 @@
+{
+  "mechanic": "0049-house",
+  "kind": "handlers",
+  "id": "0049-house-query",
+  "status": "supported",
+  "commands": [
+    57
+  ],
+  "direction": "client_to_server",
+  "capability": 49,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "No persistent house settings.",
+    "input": "W17 owns final mounting; typed actions are exposed by Panel."
+  }
+}

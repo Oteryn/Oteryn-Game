@@ -77,7 +77,21 @@ def normalize_payload(root, row):
     entry = next((entry for entry in packet["records"] if entry["canonical_key"] == key), None)
     if entry is None:
         return copy.deepcopy(row), None
-    normalized = apply_entry(row, entry)
+    # The reviewed fence covers the original recipe. Verify derived Item fields
+    # independently before replaying that fence, then regenerate them on the result.
+    from quest_item_keys import catalogue, enrich, item_definitions, without_enrichment
+    bare = copy.deepcopy(row)
+    bare['recipe'] = without_enrichment(row['recipe'])
+    enriched = bare != row
+    if enriched:
+        index = catalogue(item_definitions(Path(root)))
+        expected = copy.deepcopy(bare['recipe'])
+        enrich(expected, index)
+        if expected != row['recipe']:
+            raise ValueError('terminal normalization Item enrichment differs')
+    normalized = apply_entry(bare, entry)
+    if enriched:
+        enrich(normalized['recipe'], index)
     return normalized, {
         "path": PACKET,
         "sha256": APPROVED_SHA256,

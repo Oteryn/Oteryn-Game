@@ -3,23 +3,44 @@ import copy
 import hashlib
 import json
 import re
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
 
 import soulpit_echo_item_profiles as soulpit
+from import_cyclopedia_global import load_weights
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILES = 'content/items/definitions/spell-native-profiles.json'
 MANIFEST = 'content/spells.manifest.json'
 BINDINGS = 'imports/crystalserver/bindings/items.json'
+CYCLOPEDIA = 'docs/reference/content-prep/item-cyclopedia-capture-1'
 
 
 def canonical(value):
     return (json.dumps(value, sort_keys=True, ensure_ascii=False) + '\n').encode()
 
 
+def client_weighted(row):
+    """The capture's record as admitted: the Global client weight replaces the donor weight."""
+    row = copy.deepcopy(row)
+    leaf = row['semantics']['physical']['value']['weight']
+    leaf['value'] = load_weights(ROOT).get(int(row['production_binding']['external_id']), leaf['value'])
+    return row
+
+
 class SoulpitEchoItemProfilesTest(unittest.TestCase):
+    def test_echo_catalysts_are_materializable_in_the_existing_overlay(self):
+        catalysts = {51588, 51589, 54266}
+        admitted = {int(row['production_binding']['external_id']): row
+                    for row in self.overlay['records']}
+        self.assertTrue(catalysts <= admitted.keys())
+        for item_id in catalysts:
+            self.assertTrue(admitted[item_id]['admission']['materializable'])
+            self.assertEqual(admitted[item_id]['admission']['legal_destinations'],
+                             ['CharacterInventory', 'Ground'])
+
     def setUp(self):
         self.capture = (ROOT / soulpit.PATH).read_bytes()
         self.overlay = json.loads(self.capture)
@@ -39,6 +60,8 @@ class SoulpitEchoItemProfilesTest(unittest.TestCase):
             target = root / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(raw)
+        # The admission replaces donor weights with the verified Cyclopedia capture.
+        shutil.copytree(ROOT / CYCLOPEDIA, root / CYCLOPEDIA)
         return root
 
     def admit(self, root, generated):
@@ -67,7 +90,7 @@ class SoulpitEchoItemProfilesTest(unittest.TestCase):
         self.assertTrue(set(unbound).issubset(ids))
         records = self.overlay['records']
         admitted = [int(row['production_binding']['external_id']) for row in records]
-        self.assertEqual(len(records), 845)
+        self.assertEqual(len(records), 848)
         self.assertEqual(admitted, sorted((set(ids) | soulpit.EXTRA_IDS) - set(unbound)))
         self.assertTrue(all(row['admission']['materializable'] is True for row in records))
         self.assertTrue(all(row['admission']['legal_destinations'] == ['CharacterInventory', 'Ground']
@@ -104,11 +127,11 @@ class SoulpitEchoItemProfilesTest(unittest.TestCase):
             self.admit(root, generated)
             result = json.loads(generated[PROFILES])
             by_key = {row['production_definition']['production_key']: row for row in result['records']}
-            self.assertEqual(len(by_key), len(original['records']) + 845)
+            self.assertEqual(len(by_key), len(original['records']) + 848)
             for row in original['records']:
                 self.assertEqual(by_key[row['production_definition']['production_key']], row)
             for row in self.overlay['records']:
-                self.assertEqual(by_key[row['production_definition']['production_key']], row)
+                self.assertEqual(by_key[row['production_definition']['production_key']], client_weighted(row))
             manifest = json.loads(generated[MANIFEST])
             expected_manifest = copy.deepcopy(before_manifest)
             expected_manifest['item_profiles']['sha256'] = hashlib.sha256(generated[PROFILES]).hexdigest()
@@ -178,7 +201,7 @@ class SoulpitEchoItemProfilesTest(unittest.TestCase):
     def test_conflicting_existing_native_custody_is_not_overwritten(self):
         generated = self.generated()
         document = json.loads(generated[PROFILES])
-        conflicting = copy.deepcopy(self.overlay['records'][0])
+        conflicting = client_weighted(self.overlay['records'][0])
         conflicting['semantics']['physical']['value']['weight']['value'] += 1
         document['records'].append(conflicting)
         generated[PROFILES] = canonical(document)

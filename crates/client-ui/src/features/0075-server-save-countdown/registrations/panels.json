@@ -1,0 +1,7 @@
+{
+  "mechanic": "0075-server-save-countdown",
+  "kind": "panels",
+  "id": "0075-server-save-countdown-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

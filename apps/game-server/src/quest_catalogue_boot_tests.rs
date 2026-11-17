@@ -140,12 +140,22 @@ fn computed_transitions_refuse_and_the_event_line_counts_them() -> TestResult {
     let grizzly_tracks = oteryn_gameplay_quests::quest::grizzly_adams::storage_keys();
     for transition in &transitions {
         let key = transition["key"].as_str().ok_or("key")?;
-        let loaded = catalogue.transition(key).ok_or(key.to_owned())?;
-        let not_supported =
-            catalogue.evaluate(loaded, &BTreeMap::new(), 0) == Err(QuestRefusal::NotSupported);
         let computed = effects(transition)?
             .iter()
             .any(|effect| explicit_computed(effect) || inexact(effect));
+        // The event line counts raw SOURCE effects, including owner-excluded quests.
+        refused += usize::from(computed);
+        for effect in effects(transition)? {
+            explicit += usize::from(explicit_computed(effect));
+            inexact_effects += usize::from(inexact(effect));
+        }
+        if transition["quest"] == "oteryn:quest.dawnport_quest" {
+            assert!(catalogue.transition(key).is_none(), "{key}");
+            continue;
+        }
+        let loaded = catalogue.transition(key).ok_or(key.to_owned())?;
+        let not_supported =
+            catalogue.evaluate(loaded, &BTreeMap::new(), 0) == Err(QuestRefusal::NotSupported);
         // W15c fences the old single-write Grizzly fragments behind its compound
         // owner. The event line still counts the original lowered SOURCE document.
         let grizzly_fragment = transition["quest"]
@@ -156,11 +166,6 @@ fn computed_transitions_refuse_and_the_event_line_counts_them() -> TestResult {
                     .is_some_and(|track| grizzly_tracks.iter().any(|owned| owned == track))
             });
         assert_eq!(not_supported, computed || grizzly_fragment, "{key}");
-        refused += usize::from(computed);
-        for effect in effects(transition)? {
-            explicit += usize::from(explicit_computed(effect));
-            inexact_effects += usize::from(inexact(effect));
-        }
     }
     assert!(refused > 0 && explicit > 0 && inexact_effects > 0);
     assert_eq!(
@@ -183,6 +188,10 @@ fn an_exact_transition_of_the_boot_catalogue_applies() -> TestResult {
     let mut applied = 0;
     for transition in document_transitions()? {
         let key = transition["key"].as_str().ok_or("key")?;
+        if transition["quest"] == "oteryn:quest.dawnport_quest" {
+            assert!(catalogue.transition(key).is_none(), "{key}");
+            continue;
+        }
         let loaded = catalogue.transition(key).ok_or(key.to_owned())?;
         if let Ok(changes) = catalogue.evaluate(loaded, &BTreeMap::new(), 0) {
             assert_eq!(changes.len(), loaded.effects.len(), "{key}");

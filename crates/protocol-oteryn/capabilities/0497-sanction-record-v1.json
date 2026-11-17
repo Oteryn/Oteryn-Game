@@ -1,0 +1,17 @@
+{
+  "id": 497,
+  "name": "SANCTION_RECORD_V1",
+  "constant": "sanction_record::CAPABILITY_SANCTION_RECORD_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    6240
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

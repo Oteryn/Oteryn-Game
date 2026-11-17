@@ -1,0 +1,4 @@
+name=store_cosmetic_tokens
+commands=6187,6188
+[route]
+routing::store::route(authority, &session.admitted, command).await

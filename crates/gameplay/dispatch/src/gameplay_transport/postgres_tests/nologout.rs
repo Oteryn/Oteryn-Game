@@ -125,7 +125,7 @@ fn scenario() -> TestResult {
             );
         }
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.server_motd = "Welcome to Oteryn!";
         deps.initialize(&owner).await;
         owner

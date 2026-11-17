@@ -7,6 +7,8 @@ import copy
 import hashlib
 import json
 
+from native_profile_composition import encode_native_profile
+
 # Accepted EXERCISE0 item structures. The training ruleset may list more weapons (for
 # example the 50-charge training weapons); those get no structural overlay here.
 EXERCISE0_ITEMS = frozenset((
@@ -90,7 +92,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
                                       'revision_ref': source['identity']['revision']},
             'production_binding': binding, 'production_binding_qualification': None})
     document['records'].sort(key=order)
-    data = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    data = encode_native_profile(document)
     generated[profile_path] = data
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(data).hexdigest()

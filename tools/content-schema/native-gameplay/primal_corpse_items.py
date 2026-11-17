@@ -110,6 +110,39 @@ def verify_source(crystal: Path) -> None:
         raise ValueError("Primal source appearance closure incomplete")
 
 
+def corpse_definition(definition, capacity, duration, target, movable, weight=0):
+    """Existing non-pickupable corpse Item policy; keep unrelated groups unknown."""
+    replacement = {
+        "kind": "Item", "identity": copy.deepcopy(definition["identity"]),
+        "client_projection": definition["client_projection"],
+        "materializable": True, "stack_class": "NonStackable",
+        "semantics": {name: {"state": "UNKNOWN"} for name in UNKNOWN_GROUPS},
+    }
+    replacement["semantics"]["physical"] = {"state": "KNOWN", "value": {
+        "weight": {"state": "KNOWN", "value": weight},
+        "movable": {"state": "KNOWN", "value": movable},
+        "pickupable": {"state": "KNOWN", "value": False},
+    }}
+    replacement["semantics"]["stack"] = {"state": "KNOWN", "value": {
+        "stackable": {"state": "KNOWN", "value": False},
+        "stack_max": {"state": "NOT_APPLICABLE"},
+    }}
+    replacement["semantics"]["container"] = (
+        {"state": "KNOWN", "value": {"capacity": {"state": "KNOWN", "value": capacity}}}
+        if capacity is not None else {"state": "NOT_APPLICABLE"})
+    target_field = (
+        {"state": "KNOWN", "value": {
+            "key": f"oteryn:item.tibia.i{target}", "revision": "definition-r1"}}
+        if target is not None else {"state": "NOT_APPLICABLE"})
+    replacement["semantics"]["temporal"] = {"state": "KNOWN", "value": {
+        "consumption_mode": {"state": "KNOWN", "value": "DURABLE_ABSOLUTE_DEADLINE"},
+        "duration": {"state": "KNOWN", "value": duration},
+        "stop_duration": {"state": "KNOWN", "value": False},
+        "decay_target": target_field,
+    }}
+    return replacement
+
+
 def apply_admissions(definitions, root=ROOT):
     definitions = list(definitions)
     indexed = {definition["identity"]["key"]: definition for definition in definitions}
@@ -128,34 +161,7 @@ def apply_admissions(definitions, root=ROOT):
                 or world_object["movable"] != {"state": "KNOWN", "value": item != 39530}
                 or world_object["provenance"]["item_pointer"]["revision"] != "definition-r1"):
             raise ValueError("Primal Item/WorldObject binding differs: " + key)
-        replacement = {
-            "kind": "Item", "identity": copy.deepcopy(definition["identity"]),
-            "client_projection": definition["client_projection"],
-            "materializable": True, "stack_class": "NonStackable",
-            "semantics": {name: {"state": "UNKNOWN"} for name in UNKNOWN_GROUPS},
-        }
-        replacement["semantics"]["physical"] = {"state": "KNOWN", "value": {
-            "weight": {"state": "KNOWN", "value": 0},
-            "movable": {"state": "KNOWN", "value": item != 39530},
-            "pickupable": {"state": "KNOWN", "value": False},
-        }}
-        replacement["semantics"]["stack"] = {"state": "KNOWN", "value": {
-            "stackable": {"state": "KNOWN", "value": False},
-            "stack_max": {"state": "NOT_APPLICABLE"},
-        }}
-        replacement["semantics"]["container"] = (
-            {"state": "KNOWN", "value": {"capacity": {"state": "KNOWN", "value": capacity}}}
-            if capacity is not None else {"state": "NOT_APPLICABLE"})
-        target_field = (
-            {"state": "KNOWN", "value": {
-                "key": f"oteryn:item.tibia.i{target}", "revision": "definition-r1"}}
-            if target is not None else {"state": "NOT_APPLICABLE"})
-        replacement["semantics"]["temporal"] = {"state": "KNOWN", "value": {
-            "consumption_mode": {"state": "KNOWN", "value": "DURABLE_ABSOLUTE_DEADLINE"},
-            "duration": {"state": "KNOWN", "value": duration},
-            "stop_duration": {"state": "KNOWN", "value": False},
-            "decay_target": target_field,
-        }}
+        replacement = corpse_definition(definition, capacity, duration, target, item != 39530)
         replacements.append((definition, replacement))
     for definition, replacement in replacements:
         definition.clear()

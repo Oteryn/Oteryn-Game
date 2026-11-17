@@ -1,0 +1,9 @@
+{
+  "mechanic": "0042-party",
+  "kind": "keybindings",
+  "id": "0042-party-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+SHIFT+G",
+  "entry": "input.rs::open_key"
+}

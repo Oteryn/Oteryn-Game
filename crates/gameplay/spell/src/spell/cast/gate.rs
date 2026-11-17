@@ -74,6 +74,9 @@ pub fn admit_condition_gates(
     spell: &SpellDefinition,
     now: SemanticTimeMicros,
 ) -> Result<(), SpellCastDisposition> {
+    if state.drome_practice && spell.soul > 0 {
+        return Err(SpellCastDisposition::NotAvailable);
+    }
     if state.conditions.has_status(
         oteryn_gameplay_domain::domain::condition::StatusKind::Feared,
         now.get(),
@@ -152,9 +155,10 @@ pub(super) fn cast_resolved(
     };
     let mut resolution = match qualified {
         Some((caster, operational)) => {
+            // OwnedCastFacts binds raw build state before adding loyalty/proficiency magic.
+            // The actor's condition-only projection cannot revalidate that effective value.
             if caster.vocation != state.facts.vocation
                 || caster.level != state.facts.level
-                || caster.magic_level != state.owned_effective_magic_level(context.now.get())?
                 || caster.mana != state.mana
                 || caster.max_mana != state.facts.max_mana
                 || caster.soul != state.soul

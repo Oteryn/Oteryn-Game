@@ -1,0 +1,196 @@
+{
+  "active_npcs": 42,
+  "missing_model_greet": [
+    {
+      "npc": "oteryn:npc.barry",
+      "model_dialogue": false,
+      "overrides": []
+    },
+    {
+      "npc": "oteryn:npc.bruce",
+      "model_dialogue": false,
+      "overrides": []
+    },
+    {
+      "npc": "oteryn:npc.captain_jack_rat",
+      "model_dialogue": false,
+      "overrides": [
+        [
+          57,
+          "npcHandler:setMessage(MESSAGE_GREET, \"Hail, pirat! Come on board to go home! Welcome on board of the ship Flying Bat. Should I set {sail}s?\")"
+        ],
+        [
+          59,
+          "npcHandler:setMessage(MESSAGE_GREET, \"...\")"
+        ]
+      ]
+    },
+    {
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "model_dialogue": false,
+      "overrides": [
+        [
+          203,
+          "npcHandler:setMessage(MESSAGE_GREET, \"Someone made it! Do you bring word from my men in the outskirts?\")"
+        ],
+        [
+          204,
+          "npcHandler:setMessage(MESSAGE_FAREWELL, \"Until we meet again.\")"
+        ]
+      ]
+    },
+    {
+      "npc": "oteryn:npc.eustacio",
+      "model_dialogue": false,
+      "overrides": [
+        [
+          57,
+          "npcHandler:setMessage(MESSAGE_GREET, {"
+        ],
+        [
+          61,
+          "npcHandler:setMessage(MESSAGE_GREET, \"Hello my friend. What a delight to see you, even on a busy day. You can check your status or ask me about the location of ongoing raids.\")"
+        ]
+      ]
+    },
+    {
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "model_dialogue": false,
+      "overrides": [
+        [
+          158,
+          "npcHandler:setMessage(MESSAGE_GREET, \"HALT! Outsider, state your business!\")"
+        ],
+        [
+          159,
+          "npcHandler:setMessage(MESSAGE_FAREWELL, \"Stay vigilant.\")"
+        ]
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hal",
+      "model_dialogue": false,
+      "overrides": []
+    },
+    {
+      "npc": "oteryn:npc.jean_pierre",
+      "model_dialogue": false,
+      "overrides": [
+        [
+          172,
+          "npcHandler:setMessage(MESSAGE_GREET, \"Greetings, |PLAYERNAME|. What are you doing out here?\")"
+        ]
+      ]
+    },
+    {
+      "npc": "oteryn:npc.karith",
+      "model_dialogue": true,
+      "overrides": [
+        [
+          64,
+          "npcHandler:setMessage(MESSAGE_GREET, \"Hello! Tell me what's on your mind. Time is money.\")"
+        ],
+        [
+          67,
+          "npcHandler:setMessage(MESSAGE_GREET, \"Hello! Tell me what's on your mind. Time is money.\")"
+        ],
+        [
+          356,
+          "npcHandler:setMessage(MESSAGE_FAREWELL, \"Good bye.\")"
+        ]
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "model_dialogue": false,
+      "overrides": [
+        [
+          143,
+          "npcHandler:setMessage(MESSAGE_GREET, \"Hold it! Are you one of Demeron's men?\")"
+        ],
+        [
+          144,
+          "npcHandler:setMessage(MESSAGE_FAREWELL, \"Stay alert out there.\")"
+        ]
+      ]
+    },
+    {
+      "npc": "oteryn:npc.maritima",
+      "model_dialogue": false,
+      "overrides": []
+    },
+    {
+      "npc": "oteryn:npc.mr_west",
+      "error": "HTTPError"
+    },
+    {
+      "npc": "oteryn:npc.oliver",
+      "model_dialogue": false,
+      "overrides": []
+    },
+    {
+      "npc": "oteryn:npc.reed",
+      "model_dialogue": false,
+      "overrides": []
+    },
+    {
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "model_dialogue": false,
+      "overrides": [
+        [
+          174,
+          "npcHandler:setMessage(MESSAGE_GREET, \"If you don't carry any spares, state your business quickly or move along.\")"
+        ],
+        [
+          175,
+          "npcHandler:setMessage(MESSAGE_FAREWELL, \"Move along.\")"
+        ]
+      ]
+    },
+    {
+      "npc": "oteryn:npc.strange_pipe",
+      "model_dialogue": true,
+      "overrides": []
+    },
+    {
+      "npc": "oteryn:npc.strange_pipe_1",
+      "error": "HTTPError"
+    },
+    {
+      "npc": "oteryn:npc.strange_pipe_2",
+      "error": "HTTPError"
+    },
+    {
+      "npc": "oteryn:npc.strange_pipe_3",
+      "error": "HTTPError"
+    },
+    {
+      "npc": "oteryn:npc.tamerin",
+      "model_dialogue": false,
+      "overrides": [
+        [
+          58,
+          "npcHandler:setMessage(MESSAGE_GREET, \"Have you the {animal cure}?\")"
+        ],
+        [
+          60,
+          "npcHandler:setMessage(MESSAGE_GREET, \"Have you killed {morik}?\")"
+        ],
+        [
+          62,
+          "npcHandler:setMessage(MESSAGE_GREET, \"Hello, what brings you here?\")"
+        ]
+      ]
+    },
+    {
+      "npc": "oteryn:npc.tony",
+      "model_dialogue": false,
+      "overrides": []
+    },
+    {
+      "npc": "oteryn:npc.yalahari",
+      "model_dialogue": false,
+      "overrides": []
+    }
+  ]
+}

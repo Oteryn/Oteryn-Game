@@ -55,6 +55,7 @@ pub struct ServerResumeAcceptedFields {
     pub next_command_id: u64,
     pub schema_revision: u32,
     pub selected_capabilities: Vec<u32>,
+    pub connection_trace: Option<[u8; 16]>,
 }
 
 pub fn decode_server_resume_accepted(
@@ -65,6 +66,7 @@ pub fn decode_server_resume_accepted(
     let mut session = None;
     let (mut generation, mut sequence, mut next, mut schema) = (0, 0, 0, 0);
     let mut capabilities = Vec::new();
+    let mut connection_trace = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -101,8 +103,14 @@ pub fn decode_server_resume_accepted(
                     );
                 }
             }
+            7 => read_connection_trace(payload, &mut cursor, wire, &mut connection_trace)?,
             _ => skip_field(payload, &mut cursor, wire)?,
         }
+    }
+    if connection_trace.is_some()
+        && !capabilities.contains(&connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
+    {
+        return Err(FoundationProtocolError::MalformedEnvelope);
     }
     Ok(ServerResumeAcceptedFields {
         game_session_id: session.ok_or(FoundationProtocolError::InvalidWireIdentifier)?,
@@ -112,6 +120,7 @@ pub fn decode_server_resume_accepted(
         schema_revision: u32::try_from(schema)
             .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
         selected_capabilities: capabilities,
+        connection_trace,
     })
 }
 
@@ -166,6 +175,40 @@ mod tests {
                 ..value
             })
             .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn resume_acceptance_decodes_capability_gated_trace() -> Result<(), FoundationProtocolError> {
+        let id =
+            GameSessionId::decode(&[1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16])?;
+        let trace = [1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16];
+        let value = ServerResumeAcceptedValue {
+            game_session_id: id,
+            connection_generation: 2,
+            current_server_sequence: 44,
+            next_command_id: 8,
+            schema_revision: 1,
+            selected_capabilities: &[connection_trace::CAPABILITY_CONNECTION_TRACE_V1],
+        };
+        let frame = encode_server_resume_accepted_with_trace(&value, &trace)?;
+        let envelope = decode_wire_envelope(&frame)?;
+        assert_eq!(
+            decode_server_resume_accepted(envelope.payload())?.connection_trace,
+            Some(trace)
+        );
+
+        let mut unselected = envelope.payload().to_vec();
+        let capability = [0x30, connection_trace::CAPABILITY_CONNECTION_TRACE_V1 as u8];
+        let offset = unselected
+            .windows(capability.len())
+            .position(|window| window == capability)
+            .ok_or(FoundationProtocolError::MalformedEnvelope)?;
+        unselected.drain(offset..offset + capability.len());
+        assert_eq!(
+            decode_server_resume_accepted(&unselected),
+            Err(FoundationProtocolError::MalformedEnvelope)
         );
         Ok(())
     }

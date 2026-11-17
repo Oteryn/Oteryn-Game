@@ -1,0 +1,112 @@
+[
+  {
+    "status": 400,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_REQUEST_MALFORMED\",\"public_class\":\"RETRY_LOGIN\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 400,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_REQUEST_MALFORMED\",\"public_class\":\"RETRY_LOGIN\"},\"attempt_ref\":null}"
+  },
+  {
+    "status": 400,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNSUPPORTED_VERSION\",\"public_class\":\"CLIENT_UPDATE_REQUIRED\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 400,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNSUPPORTED_VERSION\",\"public_class\":\"CLIENT_UPDATE_REQUIRED\"},\"attempt_ref\":null}"
+  },
+  {
+    "status": 409,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_OFFER_UNSUPPORTED\",\"public_class\":\"CLIENT_UPDATE_REQUIRED\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 409,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_OFFER_UNSUPPORTED\",\"public_class\":\"CLIENT_UPDATE_REQUIRED\"},\"attempt_ref\":null}"
+  },
+  {
+    "status": 401,
+    "progression": "SecurityTerminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_AUTHENTICATION_REQUIRED\",\"public_class\":\"AUTHENTICATION_REQUIRED\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 401,
+    "progression": "SecurityTerminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_AUTHENTICATION_REQUIRED\",\"public_class\":\"AUTHENTICATION_REQUIRED\"},\"attempt_ref\":null}"
+  },
+  {
+    "status": 409,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_ATTEMPT_CONFLICT\",\"public_class\":\"RETRY_LOGIN\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 409,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_ATTEMPT_CONFLICT\",\"public_class\":\"RETRY_LOGIN\"},\"attempt_ref\":null}"
+  },
+  {
+    "status": 409,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_CHARACTER_CONFLICT\",\"public_class\":\"SESSION_UNAVAILABLE\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 409,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_CHARACTER_CONFLICT\",\"public_class\":\"SESSION_UNAVAILABLE\"},\"attempt_ref\":null}"
+  },
+  {
+    "status": 503,
+    "progression": "Retryable",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_ROUTE_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 503,
+    "progression": "Retryable",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_ROUTE_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+  },
+  {
+    "status": 429,
+    "progression": "Retryable",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_RATE_LIMITED\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 429,
+    "progression": "Retryable",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_RATE_LIMITED\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+  },
+  {
+    "status": 503,
+    "progression": "Retryable",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 503,
+    "progression": "Retryable",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+  },
+  {
+    "status": 409,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_GRANT_EXPIRED\",\"public_class\":\"RETRY_LOGIN\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 409,
+    "progression": "Terminal",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_GRANT_EXPIRED\",\"public_class\":\"RETRY_LOGIN\"},\"attempt_ref\":null}"
+  },
+  {
+    "status": 503,
+    "progression": "Retryable",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":\"01890a5d-ac96-774b-bcce-b302099a8057\"}"
+  },
+  {
+    "status": 503,
+    "progression": "Retryable",
+    "body": "{\"protocol_version\":2,\"error\":{\"code\":\"NATIVE_LOGIN_UNAVAILABLE\",\"public_class\":\"TEMPORARILY_UNAVAILABLE\"},\"attempt_ref\":null}"
+  }
+]

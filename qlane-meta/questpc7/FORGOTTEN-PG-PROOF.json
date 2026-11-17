@@ -1,0 +1,327 @@
+{
+  "test": "questpc7_forgotten_whole_native_paths_and_learning",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red_seconds": 42.191567216,
+  "red_error": "whole selected Forgotten Knowledge route must exist: left0 right10 after SHOW server_version",
+  "green_seconds": 88.533725484,
+  "pending": [],
+  "scope": "Eleven chosen stages: exact physical Heavy Old Tome recovery/hand-in, six terminal native bosses, physical dragon egg, Ivalisse and six source A Strange Chalice dialogue steps, completion and actual native powerful learning.",
+  "assumptions": [
+    "Chosen personal temple tome recovery site does not claim original spawn.",
+    "Physical egg4839 is selected USE adaptation, not original Frozen Horror creature fight.",
+    "Terminal Soul fights in retained base Dragon King arena; original floor12 spawn has only one clear tile.",
+    "Whole selected completion licenses the seventeen source Forgotten powerful families; no unrelated quest or early original boss flags."
+  ],
+  "sources": [
+    "data-global/npc/a_strange_chalice.lua:60-113 sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea",
+    "data/XML/imbuements.xml:37-415 sha256:7e4ae3be28e0b3e740e856e8cec2c8c9ff01e7f9ab4b2b8d3b970b51ca1df8fd"
+  ],
+  "first_implemented_attempt": {
+    "seconds": 75.348908819,
+    "postgres": "18.6",
+    "result": "RED",
+    "error": "CellOccupied: fixture initially placed the player on the retained Ivalisse cell before installing the NPC. Production route compiles; move the fixture player to the source approach before NPC installation."
+  },
+  "author_tests": {
+    "count": 32,
+    "seconds": 41.97,
+    "result": "PASS"
+  },
+  "green_result": "PASS",
+  "scope_proved": [
+    "No subject quest/item/reward seeds; independent fenced ordinary service inputs only.",
+    "Valid source sword/materials/250000gold/shrine refuse unearned Powerful Strike without consuming anything.",
+    "Current Premium refusal before mission and completion.",
+    "One actual Heavy Old Tome recovered then consumed exactly once; no-item/repeat cannot advance or duplicate.",
+    "All six source terminal native bosses and frozen-once credit counters.",
+    "Existing physical dragon egg4839 selected USE and source Ivalisse/father contacts.",
+    "Actual A Strange Chalice at retained source cell: learned alone refuses, six ordered words supply zzubaran.",
+    "Selected completion and unchanged completion revision on repeat.",
+    "Heart remains incomplete; Forgotten independently licenses actual native Powerful Strike, burns exact materials and250000gold, persists72000000ms."
+  ],
+  "checks": [
+    {
+      "check": "heart-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_heart_whole_native_breaches_and_rewards",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 124.111,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-heart-pg.log"
+    },
+    {
+      "check": "loader-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "loader::tests::"
+      ],
+      "seconds": 13.845,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-loader-units.log"
+    },
+    {
+      "check": "world-callback-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "world_callbacks::"
+      ],
+      "seconds": 3.399,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-world-callback-units.log"
+    },
+    {
+      "check": "objective-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "death_objectives::tests::"
+      ],
+      "seconds": 0.124,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-objective-units.log"
+    },
+    {
+      "check": "knowledge-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "imbuement::knowledge::tests::"
+      ],
+      "seconds": 0.254,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-knowledge-units.log"
+    },
+    {
+      "check": "author",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-schema/quest-authoring",
+        "-p",
+        "test_qengine_rewards.py"
+      ],
+      "seconds": 40.885,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-author.log"
+    },
+    {
+      "check": "item-author",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/content-migration",
+        "-p",
+        "test_qengine_reward_item_profiles.py"
+      ],
+      "seconds": 0.224,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-item-author.log"
+    },
+    {
+      "check": "item-generation",
+      "command": [
+        "python3",
+        "tools/content-migration/register_spell_families.py",
+        "--check"
+      ],
+      "seconds": 73.675,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-item-generation.log"
+    },
+    {
+      "check": "generation",
+      "command": [
+        "python3",
+        "tools/content-schema/quest-authoring/qengine_rewards.py",
+        "--check"
+      ],
+      "seconds": 10.086,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-generation.log"
+    },
+    {
+      "check": "placements",
+      "command": [
+        "python3",
+        "tools/content-schema/npc-authoring/convert_placements.py",
+        "--check"
+      ],
+      "seconds": 0.26,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-placements.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 99.632,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 215.086,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-clippy.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 121.081,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-forgotten-pin-check"
+      ],
+      "seconds": 137.145,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-pin-check.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 164.891,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 49.153,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-world.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.235,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-forgotten-fmt.log"
+    }
+  ],
+  "regressions": [
+    {
+      "case": "whole native Heart of Destruction",
+      "postgres": "18.6",
+      "seconds": 80.646798132,
+      "result": "PASS"
+    }
+  ],
+  "unit_results": {
+    "loader-units": [
+      10
+    ],
+    "world-callback-units": [
+      22
+    ],
+    "objective-units": [
+      2
+    ],
+    "knowledge-units": [
+      2
+    ],
+    "content": [
+      123
+    ],
+    "world": [
+      5
+    ]
+  }
+}

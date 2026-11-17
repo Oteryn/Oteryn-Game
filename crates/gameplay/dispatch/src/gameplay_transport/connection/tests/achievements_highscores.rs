@@ -43,8 +43,7 @@ fn achievements_command(id: u64, query: &[u8]) -> Vec<u8> {
 /// an over-bound reply is REJECTED with `PAYLOAD_LIMIT_EXCEEDED` and an integrity fault with
 /// `ACCOUNT_DATA_INTEGRITY` (owner decision 2026-09-30), each with no rows.
 #[test]
-fn account_achievements_query_reads_only_the_controller_account() -> Result<(), Box<dyn Error>>
-{
+fn account_achievements_query_reads_only_the_controller_account() -> Result<(), Box<dyn Error>> {
     const ACCOUNT: [u8; 16] = uuid_v7(0x55);
     let request = |page, command_id| AccountAchievementsRequest {
         account_id: ACCOUNT,
@@ -222,6 +221,8 @@ fn highscores_query_reads_only_the_admitted_session_under_capability_9()
         ]);
         assert_eq!(frames, expected);
         let query = HighscoresQuery {
+            world: None,
+            details: false,
             category: 1,
             vocation: 0,
             page: 1,
@@ -266,6 +267,42 @@ fn highscores_query_reads_only_the_admitted_session_under_capability_9()
             assert_eq!(frames.last(), Some(&terminal), "{error:?}");
             assert_eq!(failing.calls.borrow().len(), 1);
         }
+        Ok(())
+    })
+}
+
+/// T143 keeps admitted authority separate from the requested public read World.
+#[test]
+fn cross_world_highscores_route_forwards_selection_without_replacing_session_authority()
+-> Result<(), Box<dyn Error>> {
+    run(async {
+        let mut admitted = positioned()?;
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &[9])
+                .ok_or("selected")?;
+        let query = HighscoresQuery {
+            world: Some(oteryn_protocol_oteryn::WorldId::decode(&uuid_v7(90))?),
+            details: true,
+            category: 2,
+            vocation: 1,
+            page: 2,
+            snapshot_id: 300,
+        };
+        let authority = HighscoresAuthority {
+            calls: RefCell::new(Vec::new()),
+            reply: HighscoresReply::Result(vec![0x08, 1]),
+        };
+        let payload = oteryn_protocol_oteryn::highscores::encode_highscores_query(query)
+            .map_err(|e| format!("{e:?}"))?;
+        drive_session(&authority, admitted, &[highscores_command(1, &payload)]).await?;
+        assert_eq!(
+            *authority.calls.borrow(),
+            [(admitted.world_id, admitted.game_session_id, query)]
+        );
+        assert_ne!(
+            query.world.map(|w| *w.as_bytes()),
+            Some(*admitted.world_id.as_bytes())
+        );
         Ok(())
     })
 }

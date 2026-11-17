@@ -1,0 +1,9 @@
+{
+  "mechanic": "0445-house-furniture-rotation",
+  "id": "0445-house-furniture-rotation-open",
+  "status": "supported",
+  "kind": "keybindings",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+SHIFT+F",
+  "entry": "input.rs::open_key"
+}

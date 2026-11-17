@@ -10,7 +10,36 @@ pub mod creature_chain_attack;
 pub mod creature_condition_content;
 pub mod creature_defense_presentation;
 pub mod creature_spell_facts;
+mod error_codes;
 pub mod hazard;
+
+fn invariant_violation(code: oteryn_error_codes::ErrorCode, detail: &str) {
+    use std::io::Write as _;
+
+    let line = oteryn_error_codes::Line::new(
+        oteryn_error_codes::Level::Error,
+        "combat",
+        "invariant_violation",
+    )
+    .code(code)
+    .detail(detail);
+    if oteryn_error_codes::filter().allows(line.level, line.module, true) {
+        let rendered = format!(
+            "{}\n",
+            line.render("oteryn-game-server", oteryn_error_codes::unix_ms())
+        );
+        let _ignored = std::io::stderr().lock().write_all(rendered.as_bytes());
+    }
+}
+
+const fn record_variant_invariant_code() -> oteryn_error_codes::ErrorCode {
+    oteryn_error_codes::ErrorCode::new(
+        4080,
+        "COMBAT_RECORD_VARIANT_INVARIANT",
+        oteryn_error_codes::Category::InternalUnavailable,
+        oteryn_error_codes::Progression::Terminal,
+    )
+}
 
 #[allow(unused_imports, reason = "preserve the former server module path")]
 use oteryn_gameplay_content::content;

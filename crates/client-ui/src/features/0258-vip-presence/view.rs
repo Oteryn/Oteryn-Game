@@ -2,10 +2,10 @@ use super::VipPresencePanel;
 #[must_use]
 pub fn panel_text(panel: &VipPresencePanel) -> String {
     if !panel.selected {
-        return "VIP presence unavailable in this session".into();
+        return tr!("VIP presence unavailable in this session").into();
     }
     if panel.presence.entries.is_empty() {
-        return "No VIP presence updates".into();
+        return tr!("No VIP presence updates").into();
     }
     panel
         .presence

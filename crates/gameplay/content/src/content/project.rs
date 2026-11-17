@@ -10,6 +10,7 @@ mod native_entry;
 mod native_house_tiles;
 mod native_spell_tiles;
 pub mod native_spell_world;
+mod public_view;
 mod v2;
 #[allow(
     unused_imports,
@@ -22,6 +23,7 @@ pub use bestiary::{
 pub use native_entry::*;
 pub use native_house_tiles::*;
 pub use native_spell_tiles::*;
+pub use public_view::*;
 pub use v2::*;
 
 use super::{

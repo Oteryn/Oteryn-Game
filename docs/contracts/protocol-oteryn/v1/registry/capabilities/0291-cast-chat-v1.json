@@ -1,0 +1,14 @@
+{
+  "id": 291,
+  "name": "CAST_CHAT_V1",
+  "owner_decision": "S17-A / accepted S17-CAST-DESIGN section 6",
+  "owner": "Game off-tick cast owner",
+  "command_types": [
+    504
+  ],
+  "state_domains": [
+    103
+  ],
+  "offered": true,
+  "offer_gate": "Native observer and caster chat consumers; account observer admission remains mTLS purpose-bound and requires explicitly configured cast worker and current consent/audit authority."
+}

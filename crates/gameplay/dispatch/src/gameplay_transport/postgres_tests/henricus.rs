@@ -368,6 +368,7 @@ fn scenario(partial: bool) -> TestResult {
             .map_err(debug)?
             .position();
         let death = crate::gameplay_transport::actor_spell::PlayerDeath {
+            public_cause: None,
             occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(
                 220,
             ))

@@ -280,6 +280,7 @@ fn apply_packet(draft: &mut ProjectV2Draft, packet: Packet) -> AdmissionResult<u
     }
     for declaration in &a.declarations {
         let ProjectV2Declaration::Npc {
+            visibility: _,
             identity,
             presentation,
             behavior,

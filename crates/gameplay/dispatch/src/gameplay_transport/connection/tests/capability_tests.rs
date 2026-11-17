@@ -228,7 +228,7 @@ fn entry_room_dev_client_selects_guild_and_party_without_bundle_mechanics()
         selected.contains(42),
         "party requires only spatial entities (6)"
     );
-    for id in [4, 37, 43, 60, 62, 63, 68, 72, 81, 140, 165] {
+    for id in [4, 37, 43, 60, 62, 63, 68, 72, 81, 140, 165, 286] {
         assert!(
             !selected.contains(id),
             "unexpected entry-room mechanic {id}"

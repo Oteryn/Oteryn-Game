@@ -8,11 +8,16 @@ use crate::durability::boss_encounter::reward_chest::{
 };
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::RuntimeScopeRefV1;
+use oteryn_gameplay_encounter_rules::boss::pity::{
+    boosted_probability_ppm, is_pity_item, pity_boss_key,
+};
 use oteryn_gameplay_encounters::bosses::reward_chest::{
     FrozenBossContribution, contribution_loot_factors, freeze_personal_rewards, reward_eligibility,
     reward_expiry, top_contributor,
 };
-use oteryn_gameplay_items::loot_plan::{LootPlan, LootPlanError, plan_boss_loot_with_bonus};
+use oteryn_gameplay_items::loot_plan::{
+    LootPlan, LootPlanError, LootTableDefinition, plan_boss_loot_with_bonus,
+};
 use sha2::{Digest, Sha256};
 
 #[cfg(test)]
@@ -45,7 +50,9 @@ impl std::fmt::Display for PlanError {
 
 /// A scope-owned death has one identity shared by all its recipients. XP occurrences are
 /// per-principal and must not be substituted for this sealed actor-generation identity.
-fn personal_death_id(death: CreatureDeathOccurrenceKey) -> [u8; 16] {
+pub(in crate::gameplay_transport) fn personal_death_id(
+    death: CreatureDeathOccurrenceKey,
+) -> [u8; 16] {
     scoped_death_id(
         death.runtime_scope(),
         death.scope_ownership_generation().get(),
@@ -141,7 +148,32 @@ fn plan_personal_death(
     frozen: &boss_reward_contribution::FrozenBossDeath,
     facts: impl Fn(&TypedDefinitionRef) -> Option<ItemDefinitionFacts>,
 ) -> Result<BossRewardDeath, PlanError> {
-    plan_personal_death_with_slots(death, boss_key, frozen, facts, &[], |_| false)
+    plan_personal_death_with_slots(death, boss_key, frozen, facts, &[], &[], |_| false)
+}
+
+/// Capability 492: the recipient's own copy of the boss table with every Moonsilver
+/// equipment entry's chance raised by its pity bonus. `None` keeps the shared table.
+fn pity_loot_table(
+    table: &LootTableDefinition,
+    bonus_permille: u16,
+) -> Option<LootTableDefinition> {
+    if bonus_permille == 0
+        || !table
+            .entries
+            .iter()
+            .any(|entry| is_pity_item(&entry.item.production_key))
+    {
+        return None;
+    }
+    let mut boosted = table.clone();
+    for entry in &mut boosted.entries {
+        if is_pity_item(&entry.item.production_key) {
+            entry.probability_ppm = entry
+                .probability_ppm
+                .map(|base| boosted_probability_ppm(base, bonus_permille));
+        }
+    }
+    Some(boosted)
 }
 
 fn plan_personal_death_with_slots(
@@ -150,6 +182,7 @@ fn plan_personal_death_with_slots(
     frozen: &boss_reward_contribution::FrozenBossDeath,
     facts: impl Fn(&TypedDefinitionRef) -> Option<ItemDefinitionFacts>,
     bonuses: &[([u8; 16], u16)],
+    pity: &[([u8; 16], u16)],
     equipment: impl Fn(&str) -> bool,
 ) -> Result<BossRewardDeath, PlanError> {
     if frozen.participants.len() > BOSS_REWARD_CONTRIBUTORS_MAX {
@@ -214,11 +247,20 @@ fn plan_personal_death_with_slots(
             let rolls = crate::gameplay_transport::boss_encounter::slot_bonus_rolls(
                 bonus, death, &character,
             );
+            let pity_bonus = pity
+                .iter()
+                .find(|(c, _)| *c == character)
+                .map_or(0, |(_, b)| *b);
+            let boosted = pity_loot_table(&frozen.reward.loot_table, pity_bonus);
             let loot = plan_boss_loot_with_bonus(
                 death,
                 character,
-                &frozen.reward.loot_table_ref,
-                &frozen.reward.loot_table,
+                frozen
+                    .reward
+                    .loot_table_ref
+                    .as_ref()
+                    .ok_or(PlanError::ContentUnavailable)?,
+                boosted.as_ref().unwrap_or(&frozen.reward.loot_table),
                 factors[index],
                 top == Some(character),
                 rolls,
@@ -261,7 +303,47 @@ fn plan_personal_death_with_slots(
     })
 }
 
-impl DurableKillSettle<'_, '_, '_, '_> {
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn prepare_boss_rewards(&self, entry: &PendingKillSettlement) -> bool {
+        let admission = self;
+        // W03 entitlement creation is independent of the top-damage principal's
+        // current presence and must precede the proficiency-only early return.
+        if entry.boss_slot_bonuses.get().is_none() {
+            if let Some(boss) = entry.row.as_ref().and_then(|row| row.boss.as_ref()) {
+                let participants = entry.boss_reward.as_ref().map_or_else(
+                    || vec![*entry.facts.principal.character.as_bytes()],
+                    |death| {
+                        death
+                            .participants
+                            .iter()
+                            .map(|p| *p.character.as_bytes())
+                            .collect()
+                    },
+                );
+                let bonuses = admission
+                    .root
+                    .boss_slot_loot_bonuses(
+                        admission.character,
+                        admission.holder,
+                        entry.facts.death.runtime_scope(),
+                        entry.facts.death.scope_ownership_generation(),
+                        boss.clone(),
+                        participants,
+                        entry.facts.died_at_unix_ms,
+                        entry.facts.boosted_boss,
+                    )
+                    .await;
+                let Ok(bonuses) = bonuses else {
+                    return false;
+                };
+                let _ = entry.boss_slot_bonuses.set(bonuses);
+            } else {
+                let _ = entry.boss_slot_bonuses.set(Vec::new());
+            }
+        }
+        self.settle_personal_boss_rewards(entry).await
+    }
+
     /// The room's primary native death starts its authored after-kill return
     /// even when that creature creates no personal reward group. W03 keeps its
     /// existing atomic room decision and chest settlement in the transaction below.
@@ -272,7 +354,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         if entry.boss_reward.is_some() {
             return true;
         }
-        let admission = self.admission;
+        let admission = self;
         let Some(native) = admission
             .active_generation
             .and_then(|generation| generation.native_gameplay())
@@ -335,7 +417,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         let Some(frozen) = &entry.boss_reward else {
             return true;
         };
-        let admission = self.admission;
+        let admission = self;
         let Some(native) = admission
             .active_generation
             .and_then(|generation| generation.native_gameplay())
@@ -371,6 +453,39 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .boss
             .as_ref()
             .map_or(entry.creature.as_str(), |boss| boss.key.as_str());
+        // Capability 492: read each recipient's Moonsilver pity once, before the roll, so
+        // a retry re-plans identical items; the settlement below records the victory.
+        if entry.boss_pity.get().is_none() {
+            let bonuses = match pity_boss_key(key) {
+                None => Vec::new(),
+                Some(pity_key) => match admission
+                    .root
+                    .boss_pity_bonuses(
+                        admission.character,
+                        admission.holder,
+                        entry.facts.death.runtime_scope(),
+                        entry.facts.death.scope_ownership_generation(),
+                        pity_key,
+                        frozen
+                            .participants
+                            .iter()
+                            .map(|participant| *participant.character.as_bytes())
+                            .collect(),
+                    )
+                    .await
+                {
+                    Ok(bonuses) => bonuses,
+                    Err(error) => {
+                        operator_event(&format!(
+                            "boss_reward_settlement_deferred creature={} reason=pity {error:?}",
+                            entry.creature
+                        ));
+                        return false;
+                    }
+                },
+            };
+            let _ = entry.boss_pity.set(bonuses);
+        }
         let plan = match plan_personal_death_with_slots(
             personal_death_id(entry.facts.death),
             key,
@@ -382,6 +497,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .boss_slot_bonuses
                 .get()
                 .map_or(&[][..], |v| v.as_slice()),
+            entry.boss_pity.get().map_or(&[][..], |v| v.as_slice()),
             |key| admission.reward_table().is_daily_boss_equipment(key),
         ) {
             Ok(plan) => plan,

@@ -1,0 +1,366 @@
+{
+  "scope": "Original committed 33-row questpc6 ledger after owner-mandated cross-lane exclusions. No foreign quest is qualified by this audit.",
+  "counts": {
+    "SKIPPED_OTHER_LANE": 31,
+    "EXCLUDED": 1,
+    "IN_PROGRESS": 1
+  },
+  "owned_remaining": 1,
+  "owned_entries": [
+    {
+      "title": "Deeper Fibula Quest",
+      "canonical": "oteryn:quest.deeper_fibula_quest",
+      "status": "IN_PROGRESS"
+    }
+  ],
+  "source_branches": {
+    "questpc2": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc2",
+      "commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf"
+    },
+    "qengine2": {
+      "branch": "claude/happy-davinci-ijz3wy-qengine2",
+      "commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c"
+    },
+    "questpc4": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc4",
+      "commit": "516de7b0dc2126e083cd49c60451c99fd6cca402"
+    },
+    "questpc5": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "commit": "116da3f8dc64d988beb864b2632afc65cb1cef06"
+    },
+    "questl2": {
+      "branch": "claude/happy-davinci-ijz3wy-questl2",
+      "commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a"
+    }
+  },
+  "new_ownership_evidence": [
+    {
+      "title": "Chyllfroest Mini World Change",
+      "owner": "questpc4",
+      "lane": "L6",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "qlane-meta/questpc4/LANE-L6.json",
+      "source_commit": "516de7b0dc2126e083cd49c60451c99fd6cca402",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/516de7b0dc2126e083cd49c60451c99fd6cca402/qlane-meta/questpc4/LANE-L6.json"
+    },
+    {
+      "title": "Demon's Lullaby",
+      "owner": "questl2",
+      "lane": "L2",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
+      "source_commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/c48ad3674cfa7138f3b49c4b199b0916043b701a/tools/content-schema/quest-authoring/questl2-status.json"
+    },
+    {
+      "title": "Draconia Quest",
+      "owner": "questl2",
+      "lane": "L2",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
+      "source_commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/c48ad3674cfa7138f3b49c4b199b0916043b701a/tools/content-schema/quest-authoring/questl2-status.json"
+    },
+    {
+      "title": "Dreamer's Challenge Quest",
+      "owner": "questpc4",
+      "lane": "L6",
+      "disposition": "Skip; the live owner packet assigns this entry to another lane. No qualification is claimed here.",
+      "source_path": "qlane-meta/questpc4/LANE-L6.json",
+      "source_commit": "516de7b0dc2126e083cd49c60451c99fd6cca402",
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/516de7b0dc2126e083cd49c60451c99fd6cca402/qlane-meta/questpc4/LANE-L6.json"
+    }
+  ],
+  "absent_original_lane_packet": "No LANE-*.json existed at start db355fae2; this audit preserves the actual committed ledger and verifies foreign allocation against fetched packets.",
+  "continuation_refresh": {
+    "date": "2026-11-07",
+    "own_branch_head_checked": "9e11c4ef99aaca10828d83cec75a6ada2f70fc66",
+    "verified_foreign_assignments": 31,
+    "owned_pending": 1,
+    "decision": "Keep all verified foreign ownership. Reopen the retained authored Fibula supplement under the repeated owner continuation instruction; original source qualification remains valid and is not whole-supplement completion.",
+    "verification": "All 31 current canonical/title aliases matched exactly one entry in freshly fetched owner packets. Packet statuses are frozen input and are not asserted as current qualification.",
+    "entries": [
+      {
+        "title": "Chakoya Iceberg Mini World Change",
+        "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+        "owner": "questpc2",
+        "source_path": "qlane-meta/questpc2/LANE-L3.json",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+        "source_pointer": "/entries/4",
+        "packet_title": "Chakoya Iceberg Mini World Change"
+      },
+      {
+        "title": "Child of Destiny Quest",
+        "canonical": "oteryn:quest.authored.child_of_destiny_quest",
+        "owner": "questpc2",
+        "source_path": "qlane-meta/questpc2/LANE-L3.json",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+        "source_pointer": "/entries/5",
+        "packet_title": "Child of Destiny Quest"
+      },
+      {
+        "title": "Children of the Revolution Quest",
+        "canonical": "oteryn:quest.children_of_the_revolution_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/10",
+        "packet_title": "Children of the Revolution Quest"
+      },
+      {
+        "title": "Chyllfroest Mini World Change",
+        "canonical": "oteryn:quest.chyllfroest_mini_world_change",
+        "owner": "questpc4",
+        "source_path": "qlane-meta/questpc4/LANE-L6.json",
+        "source_commit": "516de7b0dc2126e083cd49c60451c99fd6cca402",
+        "source_pointer": "/entries/16",
+        "packet_title": "Chyllfroest Mini World Change"
+      },
+      {
+        "title": "Citizen Outfits Quest",
+        "canonical": "oteryn:quest.outfit_and_addon_quests",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/42",
+        "packet_title": "Mage Outfits Quest"
+      },
+      {
+        "title": "Citizen Outfits Quest on Rook",
+        "canonical": "oteryn:quest.citizen_outfits_quest_on_rook",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/12",
+        "packet_title": "Citizen Outfits Quest on Rook"
+      },
+      {
+        "title": "Citizen of Issavi Outfits Quest",
+        "canonical": "oteryn:quest.authored.citizen_of_issavi_outfits_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/11",
+        "packet_title": "Citizen of Issavi Outfits Quest"
+      },
+      {
+        "title": "Crystal Warlord Outfits Quest",
+        "canonical": "oteryn:quest.crystal_warlord_outfits_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/13",
+        "packet_title": "Crystal Warlord Outfits Quest"
+      },
+      {
+        "title": "Cults of Tibia Quest",
+        "canonical": "oteryn:quest.cults_of_tibia_quest",
+        "owner": "questpc2",
+        "source_path": "qlane-meta/questpc2/LANE-L3.json",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+        "source_pointer": "/entries/6",
+        "packet_title": "Cults of Tibia Quest"
+      },
+      {
+        "title": "Dangerous Depths Quest",
+        "canonical": "oteryn:quest.dangerous_depths_quest",
+        "owner": "questpc2",
+        "source_path": "qlane-meta/questpc2/LANE-L3.json",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+        "source_pointer": "/entries/7",
+        "packet_title": "Dangerous Depths Quest"
+      },
+      {
+        "title": "Dark Trails Quest",
+        "canonical": "oteryn:quest.dark_trails_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/14",
+        "packet_title": "Dark Trails Quest"
+      },
+      {
+        "title": "Decaying Defender Outfits Quest",
+        "canonical": "oteryn:quest.decaying_defender_outfits_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/15",
+        "packet_title": "Decaying Defender Outfits Quest"
+      },
+      {
+        "title": "Deeplings World Change",
+        "canonical": "oteryn:quest.deeplings_worldchange",
+        "owner": "questpc2",
+        "source_path": "qlane-meta/questpc2/LANE-L3.json",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+        "source_pointer": "/entries/8",
+        "packet_title": "Deeplings World Change"
+      },
+      {
+        "title": "Demon Helmet Quest",
+        "canonical": "oteryn:quest.demon_helmet_quest",
+        "owner": "questpc5",
+        "source_path": "qlane-meta/questpc5/LANE-L5.json",
+        "source_commit": "116da3f8dc64d988beb864b2632afc65cb1cef06",
+        "source_pointer": "/entries/17",
+        "packet_title": "Demon Helmet Quest"
+      },
+      {
+        "title": "Demon Outfits Quest",
+        "canonical": "oteryn:quest.demon_outfits_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/16",
+        "packet_title": "Demon Outfits Quest"
+      },
+      {
+        "title": "Demon Wars World Change",
+        "canonical": "oteryn:quest.authored.demon_wars_world_change",
+        "owner": "questpc2",
+        "source_path": "qlane-meta/questpc2/LANE-L3.json",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+        "source_pointer": "/entries/9",
+        "packet_title": "Demon Wars World Change"
+      },
+      {
+        "title": "Demon's Lullaby",
+        "canonical": "oteryn:quest.authored.demon_s_lullaby",
+        "owner": "questl2",
+        "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
+        "source_commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
+        "source_pointer": "/entries/11",
+        "packet_title": "Demon's Lullaby"
+      },
+      {
+        "title": "Devil Helmet Quest",
+        "canonical": "oteryn:quest.devil_helmet_quest",
+        "owner": "questpc5",
+        "source_path": "qlane-meta/questpc5/LANE-L5.json",
+        "source_commit": "116da3f8dc64d988beb864b2632afc65cb1cef06",
+        "source_pointer": "/entries/18",
+        "packet_title": "Devil Helmet Quest"
+      },
+      {
+        "title": "Devovorga's Essence Mini World Change",
+        "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+        "owner": "questpc2",
+        "source_path": "qlane-meta/questpc2/LANE-L3.json",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+        "source_pointer": "/entries/10",
+        "packet_title": "Devovorga's Essence Mini World Change"
+      },
+      {
+        "title": "Down the Drain Mini World Change",
+        "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
+        "owner": "questpc2",
+        "source_path": "qlane-meta/questpc2/LANE-L3.json",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+        "source_pointer": "/entries/11",
+        "packet_title": "Down the Drain Mini World Change"
+      },
+      {
+        "title": "Draccoon Herald Outfits Quest",
+        "canonical": "oteryn:quest.authored.draccoon_herald_outfits_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/17",
+        "packet_title": "Draccoon Herald Outfits Quest"
+      },
+      {
+        "title": "Draconia Quest",
+        "canonical": "oteryn:quest.draconia_quest",
+        "owner": "questl2",
+        "source_path": "tools/content-schema/quest-authoring/questl2-status.json",
+        "source_commit": "c48ad3674cfa7138f3b49c4b199b0916043b701a",
+        "source_pointer": "/entries/12",
+        "packet_title": "Draconia"
+      },
+      {
+        "title": "Dragon Slayer Outfits Quest",
+        "canonical": "oteryn:quest.authored.dragon_slayer_outfits_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/18",
+        "packet_title": "Dragon Slayer Outfits Quest"
+      },
+      {
+        "title": "Dream Warden Outfits Quest",
+        "canonical": "oteryn:quest.dream_warden_outfits_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/19",
+        "packet_title": "Dream Warden Outfits Quest"
+      },
+      {
+        "title": "Dream Warrior Outfits Quest",
+        "canonical": "oteryn:quest.dream_warrior_outfits_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/20",
+        "packet_title": "Dream Warrior Outfits Quest"
+      },
+      {
+        "title": "Dreamer's Challenge Quest",
+        "canonical": "oteryn:quest.dreamer_s_challenge_quest",
+        "owner": "questpc4",
+        "source_path": "qlane-meta/questpc4/LANE-L6.json",
+        "source_commit": "516de7b0dc2126e083cd49c60451c99fd6cca402",
+        "source_pointer": "/entries/17",
+        "packet_title": "Dreamer's Challenge Quest"
+      },
+      {
+        "title": "Druid Outfits Quest",
+        "canonical": "oteryn:quest.druid_outfits_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/21",
+        "packet_title": "Druid Outfits Quest"
+      },
+      {
+        "title": "Druid Outfits Quest on Rook",
+        "canonical": "oteryn:quest.druid_outfits_quest_on_rook",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/22",
+        "packet_title": "Druid Outfits Quest on Rook"
+      },
+      {
+        "title": "Elemental Spheres Quest",
+        "canonical": "oteryn:quest.elemental_spheres_quest",
+        "owner": "questpc2",
+        "source_path": "qlane-meta/questpc2/LANE-L3.json",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+        "source_pointer": "/entries/12",
+        "packet_title": "Elemental Spheres Quest"
+      },
+      {
+        "title": "Elementalist Outfits Quest",
+        "canonical": "oteryn:quest.elementalist_outfits_quest",
+        "owner": "qengine2",
+        "source_path": "qlane-meta/qengine2/LANE-L1.json",
+        "source_commit": "a89547fd85e9a77f7c0de3a449d4a2cf69cf782c",
+        "source_pointer": "/entries/23",
+        "packet_title": "Elementalist Outfits Quest"
+      },
+      {
+        "title": "Elvenbane Quest",
+        "canonical": "oteryn:quest.authored.elvenbane_quest",
+        "owner": "questpc2",
+        "source_path": "qlane-meta/questpc2/LANE-L3.json",
+        "source_commit": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+        "source_pointer": "/entries/13",
+        "packet_title": "Elvenbane Quest"
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "mechanic": "0010-analyser",
+  "kind": "handlers",
+  "id": "0010-analyser-item-query",
+  "status": "supported",
+  "commands": [
+    734
+  ],
+  "direction": "client_to_server",
+  "capability": 10,
+  "entry": "protocol.rs::catalogue_request",
+  "not_applicable": {
+    "settings": "Read-only active-generation item identities."
+  }
+}

@@ -20,6 +20,24 @@ enum SpellTargetIntent {
   SPELL_TARGET_INTENT_POSITION = 3;
 }
 
+// WU26-14 (Winter Update 2026 test server, capability 480 SPELL_AIM_MODE_V1): the target option of
+// the action button or hotkey that casts a wave or beam spell (targeting.needs_direction). Beam and
+// wave directions are cardinal: from the caster to the aimed tile, |dx| >= |dy| picks east or west,
+// otherwise north or south, so east and west win a tie. The geometry origin stays the tile next to
+// the caster, and the cast never turns the character.
+enum SpellAimMode {
+  SPELL_AIM_MODE_UNSPECIFIED = 0;
+  // Default: the character's facing. Sent with SPELL_TARGET_INTENT_NONE.
+  SPELL_AIM_MODE_FACING = 1;
+  // Towards target_position, the tile under the cursor; a tile on another floor is
+  // TARGET_ILLEGAL and the caster's own tile keeps the facing. Sent with
+  // SPELL_TARGET_INTENT_POSITION.
+  SPELL_AIM_MODE_CURSOR = 2;
+  // Towards the held attack target while it is a visible creature or player on the caster's floor;
+  // otherwise the facing. Sent with SPELL_TARGET_INTENT_NONE.
+  SPELL_AIM_MODE_TARGET = 3;
+}
+
 // SPELL-D7: a position in the actor's own Channel, in the pinned frame's native coordinates.
 message SpellTargetPositionV1 {
   sint32 x = 1;
@@ -39,7 +57,18 @@ message WorldActorSpellCastIntentV1 {
   // intent, or absent with POSITION, fails closed.
   SpellTargetPositionV1 target_position = 3;
   // SPELL-D7: per cast, stateless. Honoured only for a spell with targeting.aim_at_target.
+  // WU26-14: on the ordinary combat path the flag with NONE or POSITION is the old form of
+  // aim_mode TARGET or CURSOR for a wave or beam spell. A target_or_direction (strike) spell keeps
+  // the SPELL-D7 behaviour, and any other spell refuses the flag with NONE or POSITION (REJECTED).
+  // ATTACK_TARGET is unchanged.
   bool aim_at_target = 4;
+  // WU26-14: accepted only from a session holding capability 480 SPELL_AIM_MODE_V1; without it the
+  // field is unknown and fails closed. Absent (or the explicit default 0) keeps the behaviour of
+  // aim_at_target. Present, it supersedes aim_at_target, which must then be false: FACING and
+  // TARGET go with SPELL_TARGET_INTENT_NONE and CURSOR with SPELL_TARGET_INTENT_POSITION; any
+  // other combination or an unknown value fails closed. TARGET or CURSOR on a spell that is not a
+  // wave or beam follows the aim_at_target rule above. The canonical worst case stays 28 bytes.
+  SpellAimMode aim_mode = 5;
 }
 
 enum SpellCastDisposition {

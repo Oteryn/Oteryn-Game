@@ -197,6 +197,22 @@ where
         .await;
         drop(step_input);
         let moved = outcome.disposition == StepDisposition::Moved;
+        if moved {
+            authority
+                .committed_paced_movement(session.admitted, outcome.moved_to)
+                .await;
+        }
+        if moved
+            && authority
+                .pending_activity_switch(session.admitted)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?
+                .is_some()
+        {
+            // Native source STEP already handed off this Player. The queued USE
+            // did not execute; send its cancellation before the source barrier.
+            return Ok(WalkOutcome::Cancelled);
+        }
         effects::step(stream, authority, session, outcome).await?;
         let Some(current) = current.filter(|_| moved) else {
             return Ok(if outcome.disposition == StepDisposition::Blocked {
@@ -324,7 +340,7 @@ where
             }
             session
                 .held
-                .push_front((input.frame, input.arrived_while_buffered));
+                .push_front((input.frame, input.arrived_while_buffered, input.received_at));
             return Ok(false);
         }
         // A combat tick may arm chase; item walks retain the single Movement clock.
@@ -367,11 +383,11 @@ impl WaitDeadline {
 async fn ready_input<S: AsyncRead + Unpin>(
     stream: &mut S,
     frames: &mut FrameReader,
-    held: &mut std::collections::VecDeque<(Vec<u8>, bool)>,
+    held: &mut std::collections::VecDeque<(Vec<u8>, bool, tokio::time::Instant)>,
     buffered: bool,
 ) -> Option<poll::Next> {
-    if !buffered && let Some((frame, behind_step)) = held.pop_front() {
-        return Some(poll::Next::Held(frame, behind_step));
+    if !buffered && let Some((frame, behind_step, received_at)) = held.pop_front() {
+        return Some(poll::Next::Held(frame, behind_step, received_at));
     }
     if held.len() >= MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP {
         return None;

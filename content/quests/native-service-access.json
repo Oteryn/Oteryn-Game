@@ -1,0 +1,26 @@
+{
+  "schema": "OTERYN_NATIVE_SERVICE_ACCESS/v1",
+  "rules": [
+    {
+      "npc": "oteryn:npc.rashid",
+      "service": "oteryn:service.trade.rashid",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+      "minimum": 13,
+      "maximum": 13,
+      "source_callback": "CALLBACK_ON_TRADE_REQUEST",
+      "source_predicate": {
+        "operator": "==",
+        "storage": "TheTravellingTrader.Mission07",
+        "value": 1
+      },
+      "source_proof": {
+        "line": 266,
+        "path": "data-otservbr-global/npc/rashid.lua",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "sha256": "9cc53e95dce796be39ff4c903b4806068cbb0d31aa13a700e335dfab0e642db1"
+      }
+    }
+  ]
+}

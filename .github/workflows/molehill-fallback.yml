@@ -1,0 +1,106 @@
+name: Molehill fallback
+
+# With OTERYN_SELF_HOSTED_RUST or OTERYN_SELF_HOSTED_PG set to auto/auto-split,
+# new runs pick hosted runners once the Molehill heartbeat (OTERYN_MOLEHILL_SEEN,
+# Unix seconds, written every 5 minutes by the PC) is older than 10 minutes. A
+# job that was already queued for Molehill before the PC went away does not move
+# by itself, so this cancels such runs and re-runs them in full: the re-run
+# resolves its routing again and lands on hosted runners. It does nothing while
+# the heartbeat is fresh or when neither variable is in an auto mode.
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: molehill-fallback
+  cancel-in-progress: false
+
+jobs:
+  rescue:
+    name: Molehill fallback / re-run jobs waiting on an offline PC
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel and re-run runs whose Molehill jobs wait on an offline PC
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUST_MODE: ${{ vars.OTERYN_SELF_HOSTED_RUST }}
+          PG_MODE: ${{ vars.OTERYN_SELF_HOSTED_PG }}
+          SEEN: ${{ vars.OTERYN_MOLEHILL_SEEN }}
+        run: |
+          python3 -I - <<'PY'
+          import datetime
+          import json
+          import os
+          import re
+          import time
+          import urllib.request
+
+          MAX_AGE = 600
+          WORKFLOWS = ('merge-gate.yml', 'pr-postgres-harness.yml')
+          LABEL = 'oteryn-molehill'
+          repository = os.environ['REPOSITORY']
+          modes = (os.environ.get('RUST_MODE', ''), os.environ.get('PG_MODE', ''))
+          if not any(mode.startswith('auto') for mode in modes):
+              print(f'No auto routing (rust={modes[0]!r}, pg={modes[1]!r}); nothing to do.')
+              raise SystemExit(0)
+          seen = os.environ.get('SEEN', '')
+          now = time.time()
+          if re.fullmatch(r'[0-9]{9,11}', seen) and -120 <= now - int(seen) <= MAX_AGE:
+              print(f'Molehill heartbeat is {int(now - int(seen))}s old; nothing to do.')
+              raise SystemExit(0)
+
+          def api(method, path, expect_json=True):
+              request = urllib.request.Request(
+                  f'https://api.github.com/repos/{repository}{path}', method=method,
+                  headers={
+                      'Accept': 'application/vnd.github+json',
+                      'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
+                      'X-GitHub-Api-Version': '2022-11-28',
+                      'User-Agent': 'Oteryn-molehill-fallback',
+                  })
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  body = response.read()
+              return json.loads(body) if expect_json and body else None
+
+          def age(stamp):
+              created = datetime.datetime.fromisoformat(stamp.replace('Z', '+00:00'))
+              return now - created.timestamp()
+
+          stuck = []
+          for workflow in WORKFLOWS:
+              for status in ('queued', 'in_progress'):
+                  runs = api('GET', f'/actions/workflows/{workflow}/runs?status={status}&per_page=50')
+                  for run in runs.get('workflow_runs', []):
+                      jobs = api('GET', f"/actions/runs/{run['id']}/jobs?filter=latest&per_page=100")
+                      waiting = [job for job in jobs.get('jobs', [])
+                                 if job['status'] in ('queued', 'waiting') and LABEL in job.get('labels', [])
+                                 and age(job['created_at']) >= MAX_AGE]
+                      if waiting:
+                          stuck.append(run)
+                          print(f"{workflow} run {run['id']} ({run['head_branch']}): "
+                                f"{len(waiting)} job(s) waiting on {LABEL}")
+          if not stuck:
+              print('Heartbeat is stale but no run waits on Molehill.')
+              raise SystemExit(0)
+
+          for run in stuck:
+              api('POST', f"/actions/runs/{run['id']}/cancel", expect_json=False)
+          for run in stuck:
+              for _ in range(30):
+                  if api('GET', f"/actions/runs/{run['id']}")['status'] == 'completed':
+                      break
+                  time.sleep(10)
+              else:
+                  print(f"run {run['id']} did not finish cancelling; leaving it for the next pass")
+                  continue
+              api('POST', f"/actions/runs/{run['id']}/rerun", expect_json=False)
+              print(f"run {run['id']} re-run in full; its routing now resolves to hosted runners")
+          PY

@@ -1,0 +1,158 @@
+{
+  "state": "THREE_NATIVE_SIGN_SITES_PG_QUALIFIED",
+  "whole_quest": "ACTIVE",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "test": "questpc7_goblin_three_personal_sign_sites",
+  "red": {
+    "baseline": "a4e9f1080 with the three new integration bindings temporarily omitted by the repository generator; corrected inactive-state test expectations retained",
+    "seconds": 67.994534856,
+    "expected": "Committed at the first exact placement after actual NPC introduction and source-priced tool purchase",
+    "actual": "NothingToUse",
+    "log": "/tmp/questpc7-signs-contract-red.log",
+    "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "temporary_baseline_published": false
+  },
+  "fixture_diagnostic": {
+    "seconds": 35.171147329,
+    "error": "physical target must be unique",
+    "resolution": "Keep native Items; remove their duplicate terrain representations. Not counted as a mechanic RED."
+  },
+  "green": {
+    "compiled_source": "1982a397bbcb6c87715382f82e0717287d78c572",
+    "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "seconds": 91.409172094,
+    "marker": "QUESTPC7_GOBLIN_SIGNS POSTGRES_CASE_COMPLETED duration=91.409172094s success=true",
+    "selected_passed": 1,
+    "selected_failed": 0,
+    "log": "/tmp/questpc7-signs-final-green.log",
+    "command": "cargo nextest run --locked -p oteryn-gameplay-dispatch -E test(questpc7_goblin_three_personal_sign_sites) --success-output immediate --failure-output immediate"
+  },
+  "sites": [
+    [
+      33055,
+      32091,
+      -7
+    ],
+    [
+      33026,
+      32091,
+      -7
+    ],
+    [
+      33032,
+      32083,
+      -7
+    ]
+  ],
+  "native_region": {
+    "path": "content/world/placements/region-z07-x129-y125.b3",
+    "sha256": "d1d87901c566bf7fa28034bc3364f123da93f51241b2a08e63c960ca7529597f"
+  },
+  "item_source": "imports/canary/items-xml/items.xml:35733; sha256:1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+  "source_page": "https://www.tibiawiki.com.br/index.php?title=Task:Rafzan&oldid=401277",
+  "rule": "Each exact native site consumes one carried sign17668 and sets one personal flag. Preserve shared rocks so another Character is not locked out. No new mint or generic engine.",
+  "assertions": [
+    "pre-intro inactive no-op without receipts",
+    "same-appearance decoy does not spend",
+    "three distinct exact source sites",
+    "one sign per site",
+    "command replay has no new effect",
+    "fresh repeat visit has no new effect",
+    "other five jobs and kit preserved",
+    "whole quest remains incomplete"
+  ],
+  "python_tests": {
+    "authoring": "24 passed in68.108s",
+    "physical_admission": "6 passed in0.003s (unit mocks, not PG)"
+  },
+  "pending_tests": [
+    "content and dispatch Rust unit crates"
+  ],
+  "owner_exception": "PREPUSH-2: publish passes1,2,4 when step3 exceeds cadence; explicitly record pending tests.",
+  "checkpoint_checks": {
+    "callback-generation": "CALLBACK_GENERATION_EXIT=0",
+    "native-generation": "NATIVE_GENERATION_EXIT=0",
+    "audit": "AUDIT_EXIT=0",
+    "central-generation": "CENTRAL_GENERATION_EXIT=0",
+    "callback-freshness": "CALLBACK_FRESHNESS_EXIT=0",
+    "world-metadata": "WORLD_METADATA_EXIT=0",
+    "migrations": "MIGRATIONS_EXIT=0",
+    "fmt": "FMT_EXIT=0",
+    "check": "CHECK_EXIT=0",
+    "clippy": "CLIPPY_EXIT=0",
+    "pins": "PINS_EXIT=0",
+    "coverage": "COVERAGE_EXIT=0",
+    "authoring-tests": "AUTHORING_TESTS_EXIT=0",
+    "profile-tests": "PROFILE_TESTS_EXIT=0"
+  },
+  "check_duration": "5m46s",
+  "clippy_duration": "3m09s",
+  "superseded_preintro_red": {
+    "baseline": "c7d67c4fc95e29b9e4651ea069fd441810b40e4d plus the new regression and corrected native-only fixture",
+    "seconds": 34.668652794,
+    "expected": "Rejected before introduction",
+    "actual": "NothingToUse",
+    "log": "/tmp/questpc7-signs-red2.log",
+    "reason": "Initial and terminal inactive candidates correctly yield NothingToUse under the required bounded-counter activation contract. Superseded by a post-intro placement RED."
+  },
+  "schema_diagnostic_not_pg": {
+    "seconds": 0.009341513,
+    "error": "invalid callback oteryn:quest-callback/questpc7-goblin-sign-1",
+    "root_cause": "ADD counter requires activation with identical track and range",
+    "fix": "activation(signs,0..2); inactive pre-intro and terminal uses are exactly NothingToUse; repeated active site remains exactly Rejected",
+    "assertion_strength": "All exact receipt, quantity, remaining-job, replay and duplicate invariants retained."
+  },
+  "quests_unit": {
+    "baseline": "307 passed, 1 stale callback inventory count failed in21.95s",
+    "fix": "Repo audit derives exact106=103 original +3 reviewed sign keys; four negative authority mutations unchanged",
+    "green": "308 passed,0failed,0ignored in21.27s",
+    "log": "/tmp/questpc7-signs-activation-quests-unit2.log"
+  },
+  "main3029_merge_exception": {
+    "main": "83acbdac3",
+    "conflicted_files": 67,
+    "action": "Aborted before publication under the explicit owner15-minute merge exception; preserve last coherent activation fix, compile/fmt/clippy, push, then resume integration.",
+    "conflict_list": "/tmp/questpc7-main3029-conflicts.txt",
+    "local_activation_commit": "940472244",
+    "merged": false,
+    "latest_fetched_main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+    "shared_collision_files_unchanged_since_aborted_merge": [
+      "crates/gameplay/quests/src/quest/world_callbacks.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs",
+      "crates/gameplay/durability/src/durability/reward_claim_mint/quest.rs"
+    ],
+    "latest_main_fix": "6f61ac15d adds physical key33 NPC item-lane ownership; must be retained when qengine2 resolves shared convergence."
+  },
+  "activation_checkpoint_checks": {
+    "generation": "ACTIVATION_GENERATION_EXIT=0",
+    "audit": "ACTIVATION_AUDIT_EXIT=0",
+    "quests-unit2": "ACTIVATION_QUESTS_UNIT2_EXIT=0",
+    "central-check": "ACTIVATION_CENTRAL_CHECK_EXIT=0",
+    "native-check": "ACTIVATION_NATIVE_CHECK_EXIT=0",
+    "callback-check": "ACTIVATION_CALLBACK_CHECK_EXIT=0",
+    "migrations": "ACTIVATION_MIGRATIONS_EXIT=0",
+    "pins": "ACTIVATION_PINS_EXIT=0",
+    "publish-check": "ACTIVATION_PUBLISH_CHECK_EXIT=0",
+    "publish-clippy": "ACTIVATION_PUBLISH_CLIPPY_EXIT=0",
+    "publish-fmt": "ACTIVATION_PUBLISH_FMT_EXIT=0"
+  },
+  "green_publication_checks": {
+    "publish-check": "GREEN_PUBLISH_CHECK_EXIT=0",
+    "publish-fmt": "GREEN_PUBLISH_FMT_EXIT=0",
+    "callback-check": "GREEN_CALLBACK_CHECK_EXIT=0",
+    "audit": "GREEN_AUDIT_EXIT=0",
+    "native-check": "GREEN_NATIVE_CHECK_EXIT=0",
+    "migrations": "GREEN_MIGRATIONS_EXIT=0",
+    "matrix-check": "GREEN_MATRIX_CHECK_EXIT=0",
+    "pins": "GREEN_PINS_EXIT=0"
+  },
+  "clippy_reuse": "Metadata-only qualification; runtime/code identical to1982a397b, whose changed3 strict clippy passed3m09s.",
+  "rust_crate_unit_run": {
+    "state": "INTERRUPTED_ENVIRONMENT_REPLACED_RESULTS_UNVERIFIED",
+    "postgres_admin_unset": true,
+    "log": "/tmp/questpc7-signs-final-rust-unit.log",
+    "actual_pg_proof_separate": true,
+    "reason": "The execution environment disappeared; /tmp full-run log/result were lost. Do not infer full-suite success.",
+    "last_observed": "content330passed/0failed/1existingignored; dispatch incomplete; quests pending"
+  }
+}

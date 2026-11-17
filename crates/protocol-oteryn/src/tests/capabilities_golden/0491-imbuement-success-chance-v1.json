@@ -1,0 +1,17 @@
+{
+  "id": 491,
+  "name": "IMBUEMENT_SUCCESS_CHANCE_V1",
+  "constant": "imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1",
+  "requires": [
+    68
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

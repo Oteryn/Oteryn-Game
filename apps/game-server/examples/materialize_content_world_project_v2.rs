@@ -1,5 +1,9 @@
+#[path = "support/cake_creature_admission.rs"]
+mod cake_creature_admission;
 #[path = "support/item_fx_audio_raw_import.rs"]
 mod item_fx_audio_raw_import;
+#[path = "npc_materializer/preserved_display_names.rs"]
+mod preserved_display_names;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
@@ -21,7 +25,7 @@ use oteryn_game_server::content::{
     ReferenceItemSkillModifiers, ReferenceItemStack, ReferenceItemTradeRestrictions,
     ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType,
     ReimportDecision, ReimportFieldState, capture_world_project,
-    item_abilities::apply_equip_abilities_v1,
+    item_abilities::apply_equip_abilities_v1, npc_catalogue_preproduction_limits,
 };
 use oteryn_gameplay_content_promotion::content::{
     CW2_B1_DONOR_EPOCH2_ALLOCATION_DIGEST_SHA256, CW2_B1_DONOR_EPOCH2_MINTED_COUNT,
@@ -436,9 +440,10 @@ fn limits() -> ProjectEvidenceLimits {
             + CREATURE_RECORDS
             + NPC_RECORDS
             + 62
-            + (NPC_BULK_COUNT + NPC_BULK_MORE_COUNT) * 2,
+            + (NPC_BULK_COUNT + NPC_BULK_MORE_COUNT) * 2
+            + cake_creature_admission::RECORD_DELTA,
         // The four monster-full-mechanics batches add four sources and reimport states.
-        max_import_records: 25 + 4,
+        max_import_records: 30 + cake_creature_admission::IMPORT_DELTA,
         max_reimport_states: ENCOUNTER_COUNT + item_fx_audio_raw_import::STATE_COUNT + 4,
     }
 }
@@ -457,31 +462,43 @@ fn promote_beds(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error::Er
 fn main_world_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
         // E06 mints 68 client-only Crystal market Items into the committed world.
-        max_reference_records: 62_801 + 68,
+        max_reference_records: 62_886,
         max_reimport_states: 404,
-        max_import_records: 29,
+        max_import_records: 30 + cake_creature_admission::IMPORT_DELTA,
         ..limits()
     }
 }
 
-fn authoring_roots() -> Result<(PathBuf, Option<PathBuf>), Box<dyn std::error::Error>> {
+enum AuthoringSource {
+    Predecessor(PathBuf),
+    Canonicalize(PathBuf),
+}
+
+fn authoring_roots() -> Result<(PathBuf, Option<AuthoringSource>), Box<dyn std::error::Error>> {
     let mut arguments = env::args_os().skip(1);
     let flag = arguments.next();
     let value = arguments.next().ok_or("missing --output-root path")?;
     if flag.as_deref() != Some(std::ffi::OsStr::new("--output-root")) {
-        return Err("expected --output-root <path> [--predecessor-root <path>]".into());
+        return Err("expected --output-root <path> [--predecessor-root <path> | --canonicalize-root <path>]".into());
     }
-    let predecessor = match arguments.next() {
+    let source = match arguments.next() {
         None => None,
-        Some(flag) if flag == std::ffi::OsStr::new("--predecessor-root") => Some(PathBuf::from(
-            arguments.next().ok_or("missing predecessor path")?,
-        )),
+        Some(flag) if flag == std::ffi::OsStr::new("--predecessor-root") => {
+            Some(AuthoringSource::Predecessor(PathBuf::from(
+                arguments.next().ok_or("missing predecessor path")?,
+            )))
+        }
+        Some(flag) if flag == std::ffi::OsStr::new("--canonicalize-root") => {
+            Some(AuthoringSource::Canonicalize(PathBuf::from(
+                arguments.next().ok_or("missing canonical source path")?,
+            )))
+        }
         Some(_) => return Err("unexpected authoring argument".into()),
     };
     if arguments.next().is_some() {
         return Err("unexpected trailing authoring argument".into());
     }
-    Ok((PathBuf::from(value), predecessor))
+    Ok((PathBuf::from(value), source))
 }
 
 fn require_fresh_root(root: &Path) -> Result<(), Box<dyn std::error::Error>> {
@@ -528,8 +545,11 @@ const CORPSE_ADMITTED_PACKAGE: &str =
 fn reconciled_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
         max_decoded_fields: 2_400_000,
-        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + 26_194 + 2_564,
-        max_import_records: 29,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT
+            + 26_194
+            + 2_564
+            + cake_creature_admission::RECORD_DELTA,
+        max_import_records: 30 + cake_creature_admission::IMPORT_DELTA,
         max_reimport_states: 404,
         ..limits()
     }
@@ -1006,6 +1026,33 @@ fn write_documents(
     }
     let value = document_tree_digest(documents);
     Ok(value)
+}
+
+fn canonicalize_existing_world(
+    source: &Path,
+    output: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let filesystem = ProjectFilesystemLimits {
+        project: reconciled_limits(),
+        ..npc_catalogue_preproduction_limits()
+    };
+    let captured = capture_world_project(
+        source.parent().ok_or("canonical source parent missing")?,
+        source
+            .file_name()
+            .ok_or("canonical source basename missing")?,
+        filesystem,
+    )?;
+    if captured.v2().is_none() {
+        return Err("canonical source must be WorldProject/v2".into());
+    }
+    let documents = captured.canonical_documents(filesystem.project)?;
+    if documents.documents().len() != DOCUMENT_COUNT {
+        return Err("canonical WorldProject/v2 document count drifted".into());
+    }
+    let digest = write_documents(output, &documents)?;
+    println!("canonicalized_documents={DOCUMENT_COUNT} tree_sha256={digest}");
+    Ok(())
 }
 
 fn promote<T: PartialEq>(
@@ -3078,7 +3125,14 @@ fn apply_current_power_ring(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn st
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let (root, predecessor) = authoring_roots()?;
+    let (root, source) = authoring_roots()?;
+    let predecessor = match source {
+        Some(AuthoringSource::Canonicalize(source)) => {
+            return canonicalize_existing_world(&source, &root);
+        }
+        Some(AuthoringSource::Predecessor(source)) => Some(source),
+        None => None,
+    };
     validate_ranged_profiles()?;
     if let Some(source) = predecessor {
         materialize_from_predecessor(&source, &root)?;
@@ -3097,6 +3151,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         apply_item_drown_protection(&mut draft)?;
         apply_item_market_crystal_parity(&mut draft)?;
         apply_current_power_ring(&mut draft)?;
+        cake_creature_admission::apply(&mut draft)?;
+        preserved_display_names::apply(&mut draft.state.declarations)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
         // This fresh output contains only the base package just materialized above.
         // The canonical writer requires an absent root for the successor package.
@@ -3405,6 +3461,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // their predecessor; a bed group added earlier would drift every one of those pins.
     promote_beds(&mut draft)?;
     apply_official_creature_balance(&mut draft)?;
+    cake_creature_admission::apply(&mut draft)?;
+    preserved_display_names::apply(&mut draft.state.declarations)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
@@ -3816,6 +3874,7 @@ mod npc_r5_guard_tests {
             .clone();
         let quest = ProjectV2Declaration::Quest {
             identity,
+            visibility: Default::default(),
             fields: vec![],
         };
         assert!(!npc_repair_scope_allowed(&quest, &quest));

@@ -369,7 +369,7 @@ fn roll_entries(
             || state.unique.contains(&entry.item.production_key)
             || !factored_success(
                 chance,
-                probability,
+                entry.details.rated_probability_ppm.unwrap_or(probability),
                 factor,
                 entry.details.gut_bonus_hundredths,
             )
@@ -613,16 +613,16 @@ fn factored_success(
 }
 
 /// Applies the configured loot-rate percentage before a table reaches the deterministic planner.
-/// Crystal 201189f8 `data/libs/functions/functions.lua:68-70` divides the random threshold by
-/// `RATE_LOOT`; multiplying and capping the entry chance is the equivalent ppm operation.
+/// Crystal 201189f8 `data/libs/functions/functions.lua:68-71` divides the random threshold by
+/// `RATE_LOOT`; the capped chance remains available to other consumers, while the uncapped value
+/// feeds the planner's per-entry factor.
 pub fn apply_configured_loot_rate(table: &mut LootTableDefinition, rate_percent: u32) {
     for entry in &mut table.entries {
-        if let Some(probability) = &mut entry.probability_ppm {
-            *probability = u32::try_from(
-                u64::from(*probability).saturating_mul(u64::from(rate_percent)) / 100,
-            )
-            .unwrap_or(u32::MAX)
-            .min(LOOT_PROBABILITY_PPM_SCALE);
+        if let Some(probability) = entry.probability_ppm {
+            let rated = u64::from(probability).saturating_mul(u64::from(rate_percent)) / 100;
+            entry.probability_ppm = Some(rated.min(u64::from(LOOT_PROBABILITY_PPM_SCALE)) as u32);
+            entry.details.rated_probability_ppm = (rated > u64::from(LOOT_PROBABILITY_PPM_SCALE))
+                .then(|| rated.min(2_000_000) as u32);
         }
     }
 }
@@ -956,6 +956,78 @@ mod tests {
         let mut table = one_entry_table("oteryn:item.rate", 1, 1, Some(600_000));
         apply_configured_loot_rate(&mut table, 200);
         assert_eq!(table.entries[0].probability_ppm, Some(1_000_000));
+    }
+
+    #[test]
+    fn configured_loot_rate_keeps_an_in_scale_chance_without_a_rated_overflow() {
+        let mut below_scale = one_entry_table("oteryn:item.rate.below", 1, 1, Some(400_000));
+        apply_configured_loot_rate(&mut below_scale, 200);
+        assert_eq!(below_scale.entries[0].probability_ppm, Some(800_000));
+        assert_eq!(below_scale.entries[0].details.rated_probability_ppm, None);
+
+        let mut at_scale = one_entry_table("oteryn:item.rate.at", 1, 1, Some(500_000));
+        apply_configured_loot_rate(&mut at_scale, 200);
+        assert_eq!(at_scale.entries[0].probability_ppm, Some(1_000_000));
+        assert_eq!(at_scale.entries[0].details.rated_probability_ppm, None);
+
+        let mut neutral = one_entry_table("oteryn:item.rate.neutral", 1, 1, Some(600_000));
+        apply_configured_loot_rate(&mut neutral, 100);
+        assert_eq!(neutral.entries[0].probability_ppm, Some(600_000));
+        assert_eq!(neutral.entries[0].details.rated_probability_ppm, None);
+    }
+
+    #[test]
+    fn configured_loot_rate_above_certainty_survives_the_lowest_loot_factor() {
+        let reference = table_ref("oteryn:loot.rate.overflow");
+        let capped = one_entry_table("oteryn:item.rate.overflow", 1, 1, Some(1_000_000));
+        // A nominal 100% entry misses on some 95..99% factor draw.
+        let miss = (0..4096_u32)
+            .map(|actor| LootPlanDeathKey::new([7; 16], [8; 16], 1, actor, 1))
+            .find(|key| {
+                plan_creature_loot(*key, &reference, &capped)
+                    .expect("capped plan")
+                    .entries
+                    .is_empty()
+            })
+            .expect("a low factor draw misses a nominal 100% entry");
+        let mut rated = one_entry_table("oteryn:item.rate.overflow", 1, 1, Some(600_000));
+        apply_configured_loot_rate(&mut rated, 200);
+        assert_eq!(rated.entries[0].probability_ppm, Some(1_000_000));
+        assert_eq!(
+            rated.entries[0].details.rated_probability_ppm,
+            Some(1_200_000)
+        );
+        // Crystal: 60% x 200% x 95% = 114% is certain.
+        assert_eq!(
+            plan_creature_loot(miss, &reference, &rated)
+                .expect("rated plan")
+                .entries
+                .len(),
+            1
+        );
+    }
+
+    #[test]
+    fn configured_loot_rate_overflow_is_bounded_at_twice_the_scale() {
+        let reference = table_ref("oteryn:loot.rate.bound");
+        let mut table = one_entry_table("oteryn:item.rate.bound", 1, 1, Some(1_000_000));
+        apply_configured_loot_rate(&mut table, u32::MAX);
+        assert_eq!(table.entries[0].probability_ppm, Some(1_000_000));
+        assert_eq!(
+            table.entries[0].details.rated_probability_ppm,
+            Some(2_000_000)
+        );
+
+        for actor in 0..64_u32 {
+            let key = LootPlanDeathKey::new([3; 16], [4; 16], 1, actor, 1);
+            assert_eq!(
+                plan_creature_loot(key, &reference, &table)
+                    .expect("bounded plan")
+                    .entries
+                    .len(),
+                1
+            );
+        }
     }
 
     #[test]

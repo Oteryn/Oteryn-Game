@@ -1,5 +1,7 @@
 //! HOUSE-WIRE-1: one bounded, session-fenced transaction for remote management.
 mod acl;
+mod acl_read;
+pub use acl_read::HouseAclView;
 mod query;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{assert_item_only_fence, numeric_u64};

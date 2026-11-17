@@ -1,0 +1,56 @@
+--- a/crates/gameplay/durability/src/durability/item_mint.rs
++++ b/crates/gameplay/durability/src/durability/item_mint.rs
+@@ -955,12 +955,16 @@
+                 || claim.death.scope_ownership_generation() != death.scope_ownership_generation
+                 || claim.death.actor_local_id() != death.actor_local_id
+                 || claim.death.actor_local_generation() != death.actor_local_generation
+-                || claim.items().iter().any(|id| {
++                || claim.draw_ordinals.len() != claim.items().len()
++                || claim.items().iter().enumerate().any(|(offset, id)| {
+                     let key = format!("oteryn:item.tibia.i{id}");
++                    let purpose = super::tutorial_corruptor::guarantee_purpose(*id);
+                     let mut selected = frozen_children.iter().filter(|(child, _)|
+-                        child.request.item.production_key == key);
++                        child.request.cause.purpose_key == purpose);
+                     match (selected.next(), selected.next()) {
+-                        (Some((child, placement)), None) => child.request.quantity != 1
++                        (Some((child, placement)), None) => child.request.item.production_key != key
++                            || child.request.quantity != 1
++                            || child.request.cause.draw_ordinal != u32::try_from(offset).unwrap_or(u32::MAX)
+                             || placement.corpse_item_instance_id != candidate.item_instance_id,
+                         _ => true,
+                     }
+--- a/crates/gameplay/combat/src/combat/death_reward.rs
++++ b/crates/gameplay/combat/src/combat/death_reward.rs
+@@ -483,8 +483,30 @@
+             ItemMintError::AuthorityRejected,
+         ));
+     }
+-    let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
++    let mut plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
+         .map_err(CombatDeathRewardLootError::Plan)?;
++    if let Some(claim) = &tutorial_corruptor {
++        if claim.source_outputs().len() != claim.items().len() {
++            return Err(CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput));
++        }
++        for (offset, (id, source)) in claim.source_outputs().enumerate() {
++            let entry = plan.entries.iter_mut().find(|entry|
++                entry.parent.is_none() && entry.draw_ordinal == source)
++                .ok_or(CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
++            if entry.item.production_key != format!("oteryn:item.tibia.i{id}") || entry.quantity != 1 {
++                return Err(CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput));
++            }
++            // A replay's guaranteed causes do not change when ordinary loot
++            // gains/loses a stamina, event or duplex roll before preparation.
++            let purpose = crate::durability::tutorial_corruptor::guarantee_purpose(id);
++            if purpose.len() > entry.purpose_key.len() {
++                return Err(CombatDeathRewardLootError::Plan(crate::combat::LootPlanError::PlanBytesExceeded));
++            }
++            entry.purpose_key = purpose;
++            entry.draw_ordinal = u32::try_from(offset)
++                .map_err(|_| CombatDeathRewardLootError::Corpse(ItemMintError::InvalidInput))?;
++        }
++    }
+     // W22a: a fluid subtype mints with its fluid state; only one beyond the fluid range is refused.
+     if plan
+         .entries

@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python3",
+    "tools/content-schema/quest-authoring/quest_native_binding_preflight.py"
+  ],
+  "exit_code": 0,
+  "seconds": 0.551,
+  "log": ".questpc7/hoist-native-preflight.log"
+}

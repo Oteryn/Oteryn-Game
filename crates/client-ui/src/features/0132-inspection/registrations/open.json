@@ -1,0 +1,9 @@
+{
+  "mechanic": "0132-inspection",
+  "status": "supported",
+  "kind": "keybindings",
+  "id": "0132-inspection-open",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+I",
+  "entry": "input.rs::open_key"
+}

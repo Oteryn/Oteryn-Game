@@ -547,8 +547,9 @@ fn bounty_selection_completion_and_claim_use_own_state_and_rewards() -> Result<(
     )?;
     assert_eq!(data.bounty.state, BountyStatus::Completed);
     assert_eq!(balances.bounty_points, 0);
-    // Crystal caps the daily claim at ten, not a completed bounty's +1 token.
-    ctx.reroll_tokens = 10;
+    // Winter Update 2026 caps every credit at ten stored tokens (Crystal capped
+    // only the daily claim); nine stored still receives the completed bounty's +1.
+    ctx.reroll_tokens = 9;
     let effects = apply(&mut data, &mut balances, TaskBoardAction::ClaimBounty, &ctx)?;
     assert_eq!(
         (
@@ -568,18 +569,18 @@ fn bounty_selection_completion_and_claim_use_own_state_and_rewards() -> Result<(
 }
 
 #[test]
-fn bounty_grade_boundaries_and_difficulty_reward_tables_match_crystal()
+fn bounty_grade_boundaries_match_owner_provisional_profile_and_crystal_rewards()
 -> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
     let ctx = context(&catalogue);
     for (difficulty, min_exp, points) in [(0, 30, 3), (1, 70, 7), (2, 150, 16), (3, 300, 27)] {
         for (roll, grade, multiplier) in [
             (0, 2, 4),
-            (1, 2, 4),
-            (2, 1, 2),
-            (9, 1, 2),
-            (10, 0, 1),
-            (99, 0, 1),
+            (99, 2, 4),
+            (100, 1, 2),
+            (599, 1, 2),
+            (600, 0, 1),
+            (9999, 0, 1),
         ] {
             let mut data = TaskBoardData::default();
             let mut balances = TaskBoardBalances::default();
@@ -638,19 +639,20 @@ fn bounty_completion_preserves_existing_wide_token_owner() -> Result<(), TaskBoa
         &ctx,
     )?;
     let effects = apply(&mut data, &mut balances, TaskBoardAction::ClaimBounty, &ctx)?;
-    assert_eq!(effects.reroll_tokens_granted, 1);
+    // A balance above the storage cap of 10 is kept but receives nothing.
+    assert_eq!(effects.reroll_tokens_granted, 0);
     assert_eq!(
         ctx.reroll_tokens + u64::from(effects.reroll_tokens_granted),
-        u64::from(u32::MAX) + 11
+        u64::from(u32::MAX) + 10
     );
     assert_eq!(
         apply(
             &mut data,
             &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
+            TaskBoardAction::RetiredDailyReroll,
             &ctx
         ),
-        Err(TaskBoardRefusal::LimitReached)
+        Err(TaskBoardRefusal::RetiredAction)
     );
     Ok(())
 }
@@ -659,6 +661,7 @@ fn bounty_completion_preserves_existing_wide_token_owner() -> Result<(), TaskBoa
 fn difficulty_changes_wait_for_reroll_and_preserve_active_reward() -> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
     let mut ctx = context(&catalogue);
+    ctx.reroll_tokens = 1;
     let mut data = TaskBoardData::default();
     let mut balances = TaskBoardBalances::default();
     apply(&mut data, &mut balances, TaskBoardAction::OpenBounty, &ctx)?;
@@ -736,8 +739,8 @@ fn difficulty_changes_wait_for_reroll_and_preserve_active_reward() -> Result<(),
 }
 
 #[test]
-fn token_owner_boundary_refuses_before_consuming_completed_bounty() -> Result<(), TaskBoardRefusal>
-{
+fn token_owner_boundary_keeps_capped_balance_and_claims_completed_bounty()
+-> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
     let mut ctx = context(&catalogue);
     let mut data = TaskBoardData::default();
@@ -762,20 +765,33 @@ fn token_owner_boundary_refuses_before_consuming_completed_bounty() -> Result<()
         TaskBoardAction::CreditKill { race },
         &ctx,
     )?;
-    ctx.reroll_tokens = i64::MAX.unsigned_abs();
     let before = (data.clone(), balances.clone());
-    assert_eq!(
-        apply(&mut data, &mut balances, TaskBoardAction::ClaimBounty, &ctx),
-        Err(TaskBoardRefusal::ArithmeticOverflow)
-    );
-    assert_eq!((data.clone(), balances.clone()), before);
-    ctx.reroll_tokens -= 1;
-    let effects = apply(&mut data, &mut balances, TaskBoardAction::ClaimBounty, &ctx)?;
-    assert_eq!(
-        ctx.reroll_tokens + u64::from(effects.reroll_tokens_granted),
-        i64::MAX.unsigned_abs()
-    );
-    assert_eq!(data.bounty.state, BountyStatus::Selection);
+    let completed = data
+        .bounty
+        .active
+        .as_ref()
+        .ok_or(TaskBoardRefusal::WrongState)?
+        .clone();
+    for tokens in [
+        MAX_REROLL_TOKENS,
+        i64::MAX.unsigned_abs() - 1,
+        i64::MAX.unsigned_abs(),
+    ] {
+        ctx.reroll_tokens = tokens;
+        let (mut data, mut balances) = before.clone();
+        let effects = apply(&mut data, &mut balances, TaskBoardAction::ClaimBounty, &ctx)?;
+        assert_eq!(effects.reroll_tokens_granted, 0);
+        assert_eq!(
+            ctx.reroll_tokens + u64::from(effects.reroll_tokens_granted),
+            tokens
+        );
+        assert_eq!(effects.experience, completed.experience);
+        assert_eq!(
+            balances.bounty_points,
+            before.1.bounty_points + i64::from(completed.points)
+        );
+        assert_eq!(data.bounty.state, BountyStatus::Selection);
+    }
     Ok(())
 }
 
@@ -784,6 +800,7 @@ fn bounty_open_uses_vocation_and_reroll_preserves_difficulty_after_level_loss()
 -> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
     let mut ctx = context(&catalogue);
+    ctx.reroll_tokens = 1;
     let mut data = TaskBoardData::default();
     let mut balances = TaskBoardBalances::default();
     ctx.level = 8;
@@ -835,74 +852,78 @@ fn bounty_open_uses_vocation_and_reroll_preserves_difficulty_after_level_loss()
 }
 
 #[test]
-fn bounty_rerolls_use_twenty_hour_free_timer_before_spending_one_token()
+fn bounty_rerolls_always_spend_one_token_and_refuse_without_mutating_state()
 -> Result<(), TaskBoardRefusal> {
     let catalogue = creatures();
     let mut ctx = context(&catalogue);
     let mut data = TaskBoardData::default();
     let mut balances = TaskBoardBalances::default();
-    ctx.reroll_tokens = 2;
-    let effects = apply(
+    apply(&mut data, &mut balances, TaskBoardAction::OpenBounty, &ctx)?;
+    apply(
         &mut data,
         &mut balances,
-        TaskBoardAction::RerollBounty,
+        TaskBoardAction::SelectBounty { slot: 0 },
         &ctx,
     )?;
-    assert_eq!(effects.reroll_tokens_spent, 0);
-    assert_eq!(
-        data.bounty.next_free_reroll_unix,
-        ctx.now_unix_seconds + 72_000
-    );
-    assert_eq!(
-        apply(
+    for now in [0, 1_800_000_000, i64::MAX] {
+        ctx.now_unix_seconds = now;
+        let before = (data.clone(), balances.clone());
+        assert_eq!(
+            apply(
+                &mut data,
+                &mut balances,
+                TaskBoardAction::RerollBounty,
+                &ctx
+            ),
+            Err(TaskBoardRefusal::InsufficientResources)
+        );
+        assert_eq!((&data, &balances), (&before.0, &before.1));
+        ctx.reroll_tokens = 1;
+        let effects = apply(
             &mut data,
             &mut balances,
             TaskBoardAction::RerollBounty,
-            &ctx
-        )?
-        .reroll_tokens_spent,
-        1
-    );
-    ctx.reroll_tokens = 0;
+            &ctx,
+        )?;
+        assert_eq!(effects.reroll_tokens_spent, 1);
+        assert_eq!(effects.reroll_tokens_granted, 0);
+        assert_eq!(data.bounty.state, BountyStatus::Selection);
+        assert_eq!(data.bounty.offers.len(), 3);
+        ctx.reroll_tokens = 0;
+    }
     assert_eq!(
         apply(
             &mut data,
             &mut balances,
+            TaskBoardAction::RetiredDailyReroll,
+            &ctx
+        ),
+        Err(TaskBoardRefusal::RetiredAction)
+    );
+    Ok(())
+}
+
+#[test]
+fn historical_bounty_timer_never_grants_a_free_reroll() -> Result<(), Box<dyn std::error::Error>> {
+    let catalogue = creatures();
+    let ctx = context(&catalogue);
+    let mut legacy = serde_json::to_value(TaskBoardData::default())?;
+    legacy["bounty"]["next_free_reroll_unix"] = serde_json::json!(0);
+    let mut data: TaskBoardData = serde_json::from_value(legacy)?;
+    assert_eq!(data, TaskBoardData::default());
+    assert!(
+        serde_json::to_value(&data)?["bounty"]
+            .get("next_free_reroll_unix")
+            .is_none()
+    );
+    assert_eq!(
+        apply(
+            &mut data,
+            &mut TaskBoardBalances::default(),
             TaskBoardAction::RerollBounty,
             &ctx
         ),
-        Err(TaskBoardRefusal::Cooldown)
-    );
-    assert_eq!(
-        apply(
-            &mut data,
-            &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
-            &ctx
-        ),
-        Err(TaskBoardRefusal::Cooldown)
-    );
-    ctx.now_unix_seconds += 72_000;
-    ctx.reroll_tokens = 10;
-    assert_eq!(
-        apply(
-            &mut data,
-            &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
-            &ctx
-        ),
-        Err(TaskBoardRefusal::LimitReached)
-    );
-    ctx.reroll_tokens = 9;
-    assert_eq!(
-        apply(
-            &mut data,
-            &mut balances,
-            TaskBoardAction::ClaimDailyReroll,
-            &ctx
-        )?
-        .reroll_tokens_granted,
-        1
+        Err(TaskBoardRefusal::InsufficientResources)
     );
     Ok(())
 }
@@ -1003,7 +1024,8 @@ fn unwanted_overrides_preferred_and_preferred_bypasses_only_stars() -> Result<()
     let mut catalogue = creatures();
     // Put a hard, preferred creature first so the deterministic draw selects it.
     catalogue[0].bestiary_stars = 5;
-    let ctx = context(&catalogue);
+    let mut ctx = context(&catalogue);
+    ctx.reroll_tokens = 1;
     let mut data = TaskBoardData::default();
     let mut balances = TaskBoardBalances::default();
     let race = catalogue[0].race.clone();
@@ -1554,6 +1576,183 @@ fn bounty_points_last_valid_reward_then_overflow_keeps_completed_task()
                 "overflow preserves completed reward and all balances"
             );
         }
+    }
+    Ok(())
+}
+
+#[test]
+fn elite_offers_freeze_rewards_and_rarity_survives_serialization_and_resets_per_race()
+-> Result<(), Box<dyn std::error::Error>> {
+    let policy = elite::Policy::checked_in().map_err(|e| format!("{e:?}"))?;
+    assert_eq!(policy.weights(0), [500, 100, 0]);
+    assert_eq!(policy.weights(20), [2500, 1100, 200]);
+    assert_eq!(policy.grade(0, 1), 2);
+    assert_eq!(policy.grade(1, 1), 3);
+    let catalogue = creatures();
+    let mut ctx = context(&catalogue);
+    ctx.reroll_tokens = 1;
+    let mut data = TaskBoardData::default();
+    let mut balances = TaskBoardBalances::default();
+    let mut run = |data: &mut TaskBoardData, action| {
+        apply(data, &mut balances, action, &ctx).map_err(|e| format!("{e:?}"))
+    };
+    run(&mut data, TaskBoardAction::OpenBounty)?;
+    let original = data.bounty.offers.clone();
+    run(&mut data, TaskBoardAction::SetElite { enabled: true })?;
+    assert_eq!(data.bounty.offers, original);
+    run(&mut data, TaskBoardAction::RerollBounty)?;
+    assert!(data.bounty.offers.iter().all(|task| task.elite
+        && task.grade == 3
+        && task.points == 24
+        && task.experience == 48000
+        && task.dust == 40));
+    let selected = data.bounty.offers[0].clone();
+    let other = data.bounty.offers[1].race.clone();
+    let loaded: TaskBoardData = serde_json::from_slice(&serde_json::to_vec(&data)?)?;
+    assert_eq!(loaded, data);
+    run(&mut data, TaskBoardAction::SetElite { enabled: false })?;
+    run(&mut data, TaskBoardAction::SelectBounty { slot: 0 })?;
+    assert!(
+        data.bounty
+            .active
+            .as_ref()
+            .is_some_and(|task| task.elite && task.experience == selected.experience)
+    );
+    assert!(!data.bounty.rarity.contains_key(&selected.race));
+    assert_eq!(data.bounty.rarity.get(&other), Some(&2));
+    Ok(())
+}
+
+/// Winter Update 2026 test server (thread 560): offers generated at a fixed rarity
+/// build-up and grade roll, Elite on, return their frozen (grade, dust).
+fn elite_offer_rewards(
+    difficulty: u8,
+    misses: u16,
+    roll: u32,
+) -> Result<Vec<(u8, u32)>, TaskBoardRefusal> {
+    let catalogue = creatures();
+    let ctx = context(&catalogue);
+    let mut data = TaskBoardData::default();
+    let mut balances = TaskBoardBalances::default();
+    data.bounty.difficulty = difficulty;
+    data.bounty.elite = true;
+    for creature in &catalogue {
+        data.bounty.rarity.insert(creature.race.clone(), misses);
+    }
+    let mut count = 0;
+    apply_action(
+        &mut data,
+        &mut balances,
+        &TaskBoardAction::OpenBounty,
+        &ctx,
+        &mut |_| {
+            count += 1;
+            if count % 4 == 0 { roll - 1 } else { 0 }
+        },
+    )?;
+    Ok(data
+        .bounty
+        .offers
+        .iter()
+        .map(|offer| (offer.grade, offer.dust))
+        .collect())
+}
+
+#[test]
+fn elite_dust_matches_published_examples() -> Result<(), TaskBoardRefusal> {
+    // Regular Beginner 5, Silver Adept 30, Platinum Master 560 (thread 560).
+    assert_eq!(elite_offer_rewards(0, 0, 10_000)?, vec![(0, 5); 3]);
+    assert_eq!(elite_offer_rewards(1, 70, 5_000)?, vec![(1, 30); 3]);
+    assert_eq!(elite_offer_rewards(3, 70, 1)?, vec![(3, 560); 3]);
+    // Gold Master: x4 of the base, Platinum is twice Gold.
+    assert_eq!(elite_offer_rewards(3, 70, 501)?, vec![(2, 280); 3]);
+    Ok(())
+}
+
+#[test]
+fn bounty_rarity_caps_75_20_5_and_always_at_least_silver() -> Result<(), TaskBoardRefusal> {
+    let policy = elite::Policy::checked_in()?;
+    let capped = policy.weights(u16::MAX);
+    assert_eq!(capped, [7_500, 2_000, 500]);
+    assert_eq!(capped.iter().sum::<u32>(), 10_000);
+    // Rerolling the same unchosen offers forever stops at the cap of every grade.
+    let catalogue = creatures();
+    let mut ctx = context(&catalogue);
+    ctx.reroll_tokens = 1;
+    let mut data = TaskBoardData::default();
+    let mut balances = TaskBoardBalances::default();
+    apply(&mut data, &mut balances, TaskBoardAction::OpenBounty, &ctx)?;
+    for _ in 0..200 {
+        apply(
+            &mut data,
+            &mut balances,
+            TaskBoardAction::RerollBounty,
+            &ctx,
+        )?;
+    }
+    let race = data.bounty.offers[0].race.clone();
+    let stored = data.bounty.rarity.get(&race).copied().unwrap_or(0);
+    assert_eq!(policy.weights(stored), capped);
+    for roll in 1..=10_000 {
+        assert!(
+            policy.grade(stored, roll) >= 1,
+            "roll {roll} rolled ordinary"
+        );
+    }
+    assert_eq!(elite_offer_rewards(0, stored, 10_000)?, vec![(1, 10); 3]);
+    Ok(())
+}
+
+#[test]
+fn platinum_needs_one_miss() -> Result<(), TaskBoardRefusal> {
+    let policy = elite::Policy::checked_in()?;
+    assert!((1..=10_000).all(|roll| policy.grade(0, roll) != 3));
+    assert_eq!(policy.grade(1, 1), 3);
+    assert_eq!(elite_offer_rewards(3, 0, 1)?[0].0, 2);
+    Ok(())
+}
+
+/// Completes one selected bounty and claims it with `tokens` stored.
+fn claim_with_tokens(tokens: u64) -> Result<(TaskBoardEffects, TaskBoardData), TaskBoardRefusal> {
+    let catalogue = creatures();
+    let mut ctx = context(&catalogue);
+    ctx.reroll_tokens = tokens;
+    let mut data = TaskBoardData::default();
+    let mut balances = TaskBoardBalances::default();
+    apply(&mut data, &mut balances, TaskBoardAction::OpenBounty, &ctx)?;
+    apply(
+        &mut data,
+        &mut balances,
+        TaskBoardAction::SelectBounty { slot: 0 },
+        &ctx,
+    )?;
+    let task = data
+        .bounty
+        .active
+        .as_mut()
+        .ok_or(TaskBoardRefusal::WrongState)?;
+    task.current = task.required - 1;
+    let race = task.race.clone();
+    apply(
+        &mut data,
+        &mut balances,
+        TaskBoardAction::CreditKill { race },
+        &ctx,
+    )?;
+    let effects = apply(&mut data, &mut balances, TaskBoardAction::ClaimBounty, &ctx)?;
+    Ok((effects, data))
+}
+
+#[test]
+fn bounty_reroll_token_cap_10() -> Result<(), TaskBoardRefusal> {
+    // Winter Update 2026 client: "You can store up to 10 Reroll Tokens at a time."
+    assert_eq!(MAX_REROLL_TOKENS, 10);
+    for (stored, granted) in [(0, 1), (9, 1), (10, 0), (11, 0)] {
+        let (effects, data) = claim_with_tokens(stored)?;
+        assert_eq!(effects.reroll_tokens_granted, granted, "stored {stored}");
+        // The claim itself still pays out and opens the next selection.
+        assert!(effects.experience > 0);
+        assert_eq!(data.bounty.state, BountyStatus::Selection);
     }
     Ok(())
 }

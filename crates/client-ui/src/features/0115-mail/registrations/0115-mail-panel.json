@@ -1,0 +1,7 @@
+{
+  "mechanic": "0115-mail",
+  "kind": "panels",
+  "id": "0115-mail-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

@@ -1,0 +1,7 @@
+{
+  "quest": "krailos",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "runtime_admission": false,
+  "entries": [],
+  "policy": "Source-only guarded dialogue evidence. No Lua execution or automatic native keyword admission."
+}

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0493-chat-private-echo",
+  "kind": "panels",
+  "id": "0493-chat-private-echo-panel",
+  "status": "supported",
+  "entry": "protocol.rs::echo_text"
+}

@@ -1,0 +1,214 @@
+{
+  "schema": "OTERYN_WORLD_SRC_SEASONAL_PRODUCER_CONTINUATION/v1",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "pins": {
+    "crystal": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "canary": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+  },
+  "user_agent": "OterynCompatibilityResearch/1.0",
+  "source_status": 200,
+  "sources": [
+    {
+      "repository": "crystal",
+      "path": "data-crystal/world/world-monster.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-crystal/world/world-monster.xml",
+      "sha256": "aa8b018bce2923466ab4bc938eaf9c5abdfaccb05a5d8144aa0e827e5b51a0bf",
+      "git_blob_sha1": "b76486d21a08e20d8897ce61f4bd5d1d721848ef",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "crystal",
+      "path": "data-global/world/annual_events/winterlight_solstice/island-monster.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/annual_events/winterlight_solstice/island-monster.xml",
+      "sha256": "7038ec64b6d51ca22f82b6005ec4f031335bada208d3440da8dfeb237ccd39b0",
+      "git_blob_sha1": "d3a64ce793de48bef56c58d032c03a3b8ffeb006",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "crystal",
+      "path": "data-global/world/custom/global-custom-monster.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/custom/global-custom-monster.xml",
+      "sha256": "c01c66c160cc94434e80527e9cbab03fd23ba8f891f4774aa2a67cdcb3120d62",
+      "git_blob_sha1": "8704e6da3b244662d8f5f243a130f581cc4c0e1f",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "crystal",
+      "path": "data-global/world/quest/cults_of_tibia/misguided/illusion-monster.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/quest/cults_of_tibia/misguided/illusion-monster.xml",
+      "sha256": "2a0ca856263502f2066a87c47f1a57be5c154e813e46fced70c885438e479ff6",
+      "git_blob_sha1": "ba07a8b3ff351466d26d8284b90ad94c0dddbc48",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "crystal",
+      "path": "data-global/world/quest/cults_of_tibia/misguided/reality-monster.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/quest/cults_of_tibia/misguided/reality-monster.xml",
+      "sha256": "2a0ca856263502f2066a87c47f1a57be5c154e813e46fced70c885438e479ff6",
+      "git_blob_sha1": "ba07a8b3ff351466d26d8284b90ad94c0dddbc48",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "crystal",
+      "path": "data-global/world/world-monster.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-monster.xml",
+      "sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+      "git_blob_sha1": "7949251d25d8db8f0b2ca65b67df76ac577a5caf",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "canary",
+      "path": "data-canary/world/canary-monster.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-canary/world/canary-monster.xml",
+      "sha256": "c01c66c160cc94434e80527e9cbab03fd23ba8f891f4774aa2a67cdcb3120d62",
+      "git_blob_sha1": "8704e6da3b244662d8f5f243a130f581cc4c0e1f",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "canary",
+      "path": "data-otservbr-global/world/annual_events/winterlight_solstice/island-monster.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/world/annual_events/winterlight_solstice/island-monster.xml",
+      "sha256": "7038ec64b6d51ca22f82b6005ec4f031335bada208d3440da8dfeb237ccd39b0",
+      "git_blob_sha1": "d3a64ce793de48bef56c58d032c03a3b8ffeb006",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "canary",
+      "path": "data-otservbr-global/world/custom/otservbr-custom-monster.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/world/custom/otservbr-custom-monster.xml",
+      "sha256": "c01c66c160cc94434e80527e9cbab03fd23ba8f891f4774aa2a67cdcb3120d62",
+      "git_blob_sha1": "8704e6da3b244662d8f5f243a130f581cc4c0e1f",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "canary",
+      "path": "data-otservbr-global/world/otservbr-monster.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/world/otservbr-monster.xml",
+      "sha256": "ce70ad49af87603a6840c3b1169c69969dbca60a2c3737c8399f0af19f81f542",
+      "git_blob_sha1": "65e87a4134a320d28b2270fa5a17917fc7b513a1",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "canary",
+      "path": "data-otservbr-global/world/quest/cults_of_tibia/misguided/illusion-monster.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/world/quest/cults_of_tibia/misguided/illusion-monster.xml",
+      "sha256": "2a0ca856263502f2066a87c47f1a57be5c154e813e46fced70c885438e479ff6",
+      "git_blob_sha1": "ba07a8b3ff351466d26d8284b90ad94c0dddbc48",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "canary",
+      "path": "data-otservbr-global/world/quest/cults_of_tibia/misguided/reality-monster.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/world/quest/cults_of_tibia/misguided/reality-monster.xml",
+      "sha256": "2a0ca856263502f2066a87c47f1a57be5c154e813e46fced70c885438e479ff6",
+      "git_blob_sha1": "ba07a8b3ff351466d26d8284b90ad94c0dddbc48",
+      "git_blob_verified": true,
+      "hits": []
+    },
+    {
+      "repository": "crystal",
+      "path": "data/XML/events.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/XML/events.xml",
+      "sha256": "1b051e970172cbbbabb1a07a84a34d065d92e8688906e0ebe030dcaffded32f8",
+      "git_blob_sha1": "8d0839ee8f549bebbbdad2cf29fefc91bd0484d5",
+      "git_blob_verified": true
+    },
+    {
+      "repository": "crystal",
+      "path": "data/events/events.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/events/events.xml",
+      "sha256": "6dde08d69ebadbc6e6b76b4724233d65e765b9b958496c07b43a05cb2e7d1739",
+      "git_blob_sha1": "f719242c1aae5d987b0cd2c37181f2a4be9009c8",
+      "git_blob_verified": true
+    },
+    {
+      "repository": "crystal",
+      "path": "src/game/scheduling/events_scheduler.cpp",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/game/scheduling/events_scheduler.cpp",
+      "sha256": "a4c2fba3239fccaef458c711309f4f512d06717d93e294cb640bb2c2e61a76d5",
+      "git_blob_sha1": "b7595e83a8d3140c58b8e49232124b09be7b4b89",
+      "git_blob_verified": true
+    },
+    {
+      "repository": "canary",
+      "path": "data/events/events.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/events/events.xml",
+      "sha256": "c420f19f1c6750b32825fa63ec27c707da368fb33527f3f10c229a409edd9140",
+      "git_blob_sha1": "dfb7b46a3b38d6ff709dc4beb9d8864f281ce16d",
+      "git_blob_verified": true
+    },
+    {
+      "repository": "canary",
+      "path": "src/game/scheduling/events_scheduler.cpp",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/game/scheduling/events_scheduler.cpp",
+      "sha256": "2ebc94e38ebd9e3dd5c32ecf33b63353925fcf0840f1ef5fced2bfe733389dd7",
+      "git_blob_sha1": "32e0e55fab3df5b79f7f6b7af8e0cd5a89b33b81",
+      "git_blob_verified": true
+    },
+    {
+      "repository": "crystal",
+      "path": "data/json/eventscheduler/events.json",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/json/eventscheduler/events.json",
+      "sha256": "ff5bc5189802a7003828a9a03fbece271d732944cc862b90354744d4ed044f05",
+      "git_blob_sha1": "23833d31e29fb93969189d1aff245b9cb20f1022",
+      "git_blob_verified": true
+    },
+    {
+      "repository": "canary",
+      "path": "data/json/eventscheduler/events.json",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/json/eventscheduler/events.json",
+      "sha256": "ff5bc5189802a7003828a9a03fbece271d732944cc862b90354744d4ed044f05",
+      "git_blob_sha1": "23833d31e29fb93969189d1aff245b9cb20f1022",
+      "git_blob_verified": true
+    }
+  ],
+  "monster_census": {
+    "files": 12,
+    "case_insensitive_terms": [
+      "halloween",
+      "mutated pumpkin",
+      "grynch",
+      "cake golem",
+      "santa"
+    ],
+    "matching_lines": 0,
+    "scope": "Every pinned recursive-tree XML under /world/ ending -monster.xml; no claim about arbitrary operator additions or binary map attributes."
+  },
+  "calendar_census": {
+    "json_events_per_donor": 10,
+    "holiday_event_matches": 0,
+    "legacy_crystal_events": 3,
+    "scheduler_consumer_sources": {
+      "crystal": "src/game/scheduling/events_scheduler.cpp:96–102",
+      "canary": "src/game/scheduling/events_scheduler.cpp:163–173"
+    }
+  },
+  "audit_mapping": [
+    {
+      "row": "W05d Cake and calendar",
+      "audit": "docs/architecture/reviews/OTERYN_GAME_EVENTS_GAP_AUDIT_2026-11-01.md:463",
+      "status": "Attack type source resolved: COMBAT_UNDEFINEDDAMAGE; native execution blocked by required protected HP consumer. Generated source-backed manifests can carry data and default-manifest protection alone is not a blocker. Audit bridge48227 and50missing edible placements are separate pre-existing dependencies, not resolved by this census."
+    },
+    {
+      "row": "W19 item actions",
+      "status": "Ruprecht22source-backed exchanges are an independent actually placed producer; item actions do not establish Santa/merchant actor coordinates or seasonal raids.",
+      "audit": "docs/architecture/reviews/OTERYN_GAME_EVENTS_GAP_AUDIT_2026-11-01.md:465"
+    },
+    {
+      "row": "Calendar / Halloween",
+      "status": "Oct31 16:00 Hare request is sourced; matching executable raid geometry/counts absent from inspected registries; holiday windows absent from actual scheduler JSON.",
+      "audit": "docs/architecture/reviews/OTERYN_GAME_EVENTS_GAP_AUDIT_2026-11-01.md:466"
+    }
+  ]
+}

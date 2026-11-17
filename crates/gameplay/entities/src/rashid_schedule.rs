@@ -53,14 +53,17 @@ pub fn rotate_placements(table: &mut NpcPlacementTable, unix_ms: i64) {
         .retain(|npc| npc.key != RASHID_NPC_KEY || !npc.placements.is_empty());
 }
 
-/// Whether a visible Rashid actor is at his destination for this UTC weekday.
+/// Whether a visible Rashid actor is within his destination's wander area this UTC weekday.
+/// Canary 47dfd51f and Crystal 201189f8 npc/rashid.lua:10-11 set a 2000 ms
+/// interval and radius 3. Canary src/creatures/npcs/npc.cpp:1190-1196 bounds
+/// walking around masterPos; trading must remain available after those steps.
 pub fn trade_available(npc_key: &str, position: MovementLocalPosition, unix_ms: i64) -> bool {
     if npc_key != RASHID_NPC_KEY {
         return true;
     }
     let expected = destination_at(unix_ms).placement;
-    position.x == i32::from(expected.x)
-        && position.y == i32::from(expected.y)
+    position.x.abs_diff(i32::from(expected.x)) <= 3
+        && position.y.abs_diff(i32::from(expected.y)) <= 3
         && position.floor == -i16::from(expected.floor)
 }
 
@@ -121,6 +124,37 @@ mod tests {
             position(0, 0, 0),
             thursday
         ));
+    }
+
+    // Both pinned donors configure Rashid with walkRadius = 3 (npc/rashid.lua:11).
+    #[test]
+    fn weekday_trade_remains_available_after_wandering() {
+        for day in 0..7 {
+            let now = day * 86_400_000;
+            let spawn = destination_at(now).placement;
+            for dx in -3..=3 {
+                for dy in -3..=3 {
+                    assert!(trade_available(
+                        RASHID_NPC_KEY,
+                        MovementLocalPosition {
+                            x: i32::from(spawn.x) + dx,
+                            y: i32::from(spawn.y) + dy,
+                            floor: -i16::from(spawn.floor),
+                        },
+                        now,
+                    ));
+                }
+            }
+            assert!(!trade_available(
+                RASHID_NPC_KEY,
+                MovementLocalPosition {
+                    x: i32::from(spawn.x) + 4,
+                    y: i32::from(spawn.y),
+                    floor: -i16::from(spawn.floor),
+                },
+                now,
+            ));
+        }
     }
 
     #[test]

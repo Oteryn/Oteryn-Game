@@ -1,0 +1,39 @@
+{
+  "batch_id": "group-source-authoring-2026-11-07",
+  "base_sha": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+  "scope": "Standalone source authoring tool and tests only; no production callback data, runtime Rust or default regeneration hook is published by this slice.",
+  "whole_quest_qualifications": 0,
+  "source": {
+    "archive": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+    "archive_sha256": "f3fe990f2a72e2779fb360b9c8f98be9d4174b898fa486d4251aa00137c56277",
+    "blob": "62e92e8acd676bad545a501c8431c983dcd4edfa",
+    "source_sha256": "02913ff4a52944f154e0d4148b6d0baf16c9999373fd699bf76a7dd577ed7fa2",
+    "lines": "1-84",
+    "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+  },
+  "checks": {
+    "authoring_cases_passed": 3,
+    "log": "/tmp/questpc2-group-authoring-tests.log",
+    "postgres_applicable": false,
+    "reason": "No runtime, database or active callback data in this authoring-tool publication."
+  },
+  "active_runtime_work": {
+    "red": "PG18.6 actual marker;2.61s; missing source Annihilator group callback; /tmp/questpc2-group-entry-red.log",
+    "implementation": "Bounded group callback schema; current native member/session/level checks; all-carrier rollback for relocations/spawns plus final world lever CAS. Local only until complete PG ingress proof.",
+    "units": "Two carrier rollback and two schema boundary units pass. Entity tests require existing --features test-support; an initial command omitted that feature and failed to compile existing fixture APIs.",
+    "pending": "Full four-character real admission/USE test, source callback generation and native inventory proof, final fmt/check/clippy/content checks."
+  },
+  "reuse_check": {
+    "qengine2": "a89547fd8",
+    "lanes": {
+      "questpc": "6c09e03651",
+      "questpc3": "32d004db14",
+      "questpc4": "4fd80eac6b",
+      "questpc5": "116da3f8dc",
+      "questpc6": "2e42d08fa4",
+      "questpc7": "42767d1fc4",
+      "questpc8": "c8cad5fdfc"
+    },
+    "result": "No group_encounter implementation on fetched heads. Annihilator/Desert remain ACTIONABLE in questpc4, Barbarian Arena BLOCKED in questpc5. Preserve already qualified Annihilator reward-choice cohort."
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": 734,
+  "name": "ANALYSER_ITEM_QUERY",
+  "owner_decision": "CLIENTGAP-ANALYTICS",
+  "capability": 10,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/analyser-catalogue-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/analyser-catalogue-v1.md#reply",
+  "max_payload_bytes": 65,
+  "max_result_payload_bytes": 2145
+}

@@ -36,6 +36,10 @@ use std::{
     time::Duration,
 };
 
+pub mod v2;
+pub mod world_totals;
+use world_totals::{TotalsFacts, TotalsSnapshot};
+
 pub const HIGHSCORES_PATH: &str = "/internal/v1/game-public/highscores";
 pub const PROFILE_PATH: &str = "/internal/v1/game-public/character-profile";
 pub const ONLINE_PATH: &str = "/internal/v1/game-public/world-online";
@@ -111,8 +115,11 @@ pub const HIGHSCORE_FILTERS: [(&str, u8); FILTERS] = [
 ];
 /// The highscores category ids (§4.1, HIGHSCORES-0 §3), pinned to the
 /// Platform consumer's `CommunityDataPolicy` ids 1..9 (its `level` page reads
-/// category 1); 10 and 11 have no Platform page yet.
-pub const HIGHSCORE_CATEGORIES: [(&str, u8); 11] = [
+/// category 1). Game also owns 14 (lifetime Drome Score) and 17 (current
+/// rotation Drome levels): docs/reference/tibia-manual/combat.md:262.
+/// Reserved 13 (Platform Loyalty), 15 (Taint) are not
+/// published by this Game source. A category does not create a Platform page.
+pub const HIGHSCORE_CATEGORIES: [(&str, u8); 15] = [
     ("experience", 1),
     ("magic", 2),
     ("fist", 3),
@@ -124,6 +131,10 @@ pub const HIGHSCORE_CATEGORIES: [(&str, u8); 11] = [
     ("fishing", 9),
     ("achievement", 10),
     ("charm", 11),
+    ("boss", 12),
+    ("drome", 14),
+    ("phosphorus", 16),
+    ("drome_current", 17),
 ];
 /// Compiled namespace of the public-projection descriptor; never a
 /// configured source authority, so no other purpose's descriptor matches it.
@@ -135,6 +146,7 @@ pub enum Family {
     Highscores,
     CharacterProfile,
     WorldOnline,
+    WorldTotals,
 }
 
 impl Family {
@@ -144,6 +156,7 @@ impl Family {
             Self::Highscores => "highscores",
             Self::CharacterProfile => "character_profile",
             Self::WorldOnline => "world_online",
+            Self::WorldTotals => "world_totals",
         }
     }
 }
@@ -427,7 +440,7 @@ pub fn encode_highscores(
         snapshot.projection_revision,
         snapshot.source_observed_at,
     ) && canonical_uuid(&snapshot.world_id, Some(b'7'))
-        && (1..=11).contains(&snapshot.category)
+        && matches!(snapshot.category, 1..=12 | 14 | 16 | 17)
         && usize::from(snapshot.filter) < FILTERS
         && snapshot.computed_at > 0
         && rows.len() <= MAX_HIGHSCORE_ROWS
@@ -666,6 +679,14 @@ pub trait PublicSink: Send + Sync {
         operation: Operation,
         body: &str,
     ) -> impl Future<Output = Result<Delivery, NotDelivered>> + Send;
+    /// Retry metadata is independent of acknowledgement. Existing sinks keep their semantics.
+    fn send_with_retry(
+        &self,
+        operation: Operation,
+        body: &str,
+    ) -> impl Future<Output = (Result<Delivery, NotDelivered>, Option<Duration>)> + Send {
+        async move { (self.send(operation, body).await, None) }
+    }
 }
 
 /// The production sink: each exchange on its own connection and capacity;
@@ -675,32 +696,87 @@ pub trait PublicSink: Send + Sync {
 /// reusing connections (contract §11).
 pub struct MtlsPublicSink {
     descriptor: PublicProjectionDescriptor,
+    activation: v2::Activation,
 }
 
 impl MtlsPublicSink {
     #[must_use]
     pub const fn new(descriptor: PublicProjectionDescriptor) -> Self {
-        Self { descriptor }
+        Self {
+            descriptor,
+            activation: v2::Activation {
+                character_skills: false,
+                character_achievements: false,
+                character_equipment: false,
+                character_outfit: false,
+                character_online_sessions: false,
+                world_daily_kills: false,
+            },
+        }
     }
 }
 
+impl MtlsPublicSink {
+    #[must_use]
+    pub const fn with_v2_activation(mut self, activation: v2::Activation) -> Self {
+        self.activation = activation;
+        self
+    }
+}
 impl PublicSink for MtlsPublicSink {
     async fn send(&self, operation: Operation, body: &str) -> Result<Delivery, NotDelivered> {
-        let capacity = TransientCapacity::new();
-        let mut permit = capacity
-            .try_queue()
-            .map_err(|_| NotDelivered::Unavailable)?;
-        permit
-            .try_activate()
-            .map_err(|_| NotDelivered::Unavailable)?;
-        let (status, raw) =
-            http1_mtls::exchange_with_status(&self.descriptor.0, operation, body, &mut permit)
-                .await
+        self.send_with_retry(operation, body).await.0
+    }
+    async fn send_with_retry(
+        &self,
+        operation: Operation,
+        body: &str,
+    ) -> (Result<Delivery, NotDelivered>, Option<Duration>) {
+        let mut retry_after = None;
+        let result = async {
+            if !v2::publication_supported(operation, body, self.activation) {
+                return Err(NotDelivered::Unavailable);
+            }
+            let capacity = TransientCapacity::new();
+            let mut permit = capacity
+                .try_queue()
                 .map_err(|_| NotDelivered::Unavailable)?;
-        if status == 200 {
-            return decode_response(&raw).map_err(|_| NotDelivered::InvalidResponse);
+            permit
+                .try_activate()
+                .map_err(|_| NotDelivered::Unavailable)?;
+            let (status, raw, delay) = http1_mtls::exchange_public_projection(
+                &self.descriptor.0,
+                operation,
+                body,
+                &mut permit,
+            )
+            .await
+            .map_err(|_| NotDelivered::Unavailable)?;
+            retry_after = delay;
+            if status == 200 {
+                return if matches!(
+                    operation,
+                    Operation::PublishCharacterDeathsV2
+                        | Operation::PublishGuildV2
+                        | Operation::PublishCharacterSkillsV2
+                        | Operation::PublishCharacterAchievementsV2
+                        | Operation::PublishCharacterEquipmentV2
+                        | Operation::PublishCharacterOutfitV2
+                        | Operation::PublishHouseV2
+                        | Operation::PublishCharacterOnlineSessionV2
+                        | Operation::PublishWorldDailyKillsV2
+                        | Operation::PublishPublicProjectionWatermarkV2
+                ) {
+                    v2::decode_response(&raw)
+                } else {
+                    decode_response(&raw)
+                }
+                .map_err(|_| NotDelivered::InvalidResponse);
+            }
+            Err(refusal(status, &raw))
         }
-        Err(refusal(status, &raw))
+        .await;
+        (result, retry_after)
     }
 }
 
@@ -764,6 +840,32 @@ pub struct OnlineCut {
 /// The Game side of the public projections (§5). Every call is one database
 /// transaction; an `Err` is "not now".
 pub trait PublicStore: Send + Sync {
+    /// Initialize only an enabled family's Game-owned source interpretation.
+    fn prepare_v2(&self, _family: v2::Family) -> impl Future<Output = Result<(), ()>> + Send {
+        async { Ok(()) }
+    }
+
+    fn next_v2(
+        &self,
+        _family: v2::Family,
+        _held: &[String],
+    ) -> impl Future<Output = Result<Option<v2::Snapshot>, ()>> + Send {
+        async { Err(()) }
+    }
+    fn ack_v2(&self, _snapshot: &v2::Snapshot) -> impl Future<Output = Result<(), ()>> + Send {
+        async { Err(()) }
+    }
+    fn v2_facts(&self, _family: v2::Family) -> impl Future<Output = Result<v2::Facts, ()>> + Send {
+        async { Err(()) }
+    }
+
+    /// Sample one UUID page durably. None ends the sweep; errors retry the same page.
+    fn sample_totals(&self, after: &str)
+    -> impl Future<Output = Result<Option<String>, ()>> + Send;
+    fn next_totals(&self) -> impl Future<Output = Result<Vec<TotalsSnapshot>, ()>> + Send;
+    fn ack_totals(&self, sample: &TotalsSnapshot) -> impl Future<Output = Result<(), ()>> + Send;
+    fn totals_facts(&self) -> impl Future<Output = Result<Option<TotalsFacts>, ()>> + Send;
+
     /// Whether gameplay is waiting for the durability holder: the publisher
     /// then yields its next store pass (contract §11).
     fn gameplay_waiting(&self) -> bool {
@@ -1032,6 +1134,7 @@ pub struct Publisher<C, S, K, F> {
     /// Maximum Character transaction duration (§5.1); it also bounds each
     /// store call, since every store call is one such transaction.
     pub max_transaction: Duration,
+    pub v2_activation: v2::Activation,
     /// §6 operator alarm: definite refusals (`400`, `401`, `409`, unencodable).
     pub alarms: AtomicU64,
     pub last_cut: Mutex<Option<GoodCut>>,
@@ -1048,11 +1151,49 @@ pub struct Publisher<C, S, K, F> {
 fn log(family: Family, operation: &str, class: &str, elapsed: Duration) {
     // §7.4: family, operation, result class and timing only; never a name,
     // an id or a body.
-    eprintln!(
-        "oteryn-game-server event=public_projections family={} operation={operation} result={class} elapsed_ms={}",
-        family.wire(),
-        elapsed.as_millis()
+    oteryn_error_codes::emit(
+        "oteryn-game-server",
+        &oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Info,
+            "admission",
+            "public_projections",
+        )
+        .field(
+            "family",
+            oteryn_error_codes::FieldValue::Token(family.wire()),
+        )
+        .field(
+            "operation",
+            oteryn_error_codes::FieldValue::Token(operation),
+        )
+        .field("result", oteryn_error_codes::FieldValue::Token(class))
+        .field(
+            "ms",
+            oteryn_error_codes::FieldValue::U64(
+                u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX),
+            ),
+        ),
     );
+}
+
+fn log_hold(family: Family, operation: Option<&str>, alarms: u64) {
+    let mut line = oteryn_error_codes::Line::new(
+        oteryn_error_codes::Level::Warn,
+        "admission",
+        "public_projection_held",
+    )
+    .field(
+        "family",
+        oteryn_error_codes::FieldValue::Token(family.wire()),
+    )
+    .field("alarms", oteryn_error_codes::FieldValue::U64(alarms));
+    if let Some(operation) = operation {
+        line = line.field(
+            "operation",
+            oteryn_error_codes::FieldValue::Token(operation),
+        );
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
 }
 
 fn seconds(ms: i64) -> i64 {
@@ -1075,6 +1216,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             fence: Mutex::new(fence),
             source_authority,
             max_transaction,
+            v2_activation: v2::Activation::default(),
             alarms: AtomicU64::new(0),
             last_cut: Mutex::new(None),
             last_online_watermark: Mutex::new(None),
@@ -1162,9 +1304,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             return false;
         }
         let alarms = self.alarm();
-        eprintln!(
-            "oteryn-game-server event=public_projections family=world_online result=held alarms={alarms}"
-        );
+        log_hold(Family::WorldOnline, None, alarms);
         state.held.retain(|h| h.subject != world_id);
         state.held.push(Held {
             family: Family::WorldOnline,
@@ -1189,10 +1329,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             Ok(_) => *gate = Gate::default(),
             Err(not_delivered) if definite(*not_delivered) => {
                 let alarms = self.alarm();
-                eprintln!(
-                    "oteryn-game-server event=public_projections family={} operation=PublishPublicProjectionWatermarkV1 result=held alarms={alarms}",
-                    family.wire()
-                );
+                log_hold(family, Some("PublishPublicProjectionWatermarkV1"), alarms);
                 *gate = Gate {
                     backoff: Duration::ZERO,
                     at: now + DEFINITE_HOLD,
@@ -1221,10 +1358,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
             Ok(_) => state.backoff[lane] = Duration::ZERO,
             Err(not_delivered) if definite(*not_delivered) => {
                 let alarms = self.alarm();
-                eprintln!(
-                    "oteryn-game-server event=public_projections family={} result=held alarms={alarms}",
-                    family.wire()
-                );
+                log_hold(family, None, alarms);
                 state
                     .held
                     .retain(|h| !(h.family == family && h.subject == subject));
@@ -1258,6 +1392,24 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         within(&self.clock, budget, self.sink.send(operation, body))
             .await
             .unwrap_or(Err(NotDelivered::Unavailable))
+    }
+
+    async fn deliver_with_retry(
+        &self,
+        operation: Operation,
+        body: &str,
+        budget: Duration,
+    ) -> (Result<Delivery, NotDelivered>, Option<Duration>) {
+        if budget.is_zero() {
+            return (Err(NotDelivered::Unavailable), None);
+        }
+        within(
+            &self.clock,
+            budget.min(EXCHANGE_BOUND),
+            self.sink.send_with_retry(operation, body),
+        )
+        .await
+        .unwrap_or((Err(NotDelivered::Unavailable), None))
     }
 
     /// The `character_profile` and `highscores` watermarks, sent concurrently
@@ -1999,8 +2151,14 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
     /// `world_online` scan and its watermark run concurrently on one task.
     pub async fn run(&self) {
         join2(
-            self.outbox_loop(),
-            join2(self.scan_loop(), self.online_watermark_loop()),
+            self.v2_loops(),
+            join2(
+                self.outbox_loop(),
+                join2(
+                    self.totals_loop(),
+                    join2(self.scan_loop(), self.online_watermark_loop()),
+                ),
+            ),
         )
         .await;
     }

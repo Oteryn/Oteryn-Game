@@ -1,0 +1,13 @@
+{
+  "id": 381,
+  "name": "POTION_DURATIONS_V1",
+  "owner_decision": "NX-8 W09",
+  "owner": "Game active potion projection",
+  "requires": [],
+  "command_types": [
+    662
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Read-only active potion owners, no authority grant."
+}

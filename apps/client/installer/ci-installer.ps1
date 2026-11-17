@@ -184,7 +184,7 @@ $setupA = New-Installer $ReleaseId $payloadA
 
 # Fixture installer B: the same commit rebuilt with another release id.
 $env:OTERYN_RELEASE_ID = $FixtureId
-& cargo +1.99.1 build --locked --release -p oteryn-client --target $Target
+& cargo +1.100.0 build --locked --release -p oteryn-client --target $Target
 Check ($LASTEXITCODE -eq 0) "fixture build failed with exit code $LASTEXITCODE"
 $payloadB = New-Payload $FixtureId $GameCommit
 $fixtureOutput = Join-Path $WorkDir 'fixture'
@@ -311,8 +311,30 @@ Check ($launcher.ExitCode -eq 0) "the launcher exited $($launcher.ExitCode)"
 Wait-Until { -not (Mutex-Exists $ClientMutexName) } 120 'the launched smoke client to exit'
 
 Write-Host '--- /RELAUNCH starts the active client through the launcher after setup exits'
+$relaunchDiagnosticDir = Join-Path $env:LOCALAPPDATA 'Oteryn'
+Remove-Item -Force -ErrorAction SilentlyContinue `
+    (Join-Path $relaunchDiagnosticDir 'startup.log'), `
+    (Join-Path $relaunchDiagnosticDir 'launcher-exit-code.txt')
 Check ((Invoke-Setup $setupA @('/RELAUNCH')) -eq 0) 'install with /RELAUNCH failed'
-Wait-Until { Mutex-Exists $ClientMutexName } 60 'the relaunched client'
+$relaunchDeadline = [DateTime]::UtcNow.AddSeconds(60)
+while (-not (Mutex-Exists $ClientMutexName) -and [DateTime]::UtcNow -lt $relaunchDeadline) {
+    Start-Sleep -Milliseconds 250
+}
+if (-not (Mutex-Exists $ClientMutexName)) {
+    foreach ($diagnostic in @(
+        (Join-Path $relaunchDiagnosticDir 'startup.log'),
+        (Join-Path $relaunchDiagnosticDir 'launcher-exit-code.txt'),
+        (Join-Path $Logs "setup-$script:Run.log")
+    )) {
+        Write-Host "--- relaunch diagnostic: $diagnostic"
+        if (Test-Path -LiteralPath $diagnostic -PathType Leaf) {
+            Get-Content -Raw -LiteralPath $diagnostic | Write-Host
+        } else {
+            Write-Host '(not written)'
+        }
+    }
+    throw 'installer check failed: timed out waiting for the relaunched client'
+}
 $clientExe = Join-Path $InstallDir "releases\$activeA\oteryn-client.exe"
 Get-Process -Name 'oteryn-client' -ErrorAction SilentlyContinue |
     Where-Object { $_.Path -eq $clientExe } | Stop-Process -Force

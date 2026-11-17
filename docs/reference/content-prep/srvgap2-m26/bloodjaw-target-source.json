@@ -1,0 +1,32 @@
+{
+  "reference_scope": "OTS_HYPOTHESIS_ONLY",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "mechanic": "M26 native Bloodjaw source target selection",
+  "sources": [
+    {
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/elder_bloodjaw.lua",
+      "sha256": "483c813d4e44181a72325e2468307b3d8cd36611276703cf1f0e8668e3eed1c6",
+      "lines": "104-127",
+      "checked_fact": "Bloodjaw calls MonsterAI.onThink before checking boss presence."
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/systems/monster_ai.lua",
+      "sha256": "fa25b4ac8dacd53cefee06382801e13ce592a8fac91356dd6200a60edec7aee3",
+      "lines": "303-401",
+      "checked_fact": "Highest vocation/low-health priority in same-floor range10 is passed to creature:setTarget only when different."
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/functions/creatures/creature_functions.cpp",
+      "sha256": "fb8d8a65fa24edb11d4c068047839be29429981da3803f7a197b8ed97d2623ac",
+      "lines": "315-324",
+      "checked_fact": "Creature:setTarget calls setAttackedCreature; following is a distinct API."
+    },
+    {
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/creature.cpp",
+      "sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+      "lines": "953-977",
+      "checked_fact": "setAttackedCreature checks same-floor visibility and updates the attack pointer; no taunt deadline or follow-path write."
+    }
+  ],
+  "remaining": "Other native phases and qualified room chains remain withheld; this does not promote source-room qualification."
+}

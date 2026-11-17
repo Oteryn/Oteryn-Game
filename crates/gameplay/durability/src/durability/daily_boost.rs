@@ -49,17 +49,13 @@ impl DurabilityRoot {
             let selection = if let Some(row) = current {
                 DailyBoostSelection { reset_epoch: binding.epoch, creature: row.try_get("creature_key")?, boss: row.try_get("boss_key")? }
             } else {
-                let previous = sqlx::query("SELECT creature_key,boss_key FROM game_world_daily_boosts WHERE world_id=encode($1,'hex')::uuid AND reset_epoch<$2::text::numeric ORDER BY reset_epoch DESC LIMIT 1")
-                    .bind(binding.scope.world_id().as_bytes().as_slice()).bind(binding.epoch.to_string()).fetch_optional(&mut **tx).await?;
-                let (mut creatures, mut bosses) = pools;
-                if let Some(row) = previous {
-                    let creature: String = row.try_get("creature_key")?;
-                    let boss: String = row.try_get("boss_key")?;
-                    // Crystal excludes yesterday's race. A single eligible race remains usable
-                    // in small content sets instead of creating an impossible draw.
-                    if creatures.iter().any(|key| key != &creature) { creatures.retain(|key| key != &creature); }
-                    if bosses.iter().any(|key| key != &boss) { bosses.retain(|key| key != &boss); }
-                }
+                // Bound the result by the supplied pools, regardless of the number of resets.
+                // Epochs are not days: every selection in the last 30 days is ineligible.
+                let eligible = sqlx::query("SELECT ARRAY(SELECT key FROM unnest($3::text[]) AS key WHERE NOT EXISTS(SELECT 1 FROM game_world_daily_boosts h WHERE h.world_id=encode($1,'hex')::uuid AND h.reset_epoch<$2::text::numeric AND h.selected_at>=CURRENT_TIMESTAMP-INTERVAL '30 days' AND h.creature_key=key)) AS creatures, ARRAY(SELECT key FROM unnest($4::text[]) AS key WHERE NOT EXISTS(SELECT 1 FROM game_world_daily_boosts h WHERE h.world_id=encode($1,'hex')::uuid AND h.reset_epoch<$2::text::numeric AND h.selected_at>=CURRENT_TIMESTAMP-INTERVAL '30 days' AND h.boss_key=key)) AS bosses")
+                    .bind(binding.scope.world_id().as_bytes().as_slice()).bind(binding.epoch.to_string())
+                    .bind(&pools.0).bind(&pools.1).fetch_one(&mut **tx).await?;
+                let creatures: Vec<String> = eligible.try_get("creatures")?;
+                let bosses: Vec<String> = eligible.try_get("bosses")?;
                 let selection = select_daily_boost(binding.scope.world_id().as_bytes(), binding.epoch, creatures, bosses)
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
                 if [&selection.creature, &selection.boss].iter().any(|key| key.is_empty() || key.len() > 255) {

@@ -1,35 +1,49 @@
 [
   {
     "mechanic": "0199-cyclopedia-character",
+    "kind": "keybindings",
+    "id": "0199-blessings-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+SHIFT+F12",
+    "entry": "input.rs::blessings_key"
+  },
+  {
+    "mechanic": "0199-cyclopedia-character",
+    "kind": "panels",
+    "id": "0199-blessings-panel",
+    "status": "supported",
+    "entry": "view.rs::blessings_text"
+  },
+  {
+    "mechanic": "0199-cyclopedia-character",
     "kind": "handlers",
     "id": "0199-cyclopedia-character-387",
-    "status": "unsupported",
+    "status": "supported",
     "direction": "client_to_server",
     "capability": 199,
     "entry": "protocol.rs::request",
     "not_applicable": {
-      "settings": "State and actions are server-owned."
+      "settings": "No persistent client settings."
     },
     "commands": [
       387
-    ],
-    "reason": "The panel opens badges but has no native tab, paging, or target controls."
+    ]
   },
   {
     "mechanic": "0199-cyclopedia-character",
     "kind": "handlers",
     "id": "0199-cyclopedia-character-388",
-    "status": "unsupported",
+    "status": "supported",
     "direction": "client_to_server",
     "capability": 199,
     "entry": "protocol.rs::request",
     "not_applicable": {
-      "settings": "State and actions are server-owned."
+      "settings": "No persistent client settings."
     },
     "commands": [
       388
-    ],
-    "reason": "The panel opens badges but has no native tab, paging, or target controls."
+    ]
   },
   {
     "mechanic": "0199-cyclopedia-character",

@@ -23,6 +23,23 @@ use crate::foundation::{
 };
 use std::sync::Arc;
 
+pub(super) async fn refresh_activity_accounts(
+    source: &super::fresh_evidence::FreshEvidenceSource,
+    root: &crate::durability::DurabilityRoot,
+    node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+    accounts: &[[u8; 16]],
+) -> Result<(), ()> {
+    for account in accounts {
+        source
+            .refresh_account(root, node, &super::canonical_uuid(account))
+            .await
+            .map_err(|error| {
+                super::operator_event(&format!("activity_account_evidence_unavailable {error}"))
+            })?;
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) struct ActivityAttemptKey {
     pub(super) session: GameSessionId,
@@ -37,6 +54,7 @@ pub(super) struct NativeActivityCommit {
     pub(super) handoff_id: [u8; 16],
     pub(super) deadline_unix_ms: Option<i64>,
     pub(super) connections: Vec<(AdmittedSession, AdmittedSession)>,
+    pub(super) entry_effect_starts: Vec<(GameSessionId, u64)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,6 +68,10 @@ pub(super) struct NativeActivityAttempt<'a> {
     destination: RegisteredRuntime<'a>,
     request: ActivityEnterRequest,
     boss_room: bool,
+    soulpit: Option<crate::durability::soulpit::SoulpitEntryRequest>,
+    boss_pad_wire: Option<[u8; 32]>,
+    pub(super) boss_pad_prefix:
+        Option<crate::durability::activity_handoff::boss_room::QualifiedBossPadPrefix>,
     sources: Vec<AdmittedSession>,
     physical: ActivityTransferReservation,
     spells: PreparedActivitySpellStates,
@@ -57,6 +79,7 @@ pub(super) struct NativeActivityAttempt<'a> {
     kill_marks: Vec<KillReleaseMark>,
     receipt: Option<ActivityEnterReceipt>,
     moved: Option<Vec<ActivityTransferredActor>>,
+    entry_effect_starts: Option<Vec<(GameSessionId, u64)>>,
     states_installed: bool,
     outcome: Option<NativeActivityOutcome>,
 }
@@ -168,18 +191,35 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     /// has gone. Only retained attempts are retried; no fresh identities or new
     /// semantic decisions are issued by the retry pass.
     pub(super) async fn drain_native_activity_attempts(&self) -> Result<(), ()> {
-        let attempts: Vec<_> = self
+        let mut attempts: Vec<_> = self
             .activity_runtimes
             .attempts
             .lock()
             .map_err(|_| ())?
-            .values()
-            .cloned()
+            .iter()
+            .map(|(key, pending)| (*key, Arc::clone(pending)))
             .collect();
+        attempts.sort_by_key(|(key, _)| {
+            (
+                *key.session.as_bytes(),
+                key.connection_generation,
+                key.command,
+            )
+        });
         let mut available = true;
-        for pending in attempts {
+        let start = self.background_start("activity-entries", attempts.len());
+        let count = attempts.len();
+        for index in (start..count).chain(0..start) {
+            let pending = Arc::clone(&attempts[index].1);
             let _transition = self.activity_runtimes.transitions.lock().await;
-            match self.finish_native_activity(pending).await {
+            match self
+                .background_unit(
+                    "activity-entries",
+                    index + 1,
+                    self.finish_native_activity(pending),
+                )
+                .await
+            {
                 Ok(NativeActivityOutcome::Committed(commit)) => {
                     self.publish_activity_commit(&commit)?
                 }
@@ -223,6 +263,18 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 },
             };
             let payload = encode_activity_scope(&ActivityScopeSnapshot {
+                requires_ack: [source, destination]
+                    .iter()
+                    .filter_map(|session| session.item_fence)
+                    .filter_map(|fence| {
+                        self.activity_runtimes
+                            .get(fence.runtime_scope, fence.scope_ownership_generation.get())
+                    })
+                    .any(|owner| {
+                        owner.template.as_ref().is_some_and(|template| {
+                            template.key == crate::content::soulpit_activity::SOULPIT_TEMPLATE_KEY
+                        })
+                    }),
                 handoff: commit.handoff_id,
                 source_session: *source.game_session_id.as_bytes(),
                 session: *destination.game_session_id.as_bytes(),
@@ -241,6 +293,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 source,
                 destination,
                 payload,
+                movement_effect_start: commit
+                    .entry_effect_starts
+                    .iter()
+                    .find(|(session, _)| *session == destination.game_session_id)
+                    .map(|(_, cursor)| *cursor),
             });
         }
         for switch in switches {
@@ -288,13 +345,79 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         self.finish_native_activity(pending).await.map(Some)
     }
 
-    /// Server-side callers supply authored cells and a preallocated scope. Every
-    /// source fence, position, lease, pin and live participant is checked again
-    /// under both native owners before the durable writer sees the request.
-    pub(super) async fn enter_native_activity(
+    pub(super) async fn retry_native_soulpit_activity(
+        &self,
+        admitted: AdmittedSession,
+        command: u64,
+        intent: &[u8],
+    ) -> Result<Option<NativeActivityOutcome>, ()> {
+        let key = ActivityAttemptKey {
+            session: admitted.game_session_id,
+            connection_generation: admitted.continuity.connection_generation,
+            command,
+        };
+        let pending = self
+            .activity_runtimes
+            .attempts
+            .lock()
+            .map_err(|_| ())?
+            .get(&key)
+            .cloned();
+        if let Some(pending) = pending {
+            let attempt = pending.lock().await;
+            if attempt
+                .soulpit
+                .as_ref()
+                .is_none_or(|core| core.intent != intent)
+            {
+                return Ok(Some(NativeActivityOutcome::Refused(
+                    ActivityRefusal::ReplayConflict,
+                )));
+            }
+        }
+        self.retry_native_activity(
+            admitted,
+            command,
+            crate::durability::soulpit::SOULPIT_ACTIVITY_KEY,
+        )
+        .await
+    }
+
+    /// Boss wire payload remains bound to its original source command when
+    /// the two literal onUseExtra callbacks are evaluated under native owners.
+    pub(super) async fn enter_native_boss_activity(
+        &self,
+        request: ActivityEnterRequest,
+        wire: [u8; 32],
+    ) -> Result<NativeActivityOutcome, ()> {
+        self.enter_native_activity_inner(request, true, None, Some(wire))
+            .await
+    }
+
+    pub(super) async fn enter_native_soulpit(
+        &self,
+        request: ActivityEnterRequest,
+        entry: crate::durability::soulpit::SoulpitEntryRequest,
+    ) -> Result<NativeActivityOutcome, ()> {
+        self.enter_native_activity_inner(request, false, Some(entry), None)
+            .await
+    }
+    pub(super) async fn retry_native_soulpit(
+        &self,
+        admitted: AdmittedSession,
+        command: u64,
+        intent: &[u8],
+    ) -> Result<Option<NativeActivityOutcome>, ()> {
+        self.retry_native_soulpit_activity(admitted, command, intent)
+            .await
+    }
+
+    async fn enter_native_activity_inner(
         &self,
         mut request: ActivityEnterRequest,
         boss_room: bool,
+        soulpit: Option<crate::durability::soulpit::SoulpitEntryRequest>,
+        boss_pad_wire: Option<[u8; 32]>,
     ) -> Result<NativeActivityOutcome, ()> {
         let refuse = |reason| Ok(NativeActivityOutcome::Refused(reason));
         if request.command_id == 0
@@ -346,6 +469,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let attempt = pending.lock().await;
             if attempt.request.activity_key != request.activity_key
                 || attempt.boss_room != boss_room
+                || attempt.soulpit != soulpit
+                || attempt.boss_pad_wire != boss_pad_wire
+                || attempt
+                    .soulpit
+                    .as_ref()
+                    .map(|core| (&core.funding, &core.intent))
+                    != soulpit.as_ref().map(|core| (&core.funding, &core.intent))
             {
                 return refuse(ActivityRefusal::ReplayConflict);
             }
@@ -385,14 +515,23 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return refuse(ActivityRefusal::ContentChanged);
         }
+        let origin_pin = {
+            let runtime = source.runtime.lock().await;
+            ActivityContentPin {
+                coordinate_frame_digest: runtime.content_pin().frame_binding_digest(),
+                map_revision_digest: runtime.map_revision_digest(),
+                server_artifact_digest: runtime.content_pin().server_artifact_digest(),
+            }
+        };
         let boss_definition = if boss_room {
             let owner = ActivityHandoffOwner::new(self.root.clone());
             let Some(definition) = owner
-                .read_boss_room(
+                .read_boss_room_with_pin(
                     self.character,
                     self.holder,
                     initiator.source,
                     &request.activity_key,
+                    origin_pin,
                 )
                 .await
                 .map_err(|_| ())?
@@ -424,6 +563,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .map_err(|_| ())?
             .try_reserve(1)
             .map_err(|_| ())?;
+        #[cfg(test)]
+        if soulpit.is_some() {
+            eprintln!("SRX3_SOULPIT HANDOFF_STAGE prepared_destination");
+        }
         let source_view = self.runtime_view(&source);
         let destination_view = self.runtime_view(&destination);
         // A shared lethal may be queued under another contributor's principal.
@@ -531,6 +674,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 || source.states.newhaven_travel.held(admitted.game_session_id)
                 || source
                     .states
+                    .dawnport_departures
+                    .held(admitted.game_session_id)
+                || source
+                    .states
                     .dawnport_trials
                     .lock()
                     .map_err(|_| ())?
@@ -592,8 +739,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 floor: participant.destination_cell.floor,
             };
             if !super::respawn_cell_admissible(
-                destination_view.movement_cells.index(),
-                destination_view.movement_cells.scope(),
+                destination_view.movement_cells().index(),
+                destination_view.movement_cells().scope(),
                 destination.scope.world_id(),
                 actual_pin.server_artifact_digest,
                 doors.blocking_cells(),
@@ -617,6 +764,36 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             sources.push(admitted);
             debug_assert_eq!(sources.len(), ordinal + 1);
         }
+        // Native membership and both owner lanes are frozen before source
+        // onUseExtra. Reconstruct authored pad order inside the checked reader;
+        // Character sorting above remains solely the durable lock order.
+        let boss_pad_prefix =
+            if let (Some(wire), Some(definition)) = (boss_pad_wire, boss_definition.as_ref()) {
+                match source_view
+                    .qualify_source_pad_prefix(&from, &to, definition, &request, wire)
+                    .await?
+                {
+                    Ok(Some(prefix)) => {
+                        if let Some(reason) = source_view
+                            .apply_source_pad_prefix(
+                                &mut from,
+                                &mut spells,
+                                &to,
+                                &mut destination_spells,
+                                &prefix,
+                            )
+                            .await?
+                        {
+                            return refuse(reason);
+                        }
+                        Some(prefix)
+                    }
+                    Ok(None) => None,
+                    Err(reason) => return refuse(reason),
+                }
+            } else {
+                None
+            };
         // Acquire the leaf registry guard before extracting owned state; no
         // fallible registry acquisition or await remains before retention.
         let (mut attack, mut destination_attack) = if source_first {
@@ -671,6 +848,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 destination: destination.clone(),
                 request,
                 boss_room,
+                soulpit,
+                boss_pad_wire,
+                boss_pad_prefix,
                 sources,
                 physical,
                 spells: held,
@@ -678,6 +858,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 kill_marks,
                 receipt: None,
                 moved: None,
+                entry_effect_starts: None,
                 states_installed: false,
                 outcome: None,
             }));
@@ -696,6 +877,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         drop(slots);
         drop(_second_lane);
         drop(_first_lane);
+        #[cfg(test)]
+        if pending.lock().await.soulpit.is_some() {
+            eprintln!("SRX3_SOULPIT HANDOFF_STAGE retained_attempt");
+        }
         self.finish_native_activity(pending).await
     }
 
@@ -735,9 +920,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             );
         }
         if attempt.receipt.is_none() {
-            // Each participant has an independently authenticated account. Keep
-            // current producer evidence held through the durable group claim;
-            // one initiator's evidence cannot authorize the other occupants.
+            // Refresh each independent account and finish its publication cleanup
+            // before requesting another: the publication lane is exclusive.
+            // Clearing checkpoints retains accepted S2 facts; the group writer
+            // still locks and verifies every participant's current guards.
             let mut accounts: Vec<_> = attempt
                 .sources
                 .iter()
@@ -750,32 +936,49 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .collect::<Result<_, _>>()?;
             accounts.sort_unstable();
             accounts.dedup();
-            let mut evidence = Vec::new();
-            evidence.try_reserve_exact(accounts.len()).map_err(|_| ())?;
-            for account in accounts {
-                evidence.push(
-                    self.evidence
-                        .refresh_account_held(
-                            self.root,
-                            self.holder,
-                            &super::canonical_uuid(&account),
-                        )
-                        .await
-                        .map_err(|_| ())?,
-                );
+            refresh_activity_accounts(self.evidence, self.root, self.holder, &accounts).await?;
+            #[cfg(test)]
+            if attempt.soulpit.is_some() {
+                eprintln!("SRX3_SOULPIT HANDOFF_STAGE evidence_held_durable_enter");
             }
             let owner = ActivityHandoffOwner::new(self.root.clone());
-            let result = if attempt.boss_room {
+            let result = if let Some(entry) = &attempt.soulpit {
+                let native = self
+                    .active_generation
+                    .and_then(crate::content::ActiveGeneration::native_gameplay)
+                    .ok_or(())?;
+                let source_permit = if source_first {
+                    &_first_lane
+                } else {
+                    &_second_lane
+                };
                 owner
-                    .enter_boss_room(self.character, self.holder, attempt.request.clone())
+                    .enter_soulpit(
+                        self.character,
+                        self.holder,
+                        source_permit,
+                        attempt.request.clone(),
+                        entry,
+                        native,
+                    )
+                    .await
+            } else if attempt.boss_room {
+                owner
+                    .enter_boss_room_with_premium(
+                        self.character,
+                        self.holder,
+                        attempt.request.clone(),
+                        &self.premium_coordinator,
+                    )
                     .await
             } else {
                 owner
                     .enter(self.character, self.holder, attempt.request.clone())
                     .await
             };
-            for held in evidence {
-                held.release().await.map_err(|_| ())?;
+            #[cfg(test)]
+            if attempt.soulpit.is_some() {
+                eprintln!("SRX3_SOULPIT HANDOFF_DURABLE_RESULT {result:?}");
             }
             let result = result.map_err(|_| ())?;
             match result {
@@ -813,6 +1016,17 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 }
             }
         }
+        #[cfg(test)]
+        if attempt.soulpit.is_some() && srx3_faults::take_after_soulpit_commit() {
+            return Err(());
+        }
+        if attempt
+            .boss_pad_prefix
+            .as_ref()
+            .is_some_and(|prefix| prefix.refusal().is_some())
+        {
+            return Err(());
+        }
         if !attempt.states_installed {
             let (mut from, mut to) = if source_first {
                 let from = source.runtime.lock().await;
@@ -833,6 +1047,25 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 let attack = source.states.attack.lock().await;
                 (attack, destination_attack)
             };
+            // BossLever creates its source roster only after every pad has
+            // qualified and the durable handoff is known. Initialize before
+            // publishing the first destination Player; the callback owner
+            // retains the actual handoff and each completed birth on retries.
+            if let Some(prefix) = attempt.boss_pad_prefix.as_ref()
+                && prefix.pads().first().is_some_and(|pad| {
+                    pad.kind() == crate::durability::activity_handoff::boss_room::SourceBossLeverExtra::Outburst
+                })
+            {
+                let active = self.active_generation.ok_or(())?;
+                let native = active.native_gameplay().ok_or(())?;
+                let room = destination_view.effective_rooms().gate_monster_ai().ok_or(())?;
+                let callbacks = spells.native_callbacks.clone();
+                callbacks.initialize_outburst_accepted_entry(
+                    &mut to, active, room, native,
+                    &mut spells.monster_melee.creature_ai, prefix,
+                    attempt.request.handoff_id, destination_view.owner_now().get(),
+                )?;
+            }
             if attempt.moved.is_none() {
                 let moved = from
                     .commit_activity_transfer(&mut to, &mut attempt.physical)
@@ -902,8 +1135,69 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 continuity: activity_continuity(old.continuity),
                 ..old
             };
-            source_view.transfer_activity_session_state(&destination_view, old, next)?;
+            source_view
+                .transfer_activity_session_state(&destination_view, old, next)
+                .await?;
+            // M18: the transferred quest copy must seed the new session's native
+            // death consumer before the activity lanes expose its actor.
+            destination_view
+                .refresh_grizzly_kill_snapshot(next.game_session_id)
+                .await;
             connections.push((old, next));
+        }
+        if attempt.soulpit.is_some() && destination_view.rooms().gate_wire_position().is_some_and(|room|
+            room.pinned_activity_source_room() == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::Soulpit)) {
+            destination_view.activate_soulpit_obelisk().await?;
+            if attempt.entry_effect_starts.is_none() {
+                attempt.entry_effect_starts = Some(
+                    destination_view
+                        .emit_soulpit_entry_effects(&connections)
+                        .await?,
+                );
+            }
+        }
+        // onUseExtra belongs to the committed entry, not ready-room birth.
+        // All participants are now physically installed. The existing lanes
+        // stay held; the data reader must borrow that destination permit.
+        let needs_source_entry = {
+            let _runtime = destination_view.runtime.lock().await;
+            destination_view
+                .states
+                .spell_states
+                .lock()
+                .await
+                .soul_war_callbacks
+                .requires_committed_entry()
+        };
+        if needs_source_entry {
+            let (_, next) = connections.first().ok_or(())?;
+            let permit = if source_first {
+                &_second_lane
+            } else {
+                &_first_lane
+            };
+            let (clock, observed_owner_us) = destination_view
+                .current_soul_war_entry_clock_with_permit(
+                    permit,
+                    next.runtime_actor.ok_or(())?,
+                    next.game_session_id,
+                    attempt.request.handoff_id,
+                )
+                .await?
+                .ok_or(())?;
+            let now_us = destination_view.owner_now().get();
+            let elapsed_ms = clock
+                .elapsed_ms
+                .checked_add(now_us.checked_sub(observed_owner_us).ok_or(())? / 1_000)
+                .ok_or(())?;
+            let mut runtime = destination_view.runtime.lock().await;
+            runtime.owner_fence().map_err(|_| ())?;
+            let mut spells = destination_view.states.spell_states.lock().await;
+            // A retained physical owner claims this once, including retries
+            // after the durable handoff and later participants in the roster.
+            spells
+                .soul_war_callbacks
+                .committed_entry(&mut runtime, now_us, elapsed_ms)?;
         }
         let result = NativeActivityOutcome::Committed(NativeActivityCommit {
             handoff_id: attempt.request.handoff_id,
@@ -912,6 +1206,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .as_ref()
                 .map(|receipt| receipt.deadline_unix_ms),
             connections,
+            entry_effect_starts: attempt.entry_effect_starts.clone().unwrap_or_default(),
         });
         attempt.outcome = Some(result.clone());
         Ok(result)
@@ -1012,5 +1307,17 @@ pub(super) fn activity_continuity(source: SessionContinuity) -> SessionContinuit
         server_save_revision: source.server_save_revision,
         server_save_sent: source.server_save_sent,
         ..SessionContinuity::FRESH
+    }
+}
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) mod srx3_faults {
+    use std::cell::Cell;
+    thread_local! { static AFTER_SOULPIT_COMMIT: Cell<bool> = const { Cell::new(false) }; }
+    pub(in crate::gameplay_transport) fn stop_after_soulpit_commit_once() {
+        AFTER_SOULPIT_COMMIT.set(true);
+    }
+    pub(super) fn take_after_soulpit_commit() -> bool {
+        AFTER_SOULPIT_COMMIT.replace(false)
     }
 }

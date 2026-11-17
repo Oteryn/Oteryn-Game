@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --test integration_rest world_reward_claims_the_embedded_shards_decode -- --nocapture",
+  "exit": 0,
+  "duration_seconds": 44.733
+}

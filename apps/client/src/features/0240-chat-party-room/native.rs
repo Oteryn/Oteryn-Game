@@ -30,6 +30,9 @@ fn wide(text: &str) -> Vec<u16> {
         .collect()
 }
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut mailbox = lock(&link.mailbox);
         if mailbox.chat_party_room.open {
@@ -53,7 +56,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Party Chat").as_ptr(),
+            wide(tr!("Party Chat")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -88,7 +91,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         control(
             hwnd,
             "BUTTON",
-            "Send",
+            tr!("Send"),
             SEND,
             [490, 365, 100, 28],
             WS_TABSTOP,
@@ -115,7 +118,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     && commands.send(PlayCommand::ChatPublic(intent)).is_err()
                 {
                     mailbox.chat_party_room.pending = false;
-                    mailbox.chat_party_room.feedback = Some("The session has ended".into());
+                    mailbox.chat_party_room.feedback = Some(tr!("The session has ended").into());
                 }
             }
             if held.as_ref() != Some(&mailbox.chat_party_room) {

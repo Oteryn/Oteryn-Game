@@ -318,6 +318,14 @@ fn a_session_with_capability_6_whose_channel_cannot_be_read_fails_closed() -> Te
         )
         .await;
         drop(server);
+        // No snapshot: only SESSION_JOIN_UNAVAILABLE, then the close.
+        let envelope = read_one(&mut client).await?;
+        let envelope = decode_wire_envelope(&envelope)?;
+        assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+        assert_eq!(
+            oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?.error_code,
+            FoundationProtocolError::SessionJoinUnavailable.code()
+        );
         assert!(read_one(&mut client).await.is_err());
         assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
         Ok(())

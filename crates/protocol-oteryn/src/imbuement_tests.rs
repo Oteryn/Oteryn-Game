@@ -11,7 +11,7 @@ fn imbuement_request_strict_codec() {
         ImbuementAction::Query,
         ImbuementAction::Apply {
             slot: 2,
-            imbuement: 59,
+            imbuement: u8::try_from(MAX_OFFERS - 1).expect("bounded offer index"),
         },
         ImbuementAction::Clear { slot: 0 },
     ] {
@@ -39,7 +39,16 @@ fn imbuement_request_strict_codec() {
         &[8, 1, 16, 0][..],
         &[8, 4, 16, 1],
         &[8, 2, 16, 1, 24, 3, 32, 0],
-        &[8, 2, 16, 1, 24, 0, 32, 60],
+        &[
+            8,
+            2,
+            16,
+            1,
+            24,
+            0,
+            32,
+            u8::try_from(MAX_OFFERS).expect("bounded offer count"),
+        ],
         &[8, 1, 16, 1, 24, 0],
         &[8, 3, 16, 1, 24, 0, 32, 0],
         &[8, 2, 16, 1, 24, 0],
@@ -127,4 +136,52 @@ fn imbuement_reply_strict_codec_and_bound() {
         mutate(r.window.as_mut().expect("window"));
         assert!(encode_imbuement_reply(&r).is_err());
     }
+}
+
+#[test]
+fn imbuement_success_chance_rides_only_on_selected_offer_rows() {
+    let full = ImbuementReply {
+        result: ImbuementResult::Ok,
+        window: Some(full_window()),
+    };
+    let success = vec![100; MAX_OFFERS];
+    let plain = encode_imbuement_reply(&full).expect("plain reply");
+    let bytes = encode_imbuement_reply_with_success(&full, &success).expect("largest fits");
+    assert!(bytes.len() <= MAX_REPLY_BYTES);
+    assert_eq!(
+        bytes.len(),
+        plain.len() + 2 * MAX_OFFERS,
+        "field 5 adds tag and value"
+    );
+    assert_eq!(
+        decode_imbuement_reply_with_success(&bytes),
+        Ok((full.clone(), success.clone()))
+    );
+    assert!(
+        decode_imbuement_reply(&bytes).is_err(),
+        "an unselected decoder rejects field 5"
+    );
+    assert!(decode_imbuement_reply_with_success(&plain).is_err());
+    let mut mixed = success.clone();
+    mixed[0] = 0;
+    mixed[1] = 55;
+    let bytes = encode_imbuement_reply_with_success(&full, &mixed).expect("mixed");
+    assert_eq!(
+        decode_imbuement_reply_with_success(&bytes),
+        Ok((full.clone(), mixed))
+    );
+    assert!(encode_imbuement_reply_with_success(&full, &success[1..]).is_err());
+    let mut over = success;
+    over[0] = 101;
+    assert!(encode_imbuement_reply_with_success(&full, &over).is_err());
+    let bare = ImbuementReply {
+        result: ImbuementResult::NotAllowed,
+        window: None,
+    };
+    let bytes = encode_imbuement_reply_with_success(&bare, &[]).expect("bare");
+    assert_eq!(bytes, encode_imbuement_reply(&bare).expect("bare plain"));
+    assert_eq!(
+        decode_imbuement_reply_with_success(&bytes),
+        Ok((bare, Vec::new()))
+    );
 }

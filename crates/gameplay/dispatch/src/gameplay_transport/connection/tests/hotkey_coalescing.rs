@@ -47,6 +47,7 @@ impl FreshAdmissionAuthority for EquipAuthority {
         _: ExactActorRef,
         _: UseCommand,
         request: Request,
+        _: Duration,
     ) -> Option<Duration> {
         // Reference 7 stands for jewelry; 99 is an unknown definition.
         (!matches!(request.definition.get(), 7 | 99)).then(|| {

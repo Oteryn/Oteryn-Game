@@ -1102,6 +1102,26 @@ mod gem_resistance_tests {
     }
 
     #[test]
+    fn gem_resistance_removes_at_most_thirty_percent_per_element() -> Result<(), String> {
+        let mut state = player()?;
+        let mut effects = WheelRuntimeEffects::default();
+        effects.sockets.gem_values_milli.extend([
+            (("Fire Resistance".into(), "".into()), 45_000),
+            (("Ice Resistance".into(), "".into()), 12_000),
+        ]);
+        state.install_wheel_effects(effects);
+        assert_eq!(
+            state.after_wheel_resistance(1_000, PlayerHitKind::Fire, 99_999),
+            700
+        );
+        assert_eq!(
+            state.after_wheel_resistance(1_000, PlayerHitKind::Ice, 99_999),
+            880
+        );
+        Ok(())
+    }
+
+    #[test]
     fn mana_and_life_drain_keep_resistance_and_avatar_in_source_order() -> Result<(), String> {
         let mut state = player()?;
         let mut effects = WheelRuntimeEffects::default();

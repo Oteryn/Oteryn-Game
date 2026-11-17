@@ -15,3 +15,11 @@ mod tests;
 #[cfg(test)]
 #[path = "tests/state.rs"]
 mod existing_actions;
+
+#[cfg(test)]
+#[path = "tests/e2e_p03.rs"]
+mod e2e_p03;
+
+#[cfg(test)]
+#[path = "tests/e2e_w22b.rs"]
+mod e2e_w22b;

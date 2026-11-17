@@ -99,6 +99,19 @@ pub enum DefenseError {
 struct ChainSpellReader<'a, 'b, R: MonsterCombatReader>(&'a std::cell::RefCell<&'b mut R>);
 struct ChainMapReader<'a, 'b, R: MonsterCombatReader>(&'a std::cell::RefCell<&'b mut R>);
 impl<R: MonsterCombatReader> SpellWorldReader for ChainSpellReader<'_, '_, R> {
+    fn source_combat_component_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        target: ExactActorRef,
+        magnitude: u32,
+        now: u64,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<u32> {
+        self.0
+            .borrow_mut()
+            .source_combat_component_damage(runtime, issuer, target, magnitude, now, stamp)
+    }
     fn current_players(
         &mut self,
         r: &ChannelRuntimeV1,
@@ -1480,12 +1493,7 @@ fn commit_summon_follow(
     if facts.tile_admits != Some(true) {
         return Err(SummonFollowError::MissingMap);
     }
-    let (dx, dy) = match facts.direction {
-        crate::movement::CardinalStep::North => (0, -1),
-        crate::movement::CardinalStep::East => (1, 0),
-        crate::movement::CardinalStep::South => (0, 1),
-        crate::movement::CardinalStep::West => (-1, 0),
-    };
+    let (dx, dy) = facts.direction.delta();
     let next = oteryn_gameplay_entities::MovementLocalPosition {
         x: at
             .x
@@ -2259,6 +2267,18 @@ mod bone_map_admission_actual_tests {
 
 struct ComposedReader<'a, R>(&'a mut R);
 impl<R: MonsterCombatReader> SpellWorldReader for ComposedReader<'_, R> {
+    fn source_combat_component_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        target: ExactActorRef,
+        magnitude: u32,
+        now: u64,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<u32> {
+        self.0
+            .source_combat_component_damage(runtime, issuer, target, magnitude, now, stamp)
+    }
     fn native_gameplay<'a>(
         &'a self,
         r: &ChannelRuntimeV1,
@@ -2539,12 +2559,7 @@ fn commit_paced_summon_follow(
         .read_actor_position(child)
         .map_err(SummonFollowError::Carrier)?
         .position();
-    let (dx, dy) = match facts.direction {
-        crate::movement::CardinalStep::North => (0, -1),
-        crate::movement::CardinalStep::East => (1, 0),
-        crate::movement::CardinalStep::South => (0, 1),
-        crate::movement::CardinalStep::West => (-1, 0),
-    };
+    let (dx, dy) = facts.direction.delta();
     let onto = crate::content::LogicalCell {
         x: at
             .x
@@ -2560,6 +2575,7 @@ fn commit_paced_summon_follow(
     let duration = crate::movement::speed::creature_step_duration(
         runtime, child, source, ground, onto, native_now,
     )
+    .and_then(|duration| duration.checked_mul(facts.direction.pacing_cost()))
     .ok_or(SummonFollowError::MissingSpeed)?;
     if pacer.wait_until(native_now).is_some() {
         return Ok(None);
@@ -3160,10 +3176,12 @@ mod native_ability_coverage {
         gaps.sort();
         eprintln!("GAPS {}\n{}", gaps.len(), gaps.join("\n"));
         eprintln!("COVERAGE {stats:?}");
+        // Crystal201189f cake_golem.lua:77-81 adds three supported attacks.
+        // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
         let expected: BTreeMap<String, usize> = [
-            ("melee:Ok(())", 1689),
+            ("melee:Ok(())", 1691),
             ("spell:Err(UnsupportedShape)", 116),
-            ("spell:Ok(())", 4198),
+            ("spell:Ok(())", 4200),
         ]
         .into_iter()
         .map(|(k, v)| (k.to_owned(), v))

@@ -47,6 +47,53 @@ def valid_source() -> dict:
 
 
 class ProducerTests(unittest.TestCase):
+    def visibility_source(self, collection: str, data: dict) -> dict:
+        source = valid_source()
+        if collection == "relations":
+            source["relations"] = [{
+                "type": "item_relation",
+                "relation_key": "oteryn:relation.training_sword",
+                "capability_id": "item",
+                "source": "oteryn:item.training_sword",
+                "target": "oteryn:item.training_sword",
+                "data": data,
+            }]
+        else:
+            source["entities"][0]["data"] = data
+        return source
+
+    def test_explicit_public_visibility_is_preserved_and_verified(self) -> None:
+        for collection in ("entities", "relations"):
+            for nested in (False, True):
+                with self.subTest(collection=collection, nested=nested):
+                    data = {"visibility": "public"}
+                    if nested:
+                        data = {"nested": [data]}
+                    snapshot = build_snapshot(self.visibility_source(collection, data))
+                    self.assertEqual(snapshot[collection][0]["data"], data)
+                    verify_snapshot(snapshot)
+
+    def test_non_public_visibility_is_rejected_by_producer_and_verifier(self) -> None:
+        for collection in ("entities", "relations"):
+            for value in ("hidden", "private", "PUBLIC", "", None, True, False, 0, {}, [], ["public"]):
+                for nested in (False, True):
+                    with self.subTest(collection=collection, value=value, nested=nested):
+                        data = {"visibility": value}
+                        if nested:
+                            data = {"nested": [data]}
+                        source = self.visibility_source(collection, data)
+                        with self.assertRaisesRegex(CatalogValidationError, "visibility.*public"):
+                            build_snapshot(source)
+                        snapshot = build_snapshot(self.visibility_source(collection, {"visibility": "public"}))
+                        snapshot[collection][0]["data"] = data
+                        # A valid recomputed digest must not bypass the public-only rule.
+                        integrity = {key: item for key, item in snapshot.items()
+                                     if key not in {"snapshot_id", "payload_digest"}}
+                        digest = "sha256:" + hashlib.sha256(canonical_json_bytes(integrity)).hexdigest()
+                        snapshot["snapshot_id"] = snapshot["payload_digest"] = digest
+                        with self.assertRaisesRegex(CatalogValidationError, "visibility.*public"):
+                            verify_snapshot(snapshot)
+
     def test_determinism_ignores_input_collection_order(self) -> None:
         first = valid_source()
         second = copy.deepcopy(first)

@@ -2,20 +2,46 @@
   {
     "mechanic": "0149-raid-schedule",
     "kind": "handlers",
-    "id": "0149-raid-schedule-unsupported",
-    "status": "unsupported",
-    "reason": "Server-driven raid play is supported; native schedule inspection UI is pending.",
+    "id": "0149-raid-schedule-command",
+    "status": "supported",
     "commands": [
-      171,
+      171
+    ],
+    "direction": "client_to_server",
+    "capability": 149,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "This panel has no persistent client settings."
+    }
+  },
+  {
+    "mechanic": "0149-raid-schedule",
+    "kind": "keybindings",
+    "id": "0149-raid-schedule-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+K",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0149-raid-schedule",
+    "kind": "panels",
+    "id": "0149-raid-schedule-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0149-raid-schedule",
+    "kind": "handlers",
+    "id": "0149-raid-schedule-unavailable",
+    "status": "unsupported",
+    "commands": [
       172,
       173
     ],
+    "reason": "The server routes only query 171; subscription and acknowledgement have no client-usable server handlers or protocol codecs.",
     "not_applicable": {
-      "state": "Unsupported.",
-      "protocol": "Unsupported.",
-      "view": "Unsupported.",
-      "input": "Unsupported.",
-      "settings": "Unsupported."
+      "settings": "No persistent settings."
     }
   }
 ]

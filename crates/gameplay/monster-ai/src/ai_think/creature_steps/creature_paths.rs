@@ -121,7 +121,7 @@ pub(super) fn install_route(
                 motion.stop();
                 return;
             }
-            let steps: Vec<_> = route
+            let steps: Option<Vec<_>> = route
                 .into_iter()
                 .map(|step| {
                     let node = match step {
@@ -129,10 +129,17 @@ pub(super) fn install_route(
                         crate::movement::CardinalStep::East => 1,
                         crate::movement::CardinalStep::South => 2,
                         crate::movement::CardinalStep::West => 3,
+                        // This existing AI route vocabulary is cardinal. Player
+                        // diagonal support does not widen its graph or node ids.
+                        _ => return None,
                     };
-                    RouteStep::new(node, 1)
+                    Some(RouteStep::new(node, 1))
                 })
                 .collect();
+            let Some(steps) = steps else {
+                motion.stop();
+                return;
+            };
             motion.route = build_path_proposal(
                 PathRequest::new(provenance(runtime, actor, motion), entry.sequence, 1, work),
                 &steps,

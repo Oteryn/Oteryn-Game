@@ -1,0 +1,131 @@
+[
+  {
+    "name": "fmt",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "fmt",
+      "-p",
+      "oteryn-gameplay-world",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pressure_plate_sewer.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 681.2057328330002,
+    "log": ".questpc6/pressure-final-fmt.log"
+  },
+  {
+    "name": "check",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "check",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-world",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--all-targets"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 93.67037806600001,
+    "log": ".questpc6/pressure-final-check.log"
+  },
+  {
+    "name": "clippy",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "clippy",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-world",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 0.47220274099981907,
+    "log": ".questpc6/pressure-final-clippy.log"
+  },
+  {
+    "name": "world-unit",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-world",
+      "--lib",
+      "movement_item_",
+      "--",
+      "--nocapture"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 0.4407224389997282,
+    "log": ".questpc6/pressure-final-world-unit.log"
+  },
+  {
+    "name": "movement-unit",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--lib",
+      "paced_movement::special_movement::tests",
+      "--",
+      "--nocapture"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 0.5952713839997159,
+    "log": ".questpc6/pressure-final-movement-unit.log"
+  },
+  {
+    "name": "pg",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--lib",
+      "devil_helmet_pressure_plate",
+      "--",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 83.23146541799997,
+    "log": ".questpc6/pressure-final-pg.log"
+  },
+  {
+    "name": "fmt-check",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "fmt",
+      "-p",
+      "oteryn-gameplay-world",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--",
+      "--check",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pressure_plate_sewer.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 2.7634763320002094,
+    "log": ".questpc6/pressure-final-fmt-check.log"
+  }
+]

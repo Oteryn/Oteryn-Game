@@ -1,0 +1,5 @@
+{
+  "command": "python3 -m unittest discover -s tools/content-schema/reward-claim-authoring -p test_charge_native.py",
+  "exit": 0,
+  "duration_seconds": 31.874
+}

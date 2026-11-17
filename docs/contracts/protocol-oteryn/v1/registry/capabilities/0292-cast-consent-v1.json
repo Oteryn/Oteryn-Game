@@ -1,0 +1,12 @@
+{
+  "id": 292,
+  "name": "CAST_CONSENT_V1",
+  "owner_decision": "S17-A / accepted S17-CAST-DESIGN section 6",
+  "owner": "Game off-tick cast owner",
+  "command_types": [
+    503
+  ],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Native character consent query/toggle, fenced to the current player session; independent of casting or Platform account settings."
+}

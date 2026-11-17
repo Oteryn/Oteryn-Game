@@ -1,0 +1,1522 @@
+{
+  "schema": 1,
+  "quest_directory": "dreamers_challenge_quest",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/hugo_exit",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2242,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32861,
+        "y": 32240,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_carrot.lua:23-32"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2250",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2250,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32915,
+        "y": 32263,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2251",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2251,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32946,
+        "y": 32270,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2252",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2252,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32976,
+        "y": 32270,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2253",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2253,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32933,
+        "y": 32282,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2254",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2254,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32753,
+        "y": 32344,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/dreamers_challenge_quest/maze_2255",
+      "quest": "oteryn:quest.dreamer_s_challenge_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 2255,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32753,
+        "y": 32344,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:1-29"
+      ]
+    }
+  ],
+  "runtime_exclusions": [],
+  "npc_source": {
+    "quest": "dreamers_challenge_quest",
+    "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+    "runtime_admission": false,
+    "entries": [
+      {
+        "npc_source_name": "the_dream_master",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_dream_master.lua:1-141",
+        "source_blob_sha256": "eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7",
+        "full_source_lua": "local internalNpcName = \"The Dream Master\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 130,\n\tlookHead = 19,\n\tlookBody = 39,\n\tlookLegs = 20,\n\tlookFeet = 58,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"join\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) < 1 and player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The Nightmare Knights are almost extinct now, and as far as I know I am the only teacher that is left. But you might beright and its time to accept new disciples ...\",\n\t\t\t\t\"After all you have passed the Dream Challenge to reach this place, which used to be the process of initiation in the past...\",\n\t\t\t\t\"So I ask you: do you wish to become a member of the ancient order of the Nightmare Knights, |PLAYERNAME|?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"advancement\") or MsgContains(message, \"demonic\") or MsgContains(message, \"essence\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 1 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Initiate} rank? Did you bring 500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 2 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Dreamer} rank? Did you bring 1000 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 3 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Lord Protector} rank? Did you bring 1500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"Please know that your decision is irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\", npc, creature)\n\t\t\tnpcHandler:say(\"Do you still want to join our order?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"So I welcome you as the latest member of the order of the Nightmare Knights. You entered this place as a stranger, butyou will leave this place as a friend ...\",\n\t\t\t\t\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:addItem(768, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 1)\n\t\t\tplayer:addAchievement(\"Nightmare Knight\")\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.KnightwatchTowerDoor, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 3 then\n\t\t\tif player:removeItem(6499, 500) then\n\t\t\t\tplayer:addItem(769, 1)\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 2)\n\t\t\t\tnpcHandler:say(\"You advanced to {Initiate} rank! You are now able to use teleports of second floor of Knightwatch Tower.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 4 then\n\t\t\tif player:removeItem(6499, 1000) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 3)\n\t\t\t\tplayer:addItem(770, 1)\n\t\t\t\tplayer:addItem(6390, 1)\n\t\t\t\tplayer:addAchievement(\"Nightmare Walker\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Dreamer} rank!\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 5 then\n\t\t\tif player:removeItem(6499, 1500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 4)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Door, 1)\n\t\t\t\tplayer:addAchievement(\"Lord Protector\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Lord Protector} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Be greeted, visitor.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Good bye. May the gods watch over your path.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+        "sections": [
+          {
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_dream_master.lua:1-141",
+            "line_start": 1,
+            "line_end": 141,
+            "source_sha256": "eac3bc09ddfe9b4fb83bb9751fc684f1687cc2f940365892cac5755ab50fe6f7",
+            "guarded_source_lua": "local internalNpcName = \"The Dream Master\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 130,\n\tlookHead = 19,\n\tlookBody = 39,\n\tlookLegs = 20,\n\tlookFeet = 58,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"join\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) < 1 and player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The Nightmare Knights are almost extinct now, and as far as I know I am the only teacher that is left. But you might beright and its time to accept new disciples ...\",\n\t\t\t\t\"After all you have passed the Dream Challenge to reach this place, which used to be the process of initiation in the past...\",\n\t\t\t\t\"So I ask you: do you wish to become a member of the ancient order of the Nightmare Knights, |PLAYERNAME|?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"advancement\") or MsgContains(message, \"demonic\") or MsgContains(message, \"essence\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 1 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Initiate} rank? Did you bring 500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 2 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Dreamer} rank? Did you bring 1000 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) == 3 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Lord Protector} rank? Did you bring 1500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"Please know that your decision is irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\", npc, creature)\n\t\t\tnpcHandler:say(\"Do you still want to join our order?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"So I welcome you as the latest member of the order of the Nightmare Knights. You entered this place as a stranger, butyou will leave this place as a friend ...\",\n\t\t\t\t\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:addItem(768, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 1)\n\t\t\tplayer:addAchievement(\"Nightmare Knight\")\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.KnightwatchTowerDoor, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 3 then\n\t\t\tif player:removeItem(6499, 500) then\n\t\t\t\tplayer:addItem(769, 1)\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 2)\n\t\t\t\tnpcHandler:say(\"You advanced to {Initiate} rank! You are now able to use teleports of second floor of Knightwatch Tower.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 4 then\n\t\t\tif player:removeItem(6499, 1000) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 3)\n\t\t\t\tplayer:addItem(770, 1)\n\t\t\t\tplayer:addItem(6390, 1)\n\t\t\t\tplayer:addAchievement(\"Nightmare Walker\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Dreamer} rank!\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 5 then\n\t\t\tif player:removeItem(6499, 1500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits, 4)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.Door, 1)\n\t\t\t\tplayer:addAchievement(\"Lord Protector\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Lord Protector} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Be greeted, visitor.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Good bye. May the gods watch over your path.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+            "string_literals_in_original_context": [
+              {
+                "line": 1,
+                "lua_literal": "\"The Dream Master\""
+              },
+              {
+                "line": 61,
+                "lua_literal": "\"join\""
+              },
+              {
+                "line": 64,
+                "lua_literal": "\"The Nightmare Knights are almost extinct now, and as far as I know I am the only teacher that is left. But you might beright and its time to accept new disciples ...\""
+              },
+              {
+                "line": 65,
+                "lua_literal": "\"After all you have passed the Dream Challenge to reach this place, which used to be the process of initiation in the past...\""
+              },
+              {
+                "line": 66,
+                "lua_literal": "\"So I ask you: do you wish to become a member of the ancient order of the Nightmare Knights, |PLAYERNAME|?\""
+              },
+              {
+                "line": 70,
+                "lua_literal": "\"advancement\""
+              },
+              {
+                "line": 70,
+                "lua_literal": "\"demonic\""
+              },
+              {
+                "line": 70,
+                "lua_literal": "\"essence\""
+              },
+              {
+                "line": 72,
+                "lua_literal": "\"So you want to advance to a {Initiate} rank? Did you bring 500 demonic essences with you?\""
+              },
+              {
+                "line": 75,
+                "lua_literal": "\"So you want to advance to a {Dreamer} rank? Did you bring 1000 demonic essences with you?\""
+              },
+              {
+                "line": 78,
+                "lua_literal": "\"So you want to advance to a {Lord Protector} rank? Did you bring 1500 demonic essences with you?\""
+              },
+              {
+                "line": 81,
+                "lua_literal": "\"yes\""
+              },
+              {
+                "line": 83,
+                "lua_literal": "\"Please know that your decision is irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\""
+              },
+              {
+                "line": 84,
+                "lua_literal": "\"Do you still want to join our order?\""
+              },
+              {
+                "line": 88,
+                "lua_literal": "\"So I welcome you as the latest member of the order of the Nightmare Knights. You entered this place as a stranger, butyou will leave this place as a friend ...\""
+              },
+              {
+                "line": 89,
+                "lua_literal": "\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\""
+              },
+              {
+                "line": 93,
+                "lua_literal": "\"Nightmare Knight\""
+              },
+              {
+                "line": 101,
+                "lua_literal": "\"You advanced to {Initiate} rank! You are now able to use teleports of second floor of Knightwatch Tower.\""
+              },
+              {
+                "line": 103,
+                "lua_literal": "\"Come back when you gather all essences.\""
+              },
+              {
+                "line": 112,
+                "lua_literal": "\"Nightmare Walker\""
+              },
+              {
+                "line": 113,
+                "lua_literal": "\"You advanced to {Dreamer} rank!\""
+              },
+              {
+                "line": 115,
+                "lua_literal": "\"Come back when you gather all essences.\""
+              },
+              {
+                "line": 123,
+                "lua_literal": "\"Lord Protector\""
+              },
+              {
+                "line": 124,
+                "lua_literal": "\"You advanced to {Lord Protector} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\""
+              },
+              {
+                "line": 126,
+                "lua_literal": "\"Come back when you gather all essences.\""
+              },
+              {
+                "line": 134,
+                "lua_literal": "\"Be greeted, visitor.\""
+              },
+              {
+                "line": 135,
+                "lua_literal": "\"Good bye. May the gods watch over your path.\""
+              }
+            ]
+          }
+        ],
+        "review_elements": [
+          "Nightmare: wybór zakonu",
+          "Nightmare: awans1→2",
+          "Nightmare: awans2→3",
+          "Nightmare: awans3→4"
+        ],
+        "excluded_from_this_quest": [],
+        "ownership_constraint": "Rank track remains owned by oteryn:quest.nightmare_outfits_quest; do not transfer ownership to Dreamer.",
+        "runtime_admission": false,
+        "admission_reason": "Complete text and guards/topics/effects are preserved. No generic mission-NPC runtime is qualified for these branches; no ungated keywords are installed."
+      },
+      {
+        "npc_source_name": "the_bone_master",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:1-145",
+        "source_blob_sha256": "65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+        "full_source_lua": "local internalNpcName = \"The Bone Master\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 145,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 2,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"join\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) < 1 and player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The Brotherhood of Bones has suffered greatly in the past, but we did survive as we always will ...\",\n\t\t\t\t\"You have proven resourceful by beating the silly riddles the Nightmare Knights set up to test their candidates ...\",\n\t\t\t\t\"It's an amusing thought that after passing their test you might choose to join the ranks of their sworn enemies ...\",\n\t\t\t\t\"For the irony of this I ask you, |PLAYERNAME|: Do you want to join the Brotherhood of Bones?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"advancement\") or MsgContains(message, \"demonic\") or MsgContains(message, \"essence\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 1 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Hyaena} rank? Did you bring 500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 2 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Death Dealer} rank? Did you bring 1000 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 3 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Dread Lord} rank? Did you bring 1500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"But know that your decision will be irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\",\n\t\t\t\t\"Do you still want to join the Brotherhood?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Welcome to the Brotherhood! From now on you will walk the path of Bones. A life full of promises and power has just beenoffered to you ...\",\n\t\t\t\t\"Take it, if you are up to that challenge ... or perish in agony if you deserve this fate ...\",\n\t\t\t\t\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 1)\n\t\t\tplayer:addAchievement(\"Bone Brother\")\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tplayer:addItem(768, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.KnightwatchTowerDoor, 1)\n\t\telseif npcHandler:getTopic(playerId) == 3 then\n\t\t\tif player:removeItem(6499, 500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 2)\n\t\t\t\tplayer:addItem(769, 1)\n\t\t\t\tnpcHandler:say(\"You advanced to {Hyaena} rank! You are now able to use teleports of second floor of Knightwatch Tower.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 4 then\n\t\t\tif player:removeItem(6499, 1000) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 3)\n\t\t\t\tplayer:addItem(770, 1)\n\t\t\t\tplayer:addItem(6432, 1)\n\t\t\t\tplayer:addAchievement(\"Skull and Bones\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Death Dealer} rank!\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 5 then\n\t\t\tif player:removeItem(6499, 1500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 4)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Door, 1)\n\t\t\t\tplayer:addAchievement(\"Dread Lord\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Dread Lord} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to my little realm.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"We will meet again.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+        "sections": [
+          {
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:1-145",
+            "line_start": 1,
+            "line_end": 145,
+            "source_sha256": "65a6ff562c38b78383ad4e9a4ba13ede2e875cd07686955f7c7741308d8fe3b1",
+            "guarded_source_lua": "local internalNpcName = \"The Bone Master\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 145,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 2,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"join\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.NightmareOutfits.Outfits) < 1 and player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) < 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The Brotherhood of Bones has suffered greatly in the past, but we did survive as we always will ...\",\n\t\t\t\t\"You have proven resourceful by beating the silly riddles the Nightmare Knights set up to test their candidates ...\",\n\t\t\t\t\"It's an amusing thought that after passing their test you might choose to join the ranks of their sworn enemies ...\",\n\t\t\t\t\"For the irony of this I ask you, |PLAYERNAME|: Do you want to join the Brotherhood of Bones?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\tend\n\telseif MsgContains(message, \"advancement\") or MsgContains(message, \"demonic\") or MsgContains(message, \"essence\") then\n\t\tif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 1 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Hyaena} rank? Did you bring 500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 2 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Death Dealer} rank? Did you bring 1000 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telseif player:getStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits) == 3 then\n\t\t\tnpcHandler:say(\"So you want to advance to a {Dread Lord} rank? Did you bring 1500 demonic essences with you?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"But know that your decision will be irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\",\n\t\t\t\t\"Do you still want to join the Brotherhood?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Welcome to the Brotherhood! From now on you will walk the path of Bones. A life full of promises and power has just beenoffered to you ...\",\n\t\t\t\t\"Take it, if you are up to that challenge ... or perish in agony if you deserve this fate ...\",\n\t\t\t\t\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 1)\n\t\t\tplayer:addAchievement(\"Bone Brother\")\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tplayer:addItem(768, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.NightmareOutfits.KnightwatchTowerDoor, 1)\n\t\telseif npcHandler:getTopic(playerId) == 3 then\n\t\t\tif player:removeItem(6499, 500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 2)\n\t\t\t\tplayer:addItem(769, 1)\n\t\t\t\tnpcHandler:say(\"You advanced to {Hyaena} rank! You are now able to use teleports of second floor of Knightwatch Tower.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 4 then\n\t\t\tif player:removeItem(6499, 1000) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 3)\n\t\t\t\tplayer:addItem(770, 1)\n\t\t\t\tplayer:addItem(6432, 1)\n\t\t\t\tplayer:addAchievement(\"Skull and Bones\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Death Dealer} rank!\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 5 then\n\t\t\tif player:removeItem(6499, 1500) then\n\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Outfits, 4)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U7_9.BrotherhoodOutfits.Door, 1)\n\t\t\t\tplayer:addAchievement(\"Dread Lord\")\n\t\t\t\tnpcHandler:say(\"You advanced to {Dread Lord} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Come back when you gather all essences.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to my little realm.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"We will meet again.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+            "string_literals_in_original_context": [
+              {
+                "line": 1,
+                "lua_literal": "\"The Bone Master\""
+              },
+              {
+                "line": 61,
+                "lua_literal": "\"join\""
+              },
+              {
+                "line": 64,
+                "lua_literal": "\"The Brotherhood of Bones has suffered greatly in the past, but we did survive as we always will ...\""
+              },
+              {
+                "line": 65,
+                "lua_literal": "\"You have proven resourceful by beating the silly riddles the Nightmare Knights set up to test their candidates ...\""
+              },
+              {
+                "line": 66,
+                "lua_literal": "\"It's an amusing thought that after passing their test you might choose to join the ranks of their sworn enemies ...\""
+              },
+              {
+                "line": 67,
+                "lua_literal": "\"For the irony of this I ask you, |PLAYERNAME|: Do you want to join the Brotherhood of Bones?\""
+              },
+              {
+                "line": 71,
+                "lua_literal": "\"advancement\""
+              },
+              {
+                "line": 71,
+                "lua_literal": "\"demonic\""
+              },
+              {
+                "line": 71,
+                "lua_literal": "\"essence\""
+              },
+              {
+                "line": 73,
+                "lua_literal": "\"So you want to advance to a {Hyaena} rank? Did you bring 500 demonic essences with you?\""
+              },
+              {
+                "line": 76,
+                "lua_literal": "\"So you want to advance to a {Death Dealer} rank? Did you bring 1000 demonic essences with you?\""
+              },
+              {
+                "line": 79,
+                "lua_literal": "\"So you want to advance to a {Dread Lord} rank? Did you bring 1500 demonic essences with you?\""
+              },
+              {
+                "line": 82,
+                "lua_literal": "\"yes\""
+              },
+              {
+                "line": 85,
+                "lua_literal": "\"But know that your decision will be irrevocable. You will abandon the opportunity to join any order whose doctrine is incontrast to our own ...\""
+              },
+              {
+                "line": 86,
+                "lua_literal": "\"Do you still want to join the Brotherhood?\""
+              },
+              {
+                "line": 91,
+                "lua_literal": "\"Welcome to the Brotherhood! From now on you will walk the path of Bones. A life full of promises and power has just beenoffered to you ...\""
+              },
+              {
+                "line": 92,
+                "lua_literal": "\"Take it, if you are up to that challenge ... or perish in agony if you deserve this fate ...\""
+              },
+              {
+                "line": 93,
+                "lua_literal": "\"You can always ask me about your current rank and about the privileges the ranks grant to those who hold them.\""
+              },
+              {
+                "line": 96,
+                "lua_literal": "\"Bone Brother\""
+              },
+              {
+                "line": 105,
+                "lua_literal": "\"You advanced to {Hyaena} rank! You are now able to use teleports of second floor of Knightwatch Tower.\""
+              },
+              {
+                "line": 107,
+                "lua_literal": "\"Come back when you gather all essences.\""
+              },
+              {
+                "line": 116,
+                "lua_literal": "\"Skull and Bones\""
+              },
+              {
+                "line": 117,
+                "lua_literal": "\"You advanced to {Death Dealer} rank!\""
+              },
+              {
+                "line": 119,
+                "lua_literal": "\"Come back when you gather all essences.\""
+              },
+              {
+                "line": 127,
+                "lua_literal": "\"Dread Lord\""
+              },
+              {
+                "line": 128,
+                "lua_literal": "\"You advanced to {Dread Lord} rank! You are now able to use teleports of fourth floor of Knightwatch Tower and to create addon scrolls.\""
+              },
+              {
+                "line": 130,
+                "lua_literal": "\"Come back when you gather all essences.\""
+              },
+              {
+                "line": 138,
+                "lua_literal": "\"Welcome to my little realm.\""
+              },
+              {
+                "line": 139,
+                "lua_literal": "\"We will meet again.\""
+              }
+            ]
+          }
+        ],
+        "review_elements": [
+          "Brotherhood: wybór zakonu",
+          "Brotherhood: awans1→2",
+          "Brotherhood: awans2→3",
+          "Brotherhood: awans3→4"
+        ],
+        "excluded_from_this_quest": [],
+        "ownership_constraint": "Rank track remains owned by oteryn:quest.brotherhood_outfits_quest; do not transfer ownership to Dreamer.",
+        "runtime_admission": false,
+        "admission_reason": "Complete text and guards/topics/effects are preserved. No generic mission-NPC runtime is qualified for these branches; no ungated keywords are installed."
+      }
+    ],
+    "policy": "Full source is evidence only. Authoring must preserve each branch guard, topic and effect. Source literals do not authorize dialogue activation; canonical track ownership and native item/world admission remain unchanged."
+  },
+  "step_inventory": [
+    {
+      "element": "Hugo: wejście",
+      "patterns": [
+        "P03",
+        "P19"
+      ],
+      "trigger": "StepIn uid2241",
+      "condition": "premium i item3595>0",
+      "effect": "teleport32861,32235,9;-3595; odmowa powrót i fire10..20",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_carrot.lua:9"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Hugo: wyjście",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid2242",
+      "condition": "player",
+      "effect": "teleport32861,32240,9",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_carrot.lua:23"
+      ],
+      "existing": "TAK — kształt Use/StepIn+storage/teleport (powiązanie wymaga importu); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Firebug teleport",
+      "patterns": [
+        "P03",
+        "P01"
+      ],
+      "trigger": "StepIn uid2243",
+      "condition": "item1949",
+      "effect": "teleport32857,32234,11;item→3134",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_fire_bug_teleport.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Death ring ofiara",
+      "patterns": [
+        "P19"
+      ],
+      "trigger": "AddItem uid2244",
+      "condition": "item6299",
+      "effect": "usuwa drzewa3636 z3 pól x32857,y32231..32233,z11 i ofiarę",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_death_ring.lua:9"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Death ring wyjście/reset",
+      "patterns": [
+        "P03",
+        "P01"
+      ],
+      "trigger": "StepIn uid9234",
+      "condition": "player",
+      "effect": "teleport32819,32347,9; odtwarza3 brakujące drzewa3636",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_death_ring_teleport.lua:9"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Poduszki: przesuwanie rzędu",
+      "patterns": [
+        "P18",
+        "P30"
+      ],
+      "trigger": "StepIn aid2245",
+      "condition": "dowolny creature",
+      "effect": "tile→430; obraca6 dolnych obiektów o1 wX; ostatni wraca na początek",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_riddle.lua:3"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Poduszki: przesuwanie kolumny",
+      "patterns": [
+        "P18",
+        "P30"
+      ],
+      "trigger": "StepIn aid2246",
+      "condition": "dowolny creature",
+      "effect": "tile→430; obraca6 dolnych obiektów o1 wY; ostatni wraca na początek",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_riddle.lua:22"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Poduszki: przywrócenie przycisku",
+      "patterns": [
+        "P01"
+      ],
+      "trigger": "StepOut aid2245/2246",
+      "condition": "dowolny creature",
+      "effect": "tile→431",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_riddle.lua:48"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Poduszki: rozwiązanie i reset",
+      "patterns": [
+        "P18",
+        "P30"
+      ],
+      "trigger": "StepIn uid50147",
+      "condition": "6×6 od32818,32334,9; kwadranty3×3:2394,2396,2395,2397 lub900",
+      "effect": "teleport32766,32275,14; tasuje po9 poduszek2394..2397; błąd wraca",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_riddle_teleport.lua:11"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ściany: dźwignia2246",
+      "patterns": [
+        "P01",
+        "P16"
+      ],
+      "trigger": "Use uid2246;2772",
+      "condition": "wymienione obiekty obecne",
+      "effect": "usuwa3 pozycji z config;odtwarza po7s;lever2773 wraca2772 po8s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ściany: dźwignia2247",
+      "patterns": [
+        "P01",
+        "P16"
+      ],
+      "trigger": "Use uid2247;2772",
+      "condition": "wymienione obiekty obecne",
+      "effect": "usuwa4 pozycji z config;odtwarza po7s;lever2773 wraca2772 po8s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:7"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ściany: dźwignia2248",
+      "patterns": [
+        "P01",
+        "P16"
+      ],
+      "trigger": "Use uid2248;2772",
+      "condition": "wymienione obiekty obecne",
+      "effect": "usuwa4 pozycji z config;odtwarza po7s;lever2773 wraca2772 po8s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:13"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ściany: dźwignia2249",
+      "patterns": [
+        "P01",
+        "P16"
+      ],
+      "trigger": "Use uid2249;2772",
+      "condition": "wymienione obiekty obecne",
+      "effect": "usuwa6 pozycji z config;odtwarza po7s;lever2773 wraca2772 po8s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_walls.lua:19"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ściany: rozwiązanie",
+      "patterns": [
+        "P03",
+        "P30"
+      ],
+      "trigger": "StepIn uid9030",
+      "condition": "16 pól obwodu bez IMMOVABLEBLOCKSOLID",
+      "effect": "teleport32852,32287,14;przy blokadzie32762,32305,14",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_wall_teleport.lua:1"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Tic-tac: wydanie tokenów",
+      "patterns": [
+        "P01"
+      ],
+      "trigger": "Use uid2272",
+      "condition": "po transformacji lever=2772",
+      "effect": "8×3547 @32838,32264,14;12×3548 @32839,32263,14; brak one-time guarda",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_tic_tac.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Tic-tac:9 pól i otwarcie",
+      "patterns": [
+        "P18",
+        "P30"
+      ],
+      "trigger": "Use aid8033",
+      "condition": "9 pozycji ma6×3548 i3×3547; sprawdzane bez zużycia",
+      "effect": "toggle4pillar2153;lever2772 zmienia crack6298 na1949,aid9032;2773 przywraca crack",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_tic_tac_teleport.lua:1"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Tic-tac: przejście i cleanup",
+      "patterns": [
+        "P03",
+        "P01"
+      ],
+      "trigger": "StepIn aid9032",
+      "condition": "player",
+      "effect": "3 transformacje;usuwa9tokenów;teleport32874,32275,14",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tic_teleport.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ofiara4 przedmiotów i studnia",
+      "patterns": [
+        "P19",
+        "P01"
+      ],
+      "trigger": "Use uid2004;2772↔2773",
+      "condition": "w kolejności2886,3052,6299,2118 na4polach",
+      "effect": "4wells transform;przy komplecie kamień1842→1949 aid9031;donor konsumuje częściowo zanim wykryje brak",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_stone_teleport.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Studnia: przejście i reset",
+      "patterns": [
+        "P03",
+        "P01"
+      ],
+      "trigger": "StepIn32881,32270,14",
+      "condition": "player",
+      "effect": "teleport32920,32296,13;tile1842;reset lever i4wells",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_stone_teleport.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Labirynt: teleport2250",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid2250",
+      "condition": "player",
+      "effect": "teleport32915,32263,14",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:2"
+      ],
+      "existing": "TAK — kształt Use/StepIn+storage/teleport (powiązanie wymaga importu); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Labirynt: teleport2251",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid2251",
+      "condition": "player",
+      "effect": "teleport32946,32270,13",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:3"
+      ],
+      "existing": "TAK — kształt Use/StepIn+storage/teleport (powiązanie wymaga importu); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Labirynt: teleport2252",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid2252",
+      "condition": "player",
+      "effect": "teleport32976,32270,14",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:4"
+      ],
+      "existing": "TAK — kształt Use/StepIn+storage/teleport (powiązanie wymaga importu); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Labirynt: teleport2253",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid2253",
+      "condition": "player",
+      "effect": "teleport32933,32282,13",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:5"
+      ],
+      "existing": "TAK — kształt Use/StepIn+storage/teleport (powiązanie wymaga importu); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Labirynt: teleport2254",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid2254",
+      "condition": "player",
+      "effect": "teleport32753,32344,14",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:6"
+      ],
+      "existing": "TAK — kształt Use/StepIn+storage/teleport (powiązanie wymaga importu); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Labirynt: teleport2255",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid2255",
+      "condition": "player",
+      "effect": "teleport32753,32344,14",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_teleport.lua:7"
+      ],
+      "existing": "TAK — kształt Use/StepIn+storage/teleport (powiązanie wymaga importu); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Zegar: głosy",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "StepIn aid9049",
+      "condition": "player",
+      "effect": "losuje1 z5tekstów i offsetX/Y -3..3; brak zmiany postępu; nie GlobalEvent/P15",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_clock_tile.lua:1"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Nightmare: wybór zakonu",
+      "patterns": [
+        "P09",
+        "P11",
+        "P13"
+      ],
+      "trigger": "the_dream_master:join→yes→yes",
+      "condition": "NightmareOutfits<1 i BrotherhoodOutfits<1 przy join",
+      "effect": "NightmareOutfits=1;+768;KnightwatchTowerDoor=1;achievement",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_dream_master.lua:61"
+      ],
+      "existing": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Nightmare: awans1→2",
+      "patterns": [
+        "P09",
+        "P10",
+        "P11"
+      ],
+      "trigger": "advancement/demonic/essence→yes",
+      "condition": "Outfits=1 przy wyborze;ma500×6499",
+      "effect": "-500×6499;Outfits=2;+769;przy etapach2/3 achievement",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_dream_master.lua:96"
+      ],
+      "existing": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Nightmare: awans2→3",
+      "patterns": [
+        "P09",
+        "P10",
+        "P11"
+      ],
+      "trigger": "advancement/demonic/essence→yes",
+      "condition": "Outfits=2 przy wyborze;ma1000×6499",
+      "effect": "-1000×6499;Outfits=3;+770 i 6390;przy etapach2/3 achievement",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_dream_master.lua:106"
+      ],
+      "existing": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Nightmare: awans3→4",
+      "patterns": [
+        "P09",
+        "P10",
+        "P11"
+      ],
+      "trigger": "advancement/demonic/essence→yes",
+      "condition": "Outfits=3 przy wyborze;ma1500×6499",
+      "effect": "-1500×6499;Outfits=4;+dostęp Door=1;przy etapach2/3 achievement",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_dream_master.lua:118"
+      ],
+      "existing": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Brotherhood: wybór zakonu",
+      "patterns": [
+        "P09",
+        "P11",
+        "P13"
+      ],
+      "trigger": "the_bone_master:join→yes→yes",
+      "condition": "BrotherhoodOutfits<1 i NightmareOutfits<1 przy join",
+      "effect": "BrotherhoodOutfits=1;+768;KnightwatchTowerDoor=1;achievement",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:61"
+      ],
+      "existing": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Brotherhood: awans1→2",
+      "patterns": [
+        "P09",
+        "P10",
+        "P11"
+      ],
+      "trigger": "advancement/demonic/essence→yes",
+      "condition": "Outfits=1 przy wyborze;ma500×6499",
+      "effect": "-500×6499;Outfits=2;+769;przy etapach2/3 achievement",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:100"
+      ],
+      "existing": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Brotherhood: awans2→3",
+      "patterns": [
+        "P09",
+        "P10",
+        "P11"
+      ],
+      "trigger": "advancement/demonic/essence→yes",
+      "condition": "Outfits=2 przy wyborze;ma1000×6499",
+      "effect": "-1000×6499;Outfits=3;+770 i 6432;przy etapach2/3 achievement",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:110"
+      ],
+      "existing": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Brotherhood: awans3→4",
+      "patterns": [
+        "P09",
+        "P10",
+        "P11"
+      ],
+      "trigger": "advancement/demonic/essence→yes",
+      "condition": "Outfits=3 przy wyborze;ma1500×6499",
+      "effect": "-1500×6499;Outfits=4;+dostęp Door=1;przy etapach2/3 achievement",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_bone_master.lua:122"
+      ],
+      "existing": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Dokument wyglądu768",
+      "patterns": [
+        "P12"
+      ],
+      "trigger": "Use item768",
+      "condition": "wyższy zranków wybiera faction,remis Nightmare;rank≥1;brak grant;addon wymaga outfit",
+      "effect": "Nightmare female269/male268 alboBrotherhood279/278;item768 outfit,769addon1,770addon2;-1item",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:48"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Dokument wyglądu769",
+      "patterns": [
+        "P12"
+      ],
+      "trigger": "Use item769",
+      "condition": "wyższy zranków wybiera faction,remis Nightmare;rank≥2;brak grant;addon wymaga outfit",
+      "effect": "Nightmare female269/male268 alboBrotherhood279/278;item768 outfit,769addon1,770addon2;-1item",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:30"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Dokument wyglądu770",
+      "patterns": [
+        "P12"
+      ],
+      "trigger": "Use item770",
+      "condition": "wyższy zranków wybiera faction,remis Nightmare;rank≥3;brak grant;addon wymaga outfit",
+      "effect": "Nightmare female269/male268 alboBrotherhood279/278;item768 outfit,769addon1,770addon2;-1item",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_documents.lua:30"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Brotherhood: dźwignia3045",
+      "patterns": [
+        "P01",
+        "P19",
+        "P16"
+      ],
+      "trigger": "Use uid3045,2772",
+      "condition": "BrotherhoodOutfits≥2 (także Nightmare!);LeverBrotherhood1<1;diamond3028 @32784,32222,14",
+      "effect": "-3028;LeverBrotherhood1=1;item7844 na polu;lever2773 na4s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_lever_brotherhood.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Brotherhood: dźwignia3046",
+      "patterns": [
+        "P01",
+        "P19",
+        "P16"
+      ],
+      "trigger": "Use uid3046,2772",
+      "condition": "BrotherhoodOutfits≥3 (także Nightmare!);LeverBrotherhood2<1;diamond3028 @32785,32230,14",
+      "effect": "-3028;LeverBrotherhood2=1;item7846 na polu;lever2773 na4s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_lever_brotherhood.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Brotherhood: dźwignia3047",
+      "patterns": [
+        "P01",
+        "P19",
+        "P16"
+      ],
+      "trigger": "Use uid3047,2772",
+      "condition": "BrotherhoodOutfits≥4 (także Nightmare!);LeverBrotherhood3<1;diamond3028 @32781,32226,14",
+      "effect": "-3028;LeverBrotherhood3=1;item7845 na polu;lever2773 na4s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_lever_brotherhood.lua:4"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Nightmare: dźwignia3041",
+      "patterns": [
+        "P01",
+        "P19",
+        "P16"
+      ],
+      "trigger": "Use uid3041,2772",
+      "condition": "BrotherhoodOutfits≥2 (także Nightmare!);LeverNightmare1<1;diamond3028 @32836,32221,14",
+      "effect": "-3028;LeverNightmare1=1;item7844 na polu;lever2773 na4s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_lever_nightmare.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Nightmare: dźwignia3042",
+      "patterns": [
+        "P01",
+        "P19",
+        "P16"
+      ],
+      "trigger": "Use uid3042,2772",
+      "condition": "BrotherhoodOutfits≥3 (także Nightmare!);LeverNightmare1<1;diamond3028 @32837,32229,14",
+      "effect": "-3028;LeverNightmare1=1;item7846 na polu;lever2773 na4s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_lever_nightmare.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Nightmare: dźwignia3043",
+      "patterns": [
+        "P01",
+        "P19",
+        "P16"
+      ],
+      "trigger": "Use uid3043,2772",
+      "condition": "BrotherhoodOutfits≥4 (także Nightmare!);LeverNightmare3<1;diamond3028 @32833,32225,14",
+      "effect": "-3028;LeverNightmare3=1;item7845 na polu;lever2773 na4s",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/actions_lever_nightmare.lua:4"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Sacrifice teleport50149",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn aid50149",
+      "condition": "NightmareOutfits≥2",
+      "effect": "teleport32835,32225,14;niższyrank→32844,32228,14",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_sacrifice_teleport.lua:8"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Sacrifice teleport50150",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn aid50150",
+      "condition": "BrotherhoodOutfits≥2",
+      "effect": "teleport32784,32226,14;niższyrank→32790,32227,14",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_sacrifice_teleport.lua:16"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Knightwatch: teleport3048",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid3048",
+      "condition": "Nightmare lubBrotherhood rank≥1;removeItem5021,1 succeeds",
+      "effect": "-5021;teleport32360,31782,7;odmowa wraca",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Knightwatch: teleport3049",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid3049",
+      "condition": "Nightmare lubBrotherhood rank≥1;removeItem5021,1 succeeds",
+      "effect": "-5021;teleport32369,32241,7;odmowa wraca",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Knightwatch: teleport3050",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid3050",
+      "condition": "Nightmare lubBrotherhood rank≥1;removeItem5021,1 succeeds",
+      "effect": "-5021;teleport32750,32344,14;odmowa wraca",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:4"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Knightwatch: teleport3051",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid3051",
+      "condition": "Nightmare lubBrotherhood rank≥2;removeItem5021,1 succeeds",
+      "effect": "-5021;teleport32649,31925,11;odmowa wraca",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:5"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Knightwatch: teleport3052",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid3052",
+      "condition": "Nightmare lubBrotherhood rank≥2;removeItem5021,1 succeeds",
+      "effect": "-5021;teleport32732,31634,7;odmowa wraca",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:6"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Knightwatch: teleport3053",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid3053",
+      "condition": "Nightmare lubBrotherhood rank≥2;removeItem5021,1 succeeds",
+      "effect": "-5021;teleport32181,32436,7;odmowa wraca",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:7"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Knightwatch: teleport3054",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid3054",
+      "condition": "Nightmare lubBrotherhood rank≥4;removeItem5021,1 succeeds",
+      "effect": "-5021;teleport33213,32454,1;odmowa wraca",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:8"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Knightwatch: teleport3055",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid3055",
+      "condition": "Nightmare lubBrotherhood rank≥4;removeItem5021,1 succeeds",
+      "effect": "-5021;teleport33194,32853,8;odmowa wraca",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:9"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Knightwatch: teleport3056",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn uid3056",
+      "condition": "Nightmare lubBrotherhood rank≥4;removeItem5021,1 succeeds",
+      "effect": "-5021;teleport32417,32139,15;odmowa wraca",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_tower.lua:10"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Obcy zakres: Court teleport3200",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn aid3200",
+      "condition": "player",
+      "effect": "teleport33672,32228,7;należy ustalić ownership Dream Courts, nie aktywować jako Dreamer's Challenge",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_court_teleport.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Obcy zakres: Court teleport3201",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn aid3201",
+      "condition": "player",
+      "effect": "teleport33584,32208,7;należy ustalić ownership Dream Courts, nie aktywować jako Dreamer's Challenge",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_court_teleport.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Obcy zakres: Court teleport3202",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn aid3202",
+      "condition": "player",
+      "effect": "teleport33675,32148,7;należy ustalić ownership Dream Courts, nie aktywować jako Dreamer's Challenge",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_court_teleport.lua:4"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Obcy zakres: Court teleport3203",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn aid3203",
+      "condition": "player",
+      "effect": "teleport32354,31248,3;należy ustalić ownership Dream Courts, nie aktywować jako Dreamer's Challenge",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/dreamers_challenge_quest/movement_court_teleport.lua:5"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Skrzynia6195",
+      "patterns": [
+        "P05"
+      ],
+      "trigger": "shared chest key6195;pozycja w źródle",
+      "condition": "jednorazowy DreamersChallenge.BPLongSword",
+      "effect": "container2854:[2816,3285,3352,3558]; pełny tekst dokumentu także w shared quest_reward_common.lua",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2116"
+      ],
+      "existing": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Skrzynia6196",
+      "patterns": [
+        "P05"
+      ],
+      "trigger": "shared chest key6196;pozycja w źródle",
+      "condition": "jednorazowy DreamersChallenge.ChestBook",
+      "effect": "2821×1; pełny tekst dokumentu także w shared quest_reward_common.lua",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2124"
+      ],
+      "existing": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Skrzynia6197",
+      "patterns": [
+        "P05"
+      ],
+      "trigger": "shared chest key6197;pozycja w źródle",
+      "condition": "jednorazowy DreamersChallenge.ChestsWine",
+      "effect": "bag2853:[6498,2874,3602];4skrzynie wine dzielą jeden claim; native ITEM_SEMANTICS_MISSING dla vial2874",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2131"
+      ],
+      "existing": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Skrzynia6198",
+      "patterns": [
+        "P05"
+      ],
+      "trigger": "shared chest key6198;pozycja w źródle",
+      "condition": "jednorazowy DreamersChallenge.ChestsWine",
+      "effect": "bag2853:[6498,2874,3602];4skrzynie wine dzielą jeden claim; native ITEM_SEMANTICS_MISSING dla vial2874",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2139"
+      ],
+      "existing": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Skrzynia6199",
+      "patterns": [
+        "P05"
+      ],
+      "trigger": "shared chest key6199;pozycja w źródle",
+      "condition": "jednorazowy DreamersChallenge.ChestsWine",
+      "effect": "bag2853:[6498,2874,3602];4skrzynie wine dzielą jeden claim; native ITEM_SEMANTICS_MISSING dla vial2874",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2147"
+      ],
+      "existing": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Skrzynia6200",
+      "patterns": [
+        "P05"
+      ],
+      "trigger": "shared chest key6200;pozycja w źródle",
+      "condition": "jednorazowy DreamersChallenge.ChestsWine",
+      "effect": "bag2853:[6498,2874,3602];4skrzynie wine dzielą jeden claim; native ITEM_SEMANTICS_MISSING dla vial2874",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2155"
+      ],
+      "existing": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Skrzynia6201",
+      "patterns": [
+        "P05"
+      ],
+      "trigger": "shared chest key6201;pozycja w źródle",
+      "condition": "jednorazowy DreamersChallenge.Chests3SmallDiamond",
+      "effect": "3028×3",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2163"
+      ],
+      "existing": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+      "initial_import_mode": "AUTO"
+    }
+  ],
+  "preserved_claims": [
+    {
+      "claim": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond",
+      "existing_path": "content/interactions/reward_claims/reward-claims-00100-00199.json",
+      "existing_pointer": "/records/63/definition",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2163",
+      "source_file_sha256": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4",
+      "source_entry": {
+        "itemId": 2469,
+        "itemPos": {
+          "x": 32835,
+          "y": 32223,
+          "z": 14
+        },
+        "weight": 0.3,
+        "reward": [
+          [
+            3028,
+            3
+          ]
+        ],
+        "storage": {
+          "expr": "Storage.Quest.U7_9.DreamersChallenge.Chests3SmallDiamond"
+        }
+      },
+      "definition": {
+        "claim": {
+          "per": "character",
+          "repeat": {
+            "kind": "once"
+          }
+        },
+        "identity": {
+          "key": "oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests3_small_diamond",
+          "revision": "reward-claim-r1"
+        },
+        "placements": [
+          {
+            "appearance_tibia_id": 2469,
+            "reward": {
+              "items": [
+                {
+                  "count": 3,
+                  "item": {
+                    "family": "Item",
+                    "key": "oteryn:item.tibia.i3028",
+                    "revision": "definition-r1"
+                  }
+                }
+              ]
+            },
+            "source_binding": {
+              "legacy_unique_ids": [
+                {
+                  "server": "canary",
+                  "unique_id": 6201
+                },
+                {
+                  "server": "crystalserver",
+                  "unique_id": 6201
+                }
+              ],
+              "project_position": {
+                "x": 32835,
+                "y": 32223,
+                "z": 14
+              }
+            }
+          }
+        ],
+        "provenance": {
+          "pilot_key": "canary:reward-claim/quest/u7_9/dreamers_challenge/chests3_small_diamond",
+          "pilot_revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "quest": {
+          "family": "Quest",
+          "key": "canary:quest/dreamer_s_challenge_quest",
+          "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+        },
+        "readiness": "ready"
+      },
+      "scope": "Existing plain claim parity only; no new claim, provenance rewrite or native placement admission."
+    }
+  ]
+}

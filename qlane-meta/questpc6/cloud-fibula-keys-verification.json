@@ -1,0 +1,127 @@
+{
+  "state": "GREEN",
+  "scope": "Source key3940 and key3980 door access only; full authored Fibula supplement remains IN_PROGRESS.",
+  "base_commit": "9e11c4ef9",
+  "source_contract_regression": "One case and complete six-claim inventory passed126.94s; completion marker126.903062759s. Initial connection-refused attempt0.04s is not qualification evidence.",
+  "source_evidence": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "commit": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/startup/tables/door_key.lua",
+      "lines": [
+        148,
+        155
+      ]
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "commit": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data-global/lib/core/storages.lua",
+      "lines": [
+        362,
+        363
+      ]
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "commit": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/items/items.xml",
+      "line": 3532,
+      "sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85"
+    }
+  ],
+  "native_profile_change": "Only native1631 added by existing pinned importer. All previous records byte-semantically unchanged. No binary map changes.",
+  "proof": {
+    "red": {
+      "log": "/tmp/questpc6-root-proof-9e11c4ef9/questpc6-fibula-keys-red.log",
+      "sha256": "94e38c69f066cf80a2c4b625a9689670ce7dfc1506a13e7494562f5fa0dd2e15",
+      "terminal_result": "test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 2577 filtered out; finished in 102.77s",
+      "postgres_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::questpc6_fibula_keys::questpc6_fibula_keys_3940_unlocks_source_entrance_and_retains_custody ... POSTGRES_CASE_STARTED source_key_door_Some((32190, 32432, -8, 3940)) server_version=18.6 (Debian 18.6-1.pgdg13+2)",
+        "test gameplay_transport::monk_save::postgres_tests::questpc6_fibula_keys::questpc6_fibula_keys_3980_unlocks_source_cavern_and_retains_custody ... POSTGRES_CASE_STARTED source_key_door_Some((32277, 32420, -10, 3980)) server_version=18.6 (Debian 18.6-1.pgdg13+2)"
+      ]
+    },
+    "green": {
+      "log": "/tmp/questpc6-root-proof-9e11c4ef9/questpc6-fibula-keys-green.log",
+      "sha256": "069b4162cde62e003607f05a4af16465f84a02e951b5ebe99943dcf544832073",
+      "terminal_result": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2577 filtered out; finished in 108.76s",
+      "postgres_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::questpc6_fibula_keys::questpc6_fibula_keys_3940_unlocks_source_entrance_and_retains_custody ... POSTGRES_CASE_STARTED source_key_door_Some((32190, 32432, -8, 3940)) server_version=18.6 (Debian 18.6-1.pgdg13+2)",
+        "POSTGRES_CASE_COMPLETED source_key_door_Some((32190, 32432, -8, 3940)) wire_commands=6 transitions=3 duration=55.342866373s",
+        "test gameplay_transport::monk_save::postgres_tests::questpc6_fibula_keys::questpc6_fibula_keys_3980_unlocks_source_cavern_and_retains_custody ... POSTGRES_CASE_STARTED source_key_door_Some((32277, 32420, -10, 3980)) server_version=18.6 (Debian 18.6-1.pgdg13+2)",
+        "POSTGRES_CASE_COMPLETED source_key_door_Some((32277, 32420, -10, 3980)) wire_commands=6 transitions=3 duration=40.963891839s"
+      ]
+    },
+    "source_regression": {
+      "log": "/tmp/questpc6-root-proof-9e11c4ef9/questpc6-fibula-baseline-retry.log",
+      "sha256": "67cd648b9f506d061aef552f60b247ef335176d3b200d61ad1fe43deefef9cb1",
+      "terminal_result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2578 filtered out; finished in 126.94s",
+      "postgres_markers": [
+        "POSTGRES_CASE_COMPLETED deeper-fibula-well duration=46.237661217s",
+        "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula1 (32239, 32471, -10) native_source=true duration=5.042589713s",
+        "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula2 (32239, 32478, -10) native_source=true duration=5.4616025s",
+        "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula3 (32233, 32491, -10) native_source=true duration=6.577366986s",
+        "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula4 (32245, 32492, -10) native_source=true duration=6.842673994s",
+        "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.kv.deeperfibula5 (32256, 32500, -10) native_source=true duration=8.425424012s",
+        "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3980 (32219, 32401, -10) native_source=true duration=7.782373504s",
+        "POSTGRES_CASE_COMPLETED questpc6_source_deeper_fibula_well_and_complete_reward_inventory duration=126.903062759s"
+      ]
+    },
+    "check": {
+      "log": "/tmp/questpc6-root-proof-9e11c4ef9/questpc6-fibula-keys-check.log",
+      "sha256": "f4f5724c7aee85f68e91055784949ccf39d369494975a2c1ca231fa99bbdb664",
+      "terminal_result": "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5m 19s",
+      "postgres_markers": []
+    },
+    "clippy": {
+      "log": "/tmp/questpc6-root-proof-9e11c4ef9/questpc6-fibula-keys-clippy.log",
+      "sha256": "288e4ce82196571bff842027cf51f86ef5e2b5e53497751f000de21068925471",
+      "terminal_result": "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10m 12s",
+      "postgres_markers": []
+    },
+    "content": {
+      "log": "/tmp/questpc6-root-proof-9e11c4ef9/questpc6-fibula-keys-content.log",
+      "sha256": "ca908abbf88a292e0d2a303b4adad14cb4b84d4243f4b35142ecb876e0755d9d",
+      "terminal_result": "test result: ok. 123 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 3.54s",
+      "postgres_markers": []
+    },
+    "pin_refresh": {
+      "log": "/tmp/questpc6-fibula-keys-pin-refresh.log",
+      "sha256": "74f8e4800581d37e587cb6faadfc5b00f500d09dbfdaefa022043dca987d00e8",
+      "terminal_result": "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7m 50s",
+      "postgres_markers": []
+    },
+    "world_repository": {
+      "log": "/tmp/questpc6-root-proof-9e11c4ef9/world-repository.log",
+      "sha256": "b44214ca75517f85e82737fdbb92aa0d5446a753714a73caed30ef91d5009a7f",
+      "terminal_result": "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 64.46s",
+      "postgres_markers": []
+    },
+    "source_binding_units": {
+      "log": "/tmp/questpc6-root-proof-9e11c4ef9/questpc6-fibula-keys-units.log",
+      "sha256": "e2fe999d09b04ba9092a6d66b7e6998a5304ab9afad5237134996f31acd7da09",
+      "terminal_result": "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 218 filtered out; finished in 0.00s",
+      "postgres_markers": []
+    },
+    "pin_check": {
+      "log": "/tmp/questpc6-root-proof-9e11c4ef9/questpc6-fibula-keys-pin-check.log",
+      "sha256": "9f0b4208f494c4d5da6dc1e62b3cd5a687add99e40919f64a95d76d62053d326",
+      "terminal_result": "    Finished `dev` profile [unoptimized + debuginfo] target(s) in 35.37s",
+      "postgres_markers": [],
+      "exit_code": 0
+    },
+    "original_key_wire_regression": {
+      "log": "/tmp/questpc6-root-proof-9e11c4ef9/original-key-wire.log",
+      "sha256": "836b2e8f9899b722a34295ad542e6e9e4b9089e5981b1d0409322c45730164ff",
+      "terminal_result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2578 filtered out; finished in 46.03s",
+      "postgres_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::m06_keys::m06_carried_keys_use_wire_lock_wrong_key_replay_and_relog ... POSTGRES_CASE_STARTED source_key_door_None server_version=18.6 (Debian 18.6-1.pgdg13+2)",
+        "POSTGRES_CASE_COMPLETED source_key_door_None wire_commands=6 transitions=3 duration=42.10553814s"
+      ]
+    }
+  },
+  "pending": [],
+  "qualification": "No whole authored supplement qualification is claimed.",
+  "review": "Reviewed all authored Rust/tooling changes, exact source selectors, non-House and conflicting-attribute refusals, all unchanged native profiles, and bounded PG terminal results. No unresolved finding. No binary maps, source dumps, workflows or repository tools changed.",
+  "light_checks": "Package formatting and explicit mounted-file formatting, capture/profile --check, two native profile Python tests, and git diff --check passed."
+}

@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/cradle-of-monsters-lever-room-entrance",
+      "quest": "oteryn:quest.cradle_of_monsters",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33792,
+          "y": 32581,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33806,
+        "y": 32584,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_monster.lua:26-26"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/cradle-of-monsters-lever-room-exit",
+      "quest": "oteryn:quest.cradle_of_monsters",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33804,
+          "y": 32584,
+          "floor": -12
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33792,
+        "y": 32579,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_monster.lua:28-28"
+      ]
+    }
+  ],
+  "runtime_enabled": false,
+  "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590915899",
+  "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+  "reason": "ANSWER points5/7: both source selectors and both destinations lose their provisional-only ground in compilation. Preserve complete source; no map or item-owner changes in this batch.",
+  "left_out": {
+    "missing_operation": "Qualification of canonical terrain and its map-bundle bindings for exact source grounds40236/40230/40198/40196; source portals34111 also lack qualified nonblocking collision.",
+    "source_ground_items": [
+      40236,
+      40230
+    ],
+    "destination_ground_items": [
+      40198,
+      40196
+    ],
+    "map_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "proof": [
+      "tools/world-bundle-compiler/src/compile.rs:951-958",
+      "crates/gameplay/world/src/map/mod.rs:522-541",
+      "crates/gameplay/world/src/map/boot.rs:337-341",
+      "crates/gameplay/world/src/map/floor/quest_callback.rs:43-49"
+    ],
+    "related_question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590916295"
+  }
+}

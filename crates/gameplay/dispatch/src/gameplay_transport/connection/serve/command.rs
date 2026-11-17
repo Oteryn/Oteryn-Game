@@ -23,7 +23,15 @@ where
         frame,
         arrived_while_buffered,
         buffered_original,
+        received_at,
     } = input;
+    // Also fence direct/previously buffered dispatch; this is before integrity,
+    // command reservation, replay acknowledgement or any owner invocation.
+    match command_session_matches(&frame, session.admitted, session.require_session_binding) {
+        Ok(false) => return Ok(()),
+        Ok(true) => {}
+        Err(error) => return Err(close(stream, session.admitted, error).await),
+    }
     let command = match decode_wire_envelope(&frame) {
         Err(error) => return Err(close(stream, session.admitted, error).await),
         Ok(envelope) if envelope.connection_generation() != session.generation => {
@@ -121,15 +129,21 @@ where
         .await;
     }
     // Read/coalesce only before the input permit and before any equipment writer starts.
-    let replaced = super::hotkey_equip::replaced(stream, authority, session, command).await?;
+    let replaced = super::hotkey_equip::replaced(
+        stream,
+        authority,
+        session,
+        command,
+        tokio::time::Instant::now().saturating_duration_since(received_at),
+    )
+    .await?;
     let mut input_permit = authority
         .enter_input(session.admitted.game_session_id)
         .await;
-    if input_permit.is_some()
-        && (!authority.house_transfer_input(session.admitted).await
-            || !authority.activity_transfer_input(session.admitted).await)
-    {
-        return Err(ServeEnd::Disconnected);
+    let guard_deferred =
+        input_permit.is_some() && !guards(authority, session.admitted, command).await?;
+    if guard_deferred && !session.reconcile_original_bank {
+        drop(input_permit.take());
     }
 
     // Count a newly received action once, never its retained replay or delayed step.
@@ -158,6 +172,7 @@ where
     // OPS-SAVE-2: the permit is held while the command runs, not while its result is
     // written, so the shutdown snapshot waits for the effect only.
     if input_permit.is_some()
+        && !guard_deferred
         && command.command_type
             == oteryn_protocol_oteryn::house_transfer::COMMAND_TYPE_HOUSE_TRANSFER
         && session
@@ -191,8 +206,15 @@ where
     } else {
         None
     };
+    // A resumed original Bank operation must retain its historical outcome even
+    // when this replacement input is deferred. Only a proven new command gets
+    // the ordinary unavailable-input refusal below.
+    if guard_deferred && retained_bank.is_none() {
+        drop(input_permit.take());
+    }
     let npc_relocation = None;
     if input_permit.is_some()
+        && !guard_deferred
         && !authority
             .training_activity(session.admitted, command.command_type)
             .await
@@ -220,7 +242,11 @@ where
             .selected_capabilities
             .command_selected(command.command_type)
         && ((command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
-            && decode_step_intent(command.payload).is_ok())
+            && decode_step_intent_selected(
+                session.selected_capabilities.as_slice(),
+                command.payload,
+            )
+            .is_ok())
             || (command.command_type == 11 && decode_attack_target_intent(command.payload).is_ok())
             || (command.command_type == 23 && decode_logout_intent(command.payload).is_ok())
             || walk_target.is_some())
@@ -253,6 +279,10 @@ where
     } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
         match route::step(authority, session, command, arrived_while_buffered).await {
             route::StepAction::Wait(due) => {
+                session
+                    .commands
+                    .buffer_step(command)
+                    .ok_or(ServeEnd::Disconnected)?;
                 // Pacing throttled this input; the buffered original is charged only once.
                 session
                     .integrity
@@ -420,4 +450,39 @@ where
             other => other,
         },
     )
+}
+
+/// Keep holder contention distinct from lost authority in both command loops.
+pub(super) async fn guards<A: FreshAdmissionAuthority>(
+    authority: &A,
+    admitted: AdmittedSession,
+    command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+) -> Result<bool, ServeEnd> {
+    let failure = match authority.house_transfer_input(admitted).await {
+        Err(error) => Some(("house_transfer_input", error)),
+        Ok(()) => authority
+            .activity_transfer_input(admitted)
+            .await
+            .err()
+            .map(|error| ("activity_transfer_input", error)),
+    };
+    let Some((guard, error)) = failure else {
+        return Ok(true);
+    };
+    let kind = match error {
+        crate::durability::DurabilityError::RootUnavailable => "holder_busy",
+        crate::durability::DurabilityError::RootPassDeadlineExceeded => "deadline",
+        _ => {
+            operator_event(&format!(
+                "event=command_guard_failed guard={guard} command_type={} command_id={}",
+                command.command_type, command.command_id,
+            ));
+            return Err(ServeEnd::Disconnected);
+        }
+    };
+    operator_event(&format!(
+        "event=command_guard_deferred guard={guard} kind={kind} command_type={} command_id={}",
+        command.command_type, command.command_id,
+    ));
+    Ok(false)
 }

@@ -13,7 +13,7 @@ pub(super) async fn transaction(h: &Harness) -> TestResult<Type2Transaction<'_>>
 }
 
 pub(super) async fn save_entry(h: &Harness, source: GameSessionId) -> TestResult {
-    sqlx::query("INSERT INTO game_character_last_positions(character_id,world_id,tile_x,tile_y,tile_floor,coordinate_frame_digest,map_revision_digest,server_artifact_digest,character_lease_generation,write_sequence) SELECT character_id,world_id,32375,31158,-8,decode(repeat('11',32),'hex'),decode(repeat('22',32),'hex'),decode(repeat('33',32),'hex'),character_lease_generation,1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
+    sqlx::query("INSERT INTO game_character_last_positions(character_id,world_id,tile_x,tile_y,tile_floor,coordinate_frame_digest,map_revision_digest,server_artifact_digest,character_lease_generation,write_sequence) SELECT character_id,world_id,32375,31158,8,decode(repeat('11',32),'hex'),decode(repeat('22',32),'hex'),decode(repeat('33',32),'hex'),character_lease_generation,1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
         .bind(source.as_bytes().as_slice()).execute(&h.pool).await?;
     Ok(())
 }
@@ -69,7 +69,7 @@ pub(super) async fn null_consumption_is_not_a_free_entry(
         .execute(&mut **tx)
         .await?;
     let error = sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source,soul_core_proof) SELECT game_character_uuid_v7(),game_character_uuid_v7(),encode($1,'hex')::uuid,2,e.character_id,i.world_id,decode('01','hex'),'oteryn:soulpit.entry',i.item_instance_id,e.parent_item_instance_id,e.placement_ordinal,to_jsonb(i),'[]'::jsonb,1,sha256('fixture'),true,jsonb_build_object('inputs',jsonb_build_array(jsonb_build_object('item',i.item_instance_id::text,'before',to_jsonb(i),'parent',e.parent_item_instance_id::text,'ordinal',e.placement_ordinal::text,'nested',false,'consume',NULL)),'delivery',jsonb_build_object('kind','handoff','handoff',encode($2,'hex')),'channel',encode($3,'hex'),'scope_generation','1') FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($4,'hex')::uuid")
-        .bind(source.as_bytes().as_slice()).bind(request.handoff_id.as_slice()).bind(id(43).as_slice()).bind(request.source.as_slice())
+        .bind(source.as_bytes().as_slice()).bind(request.handoff_id.as_slice()).bind(id(43).as_slice()).bind(match &request.funding {crate::durability::soulpit::SoulpitFunding::Core {source,..}=>source.as_slice(),_=>return Err("core fixture".into())})
         .execute(&mut **tx).await.expect_err("JSON null authorized a free Soulpit core debit");
     assert_eq!(
         error

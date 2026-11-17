@@ -1,0 +1,15 @@
+# Gem presentation v1
+
+Existing capability148 adds read command6121; it is read-only and available only with the existing Atelier catalogue source. Existing148 commands161/308/309/424, original strict codecs, paid custody, receipts and revisions remain unchanged.272 balances are optional: absence is shown explicitly and never treated as zero or affordable.
+
+## Request
+
+The request is exactly nonce:u64 nonzero then committed Atelier revision:u64, little-endian.
+
+## Result
+
+The reply starts with that exact16-byte request, then u16-length UTF8 catalogue identity (revision@source-candidate-SHA) and base vocation, each at most128bytes. A strict boolean says whether stored shared grades qualify for the current catalogue. A u16 count and at most225 sorted distinct nonzero16-byte gem identities describe current catalogue qualification, not combat activation. Next is u16 modifier count1..140, sorted distinct (kind,id) with kind0 basic/1 supreme, id:u16, u16-length nonempty name up to128bytes, effect count1..2. Each effect has name and target (u16-length UTF8,128bytes each; only target may be empty), unit:u8 (0 percentage points,1 flat,2 seconds,3 points), then four signed little-endian i64 values in thousandths at gradesI..IV. Controls and trailing data are refused; total reply bound65536bytes. Canonical tests prove every actual69-row vocation catalogue plus225 qualified gems fits without omissions.
+
+The real Atelier state is read under its existing Character owner transaction. Current session, connection, actor/control, lease, runtime scope and owner generation are checked before and after awaiting; the requested committed Atelier revision must match. No state, resource, price, cooldown, grade or receipt is written. Qualified WheelGemData verifies its existing manifest/file hashes. Every numerical value calls the same executed basic_milli/supreme_effect helpers used by WheelRuntimeEffects, retaining signed weaknesses, integer rounding, Monk corrections, spell target normalization and mastery doubling. Imported approximate display numbers are not substituted for executable values.
+
+The Atelier pane draws original geometric quality/domain gems with lock and vessel overlays. It shows actual owned identities, selected gem modifiers, shared stored grades, all executed grade values and targets. Current catalogue qualification is distinct from active socket resonance; values for potential grades are never described as an active combat contribution. Socket/unsocket changes are drafts until original Save Wheel succeeds. Existing current quote and optional balance owners supply every review cost/yield. Reveal, dismantle, domain switch and grade upgrade require an explicit single-use15-second review. The original command bytes, occurrence and revisions are frozen; changes in the current view invalidate confirmation. No paid operation is retried automatically. Old explicit Retry preserves the original occurrence. Scope/end cleanup closes the weak-mailbox pane, clears reviews and invalidates pending metadata replies; native window epochs prevent an older close from affecting a replacement pane.

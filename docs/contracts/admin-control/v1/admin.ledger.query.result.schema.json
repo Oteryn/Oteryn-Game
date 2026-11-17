@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LedgerPage",
+  "type": "object",
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/LedgerEntry"
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "entries"
+  ],
+  "$defs": {
+    "ErrorCode": {
+      "type": "string",
+      "enum": [
+        "ADM_UNKNOWN_OPERATION",
+        "ADM_SIGNER_UNTRUSTED",
+        "ADM_BAD_SIGNATURE",
+        "ADM_EXPIRED",
+        "ADM_REPLAY",
+        "ADM_INVALID_PARAMS",
+        "ADM_FORBIDDEN",
+        "ADM_RISK_CLASS_MISMATCH",
+        "ADM_CONTROL_MISSING",
+        "ADM_PREVIEW_STALE",
+        "ADM_IDEMPOTENCY_CONFLICT",
+        "ADM_TARGET_NOT_FOUND",
+        "ADM_PRECONDITION_FAILED",
+        "ADM_TARGET_UNAVAILABLE",
+        "ADM_BUSY",
+        "ADM_AGENT_SUPERSEDED",
+        "ADM_LIMIT_EXCEEDED",
+        "ADM_INTERNAL"
+      ]
+    },
+    "LedgerEntry": {
+      "type": "object",
+      "properties": {
+        "admin_id": {
+          "type": "string"
+        },
+        "admin_operation_id": {
+          "type": "string"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ErrorCode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finished_at": {
+          "type": "string"
+        },
+        "ledger_id": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "risk_class": {
+          "$ref": "#/$defs/RiskClass"
+        },
+        "started_at": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/Status"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "ledger_id",
+        "request_id",
+        "admin_operation_id",
+        "operation",
+        "admin_id",
+        "risk_class",
+        "target",
+        "status",
+        "started_at",
+        "finished_at"
+      ]
+    },
+    "RiskClass": {
+      "type": "string",
+      "enum": [
+        "R0",
+        "R1",
+        "R2",
+        "R3",
+        "R4"
+      ]
+    },
+    "Status": {
+      "type": "string",
+      "enum": [
+        "accepted",
+        "in_progress",
+        "succeeded",
+        "failed",
+        "rejected",
+        "expired",
+        "cancelled"
+      ]
+    },
+    "Target": {
+      "type": "object",
+      "properties": {
+        "account_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "character_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "node_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "world_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

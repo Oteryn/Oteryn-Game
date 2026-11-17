@@ -1,0 +1,7 @@
+{
+  "mechanic": "0445-house-furniture-rotation",
+  "id": "0445-house-furniture-rotation-panel",
+  "status": "supported",
+  "kind": "panels",
+  "entry": "view.rs::panel_text"
+}

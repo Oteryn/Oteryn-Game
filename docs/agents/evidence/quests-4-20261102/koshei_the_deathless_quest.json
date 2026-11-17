@@ -1,0 +1,735 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "koshei_the_deathless_quest",
+    "frozen_stage1": {
+      "total": 13,
+      "auto": 7,
+      "manual": 6
+    },
+    "authored_callback_definitions": 0,
+    "runtime_catalogue_callback_definitions": 0,
+    "runtime_exclusions": [],
+    "npc_source_files": 1,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "Zachowane 7 istniejących plain claims i pełne źródło A Sweaty Cyclops.",
+    "left_out_summary": "Amulet, wymiana, specjalny stan Kosheia i jego rozliczenie wymagają odpowiednich wykonawców."
+  },
+  "steps": [
+    {
+      "cluster": "cults",
+      "cluster_row": 231,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987"
+      ],
+      "disposition": {
+        "stage1_row": 231,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Koshei:bag z dokumentem",
+          "patterns": [
+            "P05",
+            "P14"
+          ],
+          "trigger": "Use aid40532",
+          "guard": "player483293=-1",
+          "effect": "bag2853 zawiera2834 zpełnym text/name;483293=0 (pominięty Lua argument)",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/koshei_the_deathless_quest/action_bag.lua:12",
+          "source_path": "data-global/scripts/quests/koshei_the_deathless_quest/action_bag.lua",
+          "line": 12,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/koshei_the_deathless_quest/action_bag.lua#L12",
+        "status": "LEFT_OUT",
+        "reason_code": "WRITTEN_CONTAINER_AND_ZERO_DEFAULT",
+        "reason": "Bag2853 z dokumentem2834 i pełnym tekstem wymaga istniejącego container/written grant ownera. Source483293=-1 zapisuje0; ANSWER zabrania migracji istniejących zer i rozszerzania Mint.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "canonical-unset-tracks"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/koshei_the_deathless_quest/action_bag.lua:12"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Bag2853 z dokumentem2834 i pełnym tekstem wymaga istniejącego container/written grant ownera. Source483293=-1 zapisuje0; ANSWER zabrania migracji istniejących zer i rozszerzania Mint.",
+            "missing_function": "Source bag/document grant z pełnym text/name i źródłowym warunkiem -1, bez reinterpretacji zapisanych zer. Krok: Koshei:bag z dokumentem; trigger: Use aid40532; guard: player483293=-1; skutki: bag2853 zawiera2834 zpełnym text/name;483293=0 (pominięty Lua argument).",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Source bag/document grant z pełnym text/name i źródłowym warunkiem -1, bez reinterpretacji zapisanych zer. Krok: Koshei:bag z dokumentem; trigger: Use aid40532; guard: player483293=-1; skutki: bag2853 zawiera2834 zpełnym text/name;483293=0 (pominięty Lua argument).",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 232,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 232,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Koshei:5statui i trumna",
+          "patterns": [
+            "P01",
+            "P16",
+            "P18"
+          ],
+          "trigger": "Use uid3070",
+          "guard": "5 pozycji ma2062/2063;coffin167 nie istnieje",
+          "effect": "coffin162→167 @33273,32458,8 na120s",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/koshei_the_deathless_quest/action_switch.lua:1",
+          "source_path": "data-global/scripts/quests/koshei_the_deathless_quest/action_switch.lua",
+          "line": 1,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/koshei_the_deathless_quest/action_switch.lua#L1",
+        "status": "LEFT_OUT",
+        "reason_code": "COFFIN_WORLD_TIMER_NOT_PORTED",
+        "reason": "Pięć posągów i brak167 uruchamiają162→167 na120s. Brak zakwalifikowanego world target/timer; nie zapisano samej flagi sukcesu.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/koshei_the_deathless_quest/action_switch.lua:1"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Pięć posągów i brak167 uruchamiają162→167 na120s. Brak zakwalifikowanego world target/timer; nie zapisano samej flagi sukcesu.",
+            "missing_function": "Sprawdzenie pięciu posągów i transformacja 162→167 na 120s z powrotem świata. Krok: Koshei:5statui i trumna; trigger: Use uid3070; guard: 5 pozycji ma2062/2063;coffin167 nie istnieje; skutki: coffin162→167 @33273,32458,8 na120s.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Sprawdzenie pięciu posągów i transformacja 162→167 na 120s z powrotem świata. Krok: Koshei:5statui i trumna; trigger: Use uid3070; guard: 5 pozycji ma2062/2063;coffin167 nie istnieje; skutki: coffin162→167 @33273,32458,8 na120s.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 233,
+      "question_urls": [],
+      "disposition": {
+        "stage1_row": 233,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Skrzynia6236",
+          "patterns": [
+            "P05"
+          ],
+          "trigger": "shared chest key6236;pozycja wźródle",
+          "guard": "jednorazowyKosheiTheDeathless.KosheiAmuletPart1",
+          "effect": "+7530",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2431",
+          "source_path": "data-global/startup/tables/chest.lua",
+          "line": 2431,
+          "oteryn": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+          "import": "AUTO"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2431",
+        "status": "EXISTING_PLAIN_CLAIM_PRESERVED",
+        "reason": "Fresh pinned Crystal parity checked; existing claim retained, not duplicated. Native placement/reward delivery is not asserted by this worker.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [],
+        "question_urls": [],
+        "question_coverage": "EXISTING_CLAIM_RETAINED",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2431"
+        ],
+        "unimplemented_components": [],
+        "reason_code": "SOURCE_PARITY_EXISTING_CLAIM_RETAINED",
+        "implementation_layer": "EXISTING_QUALIFIED_PLAIN_CLAIM_RETAINED",
+        "source_semantic_closure": "PLAIN_REWARD_SOURCE_PARITY_CHECKED",
+        "physical_admission": "EXISTING_PLACEMENT_PARITY_RETAINED_NO_NEW_ADMISSION_CLAIM",
+        "runtime_admission": "EXISTING_PATH_RETAINED_NOT_NEWLY_TESTED_BY_WORKER",
+        "missing_function": null
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 234,
+      "question_urls": [],
+      "disposition": {
+        "stage1_row": 234,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Skrzynia6237",
+          "patterns": [
+            "P05"
+          ],
+          "trigger": "shared chest key6237;pozycja wźródle",
+          "guard": "jednorazowyKosheiTheDeathless.KosheiAmuletPart2",
+          "effect": "+7528",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2438",
+          "source_path": "data-global/startup/tables/chest.lua",
+          "line": 2438,
+          "oteryn": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+          "import": "AUTO"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2438",
+        "status": "EXISTING_PLAIN_CLAIM_PRESERVED",
+        "reason": "Fresh pinned Crystal parity checked; existing claim retained, not duplicated. Native placement/reward delivery is not asserted by this worker.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [],
+        "question_urls": [],
+        "question_coverage": "EXISTING_CLAIM_RETAINED",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2438"
+        ],
+        "unimplemented_components": [],
+        "reason_code": "SOURCE_PARITY_EXISTING_CLAIM_RETAINED",
+        "implementation_layer": "EXISTING_QUALIFIED_PLAIN_CLAIM_RETAINED",
+        "source_semantic_closure": "PLAIN_REWARD_SOURCE_PARITY_CHECKED",
+        "physical_admission": "EXISTING_PLACEMENT_PARITY_RETAINED_NO_NEW_ADMISSION_CLAIM",
+        "runtime_admission": "EXISTING_PATH_RETAINED_NOT_NEWLY_TESTED_BY_WORKER",
+        "missing_function": null
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 235,
+      "question_urls": [],
+      "disposition": {
+        "stage1_row": 235,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Skrzynia6238",
+          "patterns": [
+            "P05"
+          ],
+          "trigger": "shared chest key6238;pozycja wźródle",
+          "guard": "jednorazowyKosheiTheDeathless.KosheiAmuletPart3",
+          "effect": "+7531",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2445",
+          "source_path": "data-global/startup/tables/chest.lua",
+          "line": 2445,
+          "oteryn": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+          "import": "AUTO"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2445",
+        "status": "EXISTING_PLAIN_CLAIM_PRESERVED",
+        "reason": "Fresh pinned Crystal parity checked; existing claim retained, not duplicated. Native placement/reward delivery is not asserted by this worker.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [],
+        "question_urls": [],
+        "question_coverage": "EXISTING_CLAIM_RETAINED",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2445"
+        ],
+        "unimplemented_components": [],
+        "reason_code": "SOURCE_PARITY_EXISTING_CLAIM_RETAINED",
+        "implementation_layer": "EXISTING_QUALIFIED_PLAIN_CLAIM_RETAINED",
+        "source_semantic_closure": "PLAIN_REWARD_SOURCE_PARITY_CHECKED",
+        "physical_admission": "EXISTING_PLACEMENT_PARITY_RETAINED_NO_NEW_ADMISSION_CLAIM",
+        "runtime_admission": "EXISTING_PATH_RETAINED_NOT_NEWLY_TESTED_BY_WORKER",
+        "missing_function": null
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 236,
+      "question_urls": [],
+      "disposition": {
+        "stage1_row": 236,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Skrzynia6239",
+          "patterns": [
+            "P05"
+          ],
+          "trigger": "shared chest key6239;pozycja wźródle",
+          "guard": "jednorazowyKosheiTheDeathless.KosheiAmuletPart4",
+          "effect": "+7529",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2452",
+          "source_path": "data-global/startup/tables/chest.lua",
+          "line": 2452,
+          "oteryn": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+          "import": "AUTO"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2452",
+        "status": "EXISTING_PLAIN_CLAIM_PRESERVED",
+        "reason": "Fresh pinned Crystal parity checked; existing claim retained, not duplicated. Native placement/reward delivery is not asserted by this worker.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [],
+        "question_urls": [],
+        "question_coverage": "EXISTING_CLAIM_RETAINED",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2452"
+        ],
+        "unimplemented_components": [],
+        "reason_code": "SOURCE_PARITY_EXISTING_CLAIM_RETAINED",
+        "implementation_layer": "EXISTING_QUALIFIED_PLAIN_CLAIM_RETAINED",
+        "source_semantic_closure": "PLAIN_REWARD_SOURCE_PARITY_CHECKED",
+        "physical_admission": "EXISTING_PLACEMENT_PARITY_RETAINED_NO_NEW_ADMISSION_CLAIM",
+        "runtime_admission": "EXISTING_PATH_RETAINED_NOT_NEWLY_TESTED_BY_WORKER",
+        "missing_function": null
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 237,
+      "question_urls": [],
+      "disposition": {
+        "stage1_row": 237,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Skrzynia6240",
+          "patterns": [
+            "P05"
+          ],
+          "trigger": "shared chest key6240;pozycja wźródle",
+          "guard": "jednorazowyKosheiTheDeathless.KosheiTheDeathlessLegs",
+          "effect": "+645",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2459",
+          "source_path": "data-global/startup/tables/chest.lua",
+          "line": 2459,
+          "oteryn": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+          "import": "AUTO"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2459",
+        "status": "EXISTING_PLAIN_CLAIM_PRESERVED",
+        "reason": "Fresh pinned Crystal parity checked; existing claim retained, not duplicated. Native placement/reward delivery is not asserted by this worker.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [],
+        "question_urls": [],
+        "question_coverage": "EXISTING_CLAIM_RETAINED",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2459"
+        ],
+        "unimplemented_components": [],
+        "reason_code": "SOURCE_PARITY_EXISTING_CLAIM_RETAINED",
+        "implementation_layer": "EXISTING_QUALIFIED_PLAIN_CLAIM_RETAINED",
+        "source_semantic_closure": "PLAIN_REWARD_SOURCE_PARITY_CHECKED",
+        "physical_admission": "EXISTING_PLACEMENT_PARITY_RETAINED_NO_NEW_ADMISSION_CLAIM",
+        "runtime_admission": "EXISTING_PATH_RETAINED_NOT_NEWLY_TESTED_BY_WORKER",
+        "missing_function": null
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 238,
+      "question_urls": [],
+      "disposition": {
+        "stage1_row": 238,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Skrzynia6241",
+          "patterns": [
+            "P05"
+          ],
+          "trigger": "shared chest key6241;pozycja wźródle",
+          "guard": "jednorazowyKosheiTheDeathless.KosheiTheDeathlessPlatinum",
+          "effect": "+3035×100",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2466",
+          "source_path": "data-global/startup/tables/chest.lua",
+          "line": 2466,
+          "oteryn": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+          "import": "AUTO"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2466",
+        "status": "EXISTING_PLAIN_CLAIM_PRESERVED",
+        "reason": "Fresh pinned Crystal parity checked; existing claim retained, not duplicated. Native placement/reward delivery is not asserted by this worker.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [],
+        "question_urls": [],
+        "question_coverage": "EXISTING_CLAIM_RETAINED",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2466"
+        ],
+        "unimplemented_components": [],
+        "reason_code": "SOURCE_PARITY_EXISTING_CLAIM_RETAINED",
+        "implementation_layer": "EXISTING_QUALIFIED_PLAIN_CLAIM_RETAINED",
+        "source_semantic_closure": "PLAIN_REWARD_SOURCE_PARITY_CHECKED",
+        "physical_admission": "EXISTING_PLACEMENT_PARITY_RETAINED_NO_NEW_ADMISSION_CLAIM",
+        "runtime_admission": "EXISTING_PATH_RETAINED_NOT_NEWLY_TESTED_BY_WORKER",
+        "missing_function": null
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 239,
+      "question_urls": [],
+      "disposition": {
+        "stage1_row": 239,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Skrzynia6242",
+          "patterns": [
+            "P05"
+          ],
+          "trigger": "shared chest key6242;pozycja wźródle",
+          "guard": "jednorazowyKosheiTheDeathless.KosheiTheDeathlessGold",
+          "effect": "+3031×100",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2473",
+          "source_path": "data-global/startup/tables/chest.lua",
+          "line": 2473,
+          "oteryn": "TAK — prymityw RewardClaimMint (nie potwierdzenie tej skrzyni); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:131",
+          "import": "AUTO"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L2473",
+        "status": "EXISTING_PLAIN_CLAIM_PRESERVED",
+        "reason": "Fresh pinned Crystal parity checked; existing claim retained, not duplicated. Native placement/reward delivery is not asserted by this worker.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [],
+        "question_urls": [],
+        "question_coverage": "EXISTING_CLAIM_RETAINED",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2473"
+        ],
+        "unimplemented_components": [],
+        "reason_code": "SOURCE_PARITY_EXISTING_CLAIM_RETAINED",
+        "implementation_layer": "EXISTING_QUALIFIED_PLAIN_CLAIM_RETAINED",
+        "source_semantic_closure": "PLAIN_REWARD_SOURCE_PARITY_CHECKED",
+        "physical_admission": "EXISTING_PLACEMENT_PARITY_RETAINED_NO_NEW_ADMISSION_CLAIM",
+        "runtime_admission": "EXISTING_PATH_RETAINED_NOT_NEWLY_TESTED_BY_WORKER",
+        "missing_function": null
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 240,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "stage1_row": 240,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Koshei:Cyclops przyjęcie materiałów",
+          "patterns": [
+            "P09",
+            "P10",
+            "P17",
+            "P29"
+          ],
+          "trigger": "a sweaty cyclops:amulet→yes;topic12",
+          "guard": "KVdone false;KVtimer absent;5000gp i4części7528..7531",
+          "effect": "donor -5000gp PRZED sprawdzeniem części;jeśli komplet -1każdej iKVtimer=now+86400",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:301",
+          "source_path": "data-global/npc/a_sweaty_cyclops.lua",
+          "line": 301,
+          "oteryn": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L301",
+        "status": "LEFT_OUT",
+        "reason_code": "NPC_EXCHANGE_AND_TIMER_CLOSED",
+        "reason": "Donor pobiera 5000gp przed sprawdzeniem części i zapisuje 24h KV. ANSWER pkt4 wymaga atomowego pełnego kosztu; brak podłączonego quest-specific caller i kwalifikacji deadline/item/gold exchange w zamkniętym 0831/0832. To granica implementacji, nie brak dialogu lub danych.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": true,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:301"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Donor pobiera 5000gp przed sprawdzeniem części i zapisuje 24h KV. ANSWER pkt4 wymaga atomowego pełnego kosztu; brak podłączonego quest-specific caller i kwalifikacji deadline/item/gold exchange w zamkniętym 0831/0832. To granica implementacji, nie brak dialogu lub danych.",
+            "missing_function": "Atomowa wymiana Cyclops: 5000gp i cztery części, zapis 24h deadline oraz ponowienie z receipt bez częściowego kosztu. Krok: Koshei:Cyclops przyjęcie materiałów; trigger: a sweaty cyclops:amulet→yes;topic12; guard: KVdone false;KVtimer absent;5000gp i4części7528..7531; skutki: donor -5000gp PRZED sprawdzeniem części;jeśli komplet -1każdej iKVtimer=now+86400. Kolejność donorowego częściowego kosztu jest wyłącznie opisem źródła; docelowy write musi być atomowy według ANSWER pkt4.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Atomowa wymiana Cyclops: 5000gp i cztery części, zapis 24h deadline oraz ponowienie z receipt bez częściowego kosztu. Krok: Koshei:Cyclops przyjęcie materiałów; trigger: a sweaty cyclops:amulet→yes;topic12; guard: KVdone false;KVtimer absent;5000gp i4części7528..7531; skutki: donor -5000gp PRZED sprawdzeniem części;jeśli komplet -1każdej iKVtimer=now+86400. Kolejność donorowego częściowego kosztu jest wyłącznie opisem źródła; docelowy write musi być atomowy według ANSWER pkt4.",
+        "source_semantic_closure": "FULL_NPC_SOURCE_PRESERVED_RUNTIME_NOT_MOUNTED",
+        "npc_scope_status": "ANSWER_A_CONFIRMED_SHARED_OWNER_LEFT_OUT"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 241,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "stage1_row": 241,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Koshei:Cyclops odbiór amuletu",
+          "patterns": [
+            "P09",
+            "P11",
+            "P17",
+            "P29"
+          ],
+          "trigger": "a sweaty cyclops:amulet",
+          "guard": "KVdone false;timer≤now",
+          "effect": "+7532;KVdone=true;wcześniej tekst pozostałego czasu",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:253",
+          "source_path": "data-global/npc/a_sweaty_cyclops.lua",
+          "line": 253,
+          "oteryn": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/a_sweaty_cyclops.lua#L253",
+        "status": "LEFT_OUT",
+        "reason_code": "NPC_REWARD_AND_TIMER_CLOSED",
+        "reason": "Źródło odbioru amuletu7532, KV done i deadline jest kompletne. Brak podłączonego stanowego NPC caller oraz kwalifikowanej kompozycji grantu i done. ANSWER6589897950 oraz jawne A6590298958 odkładają zmiany wspólnego adaptera/ownera do osobnego PR; nie brak danych.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": true,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_sweaty_cyclops.lua:253"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródło odbioru amuletu7532, KV done i deadline jest kompletne. Brak podłączonego stanowego NPC caller oraz kwalifikowanej kompozycji grantu i done. ANSWER6589897950 oraz jawne A6590298958 odkładają zmiany wspólnego adaptera/ownera do osobnego PR; nie brak danych.",
+            "missing_function": "Caller odbioru Cyclops: sprawdzenie done/deadline, bezpieczny grant amuletu i jednorazowe done w tym samym rozliczeniu. Krok: Koshei:Cyclops odbiór amuletu; trigger: a sweaty cyclops:amulet; guard: KVdone false;timer≤now; skutki: +7532;KVdone=true;wcześniej tekst pozostałego czasu.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Caller odbioru Cyclops: sprawdzenie done/deadline, bezpieczny grant amuletu i jednorazowe done w tym samym rozliczeniu. Krok: Koshei:Cyclops odbiór amuletu; trigger: a sweaty cyclops:amulet; guard: KVdone false;timer≤now; skutki: +7532;KVdone=true;wcześniej tekst pozostałego czasu.",
+        "source_semantic_closure": "FULL_NPC_SOURCE_PRESERVED_RUNTIME_NOT_MOUNTED",
+        "npc_scope_status": "ANSWER_A_CONFIRMED_SHARED_OWNER_LEFT_OUT"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 242,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 242,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Koshei:amulet na corpse",
+          "patterns": [
+            "P02"
+          ],
+          "trigger": "Use7532 na7535",
+          "guard": "RewardDoor<1",
+          "effect": "-7532;RewardDoor=1;komunikat;cel niezmieniony; selector appearance-only nie jest obecnie dozwolony",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/koshei_the_deathless_quest/action_boss.lua:3",
+          "source_path": "data-global/scripts/quests/koshei_the_deathless_quest/action_boss.lua",
+          "line": 3,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/koshei_the_deathless_quest/action_boss.lua#L3",
+        "status": "LEFT_OUT",
+        "reason_code": "DYNAMIC_CORPSE_TARGET_NOT_PORTED",
+        "reason": "Amulet7532 trzeba zużyć na właściwym dynamicznym corpse i ustawić RewardDoor. Nie ma zakwalifikowanego appearance-only target ownera dla tej operacji; brak zgadywanej pozycji.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/koshei_the_deathless_quest/action_boss.lua:3"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Amulet7532 trzeba zużyć na właściwym dynamicznym corpse i ustawić RewardDoor. Nie ma zakwalifikowanego appearance-only target ownera dla tej operacji; brak zgadywanej pozycji.",
+            "missing_function": "Użycie amuletu na dokładnym dynamicznym corpse7535: zużycie amuletu, RewardDoor i pełny tekst. Krok: Koshei:amulet na corpse; trigger: Use7532 na7535; guard: RewardDoor<1; skutki: -7532;RewardDoor=1;komunikat;cel niezmieniony; selector appearance-only nie jest obecnie dozwolony.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Użycie amuletu na dokładnym dynamicznym corpse7535: zużycie amuletu, RewardDoor i pełny tekst. Krok: Koshei:amulet na corpse; trigger: Use7532 na7535; guard: RewardDoor<1; skutki: -7532;RewardDoor=1;komunikat;cel niezmieniony; selector appearance-only nie jest obecnie dozwolony.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 243,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 243,
+        "stage1": {
+          "quest": "koshei_the_deathless_quest",
+          "element": "Koshei: boss i corpse",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "standardowy spawn/walka Koshei the Deathless",
+          "guard": "definicja bossa;HP3000",
+          "effect": "corpse7535;max1Bonebeast;leczenie150..300;life drain,poison,death,curse i slow wg tabel",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/bosses/koshei_the_deathless.lua:16",
+          "source_path": "data-global/monster/bosses/koshei_the_deathless.lua",
+          "line": 16,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/bosses/koshei_the_deathless.lua#L16",
+        "status": "LEFT_OUT",
+        "reason_code": "BOSS_CORPSE_DEPENDENCY_NOT_QUALIFIED",
+        "reason": "Źródłowe boss/corpse są opisane; brak kwalifikacji całego boss→corpse→amulet przepływu w tej partii.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/bosses/koshei_the_deathless.lua:16"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowe boss/corpse są opisane; brak kwalifikacji całego boss→corpse→amulet przepływu w tej partii.",
+            "missing_function": "Kwalifikacja source bossa, walki i corpse identity oraz połączenie z docelowym użyciem amuletu. Krok: Koshei: boss i corpse; trigger: standardowy spawn/walka Koshei the Deathless; guard: definicja bossa;HP3000; skutki: corpse7535;max1Bonebeast;leczenie150..300;life drain,poison,death,curse i slow wg tabel.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Kwalifikacja source bossa, walki i corpse identity oraz połączenie z docelowym użyciem amuletu. Krok: Koshei: boss i corpse; trigger: standardowy spawn/walka Koshei the Deathless; guard: definicja bossa;HP3000; skutki: corpse7535;max1Bonebeast;leczenie150..300;life drain,poison,death,curse i slow wg tabel.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    }
+  ]
+}

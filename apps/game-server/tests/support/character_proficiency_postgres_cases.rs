@@ -422,6 +422,7 @@ fn proficiency_familiar_and_quest_writes_share_the_0073_progression_guard() -> T
                     max: 10,
                 }],
                 vec![QuestTransition {
+                    world_change: None,
                     key: "oteryn:quest-transition/fixture.guard.start".into(),
                     quest: quest.into(),
                     effects: vec![QuestEffect {

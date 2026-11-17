@@ -47,7 +47,8 @@ def read_canonical(path):
                              'sha256': hashlib.sha256(raw).hexdigest()}
 
 
-def union_profiles(active, presentations, canonical_rows, declarations):
+def union_profiles(active, presentations, canonical_rows, declarations, *,
+                   preserve_existing_display_aliases=False):
     if active.get('schema') != 'OTERYN_NATIVE_CREATURE_PROFILES/v1' or presentations.get('schema') != 'OTERYN_NATIVE_PRESENTATION_PROFILES/v1':
         raise ValueError('native profile schema required')
     result = copy.deepcopy(active)
@@ -60,7 +61,9 @@ def union_profiles(active, presentations, canonical_rows, declarations):
     fold_name = lambda value: value.translate(str.maketrans('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'))
     names = {fold_name(r['profile']['data']['profile']['details']['display_name']): r['profile']['target']
              for r in result['records']}
-    if len(names) != len(result['records']):
+    # A source-attested immutable successor may already retain donor variants
+    # with equal names. Preserve those rows exactly; new names still cannot alias.
+    if len(names) != len(result['records']) and not preserve_existing_display_aliases:
         raise ValueError('duplicate active Creature display name')
     appended = []
     for row in canonical_rows:

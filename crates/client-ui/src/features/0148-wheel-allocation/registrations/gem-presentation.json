@@ -1,0 +1,18 @@
+{
+  "mechanic": "0148-wheel-allocation",
+  "kind": "handlers",
+  "id": "0148-wheel-allocation-gem-presentation",
+  "status": "supported",
+  "commands": [
+    6121
+  ],
+  "direction": "client_to_server",
+  "capability": 148,
+  "entry": "protocol.rs::gem_presentation_query",
+  "not_applicable": {
+    "state": "Existing 0148 Wheel/Gem panel owns correlated advisory state and original paid requests.",
+    "view": "Visual Gem Atelier uses original geometric gem/domain/quality/lock/vessel glyphs and executed modifier grade comparisons.",
+    "input": "Existing Wheel native button opens the Gem Atelier; mutation confirmations use original148 commands.",
+    "settings": "The current owner supplies every value and price."
+  }
+}

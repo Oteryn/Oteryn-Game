@@ -2,6 +2,9 @@
 //! trusted time, chain successor, effect and audit share the semantic transaction.
 pub use oteryn_gameplay_social_rules::staff as rules;
 mod executor;
+mod extended;
+mod tools;
+pub use tools::{StaffLiveStatus, StaffWorldEffectState, StaffWorldEffectTarget};
 mod expiry;
 mod retained;
 mod trust;
@@ -24,6 +27,8 @@ pub type TrustedStaffClock = fn() -> Option<(u64, u64)>;
 static VERIFIERS: OnceLock<Arc<Semaphore>> = OnceLock::new();
 #[derive(Clone)]
 struct Authenticated {
+    tools: bool,
+    role: rules::StaffRole,
     envelope: SignedEnvelope,
     roster: String,
     fingerprint: String,
@@ -72,19 +77,23 @@ impl StaffTrust {
             .clone()
             .try_acquire_owned()
             .ok()?;
-        tokio::task::spawn_blocking(move || {
-            let _permit = permit;
-            self.authenticate_at(
-                &envelope,
-                if receipt {
-                    RECEIPT_NAMESPACE
-                } else {
-                    REQUEST_NAMESPACE
-                },
-                seq,
-            )
-            .ok()
-        })
+        oteryn_task_supervisor::spawn_blocking_lifecycle_supervised(
+            "staff_authenticate",
+            None,
+            move || {
+                let _permit = permit;
+                self.authenticate_at(
+                    &envelope,
+                    if receipt {
+                        RECEIPT_NAMESPACE
+                    } else {
+                        REQUEST_NAMESPACE
+                    },
+                    seq,
+                )
+                .ok()
+            },
+        )
         .await
         .ok()?
     }
@@ -92,71 +101,80 @@ impl StaffTrust {
         self: Arc<Self>,
         envelope: SignedEnvelope,
         receipt: bool,
+        tools: bool,
     ) -> Option<Authenticated> {
         let permit = VERIFIERS
             .get_or_init(|| Arc::new(Semaphore::new(4)))
             .clone()
             .try_acquire_owned()
             .ok()?;
-        tokio::task::spawn_blocking(move || {
-            let _permit = permit;
-            let namespace = if receipt {
-                RECEIPT_NAMESPACE
-            } else {
-                REQUEST_NAMESPACE
-            };
-            self.authenticate_any(&envelope, namespace).ok()?;
-            // Only after raw signature verification do we parse the closed object.
-            // Re-verify against exactly the revision pinned for its signed sequence.
-            let seq = if receipt {
-                rules::decimal(
-                    &decode::<rules::Receipt>(&envelope.canonical)
-                        .ok()?
-                        .control_seq,
-                )?
-            } else {
-                rules::decimal(
-                    &decode::<rules::Request>(&envelope.canonical)
-                        .ok()?
-                        .control_seq,
-                )?
-            };
-            let (roster, role, fingerprint) =
-                self.authenticate_at(&envelope, namespace, seq).ok()?;
-            let message = if receipt {
-                let r: rules::Receipt = decode(&envelope.canonical).ok()?;
-                if r.environment != self.environment()
-                    || r.roster_sha256 != roster
-                    || !rules::hex(&r.operation_id, 16)
-                    || !rules::hex(&r.previous_link_sha256, 32)
-                    || !rules::hex(&r.request_sha256, 32)
-                    || !rules::hex(&r.outcome_sha256, 32)
-                {
+        oteryn_task_supervisor::spawn_blocking_lifecycle_supervised(
+            "staff_authenticate_message",
+            None,
+            move || {
+                let _permit = permit;
+                let namespace = if receipt {
+                    RECEIPT_NAMESPACE
+                } else {
+                    REQUEST_NAMESPACE
+                };
+                self.authenticate_any(&envelope, namespace).ok()?;
+                // Only after raw signature verification do we parse the closed object.
+                // Re-verify against exactly the revision pinned for its signed sequence.
+                let seq = if receipt {
+                    rules::decimal(
+                        &decode::<rules::Receipt>(&envelope.canonical)
+                            .ok()?
+                            .control_seq,
+                    )?
+                } else {
+                    rules::decimal(
+                        &decode::<rules::Request>(&envelope.canonical)
+                            .ok()?
+                            .control_seq,
+                    )?
+                };
+                let (roster, role, fingerprint) =
+                    self.authenticate_at(&envelope, namespace, seq).ok()?;
+                let message = if receipt {
+                    let r: rules::Receipt = decode(&envelope.canonical).ok()?;
+                    if r.environment != self.environment()
+                        || r.roster_sha256 != roster
+                        || !rules::hex(&r.operation_id, 16)
+                        || !rules::hex(&r.previous_link_sha256, 32)
+                        || !rules::hex(&r.request_sha256, 32)
+                        || !rules::hex(&r.outcome_sha256, 32)
+                    {
+                        return None;
+                    }
+                    Message::Receipt(r)
+                } else {
+                    let r: rules::Request = decode(&envelope.canonical).ok()?;
+                    if !r.valid(role)
+                        || (!tools && r.action.is_extended())
+                        || (tools && r.issuer_character_id.is_none())
+                        || r.environment != self.environment()
+                        || r.roster_sha256 != roster
+                    {
+                        return None;
+                    }
+                    Message::Request(r)
+                };
+                let auth = Authenticated {
+                    tools,
+                    role,
+                    envelope,
+                    roster,
+                    fingerprint,
+                    message,
+                };
+                let (activation, at_roster) = self.activation_at(auth.seq()?)?;
+                if activation != auth.activation() || at_roster != auth.roster {
                     return None;
                 }
-                Message::Receipt(r)
-            } else {
-                let r: rules::Request = decode(&envelope.canonical).ok()?;
-                if !r.valid(role)
-                    || r.environment != self.environment()
-                    || r.roster_sha256 != roster
-                {
-                    return None;
-                }
-                Message::Request(r)
-            };
-            let auth = Authenticated {
-                envelope,
-                roster,
-                fingerprint,
-                message,
-            };
-            let (activation, at_roster) = self.activation_at(auth.seq()?)?;
-            if activation != auth.activation() || at_roster != auth.roster {
-                return None;
-            }
-            Some(auth)
-        })
+                Some(auth)
+            },
+        )
         .await
         .ok()?
     }
@@ -168,10 +186,14 @@ impl DurabilityRoot {
     ) -> Result<(), DurabilityError> {
         let trust = match config {
             Some(config) => Some(Arc::new(
-                tokio::task::spawn_blocking(move || StaffTrust::load(config))
-                    .await
-                    .map_err(|_| DurabilityError::InvalidStoredState)?
-                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                oteryn_task_supervisor::spawn_blocking_lifecycle_supervised(
+                    "staff_trust_load",
+                    None,
+                    move || StaffTrust::load(config),
+                )
+                .await
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
             )),
             None => None,
         };
@@ -213,12 +235,53 @@ impl DurabilityRoot {
         receipt: bool,
         clock: TrustedStaffClock,
     ) -> Result<Option<Vec<u8>>, DurabilityError> {
+        self.submit_staff_mode(authority, node, fence, envelope, receipt, clock, false)
+            .await
+    }
+    pub async fn submit_staff_tools(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        envelope: SignedEnvelope,
+        receipt: bool,
+        clock: TrustedStaffClock,
+    ) -> Result<Option<Vec<u8>>, DurabilityError> {
+        self.submit_staff_mode(authority, node, fence, envelope, receipt, clock, true)
+            .await
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Legacy and tools share the exact fenced signed transaction"
+    )]
+    async fn submit_staff_mode(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        envelope: SignedEnvelope,
+        receipt: bool,
+        clock: TrustedStaffClock,
+        tools: bool,
+    ) -> Result<Option<Vec<u8>>, DurabilityError> {
         let Some(trust) = self.staff_trust() else {
             return Ok(None);
         };
-        let Some(auth) = trust.clone().authenticate_message(envelope, receipt).await else {
+        let Some(auth) = trust
+            .clone()
+            .authenticate_message(envelope, receipt, tools)
+            .await
+        else {
             return Ok(None);
         };
+        if let Message::Request(request) = &auth.message
+            && request
+                .issuer_character_id
+                .as_deref()
+                .is_some_and(|issuer| issuer != executor::hex_id(fence.character_id.as_bytes()))
+        {
+            return Ok(None);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::InvalidStoredState)?;

@@ -7,7 +7,9 @@
     14
   ],
   "command_types": [
-    181
+    181,
+    668,
+    6116
   ],
   "state_domains": [],
   "offered": false,

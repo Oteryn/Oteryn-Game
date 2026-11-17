@@ -121,6 +121,7 @@ message OneItemTransactionV1 {
     OneItemPlayerDeathItemV1 player_death_drop = 17;
     OneItemPlayerDeathItemV1 player_death_amulet = 18;
     OneItemForgeV1 forge = 19; // P18; PR2785 answer6547509519, preserves death17/18
+    OneItemWriteOnceV1 write_once = 20; // WRITE-0 §5.3; PRESERVE_INSTANCE, no free text
   }
 }
 
@@ -238,10 +239,13 @@ message OneItemCommandRefV1 {
 // CREATURE-DEATH-OCCURRENCE-IDENTITY-V1 durable, restart-stable death key.
 message CreatureDeathOccurrenceRefV1 {
   bytes world_id = 1;   // exactly 16-byte non-nil UUIDv7
-  bytes channel_id = 2; // exactly 16-byte non-nil UUIDv7
+  bytes channel_id = 2; // UUIDv7 for Channel; empty for Instance
   uint64 scope_ownership_generation = 3;
   uint32 actor_local_id = 4;
   uint64 actor_local_generation = 5;
+  // Crystal src/creatures/creature.cpp:711-721,777-782: exact death scope of the physical corpse.
+  // Exactly one Channel or Instance UUIDv7; omitted in historical Channel bytes.
+  optional bytes instance_id = 6;
 }
 
 // The loot output cause (death key, LootTableDefinitionRef, purpose key,
@@ -277,7 +281,7 @@ message OneItemMintV1 {
   // Explicit semantic absence of a prior item; not a nil or zero identifier.
   bool before_semantically_absent = 4;
   // D3-2 corpse-loot MINT: Container { parent = the death's corpse
-  // ItemInstance, entry = placement ordinal, 1..=16 }. The parent is the
+  // ItemInstance, entry = placement ordinal, 1..=30 }. The parent is the
   // corpse MINTed for the same death (source.death_occurrence); the World and
   // Channel of the event are those of that death.
   OneItemContainerEntryV1 corpse_container_entry = 5;
@@ -387,9 +391,14 @@ message OneItemWorldResetV1 {
 }
 
 message OneItemGroundContainerEntryV1 {
-  bytes parent_item_instance_id = 1;
-  uint64 placement_ordinal = 2;
+  bytes parent_item_instance_id = 1; // actual immediate parent; non-nil UUIDv7
+  uint64 placement_ordinal = 2; // positive monotonic u64; legacy entries remain 1..30
   OneItemGroundV1 parent_ground = 3;
+  // Death-tree WorldReset/ActivityRetirement: parent_ground locates this exact
+  // Ground root, while field 1 retains the actual immediate parent. Present even
+  // for direct death-tree children; absent for legacy Ground-container entries,
+  // preserving their encoded bytes. Exactly 16-byte non-nil UUIDv7 when present.
+  optional bytes tree_root_item_instance_id = 4;
 }
 
 // D3-6 DECAY_RETIRE step: one live item (identity, type and quantity before)
@@ -450,6 +459,9 @@ message OneItemFeeBurnCauseV1 {
     OneItemNpcPurchaseV1 bosstiary_slot = 16; // WB2/P02; oteryn:bosstiary.slot_remove, same-transaction slot operation
     // Closed named-House Hireling food purchase through the existing fee owner.
     OneItemNpcPurchaseV1 hireling_service = 472;
+    // Winter Update 2026 Mod Reshaping: oteryn:atelier.reshape, 125000/1000000/5000000 gold
+    // for positions 1/2/3; paired with the same-transaction Atelier RESHAPE receipt.
+    OneItemNpcPurchaseV1 gem_reshape = 483;
   }
 }
 message OneItemMarketFeeV1 {
@@ -459,8 +471,8 @@ message OneItemMarketFeeV1 {
 message OneItemNpcPurchaseV1 {
   string service_key = 1;
   bytes occurrence = 2;
-  // Same-transaction source proof for GemReveal, GemSwitchDomain and GemGradeUp.
-  // New carried-source proofs include coin_inputs. Reveal and grade also bind
+  // Same-transaction source proof for GemReveal, GemSwitchDomain, GemGradeUp and GemReshape.
+  // New carried-source proofs include coin_inputs. Reveal, grade and reshape also bind
   // material BURNs; grade may debit the matching Supply Stash remainder.
   // Historical material-only proofs and an empty domain-switch proof remain valid.
   bytes atelier_proof = 3;
@@ -679,12 +691,14 @@ message OneItemNpcTradeV1 {
   optional OneItemHirelingPackageV1 hireling_package = 16;
   optional string house_key = 17; // world_id + key name the House; channel_id is origin provenance
   optional OneItemHouseFurnitureKitV1 house_furniture_kit = 18; // mutually exclusive with package
+  optional uint32 fluid_subtype = 19; // NPC-TRADE-3: 0..20, Item fluid state, never quantity
+  optional uint32 full_charges = 20; // NPC-TRADE-3: exact pinned native default charges
 }
 
 // Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using
 // command's CommandRef, which is the cause's identity.
 message OneItemUseCauseV1 {
-  uint32 kind = 1; // 1 Food, 2 Potion, 3 PickRefine (one-unit output), 328 MountTaming (burn), 470 HirelingLamp, 471 HirelingFood (burn)
+  uint32 kind = 1; // 1 Food, 2 Potion, 3 PickRefine (one-unit output), 4 RottenEssence, 5 SoulWarSourceUse (Sorrow/MortalEssence/CleansedSanity), 328 MountTaming (burn), 470 HirelingLamp, 471 HirelingFood (burn)
   string content_revision = 6;
   string ruleset_revision = 7;
   string sim_revision = 8;
@@ -723,6 +737,7 @@ message OneItemUseV1 {
   bool flask_missing = 12;
   optional uint64 source_inbox_ordinal = 13; // positive; HirelingLamp cause 470 only
   optional string house_key = 14; // required470, optional471; world_id + key name the House; channel_id is origin provenance
+  optional bytes instance_id = 15; // SRX-3 source essence cause4; exactly16-byte UUIDv7; channel_id empty and house_key absent
 }
 
 // D1230 closed material-free ForgeCause::DustLimit. Exactly one Character dust debit
@@ -822,4 +837,16 @@ message OneItemPlayerDeathItemV1 {
 message OneItemPlayerDeathInstanceV1 {
   bytes instance_id = 1;           // exactly 16-byte non-nil UUIDv7
   uint64 ownership_generation = 2; // positive; matches Ground and envelope when present
+}
+
+// One identity-preserving definition transform under the text CommandRef.
+message OneItemWriteOnceV1 {
+  OneItemStateV1 before = 1;
+  OneItemStateV1 after = 2;
+  OneItemCommandRefV1 command = 3;
+  bytes character_id = 4;
+  uint64 state_revision_before = 5;
+  uint64 state_revision_after = 6;
+  uint64 scope_ownership_generation = 7;
+  uint64 character_lease_generation = 8;
 }

@@ -677,3 +677,50 @@ fn rune_wire_capability_22_is_registered_not_offered_and_requires_15() -> Result
     assert!(!selected.domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY));
     Ok(())
 }
+
+/// The one frame of `frames`: `SESSION_JOIN_UNAVAILABLE` at `generation`.
+fn join_unavailable_frame(frames: &[Vec<u8>], generation: u64) -> Result<(), Box<dyn Error>> {
+    let [frame] = frames else {
+        return Err(format!("expected one frame, got {}", frames.len()).into());
+    };
+    let envelope = decode_wire_envelope(frame)?;
+    assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+    assert_eq!(envelope.connection_generation(), generation);
+    let error = oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?;
+    assert_eq!(
+        error.error_code,
+        FoundationProtocolError::SessionJoinUnavailable.code()
+    );
+    Ok(())
+}
+
+#[test]
+fn a_join_that_cannot_be_prepared_reports_session_join_unavailable() -> Result<(), Box<dyn Error>> {
+    run(async {
+        let authority = NegotiatingAuthority::new(Some(INJECTED));
+        let (admitted, _) = admit(&authority, &bootstrap(&[])?).await?;
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        authority.scope_fails.set(true);
+        let (end, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+        join_unavailable_frame(&frames, admitted.continuity.connection_generation)
+    })
+}
+
+#[test]
+fn a_resume_that_cannot_be_prepared_reports_session_join_unavailable()
+-> Result<(), Box<dyn Error>> {
+    run(async {
+        let authority = NegotiatingAuthority::new(Some(INJECTED));
+        let (admitted, _) = admit(&authority, &bootstrap(&[1])?).await?;
+        authority.lost.set(Some(admitted.map_err(|end| format!("{end:?}"))?));
+        authority.scope_fails.set(true);
+        let (end, frames) = admit(&authority, &resume(&[1])).await?;
+        assert!(matches!(
+            end,
+            Err(ConnectionEnd::AdmittedThenDisconnected(_))
+        ));
+        // Before `ServerResumeAccepted` the client knows no generation but 0.
+        join_unavailable_frame(&frames, 0)
+    })
+}

@@ -1,0 +1,23 @@
+{
+  "log": ".questpc/restart4-story-reward-pg.log",
+  "log_sha256": "4431b9c07038335f0c1f81fe8fba0c7d89a9f67e360676bfbf84d0e2118a7ab0",
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--all-features",
+    "--lib",
+    "--",
+    "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "exit": 1,
+  "duration_seconds": 158.438,
+  "test_results": {},
+  "qualified_cohorts": 0,
+  "qualified_quests": 0
+}

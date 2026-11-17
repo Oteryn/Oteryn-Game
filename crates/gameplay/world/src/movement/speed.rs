@@ -18,6 +18,9 @@ use std::time::Duration;
 pub mod creature_speed_fixture;
 
 pub use oteryn_gameplay_characters::speed::*;
+#[path = "speed/m40.rs"]
+mod m40;
+pub use m40::player_directional_step_duration;
 
 /// The effective speed of the player `actor` of `session` at the owner time `now`: the level
 /// term and the actor's active `SPEED` condition delta from the Channel runtime's condition
@@ -102,6 +105,7 @@ mod tests {
                 kind: TerrainKind::Ground,
                 walkable: Some(walkable),
                 ground_speed: Some(speed),
+                blocks_projectile: None,
             }),
         };
         let manifest = Manifest {
@@ -390,12 +394,7 @@ impl CreatureMovementCadence {
             return Err(E::MissingMap);
         }
         let at = snapshot.position();
-        let (dx, dy) = match direction {
-            crate::movement::CardinalStep::North => (0, -1),
-            crate::movement::CardinalStep::East => (1, 0),
-            crate::movement::CardinalStep::South => (0, 1),
-            crate::movement::CardinalStep::West => (-1, 0),
-        };
+        let (dx, dy) = direction.delta();
         let next = crate::foundation::MovementLocalPosition {
             x: at.x.checked_add(dx).ok_or(E::MissingMap)?,
             y: at.y.checked_add(dy).ok_or(E::MissingMap)?,
@@ -407,6 +406,7 @@ impl CreatureMovementCadence {
             z: i32::from(next.floor),
         };
         let duration = creature_step_duration(runtime, self.actor, source, ground, onto, now)
+            .and_then(|duration| duration.checked_mul(direction.pacing_cost()))
             .ok_or(E::MissingSpeed)?;
         if self.pacer.wait_until(now).is_some() {
             return Ok(None);

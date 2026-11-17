@@ -14,7 +14,7 @@ impl ExivaPanel {
             self.error = None;
             true
         } else {
-            self.error = Some("Exiva request refused; refresh the list");
+            self.error = Some(tr!("Exiva request refused; refresh the list"));
             false
         }
     }

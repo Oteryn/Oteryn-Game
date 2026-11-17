@@ -1,0 +1,128 @@
+{
+  "schema": "OTERYN_NOMADS_WINDOW_SOURCE_PROFILE/v1",
+  "classification": "CHOSEN_OTERYN_APPROXIMATION",
+  "quest": "oteryn:quest.authored.nomads_land_quest",
+  "recipe_stage": "s4",
+  "callback": "oteryn:quest-callback/engenc2/nomads-land-window",
+  "scope": "Window-obstruction observation only. This does not grant cabinet items, completion or earlier route stages. Cabinet pickup must recheck the Ground requirements, not trust the historical observation track.",
+  "source_equivalence": false,
+  "sources": [
+    {
+      "content_sha256": "668c732ef5b6fbf91da6064dec69ad08a0bde403334915afd6fe879a5d6345c0",
+      "pageid": 20026,
+      "provider": "tibia_fandom",
+      "relation": "base",
+      "revid": 842864,
+      "url": "https://tibia.fandom.com/index.php?curid=20026&oldid=842864"
+    },
+    {
+      "content_sha256": "51495fdbad2ebf340f2032d4ed075256ad1a6501ec178a580a0e6850dcc94e56",
+      "pageid": 22842,
+      "provider": "tibia_fandom",
+      "relation": "spoiler",
+      "revid": 1002600,
+      "url": "https://tibia.fandom.com/index.php?curid=22842&oldid=1002600"
+    },
+    {
+      "url": "https://github.com/Lavovskii/grimorio/blob/dbeee0138a54b30a74dd690c4a7e6fab514c8db0/_questski/tools/briefs/nomads-land-quest.md",
+      "role": "pinned public walkthrough mirror"
+    },
+    {
+      "url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml#L3817",
+      "role": "window1744, crate2471 and amphora2904 definitions; not a donor callback"
+    }
+  ],
+  "map": {
+    "path": "content/world/placements/region-z09-x129-y128.b3",
+    "sha256": "5f1c4081bc48d6e2481d0e29f37fed6b6823d6e749d1d9e75ecbfba15706d3bc",
+    "palette": "content/world/placements/index.json",
+    "donor_repository": "zimbadev/crystalserver",
+    "donor_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "window": {
+    "position": {
+      "x": 33216,
+      "y": 32855,
+      "floor": -9
+    },
+    "ordinal": 1,
+    "appearance": 1744
+  },
+  "requirements": [
+    {
+      "position": {
+        "x": 33215,
+        "y": 32854,
+        "floor": -9
+      },
+      "ground": {
+        "stacks": [
+          {
+            "item": "oteryn:item.tibia.i2471",
+            "revision": "definition-r1",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "position": {
+        "x": 33216,
+        "y": 32854,
+        "floor": -9
+      },
+      "ground": {
+        "stacks": [
+          {
+            "item": "oteryn:item.tibia.i2471",
+            "revision": "definition-r1",
+            "quantity": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i2904",
+            "revision": "definition-r1",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    {
+      "position": {
+        "x": 33217,
+        "y": 32854,
+        "floor": -9
+      },
+      "ground": {
+        "stacks": [
+          {
+            "item": "oteryn:item.tibia.i2471",
+            "revision": "definition-r1",
+            "quantity": 1
+          }
+        ]
+      }
+    }
+  ],
+  "loose_sources": [
+    {
+      "position": {
+        "x": 33218,
+        "y": 32854,
+        "floor": -9
+      },
+      "item": "oteryn:item.tibia.i2471",
+      "instances": 3
+    },
+    {
+      "position": {
+        "x": 33218,
+        "y": 32853,
+        "floor": -9
+      },
+      "item": "oteryn:item.tibia.i2904",
+      "instances": 1
+    }
+  ],
+  "native_item_profile": "content/items/definitions/spell-native-profiles.json",
+  "native_choice": "USE the existing plain-base window after arranging three crates in a line, with the amphora above the middle crate. Record a personal s4 observation; this extra USE binding is an Oteryn choice, not source Lua behavior."
+}

@@ -101,7 +101,7 @@ fn modify_conditions<S: Clone>(
     immunities: &[oteryn_gameplay_domain::domain::condition::ConditionType],
     facts: &oteryn_gameplay_foundation::foundation::condition::ApplicationFacts<'_>,
     shield_required: bool,
-    party_damage_bonus: u32,
+    (party_damage_bonus, vibrancy, player_source): (u32, u8, bool),
 ) -> Result<(), SpellCastDisposition> {
     use oteryn_gameplay_domain::domain::condition::ConditionRefusal;
     use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
@@ -155,6 +155,17 @@ fn modify_conditions<S: Clone>(
                     } else {
                         ConditionSourceKind::SelfUse
                     };
+                if crate::spell::source_player_conditions::deflect_equipped_paralysis(
+                    store,
+                    &definition,
+                    vibrancy,
+                    player_source,
+                    facts,
+                )
+                .map_err(|_| SpellCastDisposition::Rejected)?
+                {
+                    continue;
+                }
                 match store.apply(&definition, source.clone(), source_kind, immunities, facts) {
                     Ok(_) | Err(ConditionRefusal::KeptCurrent) | Err(ConditionRefusal::Immune) => {}
                     Err(_) => return reject(),
@@ -178,6 +189,7 @@ pub(super) async fn prepare(
     room: &QualifiedNativeEntryRoom,
     objects: &LocalObjectRuntime,
     content: &NativeGameplayState,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     owned: &OwnedCastFacts,
     book: &SpellBook,
     spell: &SpellDefinition,
@@ -201,6 +213,7 @@ pub(super) async fn prepare(
         room,
         objects,
         content,
+        charms,
         owned,
         book,
         spell,
@@ -229,6 +242,7 @@ pub(super) async fn prepare_named(
     room: &QualifiedNativeEntryRoom,
     objects: &LocalObjectRuntime,
     content: &NativeGameplayState,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     owned: &OwnedCastFacts,
     book: &SpellBook,
     spell: &SpellDefinition,
@@ -282,6 +296,7 @@ pub(super) async fn prepare_named(
         room,
         objects,
         content,
+        charms,
         owned,
         book,
         spell,
@@ -303,6 +318,7 @@ pub(super) async fn prepare_named(
 #[path = "ordinary_combat/prepare.rs"]
 mod preparation;
 use preparation::prepare_inner;
+pub(in crate::gameplay_transport) use preparation::{Aim, aim, aim_point, aimed_origin};
 
 struct Output {
     batch: OwnerCombatBatch,
@@ -317,6 +333,7 @@ fn lower(
     states: &mut ChannelSpellStates,
     room: &QualifiedNativeEntryRoom,
     content: &NativeGameplayState,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     owned: &OwnedCastFacts,
     spell: &SpellDefinition,
     intent: &SpellCastIntent,
@@ -568,8 +585,20 @@ fn lower(
     };
     if let Some(owner) = magnitude.as_mut() {
         owner
+            .bind_native_health_observations(runtime, owned.native_health_observations())
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+        owner
             .select_item_spell(spell)
             .map_err(|_| SpellCastDisposition::Rejected)?;
+        crate::gameplay_transport::attack::charm_combat::select_spell_critical(
+            states,
+            runtime,
+            charms,
+            owned.binding().actor,
+            command,
+            owner,
+        )
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     }
     let mut batch=OwnerCombatBatch{caster:owned.binding().actor,attacker:CharacterId::decode(&owned.binding().character).map_err(|_|SpellCastDisposition::Rejected)?,
         current_lease_generation:owned.binding().lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,
@@ -695,7 +724,11 @@ fn lower(
                 &next.policy.condition_immunities,
                 &facts,
                 spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield",
-                before.virtue_party_bonuses(now.get()).spell_damage,
+                (
+                    before.virtue_party_bonuses(now.get()).spell_damage,
+                    0,
+                    false,
+                ),
             )?;
             if next.conditions != expected.state.conditions {
                 change = Some(OwnerCombatChange::CompanionConditions(Box::new(
@@ -736,7 +769,11 @@ fn lower(
                 &[],
                 &facts,
                 spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield",
-                before.virtue_party_bonuses(now.get()).spell_damage,
+                (
+                    before.virtue_party_bonuses(now.get()).spell_damage,
+                    actual.equipped_offence().paralysis_deflection_percent,
+                    batch.caster != target.actor,
+                ),
             )?;
             if next != expected {
                 change = Some(OwnerCombatChange::PlayerConditions {
@@ -1409,7 +1446,7 @@ mod tests {
             &[],
             &facts,
             true,
-            0,
+            (0, 0, false),
         )?;
         Ok(OwnerCombatBatch {
             caster: f.actor,
@@ -2288,7 +2325,7 @@ mod tests {
             &[],
             &facts,
             false,
-            8,
+            (8, 0, false),
         )
         .unwrap();
         let ConditionValues::DamageSequence { steps, len, .. } =
@@ -2330,6 +2367,7 @@ pub(in crate::gameplay_transport) async fn prepare_due(
     room: &QualifiedNativeEntryRoom,
     objects: &LocalObjectRuntime,
     content: &NativeGameplayState,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     owned: &OwnedCastFacts,
     spell: &SpellDefinition,
     target: ExactActorRef,
@@ -2480,8 +2518,15 @@ pub(in crate::gameplay_transport) async fn prepare_due(
         .map_err(|_| SpellCastDisposition::Rejected)
         .and_then(|mut owner| {
             owner
+                .bind_native_health_observations(runtime, owned.native_health_observations())
+                .map_err(|_| SpellCastDisposition::Rejected)?;
+            owner
                 .select_item_spell(spell)
                 .map_err(|_| SpellCastDisposition::Rejected)?;
+            crate::gameplay_transport::attack::charm_combat::select_spell_critical(
+                states, runtime, charms, b.actor, command, &mut owner,
+            )
+            .map_err(|_| SpellCastDisposition::Rejected)?;
             Ok(owner)
         })
     };

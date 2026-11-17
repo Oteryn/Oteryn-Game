@@ -1,0 +1,223 @@
+{
+  "state": "REPAIRS_UNDER_VALIDATION",
+  "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+  "local_merge": "061f7d713",
+  "owner_policy": "own focused PG; workspace all-target compile; changed-crate strict clippy; fmt; duplicate migrations; repo-generated pins. CI owns full reverse-dependency suites.",
+  "postgres_version": "18.6",
+  "baseline": {
+    "selection": "test(questpc7) | test(father)",
+    "seconds": 796.444,
+    "passed": 26,
+    "failed": 4,
+    "cases": [
+      {
+        "result": "PASS",
+        "seconds": 54.255,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_asymmetric_lever::questpc7_giant_smithhammer_asymmetric_lever_all_four_states"
+      },
+      {
+        "result": "PASS",
+        "seconds": 103.818,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction"
+      },
+      {
+        "result": "PASS",
+        "seconds": 106.98,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::npc_program::catalogue_npc_father_legacy_hash_preserves_defaults_and_restart_receipts"
+      },
+      {
+        "result": "PASS",
+        "seconds": 120.779,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::fathers_burden::fathers_burden_eight_handins_cape_experience_and_replay"
+      },
+      {
+        "result": "PASS",
+        "seconds": 99.624,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_eligibility::questpc7_reward_requirements_current_premium_and_low_level"
+      },
+      {
+        "result": "PASS",
+        "seconds": 90.999,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_eligibility::questpc7_reward_requirements_refuse_missing_native_premium"
+      },
+      {
+        "result": "PASS",
+        "seconds": 97.761,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_eligibility::questpc7_reward_requirements_high_level_and_readonly_parent"
+      },
+      {
+        "result": "FAIL",
+        "seconds": 90.031,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_feaster::questpc7_feaster_native_sampling_prefix"
+      },
+      {
+        "result": "PASS",
+        "seconds": 65.056,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_ferumbras::questpc7_ferumbras_full_native_seals_and_reward_bundle"
+      },
+      {
+        "result": "FAIL",
+        "seconds": 46.629,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_friends::questpc7_friends_full_route_and_repeatable_unlocked_services"
+      },
+      {
+        "result": "PASS",
+        "seconds": 100.51,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_formal::questpc7_formal_exhibition_display_and_consumptive_accessories"
+      },
+      {
+        "result": "PASS",
+        "seconds": 119.628,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_forgotten_story::questpc7_forgotten_whole_native_paths_and_learning"
+      },
+      {
+        "result": "FAIL",
+        "seconds": 105.55,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_golden::questpc7_golden_full_commission_charges_exactly_once"
+      },
+      {
+        "result": "PASS",
+        "seconds": 73.341,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_grave::questpc7_grave_whole_native_journey_and_reward"
+      },
+      {
+        "result": "PASS",
+        "seconds": 82.099,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_hero::questpc7_hero_full_native_investigation"
+      },
+      {
+        "result": "PASS",
+        "seconds": 114.99,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_grimvale::questpc7_grimvale_native_contacts"
+      },
+      {
+        "result": "PASS",
+        "seconds": 132.693,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_heart_story::questpc7_heart_whole_native_breaches_and_rewards"
+      },
+      {
+        "result": "PASS",
+        "seconds": 139.632,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_grimvale_story::questpc7_grimvale_whole_native_investigation_and_rewards"
+      },
+      {
+        "result": "PASS",
+        "seconds": 65.629,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_hoist_story::questpc7_hoist_full_knowledge_control_completion_and_native_binding"
+      },
+      {
+        "result": "FAIL",
+        "seconds": 57.933,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_hydra::questpc7_hydra_requires_personal_native_nest_pickup"
+      },
+      {
+        "result": "PASS",
+        "seconds": 62.313,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_native_deaths::questpc7_hidden_full_native_route_and_atomic_valuables"
+      },
+      {
+        "result": "PASS",
+        "seconds": 96.28,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_native_deaths::questpc7_native_objectives_spawn_once_and_credit_exact_lethal_occurrences"
+      },
+      {
+        "result": "PASS",
+        "seconds": 221.74,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_hoist::questpc7_formorgar_hoist_read_only_step"
+      },
+      {
+        "result": "PASS",
+        "seconds": 144.189,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_outfit_items::questpc7_inquisition_personal_tokens_require_actual_native_addons"
+      },
+      {
+        "result": "PASS",
+        "seconds": 87.14,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_reward_slices::questpc7_formorgar_books_use_replay_and_refusal"
+      },
+      {
+        "result": "PASS",
+        "seconds": 166.596,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_outfit_items::questpc7_fiend_personal_tokens_require_actual_native_addons"
+      },
+      {
+        "result": "PASS",
+        "seconds": 70.606,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_reward_slices::questpc7_giant_smithhammer_rewards_use_replay_and_refusal"
+      },
+      {
+        "result": "PASS",
+        "seconds": 45.446,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_world_outfit::questpc7_world_wardrobe_grant_is_atomic_and_replay_safe"
+      },
+      {
+        "result": "PASS",
+        "seconds": 89.149,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_tokens::questpc7_hunting_for_tokens_exact_twenty_and_once_only_abacus"
+      },
+      {
+        "result": "PASS",
+        "seconds": 132.696,
+        "test": "oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::questpc7_reward_slices::questpc7_story_rewards_use_replay_and_refusal"
+      }
+    ]
+  },
+  "repairs": {
+    "feaster": "phase activation for STEP callbacks plus bounded per-command world MINT and exact same-transaction USE counter proof; added exact command replay assertion",
+    "friends": "checksum assertion follows renumbered migration1286; assertion remains exact",
+    "golden": "restore three commission offer phrases in the shared connection helper",
+    "hydra": "resolve exactly one movable native egg by its admitted definition rather than a fixture stack ordinal"
+  },
+  "pending_log": "/tmp/questpc7-pr3020-grouped-repairs-final-pg.log",
+  "passed_checks": {
+    "workspace_all_targets": "9m30s before the four focused repairs",
+    "main_grant_aliases": "5 passed,5.81s",
+    "loader": "11 passed,17.60s",
+    "activation_unit": "1 passed; checks USE/STEP IN/STEP OUT and rejects foreign/read-only/mismatched guards",
+    "author_programmes": "22 passed,73.433s",
+    "authored_inventory": "5 passed",
+    "full_regeneration": "completed repo producers,checks and pin-refresh; final standalone pin-check passed"
+  },
+  "main_migrations": [
+    {
+      "file": "0999_quest_reward_callbacks.sql",
+      "sha256": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294"
+    },
+    {
+      "file": "1000_quest_reward_payments.sql",
+      "sha256": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311"
+    },
+    {
+      "file": "1001_quest_reward_participants.sql",
+      "sha256": "de9d7f8d779b1b5d24105139c2b781afd09ad0067aa15ef904ef3267bd4c38e5"
+    },
+    {
+      "file": "1002_quest_reward_state_operations.sql",
+      "sha256": "7ccf2726dbe7637c646573a004a265b0e1c484aa5330dee42894b96fb2a27ba8"
+    },
+    {
+      "file": "1003_quest_reward_target_sets.sql",
+      "sha256": "56c9fd32ab49a247e41b66c2e0a4b4df6613e6366f6667bd00edf28d190704bf"
+    },
+    {
+      "file": "1004_quest_paid_item_exchanges.sql",
+      "sha256": "4a5da4833971b005a99adee986114a609744ad03e4441d06c724754e8a911800"
+    },
+    {
+      "file": "1005_quest_carried_use_proofs.sql",
+      "sha256": "77fe7b21e135c99a69b6e7ab26d14ff62c0f73dd01b1986bfba45912713fb023"
+    },
+    {
+      "file": "1006_quest_owned_base_predicates.sql",
+      "sha256": "2490e09e46f2f4bebb50cdebc2ae17183646f3e111f9cdafc9208bd6da6b21b2"
+    },
+    {
+      "file": "1007_quest_carried_payment_reapplication.sql",
+      "sha256": "7e2498f421c470305eadf8b89e3eab0928b8a386fea385cff9768a51a743a2ae"
+    },
+    {
+      "file": "1008_quest_carried_membership_projection.sql",
+      "sha256": "3c8d74e1b4ef3c4a19d6b9bd0cee4651bd2e57e3c3e10891b39126452b7751ca"
+    }
+  ]
+}

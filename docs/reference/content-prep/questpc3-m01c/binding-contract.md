@@ -1,0 +1,20 @@
+# M01c — imported USE / COLLECT / KILL binding contract
+
+Scope: the eleven routes assigned by `qlane-meta/qmech/ASSIGN.md`, not TALK or EXPLORE. This file records checked facts and implementation decisions; it is not gameplay qualification.
+
+The existing immutable catalogue-scoped bindings and native kill queue are reused from QENGINE2 commits `a1ea4e48d` and `df01fc4e8`, rather than introducing another quest engine. Import excludes its later transaction-clock WIP and migrations outside this assignment. The imported threshold effect uses tag 11, as in the existing questpc3 reconciliation; tag 7 remains reserved for main's SetWithBinding. Retained callback validators, exact actor/session fences, revision serialization, original-snapshot kill thresholds and replay remain authoritative.
+
+COLLECT must prove currently carried quantities without consuming or minting them. A named numbered key additionally requires its durable `game_item_keys.key_number`; a different key appearance/number must not satisfy it. A source landmark such as “dead trees” is not an additional Item requirement. Counts are not copied into every named target: a four-piece collection is four distinct one-piece requirements; a five-blossom collection requires five blossoms. These are explicit selected-route interpretations, separate from source IDs.
+
+A successful item move is the proposed native ingress for COLLECT. Mere recipe parsing, a RewardClaim candidate, a client inventory snapshot or matching display text never grants stage progress. USE must follow successful native action admission, and KILL must follow the existing frozen death queue. Missing native adapters remain explicit until their physical path and durable operation are tested.
+
+## Checked source facts
+
+| source URL | lines | SHA-256 | fact |
+| --- | --- | --- | --- |
+| [draconia/action-lever.lua](https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/draconia/action-lever.lua) | 3–16, 20–33 | `7e9edad77d28207c451ae4043ebb89e6c6baea49e5f44ccd95ea30767200ecd6` | UID 30006 removes/restores Item 1282 at (32792,31581,7); UID 30035 removes/restores Item 1772 at (32790,31594,7). Both use lever appearances 2772/2773. |
+| [grimvale/actions_closed_silvered_trap.lua](https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua) | 3–20 | `cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94` | The closed trap is Item 22074. Successful placement transforms it to 22059; refuse inventory use and positions at distance >=30 from (33390,31540,11). |
+| [grimvale/actions_silver_liquid.lua](https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/grimvale/actions_silver_liquid.lua) | 3–15 | `b9ce9fa8be0fffa0bf8ef98b83067ff7eab12814d9a7f72a81034df680632210` | Item 22058 is the liquid. It transforms selected traps 3481/3482 to closed silvered trap 22074 and consumes the liquid only on that exact target match. |
+| [grimvale/creaturescripts_feroxa_transform.lua](https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/grimvale/creaturescripts_feroxa_transform.lua) | 3–39 | `f352019001aad140d2e8e8c003895a53afdbffeb6c52c05317597a8e2e58a982` | Early Feroxa phases remove/replace the creature; a phase death creates Feroxa5. A string match on every Feroxa phase is not terminal-boss kill evidence. |
+
+Canonical Item `oteryn:item.tibia.i22082` is named “purple nightshade blossoms” in `content/items/definitions/items-11000-11499.json`; the chosen singular target “Purple Nightshade Blossom” therefore needs an explicit exact-identity binding, not a guessed missing Item. The native Item provider already contains that appearance. Canonical Feroxa and Feroxa2–5 records and their source bindings exist in `content/creatures/definitions/creatures-00500-00999.json`.

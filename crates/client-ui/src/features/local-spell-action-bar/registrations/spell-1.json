@@ -7,7 +7,6 @@
   "chord": "1",
   "entry": "input.rs::default_spell_binding",
   "not_applicable": {
-    "state": "Local hotkey routing has no state concern.",
     "protocol": "Local hotkey routing has no protocol concern.",
     "settings": "Local hotkey routing has no settings concern."
   }

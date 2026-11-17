@@ -1,0 +1,65 @@
+{
+  "scope": "First-party Thaian native actor admission only; Feaster whole quest ACTIVE",
+  "source": "https://www.tibiawiki.com.br/index.php?title=Thaian&oldid=445240",
+  "postgres_version": "18.6",
+  "red": {
+    "duration_seconds": 81.509290862,
+    "error": "missing first-party Thaian native profile",
+    "log": "/workspace/scratch/questpc7-thaian-red3.log"
+  },
+  "loader_repairs": [
+    {
+      "duration_seconds": 33.103105454,
+      "error": "opened byte length differs from manifest",
+      "repair": "Repository-derived World document seal refreshed using existing provenance framing."
+    },
+    {
+      "duration_seconds": 42.866669788,
+      "error": "Project(LimitExceeded { resource: \"project reference records\", actual: 62872, limit: 62869 })",
+      "repair": "Regenerator derives three additional owned declarations and30 measured source records."
+    },
+    {
+      "duration_seconds": 45.651741254,
+      "error": "v2 authoring profiles are not target sorted and unique",
+      "repair": "Owned authoring merge sorts all records/profiles by family,key,revision; canonical Creature index stays sorted."
+    }
+  ],
+  "green": {
+    "duration_seconds": 67.368691913,
+    "postgres_version": "18.6",
+    "marker": "QUESTPC7_THAIAN POSTGRES_CASE_COMPLETED duration=67.368691913s success=true",
+    "command": "cargo nextest run -p oteryn-gameplay-dispatch -E 'test(questpc7_feaster_thaian_native_admission_preserves_source_facts)' --success-output immediate",
+    "log": "/workspace/scratch/questpc7-thaian-green5.log"
+  },
+  "assertions": [
+    "real Para Norbert introduction and bell grant",
+    "canonical Thaian HP50000, chosen zeroXP, noillusion, two source immunities and invisibility sensing",
+    "existing Ghost visual48 and honestly attested admitted melee approximation",
+    "real runtime admission at32627,32077,-7 with50000health",
+    "no programme advancement and bell preserved"
+  ],
+  "source_stage_tests": {
+    "passed": 9,
+    "duration_seconds": 1.511
+  },
+  "validation": {
+    "workspace_all_targets": "PASS final enum-order source and pin;9m05s including queued build lock",
+    "fmt": "PASS final enum-order source",
+    "duplicate_migrations": "PASS final enum-order source",
+    "source_stage_tests": "9 passed2.061s; installer/reseal byte-idempotent",
+    "crate_units": "Content330passed354.66s; game-server577passed182.47s; dispatch2775passed1250.53s; zero failures;22 preexisting ignores total. Unit admin URL unset; actualPG evidence separate.",
+    "pg_rerun": "green4 currently compiling; no GREEN claim",
+    "publication": "Compiling WIP under owner PREPUSH-2 cadence exception; final pin refresh required before push",
+    "completion_matrix": "Freshness PASS; no quest completion implied",
+    "world_metadata": "PASS",
+    "clippy": "PASS strict content/dispatch/game-server all-targets,10m28s including queued lock"
+  },
+  "publication": "PUSHED c5cc4325927d98d1af90c7041352d8c1d32a3361; native actor-admission slice QUALIFIED; whole Feaster ACTIVE; full changed-crate units now complete",
+  "final_bundle_digest": "8e4be229276fd4fe4898ae301a0557bd9df8c000be99a1ec508c3dd46008a053",
+  "last_red_before_enum_fix": {
+    "duration_seconds": 44.285881391,
+    "error": "Project(InvalidProject(\"v2 authoring profiles are not target sorted and unique\"))",
+    "root_cause": "Authoring profile target family is Rust enum order, not lexical; canonical reference identity remains lexical.",
+    "next_fix": "Sort profiles with ProjectV2Family order, regenerate and rerun."
+  }
+}

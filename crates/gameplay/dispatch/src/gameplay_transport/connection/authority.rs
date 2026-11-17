@@ -25,11 +25,96 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// Complete only the final spell participant under this connection's admitted fence.
+    fn repair_pending_spells(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { false }
+    }
+
+    /// One bounded cadence body; production retains its root's fairness grant across passes.
+    fn background_operation<F: Future>(&self, future: F) -> impl Future<Output = F::Output> {
+        future
+    }
+
+    /// Informational operator publication, read only after authoritative admission.
+    fn client_bulletin(&self) -> impl Future<Output = Option<String>> {
+        async { None }
+    }
+    /// NX-1: current durable bans/kicks and session staff flags; independent of presentation capabilities.
+    fn staff_refresh(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { true }
+    }
+    /// A closing account uses the existing activity/terminal-release owners.
+    fn account_closure_check(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { false }
+    }
+
+    /// One read-only presentation frame for a batch; default reference fixtures
+    /// retain their legacy positive-z wire. Production independently proves pins.
+    fn native_map_cue_uses_native_floor(&self) -> impl Future<Output = Option<bool>> {
+        async { Some(false) }
+    }
+
+    /// Post-auth observation-only presentation frame. The production House
+    /// adapter must derive it from this exact current actor/session custody.
+    fn native_current_actor_map_cue_frame(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<bool>> {
+        async { self.native_map_cue_uses_native_floor().await }
+    }
+
+    /// Read-only current native presentation source; never an offer for casting.
+    fn native_world_presentation_available(&self) -> impl Future<Output = bool> {
+        async { false }
+    }
+
+    #[cfg(test)]
+    fn test_durability_root(&self) -> Option<&crate::durability::DurabilityRoot> {
+        None
+    }
+
+    fn observe_sounds(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _after: u64,
+    ) -> impl Future<
+        Output = Option<(
+            u64,
+            Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+        )>,
+    > {
+        async { None }
+    }
+
     /// Native movement effects committed by special-tile entry after `after`.
     fn observe_movement_effects(
         &self,
         _after: u64,
     ) -> Vec<(u64, crate::map::overlay::TilePos, u16)> {
+        Vec::new()
+    }
+    /// Current actor-scoped native effects. Unimplemented authorities are
+    /// closed: the legacy map stream cannot establish named-House custody.
+    fn observe_current_actor_movement_effects(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _after: u64,
+    ) -> impl Future<Output = Vec<(u64, crate::map::overlay::TilePos, u16)>> {
+        async { Vec::new() }
+    }
+    fn observe_movement_speech(
+        &self,
+        _after: u64,
+    ) -> Vec<(u64, crate::map::facts::MovementSpeech)> {
+        Vec::new()
+    }
+    fn observe_creature_visuals(
+        &self,
+        _after: u64,
+    ) -> Vec<(u64, crate::map::facts::CreatureVisualKind)> {
         Vec::new()
     }
     /// Select the complete native owner for a committed activity successor.
@@ -86,6 +171,12 @@ pub trait FreshAdmissionAuthority {
     /// for this exact socket/loss lifecycle. Cancellation or an unknown durable
     /// outcome must retain the aliases needed by the existing recovery owners.
     fn finish_activity_connection_lineage(&self, _admitted: AdmittedSession) {}
+    fn analyser_snapshot(&self, _admitted: AdmittedSession) -> impl Future<Output = Option<bool>> {
+        async { Some(false) }
+    }
+    fn analyser_next(&self, _admitted: AdmittedSession) -> impl Future<Output = Option<Vec<u8>>> {
+        async { None }
+    }
     mechanic_authority_methods!();
     /// KEYDOOR-1: use a resolved carried/map key on a non-movable map door.
     fn use_key_on_door(
@@ -97,8 +188,13 @@ pub trait FreshAdmissionAuthority {
     ) -> impl Future<Output = Option<UseOutcome>> {
         async { None }
     }
-    fn activity_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
-        async { true }
+    /// Holder unavailability/deadline refuses this command; every other error
+    /// means the admitted authority was lost and still closes the connection.
+    fn activity_transfer_input(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<(), crate::durability::DurabilityError>> {
+        async { Ok(()) }
     }
     fn activity_scope_snapshot(
         &self,
@@ -107,9 +203,21 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
-    fn house_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
-        async { true }
+    fn house_transfer_input(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<(), crate::durability::DurabilityError>> {
+        async { Ok(()) }
     }
+    fn observe_house_map(
+        &self,
+        _admitted: AdmittedSession,
+        _view: &mut SessionMapView,
+        _items: &mut SessionItemView,
+    ) -> impl Future<Output = Option<Result<Option<MapUpdate>, MapViewError>>> {
+        async { None }
+    }
+
     fn house_scope_ack(
         &self,
         _admitted: AdmittedSession,
@@ -195,6 +303,14 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// S-ENTNAME: the same visibility read enriched with names for capability 286.
+    fn observe_named_visible_entities(
+        &self,
+        actor: ExactActorRef,
+    ) -> impl Future<Output = Option<ChannelEntities>> {
+        self.observe_visible_entities(actor)
+    }
+
     /// VIS-3 (MOVE-RL-11 §4): every entity of the admitted actor's Channel with the actor's own
     /// identity among them, read in one Channel-owner work item, for domain 1 under capability 6.
     /// `None` when it cannot be read: a session that selected capability 6 then fails closed.
@@ -211,11 +327,15 @@ pub trait FreshAdmissionAuthority {
                 content_generation: own.content_generation,
                 observer: identity,
                 entities: vec![ChannelEntity {
+                    source_icons:
+                        oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(
+                        ),
+                    display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                     kind: VisibleKind::Player,
                     identity,
-                    generation: 0,
+                    generation: actor.actor_local_generation(),
                     position: own.actor_position,
                     revision: 0,
                 }],
@@ -254,6 +374,16 @@ pub trait FreshAdmissionAuthority {
         direction: StepDirection,
     ) -> impl Future<Output = (StepOutcome, Option<std::time::Duration>)> {
         async move { (self.step(actor, direction).await, None) }
+    }
+
+    /// Physical committed movement observation; it does not grant client input.
+    /// Call after the actor's pace clock and movement guards are settled.
+    fn committed_paced_movement(
+        &self,
+        _admitted: AdmittedSession,
+        _moved_to: Option<oteryn_protocol_oteryn::world_spatial::WorldSpatialObservation>,
+    ) -> impl Future<Output = ()> {
+        async {}
     }
 
     fn turn_actor_valid(
@@ -424,6 +554,11 @@ pub trait FreshAdmissionAuthority {
         std::future::pending()
     }
 
+    /// A durable Newhaven kit changed carried items; consume its bounded display notification.
+    fn take_newhaven_inventory_changed(&self, _session: GameSessionId) -> bool {
+        false
+    }
+
     fn take_tutorial_notice(
         &self,
         _session: GameSessionId,
@@ -467,6 +602,15 @@ pub trait FreshAdmissionAuthority {
     ///
     /// `command_id` is the FND-02 CommandId of the `USE` and `item_fence` the admitted session's
     /// [`AdmittedSession::item_fence`]; a chest `USE` keys its fenced MINT by both (C2).
+    fn use_event_world_object(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     fn use_object(
         &self,
         _actor: ExactActorRef,
@@ -474,6 +618,17 @@ pub trait FreshAdmissionAuthority {
         _target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> impl Future<Output = UseOutcome> {
         async { UseOutcome::rejected() }
+    }
+
+    /// A live map handle can reach a specific world owner without being treated as carried.
+    /// Unknown map uses retain the ordinary fail-closed container/item path.
+    fn use_map_item(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _item: ItemKey,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
     }
 
     /// ITEM-USE-1c: one `USE` of the main backpack direct entry `item` (food or a potion) under
@@ -518,6 +673,29 @@ pub trait FreshAdmissionAuthority {
         async { false }
     }
 
+    /// Explicit quest owner for a carried tool and a resolved map-item handle.
+    fn use_quest_tool(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
+    fn use_event_item(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _visible_target: bool,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     fn use_consume_transform(
         &self,
         _actor: ExactActorRef,
@@ -535,8 +713,8 @@ pub trait FreshAdmissionAuthority {
         _command: UseCommand,
         _converter: ItemKey,
         _coin: ItemKey,
-    ) -> impl Future<Output = Option<UseOutcome>> {
-        async { None }
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
     }
 
     /// I10a: a carried fluid container used on another carried one; `None` when either is not.
@@ -576,6 +754,24 @@ pub trait FreshAdmissionAuthority {
         _visible: bool,
     ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
         async { Ok(None) }
+    }
+
+    fn observe_house_destroy(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _source: [u8; 16],
+        _target: [u8; 16],
+    ) -> impl Future<Output = Option<super::super::house_destroy::Candidate>> {
+        async { None }
+    }
+    fn destroy_house_furniture(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _input: crate::durability::house_furniture_destroy::HouseDestroyCommand,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
     }
 
     /// MINING-1: original USE is retained for replay before either handle is resolved.
@@ -653,10 +849,33 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn use_soul_war_source_items(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     /// W07 reuses USE for carried Soul Core targets and the fixed obelisk. An unknown
     /// item returns None so existing tool owners can handle it; uncertain writes close
     /// the command through Err instead of falling through to a second mutation owner.
     fn use_soulpit_items(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
+    /// I14: probe flask/dispenser actions before Channel-only fluid handlers in a named House.
+    fn use_dispenser_action(
         &self,
         _actor: ExactActorRef,
         _command: UseCommand,
@@ -751,6 +970,23 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn stash_filtered(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashIntent,
+        filter: Option<oteryn_protocol_oteryn::stash::StashFilter>,
+        item: Option<ItemKey>,
+        row_open: bool,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::stash::StashReply>> {
+        async move {
+            if filter.is_some() {
+                return None;
+            }
+            self.stash(actor, command, intent, item, row_open).await
+        }
+    }
+
     /// Depot requests are resolved by the live Channel and fenced native item owner.
     fn depot(
         &self,
@@ -783,6 +1019,17 @@ pub trait FreshAdmissionAuthority {
         _request: LoopMove,
     ) -> impl Future<Output = LoopMoveResult> {
         async { LoopMoveResult::Refused(LoopMoveRefusal::Rejected) }
+    }
+
+    /// Authenticated446 extends only actual named-House container capacity.
+    fn move_loop_item_with_house_capacity(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        request: LoopMove,
+        _house_capacity_v2: bool,
+    ) -> impl Future<Output = LoopMoveResult> {
+        self.move_loop_item(actor, command, request)
     }
 
     /// ITEM-VIEW-1b: the Channel owner's view of the item a `USE` handle resolved to, with the
@@ -865,11 +1112,30 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// Legacy authorities keep capability14's original20 bound.
+    fn observe_container_with_house_capacity(
+        &self,
+        actor: ExactActorRef,
+        fence: Option<CurrentCharacterItemFence>,
+        target: ItemKey,
+        _house_capacity_v2: bool,
+    ) -> impl Future<Output = Option<ContainerObservation>> {
+        self.observe_container(actor, fence, target)
+    }
+
     /// Current observer-relative icons. Unavailable facts produce no update.
     fn observe_party_icons(
         &self,
         _admitted: AdmittedSession,
     ) -> impl Future<Output = Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>>> {
+        std::future::ready(None)
+    }
+
+    /// Own current-placement PvP observation; this never observes another character's totals.
+    fn observe_pvp_status(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::party_skull::PvpStatus>> {
         std::future::ready(None)
     }
 
@@ -917,6 +1183,15 @@ pub trait FreshAdmissionAuthority {
     }
 
     /// CHAT-WIRE-1: one `CHAT_INTENT` (command 13) of the admitted actor.
+    /// Older authority implementations may refuse the optional read-only console query.
+    fn console_levels(
+        &self,
+        _admitted: AdmittedSession,
+        _names: Vec<String>,
+    ) -> impl Future<Output = Option<Vec<Option<u32>>>> {
+        std::future::ready(None)
+    }
+
     fn chat_intent(
         &self,
         _actor: ExactActorRef,
@@ -1028,6 +1303,43 @@ pub trait FreshAdmissionAuthority {
         &self,
         _session: GameSessionId,
     ) -> impl Future<Output = Option<oteryn_protocol_oteryn::chat::private_channel::ChatChannelList>>
+    {
+        std::future::ready(None)
+    }
+
+    /// Capabilities 494 and 495 (WU26): the channel list with its extension when either changed
+    /// since the client was last sent one, and the member notices (line kind 8) since the
+    /// previous read. Only sessions with capability 80 and 494 or 495 ask.
+    fn chat_channel_list_extended_bound(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<
+        Output = (
+            Option<(
+                oteryn_protocol_oteryn::chat::private_channel::ChatChannelList,
+                oteryn_protocol_oteryn::chat::private_channel_extended::ChannelListExtension,
+            )>,
+            Vec<oteryn_protocol_oteryn::chat::line_extended::ChannelNotice>,
+        ),
+    > {
+        std::future::ready((None, Vec::new()))
+    }
+
+    /// Capability 493 (WU26): the relay accepted a private line of the session; queue its echo.
+    fn chat_private_echo(
+        &self,
+        _admitted: AdmittedSession,
+        _recipient_name: String,
+        _text: String,
+    ) -> impl Future<Output = ()> {
+        std::future::ready(())
+    }
+
+    /// Capability 493 (WU26): the oldest undelivered echo of the session.
+    fn chat_private_echo_next(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::chat::line_extended::PrivateEcho>>
     {
         std::future::ready(None)
     }
@@ -1145,6 +1457,15 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    fn observe_spell_catalog(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<Vec<oteryn_protocol_oteryn::actor_spell_catalog::SpellCatalogEntry>>>
+    {
+        async { None }
+    }
+
     /// The admitted actor's current `ACTOR_VITALS` revision and value for the initial snapshot,
     /// or `None` while it has no Character cast facts (spell cast §4).
     fn observe_vitals(
@@ -1153,6 +1474,16 @@ pub trait FreshAdmissionAuthority {
         _game_session_id: GameSessionId,
     ) -> impl Future<Output = Option<(u64, ActorVitals)>> {
         async { None }
+    }
+
+    /// Coordinate DATA only: the current room may use a different wire floor
+    /// convention. Existing authorities preserve their original coordinates.
+    fn physical_native_cast_position(
+        &self,
+        position: oteryn_protocol_oteryn::actor_spell::SpellTargetPosition,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::actor_spell::SpellTargetPosition>>
+    {
+        async move { Some(position) }
     }
 
     /// One `WORLD_ACTOR_SPELL_CAST_INTENT` of the admitted actor, applied by the Channel owner

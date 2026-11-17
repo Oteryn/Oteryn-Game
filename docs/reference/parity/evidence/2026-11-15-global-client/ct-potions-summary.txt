@@ -1,0 +1,21 @@
+Potion measurement: Invalid Monk, level 757, ML 54 (armor+legs on), no virtue (verified: Sustain on gave 1182-1278, toggled off gave 820/827 Spirit Mend). 2026-11-15, 17:07-17:17.
+Method: values from the Server Log copied as text ("You gained N mana", "You healed yourself for N hitpoints"); mana drained with Spirit Mend and HP set to 1 at the king before each chunk, so no gain could hit the cap (end-of-chunk HP/mana stayed below max in every chunk).
+
+Inventory before: superior mana 160, great mana 495, ultimate spirit 480, great spirit 17, ultimate health 501, empty flasks 394. Not present: health, strong health, great health, supreme health, mana, strong mana, ultimate mana potions. Nothing bought.
+
+superior mana    mana: n=30 min=242 max=356 mean=301.8 sd=35.2
+great mana       mana: n=30 min=150 max=246 mean=207.2 sd=25.2
+ultimate spirit  mana: n=30 min=150 max=247 mean=207.9 sd=29.3
+                 HP:   n=30 min=424 max=579 mean=514.5 sd=49.3
+great spirit     mana: n=12 min=124 max=160 mean=143.8 sd=13.6
+                 HP:   n=12 min=262 max=349 mean=317.1 sd=27.2
+ultimate health  not usable: "You cannot use this object." (Look: "can only be consumed by knights of level 130 or higher"). 0 samples.
+
+Exhaust/cooldown: 1 s between potions. Spam test clicking every 0.4 s: successful drinks at 17:00:13, :14, :15, :16 (one per second); extra clicks still print "Using one of N ..." with the same count but no gain and no item used. In the series (1.1 s clicks) every click succeeded.
+
+Anomalies / notes:
+- Great spirit is not on the hotbar. It was used from the backpack via Ctrl+click, "Use with...", then a click on the character. That way the Server Log has no "Using one of" line, only the gain lines. A plain right-click gives "You cannot use this object." Stock is now 5 (the last 5 were kept).
+- Gains vary widely within a type (e.g. superior mana 249-356), consistent with a random formula range; no drift over time.
+- Ultimate spirit HP and mana per drink are not correlated in a fixed ratio (both random).
+- The client saves a LowHealth screenshot every time HP is set to 1 at the king.
+- Raw data: /tmp/ct-potions.txt; runner /tmp/ct-pot2.py.

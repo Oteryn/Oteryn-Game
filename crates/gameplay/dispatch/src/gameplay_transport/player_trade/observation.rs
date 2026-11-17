@@ -122,6 +122,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain(visible.creatures.iter().map(|e| (VisibleKind::Creature, e)))
             .chain(visible.npcs.iter().map(|e| (VisibleKind::Npc, e)))
             .map(|(kind, e)| super::super::world_spatial::ChannelEntity {
+ source_icons: oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+                display_name: None,
                 health_percent: 100,
                 direction: match runtime
                     .read_actor_position(e.actor)
@@ -173,8 +175,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let digest = runtime.content_pin().server_artifact_digest();
         pinned_index(runtime, self.active_generation).ok_or(ResultCode::Rejected)?;
-        let room = self
-            .rooms
+        let room = self.rooms()
             .gate_attack_target()
             .ok_or(ResultCode::Rejected)?;
         let objects = self.door.lock().await;
@@ -280,7 +281,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         runtime: &ChannelRuntimeV1,
         leaf: &TradeLeaf,
-    ) -> Result<wire::Offer, ResultCode> {
+    ) -> Result<wire::Offer, CheckError> {
         let (definition, count) = leaf
             .definition_and_quantity()
             .map_err(|_| ResultCode::Rejected)?;
@@ -288,11 +289,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self
             .active_generation
             .and_then(|g| g.native_gameplay())
-            .ok_or(ResultCode::Rejected)?;
+            .ok_or_else(|| {
+                CheckError::Caused(CommandOutcome::rejected("native_gameplay_missing"))
+            })?;
         let Some((tradeable, pickupable)) =
             NativeItemWeights(native).player_trade_flags(&definition)
         else {
-            return Err(ResultCode::NotTradeable);
+            return Err(ResultCode::NotTradeable.into());
         };
         oteryn_gameplay_economy::player_trade::LeafFacts {
             direct_backpack_entry: true,
@@ -303,7 +306,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             quantity: count,
         }
         .check()
-        .map_err(result)?;
+        .map_err(CheckError::from)?;
         Ok(wire::Offer {
             definition: definition_ref(index, &definition)
                 .ok_or(ResultCode::NotTradeable)?

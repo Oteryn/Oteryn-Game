@@ -1,0 +1,7 @@
+{
+  "mechanic": "0382-death-protection",
+  "kind": "panels",
+  "id": "0382-death-protection-hud",
+  "status": "supported",
+  "entry": "view.rs::notice"
+}

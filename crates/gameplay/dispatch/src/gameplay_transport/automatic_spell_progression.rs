@@ -3,10 +3,13 @@
 use std::collections::BTreeSet;
 
 use crate::domain::{CharacterId, CharacterRevision};
+use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::foundation::GameSessionId;
 use crate::spell::{SpellBook, Vocation};
 
 use super::ComposedFreshAdmission;
+use super::connection::{AdmissionRefusal, AdmittedSession, FirstEntryOutcome};
+use super::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 
 /// The exact catalogue slice acquired at this progression point. `learning_required` preserves
 /// explicitly excluded spells rather than turning this compatibility projection into a grant.
@@ -21,6 +24,73 @@ fn eligible_spell_keys(book: &SpellBook, level: u32, vocation: Vocation) -> BTre
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Fresh and resumed connections share the same idempotent, exact-fence repair.
+    pub(super) async fn repair_pending_spell_entry(&self, admitted: AdmittedSession) -> bool {
+        let (FirstEntryOutcome::AwaitingSpellRepair, Some(expected), Some(actor)) = (
+            admitted.first_entry,
+            admitted.item_fence,
+            admitted.runtime_actor,
+        ) else {
+            return false;
+        };
+        if expected.game_session_id != admitted.game_session_id
+            || expected.connection_generation.get() != admitted.continuity.connection_generation
+        {
+            return false;
+        }
+        let Ok(retry) =
+            super::AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
+        else {
+            return false;
+        };
+        retry
+            .retry_unavailable(async || {
+                let loaded =
+                    load_character_cast_facts(self.root, self.character, expected.character_id)
+                        .await;
+                let (facts, revision, needs_grant) = match loaded {
+                    CastFactsLoad::Ready {
+                        facts,
+                        character_revision,
+                    } => (facts, character_revision, true),
+                    CastFactsLoad::NoVocation {
+                        facts,
+                        character_revision,
+                    } => (facts, character_revision, false),
+                    CastFactsLoad::Unavailable => return Err(AdmissionRefusal::Unavailable),
+                };
+                let fence = self
+                    .current_quest_fence(admitted.game_session_id)
+                    .await
+                    .map_err(|()| AdmissionRefusal::Unavailable)?
+                    .ok_or(AdmissionRefusal::Rejected)?;
+                if fence.item_fence() != expected {
+                    return Err(AdmissionRefusal::Rejected);
+                }
+                if fence.expected_character_revision != revision
+                    || (needs_grant
+                        && !self
+                            .reconcile_automatic_spells_fenced(fence, facts.level, facts.vocation)
+                            .await)
+                {
+                    return Err(AdmissionRefusal::Unavailable);
+                }
+                let runtime = self.runtime.lock().await;
+                if !runtime
+                    .player_control_facts(actor, admitted.game_session_id)
+                    .or_else(|_| {
+                        runtime.house_player_control_facts(actor, admitted.game_session_id)
+                    })
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+                {
+                    return Err(AdmissionRefusal::Rejected);
+                }
+                Ok(())
+            })
+            .await
+            .is_ok()
+    }
+
     pub(super) async fn reconcile_automatic_spells(
         &self,
         character: CharacterId,
@@ -35,6 +105,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if fence.character_id != character || fence.expected_character_revision != revision {
             return false;
         }
+        self.reconcile_automatic_spells_fenced(fence, level, vocation)
+            .await
+    }
+
+    async fn reconcile_automatic_spells_fenced(
+        &self,
+        fence: CurrentCharacterGameplayFence,
+        level: u32,
+        vocation: Vocation,
+    ) -> bool {
         let eligible = eligible_spell_keys(self.spells, level, vocation);
         self.root
             .acquire_automatic_spells(self.character, self.holder, fence, &eligible)

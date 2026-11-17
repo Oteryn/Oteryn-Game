@@ -1,0 +1,2023 @@
+{
+  "schema": "OTERYN_WORLD_CHANGE_OWNER_CATALOGUE/v1",
+  "owner": "world_event::changes; existing WorldReset finalization",
+  "selection": "The existing server-save owner selects daily candidates. Qualified counter bindings project current World phases; transferred HELD titles remain excluded.",
+  "entries": [
+    {
+      "key": "awash",
+      "title": "Awash World Change",
+      "quest": "oteryn:quest.awash_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00100-00199.json",
+          "locator": "oteryn:quest.awash_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Awash World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "c14e8dc57b44eafe1820f287e215c8a9024d8734570c45fbea82f49f092e55ef",
+          "pageid": 54563,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 1149363,
+          "url": "https://tibia.fandom.com/index.php?curid=54563&oldid=1149363"
+        },
+        {
+          "content_sha256": "05d9d1ed10eb0c2e031ee2bb532fcb68d93934bd015ea0094ebba35f5e85d2e0",
+          "pageid": 54770,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1149364,
+          "url": "https://tibia.fandom.com/index.php?curid=54770&oldid=1149364"
+        }
+      ],
+      "reason": "Pump/lever event membership, flooded/dry layer transition and shared reset rule are not bound.",
+      "missing_facts": [
+        "Pump/lever event membership, flooded/dry layer transition and shared reset rule are not bound."
+      ]
+    },
+    {
+      "key": "bank_robbery",
+      "title": "Bank Robbery Mini World Change",
+      "quest": "oteryn:quest.authored.bank_robbery_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.authored.bank_robbery_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Bank Robbery Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "d97167fd59323461c14ada6bde5bceeeb6c9de711d91afd5ab26c5f246300094",
+          "pageid": 76142,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 891480,
+          "url": "https://tibia.fandom.com/index.php?curid=76142&oldid=891480"
+        },
+        {
+          "content_sha256": "a865de3250f6abd2e432be0b265a88cb14e6bc202b07661af28f2f9cd35d5cc1",
+          "pageid": 76139,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1082154,
+          "url": "https://tibia.fandom.com/index.php?curid=76139&oldid=1082154"
+        }
+      ],
+      "reason": "Hourly robbery trigger/probability, banker-disable state and bag recovery/reset binding are absent; W 15 explicitly leaves the mid-epoch trigger outside v 1.",
+      "missing_facts": [
+        "Hourly robbery trigger/probability, banker-disable state and bag recovery/reset binding are absent; W 15 explicitly leaves the mid-epoch trigger outside v 1."
+      ]
+    },
+    {
+      "key": "bored",
+      "title": "Bored Mini World Change",
+      "quest": "oteryn:quest.bored_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00100-00199.json",
+          "locator": "oteryn:quest.bored_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Bored Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "9c2a3ca0693bafb274262db6f886b23fa8bea8f1db79dc50e34f6b9f0cc64848",
+          "pageid": 76210,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845015,
+          "url": "https://tibia.fandom.com/index.php?curid=76210&oldid=845015"
+        },
+        {
+          "content_sha256": "6bfd3400c4cc74a11a51ed27c8317359ac38bebfdfa5a1b80d53c21ed8aa3d65",
+          "pageid": 76211,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1135336,
+          "url": "https://tibia.fandom.com/index.php?curid=76211&oldid=1135336"
+        }
+      ],
+      "reason": "W 15 fixes 82 permille. Wyda and fake-spider components do not identify the active illusion-spider spawn variant or daily availability binding.",
+      "missing_facts": [
+        "W 15 fixes 82 permille. Wyda and fake-spider components do not identify the active illusion-spider spawn variant or daily availability binding."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 82,
+        "duration": "until_next_reset"
+      }
+    },
+    {
+      "key": "chakoya_iceberg",
+      "title": "Chakoya Iceberg Mini World Change",
+      "quest": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.authored.chakoya_iceberg_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Chakoya Iceberg Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "76c05acb484399ba03d3c5216c7d2f8608786af7403a7e140b6cee5d97dc1a44",
+          "pageid": 76212,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 847008,
+          "url": "https://tibia.fandom.com/index.php?curid=76212&oldid=847008"
+        },
+        {
+          "content_sha256": "002b68c1746f89bbb19af0d2be47bc61ab81022b65f1941c5615d95c4cb070a5",
+          "pageid": 76213,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887139,
+          "url": "https://tibia.fandom.com/index.php?curid=76213&oldid=887139"
+        }
+      ],
+      "reason": "Selected iceberg geometry, creature-to-variant membership and activation rule are absent; base Chakoya spawns/storage names do not identify the active iceberg.",
+      "missing_facts": [
+        "Selected iceberg geometry, creature-to-variant membership and activation rule are absent; base Chakoya spawns/storage names do not identify the active iceberg."
+      ]
+    },
+    {
+      "key": "chyllfroest",
+      "title": "Chyllfroest Mini World Change",
+      "quest": "oteryn:quest.chyllfroest_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00100-00199.json",
+          "locator": "oteryn:quest.chyllfroest_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Chyllfroest Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "be0cc96f5198a48b44c9766ab0baa9a09e83b525024f629b34bcaaad2f60e01f",
+          "pageid": 76214,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 797728,
+          "url": "https://tibia.fandom.com/index.php?curid=76214&oldid=797728"
+        },
+        {
+          "content_sha256": "087ee85b852a27e67160eae5c853d0ea02e4904668c165c8d432d997b2590f63",
+          "pageid": 76215,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887140,
+          "url": "https://tibia.fandom.com/index.php?curid=76215&oldid=887140"
+        }
+      ],
+      "reason": "Exact seasonal opening interval and native bridge/closed/open projection with spawn membership are not established.",
+      "missing_facts": [
+        "Exact seasonal opening interval and native bridge/closed/open projection with spawn membership are not established."
+      ]
+    },
+    {
+      "key": "deeplings",
+      "title": "Deeplings World Change",
+      "quest": "oteryn:quest.deeplings_worldchange",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00100-00199.json",
+          "locator": "oteryn:quest.deeplings_worldchange"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Deeplings World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "deeplings; source mechanics and explicit native geometry/parameters"
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/deepling_boss_access.rs",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "1a6b11b8baea5180b05db355d8219c2e74a562e331c7fd02b3e752853283111e",
+          "pageid": 56899,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845058,
+          "url": "https://tibia.fandom.com/index.php?curid=56899&oldid=845058"
+        },
+        {
+          "content_sha256": "4d57a247a604e765f0c4088501a0de414718de15488492043857bafde204c4f0",
+          "pageid": 56900,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 501316,
+          "url": "https://tibia.fandom.com/index.php?curid=56900&oldid=501316"
+        }
+      ],
+      "reason": "Heart/net shared progress, save transitions, explicit native coral-OR-stair completion and phase-three boss access preserving personal Crystal 13.",
+      "binding": {
+        "counter_key": "deeplings",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json",
+        "native_callbacks": "crates/gameplay/quests/src/quest/deepling_boss_access.rs"
+      }
+    },
+    {
+      "key": "demon_wars",
+      "title": "Demon Wars World Change",
+      "quest": "oteryn:quest.authored.demon_wars_world_change",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.authored.demon_wars_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Demon Wars World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "demon_wars; source mechanics and explicit native geometry/parameters"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "f6d24deda0769371b6269d3ee0e6da9a8fa5664bd91a0ad7882c31130f553f13",
+          "pageid": 54562,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 1090693,
+          "url": "https://tibia.fandom.com/index.php?curid=54562&oldid=1090693"
+        },
+        {
+          "content_sha256": "dfac84b50374be9381843504f618ec0789539e3caa07026cd6d4b4627a67a124",
+          "pageid": 54700,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 880733,
+          "url": "https://tibia.fandom.com/index.php?curid=54700&oldid=880733"
+        }
+      ],
+      "reason": "Shared durable credited-kill counter, native current-world callbacks and phase projection through the existing Spawn/map owners; explicit native adaptations are recorded in WORLDCHG-Q.md.",
+      "binding": {
+        "counter_key": "demon_wars",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+      }
+    },
+    {
+      "key": "devovorga_s_essence",
+      "title": "Devovorga's Essence Mini World Change",
+      "quest": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.authored.devovorga_s_essence_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Devovorga's Essence Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "4f0767fb999b622c67eaef1d49a978c8a7502d122504176c51c71b3fd59d033e",
+          "pageid": 76216,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845419,
+          "url": "https://tibia.fandom.com/index.php?curid=76216&oldid=845419"
+        },
+        {
+          "content_sha256": "0e5d9ea11a467ee2aed7b1baf384992f9f76253729affa594d07973372388cd0",
+          "pageid": 76217,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 944253,
+          "url": "https://tibia.fandom.com/index.php?curid=76217&oldid=944253"
+        }
+      ],
+      "reason": "W 15 fixes 16 permille. Native Vengoth gate/destination, incarnation selection/cost debit and encounter admission are absent.",
+      "missing_facts": [
+        "W 15 fixes 16 permille. Native Vengoth gate/destination, incarnation selection/cost debit and encounter admission are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 16,
+        "duration": "until_next_reset"
+      }
+    },
+    {
+      "key": "down_the_drain",
+      "title": "Down the Drain Mini World Change",
+      "quest": "oteryn:quest.authored.down_the_drain_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.authored.down_the_drain_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Down the Drain Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "84d1058395a377b6b5e438fc673049ad2179cd3d5d02a46c79ec3eb4dd1f331d",
+          "pageid": 76218,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 891481,
+          "url": "https://tibia.fandom.com/index.php?curid=76218&oldid=891481"
+        },
+        {
+          "content_sha256": "c3b3859f63be056d74f41a6edf13dc7a75368b24659144cd6cca2e01737aa355",
+          "pageid": 76219,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887142,
+          "url": "https://tibia.fandom.com/index.php?curid=76219&oldid=887142"
+        }
+      ],
+      "reason": "W 15 fixes 307 permille. Native flooded/dry river topology, active spawn membership and world-state projection are absent.",
+      "missing_facts": [
+        "W 15 fixes 307 permille. Native flooded/dry river topology, active spawn membership and world-state projection are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 307,
+        "duration": "until_next_reset"
+      }
+    },
+    {
+      "key": "fire_from_the_earth",
+      "title": "Fire from the Earth Mini World Change",
+      "quest": "oteryn:quest.authored.fire_from_the_earth_mini_world_change",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.fire_from_the_earth_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Fire from the Earth Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "fire_from_the_earth; source mechanics and explicit native geometry/parameters"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "306bf03580c82142bff8aced58d510cf0dced38bcc67e5eba881f4d72681ef30",
+          "pageid": 76220,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845085,
+          "url": "https://tibia.fandom.com/index.php?curid=76220&oldid=845085"
+        },
+        {
+          "content_sha256": "86c8bc596ec60a94a2784b26e06b6ce6dfd5d6cd86caf5be97743d1d31163a76",
+          "pageid": 76221,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887143,
+          "url": "https://tibia.fandom.com/index.php?curid=76221&oldid=887143"
+        }
+      ],
+      "reason": "Shared durable credited-kill counter, native current-world callbacks and phase projection through the existing Spawn/map owners; explicit native adaptations are recorded in WORLDCHG-Q.md.",
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 199,
+        "classification": "CHOSEN_OTERYN_NATIVE_CANDIDATE"
+      },
+      "binding": {
+        "counter_key": "fire_from_the_earth",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+      }
+    },
+    {
+      "key": "flower_month",
+      "title": "Flower Month",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "crates/gameplay/world-change/src/daily.rs",
+          "locator": "flower_month.lua:28-55,63-64"
+        },
+        {
+          "path": "content/encounters/raids/catalogue.json",
+          "locator": "oteryn:raid.raid.dryad_invasion:inactive_reasons and donor_cycle"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [],
+      "reason": "June, four native donor rectangles, 25 dryads per wave, 15-minute rotation and 250 attempts are known. Raid catalogue explicitly holds wiki five waves/hour versus donor indefinite four-area cycle; accepted firing/end policy remains unresolved.",
+      "missing_facts": [
+        "June, four native donor rectangles, 25 dryads per wave, 15-minute rotation and 250 attempts are known. Raid catalogue explicitly holds wiki five waves/hour versus donor indefinite four-area cycle; accepted firing/end policy remains unresolved."
+      ]
+    },
+    {
+      "key": "fury_gates",
+      "title": "Fury Gates Mini World Change",
+      "quest": "oteryn:quest.fury_gates_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00100-00199.json",
+          "locator": "oteryn:quest.fury_gates_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Fury Gates Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/portal-bindings-candidate.json",
+          "locator": "fury_gates:source pairings and native startup-marker omission; native_admission=false"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W6:Furyosa requires_world_change=fury_gates; existing raid:furyfate.furyosa"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "8f355670c94210a244746b9aa3599f3bb6cd17f15a165da2610e0ed874e187f0",
+          "pageid": 76237,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 1099676,
+          "url": "https://tibia.fandom.com/index.php?curid=76237&oldid=1099676"
+        },
+        {
+          "content_sha256": "7911f1f4678e0cb5a76e587dd2600c17dd3367c1a8abbecbb6cb2145ac8f82df",
+          "pageid": 76236,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887144,
+          "url": "https://tibia.fandom.com/index.php?curid=76236&oldid=887144"
+        }
+      ],
+      "reason": "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. The Furyosa scheduler precondition is bound and denies new firings while the title is HELD. Native W1 variant/layer-set composition, return AID restoration and eligible callbacks remain unimplemented.",
+      "missing_facts": [
+        "343 permille and ten equal cities; exact entry/return positions and Premium/promoted/level60 rules are sourced. The Furyosa scheduler precondition is bound and denies new firings while the title is HELD. Native W1 variant/layer-set composition, return AID restoration and eligible callbacks remain unimplemented."
+      ],
+      "hold_kind": "NATIVE_IMPLEMENTATION_GAP; no missing donor fact identified for basic gates",
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:furyfate.furyosa"
+      }
+    },
+    {
+      "key": "grimvale",
+      "title": "Grimvale Mini World Change",
+      "quest": "oteryn:quest.grimvale_mini_world_change",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00100-00199.json",
+          "locator": "oteryn:quest.grimvale_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Grimvale Mini World Change"
+        },
+        {
+          "path": "crates/gameplay/world-change/src/daily.rs",
+          "locator": "daily.rs:grimvale_respawn_event.lua:3; native spawn substitutions"
+        },
+        {
+          "path": "content/quests/world-callbacks.json",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "2227258cad7f8203f77c7ee9c22e0bb246a38faae867fbe69537760aa4b8aaeb",
+          "pageid": 76238,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 847053,
+          "url": "https://tibia.fandom.com/index.php?curid=76238&oldid=847053"
+        },
+        {
+          "content_sha256": "7d947f8be91f2c851cb210e6287d714289a0e72046c679dec49dc4b064f99aca",
+          "pageid": 76239,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1102848,
+          "url": "https://tibia.fandom.com/index.php?curid=76239&oldid=1102848"
+        }
+      ],
+      "reason": "Current monthly selection plus the existing XML Feroxa final wave opens the exact native portal; stateless entry rechecks the current World and source.",
+      "trigger": {
+        "kind": "calendar",
+        "day": 13
+      },
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:edron.feroxa",
+        "native_callbacks": "content/quests/world-callbacks.json"
+      }
+    },
+    {
+      "key": "hive_born",
+      "title": "Hive Born World Change",
+      "quest": "oteryn:quest.authored.hive_born_world_change",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.hive_born_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Hive Born World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "hive_born; source mechanics and explicit native geometry/parameters"
+        },
+        {
+          "path": "crates/gameplay/quests/src/quest/hive_access.rs",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "b445cf7355c61fe781a5ce149f0da32484bb6805ff9be1b6c7e364d3be913ba6",
+          "pageid": 56901,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845113,
+          "url": "https://tibia.fandom.com/index.php?curid=56901&oldid=845113"
+        },
+        {
+          "content_sha256": "c8dd90a99df4f596c9db4b3231b19e9d3c1ad70b306d37f9e4b37d90fb207d0b",
+          "pageid": 56902,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 930222,
+          "url": "https://tibia.fandom.com/index.php?curid=56902&oldid=930222"
+        }
+      ],
+      "reason": "Completed native missions credit the World and award personal Favour atomically; fifty Favour buys seven days of scent. Forty-eight native gates enforce shared stages and scent while preserving outward escape.",
+      "binding": {
+        "counter_key": "hive_born",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json",
+        "native_callbacks": "crates/gameplay/quests/src/quest/hive_access.rs"
+      }
+    },
+    {
+      "key": "hive_outpost",
+      "title": "Hive Outpost Mini World Change",
+      "quest": "oteryn:quest.authored.hive_outpost_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.hive_outpost_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Hive Outpost Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "3d8f5f732d89454ac7ad8f392d117630928fa717339c95c8fd094af0f26b370c",
+          "pageid": 76240,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 969491,
+          "url": "https://tibia.fandom.com/index.php?curid=76240&oldid=969491"
+        },
+        {
+          "content_sha256": "0787132bb261f1b11d861ccc9f855c47b10142d0063f8cc8dbbc8a725b7edb1e",
+          "pageid": 76241,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887146,
+          "url": "https://tibia.fandom.com/index.php?curid=76241&oldid=887146"
+        }
+      ],
+      "reason": "Native invasion variant membership, activation rule and optional-boss selection are absent.",
+      "missing_facts": [
+        "Native invasion variant membership, activation rule and optional-boss selection are absent."
+      ]
+    },
+    {
+      "key": "horse_station",
+      "title": "Horse Station World Change",
+      "quest": "oteryn:quest.horse_station_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00100-00199.json",
+          "locator": "oteryn:quest.horse_station_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Horse Station World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "6c0e7c98da932f9ff0f0bce836ed06d41cb158cb060bb983ff46f3ee57f3d465",
+          "pageid": 54701,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 844780,
+          "url": "https://tibia.fandom.com/index.php?curid=54701&oldid=844780"
+        },
+        {
+          "content_sha256": "37f0e3039f78423a179ee180a4bb2573761509ce2c972cb683d3a462d450a55b",
+          "pageid": 54702,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 502074,
+          "url": "https://tibia.fandom.com/index.php?curid=54702&oldid=502074"
+        }
+      ],
+      "reason": "Startup horse anchors/counts and stable handler are known. Escape, three-hour/zero-horse raid activation/expiry and native stable transition are not composed; donor stable script references an unassigned waveEvent.",
+      "missing_facts": [
+        "Startup horse anchors/counts and stable handler are known. Escape, three-hour/zero-horse raid activation/expiry and native stable transition are not composed; donor stable script references an unassigned waveEvent."
+      ]
+    },
+    {
+      "key": "insectoid_invasion",
+      "title": "Insectoid Invasion World Change",
+      "quest": "oteryn:quest.authored.insectoid_invasion_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.insectoid_invasion_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Insectoid Invasion World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "3ce58b7ec8a458a455a4ab381a3ba32eb56b2b4332e2585ea6b91c49d544f612",
+          "pageid": 54570,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 1106148,
+          "url": "https://tibia.fandom.com/index.php?curid=54570&oldid=1106148"
+        },
+        {
+          "content_sha256": "373c8a691f750c592613c02f7094c4a4d2d16abba730189795517d05f6525d79",
+          "pageid": 55050,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1160735,
+          "url": "https://tibia.fandom.com/index.php?curid=55050&oldid=1160735"
+        }
+      ],
+      "reason": "Greenshore invasion/restoration state, credited restoration threshold and active spawn membership are not bound.",
+      "missing_facts": [
+        "Greenshore invasion/restoration state, credited restoration threshold and active spawn membership are not bound."
+      ]
+    },
+    {
+      "key": "jungle_camp",
+      "title": "Jungle Camp Mini World Change",
+      "quest": "oteryn:quest.authored.jungle_camp_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.jungle_camp_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Jungle Camp Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "91835c5541a366c6362e0b9c1e76870c0f58e28e4fc4b235e85d22f9b56f1637",
+          "pageid": 76242,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 847067,
+          "url": "https://tibia.fandom.com/index.php?curid=76242&oldid=847067"
+        },
+        {
+          "content_sha256": "354305b8ac714a3adb95337a6d2aa7d906533db6803d698ce39c2e0dccaf6588",
+          "pageid": 76243,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887148,
+          "url": "https://tibia.fandom.com/index.php?curid=76243&oldid=887148"
+        }
+      ],
+      "reason": "Camp-to-variant membership, daily variant trigger and rare-boss selection rules are not bound.",
+      "missing_facts": [
+        "Camp-to-variant membership, daily variant trigger and rare-boss selection rules are not bound."
+      ]
+    },
+    {
+      "key": "kingsday",
+      "title": "Kingsday Mini World Change",
+      "quest": "oteryn:quest.authored.kingsday_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.kingsday_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Kingsday Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "197922712f1ded5770d79349d7e971b59a0dc85fa2ff9d03d769c70d247de73a",
+          "pageid": 76244,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845148,
+          "url": "https://tibia.fandom.com/index.php?curid=76244&oldid=845148"
+        },
+        {
+          "content_sha256": "0b67e7e6c7047759d08c7efec385a5d1ab30586518258f185cec9466cfa0cef3",
+          "pageid": 76245,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 994341,
+          "url": "https://tibia.fandom.com/index.php?curid=76245&oldid=994341"
+        }
+      ],
+      "reason": "W 15 fixes 24 permille. Celebration state, hourly arena raid binding and achievement eligibility are absent.",
+      "missing_facts": [
+        "W 15 fixes 24 permille. Celebration state, hourly arena raid binding and achievement eligibility are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 24,
+        "duration": "until_next_reset"
+      }
+    },
+    {
+      "key": "lumberjack",
+      "title": "Lumberjack Mini World Change",
+      "quest": "oteryn:quest.authored.lumberjack_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.lumberjack_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Lumberjack Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "f7b2e61fe991e5e8b709f52cf51d0777b55944ce5c7011df4eb6a2640b65a4f1",
+          "pageid": 76246,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845163,
+          "url": "https://tibia.fandom.com/index.php?curid=76246&oldid=845163"
+        },
+        {
+          "content_sha256": "a31cf523648ff168e34f12a31429a05d8db42be4e7a0daa6df49dc6e32355ce2",
+          "pageid": 76247,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 893906,
+          "url": "https://tibia.fandom.com/index.php?curid=76247&oldid=893906"
+        }
+      ],
+      "reason": "W 15 fixes 90 permille. Native felled-tree variant, Chip activation and report/reset mutation are absent.",
+      "missing_facts": [
+        "W 15 fixes 90 permille. Native felled-tree variant, Chip activation and report/reset mutation are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 90,
+        "duration": "until_next_reset"
+      }
+    },
+    {
+      "key": "nightmare_isles",
+      "title": "Nightmare Isles Mini World Change",
+      "quest": "oteryn:quest.nightmare_isles_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00100-00199.json",
+          "locator": "oteryn:quest.nightmare_isles_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Nightmare Isles Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/portal-bindings-candidate.json",
+          "locator": "nightmare_isles:source pairings and native startup-marker omission; native_admission=false"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "b4f3b5e866f2c255c10b37ed5596aa1760a4d36de8eecbab066308c4375800eb",
+          "pageid": 76248,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 891482,
+          "url": "https://tibia.fandom.com/index.php?curid=76248&oldid=891482"
+        },
+        {
+          "content_sha256": "aa0eb3fc0b976fd26e1c03a84fcc0d59bca60e7289fec5cd42f18e22199375ab",
+          "pageid": 76249,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887167,
+          "url": "https://tibia.fandom.com/index.php?curid=76249&oldid=887167"
+        }
+      ],
+      "reason": "1000 permille and three equal entrances; exact shared-dungeon entry/return positions and base creatures are sourced. Native W1 variant/layer-set composition, missing return UID restoration and current-fenced entry/return callbacks remain unimplemented.",
+      "missing_facts": [
+        "1000 permille and three equal entrances; exact shared-dungeon entry/return positions and base creatures are sourced. Native W1 variant/layer-set composition, missing return UID restoration and current-fenced entry/return callbacks remain unimplemented."
+      ],
+      "hold_kind": "NATIVE_IMPLEMENTATION_GAP; no missing donor fact identified for basic gates"
+    },
+    {
+      "key": "nomads",
+      "title": "Nomads Mini World Change",
+      "quest": "oteryn:quest.authored.nomads_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.nomads_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Nomads Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "f1245b9955b9119a72b310abcce59fce78baad86eae4c512c99928ba4eef70b0",
+          "pageid": 76251,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845176,
+          "url": "https://tibia.fandom.com/index.php?curid=76251&oldid=845176"
+        },
+        {
+          "content_sha256": "059dc4e9b28527f72eb8e7c43aa67133a9273fc27cc0935ba3f9257e82bda0f3",
+          "pageid": 76252,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1128611,
+          "url": "https://tibia.fandom.com/index.php?curid=76252&oldid=1128611"
+        }
+      ],
+      "reason": "W 15/D 1055 fixes 799 permille, four camps and equal weights 1. Native camp/spawn/chest membership and selection-to-map binding are absent; base Nomad spawns do not establish camp variants.",
+      "missing_facts": [
+        "W 15/D 1055 fixes 799 permille, four camps and equal weights 1. Native camp/spawn/chest membership and selection-to-map binding are absent; base Nomad spawns do not establish camp variants."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 799,
+        "duration": "until_next_reset"
+      },
+      "variant_weights": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "key": "noodles_is_gone",
+      "title": "Noodles is Gone Mini World Change",
+      "quest": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.noodles_is_gone_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Noodles is Gone Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "e36e3ab6275c90b73dc1e5f9af96567b2beb5697d9d1b08a1a825859793f75f2",
+          "pageid": 76253,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 891483,
+          "url": "https://tibia.fandom.com/index.php?curid=76253&oldid=891483"
+        },
+        {
+          "content_sha256": "329ebcf9de2c3711b9e455a3fb130eea9fcda6735e4d3911252aa77cdb17d850",
+          "pageid": 76254,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1122443,
+          "url": "https://tibia.fandom.com/index.php?curid=76254&oldid=1122443"
+        }
+      ],
+      "reason": "W 15 fixes 92 permille. Retained Noodles mutations are PostmanMission 06; Dog Collar escort, disappearance/return and next-save Dog Lady transition are absent.",
+      "missing_facts": [
+        "W 15 fixes 92 permille. Retained Noodles mutations are PostmanMission 06; Dog Collar escort, disappearance/return and next-save Dog Lady transition are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 92,
+        "duration": "until_next_reset"
+      }
+    },
+    {
+      "key": "oriental_trader",
+      "title": "Oriental Trader Mini World Change",
+      "quest": "oteryn:quest.oriental_trader_mini_world_change",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00100-00199.json",
+          "locator": "oteryn:quest.oriental_trader_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Oriental Trader Mini World Change"
+        },
+        {
+          "path": "crates/gameplay/world-change/src/daily.rs",
+          "locator": "daily.rs:oriental_trader.lua:3-44; admitted map layers and Yasir placement"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/npc_trade.rs",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "46c90d40bb5b10cb0ff15f81569cbe47e09fd0df38bd0af722178badced0cbc2",
+          "pageid": 76255,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845183,
+          "url": "https://tibia.fandom.com/index.php?curid=76255&oldid=845183"
+        },
+        {
+          "content_sha256": "3a9a0ba7240c4bdd4213cf0a5f6d280150dabbd7cb67a1ed9e5ffc0c22482531",
+          "pageid": 76256,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887151,
+          "url": "https://tibia.fandom.com/index.php?curid=76256&oldid=887151"
+        }
+      ],
+      "reason": "Selected three-town ship layer and native Yasir conversation/offers; current selected deck is checked inside the trade transaction, after historical replay.",
+      "trigger": {
+        "kind": "at_reset",
+        "chance_percent": 33,
+        "variants": [
+          "ankrahmun",
+          "carlin",
+          "libertybay"
+        ]
+      },
+      "binding": {
+        "native_callbacks": "crates/gameplay/durability/src/durability/npc_trade.rs"
+      }
+    },
+    {
+      "key": "overhunting",
+      "title": "Overhunting World Change",
+      "quest": "oteryn:quest.overhunting_world_change",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00100-00199.json",
+          "locator": "oteryn:quest.overhunting_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Overhunting World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "overhunting; source mechanics and explicit native geometry/parameters"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "7ad2d3e9dfac68dacc1809b59fb63749ee469f3e29cd4d3c8ba4b6f6fca0e33c",
+          "pageid": 54569,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 844823,
+          "url": "https://tibia.fandom.com/index.php?curid=54569&oldid=844823"
+        },
+        {
+          "content_sha256": "238b00d78e9dc5dfb6760b32f8de6252d358520a370db0509c03a847835899b8",
+          "pageid": 54864,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1084984,
+          "url": "https://tibia.fandom.com/index.php?curid=54864&oldid=1084984"
+        }
+      ],
+      "reason": "Shared durable credited-kill counter, native current-world callbacks and phase projection through the existing Spawn/map owners; explicit native adaptations are recorded in WORLDCHG-Q.md.",
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:abdendriel.whitedeers",
+        "stage": 1,
+        "counter_key": "overhunting",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+      }
+    },
+    {
+      "key": "poacher_caves",
+      "title": "Poacher Caves Mini World Change",
+      "quest": "oteryn:quest.authored.poacher_caves_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.poacher_caves_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Poacher Caves Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "4c4ddf155bb4d4a64eaba762b076f3c846bc1c04fae39bc981cfd9b4278e467c",
+          "pageid": 76257,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 1175804,
+          "url": "https://tibia.fandom.com/index.php?curid=76257&oldid=1175804"
+        },
+        {
+          "content_sha256": "3d6f6934f133efe0193ccf78938c6a08825cf755e79b6b84711961e8e95b3a1e",
+          "pageid": 76258,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1175805,
+          "url": "https://tibia.fandom.com/index.php?curid=76258&oldid=1175805"
+        }
+      ],
+      "reason": "Native three-state population transition, credited kills and active Game/poacher map/spawn membership are absent.",
+      "missing_facts": [
+        "Native three-state population transition, credited kills and active Game/poacher map/spawn membership are absent."
+      ]
+    },
+    {
+      "key": "rathleton",
+      "title": "Rathleton Quest",
+      "quest": "oteryn:quest.authored.rathleton_quest",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.rathleton_quest"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Rathleton Quest"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "0219ead4b90806154b242868a1ccd61aae5ac5ea802f5850785b4c6f5ec415a3",
+          "pageid": 68050,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 846610,
+          "url": "https://tibia.fandom.com/index.php?curid=68050&oldid=846610"
+        },
+        {
+          "content_sha256": "a7f05985e0a454e4831126504feb82b712e49adfc9e072780340412c0af00ab4",
+          "pageid": 68051,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1141625,
+          "url": "https://tibia.fandom.com/index.php?curid=68051&oldid=1141625"
+        },
+        {
+          "content_sha256": "32ae1c7c18ed41804d168a7fd004f74fd27d910b7a1caee7ea876391741e7143",
+          "pageid": 33732,
+          "provider": "tibiawiki_br",
+          "relation": "crosscheck",
+          "revid": 386889,
+          "url": "https://www.tibiawiki.com.br/index.php?curid=33732&oldid=386889"
+        }
+      ],
+      "reason": "50/150/300/500 spent-vote rank thresholds are known. Ballot identity, election period, eligibility/point debit, winner transition and native rank admission are absent.",
+      "missing_facts": [
+        "50/150/300/500 spent-vote rank thresholds are known. Ballot identity, election period, eligibility/point debit, winner transition and native rank admission are absent."
+      ]
+    },
+    {
+      "key": "rise_of_devovorga",
+      "title": "Rise of Devovorga",
+      "quest": "oteryn:quest.authored.rise_of_devovorga",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.rise_of_devovorga"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Rise of Devovorga"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "f84b2a6c238e696f8f5ed690caf4036fed07616e8505b58ee29a7a3a20848146",
+          "pageid": 48435,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 1076762,
+          "url": "https://tibia.fandom.com/index.php?curid=48435&oldid=1076762"
+        },
+        {
+          "content_sha256": "2238955635ed5fb74b0ecc1e6af9fb6ccdf220dd210221ac2b17258adcae855e",
+          "pageid": 48437,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1204791,
+          "url": "https://tibia.fandom.com/index.php?curid=48437&oldid=1204791"
+        }
+      ],
+      "reason": "Boss spell/storage metadata exists; exact seasonal interval, synchronized phases, victory/failure and participation/reward admission are absent.",
+      "missing_facts": [
+        "Boss spell/storage metadata exists; exact seasonal interval, synchronized phases, victory/failure and participation/reward admission are absent."
+      ]
+    },
+    {
+      "key": "river_runs_deep",
+      "title": "River Runs Deep Mini World Change",
+      "quest": "oteryn:quest.authored.river_runs_deep_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.river_runs_deep_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "River Runs Deep Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "c5daf7519251c83b4f41280a868b65e015abe4f21ad2945dff9292ac787bd317",
+          "pageid": 76259,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845206,
+          "url": "https://tibia.fandom.com/index.php?curid=76259&oldid=845206"
+        },
+        {
+          "content_sha256": "1ced7823c2a9c76d3f2264528d178f102fa5dc47c921270967b6b0ed696e8e9d",
+          "pageid": 76260,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887153,
+          "url": "https://tibia.fandom.com/index.php?curid=76260&oldid=887153"
+        }
+      ],
+      "reason": "W 15 fixes 269 permille and fishing callback exists. Flooded/dry river layer and fishing-object/spawn membership are not bound.",
+      "missing_facts": [
+        "W 15 fixes 269 permille and fishing callback exists. Flooded/dry river layer and fishing-object/spawn membership are not bound."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 269,
+        "duration": "until_next_reset"
+      }
+    },
+    {
+      "key": "spider_nest",
+      "title": "Spider Nest Mini World Change",
+      "quest": "oteryn:quest.authored.spider_nest_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.spider_nest_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Spider Nest Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "bf08cd74ddd364a02630dce330f61bd0ed3667b2c73d64f5efc517c73726848d",
+          "pageid": 76261,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 891484,
+          "url": "https://tibia.fandom.com/index.php?curid=76261&oldid=891484"
+        },
+        {
+          "content_sha256": "c238c55a16f6c740250e13a288ffe4226aea1f227338b197bb189626f68c9e75",
+          "pageid": 76262,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887154,
+          "url": "https://tibia.fandom.com/index.php?curid=76262&oldid=887154"
+        }
+      ],
+      "reason": "Mamma Longlegs spell/base creature exists; active nest spawn membership, entry barrier, daily activation rule and kill progression are not bound.",
+      "missing_facts": [
+        "Mamma Longlegs spell/base creature exists; active nest spawn membership, entry barrier, daily activation rule and kill progression are not bound."
+      ]
+    },
+    {
+      "key": "spirit_grounds",
+      "title": "Spirit Grounds Mini World Change",
+      "quest": "oteryn:quest.authored.spirit_grounds_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.spirit_grounds_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Spirit Grounds Mini World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "ba2eac722a3b05158b41ddc0d3fae1ac645f4aac2d765fe5c5a6e2bac8bc0b73",
+          "pageid": 76263,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 891485,
+          "url": "https://tibia.fandom.com/index.php?curid=76263&oldid=891485"
+        },
+        {
+          "content_sha256": "694a5ee81212adf7ea8ffdbd6f3a16ae81a5bf7791c1077ce0e16e13163fdfd3",
+          "pageid": 76264,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887160,
+          "url": "https://tibia.fandom.com/index.php?curid=76264&oldid=887160"
+        }
+      ],
+      "reason": "Named gate regions/storage metadata exist; rotation rule, source/destination pairing and spawn-variant membership are absent.",
+      "missing_facts": [
+        "Named gate regions/storage metadata exist; rotation rule, source/destination pairing and spawn-variant membership are absent."
+      ]
+    },
+    {
+      "key": "spring_into_life",
+      "title": "Spring into Life",
+      "quest": "oteryn:quest.authored.spring_into_life",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.spring_into_life"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Spring into Life"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "f140039686a5ba9d1f95bced72d01927b794bd5e6e310eb1b28d582745fb9f60",
+          "pageid": 58901,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845338,
+          "url": "https://tibia.fandom.com/index.php?curid=58901&oldid=845338"
+        },
+        {
+          "content_sha256": "accf6e1779a1ead105020838ca1c779f46a4bede6fd42353bf738facd9365a9a",
+          "pageid": 59009,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1099118,
+          "url": "https://tibia.fandom.com/index.php?curid=59009&oldid=1099118"
+        }
+      ],
+      "reason": "Egg/nest/hatchling identities are described; exact seasonal dates, native nest membership, hatch timing, reward weights and merchant admission are absent.",
+      "missing_facts": [
+        "Egg/nest/hatchling identities are described; exact seasonal dates, native nest membership, hatch timing, reward weights and merchant admission are absent."
+      ]
+    },
+    {
+      "key": "stampede",
+      "title": "Stampede Mini World Change",
+      "quest": "oteryn:quest.stampede_mini_world_change",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.stampede_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Stampede Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W6/W15:125permille;62/498observed days;until_next_reset"
+        },
+        {
+          "path": "content/encounters/raids/catalogue.json",
+          "locator": "raid:porthope.stampede;16;32825,32667,7-32888,32675,7;2000ms;86400s;21600000ms"
+        },
+        {
+          "path": "crates/gameplay/progression/src/bestiary_achievement.rs",
+          "locator": "KILLS:5terrified_elephant=>trail_of_the_ape_god"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "ba44ba6d085ef74de5cea5ac03abf786f84ebe4a7b06472c04968e38b70fb28b",
+          "pageid": 76265,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845239,
+          "url": "https://tibia.fandom.com/index.php?curid=76265&oldid=845239"
+        },
+        {
+          "content_sha256": "ed904b4e6c1ebf413c8ad466b1f5c194664ca4eebbd4713e4c00fcba0896ce33",
+          "pageid": 76266,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 887155,
+          "url": "https://tibia.fandom.com/index.php?curid=76266&oldid=887155"
+        }
+      ],
+      "reason": "Accepted W 15 daily 125-permille gate composed with the existing Stampede raid schedule, 16 Terrified Elephants and bound Tiquanda area; existing fifth-credited-kill achievement path. The raid keeps its own native interval/margin and until-reset creature lifetime.",
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 125,
+        "duration": "until_next_reset",
+        "observed_active_days": 62,
+        "observed_days": 498
+      },
+      "binding": {
+        "kind": "raid",
+        "raid_key": "raid:porthope.stampede",
+        "multiplicity": "CHANNEL_LOCAL_REPEATABLE",
+        "achievement": "oteryn:achievement/trail_of_the_ape_god",
+        "credited_kills": 5
+      }
+    },
+    {
+      "key": "steamship",
+      "title": "Steamship World Change",
+      "quest": "oteryn:quest.steamship_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.steamship_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Steamship World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "d9732ff9a1213c1365f2c51404aeb3a680922197c5bd24292b3b2e5dde7bd6f0",
+          "pageid": 54705,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 891478,
+          "url": "https://tibia.fandom.com/index.php?curid=54705&oldid=891478"
+        },
+        {
+          "content_sha256": "08c5ee1b8bf16faebdc9f4bedb129ee167fb47420e87a50d89da63b512766a01",
+          "pageid": 54769,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 772277,
+          "url": "https://tibia.fandom.com/index.php?curid=54769&oldid=772277"
+        }
+      ],
+      "reason": "200 sharedCoal and Junkar destinations/prices are known. Coal custody/debit, shared unlock transition and transport gate are absent; savecoal dialogue is not a debit.",
+      "missing_facts": [
+        "200 sharedCoal and Junkar destinations/prices are known. Coal custody/debit, shared unlock transition and transport gate are absent; savecoal dialogue is not a debit."
+      ]
+    },
+    {
+      "key": "swamp_fever",
+      "title": "Swamp Fever World Change",
+      "quest": "oteryn:quest.swamp_fever_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.swamp_fever_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Swamp Fever World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "c5d605ad18c831e1cce9eedba83a526b0b303f70bcae37e1592131118bbc3d31",
+          "pageid": 54559,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 844892,
+          "url": "https://tibia.fandom.com/index.php?curid=54559&oldid=844892"
+        },
+        {
+          "content_sha256": "67d51c7e52e6b698307b73fc00d372afe7ede983676ad3bd64851c83b4ede83a",
+          "pageid": 55045,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 749214,
+          "url": "https://tibia.fandom.com/index.php?curid=55045&oldid=749214"
+        }
+      ],
+      "reason": "Ottokar exchanges medicine 12517 for belongings 12413 as an individual task. Epidemic threshold, medicine drop/custody and shared disease transition are absent.",
+      "missing_facts": [
+        "Ottokar exchanges medicine 12517 for belongings 12413 as an individual task. Epidemic threshold, medicine drop/custody and shared disease transition are absent."
+      ]
+    },
+    {
+      "key": "thawing",
+      "title": "Thawing Mini World Change",
+      "quest": "oteryn:quest.thawing_mini_world_change",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.thawing_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Thawing Mini World Change"
+        },
+        {
+          "path": "crates/gameplay/world-change/src/daily.rs",
+          "locator": "daily.rs:thawing.lua:1-19; 14 admitted ice-flower placements"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/item_craft/harvest.rs",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "84a2c6828d6e90fbc821d9ff34c64f7ce21d81223479d81c8d9fd9654c3e3710",
+          "pageid": 76267,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845260,
+          "url": "https://tibia.fandom.com/index.php?curid=76267&oldid=845260"
+        },
+        {
+          "content_sha256": "1a45dab97d49c383de585f8a85eabb14474ff6eb54372c2bfc1012c8a19a0829",
+          "pageid": 76268,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 890265,
+          "url": "https://tibia.fandom.com/index.php?curid=76268&oldid=890265"
+        }
+      ],
+      "reason": "Fourteen sourced flower placements use stable Added identity and current-save harvest authority; native yield, replay, restart and regrowth are composed.",
+      "trigger": {
+        "kind": "at_reset",
+        "chance_percent": 10
+      },
+      "binding": {
+        "native_callbacks": "crates/gameplay/durability/src/durability/item_craft/harvest.rs"
+      }
+    },
+    {
+      "key": "the_fire_feathered_serpent",
+      "title": "The Fire-Feathered Serpent World Change",
+      "quest": "oteryn:quest.authored.the_fire_feathered_serpent_world_change",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.the_fire_feathered_serpent_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "The Fire-Feathered Serpent World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "the_fire_feathered_serpent; source mechanics and explicit native geometry/parameters"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "d018020a4288d02d6fc652ab96f8efd1d0b7f95d442edca081c31f5c07343d67",
+          "pageid": 85784,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 891479,
+          "url": "https://tibia.fandom.com/index.php?curid=85784&oldid=891479"
+        },
+        {
+          "content_sha256": "0b520f5c19efdf5a949b9253b780ad661f5913b1a069c9309c28d467ad82148a",
+          "pageid": 85785,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1078002,
+          "url": "https://tibia.fandom.com/index.php?curid=85785&oldid=1078002"
+        }
+      ],
+      "reason": "Shared durable credited-kill counter, native current-world callbacks and phase projection through the existing Spawn/map owners; explicit native adaptations are recorded in WORLDCHG-Q.md.",
+      "binding": {
+        "counter_key": "the_fire_feathered_serpent",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+      }
+    },
+    {
+      "key": "the_mage_s_tower",
+      "title": "The Mage's Tower World Change",
+      "quest": "oteryn:quest.the_mages_tower_world_change",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.the_mages_tower_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "The Mage's Tower World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        },
+        {
+          "path": "content/encounters/world-changes/credited-kills.json",
+          "locator": "the_mage_s_tower; source mechanics and explicit native geometry/parameters"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "36aeb30467281f51d01763edd84315fa221dce4805a057c5a7c5d4ad3e28bbcc",
+          "pageid": 54564,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 844897,
+          "url": "https://tibia.fandom.com/index.php?curid=54564&oldid=844897"
+        },
+        {
+          "content_sha256": "cee214a0f3ef871e1fde37e41e7e20550054c0516462769e24f11e7fb491a466",
+          "pageid": 55046,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1095409,
+          "url": "https://tibia.fandom.com/index.php?curid=55046&oldid=1095409"
+        }
+      ],
+      "reason": "Shared durable credited-kill counter, native current-world callbacks and phase projection through the existing Spawn/map owners; explicit native adaptations are recorded in WORLDCHG-Q.md.",
+      "binding": {
+        "counter_key": "the_mage_s_tower",
+        "counter_bindings": "content/encounters/world-changes/credited-kills.json"
+      }
+    },
+    {
+      "key": "the_mummy_s_curse",
+      "title": "The Mummy's Curse World Change",
+      "quest": "oteryn:quest.the_mummys_curse_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.the_mummys_curse_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "The Mummy's Curse World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "e93af90ea7e5149427b168a2591808ca53d1d25e9de262376969ed86c997e22f",
+          "pageid": 54567,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 844898,
+          "url": "https://tibia.fandom.com/index.php?curid=54567&oldid=844898"
+        },
+        {
+          "content_sha256": "43a894102a09feed91fcd16144041a81483139df989c46cde78f6b7d53253625",
+          "pageid": 55049,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1084983,
+          "url": "https://tibia.fandom.com/index.php?curid=55049&oldid=1084983"
+        }
+      ],
+      "reason": "Jar actionids 50006-50010, chances and boss/wall coordinates exist. Native shared jar/world composition is absent; duplicate boss spawn and conflicting wall timing in retained donor are unresolved.",
+      "missing_facts": [
+        "Jar actionids 50006-50010, chances and boss/wall coordinates exist. Native shared jar/world composition is absent; duplicate boss spawn and conflicting wall timing in retained donor are unresolved."
+      ]
+    },
+    {
+      "key": "their_masters_voice",
+      "title": "Their Master's Voice World Change",
+      "quest": "oteryn:quest.their_masters_voice",
+      "status": "QUALIFIED",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.their_masters_voice"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Their Master's Voice World Change"
+        },
+        {
+          "path": "crates/gameplay/world-change/src/daily.rs",
+          "locator": "daily.rs:their_masters_voice.lua:4; map daily fungus projection"
+        },
+        {
+          "path": "crates/gameplay/durability/src/durability/terrain_tool.rs",
+          "locator": "WORLDCHG-Q native execution; focused unit and PostgreSQL proof in review report"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "66360bb61c4e6268979fbf42f1e1f1d4e7b2d8f9c91b7365d5b342634aa138d4",
+          "pageid": 54568,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 1110635,
+          "url": "https://tibia.fandom.com/index.php?curid=54568&oldid=1110635"
+        },
+        {
+          "content_sha256": "30d60c0a93ac3876ab9dfae60dea7269461baf285a3674281cc6e8c74642bece",
+          "pageid": 55047,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1110638,
+          "url": "https://tibia.fandom.com/index.php?curid=55047&oldid=1110638"
+        }
+      ],
+      "reason": "Native gobbler custody and atomic XP feed the shared timed encounter, owned servant waves and Mad Mage; participation observes the current twenty-five-use period.",
+      "trigger": {
+        "kind": "at_reset",
+        "chance_percent": 20
+      },
+      "binding": {
+        "native_callbacks": "crates/gameplay/durability/src/durability/terrain_tool.rs"
+      }
+    },
+    {
+      "key": "thornfire",
+      "title": "Thornfire World Change",
+      "quest": "oteryn:quest.thornfire_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00200-00299.json",
+          "locator": "oteryn:quest.thornfire_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Thornfire World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "ed180a2b2511526aa24dc1f1e291546eae3ddfa2da94b42ddbebe18a1beb9e29",
+          "pageid": 54125,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 844903,
+          "url": "https://tibia.fandom.com/index.php?curid=54125&oldid=844903"
+        },
+        {
+          "content_sha256": "f389b20c107a9ae0266a0dd2a23e4e3c68cefc247085cd8f4e971da57dfa7ec1",
+          "pageid": 54126,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 1020842,
+          "url": "https://tibia.fandom.com/index.php?curid=54126&oldid=1020842"
+        }
+      ],
+      "reason": "Native global fire/spawn membership, water/action credit, release condition and reset transition are absent.",
+      "missing_facts": [
+        "Native global fire/spawn membership, water/action credit, release condition and reset transition are absent."
+      ]
+    },
+    {
+      "key": "twisted_waters",
+      "title": "Twisted Waters World Change",
+      "quest": "oteryn:quest.authored.twisted_waters_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.twisted_waters_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Twisted Waters World Change"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "3d187f808ebeab9cc67654603796e8af0d25589d7b5a27d4aa84e9a93479ce1c",
+          "pageid": 54198,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 844910,
+          "url": "https://tibia.fandom.com/index.php?curid=54198&oldid=844910"
+        },
+        {
+          "content_sha256": "9d8a93797323406154e301991db7ad2f20083e9b3dd850f71c4709f3732ed7a7",
+          "pageid": 55048,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 935150,
+          "url": "https://tibia.fandom.com/index.php?curid=55048&oldid=935150"
+        }
+      ],
+      "reason": "1000 worldcorpse deposits, save transitions and 20-hour personal restriction are known. Deposit debit, lake-state projection and catch eligibility are absent.",
+      "missing_facts": [
+        "1000 worldcorpse deposits, save transitions and 20-hour personal restriction are known. Deposit debit, lake-state projection and catch eligibility are absent."
+      ]
+    },
+    {
+      "key": "warpath",
+      "title": "Warpath Mini World Change",
+      "quest": "oteryn:quest.authored.warpath_mini_world_change",
+      "status": "HELD",
+      "evidence": [
+        {
+          "path": "content/quests/definitions/quests-00300-00351.json",
+          "locator": "oteryn:quest.authored.warpath_mini_world_change"
+        },
+        {
+          "path": "docs/agents/evidence/OTV2-20261102-quest-patterns-0.md",
+          "locator": "Warpath Mini World Change"
+        },
+        {
+          "path": "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md",
+          "locator": "W15:accepted per-reset frequency;W5:until_next_reset"
+        },
+        {
+          "path": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+          "locator": "corpus-manifest.json;retained Crystal9f5/Canary04b8/Crystal-summer00ce components audited;no native title inferred from metadata"
+        }
+      ],
+      "source_refs": [
+        {
+          "content_sha256": "19f451eee1d4ce604045484462d8d862b24e221444cbdac54f54a4e8fbb84ff6",
+          "pageid": 76269,
+          "provider": "tibia_fandom",
+          "relation": "base",
+          "revid": 845669,
+          "url": "https://tibia.fandom.com/index.php?curid=76269&oldid=845669"
+        },
+        {
+          "content_sha256": "25a6dec3aceaee5d95e56659c96ff4673ae2db757a8105dcd380fd1da1c40e9d",
+          "pageid": 76270,
+          "provider": "tibia_fandom",
+          "relation": "spoiler",
+          "revid": 944151,
+          "url": "https://tibia.fandom.com/index.php?curid=76270&oldid=944151"
+        }
+      ],
+      "reason": "W 15 fixes 373 permille. Native camp/guard/Bibby kill-to-spawn progression, entrance and cooldown binding are absent.",
+      "missing_facts": [
+        "W 15 fixes 373 permille. Native camp/guard/Bibby kill-to-spawn progression, entrance and cooldown binding are absent."
+      ],
+      "trigger": {
+        "kind": "at_reset",
+        "chance_permille": 373,
+        "duration": "until_next_reset"
+      }
+    }
+  ]
+}

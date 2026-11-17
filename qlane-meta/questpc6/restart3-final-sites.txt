@@ -1,0 +1,10 @@
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:554:        .filter(|case| case.claim == "oteryn:reward-claim.quest.key.id3620")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs:35:fn newhaven_corruptor_ordinary_loot_is_frozen_across_stamina_boundary() -> TestResult {
+tools/content-migration/test_quest_finish_newhaven_items.py:55:    def test_guaranteed_gear_has_complete_plain_equipment_requirements(self):
+tools/content-schema/quest-authoring/check_quest_claim_qualification.py:19:EXPECTED_DENOMINATOR = 206
+tools/content-schema/quest-authoring/check_quest_claim_qualification.py:120:        "denominator": EXPECTED_DENOMINATOR,
+tools/content-schema/quest-authoring/check_quest_claim_qualification.py:124:            "blocked": {"WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": EXPECTED_DENOMINATOR},
+tools/content-schema/quest-authoring/check_quest_claim_qualification.py:177:    if coverage.get("counts", {}).get("supported_unqualified") != EXPECTED_DENOMINATOR:
+tools/content-schema/quest-authoring/check_quest_claim_qualification.py:178:        errors.append(f"coverage denominator drift (expected {EXPECTED_DENOMINATOR} supported_unqualified)")
+tools/content-schema/quest-authoring/check_quest_claim_qualification.py:179:    if ledger.get("denominator") != EXPECTED_DENOMINATOR:
+tools/content-schema/quest-authoring/quest_callback_coverage.py:173:QUALIFIED["oteryn:reward-claim.quest.key.id3620"] = (

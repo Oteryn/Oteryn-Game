@@ -1,0 +1,594 @@
+{
+  "batch": "desert-party-rite-mechanism-2026-11-07",
+  "state": "GREEN",
+  "whole_quest_qualifications": 0,
+  "integrated_remote": "853614652",
+  "scope": [
+    "Bounded exact-party transfer and durable member fences",
+    "Immutable full-stack altar receipts and interrupted projection recovery",
+    "Four pinned native scenery profiles and shared production bundle lookup",
+    "Captured source lever UID30030"
+  ],
+  "reuse_review": {
+    "qengine2": "a585529d7",
+    "questpc3": "0874c2694",
+    "questpc4": "ab8ccdf0b",
+    "questpc5": "3f79d826a",
+    "questpc6": "f91534062",
+    "questpc7": "136d3e35a",
+    "questpc8": "7eeee8fb1",
+    "result": "No published party rite or the four missing scenery profiles; reuse existing encounter group core and offering/Quest receipt owners."
+  },
+  "source": {
+    "scope": "Desert Dungeon four station rite; generic reusable party transfer with ground offerings",
+    "source": "canary@04b83b512114bfd888000d6e1433ed8ecaec7c5b:data-otservbr-global/scripts/quests/desert_dungeon_quest/actions_desert_dungeon_lever.lua:1-84",
+    "source_sha256": "72e3bcedf70a9dd7ffe81bb5f71aaa831acdd66110b91bc44aae11ab43acf1ad",
+    "lever": {
+      "position": [
+        32673,
+        32086,
+        8
+      ],
+      "unique": 30030,
+      "appearance": 2772,
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1002-1005",
+      "sha256": "41e560708ca123dd7aba34b1e54adf73b843e61fe3eb72fa33ad380a92282a7e",
+      "git_blob_sha1": "31643d019244bd228c0355c9aed8522bce45aaf0"
+    },
+    "stations": [
+      {
+        "from": [
+          32677,
+          32089,
+          8
+        ],
+        "to": [
+          32671,
+          32071,
+          8
+        ],
+        "altar": [
+          32679,
+          32089,
+          8
+        ],
+        "item": 3059,
+        "vocation": "sorcerer"
+      },
+      {
+        "from": [
+          32669,
+          32089,
+          8
+        ],
+        "to": [
+          32673,
+          32071,
+          8
+        ],
+        "altar": [
+          32667,
+          32089,
+          8
+        ],
+        "item": 3585,
+        "vocation": "druid"
+      },
+      {
+        "from": [
+          32673,
+          32085,
+          8
+        ],
+        "to": [
+          32670,
+          32071,
+          8
+        ],
+        "altar": [
+          32673,
+          32083,
+          8
+        ],
+        "item": 3349,
+        "vocation": "paladin"
+      },
+      {
+        "from": [
+          32673,
+          32093,
+          8
+        ],
+        "to": [
+          32672,
+          32071,
+          8
+        ],
+        "altar": [
+          32673,
+          32094,
+          8
+        ],
+        "item": 3264,
+        "vocation": "knight"
+      }
+    ],
+    "reuse": [
+      "Existing source callbacks and atomic ground consumption/Quest receipt",
+      "Existing sealed movement proofs and commit_quest_encounter_entry without spawned monsters",
+      "Existing current Character admission/build owner and native vocation projection"
+    ],
+    "implementation": [
+      "Bound party-transfer schema, 1..8 exact distinct stations and destination cells, base-vocation rules",
+      "Prepare all native proofs before any durable mutation; refuse missing/wrong/dead/busy/stale members or blocked destinations",
+      "Bind all member identities/generations/placement revisions in the original callback context; validate every member durable fence and vocation inside the existing offering transaction",
+      "Use one internal rite occurrence track for existing immutable receipt ownership, not a source reward/access flag",
+      "Take the complete exact matching plain altar stack, retaining the existing 100-unit consumption bound",
+      "Keep all participants pending through unknown outcomes; project four relocations and lever once with whole-carrier rollback",
+      "Real four-Character Fresh/D88 fixtures; prove exact-match zero-consumption refusal, interrupted commit, replay, native movement and earned existing rewards"
+    ],
+    "assumptions": [
+      "Conservative refusal if a destination fails native collision/PZ/current-session qualification",
+      "No source minimum level invented; retain existing physical entry gates",
+      "Lever initiator need not occupy a station; no monster or room occupancy requirement added"
+    ],
+    "state": "IMPLEMENTED_PG_GREEN",
+    "git_blob_sha1": "a026ed96cd10d7f8dcf86ecdcfa582ba13180767"
+  },
+  "native_profiles": {
+    "record": "tools/content-schema/native-gameplay/party-rite-item-profiles.json",
+    "revision": "99902524e052f37574194466c2949c576e4ab269",
+    "urls": [
+      "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/data/items/items.xml",
+      "https://raw.githubusercontent.com/opentibiabr/canary/99902524e052f37574194466c2949c576e4ab269/data/items/appearances.dat"
+    ],
+    "xml_lines": {
+      "1841": 3867,
+      "2114": 4200,
+      "2153": 4484,
+      "3656": 11541
+    },
+    "raw_sources_committed": false
+  },
+  "source_map_semantic_delta": [
+    {
+      "position": [
+        32673,
+        32086,
+        8
+      ],
+      "before": null,
+      "after": {
+        "unique": 30030
+      }
+    }
+  ],
+  "world_pin": "a0846ee7757ee5301aa17dbbda2dbf5aaaacc9bf6e80c73ed027d7b2d7edc20c",
+  "red": {
+    "postgres_server_version_num": 180006,
+    "missing_callback_runtime_seconds": 3.64,
+    "log": "/tmp/questpc2-desert-red-callback.log"
+  },
+  "green": [
+    {
+      "name": "route",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "desert_dungeon_four_station_rite_uses_real_fenced_players",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 137.783,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "DESERT_PARTY_RITE POSTGRES_CASE_COMPLETED",
+      "passed": true,
+      "log": "/tmp/questpc2-desert-real-birth-route.log"
+    }
+  ],
+  "green_runtime_seconds": 61.9,
+  "fixture_corrections": [
+    "Use exact production resolver policy; profile absence cannot invent a new terrain requirement.",
+    "Use authenticated live TLS source and actual Character bootstrap creation receipts before signed Fresh admission.",
+    "Persisted active session state is2.",
+    "Unknown durable acknowledgement closes without CommandResult; recovery asserts original receipt and all member placements."
+  ],
+  "next": "Earn both Desert source rewards via physical movement/chest USE; reuse questpc4 exact full-charge projection for owned desert2. Continue remaining owned entries.",
+  "checks_python": [
+    {
+      "name": "effect authoring",
+      "passed": 7,
+      "seconds": 2.308
+    },
+    {
+      "name": "native scenery source/collision/refusal",
+      "passed": 3,
+      "seconds": 0.004
+    },
+    {
+      "name": "startup access binding",
+      "passed": 4,
+      "seconds": 0.813
+    }
+  ],
+  "regeneration_checks": [
+    "qengine_access.py --check",
+    "build_party_rite_item_profiles.py /tmp/questpc2-party-native-source --check",
+    "quest_access_bindings.py --crystal-root /tmp/questpc2-party-source --check",
+    "register_spell_families.py --check:42 files",
+    "raid_catalogue.py --check"
+  ],
+  "build_failure_corrected": {
+    "error": "No space left on device (os error28) before any PostgreSQL execution",
+    "seconds": 116.074,
+    "log": "/tmp/questpc2-desert-integrated-disk-red.log",
+    "recovery": "Reclaimed only inactive unlocked query caches; SHA-verified compressed prior PG-green executable outside checkout before unlink while no build/process used it. Retried same combined-tree regression."
+  },
+  "second_build_failure_corrected": {
+    "error": "Content link Bus error and integration_rest os28; sandbox then failed creating temporary /workspace/.git mount file",
+    "seconds": 9.411,
+    "log": "/tmp/questpc2-desert-content-disk-red.log",
+    "test_cases_run": 0,
+    "recovery": "Automatic review approved a one-shot targeted cleanup outside the unstartable sandbox. Reclaimed8172610425 bytes from only inactive unlocked query-cache.bin/dep-graph.bin files; preserved all objects/executables, active builds, native Dispatch cache, source and PostgreSQL. Remaining content/World/pin checks rerun; prior green checks retained."
+  },
+  "checks": [
+    {
+      "name": "schema",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "source_party_rite_is_bounded_and_exclusive",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.144,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-checks-schema.log"
+    },
+    {
+      "name": "group",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-entities",
+        "--features",
+        "test-support",
+        "--lib",
+        "source_group_projection_refusal_restores_every_member_and_retries_once",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.172,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-checks-group.log"
+    },
+    {
+      "name": "encounter-regression",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "qengine_annihilator_party_encounter_fail_closed",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 82.937,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "POSTGRES_CASE_COMPLETED annihilator-entry",
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-checks-encounter-regression.log"
+    },
+    {
+      "name": "altar-regression",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "rotten_blood_postgres_literal_altar_consumption_and_replay",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 55.652,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "ROTTEN_BLOOD POSTGRES_CASE_COMPLETED literal_altar",
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-checks-altar-regression.log"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 14.112,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-checks-fmt.log"
+    },
+    {
+      "name": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-game-server"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 101.081,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-checks-check.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-game-server",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 220.077,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-checks-clippy.log"
+    },
+    {
+      "name": "server-item-boot",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-game-server",
+        "--lib",
+        "map_cutover_b_a_bundle_with_items_boots_from_the_active_generation",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 214.968,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-checks-server-item-boot.log"
+    },
+    {
+      "name": "server-floor",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-game-server",
+        "--lib",
+        "map_floor_activation_counts_floor_changes_and_refuses_a_flat_bundle",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.309,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-checks-server-floor.log"
+    },
+    {
+      "name": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 10.781,
+      "counts": [
+        [
+          "123",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-remaining-content.log"
+    },
+    {
+      "name": "world-project",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository",
+        "--quiet"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 55.676,
+      "counts": [
+        [
+          "5",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-remaining-world-project.log"
+    },
+    {
+      "name": "pin",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "run",
+        "--locked",
+        "--offline",
+        "--release",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/questpc2-desert-final-pin-check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 27.841,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-desert-final-remaining-pin.log"
+    }
+  ],
+  "postgres_cases_passed": 3,
+  "self_review": {
+    "result": "No material finding",
+    "boundaries": [
+      "Exact current member identity/session/lease/scope and vocation under the existing exclusive admission locks before any fresh offering mutation.",
+      "Original immutable context binds retry; a pending participant resolves the original owner, and foreign lever commands cannot replace its projection.",
+      "Every sealed native movement proof is checked before mutation; whole carrier rollback and final lever CAS retain exact once-only projection.",
+      "Empty party serialization preserves historical receipt bindings; nonparty callbacks reject supplied party metadata.",
+      "Exact source Item identity/physics and one startup UID delta; no authored geometry or source-fact override."
+    ],
+    "applicable_negative_operators": [
+      "missing live member",
+      "missing sacrifice",
+      "wrong base vocation",
+      "stale connection generation",
+      "stale scope generation",
+      "duplicate/foreign Character",
+      "projection refusal rollback",
+      "stale native movement proof",
+      "lost acknowledgement",
+      "exact immutable replay"
+    ],
+    "publication": "AUTHORING branch only; no freeze, PR or readiness claim"
+  }
+}

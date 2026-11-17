@@ -1,5 +1,6 @@
 //! CREATURE-MOVE-1 through the real composed Channel dispatch and existing PostgreSQL harness.
-use super::fixture::{Harness, debug, id, run};
+use super::fixture::{Harness, debug, id};
+use super::kill_reward_e2e::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
@@ -129,7 +130,7 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
         deps.combat_room = Some(room);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.clock_origin = std::time::Instant::now();
         deps.initialize(&owner).await;
         owner.clock_origin -= Duration::from_secs(10);

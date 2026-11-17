@@ -1,0 +1,144 @@
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:493:            ("oteryn:reward-claim.kv.variant", LeftOut::Variant),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:494:            ("oteryn:reward-claim.kv.waiting", LeftOut::NotReady),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:495:            ("oteryn:reward-claim.kv.hours", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:496:            ("oteryn:reward-claim.kv.container", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:497:            ("oteryn:reward-claim.kv.two", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:498:            ("oteryn:reward-claim.kv.grant", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:580:                LeftOut::UnencodedField
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:582:            ("oteryn:reward-claim.kv.zero", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:583:            ("oteryn:reward-claim.kv.wide", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:584:            ("oteryn:reward-claim.kv.container", LeftOut::Variant),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:585:            ("oteryn:reward-claim.kv.stack", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:586:            ("oteryn:reward-claim.kv.plain_key", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:607:            LeftOut::ItemNotAdmitted
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:674:            .filter(|(_, why)| *why == LeftOut::NotReady)
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:678:    for (reason, expected) in [(LeftOut::OwnerExcluded, 2), (LeftOut::Variant, 6)] {
+apps/game-server/src/node/serve/qualification_fixture.rs:170:            root_fluid_subtype: None,
+apps/game-server/src/node/serve/qualification_fixture.rs:171:            root_charges_remaining: None,
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:18:pub struct TutorialCorruptorClaim {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:25:impl TutorialCorruptorClaim {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:64:    ) -> Result<Option<TutorialCorruptorClaim>, CharacterProgressionError> {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:103:                    Ok(Ok((!items.is_empty()).then_some(TutorialCorruptorClaim {
+crates/gameplay/durability/src/durability/tutorial_corruptor.rs:141:    claim: &TutorialCorruptorClaim,
+apps/game-server/tests/support/combat_bestiary_postgres_cases.rs:72:    Ok(CreatureDeathRewardInput {
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:814:        root_fluid_subtype: None,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs:815:        root_charges_remaining: None,
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:53:            root.root_fluid_subtype = Some(9);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:68:            root.root_fluid_subtype = Some(1);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:109:                bad.root_fluid_subtype = Some(6);
+apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs:111:                    bad.root_fluid_subtype = None;
+crates/gameplay/content/src/content/world_reward_claims.rs:116:    pub root_fluid_subtype: Option<u8>,
+crates/gameplay/content/src/content/world_reward_claims.rs:117:    pub root_charges_remaining: Option<u32>,
+crates/gameplay/content/src/content/world_reward_claims.rs:245:    root_fluid_subtype: Option<u8>,
+crates/gameplay/content/src/content/world_reward_claims.rs:246:    root_charges_remaining: Option<u32>,
+crates/gameplay/content/src/content/world_reward_claims.rs:293:        return Ok(Err(LeftOut::OwnerExcluded));
+crates/gameplay/content/src/content/world_reward_claims.rs:300:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:303:        return Ok(Err(LeftOut::Variant));
+crates/gameplay/content/src/content/world_reward_claims.rs:309:        return Ok(Err(LeftOut::NotReady));
+crates/gameplay/content/src/content/world_reward_claims.rs:341:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:362:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:371:        return Ok(Err(LeftOut::ItemNotAdmitted));
+crates/gameplay/content/src/content/world_reward_claims.rs:509:                recipe.get("root_charges_remaining").is_some()
+crates/gameplay/content/src/content/world_reward_claims.rs:510:                    || recipe.get("root_fluid_subtype").is_some()
+crates/gameplay/content/src/content/world_reward_claims.rs:552:            "root_charges_remaining",
+crates/gameplay/content/src/content/world_reward_claims.rs:623:                    || recipe.get("root_charges_remaining").and_then(Value::as_u64) == Some(1)) =>
+crates/gameplay/content/src/content/world_reward_claims.rs:640:        result.root_charges_remaining = recipe
+crates/gameplay/content/src/content/world_reward_claims.rs:641:            .get("root_charges_remaining")
+crates/gameplay/content/src/content/world_reward_claims.rs:972:        root_fluid_subtype: None,
+crates/gameplay/content/src/content/world_reward_claims.rs:973:        root_charges_remaining: None,
+crates/gameplay/content/src/content/world_reward_claims.rs:1017:                root_fluid_subtype: placement.root_fluid_subtype,
+crates/gameplay/content/src/content/world_reward_claims.rs:1018:                root_charges_remaining: placement.root_charges_remaining,
+crates/gameplay/content/src/content/world_reward_claims.rs:1100:                    .all(|placement| placement.root_charges_remaining == Some(1)
+crates/gameplay/content/src/content/world_reward_claims.rs:1230:            Ok(Err(LeftOut::ItemNotAdmitted))
+crates/gameplay/durability/src/durability/item_mint.rs:910:        tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
+apps/game-server/tests/support/attack_kill_reward_postgres_cases.rs:575:    Ok(CreatureDeathRewardInput {
+crates/gameplay/content/src/content/world_reward_claims/native_state.rs:88:        if recipe.get("root_fluid_subtype").is_some() {
+crates/gameplay/content/src/content/world_reward_claims/native_state.rs:93:                || recipe.get("root_charges_remaining").and_then(Value::as_u64) != Some(1)
+crates/gameplay/content/src/content/world_reward_claims/native_state.rs:97:        } else if recipe.get("root_charges_remaining").is_some() {
+crates/gameplay/combat/src/combat/death_reward.rs:235:    pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+crates/gameplay/combat/src/combat/death_reward.rs:477:    tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:8:        std::iter::once((0, request.root_charges_remaining))
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:25:        request.root_fluid_subtype,
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:26:        request.root_charges_remaining,
+crates/gameplay/durability/src/durability/reward_claim_mint/charges.rs:69:    for (ordinal, charges) in std::iter::once((0, frozen.request.root_charges_remaining)).chain(
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:9:    pub async fn claim_falcon_chest(
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:153:        || first.root_fluid_subtype.is_some()
+crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs:154:        || first.root_charges_remaining.is_some()
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:8:        std::iter::once((0, request.root_fluid_subtype))
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:29:        request.root_fluid_subtype,
+crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs:59:    for (ordinal, subtype) in std::iter::once((0, frozen.request.root_fluid_subtype)).chain(
+crates/gameplay/durability/src/durability/core_modules.rs:1454:fn scope_storage_v2(record: &ReconnectDurabilityRecordV1) -> V2ScopeStorage {
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:616:    Ok(CreatureDeathRewardInput {
+apps/game-server/tests/support/combat_death_reward_postgres_cases.rs:1574:            let input = CreatureDeathRewardInput {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:8:pub struct NpcProgramRequest {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:24:impl NpcProgramRequest {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:58:    request: &NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:72:    request: &NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:82:                if let oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Storage {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:118:        request: NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:143:        request: NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:254:    request: &NpcProgramRequest,
+crates/gameplay/durability/src/durability/quest_world_callback.rs:27:    pub async fn check_character_world_callback(
+crates/gameplay/durability/src/durability/admission_journal.rs:1764:fn scope_storage(record: &ReconnectDurabilityRecordV1) -> ScopeStorage {
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:184:    pub root_fluid_subtype: Option<u8>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:186:    pub root_charges_remaining: Option<u32>,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1863:            root_fluid_subtype: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:1864:            root_charges_remaining: None,
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2028:        filled.root_fluid_subtype = Some(6);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2035:        wine.root_fluid_subtype = Some(2);
+crates/gameplay/durability/src/durability/reward_claim_mint.rs:2043:                "empty subtype" => changed.root_fluid_subtype = Some(0),
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:2:use super::super::quest_state::npc_program::{NpcProgramCommit, NpcProgramRequest};
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs:11:        request: NpcProgramRequest,
+crates/gameplay/social/src/interaction/chest_use.rs:319:        root_fluid_subtype: None,
+crates/gameplay/social/src/interaction/chest_use.rs:320:        root_charges_remaining: None,
+tools/content-schema/reward-claim-authoring/test_charge_native.py:30:                self.assertEqual(placement['root_charges_remaining'], 1)
+tools/content-schema/reward-claim-authoring/reward_claim_variant_authoring.py:66:                    'root_charges_remaining': {'const': 1},
+tools/content-schema/reward-claim-authoring/charge_native.py:111:        projected.update(root=contents[0]['item'], capacity=None, contents=[], root_charges_remaining=1)
+tools/content-schema/encounter-authoring/canary_encounters.py:259:                    f'Every player in creature:getDamageMap() is credited (D27): the quest domain raises Storage {questline} by 1 '
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:690:            root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/arena_match.rs:691:            root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:7:use crate::durability::tutorial_corruptor::TutorialCorruptorClaim;
+crates/gameplay/dispatch/src/gameplay_transport/tutorial_corruptor.rs:15:    ) -> Result<(LootTableDefinition, Option<TutorialCorruptorClaim>), ()> {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:109:fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:138:    PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:171:fn pending_with_ordinary_surprise_bag() -> PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs:1057:fn entry_for(creature: ExactActorRef) -> PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:7:    npc_program::{self, NpcProgramRequest},
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:26:        request: NpcProgramRequest,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:41:    request: NpcProgramRequest,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:100:    let mut request = NpcProgramRequest {
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:187:                    root_fluid_subtype: bound.root_fluid_subtype,
+crates/gameplay/dispatch/src/gameplay_transport/bundle_chest.rs:188:                    root_charges_remaining: bound.root_charges_remaining,
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:117:            root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/grizzly_rewards.rs:118:            root_charges_remaining: None,
+crates/gameplay/quests/src/quest/rotten_blood.rs:38:        storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, preserve: false, read_only: false }],
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:79:            root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/rewards.rs:80:            root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:215:                root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/soul_war_reward.rs:216:                root_charges_remaining: None,
+crates/gameplay/quests/src/quest/world_callbacks.rs:57:pub struct Storage {
+crates/gameplay/quests/src/quest/npc_rules/validate.rs:110:                    NpcRuleGuard::Storage {
+crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:81:            NpcRuleGuard::Storage {
+crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:322:                        NpcRuleGuard::Storage { .. } | NpcRuleGuard::StorageTime { .. }
+crates/gameplay/quests/src/quest/grizzly_adams.rs:222:pub struct GrizzlyStorage {
+crates/gameplay/quests/src/quest/npc_rules.rs:110:    Storage {
+crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs:266:            .map(|(track, value)| NpcRuleGuard::Storage {
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:399:                let allowed = self.root.check_character_world_callback(
+crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs:171:                        root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs:172:                        root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/falcon_chests.rs:189:                    .claim_falcon_chest(
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:92:pub struct PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:143:impl PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1460:                        PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:1793:    let entry = PendingKillSettlement {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:263:        root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_durability/rewards.rs:264:        root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:473:                    root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:474:                    root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:642:        root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:643:        root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/falcon_chests.rs:213:                    root_fluid_subtype: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/falcon_chests.rs:214:                    root_charges_remaining: None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:5:use crate::durability::quest_state::{QuestTransitionOutcome, npc_program::NpcProgramRequest};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:113:    let request = NpcProgramRequest {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/underwater_drowning.rs:433:                    vec![Storage {

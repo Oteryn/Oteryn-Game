@@ -20,13 +20,27 @@ fn party_buffs_real_dispatch_applies_values_and_duration_only_in_range_postgres(
 }
 
 #[test]
-fn heal_party_real_dispatch_members_values_duration_postgres() -> TestResult { run_party_buffs(Some(("heal_party", "druid"))) }
+fn heal_party_real_dispatch_members_values_duration_postgres() -> TestResult {
+    run_party_buffs(Some(("heal_party", "druid")))
+}
 #[test]
-fn enchant_party_real_dispatch_members_values_duration_postgres() -> TestResult { run_party_buffs(Some(("enchant_party", "sorcerer"))) }
+fn enchant_party_real_dispatch_members_values_duration_postgres() -> TestResult {
+    run_party_buffs(Some(("enchant_party", "sorcerer")))
+}
 #[test]
-fn train_party_real_dispatch_members_values_duration_postgres() -> TestResult { run_party_buffs(Some(("train_party", "knight"))) }
+fn train_party_real_dispatch_members_values_duration_postgres() -> TestResult {
+    run_party_buffs(Some(("train_party", "knight")))
+}
+
+pub(super) fn run_party_list() -> TestResult {
+    run_case(None, true)
+}
 
 pub(super) fn run_party_buffs(extra: Option<(&'static str, &'static str)>) -> TestResult {
+    run_case(extra, false)
+}
+
+fn run_case(extra: Option<(&'static str, &'static str)>, party_list: bool) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -38,9 +52,15 @@ pub(super) fn run_party_buffs(extra: Option<(&'static str, &'static str)>) -> Te
                 let h = Harness::create(admin, extra.map_or("party_buffs", |(key, _)| key), false)
                     .await
                     .map_err(debug)?;
-                let result = scenario(&h, extra).await.map_err(|error| error.to_string());
+                let result = scenario(&h, extra, party_list)
+                    .await
+                    .map_err(|error| error.to_string());
                 h.cleanup().await.map_err(debug)?;
-                eprintln!("POSTGRES_EXECUTED case={} elapsed={:.3}s", extra.map_or("party_buffs", |(key, _)| key), started.elapsed().as_secs_f64());
+                eprintln!(
+                    "POSTGRES_EXECUTED case={} elapsed={:.3}s",
+                    extra.map_or("party_buffs", |(key, _)| key),
+                    started.elapsed().as_secs_f64()
+                );
                 result
             })
         })?
@@ -70,11 +90,19 @@ fn open_party_world(
             floor: -7,
             sx,
             sy: 0,
-            tiles: (0..=2).flat_map(|y| {
-                let ground = ground.clone();
-                (1..=40).filter(move |x| x / oteryn_world_bundle::sector::SECTOR_SIZE == sx)
-                    .map(move |x| { let mut tile = ground.clone(); tile.x=x; tile.y=y; tile })
-            }).collect(),
+            tiles: (0..=2)
+                .flat_map(|y| {
+                    let ground = ground.clone();
+                    (1..=40)
+                        .filter(move |x| x / oteryn_world_bundle::sector::SECTOR_SIZE == sx)
+                        .map(move |x| {
+                            let mut tile = ground.clone();
+                            tile.x = x;
+                            tile.y = y;
+                            tile
+                        })
+                })
+                .collect(),
         })
         .collect();
     let bytes = writer::write(&data.manifest, &data.sectors, &data.spawns).map_err(debug)?;
@@ -98,7 +126,7 @@ fn open_party_world(
     .map_err(debug)?)
 }
 
-async fn scenario(h: &Harness, extra: Option<(&str, &str)>) -> TestResult {
+async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -169,7 +197,11 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>) -> TestResult {
         1,
         1,
         "runtime-scope-assignment:1",
-        if extra.is_some_and(|(key, _)| key == "c11_monk") { 32 } else { 5 },
+        if extra.is_some_and(|(key, _)| key == "c11_monk") {
+            32
+        } else {
+            5
+        },
         pin.clone(),
     )
     .map_err(debug)?;
@@ -370,11 +402,25 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>) -> TestResult {
                 item_fence: None,
             })
             .await;
-        let vocation = if index == 0 { extra.map_or("paladin", |(_, vocation)| vocation) }
-            else if extra.is_some_and(|(key, _)| key == "c11_monk") { "knight" } else { "monk" };
+        let vocation = if index == 0 {
+            extra.map_or("paladin", |(_, vocation)| vocation)
+        } else if extra.is_some_and(|(key, _)| key == "c11_monk") {
+            "knight"
+        } else {
+            "monk"
+        };
         let (facts, build) = if index == 0 && extra.is_some_and(|(key, _)| key == "c11_monk") {
-            initialize_build_at_experience(&owner, session, vocation, 90 + index as u8, 40_000_000_000).await?
-        } else { initialize_build(&owner, session, vocation, 90 + index as u8).await? };
+            initialize_build_at_experience(
+                &owner,
+                session,
+                vocation,
+                90 + index as u8,
+                40_000_000_000,
+            )
+            .await?
+        } else {
+            initialize_build(&owner, session, vocation, 90 + index as u8).await?
+        };
         let runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
         assert!(
@@ -416,7 +462,10 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>) -> TestResult {
         return super::monk_virtues::scenario(&mut owner, h, &players).await;
     }
     // Each eligible vocation casts on its own session; both nearby actors receive both buffs.
-    let casts = extra.map_or_else(|| vec![(20, "protect_party", 0), (21, "enlighten_party", 1)], |(key, _)| vec![(20, key, 0)]);
+    let casts = extra.map_or_else(
+        || vec![(20, "protect_party", 0), (21, "enlighten_party", 1)],
+        |(key, _)| vec![(20, key, 0)],
+    );
     for (number, key, caster) in casts {
         let spell = (1..=u32::try_from(spells.source_len())?)
             .filter_map(std::num::NonZeroU32::new)
@@ -486,19 +535,47 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>) -> TestResult {
                             (120_000, 2, 2_000, 0)
                         );
                     }
-                    ConditionValues::SpellSkills { duration_ms, melee, distance, fist, .. } if key == "train_party" => {
+                    ConditionValues::SpellSkills {
+                        duration_ms,
+                        melee,
+                        distance,
+                        fist,
+                        ..
+                    } if key == "train_party" => {
                         assert_eq!((duration_ms, melee, distance, fist), (120_000, 3, 3, 3));
                     }
-                    ConditionValues::SpellSkills { duration_ms, magic_level, .. } if key == "enchant_party" => {
+                    ConditionValues::SpellSkills {
+                        duration_ms,
+                        magic_level,
+                        ..
+                    } if key == "enchant_party" => {
                         assert_eq!((duration_ms, magic_level), (120_000, 1));
                     }
-                    ConditionValues::SpellRegeneration { duration_ms, health_gain, health_interval_ms, mana_gain, .. } if key == "heal_party" => {
-                        assert_eq!((duration_ms, health_gain, health_interval_ms, mana_gain), (120_000, 20, 2_000, 0));
+                    ConditionValues::SpellRegeneration {
+                        duration_ms,
+                        health_gain,
+                        health_interval_ms,
+                        mana_gain,
+                        ..
+                    } if key == "heal_party" => {
+                        assert_eq!(
+                            (duration_ms, health_gain, health_interval_ms, mana_gain),
+                            (120_000, 20, 2_000, 0)
+                        );
                     }
                     other => return Err(format!("unexpected {key} condition: {other:?}").into()),
                 }
             }
         }
+        drop(states);
+        drop(runtime);
+        for (index, (actor, session)) in players.iter().copied().enumerate() {
+            super::party_effects::check_buffs(h, &owner, actor, session, key, index != 2).await?;
+        }
+    }
+    super::party_member_effects::check(&owner, &players).await?;
+    if party_list {
+        super::party_list::check(&owner, &players).await?;
     }
     Ok(())
 }
@@ -514,9 +591,15 @@ pub(super) async fn initialize_build(
     initialize_build_at_experience(owner, session, vocation, seed, 16_000_000).await
 }
 async fn initialize_build_at_experience(
-    owner: &ComposedFreshAdmission<'_, '_, '_>, session: crate::foundation::GameSessionId,
-    vocation: &str, seed: u8, experience: i64,
-) -> TestResult<(crate::spell::cast::CharacterCastFacts, crate::durability::character_build::DurableBuildState)> {
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+    vocation: &str,
+    seed: u8,
+    experience: i64,
+) -> TestResult<(
+    crate::spell::cast::CharacterCastFacts,
+    crate::durability::character_build::DurableBuildState,
+)> {
     let fence = owner
         .current_quest_fence(session)
         .await

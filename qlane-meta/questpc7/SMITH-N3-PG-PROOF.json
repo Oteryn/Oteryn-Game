@@ -1,0 +1,79 @@
+{
+  "at": "2026-11-08T16:29:57.216847+00:00",
+  "state": "QUALIFIED_COMPLETE_CHOSEN_ROUTE",
+  "quest": "Giant Smithhammer Quest",
+  "canonical": "oteryn:quest.giant_smithhammer_quest",
+  "test": "questpc7_smith_native_guardian_exact_cache_completion",
+  "postgres": "18.6",
+  "red_seconds": 40.344435849,
+  "red_error": "missing reused smith programme",
+  "green_seconds": 43.167823247,
+  "green_log_sha256": "f61d5715d39da786669786f1e23c05bdf6ebf2e8682a60a1b10f0fcf37b39dfe",
+  "reuse": {
+    "lane": "questpc8",
+    "commit": "3b315d18dbb0a3a00149a2a14b9a19fcb42053a1",
+    "retained": [
+      "two callback keys",
+      "owned tracks",
+      "native Giant Spider guardian contract",
+      "exact three reward outputs"
+    ],
+    "adaptation": "Pin a real chest at32777,32254,-8 on verified clear native ground; the peer fixture target32776,32253,-8 has no chest in current main."
+  },
+  "scope": [
+    "fresh subject quest state without quest-progress seeds",
+    "free-account entry without Current Premium authority",
+    "actual native exploration admits exactly one guardian across refresh",
+    "cache refuses before native Giant Spider lethal credit",
+    "one actual native Giant Spider lethal through existing death/corpse/loot owner",
+    "exact carried3208x1,3034x1,3031x100",
+    "durable owned quest completion",
+    "repeat cache use changes no output quantities",
+    "production prop emitted/pinned and selector agrees; all three actual source cells verified clear"
+  ],
+  "native_inventory": {
+    "before": 3956,
+    "after": 3961,
+    "added": [
+      3208,
+      4038,
+      4039,
+      4040,
+      5977
+    ],
+    "removed": [],
+    "changed_existing_profiles": [],
+    "changed_loot_custody_facts": [
+      828,
+      3371,
+      5879,
+      5977
+    ],
+    "all_loot_tables_bindings_quantities_probabilities": "UNCHANGED",
+    "closed_remainder": 97
+  },
+  "source_proofs": [
+    "tools/content-schema/native-gameplay/questpc7-smith-item-profile.json",
+    "tools/content-schema/native-gameplay/questpc7-smith-corpse-profiles.json"
+  ],
+  "validation": {
+    "authoring_checks": "PASS exact CI runner",
+    "authoring_units": "PASS107modules/1153cases; existing skips unchanged; clean retry after infrastructure SIGKILL",
+    "content_tree": "PASS34111Items/252Mounts/1864Creaturebindings",
+    "rust_units": "PASS354/354 in77.072s: complete quests crate and equipment inventory regression",
+    "workspace_all_targets": "PASS8m17s",
+    "clippy": "PASS changed quests+dispatch alltargets -Dwarnings3m50s",
+    "fmt": "PASS",
+    "duplicate_migrations": "PASS no new migrations",
+    "prey": "PASS actual simulation15cases/776creatures and4derived files",
+    "source_compiler": "PASS frozen SOURCE cores unchanged",
+    "pin_refresh": "PASS official tooling",
+    "full_dispatch_units": "PENDING under PREPUSH-2 time budget; own PG and changed equipment regression passed"
+  },
+  "boundary": [
+    "chosen once-only programme; original donor UID/placement not claimed",
+    "corpse chain source facts admitted; no timed-decay execution claim",
+    "no node-boot qualification claim"
+  ],
+  "overlap": "Collector must keep exactly one authored-smith-cache callback pair if merging questpc8 alongside this lane; retain actual production chest binding."
+}

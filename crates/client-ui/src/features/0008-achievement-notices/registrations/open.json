@@ -1,0 +1,9 @@
+{
+  "mechanic": "0008-achievement-notices",
+  "kind": "keybindings",
+  "id": "0008-achievement-notices-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+SHIFT+M",
+  "entry": "input.rs::open_key"
+}

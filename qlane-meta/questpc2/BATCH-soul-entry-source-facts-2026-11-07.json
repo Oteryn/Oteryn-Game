@@ -1,0 +1,36 @@
+{
+  "batch": "soul-entry-source-facts-2026-11-07",
+  "base_sha": "c0f2c94f73e226668b10eff8d421d9fd6096bca8",
+  "state": "GREEN_READY_TO_PUBLISH",
+  "scope": "Soul War Quest only; replayable entry facts, no runtime activation or engine feature.",
+  "local_helper": "tools/content-schema/quest-authoring/questpc2_soul_entries.py",
+  "local_helper_lines": 48,
+  "artifact": "tools/content-schema/quest-authoring/samples/questpc2-soul-entries.json",
+  "records": 6,
+  "ordered_player_slots": 30,
+  "source": {
+    "archive": "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz",
+    "archive_sha256": "f3fe990f2a72e2779fb360b9c8f98be9d4174b898fa486d4251aa00137c56277",
+    "path": "data-global/lib/quests/soul_war.lua",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75",
+    "lines": "286-477"
+  },
+  "semantics": [
+    "Preserve all five ordered source slots for each of six bosses, including shared teleport destinations.",
+    "Lua last assignment governs Greed: source line372 zero is superseded by line392 20h. Retain both assignments as facts.",
+    "Final Megalomania uses source72h; all entry facts remain native_admission=false.",
+    "Do not silently substitute this9f5 source pin for the existing201189f runtime candidate registry. QENGINE2 must qualify source hooks/closures and explicit provenance before integration."
+  ],
+  "checks": {
+    "focused_red": "New module absent; then generated artifact absent; both focused failures retained.",
+    "focused_green_log": "/tmp/questpc2-soul-entries-artifact-green.log",
+    "focused_green": "One focused source replay/provenance/slot order/cooldown/artifact consistency test passed.",
+    "postgres": "Not applicable: only a source fact helper, its test and derived research packet; no Rust/game/runtime/DB inputs changed. Previous c0f2c94f7 carries three actual source-corpse PG cases green.",
+    "workspace_all_targets": "GREEN exit0,43.65s; /tmp/questpc2-soul-entry-facts-workspace-check.log",
+    "fmt": "GREEN; /tmp/questpc2-soul-entry-facts-fmt.log",
+    "generation": "Generated exactly once at batch end by repository helper.",
+    "owner_policy": "Latest hard speed rule: compile+fmt before push; no full suites or extra lint/generation loops."
+  },
+  "whole_quest_qualifications": 0
+}

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0146-container-sort",
+  "kind": "panels",
+  "id": "0146-container-sort-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

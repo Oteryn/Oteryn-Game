@@ -310,7 +310,16 @@ class CosmeticsAuthoring(unittest.TestCase):
             staged = (root / c.MANIFEST).parent
             shutil.copytree((c.ROOT / c.MANIFEST).parent, staged)
             expected = c.build(self.authoring, root / c.MANIFEST)
-            self.assertEqual(c.materialized_outputs(root), {c.OUTPUT: expected})
+            outputs = c.materialized_outputs(root)
+            self.assertEqual(set(outputs), {c.OUTPUT})
+            self.assertLess(len(outputs[c.OUTPUT]), 200000)
+            descriptor = c.parse(outputs[c.OUTPUT])
+            self.assertEqual(descriptor["schema"], "OTERYN_NATIVE_COSMETICS_INPUT/v1")
+            self.assertEqual(descriptor["section_sha256"], c.sha(expected))
+            self.assertEqual(descriptor["authoring"], {
+                "path": "authoring.json", "sha256": c.sha(source.read_bytes())})
+            self.assertEqual(descriptor["source_manifest"]["sha256"],
+                             c.sha((root / c.MANIFEST).read_bytes()))
             shard = staged / c.parse((root / c.MANIFEST).read_bytes())["files"][0]["path"]
             shard.write_bytes(shard.read_bytes() + b" ")
             with self.assertRaisesRegex(ValueError, "shard digest"):

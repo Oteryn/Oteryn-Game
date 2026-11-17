@@ -1,0 +1,16 @@
+{
+  "mechanic": "0483-gem-atelier",
+  "kind": "handlers",
+  "id": "0483-gem-atelier-reshape",
+  "status": "supported",
+  "commands": [
+    6214
+  ],
+  "direction": "client_to_server",
+  "capability": 483,
+  "entry": "protocol.rs::reshape",
+  "not_applicable": {
+    "input": "Reshape uses the Wheel panel's selected gem and modifier, then review and confirm.",
+    "settings": "The Gem Atelier has no client settings."
+  }
+}

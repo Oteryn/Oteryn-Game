@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "quests": [{
+    "quest": "oteryn:quest.authored.draccoon_herald_outfits_quest",
+    "recipe_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "sources": ["engine fixture; no production quest authoring or qualification"],
+    "tracks": [
+      {"key":"oteryn:quest-progress/authored-kills/phase","initial":0,"minimum":0,"maximum":5},
+      {"key":"oteryn:quest-progress/authored-kills/count","initial":0,"minimum":0,"maximum":3}
+    ],
+    "stages": [
+      {"key":"start","completes":false,"trigger":{"kind":"npc_dialogue","callback":{
+        "key":"oteryn:quest-reward/authored-kills-start","quest":"oteryn:quest.authored.draccoon_herald_outfits_quest",
+        "npc":"oteryn:npc.cledwyn","keywords":["enginehunt"],"topic":0,"next_topic":0,
+        "storage":[{"track":"oteryn:quest-progress/authored-kills/phase","minimum":0,"maximum":0,"set":4}],
+        "take":[],"give":null,"outfit":null,"achievement":null,"reply":["Bound hunt."],"sources":["engine fixture"]
+      }}},
+      {"key":"count","completes":true,"trigger":{"kind":"kill","counter":{
+        "key":"oteryn:quest-transition/native-kills/authored-engine-rat","creature":"oteryn:creature.rat",
+        "track":"oteryn:quest-progress/authored-kills/count","gate":"oteryn:quest-progress/authored-kills/phase",
+        "gate_value":4,"advance_gate_to":5,"maximum":3
+      }}}
+    ]
+  }]
+}

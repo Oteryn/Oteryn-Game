@@ -1,0 +1,29 @@
+{
+  "file_sha256": "11223ba55d6a735571849fe629a4b1aab86dd33b1e356db5583aa8a50b6a89f5",
+  "checks": [
+    {
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "apps/game-server/src/quest_catalogue_boot_tests.rs"
+      ],
+      "exit_code": 0,
+      "seconds": 0.068,
+      "output": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "apps/game-server/src/quest_catalogue_boot_tests.rs"
+      ],
+      "exit_code": 0,
+      "seconds": 0.029,
+      "output": ""
+    }
+  ]
+}

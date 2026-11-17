@@ -24,6 +24,28 @@ pub enum Operation {
     Withdraw = 10,
     Status = 11,
     Query = 12,
+    MainCharacter = 13,
+    FriendInvite = 14,
+    FriendAccept = 15,
+    FriendRevoke = 16,
+    FriendsQuery = 17,
+    FriendReject = 18,
+}
+impl Operation {
+    pub fn is_query(self) -> bool {
+        matches!(self, Self::Query | Self::FriendsQuery)
+    }
+    pub fn is_account(self) -> bool {
+        matches!(
+            self,
+            Self::MainCharacter
+                | Self::FriendInvite
+                | Self::FriendAccept
+                | Self::FriendRevoke
+                | Self::FriendsQuery
+                | Self::FriendReject
+        )
+    }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Request {
@@ -44,18 +66,23 @@ pub fn encode_request(request: &Request) -> Result<(u32, Vec<u8>), Error> {
         | Operation::Edit
         | Operation::GroupAdd
         | Operation::GroupRename
-        | Operation::GroupRemove => COMMAND_TYPE_VIP_LIST,
+        | Operation::GroupRemove
+        | Operation::MainCharacter
+        | Operation::FriendInvite
+        | Operation::FriendRevoke => COMMAND_TYPE_VIP_LIST,
         Operation::Accept
         | Operation::Reject
         | Operation::Revoke
         | Operation::Withdraw
-        | Operation::Status => COMMAND_TYPE_VIP_CONSENT,
-        Operation::Query => COMMAND_TYPE_VIP_QUERY,
+        | Operation::Status
+        | Operation::FriendAccept
+        | Operation::FriendReject => COMMAND_TYPE_VIP_CONSENT,
+        Operation::Query | Operation::FriendsQuery => COMMAND_TYPE_VIP_QUERY,
     };
     let mut out = Vec::new();
     push_varint_field(&mut out, 1, request.operation as u64);
     match request.operation {
-        Operation::Add | Operation::GroupAdd => {
+        Operation::Add | Operation::GroupAdd | Operation::FriendInvite => {
             push_message_field(&mut out, 3, request.text.as_bytes())
         }
         Operation::GroupRename => {
@@ -71,7 +98,8 @@ pub fn encode_request(request: &Request) -> Result<(u32, Vec<u8>), Error> {
                 push_varint_field(&mut out, 6, u64::from(*group));
             }
         }
-        Operation::Query => {
+        Operation::MainCharacter => {}
+        Operation::Query | Operation::FriendsQuery => {
             if request.number != 0 {
                 push_varint_field(&mut out, 2, request.number);
             }
@@ -200,19 +228,30 @@ pub fn decode_request(command_type: u32, bytes: &[u8]) -> Result<Request, Error>
         (49, 10) => Operation::Withdraw,
         (49, 11) => Operation::Status,
         (50, 12) => Operation::Query,
+        (48, 13) => Operation::MainCharacter,
+        (48, 14) => Operation::FriendInvite,
+        (49, 15) => Operation::FriendAccept,
+        (48, 16) => Operation::FriendRevoke,
+        (50, 17) => Operation::FriendsQuery,
+        (49, 18) => Operation::FriendReject,
         _ => return Err(Error::Malformed),
     };
     let has_number = number.is_some();
     let has_text = text.is_some();
     let allowed = match operation {
-        Operation::Add | Operation::GroupAdd => {
+        Operation::Add | Operation::GroupAdd | Operation::FriendInvite => {
             !has_number && has_text && icon.is_none() && notify.is_none() && groups.is_empty()
         }
         Operation::GroupRename => {
             has_number && has_text && icon.is_none() && notify.is_none() && groups.is_empty()
         }
         Operation::Edit => has_number && has_text,
-        Operation::Query => !has_text && icon.is_none() && notify.is_none() && groups.is_empty(),
+        Operation::MainCharacter => {
+            !has_number && !has_text && icon.is_none() && notify.is_none() && groups.is_empty()
+        }
+        Operation::Query | Operation::FriendsQuery => {
+            !has_text && icon.is_none() && notify.is_none() && groups.is_empty()
+        }
         _ => has_number && !has_text && icon.is_none() && notify.is_none() && groups.is_empty(),
     };
     if !allowed {
@@ -264,3 +303,26 @@ pub fn encode_result(
 #[cfg(test)]
 #[path = "vip_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod main_character_tests {
+    use super::*;
+    #[test]
+    fn main_character_request_uses_the_acting_session_without_global_identifiers()
+    -> Result<(), Error> {
+        let request = Request {
+            operation: Operation::MainCharacter,
+            number: 0,
+            text: String::new(),
+            icon: 0,
+            notify: false,
+            groups: vec![],
+        };
+        let (kind, bytes) = encode_request(&request)?;
+        assert_eq!((kind, bytes.as_slice()), (48, &[8, 13][..]));
+        assert_eq!(decode_request(kind, &bytes)?, request);
+        assert!(decode_request(48, &[8, 13, 16, 1]).is_err());
+        assert!(decode_request(49, &bytes).is_err());
+        Ok(())
+    }
+}

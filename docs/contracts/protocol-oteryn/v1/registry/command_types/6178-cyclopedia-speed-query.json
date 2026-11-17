@@ -1,0 +1,10 @@
+{
+  "id": 6178,
+  "name": "CYCLOPEDIA_SPEED_QUERY",
+  "owner_decision": "T187 owner decision 2026-11-09",
+  "capability": 57,
+  "payload_schema": "cyclopedia-basic-v1.md#discovery-speed-query",
+  "result_schema": "cyclopedia-basic-v1.md#discovery-speed-query",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 2
+}

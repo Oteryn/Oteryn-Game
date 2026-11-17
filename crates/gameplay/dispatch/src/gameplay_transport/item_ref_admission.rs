@@ -78,6 +78,36 @@ pub(super) use oteryn_gameplay_items::item_ref_admission::{
     definition_ref, generation_inbox_item_facts, generation_item_facts,
 };
 
+fn native_corpse_appearance(
+    runtime: &ChannelRuntimeV1,
+    generation: Option<&ActiveGeneration>,
+    index: &ItemDefinitionIndex,
+    reference: std::num::NonZeroU32,
+) -> Option<std::num::NonZeroU16> {
+    let generation = generation?;
+    let native = generation.native_gameplay()?;
+    let pin = runtime.content_pin();
+    if generation.identity().server_artifact_digest() != pin.server_artifact_digest()
+        || generation.identity().client_artifact_digest() != pin.client_artifact_digest()
+    {
+        return None;
+    }
+    let (key, revision) = index.definition_at(reference)?;
+    let policy = native.item_policy(key, revision)?;
+    if policy.source_digest() != native.source_digest() {
+        return None;
+    }
+    // Native policy qualification proves the source binding, including aliases.
+    // A generation-local ordinal is never interpreted as an appearance number.
+    let id = policy
+        .record()
+        .production_binding
+        .external_id
+        .parse::<u16>()
+        .ok()?;
+    std::num::NonZeroU16::new(id)
+}
+
 /// MAP-ITEM-REF-1 Part B: the bound corpses of the Channel as D85 objects (entity generation 0),
 /// read under the caller's runtime lock. A corpse whose definition the pinned index does not name
 /// is left out; with capability 4 not offered, or no pinned index, there are none.
@@ -101,9 +131,18 @@ pub(super) fn visible_corpses(
                 &corpse.item.revision_ref,
             )?;
             Some(ChannelEntity {
+                source_icons:
+                    oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+                display_name: None,
                 health_percent: 100,
                 direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                 kind: VisibleKind::Corpse {
+                    native_appearance_id: native_corpse_appearance(
+                        runtime,
+                        generation,
+                        index,
+                        item_definition_ref,
+                    ),
                     item_definition_ref,
                 },
                 identity: corpse.identity,
@@ -167,6 +206,7 @@ pub(super) async fn observe_item_target(
         .iter()
         .map(|entry| {
             Some(ViewItem {
+                appearance_id: super::item_view::appearance_of(&entry.item.definition),
                 key: ItemKey::Instance(entry.item.item_instance_id),
                 item_definition_ref: definition_ref(index, &entry.item.definition)?,
                 count: NonZeroU32::new(entry.item.quantity)?,
@@ -360,19 +400,64 @@ pub(super) async fn observe_character_inventory(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     game_session_id: GameSessionId,
 ) -> Option<InventoryItems> {
-    let current = FreshAdmissionStore::from_root(admission.root.clone())
-        .current_session_at(game_session_id)
-        .await
-        .ok()?
-        .0;
-    if current.session_state() != GameSessionState::Active {
-        return None;
-    }
-    let character_id =
-        crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes()).ok()?;
-    let backpack = admission
-        .root
-        .read_character_backpack(admission.character, character_id)
+    use super::connection::AdmissionRefusal::{Rejected, Unavailable};
+    use crate::durability::{DurabilityError, item_use::ItemUseError};
+    // These reads share the root's single holder with the node cadence. A busy
+    // holder must not turn a valid join/resume into a missing inventory snapshot.
+    let backpack = super::AdmissionRetryBudget::for_command(admission.root)
+        .retry_unavailable(async || {
+            let current = FreshAdmissionStore::from_root(admission.root.clone())
+                .current_session_at(game_session_id)
+                .await
+                .map_err(|error| match error {
+                    DurabilityError::RootUnavailable => Unavailable,
+                    _ => Rejected,
+                })?
+                .0;
+            if current.session_state() != GameSessionState::Active
+                || current.current_game_session_id() != game_session_id
+            {
+                return Err(Rejected);
+            }
+            let fence = super::item_fence_of(current).ok_or(Rejected)?;
+            let in_house = admission
+                .runtime
+                .lock()
+                .await
+                .house_player_for_session(game_session_id)
+                .map_err(|_| Rejected)?
+                .is_some();
+            if in_house {
+                // Character-carried custody uses the existing current House
+                // custody fence without adding a service ACL requirement.
+                admission
+                    .root
+                    .read_house_carried_inventory(
+                        admission.character,
+                        admission.holder,
+                        fence,
+                        *admission.channel_id.as_bytes(),
+                    )
+                    .await
+                    .map(crate::durability::item_use::ItemUseInventory::into_backpack)
+                    .map_err(|error| match error {
+                        DurabilityError::RootUnavailable => Unavailable,
+                        _ => Rejected,
+                    })
+            } else {
+                // Ordinary Channel and activity snapshots cross the current actor
+                // fence before publishing inventory, including closed death bags.
+                admission
+                    .root
+                    .read_item_use_inventory(admission.character, admission.holder, fence)
+                    .await
+                    .map(crate::durability::item_use::ItemUseInventory::into_backpack)
+                    .map_err(|error| match error {
+                        ItemUseError::Unavailable(DurabilityError::RootUnavailable) => Unavailable,
+                        _ => Rejected,
+                    })
+            }
+        })
         .await
         .ok()?;
     let index = pinned_index(

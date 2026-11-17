@@ -1,0 +1,9 @@
+{
+  "mechanic": "0099-guildhall",
+  "kind": "keybindings",
+  "id": "0099-guildhall-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+G",
+  "entry": "input.rs::open_key"
+}

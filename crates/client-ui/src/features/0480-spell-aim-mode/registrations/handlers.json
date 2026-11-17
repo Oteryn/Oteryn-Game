@@ -1,0 +1,20 @@
+{
+  "mechanic": "0480-spell-aim-mode",
+  "kind": "handlers",
+  "id": "0480-spell-aim-mode-core-cast-extension",
+  "status": "supported",
+  "commands": [],
+  "shared_commands": [
+    3
+  ],
+  "direction": "client_to_server",
+  "capability": 480,
+  "entry": "input.rs::cast_command",
+  "test": "tests.rs::each_target_option_selects_its_aimed_cast_command",
+  "not_applicable": {
+    "state": "The cast intent is stateless per cast.",
+    "protocol": "The shared session command3 codec carries field 5 aim_mode and falls back to the old encoding without 480.",
+    "view": "The existing action bar target option dialog selects the option.",
+    "settings": "The per-button target option is stored with the existing action bar assignments."
+  }
+}

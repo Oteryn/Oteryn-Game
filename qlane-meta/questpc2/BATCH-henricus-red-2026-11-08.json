@@ -1,0 +1,30 @@
+{
+  "batch": "henricus-recruitment-red-scaffold",
+  "publication": "WIP compiling regression scaffold, not a green quest batch",
+  "red_pg": {
+    "test": "questpc2_henricus_recruitment_and_first_mission_are_topic_fenced_and_atomic",
+    "server_version": 180006,
+    "duration_seconds": 65.812208608,
+    "error": "missing source recruitment offer: []",
+    "log": "/tmp/questpc2b-henricus-red-pg.log"
+  },
+  "log_sha256": "7a945af617346d7dd3281d6006719e3f3f0e0b8073094553cc9594a2c9a826fe",
+  "code_scope": [
+    "New mounted Henricus PG regression",
+    "Existing scenario router invokes it",
+    "Expose existing Oldrak test-only unoffered-yes helper for reuse"
+  ],
+  "runtime_logic_changed": false,
+  "owner_cadence": "Publish compiling WIP within30 minutes, name exact red point, then immediately implement the missing quest data. No test weakened or skipped.",
+  "engine_requests": [
+    "Source NPC item+bank-money effects sharing one topic, Oldrak Demon Oak",
+    "Source NPC money/fallback-topic semantics, Halvar Barbarian Arena"
+  ],
+  "checks": {
+    "workspace_all_targets": "PASS5m03s",
+    "clippy_dispatch_all_targets_all_features": "PASS8m17s",
+    "fmt": "PASS",
+    "generation": "PASS applicable central lists/pins; no runtime content changes",
+    "duplicate_migrations": "PASS"
+  }
+}

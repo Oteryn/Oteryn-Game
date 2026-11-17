@@ -1,0 +1,7 @@
+{
+  "mechanic": "0098-quick-loot",
+  "status": "supported",
+  "kind": "panels",
+  "id": "0098-quick-loot-panel",
+  "entry": "view.rs::panel_text"
+}

@@ -147,7 +147,7 @@ fn actual_named_healing_failure_starts_cooldowns_without_resources_or_harmony() 
             );
         }
         let mut substituted = caster.clone();
-        substituted.magic_level += 1;
+        substituted.level += 1;
         assert!(
             prepare_named_player_failure_owner_cast_with_caster(
                 &state,

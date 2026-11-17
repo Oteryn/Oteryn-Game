@@ -1,0 +1,17 @@
+{
+  "id": 489,
+  "name": "HOUSE_PODIUM_FLAGS_V1",
+  "constant": "house_podium::CAPABILITY_HOUSE_PODIUM_FLAGS_V1",
+  "requires": [
+    150
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

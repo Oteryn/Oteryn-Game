@@ -5,6 +5,7 @@ use crate::ErrorCode;
 /// Longest escaped `detail` value in bytes.
 const DETAIL_MAX: usize = 512;
 const ELLIPSIS: &str = "...";
+const TOKEN_MAX: usize = 128;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Level {
@@ -12,6 +13,17 @@ pub enum Level {
     Warn,
     Info,
     Debug,
+}
+
+/// One ordered extension field in a diagnostic line.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FieldValue<'a> {
+    /// A sanitized token value.
+    Token(&'a str),
+    /// An owned sanitized token value.
+    Owned(String),
+    /// An unsigned numeric value.
+    U64(u64),
 }
 
 impl Level {
@@ -62,6 +74,7 @@ pub struct Line<'a> {
     pub world: Option<&'a str>,
     pub channel: Option<&'a str>,
     pub session_gen: Option<u64>,
+    pub fields: Vec<(&'a str, FieldValue<'a>)>,
     pub detail: Option<&'a str>,
 }
 
@@ -79,6 +92,7 @@ impl<'a> Line<'a> {
             world: None,
             channel: None,
             session_gen: None,
+            fields: Vec::new(),
             detail: None,
         }
     }
@@ -123,6 +137,13 @@ impl<'a> Line<'a> {
     #[must_use]
     pub const fn detail(mut self, detail: &'a str) -> Self {
         self.detail = Some(detail);
+        self
+    }
+
+    /// Append an extension field after scope fields and before `detail`.
+    #[must_use]
+    pub fn field(mut self, key: &'a str, value: FieldValue<'a>) -> Self {
+        self.fields.push((key, value));
         self
     }
 
@@ -176,6 +197,16 @@ impl<'a> Line<'a> {
         if let Some(generation) = self.session_gen {
             out.push_str(&format!(" session_gen={generation}"));
         }
+        for (key, value) in &self.fields {
+            out.push(' ');
+            out.push_str(&field_key(key));
+            out.push('=');
+            match value {
+                FieldValue::Token(value) => out.push_str(&token(value)),
+                FieldValue::Owned(value) => out.push_str(&token(value)),
+                FieldValue::U64(value) => out.push_str(&value.to_string()),
+            }
+        }
         if let Some(detail) = self.detail {
             out.push_str(" detail=\"");
             out.push_str(&escape_detail(detail));
@@ -183,6 +214,27 @@ impl<'a> Line<'a> {
         }
         out
     }
+}
+
+fn field_key(value: &str) -> String {
+    let mut key: String = value
+        .bytes()
+        .take(TOKEN_MAX)
+        .map(|byte| {
+            if byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_' {
+                char::from(byte)
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    if key.is_empty() {
+        key.push('_');
+    }
+    if ORDER.contains(&key.as_str()) {
+        key.insert_str(0, "field_");
+    }
+    key
 }
 
 fn token(value: &str) -> String {
@@ -195,6 +247,7 @@ fn token(value: &str) -> String {
                 '_'
             }
         })
+        .take(TOKEN_MAX)
         .collect();
     if token.is_empty() {
         "_".to_owned()
@@ -299,6 +352,7 @@ pub struct ParsedLine {
     pub world: Option<String>,
     pub channel: Option<String>,
     pub session_gen: Option<u64>,
+    pub fields: Vec<(String, String)>,
     pub detail: Option<String>,
 }
 
@@ -362,6 +416,7 @@ pub fn parse_line(line: &str) -> Result<ParsedLine, ParseError> {
         world: None,
         channel: None,
         session_gen: None,
+        fields: Vec::new(),
         detail,
     };
     let mut next = 0;
@@ -371,11 +426,29 @@ pub fn parse_line(line: &str) -> Result<ParsedLine, ParseError> {
             .split_once('=')
             .filter(|(_, value)| !value.is_empty())
             .ok_or_else(|| ParseError::BadValue(word.to_owned()))?;
-        let index = ORDER
-            .iter()
-            .position(|candidate| *candidate == key)
-            .filter(|index| *index < 13)
-            .ok_or_else(|| ParseError::FieldOrder(key.to_owned()))?;
+        let known = ORDER.iter().position(|candidate| *candidate == key);
+        if known.is_none() {
+            if next > 13 || parsed.fields.iter().any(|(seen, _)| seen == key) {
+                return Err(ParseError::FieldOrder(key.to_owned()));
+            }
+            if key.is_empty()
+                || !key
+                    .bytes()
+                    .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_')
+                || value.contains(|character: char| {
+                    !character.is_ascii_alphanumeric() && !"._:/+-".contains(character)
+                })
+            {
+                return Err(ParseError::BadValue(key.to_owned()));
+            }
+            next = 13;
+            parsed.fields.push((key.to_owned(), value.to_owned()));
+            continue;
+        }
+        let index = known.ok_or_else(|| ParseError::FieldOrder(key.to_owned()))?;
+        if index >= 13 {
+            return Err(ParseError::FieldOrder(key.to_owned()));
+        }
         if index < next || seen[index] {
             return Err(ParseError::FieldOrder(key.to_owned()));
         }
@@ -466,6 +539,25 @@ mod tests {
     }
 
     #[test]
+    fn extension_fields_round_trip_between_scope_and_detail() {
+        let text = Line::new(Level::Info, "node", "done")
+            .scope("world", "channel")
+            .field("outcome", FieldValue::Token("ok"))
+            .field("ms", FieldValue::U64(42))
+            .detail("safe\ntext")
+            .render("p", 1);
+        let parsed = parse_line(&text).unwrap();
+        assert_eq!(
+            parsed.fields,
+            [
+                ("outcome".to_owned(), "ok".to_owned()),
+                ("ms".to_owned(), "42".to_owned())
+            ]
+        );
+        assert_eq!(parsed.detail.as_deref(), Some("safe\ntext"));
+    }
+
+    #[test]
     fn out_of_order_repeated_or_missing_fields_are_rejected() {
         let good = "p ts=1 level=info module=node event=x";
         assert!(parse_line(good).is_ok());
@@ -477,7 +569,7 @@ mod tests {
             "p ts=1 level=info module=node event=x wire=E1050",
             "p ts=1 level=info module=node event=x trace=a code=E2001 name=A cat=CONFLICT",
             "p ts=1 level=loud module=node event=x",
-            "p ts=1 level=info module=node event=x extra=1",
+            "p ts=1 level=info module=node event=x Extra=1",
             "p ts=1 level=info module=node event=x detail=\"a\" world=w",
         ] {
             assert!(parse_line(bad).is_err(), "{bad}");

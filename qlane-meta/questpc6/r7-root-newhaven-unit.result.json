@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_cached_plan_reserves_only_shortfall_and_releases_it newhaven_corruptor_guarantee_survives_low_factor_and_keeps_independent_ordinary_drop --nocapture",
+  "exit": 0,
+  "duration_seconds": 89.046
+}

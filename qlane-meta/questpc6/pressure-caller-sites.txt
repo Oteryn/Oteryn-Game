@@ -1,0 +1,8 @@
+crates/gameplay/world/src/map/facts/quest_callbacks.rs:293:    pub fn remove_movement_item(&self, pos: TilePos, appearance: u16) -> bool {
+crates/gameplay/world/src/map/facts.rs:1150:        assert!(!facts.remove_movement_item(pos, 1));
+crates/gameplay/world/src/map/facts.rs:1151:        assert!(facts.remove_movement_item(pos, 435));
+crates/gameplay/world/src/map/facts.rs:1157:        assert!(facts.remove_movement_item(pos, 435));
+crates/gameplay/world/src/map/facts.rs:1158:        assert!(!facts.remove_movement_item(pos, 435));
+crates/gameplay/dispatch/src/gameplay_transport/paced_movement/special_movement.rs:104:fn quest_sewer_step(
+crates/gameplay/dispatch/src/gameplay_transport/paced_movement/special_movement.rs:147:            EntrySource::Added(_) => map.facts.remove_movement_item(position, 435),
+crates/gameplay/dispatch/src/gameplay_transport/paced_movement/special_movement.rs:538:        changed |= quest_sewer_step(map, origin_entries.as_ref(), &ids);

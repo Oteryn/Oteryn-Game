@@ -64,7 +64,12 @@ impl DefensePresentationSource {
         }
         let record=records.iter().find(|r|matches!(r,ProjectReferenceRecord::Creature{identity,..}if identity.key==creature.key&&identity.revision==creature.revision)).ok_or(AttackError::InvalidSource)?;
         let ProjectReferenceRecord::Creature { behavior, .. } = record else {
-            unreachable!()
+            let error = AttackError::InvalidSource;
+            crate::invariant_violation(
+                crate::record_variant_invariant_code(),
+                "resolved defense creature record changed variant",
+            );
+            return Err(error);
         };
         let mut map = std::collections::BTreeMap::new();
         for profile in profiles {

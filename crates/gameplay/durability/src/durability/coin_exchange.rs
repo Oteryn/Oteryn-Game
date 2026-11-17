@@ -1,10 +1,10 @@
 //! Command-retained banker and native item-use conversion of carried coins only.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_equipment::assert_current_equipment_in_transaction;
+use super::character_progression::CurrentCharacterGameplayFence;
 use super::db::begin_type2_transaction;
 use super::item_loop_move::{ItemLoopContent, carried_weight};
 use super::item_mint::TypedDefinitionRef;
-use super::character_progression::CurrentCharacterGameplayFence;
 use super::item_timed_state::{
     self, TimedCheckpointRequest, TimedDefinitionFacts, TimedExpiryRequest, TimedWriteError,
 };
@@ -18,7 +18,9 @@ use crate::domain::{
     timed_item::{ExpireReason, TimedValues},
 };
 use crate::foundation::CommandRef;
-use oteryn_gameplay_economy::coin_exchange::{CoinExchange, ExchangeRefusal, ExchangeUse, qualify, qualify_item_use};
+use oteryn_gameplay_economy::coin_exchange::{
+    CoinExchange, ExchangeRefusal, ExchangeUse, qualify, qualify_item_use,
+};
 use serde_json::{Value, json};
 use sqlx::Row;
 
@@ -48,8 +50,17 @@ pub enum CoinConverter {
 }
 
 impl CoinConverter {
-    fn id(self) -> [u8; 16] { match self { Self::Gold(id) | Self::Magic(id) => id } }
-    fn code(self) -> i16 { match self { Self::Gold(_) => 1, Self::Magic(_) => 2 } }
+    fn id(self) -> [u8; 16] {
+        match self {
+            Self::Gold(id) | Self::Magic(id) => id,
+        }
+    }
+    fn code(self) -> i16 {
+        match self {
+            Self::Gold(_) => 1,
+            Self::Magic(_) => 2,
+        }
+    }
 }
 
 fn code(exchange: CoinExchange) -> i16 {
@@ -96,7 +107,19 @@ impl DurabilityRoot {
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         let mut context = content;
+        #[cfg(any(test, feature = "test-support"))]
+        let diagnostic_root = self.root_identity();
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, content| Box::pin(async move {
+            macro_rules! commit_exchange {
+                ($transaction:expr, $phase:literal) => {{
+                    #[cfg(any(test, feature = "test-support"))]
+                    let probe = audit_commit_probe::CommitProbe::start(diagnostic_root, command, $phase, deadline);
+                    let result = $transaction.commit(deadline).await;
+                    #[cfg(any(test, feature = "test-support"))]
+                    probe.finish(&result);
+                    result
+                }};
+            }
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
             lock(&mut tx, command).await?;
@@ -105,12 +128,12 @@ impl DurabilityRoot {
                 let stored: Option<Vec<u8>> = row.try_get("item_source")?;
                 if stored.as_deref() != source.as_ref().map(|id| id.as_slice()) {
                     // NPC resume must never execute or acknowledge an item-use receipt.
-                    if source.is_none() { tx.commit(deadline).await?; return Ok(None); }
+                    if source.is_none() { commit_exchange!(tx, "retained_read")?; return Ok(None); }
                     return Err(DurabilityError::InvalidStoredState);
                 }
             }
             if existing.is_none() {
-                let Some(request) = request.as_ref() else { tx.commit(deadline).await?; return Ok(None); };
+                let Some(request) = request.as_ref() else { commit_exchange!(tx, "retained_read")?; return Ok(None); };
                 let content = content.ok_or(DurabilityError::Unavailable)?;
                 if request.npc_generation == 0 || request.catalogue_revision == 0 || request.conversation_revision == 0 || request.npc_key.is_empty() || request.npc_key.len() > 512 {
                     return Err(DurabilityError::InvalidStoredState);
@@ -120,7 +143,7 @@ impl DurabilityRoot {
                     .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(content.loop_content_digest().as_slice()).bind(code(request.exchange)).bind(request.amount.to_string()).bind(request.npc_identity.as_slice()).bind(request.npc_generation.to_string()).bind(&request.npc_key).bind(request.catalogue_revision.to_string()).bind(request.conversation_revision.to_string()).bind(source.as_ref().map(|id| id.as_slice())).bind(converter.as_ref().map(|(tool, _)| tool.id()).as_ref().map(|id| id.as_slice())).bind(converter.as_ref().map(|(tool, _)| tool.code())).execute(&mut **tx).await?;
             }
             // The immutable accepted request survives a timeout or process loss after this commit.
-            tx.commit(deadline).await?;
+            commit_exchange!(tx, "acceptance")?;
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &record).await?;
             lock(&mut tx, command).await?;
@@ -154,7 +177,7 @@ impl DurabilityRoot {
                         None => {
                             sqlx::query("UPDATE game_coin_exchange_receipts SET result=2,inputs='[]',outputs='[]' WHERE transaction_id=$1::uuid")
                                 .bind(&transaction).execute(&mut **tx).await?;
-                            tx.commit(deadline).await?;
+                            commit_exchange!(tx, "converter_refusal_finalization")?;
                             return Ok(Some(CoinExchangeReceipt { npc_identity: identity.try_into().map_err(|_| DurabilityError::InvalidStoredState)?, npc_generation: generation, line: exchange.insufficient_coins().to_owned(), changed: false }));
                         }
                     },
@@ -177,9 +200,134 @@ impl DurabilityRoot {
                 4 => "There is not enough room in your backpack.",
                 _ => return Err(DurabilityError::InvalidStoredState),
             }.to_owned();
-            tx.commit(deadline).await?;
+            commit_exchange!(tx, "finalization")?;
             Ok(Some(CoinExchangeReceipt { npc_identity: identity.try_into().map_err(|_| DurabilityError::InvalidStoredState)?, npc_generation: generation, line, changed: result == 1 }))
         })).await
+    }
+}
+
+/// Temporary, exact-command diagnostics consumed only by the native coin fixture.
+#[cfg(any(test, feature = "test-support"))]
+pub mod audit_commit_probe {
+    use super::{CommandRef, DurabilityError, DurabilityRoot};
+    use std::future::Future;
+    use std::sync::{Arc, Mutex};
+    use std::time::Instant;
+
+    #[derive(Debug, Default)]
+    pub struct Report {
+        pub commits: Vec<Commit>,
+        pub overflow: usize,
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct Commit {
+        pub phase: &'static str,
+        pub remaining_ms: u128,
+        pub elapsed_ms: u128,
+        pub outcome: &'static str,
+    }
+
+    struct Scope {
+        root: usize,
+        command: CommandRef,
+        report: Arc<Mutex<Report>>,
+    }
+
+    tokio::task_local! {
+        static ACTIVE: Scope;
+    }
+
+    /// The fixture polls its server and client directly inside this future.
+    /// No diagnostics are installed in unrelated roots, commands or spawned tasks.
+    pub async fn capture<F: Future>(
+        root: &DurabilityRoot,
+        command: CommandRef,
+        operation: F,
+    ) -> (F::Output, Report) {
+        let report = Arc::new(Mutex::new(Report::default()));
+        let result = ACTIVE
+            .scope(
+                Scope {
+                    root: root.root_identity(),
+                    command,
+                    report: Arc::clone(&report),
+                },
+                operation,
+            )
+            .await;
+        let report = std::mem::take(&mut *report.lock().unwrap_or_else(|error| error.into_inner()));
+        (result, report)
+    }
+
+    pub(super) struct CommitProbe(Option<Attempt>);
+
+    struct Attempt {
+        report: Arc<Mutex<Report>>,
+        started: Instant,
+        commit: Commit,
+    }
+
+    impl CommitProbe {
+        pub(super) fn start(
+            root: usize,
+            command: CommandRef,
+            phase: &'static str,
+            deadline: Instant,
+        ) -> Self {
+            Self(
+                ACTIVE
+                    .try_with(|scope| {
+                        (scope.root == root
+                            && scope.command.game_session_id() == command.game_session_id()
+                            && scope.command.command_id() == command.command_id())
+                        .then(|| Attempt {
+                            report: Arc::clone(&scope.report),
+                            started: Instant::now(),
+                            commit: Commit {
+                                phase,
+                                remaining_ms: deadline
+                                    .saturating_duration_since(Instant::now())
+                                    .as_millis(),
+                                elapsed_ms: 0,
+                                outcome: "Cancelled",
+                            },
+                        })
+                    })
+                    .ok()
+                    .flatten(),
+            )
+        }
+
+        pub(super) fn finish(mut self, result: &Result<(), DurabilityError>) {
+            if let Some(attempt) = &mut self.0 {
+                attempt.commit.outcome = match result {
+                    Ok(()) => "Committed",
+                    Err(DurabilityError::CommitOutcomeUnknown) => "CommitOutcomeUnknown",
+                    Err(DurabilityError::CommitRejected) => "CommitRejected",
+                    Err(DurabilityError::RootPassDeadlineExceeded) => "RootPassDeadlineExceeded",
+                    Err(_) => "OtherDurabilityError",
+                };
+            }
+        }
+    }
+
+    impl Drop for CommitProbe {
+        fn drop(&mut self) {
+            let Some(attempt) = &mut self.0 else {
+                return;
+            };
+            attempt.commit.elapsed_ms = attempt.started.elapsed().as_millis();
+            let mut report = attempt
+                .report
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            if report.commits.len() < 8 {
+                report.commits.push(attempt.commit);
+            } else {
+                report.overflow = report.overflow.saturating_add(1);
+            }
+        }
     }
 }
 
@@ -317,7 +465,10 @@ async fn qualify_converter(
     exchange: CoinExchange,
 ) -> Result<Option<ConverterCharge>, DurabilityError> {
     if matches!(tool, CoinConverter::Magic(_))
-        && !matches!(exchange, CoinExchange::GoldToPlatinum | CoinExchange::PlatinumToCrystal)
+        && !matches!(
+            exchange,
+            CoinExchange::GoldToPlatinum | CoinExchange::PlatinumToCrystal
+        )
     {
         return Ok(None);
     }
@@ -341,12 +492,21 @@ async fn qualify_converter(
     if &stored != definition {
         return Ok(None);
     }
-    let charge = match item_timed_state::load_timed_state(tx, &tool.id()).await.map_err(timed_error)? {
-        None => facts.full.charges().map(|charges| ConverterCharge { revision: 0, charges }),
+    let charge = match item_timed_state::load_timed_state(tx, &tool.id())
+        .await
+        .map_err(timed_error)?
+    {
+        None => facts.full.charges().map(|charges| ConverterCharge {
+            revision: 0,
+            charges,
+        }),
         Some(state) if state.deadline_at.is_none() => state
             .values
             .and_then(|values| values.charges())
-            .map(|charges| ConverterCharge { revision: state.revision, charges }),
+            .map(|charges| ConverterCharge {
+                revision: state.revision,
+                charges,
+            }),
         Some(_) => None,
     };
     Ok(charge.filter(|charge| charge.charges >= 1))
@@ -364,7 +524,9 @@ async fn spend_converter(
     let ids = sqlx::query("SELECT uuid_send(game_character_uuid_v7()) AS tx,uuid_send(game_character_uuid_v7()) AS event,floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS now")
         .fetch_one(&mut ***tx).await?;
     let id = |column: &str| -> Result<[u8; 16], DurabilityError> {
-        ids.try_get::<Vec<u8>, _>(column)?.try_into().map_err(|_| DurabilityError::InvalidStoredState)
+        ids.try_get::<Vec<u8>, _>(column)?
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)
     };
     let transaction_id = id("tx")?;
     if charge.charges > 1 {
@@ -373,10 +535,13 @@ async fn spend_converter(
             expected_revision: charge.revision,
             transaction_id,
             definition: facts.clone(),
-            values: TimedValues::new(Some(charge.charges - 1), None).map_err(|_| DurabilityError::InvalidStoredState)?,
+            values: TimedValues::new(Some(charge.charges - 1), None)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
         };
         item_timed_state::validate_checkpoint(&checkpoint).map_err(timed_error)?;
-        item_timed_state::write_checkpoint(tx, fence.character_id, &checkpoint).await.map_err(timed_error)?;
+        item_timed_state::write_checkpoint(tx, fence.character_id, &checkpoint)
+            .await
+            .map_err(timed_error)?;
         return Ok(());
     }
     let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
@@ -388,8 +553,12 @@ async fn spend_converter(
         character_lease_generation: fence.character_lease_generation,
         runtime_scope: fence.runtime_scope,
         scope_ownership_generation: fence.scope_ownership_generation,
-        expected_character_revision: CharacterRevision::new(revision.parse().map_err(|_| DurabilityError::InvalidStoredState)?)
-            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        expected_character_revision: CharacterRevision::new(
+            revision
+                .parse()
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+        .map_err(|_| DurabilityError::InvalidStoredState)?,
     };
     let expiry = TimedExpiryRequest {
         item_instance_id: tool.id(),
@@ -404,7 +573,9 @@ async fn spend_converter(
     };
     item_timed_state::validate_expiry(&expiry).map_err(timed_error)?;
     let tuple = tx.tuple();
-    item_timed_state::write_expiry(tx, &gameplay, &expiry, tuple).await.map_err(timed_error)?;
+    item_timed_state::write_expiry(tx, &gameplay, &expiry, tuple)
+        .await
+        .map_err(timed_error)?;
     Ok(())
 }
 
@@ -479,7 +650,8 @@ async fn plan<C: ItemLoopContent>(
         let selected = source.is_none_or(|id| item_id == id);
         if coin == Some(initial.input.0) && selected {
             if source.is_some() {
-                let selected = qualify_item_use(initial.input.0, count, ExchangeUse::Coin, usize::MAX, true);
+                let selected =
+                    qualify_item_use(initial.input.0, count, ExchangeUse::Coin, usize::MAX, true);
                 if amount != 1 || !selected.is_ok_and(|p| p.exchange == initial) {
                     return refuse(ExchangeRefusal::InvalidAmount);
                 }

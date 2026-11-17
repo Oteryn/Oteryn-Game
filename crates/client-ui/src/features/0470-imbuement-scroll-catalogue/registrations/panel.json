@@ -1,0 +1,7 @@
+{
+  "mechanic": "0470-imbuement-scroll-catalogue",
+  "kind": "panels",
+  "id": "0470-imbuement-scroll-catalogue-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

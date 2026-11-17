@@ -1,0 +1,4357 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "quest": "oteryn:quest.authored.braindeath_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:braindeath:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=38390&oldid=322750",
+        "Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data-global/startup/tables/chest.lua:2709-2715; UID6283 at 32546,31522,11."
+      ],
+      "key": "oteryn:quest-callback/authored-braindeath",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32545,
+          "y": 31522,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/braindeath/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/braindeath/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.authored.braindeath_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:braindeath:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=38390&oldid=322750",
+        "Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data-global/startup/tables/chest.lua:2709-2715; UID6283 at 32546,31522,11."
+      ],
+      "key": "oteryn:quest-callback/authored-braindeath-coffin",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32546,
+          "y": 31522,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1983,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/braindeath/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/braindeath/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i2867",
+          "count": 1,
+          "contents": [
+            {
+              "item": "oteryn:item.tibia.i239",
+              "count": 2
+            },
+            {
+              "item": "oteryn:item.tibia.i3035",
+              "count": 13
+            }
+          ]
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.tinder_box_quest_chyllfroest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tinder-box:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=76272&oldid=800663",
+        "Crystal9f5a72c6 tinder_box_quest_chyllfroest/actions_reward.lua: item20357 UID3263; native summit exact ordinal documented in CONTRACT-NOTES.md"
+      ],
+      "key": "oteryn:quest-callback/authored-tinder-box",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32084,
+          "y": 31025,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/tinder-box/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.tinder_box_quest_chyllfroest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tinder-box:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=76272&oldid=800663",
+        "Crystal9f5a72c6 tinder_box_quest_chyllfroest/actions_reward.lua: item20357 UID3263; native summit exact ordinal documented in CONTRACT-NOTES.md"
+      ],
+      "key": "oteryn:quest-callback/authored-tinder-box-bones",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32085,
+          "y": 31025,
+          "floor": -1
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4285,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/tinder-box/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 3
+        }
+      ],
+      "premium_required": true,
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i20357",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.voodoo_doll_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:voodoo:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
+        "https://tibia.fandom.com/index.php?curid=5235&oldid=749496",
+        "https://www.tibiawiki.com.br/index.php?curid=4566&oldid=416110",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-voodoo",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32743,
+          "y": 31950,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": false,
+      "success_message": "Three witches guard the two boxes by the eastern wall. Search the northern box first."
+    },
+    {
+      "quest": "oteryn:quest.authored.voodoo_doll_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:voodoo:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
+        "https://tibia.fandom.com/index.php?curid=5235&oldid=749496",
+        "https://www.tibiawiki.com.br/index.php?curid=4566&oldid=416110",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-voodoo-north",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32757,
+          "y": 31953,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/kills",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3209",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.voodoo_doll_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:voodoo:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=5234&oldid=1106155",
+        "https://tibia.fandom.com/index.php?curid=5235&oldid=749496",
+        "https://www.tibiawiki.com.br/index.php?curid=4566&oldid=416110",
+        "Chosen exact native anchors and conservative adaptations are documented in qlane-meta/questpc8/CONTRACT-NOTES.md; no startup UID is invented."
+      ],
+      "key": "oteryn:quest-callback/authored-voodoo-south",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32757,
+          "y": 31957,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/voodoo/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 4
+        }
+      ],
+      "premium_required": false,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3046",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "completes": true
+    },
+    {
+      "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:kingdom-of-kormarak:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=38407&oldid=884223",
+        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "Conservative chosen restoration: actual native body32342,32125,z10 appearance4240 ordinal2; ordered western approach thresholds; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-kormarak",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32340,
+          "y": 32125,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "premium_required": false
+    },
+    {
+      "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:kingdom-of-kormarak:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=38407&oldid=884223",
+        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "Conservative chosen restoration: actual native body32342,32125,z10 appearance4240 ordinal2; ordered western approach thresholds; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-kormarak-inner",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32341,
+          "y": 32125,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": false
+    },
+    {
+      "quest": "oteryn:quest.authored.kingdom_of_kormarak_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:kingdom-of-kormarak:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=38407&oldid=884223",
+        "https://tibia.fandom.com/index.php?curid=56856&oldid=899526",
+        "Conservative chosen restoration: actual native body32342,32125,z10 appearance4240 ordinal2; ordered western approach thresholds; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-kormarak-reward",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32342,
+          "y": 32125,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4240,
+        "ordinal": 2
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/kormarak/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3359",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3354",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3276",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3287",
+              "count": 13
+            }
+          ]
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind-potion:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Conservative two-cache restoration: native box32216,31168,z11 appearance2473 ordinal1, then concealed cache alias at retained unlit campfire32216,31172,z11 appearance2001 ordinal1. No fake UID, object creation or light-state edit. See qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32216,
+          "y": 31170,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind-potion:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Conservative two-cache restoration: native box32216,31168,z11 appearance2473 ordinal1, then concealed cache alias at retained unlit campfire32216,31172,z11 appearance2001 ordinal1. No fake UID, object creation or light-state edit. See qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind-first",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32216,
+          "y": 31168,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": true,
+      "completes": false,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i7440",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i7159",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "success_message": "You recovered the first potion cache."
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind-potion:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Conservative two-cache restoration: native box32216,31168,z11 appearance2473 ordinal1, then concealed cache alias at retained unlit campfire32216,31172,z11 appearance2001 ordinal1. No fake UID, object creation or light-state edit. See qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind-second-route",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32215,
+          "y": 31172,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.authored.mastermind_potion_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mastermind-potion:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=17060&oldid=842378",
+        "https://tibia.fandom.com/index.php?curid=18595&oldid=289008",
+        "Conservative two-cache restoration: native box32216,31168,z11 appearance2473 ordinal1, then concealed cache alias at retained unlit campfire32216,31172,z11 appearance2001 ordinal1. No fake UID, object creation or light-state edit. See qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-mastermind-second",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32216,
+          "y": 31172,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2001,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mastermind/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": true,
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i7440",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i7158",
+              "count": 2
+            },
+            {
+              "item": "oteryn:item.tibia.i3031",
+              "count": 100
+            },
+            {
+              "item": "oteryn:item.tibia.i3031",
+              "count": 100
+            },
+            {
+              "item": "oteryn:item.tibia.i3031",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "success_message": "You recovered the second potion cache."
+    },
+    {
+      "key": "oteryn:quest-callback/authored-life-ring-bridge",
+      "quest": "oteryn:quest.life_ring_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32413,
+          "y": 32230,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "ordinal": 1
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:retained-source-native-life-ring-bridge:r1",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
+        "Native six bridge ground appearances4598; actual lever ordinal1 has no retained AID30007."
+      ],
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32410,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32411,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32412,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32410,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32411,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32412,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 4598,
+              "create": 5770,
+              "passable": true,
+              "allow_missing": false
+            }
+          ],
+          "close": [
+            {
+              "position": {
+                "x": 32410,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32411,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32412,
+                "y": 32231,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32410,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32411,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32412,
+                "y": 32232,
+                "floor": -10
+              },
+              "remove": 5770,
+              "create": 4598,
+              "passable": false,
+              "allow_missing": false
+            }
+          ],
+          "remove_self": false,
+          "relocations": [
+            {
+              "from": [
+                {
+                  "x": 32410,
+                  "y": 32231,
+                  "floor": -10
+                },
+                {
+                  "x": 32411,
+                  "y": 32231,
+                  "floor": -10
+                },
+                {
+                  "x": 32412,
+                  "y": 32231,
+                  "floor": -10
+                },
+                {
+                  "x": 32410,
+                  "y": 32232,
+                  "floor": -10
+                },
+                {
+                  "x": 32411,
+                  "y": 32232,
+                  "floor": -10
+                },
+                {
+                  "x": 32412,
+                  "y": 32232,
+                  "floor": -10
+                }
+              ],
+              "to": {
+                "x": 32409,
+                "y": 32231,
+                "floor": -10
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.life_ring_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:life-ring:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=2853&oldid=748882",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/tile_pick.lua",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/lib/register_actions.lua",
+        "Native pick ground355 ordinal0 at32437,32239,z10; cache2469 ordinal1 at32443,32238,z11; no fake action101 or UID6131. See CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-life-ring-entry",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32437,
+          "y": 32238,
+          "floor": -10
+        },
+        "appearance": 351,
+        "ordinal": 0,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/life-ring/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "premium_required": false
+    },
+    {
+      "quest": "oteryn:quest.life_ring_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:life-ring:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=2853&oldid=748882",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/tile_pick.lua",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/lib/register_actions.lua",
+        "Native pick ground355 ordinal0 at32437,32239,z10; cache2469 ordinal1 at32443,32238,z11; no fake action101 or UID6131. See CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-life-ring-pick",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32437,
+          "y": 32239,
+          "floor": -10
+        },
+        "appearance": 355,
+        "ordinal": 0,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/life-ring/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3456",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": 394,
+        "reusable": true
+      },
+      "success_message": "You opened the concealed passage with your pick."
+    },
+    {
+      "quest": "oteryn:quest.life_ring_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:life-ring:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=2853&oldid=748882",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/startup/tables/tile_pick.lua",
+        "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/lib/register_actions.lua",
+        "Native pick ground355 ordinal0 at32437,32239,z10; cache2469 ordinal1 at32443,32238,z11; no fake action101 or UID6131. See CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-life-ring-cache",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32443,
+          "y": 32238,
+          "floor": -11
+        },
+        "appearance": 2469,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/life-ring/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 4
+        }
+      ],
+      "premium_required": false,
+      "completes": true,
+      "success_message": "You recovered the Life Ring cache.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3052",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3085",
+              "count": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-magic-sword",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32575,
+          "y": 32197,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/upper",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "minimum_level": 100
+    },
+    {
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-magic-sword-lower",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32578,
+          "y": 32196,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/upper",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/lower",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "minimum_level": 100
+    },
+    {
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-magic-sword-north",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32577,
+          "y": 32193,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/upper",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/lower",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "minimum_level": 100,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i651",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3388",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3389",
+              "count": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-magic-sword-south",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32578,
+          "y": 32193,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2472,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/upper",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/lower",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "completes": true,
+      "minimum_level": 100,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i3288",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i3388",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i3389",
+              "count": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.magic_sword_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 32578,
+            "y": 32197,
+            "floor": -15
+          },
+          "appearance": 1631,
+          "replacement": 1633
+        }
+      ],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:magic-sword:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=95154&oldid=875253",
+        "https://tibia.fandom.com/index.php?curid=95159&oldid=1023479",
+        "Conservative archival restoration: native southern Mintwallin hole432/ladder1948, lower fire corridor and unbound two-chest bank32577/32578,32193,z15. Historical north/south roles map to the ordered western/eastern surviving caches. Existing Mad Mage and Ghoul Room claims unchanged; see qlane-meta/questpc8/CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-magic-sword-passage",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32578,
+          "y": 32197,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 1631,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/stage",
+          "minimum": 1,
+          "maximum": 4,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/upper",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/magic_sword/passage",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "minimum_level": 100,
+      "effects": {
+        "transform": 1633
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.torch_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:torch:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=3397&oldid=425673",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/actions/rookgaard/sewer_lever.lua"
+      ],
+      "key": "oteryn:quest-callback/authored-torch",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32097,
+          "y": 32204,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/torch/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/torch/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": false,
+      "completes": false
+    },
+    {
+      "quest": "oteryn:quest.authored.torch_quest",
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:torch:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=3397&oldid=425673",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/actions/rookgaard/sewer_lever.lua"
+      ],
+      "key": "oteryn:quest-callback/authored-torch-lever-32098",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32098,
+          "y": 32204,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/torch/stage",
+          "minimum": 1,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 352,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4634,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            },
+            {
+              "position": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4611,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 352,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4636,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            },
+            {
+              "position": {
+                "x": 32104,
+                "y": 32204,
+                "floor": -8
+              },
+              "remove": 2772,
+              "create": 2773,
+              "passable": false
+            }
+          ],
+          "close": [
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 352,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": null,
+              "create": 4634,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 4611,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 352,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": null,
+              "create": 4636,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32104,
+                "y": 32204,
+                "floor": -8
+              },
+              "remove": 2773,
+              "create": 2772,
+              "passable": false
+            }
+          ],
+          "evacuate_close": [
+            {
+              "from": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            },
+            {
+              "from": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            },
+            {
+              "from": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            }
+          ],
+          "relocate_items_close": true
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.torch_quest",
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:torch:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=3397&oldid=425673",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/actions/rookgaard/sewer_lever.lua"
+      ],
+      "key": "oteryn:quest-callback/authored-torch-lever-32104",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32104,
+          "y": 32204,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/torch/stage",
+          "minimum": 1,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "premium_required": false,
+      "completes": false,
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 352,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4634,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            },
+            {
+              "position": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4611,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 352,
+              "create": 5770,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 4636,
+              "create": null,
+              "passable": null,
+              "allow_missing": true
+            },
+            {
+              "position": {
+                "x": 32098,
+                "y": 32204,
+                "floor": -8
+              },
+              "remove": 2772,
+              "create": 2773,
+              "passable": false
+            }
+          ],
+          "close": [
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 352,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": null,
+              "create": 4634,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 4611,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": 5770,
+              "create": 352,
+              "passable": true
+            },
+            {
+              "position": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "remove": null,
+              "create": 4636,
+              "passable": false
+            },
+            {
+              "position": {
+                "x": 32098,
+                "y": 32204,
+                "floor": -8
+              },
+              "remove": 2773,
+              "create": 2772,
+              "passable": false
+            }
+          ],
+          "evacuate_close": [
+            {
+              "from": {
+                "x": 32099,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            },
+            {
+              "from": {
+                "x": 32100,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            },
+            {
+              "from": {
+                "x": 32101,
+                "y": 32205,
+                "floor": -8
+              },
+              "players_to": {
+                "x": 32102,
+                "y": 32205,
+                "floor": -8
+              },
+              "creatures_to": {
+                "x": 32103,
+                "y": 32205,
+                "floor": -8
+              },
+              "all": true
+            }
+          ],
+          "relocate_items_close": true
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.torch_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:torch:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=3397&oldid=425673",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/actions/rookgaard/sewer_lever.lua"
+      ],
+      "key": "oteryn:quest-callback/authored-torch-cache",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32097,
+          "y": 32187,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2473,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/torch/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/torch/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": false,
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i2920",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.tibia_anniversary",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes.",
+        "Conservative seasonal station: literal untagged public Thais small table2319 at32359,32235,z7 ordinal1 stands in for absent24414/24842 sewing table; original palette and all native table properties remain unchanged."
+      ],
+      "premium_required": false,
+      "key": "oteryn:quest-callback/authored-anniversary",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32359,
+          "y": 32234,
+          "floor": -7
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/rags",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/kills",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ]
+    },
+    {
+      "quest": "oteryn:quest.authored.tibia_anniversary",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes.",
+        "Conservative seasonal station: literal untagged public Thais small table2319 at32359,32235,z7 ordinal1 stands in for absent24414/24842 sewing table; original palette and all native table properties remain unchanged."
+      ],
+      "premium_required": false,
+      "key": "oteryn:quest-callback/authored-anniversary-contribute",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32359,
+          "y": 32235,
+          "floor": -7
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 2319
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/rags",
+          "minimum": 30,
+          "maximum": 30,
+          "set": 30,
+          "preserve": true
+        }
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i24415",
+        "count": 30,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "quest": "oteryn:quest.authored.tibia_anniversary",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes.",
+        "Conservative seasonal station: literal untagged public Thais small table2319 at32359,32235,z7 ordinal1 stands in for absent24414/24842 sewing table; original palette and all native table properties remain unchanged."
+      ],
+      "premium_required": false,
+      "key": "oteryn:quest-callback/authored-anniversary-reward",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32359,
+          "y": 32235,
+          "floor": -7
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 2319
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/anniversary/kills",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        }
+      ],
+      "completes": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30197",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32031,
+          "y": 32463,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 0
+        }
+      ],
+      "premium_required": true,
+      "minimum_level": 250
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library-raft",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32031,
+          "y": 32463,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4527,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i28707",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      }
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library-temple",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33525,
+          "y": 31464,
+          "floor": -14
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": true
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library-fingerboard",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32807,
+          "y": 32765,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 23881,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i28491",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i28492",
+        "target_replacement": null
+      }
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library-strings",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32808,
+          "y": 32765,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 25051,
+        "ordinal": 1
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i28492",
+        "count": 1,
+        "replacement": "oteryn:item.tibia.i28493",
+        "target_replacement": null
+      }
+    },
+    {
+      "quest": "oteryn:quest.the_secret_library_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charles.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/spectulus.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/gail.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/high_and_dry_isles/movements_boat_puzzle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/actions_bonefiddle.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/the_order_of_the_falcon/actions_oberonLever.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/quests/the_secret_library_quest/movement_teleport.lua",
+        "oteryn-authored:chosen-secret-library:quest-r1: Conservative chosen programme: fixed native palace ground23881 and object25051 stand for unavailable loose skull28489/hair28490 targets. Only carried ebony wood converts; fixed stations are not consumed. Charles raft assistance is an authored discussion, not a paid shortcut passage. The selected temple research counterpart is the source Liquid Death entrance. No fabricated source tags."
+      ],
+      "key": "oteryn:quest-callback/authored-secret-library-wing",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32480,
+          "y": 32597,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/secret-library/access",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i28493",
+          "count": 1
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-treasure-island",
+      "quest": "oteryn:quest.treasure_island_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32131,
+          "y": 32913,
+          "floor": -7
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/treasure-island/stage",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:treasure-island:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=9859&oldid=742171",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/captain_waverider.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/lib/register_actions.lua",
+        "Conservative selected spot: retained sand231 at32126,32934,z7 ordinal0 above native rope386 at z8; source action100 is absent, so literal position binds deterministic map-gated opening615 without fabricated AID. Selected no-item exploration programme."
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9205",
+          "count": 1
+        }
+      ],
+      "required_travel": [
+        {
+          "route": "oteryn:service.travel.captain_waverider/treasure_island",
+          "after_transition": null
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-treasure-dig",
+      "quest": "oteryn:quest.treasure_island_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32126,
+          "y": 32934,
+          "floor": -7
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": 231
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/treasure-island/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3457",
+        "count": 1,
+        "reusable": true,
+        "replacement": null,
+        "target_replacement": 615
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:treasure-island:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=9859&oldid=742171",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/captain_waverider.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/lib/register_actions.lua",
+        "Conservative selected spot: retained sand231 at32126,32934,z7 ordinal0 above native rope386 at z8; source action100 is absent, so literal position binds deterministic map-gated opening615 without fabricated AID. Selected no-item exploration programme."
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9205",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-treasure-scout",
+      "quest": "oteryn:quest.treasure_island_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32126,
+          "y": 32935,
+          "floor": -8
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/treasure-island/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:treasure-island:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=9859&oldid=742171",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/captain_waverider.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/lib/register_actions.lua",
+        "Conservative selected spot: retained sand231 at32126,32934,z7 ordinal0 above native rope386 at z8; source action100 is absent, so literal position binds deterministic map-gated opening615 without fabricated AID. Selected no-item exploration programme."
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9205",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-treasure-rope",
+      "quest": "oteryn:quest.treasure_island_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32126,
+          "y": 32934,
+          "floor": -8
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": 386
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32126,
+        "y": 32933,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/treasure-island/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i3003",
+        "count": 1,
+        "reusable": true,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:treasure-island:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=9859&oldid=742171",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/captain_waverider.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/lib/register_actions.lua",
+        "Conservative selected spot: retained sand231 at32126,32934,z7 ordinal0 above native rope386 at z8; source action100 is absent, so literal position binds deterministic map-gated opening615 without fabricated AID. Selected no-item exploration programme."
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9205",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-treasure-complete",
+      "quest": "oteryn:quest.treasure_island_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32349,
+          "y": 32856,
+          "floor": -7
+        },
+        "ordinal": 0,
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/treasure-island/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:treasure-island:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=9859&oldid=742171",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/captain_waverider.lua",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/lib/register_actions.lua",
+        "Conservative selected spot: retained sand231 at32126,32934,z7 ordinal0 above native rope386 at z8; source action100 is absent, so literal position binds deterministic map-gated opening615 without fabricated AID. Selected no-item exploration programme."
+      ],
+      "premium_required": true,
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i3457",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i3003",
+          "count": 1
+        },
+        {
+          "item": "oteryn:item.tibia.i9205",
+          "count": 1
+        }
+      ],
+      "required_travel": [
+        {
+          "route": "oteryn:service.travel.captain_waverider_island/liberty_bay",
+          "after_transition": "oteryn:quest-callback/authored-treasure-rope"
+        }
+      ],
+      "completes": true
+    },
+    {
+      "key": "oteryn:quest-callback/authored-trader-package",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32661,
+          "y": 32192,
+          "floor": -8
+        },
+        "ordinal": 1,
+        "unique": null,
+        "action": null,
+        "appearance": 2472
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/travelling-trader/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "premium_required": true,
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i145",
+          "count": 1,
+          "contents": []
+        }
+      },
+      "sources": [
+        "oteryn-authored:chosen-recipe:travelling-trader:authored-r1",
+        "https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/snake_eye.lua",
+        "OTERYN_CONSERVATIVE_NATIVE_BINDING: retained sole nearby box at32661,32192,-8 appearance2472ordinal1 is untagged; require exact literal source tile after Willard and Snake Eye, never fabricate UID."
+      ]
+    },
+    {
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw",
+        "Oteryn contextual crafting USE: existing canonical Kha'zeel ground at33080,32704,z5, ordinal0; requires and consumes all three fragments. No source shrine/crystal object identity claim."
+      ],
+      "key": "oteryn:quest-callback/authored-mystery-assembly",
+      "trigger": "use",
+      "premium_required": true,
+      "completes": true,
+      "selector": {
+        "position": {
+          "x": 33080,
+          "y": 32704,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 231,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i50337",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i50338",
+            "count": 1
+          }
+        ],
+        "item_reward": {
+          "item": "oteryn:item.tibia.i50335",
+          "count": 1,
+          "contents": []
+        },
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i50336",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "success_message": "You use the three fragments at the crystal landmark and assemble a guardian statue."
+    },
+    {
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw",
+        "Oteryn landmark USE bindings on existing canonical source ground; no claim of source Carved Shrine object identity."
+      ],
+      "key": "oteryn:quest-callback/authored-mystery-inukaya",
+      "trigger": "use",
+      "premium_required": true,
+      "completes": false,
+      "selector": {
+        "position": {
+          "x": 32459,
+          "y": 31093,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 799,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i50336",
+          "count": 1,
+          "contents": []
+        },
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "success_message": "You recover a statue fragment from the inukaya landmark."
+    },
+    {
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw",
+        "Oteryn landmark USE bindings on existing canonical source ground; no claim of source Carved Shrine object identity."
+      ],
+      "key": "oteryn:quest-callback/authored-mystery-muggy-plains",
+      "trigger": "use",
+      "premium_required": true,
+      "completes": false,
+      "selector": {
+        "position": {
+          "x": 33198,
+          "y": 31184,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 469,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i50337",
+          "count": 1,
+          "contents": []
+        },
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "success_message": "You recover a statue fragment from the muggy-plains landmark."
+    },
+    {
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw",
+        "Oteryn landmark USE bindings on existing canonical source ground; no claim of source Carved Shrine object identity."
+      ],
+      "key": "oteryn:quest-callback/authored-mystery-kilmaresh",
+      "trigger": "use",
+      "premium_required": true,
+      "completes": false,
+      "selector": {
+        "position": {
+          "x": 33834,
+          "y": 31697,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 4408,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i50338",
+          "count": 1,
+          "contents": []
+        },
+        "transform": null,
+        "facing": null,
+        "magic": null,
+        "portals": null,
+        "item_cycle": null,
+        "encounter": null
+      },
+      "success_message": "You recover a statue fragment from the kilmaresh landmark."
+    },
+    {
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:mystery-of-the-valley-quest:authored-r1",
+        "https://www.tibiawiki.com.br/index.php?title=Mystery_of_the_Valley_Quest&action=raw",
+        "Oteryn landmark USE bindings on existing canonical source ground; no claim of source Carved Shrine object identity."
+      ],
+      "key": "oteryn:quest-callback/authored-mystery-crystal",
+      "trigger": "step_in",
+      "premium_required": true,
+      "completes": false,
+      "selector": {
+        "position": {
+          "x": 33080,
+          "y": 32704,
+          "floor": -5
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 231,
+        "ordinal": 0
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/mystery-of-the-valley/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "success_message": "The crystal landmark resonates with the three fragments. Use the rock to assemble the statue."
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-1",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33015,
+          "y": 32022,
+          "floor": -6
+        },
+        "appearance": 17405,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine.",
+      "use_range": 2
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-2",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33016,
+          "y": 32025,
+          "floor": -6
+        },
+        "appearance": 17515,
+        "ordinal": 2,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine.",
+      "use_range": 2
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-3",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33017,
+          "y": 32041,
+          "floor": -6
+        },
+        "appearance": 17407,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine.",
+      "use_range": 2
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-4",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33030,
+          "y": 32099,
+          "floor": -6
+        },
+        "appearance": 17406,
+        "ordinal": 2,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine.",
+      "use_range": 2
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-5",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33016,
+          "y": 32097,
+          "floor": -6
+        },
+        "appearance": 17515,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine.",
+      "use_range": 2
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-6",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33013,
+          "y": 32095,
+          "floor": -6
+        },
+        "appearance": 17408,
+        "ordinal": 2,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine.",
+      "use_range": 2
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-7",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33016,
+          "y": 32142,
+          "floor": -6
+        },
+        "appearance": 17406,
+        "ordinal": 2,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine.",
+      "use_range": 2
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-8",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33015,
+          "y": 32138,
+          "floor": -6
+        },
+        "appearance": 17515,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 8,
+          "maximum": 8,
+          "set": 9
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine.",
+      "use_range": 2
+    },
+    {
+      "quest": "oteryn:quest.authored.venore_daily_tasks_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:venore-daily:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=61789&oldid=845862",
+        "https://tibia.fandom.com/index.php?curid=61790&oldid=856089",
+        "OTERYN_AUTHORED_APPROXIMATION: sequential north-to-south saw/treadmill/crane circuit, five native Little Corym Charlatans,72000-second aggregate cooldown; CONTRACT-NOTES.md."
+      ],
+      "key": "oteryn:quest-callback/authored-venore-machine-9",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33022,
+          "y": 32147,
+          "floor": -6
+        },
+        "appearance": 17407,
+        "ordinal": 3,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/venore-daily/stage",
+          "minimum": 9,
+          "maximum": 9,
+          "set": 10
+        }
+      ],
+      "premium_required": false,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i17513",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You oil this construction machine.",
+      "use_range": 2
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-gather",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33743,
+          "y": 31061,
+          "floor": -8
+        },
+        "appearance": 30250,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You gather the three guaranteed disguise components.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30337",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i30185",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30186",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-disguise",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33743,
+          "y": 31061,
+          "floor": -8
+        },
+        "appearance": 30250,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You combine the remains into your Percht disguise.",
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i30337",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i30185",
+            "count": 1
+          },
+          {
+            "item": "oteryn:item.tibia.i30186",
+            "count": 1
+          }
+        ]
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ],
+      "disguise": {
+        "track": "oteryn:quest-progress/chosen/winterlight/stage",
+        "minimum": 2,
+        "maximum": 7,
+        "creature": "oteryn:creature.percht"
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-torch",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33743,
+          "y": 31061,
+          "floor": -8
+        },
+        "appearance": 30250,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You take an uncharged Percht-warding torch.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": []
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-branches-1",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33745,
+          "y": 31059,
+          "floor": -8
+        },
+        "appearance": 30223,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You collect five branches for the next warm fire.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30226",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-fire-1",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33758,
+          "y": 31074,
+          "floor": -9
+        },
+        "appearance": 30251,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "Warm fire 1 of four thaws the Queen.",
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i30226",
+            "count": 5
+          }
+        ]
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i30214",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-branches-2",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33745,
+          "y": 31059,
+          "floor": -8
+        },
+        "appearance": 30223,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You collect five branches for the next warm fire.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30226",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-fire-2",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33758,
+          "y": 31074,
+          "floor": -9
+        },
+        "appearance": 30251,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "Warm fire 2 of four thaws the Queen.",
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i30226",
+            "count": 5
+          }
+        ]
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i30214",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-branches-3",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33745,
+          "y": 31059,
+          "floor": -8
+        },
+        "appearance": 30223,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 5,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You collect five branches for the next warm fire.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30226",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-fire-3",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33758,
+          "y": 31074,
+          "floor": -9
+        },
+        "appearance": 30251,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "Warm fire 3 of four thaws the Queen.",
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i30226",
+            "count": 5
+          }
+        ]
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i30214",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-branches-4",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33745,
+          "y": 31059,
+          "floor": -8
+        },
+        "appearance": 30223,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You collect five branches for the next warm fire.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i30226",
+          "count": 1,
+          "contents": [],
+          "backpack_outputs": [
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            },
+            {
+              "item": "oteryn:item.tibia.i30226",
+              "count": 1
+            }
+          ]
+        }
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-fire-4",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33758,
+          "y": 31074,
+          "floor": -9
+        },
+        "appearance": 30251,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/issued",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "Warm fire 4 of four thaws the Queen.",
+      "effects": {
+        "carried_inputs": [
+          {
+            "item": "oteryn:item.tibia.i30226",
+            "count": 5
+          }
+        ]
+      },
+      "completes": false,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i30214",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-winterlight-complete",
+      "quest": "oteryn:quest.winterlight_solstice",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33758,
+          "y": 31074,
+          "floor": -9
+        },
+        "appearance": 30251,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/winterlight/kills",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "premium_required": true,
+      "offerings": [],
+      "present": [
+        {
+          "item": "oteryn:item.tibia.i30214",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The Percht Queen is defeated. You earn the base Percht Raider outfit.",
+      "effects": {
+        "outfit_reward": {
+          "outfit": "oteryn:outfit.percht_raider",
+          "addons": 0
+        }
+      },
+      "completes": true,
+      "sources": [
+        "oteryn-authored:chosen-recipe:winterlight:authored-r1",
+        "https://tibia.fandom.com/index.php?curid=87280&oldid=1086717",
+        "https://www.tibiawiki.com.br/Winterlight_Solstice",
+        "OTERYN_AUTHORED_APPROXIMATION: permanent finite route; source-native bonfires/vortex, four five-branch warm fires, Quest-owned disguise admission, thaw-gated native Queen and base outfit only; CONTRACT-NOTES.md."
+      ]
+    },
+    {
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:wrath-crystals:authored-r1",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen s8 uses retained snake sceptre11371, not donor replica11362; four literal native11427 crystals clockwise NW,NE,SE,SW, world USE with exact carried tool. No donor UIDs, global transforms, summons, boss kills or completion are claimed."
+      ],
+      "key": "oteryn:quest-callback/authored-wrath-crystal-1",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33049,
+          "y": 31089,
+          "floor": -15
+        },
+        "appearance": 11427,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/crystals",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11371",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You have dispelled imperial influence 1 of 4."
+    },
+    {
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:wrath-crystals:authored-r1",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen s8 uses retained snake sceptre11371, not donor replica11362; four literal native11427 crystals clockwise NW,NE,SE,SW, world USE with exact carried tool. No donor UIDs, global transforms, summons, boss kills or completion are claimed."
+      ],
+      "key": "oteryn:quest-callback/authored-wrath-crystal-2",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33095,
+          "y": 31091,
+          "floor": -15
+        },
+        "appearance": 11427,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/crystals",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11371",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You have dispelled imperial influence 2 of 4."
+    },
+    {
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:wrath-crystals:authored-r1",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen s8 uses retained snake sceptre11371, not donor replica11362; four literal native11427 crystals clockwise NW,NE,SE,SW, world USE with exact carried tool. No donor UIDs, global transforms, summons, boss kills or completion are claimed."
+      ],
+      "key": "oteryn:quest-callback/authored-wrath-crystal-3",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33096,
+          "y": 31114,
+          "floor": -15
+        },
+        "appearance": 11427,
+        "ordinal": 2,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 7
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/crystals",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11371",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You have dispelled imperial influence 3 of 4."
+    },
+    {
+      "quest": "oteryn:quest.wrath_of_the_emperor_quest",
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "oteryn-authored:chosen-recipe:wrath-crystals:authored-r1",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre.lua",
+        "OTERYN_AUTHORED_APPROXIMATION: chosen s8 uses retained snake sceptre11371, not donor replica11362; four literal native11427 crystals clockwise NW,NE,SE,SW, world USE with exact carried tool. No donor UIDs, global transforms, summons, boss kills or completion are claimed."
+      ],
+      "key": "oteryn:quest-callback/authored-wrath-crystal-4",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33049,
+          "y": 31115,
+          "floor": -15
+        },
+        "appearance": 11427,
+        "ordinal": 1,
+        "unique": null,
+        "action": null
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/stage",
+          "minimum": 7,
+          "maximum": 7,
+          "set": 8
+        },
+        {
+          "track": "oteryn:quest-progress/chosen/wrath/crystals",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "premium_required": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i11371",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "success_message": "You have dispelled imperial influence 4 of 4."
+    }
+  ]
+}

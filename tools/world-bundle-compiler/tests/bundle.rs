@@ -34,6 +34,7 @@ impl KeyResolver for Resolver {
             kind: TerrainKind::Ground,
             walkable: Some(true),
             ground_speed: Some(150),
+            blocks_projectile: None,
         }))
     }
 
@@ -451,7 +452,7 @@ fn reader_matches_the_python_b3_codec() -> TestResult {
 fn reseal(mut bytes: Vec<u8>) -> Vec<u8> {
     let body = bytes.len() - 32;
     let mut hash = <sha2::Sha256 as sha2::Digest>::new();
-    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v6\0");
+    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v8\0");
     sha2::Digest::update(&mut hash, &bytes[..body]);
     let digest: [u8; 32] = sha2::Digest::finalize(hash).into();
     bytes[body..].copy_from_slice(&digest);
@@ -699,11 +700,108 @@ fn reader_refuses_a_bundle_this_node_cannot_run() -> TestResult {
             "{refused:?} was accepted"
         );
     }
-    assert!(bundle::SUPPORTED_CAPABILITIES.is_empty());
+    for capability in bundle::SUPPORTED_CAPABILITIES {
+        let accepted = with(Identity {
+            required_capabilities: vec![(*capability).into()],
+            ..current.clone()
+        })?;
+        assert!(bundle::read(&accepted.bytes).is_ok());
+    }
+    let unsupported = "oteryn:feature/x";
+    assert!(!bundle::SUPPORTED_CAPABILITIES.contains(&unsupported));
     let result = with(Identity {
-        required_capabilities: vec!["oteryn:feature/x".into()],
+        required_capabilities: vec![unsupported.into()],
         ..current
     });
     assert!(matches!(result, Err(Error::Format(_))));
+    Ok(())
+}
+
+#[test]
+fn legacy_zero_item_quantity_defaults_without_weakening_the_sector_codec() -> TestResult {
+    let mut ground = item(0, 0);
+    ground.attrs.count = Some(0);
+    let mut implicit = item(2, 0);
+    implicit.attrs.count = Some(0);
+    implicit.attrs.charges = Some(0);
+    implicit.attrs.action = Some(0);
+    let mut counted = item(2, 0);
+    counted.attrs.count = Some(7);
+    let source_tile = tile(1, 2, vec![ground, implicit, counted]);
+    let regions = vec![region(7, 0, 0, &[(0, vec![source_tile])])?];
+    let raw = oteryn_world_bundle_compiler::b3::decode_region(
+        &regions[0],
+        bundle::TILE_LIMITS,
+        &mut budget(),
+    )?;
+    assert_eq!(
+        raw.sectors[0].2[0].items[1].attrs.count,
+        Some(0),
+        "raw B3 presence stays exact"
+    );
+    let palette = palette();
+    let families = Families::default();
+    let source = input(&regions, &palette, BuildClass::NonProduction, &families);
+    let compiled = compile(&source, &Resolver)?;
+    let read = bundle::read(&compiled.bytes)?;
+    let items = &read.sectors[0].tiles[0].items;
+    assert_eq!(
+        items[0].attrs.count,
+        Some(0),
+        "Terrain attributes stay exact"
+    );
+    assert_eq!(
+        items[1].attrs.count, None,
+        "an imported Item's zero sentinel means default one"
+    );
+    assert_eq!(
+        (items[1].attrs.charges, items[1].attrs.action),
+        (Some(0), Some(0)),
+        "zero charge and binding fields stay exact"
+    );
+    assert_eq!(items[2].attrs.count, Some(7));
+    oteryn_world_bundle_compiler::compile::equivalence(&source, &Resolver, &compiled.bytes)?;
+    Ok(())
+}
+
+#[test]
+fn srx3_source_static_bundle_capability_is_required_only_for_used_qualified_surfaces() -> TestResult
+{
+    use oteryn_world_bundle_compiler::resolve::Registry;
+    let mut registry = Registry::default();
+    registry.add_catalogue(
+        "WorldObject",
+        include_bytes!("../../../content/world/objects/objects-12932-13108.json"),
+    )?;
+    registry.add_catalogue(
+        "Terrain",
+        include_bytes!("../../../content/world/terrain/terrain-08613-08613.json"),
+    )?;
+    registry.seal()?;
+    let palette = vec![
+        "oteryn:terrain.tibia.i9290".into(),
+        "oteryn:world-object.tibia.i10649".into(),
+    ];
+    let families = Families::default();
+    for (items, required) in [
+        (vec![item(0, 0)], false),
+        (vec![item(0, 0), item(1, 0)], true),
+    ] {
+        let regions = vec![region(7, 0, 0, &[(0, vec![tile(1, 2, items)])])?];
+        let input = input(&regions, &palette, BuildClass::NonProduction, &families);
+        let compiled = compile(&input, &registry)?;
+        let decoded = bundle::read(&compiled.bytes)?;
+        assert_eq!(
+            decoded
+                .manifest
+                .identity
+                .required_capabilities
+                .iter()
+                .any(|name| name == "source-static-surfaces-v1"),
+            required,
+            "an unused static catalogue must not change compatibility; a placed static surface must fence old readers"
+        );
+        oteryn_world_bundle_compiler::compile::equivalence(&input, &registry, &compiled.bytes)?;
+    }
     Ok(())
 }

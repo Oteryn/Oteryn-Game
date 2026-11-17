@@ -296,8 +296,12 @@ two title thresholds are derived from the subarea rows and content. None of them
 - **Creature list.** The client gets the subarea creature list from content (spawn points by
   subarea), plus the character's Bestiary state for silhouettes.
 - **Speed bonus.** This is a movement speed contribution in fully discovered areas that stacks
-  with their count. It is inert, with factor 0, until CYC-PARITY-1 evidences the values. It is
-  then added through the speed contribution owner.
+  with their count. Owner decision 2026-11-09 (T187) enables content-defined
+  `PARITY_PENDING` starting values: for n completed areas among N discoverable areas,
+  `minimum + floor((maximum-minimum)*(n-1)/(N-1))`, with N=1 using maximum.
+  The initial endpoints are 100 and 195. One replaceable contribution applies only
+  inside a fully discovered area; completion, reset, entry and exit recompute it.
+  This supersedes the inert-factor note for the speed bonus only.
 
 ## 5. Improved respawn rate and donations
 
@@ -422,7 +426,7 @@ the value is set. Nothing is guessed.
 
 - the number of POIs generated per start (more than 7);
 - the found radius;
-- the speed bonus per number of fully discovered areas;
+- the speed bonus per number of fully discovered areas: content-defined `PARITY_PENDING` starting values (owner decision 2026-11-09), enabled by the T187 formula in §4.5;
 - the set of donation-eligible areas;
 - any premium requirement or minimum for a donation;
 - the order of the random and donation draws;

@@ -96,6 +96,42 @@ Peers without the public-channel extension do not gain the added room bits. List
 are discovered from the World owner, so an invitation or closure on another node reaches
 the existing client list delta without a new protocol message.
 
+## WU26 extensions (capabilities 493 to 496)
+
+Four capabilities, each negotiated alone, bring the server side of the Tibia Global chat
+window. A session that selects none of them receives byte-identical domain 12 payloads.
+`chat_v1.proto` carries the field layout; `crates/protocol-oteryn/src/chat/line_extended.rs`
+and `private_channel_extended.rs` hold the codecs and bounds.
+
+| Capability | Requires | Wire | Producer |
+| --- | --- | --- | --- |
+| 493 `CHAT_PRIVATE_ECHO_V1` | 7 | Line kind 2 with field 12 `recipient_name` | The private-message send path: when the World relay accepts the line (`OK`), the sender's own echo is queued and drained on its next CHAT refresh |
+| 494 `CHAT_JOINED_CHANNELS_V1` | 80 | List delta 3, repeated varint field 4 `joined_channel` | The list read, in the same transaction as fields 1 to 3 |
+| 495 `CHAT_CHANNEL_PARTICIPANTS_V1` | 80 | List delta 3, repeated field 5 `ChatChannelParticipantsV1`; line kind 8 with fields 4, 11, 14 | One durable read of the list and the members of every channel the session is in |
+| 496 `CHAT_LINE_SEQUENCE_V1` | 7 | Every line delta (type 1) carries field 13 `line_sequence` | The delta's own new domain 12 revision |
+
+Member notices follow the Crystal private-channel rule that a member's arrival and departure
+are told to the other users of the channel, never to the member itself
+(`ChatChannel::addUser` and `removeUser` in `src/creatures/interactions/chat.cpp`). The server
+compares two consecutive member reads of a channel and epoch the session is in at both:
+a new joined member is `JOINED`; a member whose row stays but is no longer joined, or whose
+session ended or dropped capability 80, is `LEFT`; a member whose row was removed while its
+session still participates in the World is `EXCLUDED`. The first read after an admission is
+the baseline and notifies nothing, so a reconnect never replays notices. A recreated channel
+has a new epoch and carries nothing over. The session's own join, leave or exclusion changes
+only its list; the client opens or closes the tab from fields 4 and 5.
+
+A channel's tab label is the client's: "<owner>'s channel", from `owner_name` of the invitation
+or the session's own name for its own channel. The bounds are 17 joined channels (own and 16
+invitations, `CHATPM-RL-02`) of at most 17 members (`CHATPM-RL-01`), so a list delta is at most
+37,500 bytes and a line at most 1,280 bytes with these capabilities.
+
+The echo carries the sender's admitted name and the text as the relay carried it (trimmed,
+`CHAT0-RL-01`); it is not durable, is dropped with undelivered lines at a replacement snapshot,
+and is bounded by the CHAT egress bound. Cast viewers (capability 290) receive no echo or
+notice.
+No migration is added: the member read uses the tables of migration 0718.
+
 ## Session SDK and native UI boundary
 
 `crates/session/src/private_channels.rs` decodes channel-list delta 3 only after capability

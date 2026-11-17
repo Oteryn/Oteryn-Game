@@ -2,6 +2,16 @@
 
 This directory contains the schema-v1 deterministic producer/validator for `docs/contracts/OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md`.
 
+`build.py /tmp/game-platform-catalog.json` invokes the shared Rust CONTENT
+loader/view and this validator without retaining a normalized input file.
+See [CATALOG-CONTRACT-NOTES.md](../../docs/reference/CATALOG-CONTRACT-NOTES.md)
+for the visibility rules, CI step and explicit payload-promotion blockers.
+The resulting physical artifact currently remains `unsupported/unknown` for
+every capability; the candidate view is not a populated Platform catalogue.
+The Rust filesystem adapter runs on Linux, matching the existing CONTENT
+capture boundary. Test discovery requires Cargo and the repository's existing
+`jsonschema` schema-tool dependency; the Python producer itself remains portable.
+
 It consumes normalized native catalogue input. It does **not** parse legacy-engine sources, Atlas, third-party Wiki data, legacy numeric IDs or mutable runtime state as native authority.
 
 ## Produce

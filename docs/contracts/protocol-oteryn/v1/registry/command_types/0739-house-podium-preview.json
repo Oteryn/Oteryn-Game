@@ -1,0 +1,10 @@
+{
+  "id": 739,
+  "name": "HOUSE_PODIUM_PREVIEW",
+  "owner_decision": "CLIENT-GAPS T136 read-only podium draft artwork",
+  "capability": 150,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/house-podium-preview.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/house-podium-preview.md#reply",
+  "max_payload_bytes": 163,
+  "max_result_payload_bytes": 11
+}

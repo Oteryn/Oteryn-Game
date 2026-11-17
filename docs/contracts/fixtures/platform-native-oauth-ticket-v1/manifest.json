@@ -1,0 +1,366 @@
+{
+  "contract_id": "native-oauth-ticket-v1",
+  "base_commit": "f73244933228f399f1a5e9174ef064d7ffe70785",
+  "client_id": "019a5f4a-1000-7000-8000-000000000001",
+  "redirect_uri": "http://127.0.0.1:41000/callback",
+  "code_verifier": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+  "code_challenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+  "synthetic_authorization_code": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+  "synthetic_refresh_token": "ISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0-P0A",
+  "synthetic_access_token": "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A",
+  "placeholders": {
+    "access_token": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "refresh_token": "__________________________________________8",
+    "ticket": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  },
+  "files": [
+    {
+      "file": "token-request-code.form",
+      "bytes": 238,
+      "sha256": "1df99c37a427407d65ea110feaf245778a0b982950a42ff176a9a7ae7b78995b"
+    },
+    {
+      "file": "token-request-refresh.form",
+      "bytes": 129,
+      "sha256": "75014388e2f015beffb5888555f2e6e9f8fef6331176d753c2cc45b5b1429fd5"
+    },
+    {
+      "file": "token-request-unknown-field.form",
+      "bytes": 103,
+      "sha256": "c1f9702f271360fcf257a27143834a83e925026a370d517523a934b629c79255"
+    },
+    {
+      "file": "token-request-unsupported-grant.form",
+      "bytes": 66,
+      "sha256": "808d5958b8f495f4509fa0ec83b5b88cfdeb160ca44b381555a78de8fd447e33"
+    },
+    {
+      "file": "token-request-unknown-client.form",
+      "bytes": 238,
+      "sha256": "ed91015aeae659f53facafdea524bfe163f41e334d4f09beba38d11d046180b6"
+    },
+    {
+      "file": "token-response.json",
+      "bytes": 186,
+      "sha256": "92cbecd728e21ae5bf3b25590a8aa26fdbb63f6f330a330926987f04d86da9cb"
+    },
+    {
+      "file": "token-invalid-request.json",
+      "bytes": 110,
+      "sha256": "6c8ccc48ad2fdae39c8b5ee667cf3906fab6daecd8caddf8ce7e6e2f1d616438"
+    },
+    {
+      "file": "token-invalid-grant.json",
+      "bytes": 92,
+      "sha256": "25cf915dc18b606f6e8a7564135edd3630f6ecb6bd33420174320f6c54e0e57b"
+    },
+    {
+      "file": "token-unsupported-grant.json",
+      "bytes": 131,
+      "sha256": "1e8280dadff1c8f603ae6ee9a24340739343adc92a7d2063526026a93b188542"
+    },
+    {
+      "file": "token-invalid-client.json",
+      "bytes": 78,
+      "sha256": "0b8d743605b3195f5231095ca9c94549bad407ac43444a6417128b10217627ab"
+    },
+    {
+      "file": "ticket-request.json",
+      "bytes": 22,
+      "sha256": "00aa4c2c857995eb8e19cb0fade07e4b49aac774e37a99c37a0c9f549204d9de"
+    },
+    {
+      "file": "ticket-request-unsupported.json",
+      "bytes": 22,
+      "sha256": "e68cb099ab8a3557572bff7e669270ac75fe321c1920b12a2aa7a535d1d16155"
+    },
+    {
+      "file": "ticket-response.json",
+      "bytes": 93,
+      "sha256": "f4f8bad625160e0c3da2c0c3a1065321a5b5e21d80564e24d0c9ef1cc3541ad4"
+    },
+    {
+      "file": "ticket-unauthenticated.json",
+      "bytes": 27,
+      "sha256": "ab4fd90076db1102a7ec6ff9212732f51c7ba6cb43e63eb94d9c5d6f26d8270a"
+    },
+    {
+      "file": "ticket-unavailable.json",
+      "bytes": 34,
+      "sha256": "49ee5f64edcabe77bb74479b1200f4fce6bec69d7a9e1e84de9e9ccf15b4471f"
+    },
+    {
+      "file": "ticket-invalid-request.json",
+      "bytes": 27,
+      "sha256": "52977cef16ffb1e7392b602fc98ae422b15b03d9403f17ac43ad8e59b51c8782"
+    }
+  ],
+  "cases": [
+    {
+      "case": "token-code-success",
+      "setup": "authorization code AQID... was issued to the fixture account for the fixture client and redirect, with the PKCE S256 challenge of the RFC 7636 verifier",
+      "method": "POST",
+      "path": "/oauth/token",
+      "headers": {
+        "content-type": "application/x-www-form-urlencoded"
+      },
+      "request": "token-request-code.form",
+      "status": 200,
+      "response_headers": {
+        "cache-control": "no-store",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "token-response.json",
+      "normalized": [
+        "access_token",
+        "refresh_token"
+      ]
+    },
+    {
+      "case": "token-code-replay",
+      "setup": "the same code after token-code-success",
+      "method": "POST",
+      "path": "/oauth/token",
+      "headers": {
+        "content-type": "application/x-www-form-urlencoded"
+      },
+      "request": "token-request-code.form",
+      "status": 400,
+      "response_headers": {
+        "cache-control": "no-store",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "token-invalid-grant.json",
+      "normalized": []
+    },
+    {
+      "case": "token-refresh-success",
+      "setup": "refresh token ISIj... is the current refresh token of a live token family",
+      "method": "POST",
+      "path": "/oauth/token",
+      "headers": {
+        "content-type": "application/x-www-form-urlencoded"
+      },
+      "request": "token-request-refresh.form",
+      "status": 200,
+      "response_headers": {
+        "cache-control": "no-store",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "token-response.json",
+      "normalized": [
+        "access_token",
+        "refresh_token"
+      ]
+    },
+    {
+      "case": "token-unknown-field",
+      "setup": "",
+      "method": "POST",
+      "path": "/oauth/token",
+      "headers": {
+        "content-type": "application/x-www-form-urlencoded"
+      },
+      "request": "token-request-unknown-field.form",
+      "status": 400,
+      "response_headers": {
+        "cache-control": "no-store",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "token-invalid-request.json",
+      "normalized": []
+    },
+    {
+      "case": "token-unsupported-grant",
+      "setup": "",
+      "method": "POST",
+      "path": "/oauth/token",
+      "headers": {
+        "content-type": "application/x-www-form-urlencoded"
+      },
+      "request": "token-request-unsupported-grant.form",
+      "status": 400,
+      "response_headers": {
+        "cache-control": "no-store",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "token-unsupported-grant.json",
+      "normalized": []
+    },
+    {
+      "case": "token-unknown-client",
+      "setup": "client_id is not in PORTAL_OAUTH_CONFIG",
+      "method": "POST",
+      "path": "/oauth/token",
+      "headers": {
+        "content-type": "application/x-www-form-urlencoded"
+      },
+      "request": "token-request-unknown-client.form",
+      "status": 401,
+      "response_headers": {
+        "cache-control": "no-store",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "token-invalid-client.json",
+      "normalized": []
+    },
+    {
+      "case": "ticket-success",
+      "setup": "bearer QUJD... is a live game:ticket access token of the native client; issuance consumes it",
+      "method": "POST",
+      "path": "/api/v1/game-auth/tickets",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A",
+        "content-type": "application/json"
+      },
+      "request": "ticket-request.json",
+      "status": 200,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "ticket-response.json",
+      "normalized": [
+        "ticket"
+      ]
+    },
+    {
+      "case": "ticket-replay",
+      "setup": "the same bearer after ticket-success",
+      "method": "POST",
+      "path": "/api/v1/game-auth/tickets",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A",
+        "content-type": "application/json"
+      },
+      "request": "ticket-request.json",
+      "status": 401,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "ticket-unauthenticated.json",
+      "normalized": []
+    },
+    {
+      "case": "ticket-missing-bearer",
+      "setup": "",
+      "method": "POST",
+      "path": "/api/v1/game-auth/tickets",
+      "headers": {
+        "content-type": "application/json"
+      },
+      "request": "ticket-request.json",
+      "status": 401,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "ticket-unauthenticated.json",
+      "normalized": []
+    },
+    {
+      "case": "ticket-unknown-bearer",
+      "setup": "no token has this access hash",
+      "method": "POST",
+      "path": "/api/v1/game-auth/tickets",
+      "headers": {
+        "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "content-type": "application/json"
+      },
+      "request": "ticket-request.json",
+      "status": 401,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "ticket-unauthenticated.json",
+      "normalized": []
+    },
+    {
+      "case": "ticket-flag-off",
+      "setup": "PORTAL_GAME_TICKETS_ENABLED is not true or OTERYN_ENV is not testing/preprod",
+      "method": "POST",
+      "path": "/api/v1/game-auth/tickets",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A",
+        "content-type": "application/json"
+      },
+      "request": "ticket-request.json",
+      "status": 401,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "ticket-unavailable.json",
+      "normalized": []
+    },
+    {
+      "case": "ticket-unsupported-version",
+      "setup": "",
+      "method": "POST",
+      "path": "/api/v1/game-auth/tickets",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A",
+        "content-type": "application/json"
+      },
+      "request": "ticket-request-unsupported.json",
+      "status": 422,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "content-type": "application/json"
+      },
+      "response": "ticket-invalid-request.json",
+      "normalized": []
+    },
+    {
+      "case": "ticket-rate-limited",
+      "setup": "the bearer already made 5 issuance requests in the current 60-second window",
+      "method": "POST",
+      "path": "/api/v1/game-auth/tickets",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A",
+        "content-type": "application/json"
+      },
+      "request": "ticket-request.json",
+      "status": 429,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache",
+        "retry-after": "30"
+      },
+      "response": null,
+      "normalized": []
+    },
+    {
+      "case": "ticket-database-unavailable",
+      "setup": "the database is unreachable",
+      "method": "POST",
+      "path": "/api/v1/game-auth/tickets",
+      "headers": {
+        "authorization": "Bearer QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2A",
+        "content-type": "application/json"
+      },
+      "request": "ticket-request.json",
+      "status": 503,
+      "response_headers": {
+        "cache-control": "no-store, private",
+        "pragma": "no-cache"
+      },
+      "response": null,
+      "normalized": []
+    }
+  ]
+}

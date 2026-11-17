@@ -1,0 +1,22 @@
+{
+  "module": "process",
+  "owner": "apps/game-server",
+  "events": [
+    {
+      "event": "log_spec_invalid",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "process_start",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    }
+  ]
+}

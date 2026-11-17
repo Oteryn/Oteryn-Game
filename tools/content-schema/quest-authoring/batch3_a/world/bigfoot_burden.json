@@ -1,0 +1,569 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-16",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32795,
+          "y": 31761,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33000,
+        "y": 31870,
+        "floor": -13
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "You have no idea on how to use this device. Xelvar in Kazordoon might tell you more about it."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-17",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33000,
+          "y": 31871,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32795,
+        "y": 31762,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "You have no idea on how to use this device. Xelvar in Kazordoon might tell you more about it."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:17",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-18",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32803,
+          "y": 31745,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32864,
+        "y": 31844,
+        "floor": -11
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "You have no idea on how to use this device. Xelvar in Kazordoon might tell you more about it."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-19",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32864,
+          "y": 31845,
+          "floor": -11
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32803,
+        "y": 31746,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "You have no idea on how to use this device. Xelvar in Kazordoon might tell you more about it."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:19",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-20",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32796,
+          "y": 31780,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32988,
+        "y": 31862,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "You have no idea on how to use this device. Xelvar in Kazordoon might tell you more about it."
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank",
+          "minimum": 120,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "Your rank among the Gnomes is too low."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:20",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-21",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32986,
+          "y": 31861,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32798,
+        "y": 31783,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "You have no idea on how to use this device. Xelvar in Kazordoon might tell you more about it."
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank",
+          "minimum": 120,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "Your rank among the Gnomes is too low."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:21",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-22",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 33001,
+          "y": 31916,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32959,
+        "y": 31953,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "You have no idea on how to use this device. Xelvar in Kazordoon might tell you more about it."
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank",
+          "minimum": 120,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "Your rank among the Gnomes is too low."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:22",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-23",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32959,
+          "y": 31952,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33001,
+        "y": 31915,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "You have no idea on how to use this device. Xelvar in Kazordoon might tell you more about it."
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank",
+          "minimum": 120,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "Your rank among the Gnomes is too low."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:23",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-24",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32980,
+          "y": 31907,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32904,
+        "y": 31894,
+        "floor": -13
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "You have no idea on how to use this device. Xelvar in Kazordoon might tell you more about it."
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank",
+          "minimum": 480,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "Your rank among the Gnomes is too low."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-25",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32904,
+          "y": 31893,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32979,
+        "y": 31907,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "You have no idea on how to use this device. Xelvar in Kazordoon might tell you more about it."
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/rank",
+          "minimum": 480,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "Your rank among the Gnomes is too low."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:25",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-31",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32789,
+          "y": 31796,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32771,
+        "y": 31800,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 25,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "Your rank among the Gnomes is too low."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:31",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/bigfoot_burden/gnomebase-32",
+      "quest": "oteryn:quest.bigfoot_s_burden_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32772,
+          "y": 31799,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32790,
+        "y": 31795,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_60/bigfoots_burden/quest_line",
+          "minimum": 25,
+          "maximum": 2147483647,
+          "set": 0,
+          "read_only": true,
+          "failure_message": "Your rank among the Gnomes is too low."
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "Your rank among the Gnomes is too low.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:32",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:86",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:93"
+      ]
+    }
+  ]
+}

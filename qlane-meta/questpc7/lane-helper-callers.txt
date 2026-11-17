@@ -1,0 +1,5 @@
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs:304:        .commit_npc_program(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs:157:        slot.commit_npc_program(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_reward_slices.rs:8:    let selected: Vec<_> = quest_catalogue_chests::cases()?
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_reward_slices.rs:20:    quest_catalogue_chests::execute(selected)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_reward_slices.rs:54:    let cases = quest_catalogue_chests::cases()?;

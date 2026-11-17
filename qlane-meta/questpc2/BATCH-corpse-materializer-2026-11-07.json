@@ -1,0 +1,26 @@
+{
+  "batch_id": "corpse-materializer-2026-11-07",
+  "base_sha": "f9cc1e5508ce71e312bb4806047e6d2628254aed",
+  "scope": "Authoring materializer and equivalence-validator hooks only; canonical data and runtime changes remain uncommitted.",
+  "whole_quest_qualifications": 0,
+  "changes": [
+    "Apply the already tested pinned encounter corpse overlay after the existing Primal overlay.",
+    "Apply the identical overlay in the retained-source round-trip validator.",
+    "Document regeneration practice in the existing content skill."
+  ],
+  "validation": {
+    "python_cases_passed": 17,
+    "log": "/tmp/questpc2-corpse-admission-python.log",
+    "governance": "/tmp/questpc2-corpse-governance.log",
+    "item_roundtrip": "The previous ITEM_DEFINITION_ROUNDTRIP refusal is resolved; the validator proceeds to native registration, where the separately changing runtime model fingerprint was stale. Full generated-tree validation remains part of the unpublished runtime batch.",
+    "postgres_applicable": false,
+    "reason": "No database/runtime or active canonical data changes in this authoring slice."
+  },
+  "active_runtime_batch": {
+    "red": "PG18.6 five cases:3 passed,2 failed,180.61s; Spite and Bakragore full rows refused loot_item_inadmissible, so roots=0.",
+    "implementation": "Separate validated empty reward-boss corpse rows from strict personal loot admission. Preserve ordinary creature refusal and no fabricated personal chest.",
+    "unit": "New source fixture test passes1 case33.57s, asserting full loot remains refused and only admitted reward bosses receive empty physical rows.",
+    "pending": "Final PG, check/clippy, generated model/registration and content checks before active data publication."
+  },
+  "cache_recovery": "32GB build disk repeatedly exhausted. Removed only superseded compiler sessions and disposable archives, retaining latest sessions per crate/profile; also reclaimed one obsolete test executable from older source/profile. Source, current binaries and PG remain intact. Ledgers /tmp/questpc2-obsolete-cache-round3.json and round4.json. No broad clean or profile changes."
+}

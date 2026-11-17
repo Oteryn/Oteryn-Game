@@ -24,6 +24,9 @@ use super::super::{DurabilityError, DurabilityRoot};
 pub struct BountyTalismanSnapshot {
     race: Option<String>,
     bonuses: [i64; 4],
+    elite: bool,
+    completion_dust: u32,
+    selection_serial: u64,
 }
 
 impl BountyTalismanSnapshot {
@@ -34,15 +37,39 @@ impl BountyTalismanSnapshot {
         equipped: bool,
     ) -> Self {
         let Some(active) = data.bounty.active.as_ref().filter(|active| {
-            equipped
-                && data.bounty.state == BountyStatus::Active
-                && active.current < active.required
+            data.bounty.state == BountyStatus::Active && active.current < active.required
         }) else {
             return Self::default();
         };
         Self {
             race: Some(active.race.clone()),
+            elite: active.elite,
+            selection_serial: data.bounty.selection_serial,
+            completion_dust: if active.elite
+                && active.current.checked_add(1) == Some(active.required)
+            {
+                active.dust
+            } else {
+                0
+            },
             bonuses: data.active_talisman_bonuses(tracks, &active.race, equipped),
+        }
+    }
+
+    pub fn elite_race(&self) -> Option<&str> {
+        self.elite.then_some(self.race.as_deref()).flatten()
+    }
+    pub fn elite(&self, race: &str) -> bool {
+        self.elite_race() == Some(race)
+    }
+    pub fn selection_serial(&self) -> u64 {
+        self.selection_serial
+    }
+    pub fn completion_dust(&self, race: &str) -> u32 {
+        if self.elite(race) {
+            self.completion_dust
+        } else {
+            0
         }
     }
 
@@ -166,7 +193,8 @@ mod tests {
     use oteryn_gameplay_quests::quest::task_board::full::BountyTask;
 
     #[test]
-    fn talisman_requires_equipped_extra_slot_and_active_matching_bounty() {
+    fn talisman_requires_equipped_extra_slot_and_active_matching_bounty() -> Result<(), &'static str>
+    {
         let mut board = TaskBoardData::default();
         let tracks = [
             (task_board::TALISMAN_DAMAGE.to_owned(), 1),
@@ -181,6 +209,8 @@ mod tests {
         );
         board.bounty.state = BountyStatus::Active;
         board.bounty.active = Some(BountyTask {
+            elite: false,
+            dust: 0,
             race: "oteryn:creature.rat".to_owned(),
             required: 25,
             current: 24,
@@ -206,5 +236,20 @@ mod tests {
         );
         // A frozen lethal-hit snapshot survives the task's completing credit.
         assert_eq!(snapshot.bonuses("oteryn:creature.rat"), [300, 0, 0, 10_000]);
+        board.bounty.state = BountyStatus::Active;
+        let active = board.bounty.active.as_mut().ok_or("active bounty")?;
+        active.elite = true;
+        active.dust = 8;
+        let elite = BountyTalismanSnapshot::from_board(&board, &tracks, false);
+        assert!(elite.elite("oteryn:creature.rat"));
+        assert!(!elite.elite("oteryn:creature.cave_rat"));
+        assert_eq!(elite.completion_dust("oteryn:creature.rat"), 8);
+        assert_eq!(elite.bonuses("oteryn:creature.rat"), [0; 4]);
+        board.bounty.state = BountyStatus::Completed;
+        assert!(
+            !BountyTalismanSnapshot::from_board(&board, &tracks, false)
+                .elite("oteryn:creature.rat")
+        );
+        Ok(())
     }
 }

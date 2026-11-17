@@ -79,6 +79,10 @@ pub struct LootEntryDetails {
     /// The loot owner's Gut Charm bonus on this creature product, in hundredths of a percent;
     /// set on the kill's own copy of the table, never in content.
     pub gut_bonus_hundredths: u32,
+    /// The configured loot rate's uncapped chance when it exceeds the ppm scale (Crystal
+    /// `functions.lua:68-71` divides the draw instead of capping), bounded at twice the scale;
+    /// set on the kill's own copy, never in content.
+    pub rated_probability_ppm: Option<u32>,
 }
 
 /// Mirrors `content::reference_playable::ReferenceLootDefinition`: the

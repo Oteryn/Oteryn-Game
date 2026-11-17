@@ -22,8 +22,9 @@ Modes
 Ledger (rust_fast legs)
   `plan` keys every selected crate on its own closure (`--per-package`, test
   shards) or all of them on one shared key (Clippy). `select` drops the crates
-  whose key is in the restored ledger, `junit-passed` lists the crates none of
-  whose nextest suites failed, and `record` adds only those keys. A fix to one
+  whose key is in the restored ledger, `junit-passed` lists only crates with an
+  observed passing nextest suite and no failed or incomplete suite, and `record`
+  adds only those keys. A fix to one
   failing crate then re-runs that crate and its dependents, not the whole leg.
 
 Failures are never cached and any error here yields an empty key, which means
@@ -409,8 +410,10 @@ def command_record(args: argparse.Namespace) -> int:
 
 
 def command_junit_passed(args: argparse.Namespace) -> int:
-    """Packages none of whose nextest test suites (binary ids `pkg` or `pkg::kind/name`) failed."""
+    """Observed passing packages, aggregating binary ids `pkg` and `pkg::kind/name`."""
+    observed: set[str] = set()
     failed: set[str] = set()
+    incomplete: set[str] = set()
     try:
         tree = ET.parse(args.junit)
     except (OSError, ET.ParseError) as error:
@@ -419,16 +422,28 @@ def command_junit_passed(args: argparse.Namespace) -> int:
         return 0
     for suite in tree.iter("testsuite"):
         package = suite.get("name", "").split("::", 1)[0]
+        cases = list(suite.iter("testcase"))
         bad = any(int(suite.get(field, "0") or 0) for field in ("failures", "errors"))
-        bad = bad or any(case.find(tag) is not None for case in suite.iter("testcase") for tag in ("failure", "error", "flakyFailure", "rerunFailure"))
+        bad = bad or any(case.find(tag) is not None for case in cases for tag in ("failure", "error", "flakyFailure", "rerunFailure"))
         if bad or not package:
             failed.add(package)
+        declared_tests = suite.get("tests")
+        if declared_tests is not None and int(declared_tests) != len(cases):
+            incomplete.add(package)
+        elif any(case.find("skipped") is None for case in cases) or (
+            declared_tests is not None and int(declared_tests) == 0
+            and not int(suite.get("skipped", "0") or 0)
+        ):
+            # An explicit zero-test suite is an observed empty shard. An absent
+            # suite, an empty container or only skipped cases proves no pass.
+            observed.add(package)
     if "" in failed:
         Path(args.out).write_text("", encoding="utf-8")
         return 0
-    passed = [name for name, _ in read_packages(Path(args.packages)) if name not in failed]
+    passed = [name for name, _ in read_packages(Path(args.packages))
+              if name in observed and name not in failed and name not in incomplete]
     Path(args.out).write_text("".join(f"{name}\n" for name in passed), encoding="utf-8")
-    print(f"JUnit: {len(passed)} package(s) passed, failed: {', '.join(sorted(failed)) or 'none'}")
+    print(f"JUnit: {len(passed)} package(s) passed, failed: {', '.join(sorted(failed)) or 'none'}, incomplete: {', '.join(sorted(incomplete)) or 'none'}")
     return 0
 
 

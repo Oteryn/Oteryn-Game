@@ -1,6 +1,8 @@
 //! Periodic state refreshes and chase progression.
 
 use super::*;
+use crate::gameplay_transport::appearance_change::observation::ObservationError;
+use oteryn_protocol_oteryn::chat::{line_extended, private_channel_extended};
 
 pub(super) async fn serene<S, A>(
     stream: &mut S,
@@ -11,9 +13,24 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if session.selected_capabilities.contains(290) {
+        authority.cast_refresh(session.admitted).await;
+    }
     let changed = authority
         .tick_vitals(session.actor, session.admitted.game_session_id)
         .await;
+    if let Some(catalog) = &mut session.spell_catalog {
+        catalog
+            .refresh(
+                stream,
+                authority,
+                session.actor,
+                &mut session.admitted,
+                &mut session.sequence,
+            )
+            .await?;
+    }
+    sounds(stream, authority, session).await?;
     let current = authority
         .observe_vitals(session.actor, session.admitted.game_session_id)
         .await;
@@ -94,9 +111,39 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if session.cast_chat_revision > 0 {
+        for (delta_type, payload) in authority.cast_live_chat(session.admitted).await {
+            let revision = session
+                .cast_chat_revision
+                .checked_add(1)
+                .ok_or(ServeEnd::Disconnected)?;
+            let sequence = session
+                .sequence
+                .checked_add(1)
+                .ok_or(ServeEnd::Disconnected)?;
+            let frame = encode_state_delta(
+                session.generation,
+                sequence,
+                103,
+                session.cast_chat_revision,
+                revision,
+                delta_type,
+                &payload,
+            )
+            .map_err(|_| ServeEnd::Disconnected)?;
+            write_frame(stream, &frame)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?;
+            session.sequence = sequence;
+            session.admitted.continuity.server_sequence = sequence;
+            session.cast_chat_revision = revision;
+        }
+    }
+    super::native_cues::refresh(stream, authority, session).await?;
     channel_list(stream, authority, session).await?;
     typing(stream, authority, session).await?;
     super::vip_presence::refresh(stream, authority, session).await?;
+    private_echoes(stream, authority, session).await?;
     // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
     // delta; an empty queue sends nothing.
     // At most one full queue per refresh: lines that keep arriving cannot hold the
@@ -109,19 +156,30 @@ where
         else {
             break;
         };
-        let Some((delta_sequence, frame, chat_revision)) = chat_line_delta(
-            session.generation,
-            session.sequence,
-            session.admitted.continuity.chat_revision,
-            &line,
-        ) else {
-            return Err(ServeEnd::Disconnected);
-        };
-        session.sequence = delta_sequence;
-        session.admitted.continuity.server_sequence = session.sequence;
-        session.admitted.continuity.chat_revision = chat_revision;
-        if write_frame(stream, &frame).await.is_err() {
-            return Err(ServeEnd::Disconnected);
+        if session
+            .selected_capabilities
+            .contains(line_extended::CAPABILITY_CHAT_LINE_SEQUENCE_V1)
+        {
+            let payload = encode_chat_line(&line).map_err(|_| ServeEnd::Disconnected)?;
+            write_line(stream, session, payload).await?;
+        } else {
+            let Some((delta_sequence, frame, chat_revision)) = chat_line_delta(
+                session.generation,
+                session.sequence,
+                session.admitted.continuity.chat_revision,
+                &line,
+            ) else {
+                return Err(ServeEnd::Disconnected);
+            };
+            session.sequence = delta_sequence;
+            session.admitted.continuity.server_sequence = session.sequence;
+            session.admitted.continuity.chat_revision = chat_revision;
+            if write_frame(stream, &frame).await.is_err() {
+                return Err(ServeEnd::Disconnected);
+            }
+        }
+        if session.selected_capabilities.contains(290) {
+            authority.cast_heard(session.admitted, &line).await;
         }
         // A marker takes no slot, so only a real line frees one.
         if !matches!(line, ChatLine::Dropped) {
@@ -129,6 +187,75 @@ where
                 .chat_delivered(session.admitted.game_session_id)
                 .await;
         }
+    }
+    Ok(())
+}
+
+/// WU26: one domain 12 line delta (type 1) of an encoded line. With capability 496 the line
+/// carries field 13, the delta's own new revision, so it strictly increases per GameSession.
+async fn write_line<S>(
+    stream: &mut S,
+    session: &mut ServeState,
+    mut payload: Vec<u8>,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
+    if session
+        .selected_capabilities
+        .contains(line_extended::CAPABILITY_CHAT_LINE_SEQUENCE_V1)
+    {
+        let line_sequence = session
+            .admitted
+            .continuity
+            .chat_revision
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        line_extended::append_line_sequence(&mut payload, line_sequence)
+            .map_err(|_| ServeEnd::Disconnected)?;
+    }
+    let Some((delta_sequence, frame, chat_revision)) = chat_delta(
+        session.generation,
+        session.sequence,
+        session.admitted.continuity.chat_revision,
+        DELTA_TYPE_CHAT_LINE_V1,
+        &payload,
+    ) else {
+        return Err(ServeEnd::Disconnected);
+    };
+    session.sequence = delta_sequence;
+    session.admitted.continuity.server_sequence = session.sequence;
+    session.admitted.continuity.chat_revision = chat_revision;
+    if write_frame(stream, &frame).await.is_err() {
+        return Err(ServeEnd::Disconnected);
+    }
+    Ok(())
+}
+
+/// WU26 capability 493: the echoes of the session's accepted private lines, oldest first, at most
+/// one egress bound per refresh.
+async fn private_echoes<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    if !session
+        .selected_capabilities
+        .contains(line_extended::CAPABILITY_CHAT_PRIVATE_ECHO_V1)
+    {
+        return Ok(());
+    }
+    for _ in 0..EGRESS_MAX_LINES {
+        let Some(echo) = authority.chat_private_echo_next(session.admitted).await else {
+            break;
+        };
+        let payload =
+            line_extended::encode_private_echo(&echo).map_err(|_| ServeEnd::Disconnected)?;
+        write_line(stream, session, payload).await?;
     }
     Ok(())
 }
@@ -192,6 +319,15 @@ where
     {
         return Ok(());
     }
+    if session
+        .selected_capabilities
+        .contains(private_channel_extended::CAPABILITY_CHAT_JOINED_CHANNELS_V1)
+        || session
+            .selected_capabilities
+            .contains(private_channel_extended::CAPABILITY_CHAT_CHANNEL_PARTICIPANTS_V1)
+    {
+        return channel_list_extended(stream, authority, session).await;
+    }
     let Some(list) = authority.chat_channel_list_bound(session.admitted).await else {
         return Ok(());
     };
@@ -211,6 +347,48 @@ where
     session.admitted.continuity.chat_revision = chat_revision;
     if write_frame(stream, &frame).await.is_err() {
         return Err(ServeEnd::Disconnected);
+    }
+    Ok(())
+}
+
+/// WU26 capabilities 494 and 495: the list delta with fields 4 and 5 when the list or its
+/// extension changed, then one line kind 8 per member notice since the previous read.
+async fn channel_list_extended<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    use oteryn_protocol_oteryn::chat::private_channel;
+    let (list, notices) = authority
+        .chat_channel_list_extended_bound(session.admitted)
+        .await;
+    if let Some((list, extension)) = list {
+        let payload = private_channel_extended::encode_channel_list_extended(&list, &extension)
+            .map_err(|_| ServeEnd::Disconnected)?;
+        let Some((delta_sequence, frame, chat_revision)) = chat_delta(
+            session.generation,
+            session.sequence,
+            session.admitted.continuity.chat_revision,
+            private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1,
+            &payload,
+        ) else {
+            return Err(ServeEnd::Disconnected);
+        };
+        session.sequence = delta_sequence;
+        session.admitted.continuity.server_sequence = session.sequence;
+        session.admitted.continuity.chat_revision = chat_revision;
+        if write_frame(stream, &frame).await.is_err() {
+            return Err(ServeEnd::Disconnected);
+        }
+    }
+    for notice in notices {
+        let payload =
+            line_extended::encode_channel_notice(&notice).map_err(|_| ServeEnd::Disconnected)?;
+        write_line(stream, session, payload).await?;
     }
     Ok(())
 }
@@ -269,6 +447,7 @@ where
     else {
         return Ok(());
     };
+    sounds(stream, authority, session).await?;
     if session.chase_due.is_none()
         && state.target.is_some()
         && state.modes.chase == ChaseMode::Chase
@@ -345,6 +524,19 @@ where
         }
         return Ok(());
     };
+    if outcome.disposition == StepDisposition::Moved {
+        authority
+            .committed_paced_movement(session.admitted, outcome.moved_to)
+            .await;
+    }
+    if authority
+        .pending_activity_switch(session.admitted)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?
+        .is_some()
+    {
+        return Ok(());
+    }
     let Some(observation) = outcome.moved_to else {
         return Ok(());
     };
@@ -382,8 +574,14 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    sounds(stream, authority, session).await?;
+    let inventory_refresh_pending = session
+        .item_view
+        .as_ref()
+        .is_some_and(|view| view.inventory_refresh_pending);
+    super::native_cues::refresh(stream, authority, session).await?;
     if let Some(view) = session.item_view.as_mut()
-        && view.inventory_refresh_pending
+        && inventory_refresh_pending
     {
         item_use_view_refresh::refresh(
             stream,
@@ -397,13 +595,26 @@ where
         .await
         .ok_or(ServeEnd::Disconnected)?;
     }
+    refresh_newhaven_inventory(
+        stream,
+        authority,
+        session.actor,
+        &mut session.admitted,
+        session.item_view.as_mut(),
+        session.container_views.as_mut(),
+        &mut session.sequence,
+    )
+    .await
+    .ok_or(ServeEnd::Disconnected)?;
     player_trade::refresh(stream, authority, session).await?;
     cyclopedia_tracker::refresh(stream, authority, session).await?;
     // Crystal's tile notifications refresh every observer, including an idle one.
     // Use the same bounded connection refresh already used after local item commits.
-    if session
-        .selected_capabilities
-        .contains(oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1)
+    // The pending inventory retry already observes these containers this tick.
+    if !inventory_refresh_pending
+        && session
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1)
         && let (Some(views), Some(view)) =
             (session.container_views.as_mut(), session.item_view.as_mut())
     {
@@ -431,12 +642,18 @@ where
     let Some(view) = session.visibility.as_mut() else {
         return Ok(());
     };
-    let Some(channel) = authority.observe_visible_entities(session.actor).await else {
+    let Some(channel) = crate::gameplay_transport::entity_names::observe(
+        authority,
+        session.actor,
+        session.admitted.continuity.selected_capabilities,
+    )
+    .await
+    else {
         return Err(ServeEnd::Disconnected);
     };
-    let Some((to_sequence, to_revision)) = session
+    let projection = session
         .appearances
-        .refresh(
+        .refresh_result(
             stream,
             authority,
             session.actor,
@@ -447,37 +664,48 @@ where
             session.sequence,
             session.revision,
         )
-        .await
-    else {
-        return Err(ServeEnd::Disconnected);
-    };
-    session.sequence = to_sequence;
-    session.revision = to_revision;
-    session.admitted.continuity.spatial_revision = session.revision;
-    party_skull::refresh(stream, authority, session).await?;
-    // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
-    if let (Some(view), Some(items)) = (session.world_map.as_mut(), session.item_view.as_mut()) {
-        let update = world_map_delta(
-            authority,
-            session.actor,
-            session.generation,
-            session.sequence,
-            view,
-            items,
-        )
         .await;
-        session.admitted.continuity.item_view = items.continuity();
-        let Some(update) = update else {
-            return Err(ServeEnd::Disconnected);
-        };
-        if let Some((delta_sequence, frame)) = update {
-            session.sequence = delta_sequence;
-            session.admitted.continuity.server_sequence = session.sequence;
-            session.admitted.continuity.world_map_revision = view.revision();
-            if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
+    match projection {
+        Ok((to_sequence, to_revision)) => {
+            session.sequence = to_sequence;
+            session.revision = to_revision;
+            session.admitted.continuity.spatial_revision = session.revision;
+            party_skull::refresh(stream, authority, session).await?;
+            // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
+            if let (Some(view), Some(items)) =
+                (session.world_map.as_mut(), session.item_view.as_mut())
+            {
+                let update = world_map_frames(
+                    authority,
+                    session.actor,
+                    session.generation,
+                    session.sequence,
+                    view,
+                    items,
+                )
+                .await;
+                session.admitted.continuity.item_view = items.continuity();
+                let Some(update) = update else {
+                    return Err(ServeEnd::Disconnected);
+                };
+                if let Some((next_sequence, frames)) = update {
+                    session.sequence = next_sequence;
+                    session.admitted.continuity.server_sequence = session.sequence;
+                    session.admitted.continuity.world_map_revision = view.revision();
+                    for frame in frames {
+                        if write_frame(stream, &frame).await.is_err() {
+                            return Err(ServeEnd::Disconnected);
+                        }
+                    }
+                }
             }
         }
+        // The discarded candidate consumed no appearance, visibility or item
+        // cursor. Independent clock/weather deltas below still get their turn.
+        // A pending respawn fences the dead Character's appearance only until its
+        // placement; the next refresh observes it again.
+        Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => {}
+        Err(ObservationError::Unavailable) => return Err(ServeEnd::Disconnected),
     }
     // CLOCK-1 (§11.3): a due domain 18 delta, at most one per 10,000 ms.
     if session
@@ -528,5 +756,175 @@ where
             session.weather_sent = Some(observed);
         }
     }
+    Ok(())
+}
+pub(super) async fn sounds<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    use oteryn_protocol_oteryn::presentation as wire;
+    let presentation_selected = session
+        .selected_capabilities
+        .contains(wire::CAPABILITY_PRESENTATION_V1);
+    let ambient_selected = session
+        .selected_capabilities
+        .contains(wire::CAPABILITY_AMBIENT_SOUND_V1);
+    let item_selected = session
+        .selected_capabilities
+        .contains(wire::CAPABILITY_ITEM_EFFECTS_V1);
+    if !presentation_selected && !ambient_selected && !item_selected {
+        return Ok(());
+    }
+    let Some((cursor, mut events)) = authority
+        .observe_sounds(
+            session.actor,
+            session.admitted.game_session_id,
+            session.sound_cursor,
+        )
+        .await
+    else {
+        return Ok(());
+    };
+    if ambient_selected
+        && let Some(cue_id) = events.iter().find_map(|event| match event.kind {
+            wire::PresentationEventKind::AmbientSound { cue_id } => Some(cue_id),
+            _ => None,
+        })
+    {
+        ambient_sound(stream, session, cue_id).await?;
+    }
+
+    if session.selected_capabilities.contains(290) {
+        authority.cast_effects(session.admitted, &events).await;
+    }
+    let item_events: Vec<_> = events
+        .iter()
+        .copied()
+        .filter(|event| {
+            item_selected && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. })
+        })
+        .collect();
+    events.retain(|event| {
+        presentation_selected
+            && !matches!(event.kind, wire::PresentationEventKind::AmbientSound { .. })
+            && !(item_selected
+                && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. }))
+    });
+    for (index, event) in events.iter_mut().enumerate() {
+        event.decision_ordinal = u32::try_from(index + 1).map_err(|_| ServeEnd::Disconnected)?;
+    }
+    if !events.is_empty() {
+        let payload =
+            wire::encode_presentation_batch(&events).map_err(|_| ServeEnd::Disconnected)?;
+        let revision = session
+            .admitted
+            .continuity
+            .presentation_revision
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let sequence = session
+            .sequence
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let frame = encode_state_delta(
+            session.generation,
+            sequence,
+            wire::STATE_DOMAIN_WORLD_PRESENTATION,
+            session.admitted.continuity.presentation_revision,
+            revision,
+            wire::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1,
+            &payload,
+        )
+        .map_err(|_| ServeEnd::Disconnected)?;
+        write_frame(stream, &frame)
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
+        session.sequence = sequence;
+        session.admitted.continuity.server_sequence = sequence;
+        session.admitted.continuity.presentation_revision = revision;
+    }
+    if !item_events.is_empty() {
+        item_effects(stream, session, &item_events).await?;
+    }
+    session.sound_cursor = cursor;
+    Ok(())
+}
+
+/// One private replacement, including the silence sent before entering House custody.
+pub(super) async fn ambient_sound<S: AsyncRead + AsyncWrite + Unpin>(
+    stream: &mut S,
+    session: &mut ServeState,
+    cue_id: u32,
+) -> Result<(), ServeEnd> {
+    use oteryn_protocol_oteryn::presentation as wire;
+    let event = wire::PresentationEvent {
+        decision_ordinal: 1,
+        emission_ordinal: 1,
+        kind: wire::PresentationEventKind::AmbientSound { cue_id },
+    };
+    let payload = wire::encode_presentation_batch(&[event]).map_err(|_| ServeEnd::Disconnected)?;
+    let revision = session
+        .ambient_revision
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let sequence = session
+        .sequence
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let frame = encode_state_delta(
+        session.generation,
+        sequence,
+        wire::STATE_DOMAIN_AMBIENT_SOUND,
+        session.ambient_revision,
+        revision,
+        1,
+        &payload,
+    )
+    .map_err(|_| ServeEnd::Disconnected)?;
+    write_frame(stream, &frame)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+    session.ambient_revision = revision;
+    session.sequence = sequence;
+    session.admitted.continuity.server_sequence = sequence;
+    Ok(())
+}
+
+async fn item_effects<S: AsyncRead + AsyncWrite + Unpin>(
+    stream: &mut S,
+    session: &mut ServeState,
+    events: &[oteryn_protocol_oteryn::presentation::PresentationEvent],
+) -> Result<(), ServeEnd> {
+    use oteryn_protocol_oteryn::presentation as wire;
+    let payload = wire::encode_item_effect_batch(events).map_err(|_| ServeEnd::Disconnected)?;
+    let revision = session
+        .item_effects_revision
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let sequence = session
+        .sequence
+        .checked_add(1)
+        .ok_or(ServeEnd::Disconnected)?;
+    let frame = encode_state_delta(
+        session.generation,
+        sequence,
+        wire::STATE_DOMAIN_ITEM_EFFECTS,
+        session.item_effects_revision,
+        revision,
+        1,
+        &payload,
+    )
+    .map_err(|_| ServeEnd::Disconnected)?;
+    write_frame(stream, &frame)
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+    session.sequence = sequence;
+    session.admitted.continuity.server_sequence = sequence;
+    session.item_effects_revision = revision;
     Ok(())
 }

@@ -18,6 +18,7 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
                 eprintln!("Canonical PostgreSQL 18.6: staged boss lever dispatch refusal");
                 for table in [
                     "game_boss_room_catalogue",
+                    "game_boss_room_publications",
                     "game_boss_room_activities",
                     "game_boss_room_participants",
                     "game_boss_room_reward_receipts",
@@ -29,7 +30,15 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
                     .fetch_one(&h.pool)
                     .await?;
                     assert!(readable, "missing staged read access: {table}");
-                    for privilege in ["INSERT", "UPDATE", "DELETE", "TRUNCATE", "TRIGGER"] {
+                    for privilege in [
+                        "INSERT",
+                        "UPDATE",
+                        "DELETE",
+                        "TRUNCATE",
+                        "TRIGGER",
+                        "REFERENCES",
+                        "MAINTAIN",
+                    ] {
                         let writable: bool = sqlx::query_scalar(
                             "SELECT has_table_privilege('oteryn_game_runtime',$1,$2)",
                         )
@@ -37,19 +46,36 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
                         .bind(privilege)
                         .fetch_one(&h.pool)
                         .await?;
-                        // W02 coordinator ANSWER A installs the complete fenced
-                        // writer in 0628. Only its activity/member INSERT is now
-                        // admitted; content, rewards and destructive rights are unchanged.
+                        //0628 installs fenced activity/member INSERT.1104's
+                        // qualified publisher adds insert-once catalogue metadata
+                        // and immutable scoped publications; neither needs UPDATE.
+                        // Reward/destructive/DDL privileges remain withheld.
                         let expected = privilege == "INSERT"
                             && matches!(
                                 table,
-                                "game_boss_room_activities" | "game_boss_room_participants"
+                                "game_boss_room_catalogue"
+                                    | "game_boss_room_publications"
+                                    | "game_boss_room_activities"
+                                    | "game_boss_room_participants"
                             );
                         assert_eq!(
                             writable, expected,
                             "unexpected table privilege {privilege}: {table}"
                         );
                     }
+                }
+                // Table-level UPDATE denial alone would miss a stray column grant.
+                for table in ["game_boss_room_catalogue", "game_boss_room_publications"] {
+                    let column_update: bool = sqlx::query_scalar(
+                        "SELECT has_any_column_privilege('oteryn_game_runtime',$1,'UPDATE')",
+                    )
+                    .bind(table)
+                    .fetch_one(&h.pool)
+                    .await?;
+                    assert!(
+                        !column_update,
+                        "insert-once publisher cannot UPDATE columns: {table}"
+                    );
                 }
                 let deps = Dependencies::new()?;
                 let mut admitted = deps.admitted;

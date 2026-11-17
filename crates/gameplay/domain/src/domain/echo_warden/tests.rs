@@ -1,5 +1,32 @@
 use super::*;
 
+#[test]
+fn current_outcome_families_keep_exact_counts_and_bestiary_chance() -> Result<(), EchoWardenError> {
+    for completed in [false, true] {
+        let threshold = if completed { 20 } else { 10 };
+        for roll in 1..=100 {
+            let plan = EchoRaidPlan::select(roll, completed, false, 7)?;
+            assert_eq!(
+                plan.outcome(),
+                if roll <= threshold {
+                    EchoOutcome::Warden
+                } else {
+                    EchoOutcome::Regular
+                }
+            );
+            assert_eq!(plan.spawn_count(), 8);
+        }
+        let influenced = EchoRaidPlan::select(100, completed, true, 12)?;
+        assert_eq!(influenced.outcome(), EchoOutcome::Influenced);
+        assert_eq!(influenced.spawn_count(), 4);
+        assert_eq!(influenced.variant_at(0), None);
+        assert_eq!(influenced.spawn_delay_ms(1), Some(SPAWN_STEP_MS));
+    }
+    assert!(EchoRaidPlan::select(0, false, false, 7).is_err());
+    assert!(EchoRaidPlan::select(101, false, false, 7).is_err());
+    Ok(())
+}
+
 fn ordinary_death() -> EchoDeathFacts {
     EchoDeathFacts {
         is_warden: false,

@@ -42,3 +42,27 @@ impl ServerMessageInbox {
         }
     }
 }
+
+impl ServerMessageInbox {
+    /// The native dialog worker consumes exactly the validated messages in this delivery batch.
+    pub fn interactive_notices(
+        &self,
+    ) -> impl Iterator<Item = oteryn_client_ui::modal_dialogs::NoticeDialog> + '_ {
+        use sha2::{Digest, Sha256};
+        use std::fmt::Write;
+        self.messages.iter().filter_map(|message| {
+            let (kind, text) = match &message.value {
+                ServerMessage::Warning(text) => ("warning", text),
+                ServerMessage::Advance(text) => ("advance", text),
+                ServerMessage::StatusText(_) => return None,
+            };
+            let mut key = format!("server-{kind}:");
+            for byte in Sha256::digest(text.as_bytes()) {
+                write!(&mut key, "{byte:02x}").ok()?;
+            }
+            Some(oteryn_client_ui::modal_dialogs::NoticeDialog::new(
+                &key, text, true,
+            ))
+        })
+    }
+}

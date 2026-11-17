@@ -1,7 +1,7 @@
 use super::*;
 use std::collections::BTreeMap;
 
-pub(super) fn source_rooms(
+pub(in super::super) fn source_rooms(
     bosses: Vec<&quest::GrizzlyBoss>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
@@ -106,7 +106,7 @@ pub(super) fn source_rooms(
     .map_err(debug)
 }
 
-pub(super) async fn activate(
+pub(in super::super) async fn activate(
     h: &Harness,
     server: [u8; 32],
     client: [u8; 32],

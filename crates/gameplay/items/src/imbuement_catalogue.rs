@@ -10,7 +10,7 @@ pub const IMBUEMENT_CATALOGUE_REVISION: &str =
     "82ea7b6c28b47b1b3d631ecff6d0015d5019d41327656945609d84340bf95d63";
 
 /// Ascending by `(family, tier)`.
-pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
+pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 72] = [
     ImbuementRecipe {
         family: 1,
         tier: 1,
@@ -316,34 +316,6 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         ],
     },
     ImbuementRecipe {
-        family: 13,
-        tier: 1,
-        key: "oteryn:imbuement.vibrancy",
-        requires_premium: false,
-        apply_gold: 7500,
-        materials: &[(MATERIAL_22053, 20)],
-    },
-    ImbuementRecipe {
-        family: 13,
-        tier: 2,
-        key: "oteryn:imbuement.vibrancy",
-        requires_premium: true,
-        apply_gold: 60000,
-        materials: &[(MATERIAL_22053, 20), (MATERIAL_23507, 15)],
-    },
-    ImbuementRecipe {
-        family: 13,
-        tier: 3,
-        key: "oteryn:imbuement.vibrancy",
-        requires_premium: true,
-        apply_gold: 250000,
-        materials: &[
-            (MATERIAL_22053, 20),
-            (MATERIAL_23507, 15),
-            (MATERIAL_28567, 5),
-        ],
-    },
-    ImbuementRecipe {
         family: 14,
         tier: 1,
         key: "oteryn:imbuement.chop",
@@ -539,21 +511,197 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
             (MATERIAL_9654, 5),
         ],
     },
+    ImbuementRecipe {
+        family: 21,
+        tier: 1,
+        key: "oteryn:imbuement.scorch",
+        requires_premium: false,
+        apply_gold: 7500,
+        materials: &[(MATERIAL_9636, 25)],
+    },
+    ImbuementRecipe {
+        family: 21,
+        tier: 2,
+        key: "oteryn:imbuement.scorch",
+        requires_premium: true,
+        apply_gold: 60000,
+        materials: &[(MATERIAL_9636, 25), (MATERIAL_5920, 5)],
+    },
+    ImbuementRecipe {
+        family: 21,
+        tier: 3,
+        key: "oteryn:imbuement.scorch",
+        requires_premium: true,
+        apply_gold: 250000,
+        materials: &[(MATERIAL_9636, 25), (MATERIAL_5920, 5), (MATERIAL_5954, 5)],
+    },
+    ImbuementRecipe {
+        family: 22,
+        tier: 1,
+        key: "oteryn:imbuement.venom",
+        requires_premium: false,
+        apply_gold: 7500,
+        materials: &[(MATERIAL_9686, 25)],
+    },
+    ImbuementRecipe {
+        family: 22,
+        tier: 2,
+        key: "oteryn:imbuement.venom",
+        requires_premium: true,
+        apply_gold: 60000,
+        materials: &[(MATERIAL_9686, 25), (MATERIAL_9640, 20)],
+    },
+    ImbuementRecipe {
+        family: 22,
+        tier: 3,
+        key: "oteryn:imbuement.venom",
+        requires_premium: true,
+        apply_gold: 250000,
+        materials: &[
+            (MATERIAL_9686, 25),
+            (MATERIAL_9640, 20),
+            (MATERIAL_21194, 2),
+        ],
+    },
+    ImbuementRecipe {
+        family: 23,
+        tier: 1,
+        key: "oteryn:imbuement.frost",
+        requires_premium: false,
+        apply_gold: 7500,
+        materials: &[(MATERIAL_9661, 25)],
+    },
+    ImbuementRecipe {
+        family: 23,
+        tier: 2,
+        key: "oteryn:imbuement.frost",
+        requires_premium: true,
+        apply_gold: 60000,
+        materials: &[(MATERIAL_9661, 25), (MATERIAL_21801, 10)],
+    },
+    ImbuementRecipe {
+        family: 23,
+        tier: 3,
+        key: "oteryn:imbuement.frost",
+        requires_premium: true,
+        apply_gold: 250000,
+        materials: &[
+            (MATERIAL_9661, 25),
+            (MATERIAL_21801, 10),
+            (MATERIAL_9650, 5),
+        ],
+    },
+    ImbuementRecipe {
+        family: 24,
+        tier: 1,
+        key: "oteryn:imbuement.electrify",
+        requires_premium: false,
+        apply_gold: 7500,
+        materials: &[(MATERIAL_18993, 25)],
+    },
+    ImbuementRecipe {
+        family: 24,
+        tier: 2,
+        key: "oteryn:imbuement.electrify",
+        requires_premium: true,
+        apply_gold: 60000,
+        materials: &[(MATERIAL_18993, 25), (MATERIAL_21975, 5)],
+    },
+    ImbuementRecipe {
+        family: 24,
+        tier: 3,
+        key: "oteryn:imbuement.electrify",
+        requires_premium: true,
+        apply_gold: 250000,
+        materials: &[
+            (MATERIAL_18993, 25),
+            (MATERIAL_21975, 5),
+            (MATERIAL_23508, 1),
+        ],
+    },
+    ImbuementRecipe {
+        family: 25,
+        tier: 1,
+        key: "oteryn:imbuement.reap",
+        requires_premium: false,
+        apply_gold: 7500,
+        materials: &[(MATERIAL_11484, 25)],
+    },
+    ImbuementRecipe {
+        family: 25,
+        tier: 2,
+        key: "oteryn:imbuement.reap",
+        requires_premium: true,
+        apply_gold: 60000,
+        materials: &[(MATERIAL_11484, 25), (MATERIAL_9647, 20)],
+    },
+    ImbuementRecipe {
+        family: 25,
+        tier: 3,
+        key: "oteryn:imbuement.reap",
+        requires_premium: true,
+        apply_gold: 250000,
+        materials: &[
+            (MATERIAL_11484, 25),
+            (MATERIAL_9647, 20),
+            (MATERIAL_10420, 5),
+        ],
+    },
+    ImbuementRecipe {
+        family: 26,
+        tier: 1,
+        key: "oteryn:imbuement.vibrancy",
+        requires_premium: false,
+        apply_gold: 7500,
+        materials: &[(MATERIAL_22053, 20)],
+    },
+    ImbuementRecipe {
+        family: 26,
+        tier: 2,
+        key: "oteryn:imbuement.vibrancy",
+        requires_premium: true,
+        apply_gold: 60000,
+        materials: &[(MATERIAL_22053, 20), (MATERIAL_23507, 15)],
+    },
+    ImbuementRecipe {
+        family: 26,
+        tier: 3,
+        key: "oteryn:imbuement.vibrancy",
+        requires_premium: true,
+        apply_gold: 250000,
+        materials: &[
+            (MATERIAL_22053, 20),
+            (MATERIAL_23507, 15),
+            (MATERIAL_28567, 5),
+        ],
+    },
 ];
 
 const MATERIAL_5877: &str = "oteryn:item.tibia.i5877";
+
+const MATERIAL_5920: &str = "oteryn:item.tibia.i5920";
+
+const MATERIAL_5954: &str = "oteryn:item.tibia.i5954";
 
 const MATERIAL_9633: &str = "oteryn:item.tibia.i9633";
 
 const MATERIAL_9635: &str = "oteryn:item.tibia.i9635";
 
+const MATERIAL_9636: &str = "oteryn:item.tibia.i9636";
+
 const MATERIAL_9638: &str = "oteryn:item.tibia.i9638";
 
 const MATERIAL_9639: &str = "oteryn:item.tibia.i9639";
 
+const MATERIAL_9640: &str = "oteryn:item.tibia.i9640";
+
 const MATERIAL_9641: &str = "oteryn:item.tibia.i9641";
 
 const MATERIAL_9644: &str = "oteryn:item.tibia.i9644";
+
+const MATERIAL_9647: &str = "oteryn:item.tibia.i9647";
+
+const MATERIAL_9650: &str = "oteryn:item.tibia.i9650";
 
 const MATERIAL_9654: &str = "oteryn:item.tibia.i9654";
 
@@ -561,11 +709,15 @@ const MATERIAL_9657: &str = "oteryn:item.tibia.i9657";
 
 const MATERIAL_9660: &str = "oteryn:item.tibia.i9660";
 
+const MATERIAL_9661: &str = "oteryn:item.tibia.i9661";
+
 const MATERIAL_9663: &str = "oteryn:item.tibia.i9663";
 
 const MATERIAL_9665: &str = "oteryn:item.tibia.i9665";
 
 const MATERIAL_9685: &str = "oteryn:item.tibia.i9685";
+
+const MATERIAL_9686: &str = "oteryn:item.tibia.i9686";
 
 const MATERIAL_9690: &str = "oteryn:item.tibia.i9690";
 
@@ -593,6 +745,8 @@ const MATERIAL_10311: &str = "oteryn:item.tibia.i10311";
 
 const MATERIAL_10405: &str = "oteryn:item.tibia.i10405";
 
+const MATERIAL_10420: &str = "oteryn:item.tibia.i10420";
+
 const MATERIAL_11444: &str = "oteryn:item.tibia.i11444";
 
 const MATERIAL_11447: &str = "oteryn:item.tibia.i11447";
@@ -602,6 +756,8 @@ const MATERIAL_11452: &str = "oteryn:item.tibia.i11452";
 const MATERIAL_11464: &str = "oteryn:item.tibia.i11464";
 
 const MATERIAL_11466: &str = "oteryn:item.tibia.i11466";
+
+const MATERIAL_11484: &str = "oteryn:item.tibia.i11484";
 
 const MATERIAL_11489: &str = "oteryn:item.tibia.i11489";
 
@@ -625,6 +781,8 @@ const MATERIAL_17458: &str = "oteryn:item.tibia.i17458";
 
 const MATERIAL_17823: &str = "oteryn:item.tibia.i17823";
 
+const MATERIAL_18993: &str = "oteryn:item.tibia.i18993";
+
 const MATERIAL_18994: &str = "oteryn:item.tibia.i18994";
 
 const MATERIAL_20199: &str = "oteryn:item.tibia.i20199";
@@ -633,9 +791,15 @@ const MATERIAL_20200: &str = "oteryn:item.tibia.i20200";
 
 const MATERIAL_20205: &str = "oteryn:item.tibia.i20205";
 
+const MATERIAL_21194: &str = "oteryn:item.tibia.i21194";
+
 const MATERIAL_21200: &str = "oteryn:item.tibia.i21200";
 
 const MATERIAL_21202: &str = "oteryn:item.tibia.i21202";
+
+const MATERIAL_21801: &str = "oteryn:item.tibia.i21801";
+
+const MATERIAL_21975: &str = "oteryn:item.tibia.i21975";
 
 const MATERIAL_22007: &str = "oteryn:item.tibia.i22007";
 
@@ -648,6 +812,8 @@ const MATERIAL_22728: &str = "oteryn:item.tibia.i22728";
 const MATERIAL_22730: &str = "oteryn:item.tibia.i22730";
 
 const MATERIAL_23507: &str = "oteryn:item.tibia.i23507";
+
+const MATERIAL_23508: &str = "oteryn:item.tibia.i23508";
 
 const MATERIAL_25694: &str = "oteryn:item.tibia.i25694";
 

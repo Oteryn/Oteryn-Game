@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 import hireling_item_profiles as hireling
+from import_cyclopedia_global import apply_profile_weights
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILES = "content/items/definitions/spell-native-profiles.json"
@@ -18,6 +19,12 @@ class HirelingItemProfiles(unittest.TestCase):
         cls.raw = (ROOT / PROFILES).read_bytes()
         cls.profiles = {row["production_definition"]["production_key"]: row
                         for row in json.loads(cls.raw)["records"]}
+        # As admission sees the capture: outside the decided weight pairs the Global client
+        # weight replaces the donor weight; the committed capture itself stays donor.
+        decided = hireling.SHARED_NATIVE_WEIGHTS.keys() | hireling.MERGED_MAIN_NATIVE_WEIGHTS.keys()
+        cls.admitted = copy.deepcopy([row for row in cls.overlay["records"]])
+        apply_profile_weights([row for row in cls.admitted
+                               if row["production_definition"]["production_key"] not in decided], ROOT)
 
     def test_all_source_trade_food_and_package_operands_are_profiled(self):
         self.assertEqual(self.overlay["source_revision"], hireling.REVISION)
@@ -25,7 +32,7 @@ class HirelingItemProfiles(unittest.TestCase):
         self.assertEqual(self.overlay["catalogue"]["trader_items"], 1409)
         self.assertEqual(self.overlay["catalogue"]["packages"], 23)
         self.assertEqual(self.overlay["catalogue"]["package_ingredients"], 69)
-        for source in self.overlay["records"]:
+        for source in self.admitted:
             key = source["production_definition"]["production_key"]
             row = self.profiles[key]
             self.assertEqual(row["production_definition"], source["production_definition"])
@@ -68,9 +75,10 @@ class HirelingItemProfiles(unittest.TestCase):
         self.assertEqual(self.overlay["catalogue"]["cook_items"], list(range(29408, 29417)))
 
     def test_complete_active_profiles_fit_the_unchanged_native_input_bound(self):
-        # native_gameplay.rs::MAX_PROFILES remains 8 MiB. The former indented
+        # native_gameplay.rs::MAX_ITEM_PROFILES is the existing 16 MiB Item bound.
+        # The former indented
         # 2,104-record output reached 9,074,560 bytes and could not activate.
-        self.assertLessEqual(len(self.raw), 8 * 1024 * 1024,
+        self.assertLessEqual(len(self.raw), 16 * 1024 * 1024,
             "the full active Item closure must activate without widening its resource bound")
         self.assertEqual(len(self.profiles), len(json.loads(self.raw)["records"]),
             "serialization cannot hide duplicate canonical Item profiles")
@@ -174,6 +182,7 @@ class HirelingItemProfiles(unittest.TestCase):
             "oteryn:item.tibia.i10454": (115, 114, 27704),
             "oteryn:item.tibia.i18924": (510, 509, 38605),
             "oteryn:item.tibia.i27598": (230, 229, 52453),
+            "oteryn:item.tibia.i32228": (20, 250, 60653),
         })
         self.check_shared_weights(hireling.MERGED_MAIN_NATIVE_WEIGHTS)
 

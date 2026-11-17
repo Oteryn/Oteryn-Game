@@ -1,0 +1,162 @@
+--- a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs
+@@ -2736,12 +2736,7 @@
+             expected_character_revision,
+             ..self.fence
+         };
+-        let Ok(mut loot_table) = admission.tutorial_corruptor_table(fence, &entry).await else {
+-            return SettleReport {
+-                verdict: SettleVerdict::Retry,
+-                no_progression: false,
+-            };
+-        };
++        let mut loot_table = row.loot_table.clone();
+         if let Some(race) = &row.race {
+             let bonus = entry
+                 .talisman
+@@ -2803,7 +2798,14 @@
+             }
+         }
+         super::echo_warden::drops::append_callback_loot(&mut loot_table, &entry.callback_loot);
++        // Ordinary stamina/event/duplex transforms must never remove or multiply
++        // the one-shot tutorial reward. Its arm is consumed by the atomic MINT.
++        let Ok((loot_table, tutorial_corruptor)) = admission
++            .tutorial_corruptor_table(fence, &entry, loot_table).await else {
++            return SettleReport { verdict: SettleVerdict::Retry, no_progression: false };
++        };
+         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
++            tutorial_corruptor,
+             corpse_item: row.corpse_item.clone(),
+             loot_table_ref: row.loot_table_ref.clone(),
+             loot_table,
+--- a/crates/gameplay/combat/src/combat/death_reward.rs
++++ b/crates/gameplay/combat/src/combat/death_reward.rs
+@@ -231,6 +231,8 @@
+ /// Complete semantic input of one death's reward composition.
+ #[derive(Debug, Clone)]
+ pub struct CreatureDeathRewardInput<const N: usize> {
++    /// Trusted one-shot Newhaven gear; consumed in the atomic corpse/loot transaction.
++    pub tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+     /// The corpse `ItemInstance`'s definition, supplied by the caller exactly
+     /// as the loot definitions are (Content binding of `i00005801` waits on
+     /// the Content revision, D3-7).
+@@ -472,6 +474,7 @@
+     loot_table: &LootTableDefinition,
+     inflight_before_this_death: usize,
+     committed_loot: &mut Vec<(CommittedItemMint, LootDefinitionRef, u32)>,
++    tutorial_corruptor: Option<crate::durability::tutorial_corruptor::TutorialCorruptorClaim>,
+ ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
+     // Ground custody has no Instance placement contract. This typed refusal does
+     // not suppress the independent XP path or W03's personal reward entitlements.
+@@ -527,7 +530,7 @@
+         .freeze_item_mint(session.authority, session.node, corpse_request)
+         .await
+         .map_err(CombatDeathRewardLootError::Corpse)?;
+-    if plan.entries.iter().any(|entry| entry.parent.is_some()) {
++    if tutorial_corruptor.is_some() || plan.entries.iter().any(|entry| entry.parent.is_some()) {
+         let mut children = Vec::with_capacity(plan.entries.len());
+         for entry in &plan.entries {
+             let parent = match entry.parent {
+@@ -578,6 +581,7 @@
+                 &mut children,
+                 top_damage_character_id,
+                 ground.boss_spawn.clone(),
++                tutorial_corruptor,
+             )
+             .await
+             .map_err(CombatDeathRewardLootError::Corpse)?;
+@@ -815,6 +819,7 @@
+         &input.loot_table,
+         input.inflight_loot_mints_before_this_death,
+         &mut committed_loot,
++        input.tutorial_corruptor.clone(),
+     )
+     .await;
+
+--- a/crates/gameplay/durability/src/durability/item_mint.rs
++++ b/crates/gameplay/durability/src/durability/item_mint.rs
+@@ -886,6 +886,7 @@
+                 &mut [],
+                 top_damage_character_id,
+                 boss,
++                None,
+             )
+             .await?;
+         outcomes.pop().ok_or(ItemMintError::InvalidInput)
+@@ -906,6 +907,7 @@
+         children: &mut [ItemMintCandidate],
+         top_damage_character_id: [u8; 16],
+         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
++        tutorial_corruptor: Option<super::tutorial_corruptor::TutorialCorruptorClaim>,
+     ) -> Result<Vec<ItemMintOutcome>> {
+         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
+             return Err(ItemMintError::InvalidInput);
+@@ -945,6 +947,20 @@
+             frozen_children.push((FrozenMint::of(child), placement));
+             parents.push(child.item_instance_id);
+         }
++        if let Some(claim) = &tutorial_corruptor {
++            let death = candidate.request.cause.death;
++            if claim.fence.character_id.as_bytes() != &top_damage_character_id
++                || claim.death.world_id() != death.world_id
++                || claim.death.channel_id() != Some(death.channel_id)
++                || claim.death.scope_ownership_generation() != death.scope_ownership_generation
++                || claim.death.actor_local_id() != death.actor_local_id
++                || claim.death.actor_local_generation() != death.actor_local_generation
++                || claim.items().iter().any(|id| !frozen_children.iter().any(|(child, placement)|
++                    placement.corpse_item_instance_id == candidate.item_instance_id
++                    && child.request.item.production_key == format!("oteryn:item.tibia.i{id}")
++                    && child.request.quantity == 1))
++            { return Err(ItemMintError::InvalidInput); }
++        }
+         let frozen = FrozenMint::of(candidate);
+         let node = node.clone();
+         let mut context = permit;
+@@ -1123,6 +1139,9 @@
+                             occurred_at_unix_ms: child.occurred_at_unix_ms,
+                             envelope_sha256: child.envelope_sha256,
+                         }));
++                    }
++                    if let Some(claim) = &tutorial_corruptor {
++                        super::tutorial_corruptor::consume_in_transaction(&mut tx, &node, claim).await?;
+                     }
+                     let committed = CommittedItemMint {
+                         transaction_id: frozen.transaction_id,
+--- a/apps/game-server/tests/support/combat_death_reward_postgres_cases.rs
++++ b/apps/game-server/tests/support/combat_death_reward_postgres_cases.rs
+@@ -614,6 +614,7 @@
+     character_revision: u64,
+ ) -> TestResult<CreatureDeathRewardInput<2>> {
+     Ok(CreatureDeathRewardInput {
++            tutorial_corruptor: None,
+         corpse_item: corpse_item_ref(),
+         loot_table_ref: rat_loot_table_ref(),
+         loot_table,
+@@ -1571,6 +1572,7 @@
+                 .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+                 .await;
+             let input = CreatureDeathRewardInput {
++            tutorial_corruptor: None,
+                 corpse_item: pin.corpse,
+                 loot_table_ref: pin.table_ref,
+                 loot_table: pin.admitted,
+--- a/apps/game-server/tests/support/attack_kill_reward_postgres_cases.rs
++++ b/apps/game-server/tests/support/attack_kill_reward_postgres_cases.rs
+@@ -573,6 +573,7 @@
+     character_revision: u64,
+ ) -> TestResult<CreatureDeathRewardInput<2>> {
+     Ok(CreatureDeathRewardInput {
++            tutorial_corruptor: None,
+         corpse_item: corpse_item_ref(),
+         loot_table_ref: rat_loot_table_ref(),
+         loot_table,
+--- a/apps/game-server/tests/support/combat_bestiary_postgres_cases.rs
++++ b/apps/game-server/tests/support/combat_bestiary_postgres_cases.rs
+@@ -70,6 +70,7 @@
+ fn input_at(xp_amount: i64, revision: u64) -> TestResult<CreatureDeathRewardInput<2>> {
+     let context = context();
+     Ok(CreatureDeathRewardInput {
++            tutorial_corruptor: None,
+         corpse_item: definition("ItemType", "fixture:bestiary.item.rat_corpse"),
+         loot_table_ref: definition("LootTable", "fixture:bestiary.loot.rat"),
+         loot_table: LootTableDefinition {

@@ -257,3 +257,6 @@ pub fn decode_charm_progression_reply(payload: &[u8]) -> WireResult<CharmProgres
 #[cfg(test)]
 #[path = "charm_progression_tests.rs"]
 mod tests;
+
+#[path = "bestiary_catalogue.rs"]
+pub mod catalogue;

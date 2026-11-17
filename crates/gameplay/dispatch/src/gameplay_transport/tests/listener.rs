@@ -223,6 +223,76 @@ fn resource_connection_budget_backpressures_at_limit() -> Result<(), Box<dyn Err
     })
 }
 
+#[test]
+fn released_connection_capacity_wakes_the_isolated_listener() -> Result<(), Box<dyn Error>> {
+    struct Completed {
+        count: AtomicUsize,
+        changed: Notify,
+    }
+    impl ConnectionObserver for Completed {
+        fn ended(&self, end: ConnectionEnd) {
+            assert_eq!(end, ConnectionEnd::TransportFailed);
+            self.count.fetch_add(1, Ordering::SeqCst);
+            self.changed.notify_one();
+        }
+    }
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let result = (|| -> Result<(), Box<dyn Error>> {
+                runtime()?.block_on(tokio::task::LocalSet::new().run_until(async {
+                    let material = material()?;
+                    let listener = TcpListener::bind("127.0.0.1:0").await?;
+                    let address = listener.local_addr()?;
+                    let mut clients = Vec::new();
+                    for _ in 0..3 {
+                        clients.push(TcpStream::connect(address).await?);
+                    }
+                    // Prime accept readiness outside the serving task, leaving two sockets
+                    // queued. Neither a new connection nor the test's timeout wakes serve.
+                    drop(listener.accept().await?);
+                    let completed = Arc::new(Completed {
+                        count: AtomicUsize::new(0),
+                        changed: Notify::new(),
+                    });
+                    let observer = Arc::clone(&completed);
+                    let shutdown = CancellationToken::new();
+                    let stopping = shutdown.clone();
+                    let limits =
+                        ListenerLimits::new(1, 1, Duration::from_millis(100)).ok_or("limits")?;
+                    let serving = tokio::task::spawn_local(async move {
+                        serve_listener(
+                            &listener,
+                            &material.server,
+                            limits,
+                            &GatedAuthority::new(true),
+                            &SecureIdentifiers,
+                            observer.as_ref(),
+                            &stopping,
+                        )
+                        .await;
+                    });
+                    let result = tokio::time::timeout(Duration::from_secs(3), async {
+                        while completed.count.load(Ordering::SeqCst) < 2 {
+                            completed.changed.notified().await;
+                        }
+                    })
+                    .await;
+                    shutdown.cancel();
+                    serving.await?;
+                    result?;
+                    assert_eq!(completed.count.load(Ordering::SeqCst), 2);
+                    drop(clients);
+                    Ok(())
+                }))
+            })();
+            result.map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "listener capacity fixture thread failed")?
+        .map_err(Into::into)
+}
+
 /// Admits at once; every ended connection's loss is recorded and its
 /// grace expiry then waits until shutdown.
 struct LifecycleAuthority {
@@ -426,8 +496,7 @@ fn resource_handshake_units_bound_concurrent_admission() -> Result<(), Box<dyn E
 }
 
 #[test]
-fn shutdown_completes_admission_in_flight_and_cancels_entry_work() -> Result<(), Box<dyn Error>>
-{
+fn shutdown_completes_admission_in_flight_and_cancels_entry_work() -> Result<(), Box<dyn Error>> {
     runtime()?.block_on(async {
         let material = material()?;
         let listener = TcpListener::bind("127.0.0.1:0").await?;
@@ -561,4 +630,171 @@ fn uuid_v7(seed: u8) -> [u8; 16] {
     bytes[6] = 0x70 | (seed & 0x0f);
     bytes[8] = 0x80 | (seed & 0x3f);
     bytes
+}
+
+/// Admissions stay pending together inside the listener's single polling task.
+struct HolderTicketAuthority {
+    root: DurabilityRoot,
+    calls: AtomicUsize,
+    changed: Notify,
+    release: Notify,
+    tickets: Mutex<Vec<bool>>,
+    arrived: Mutex<Vec<GameSessionId>>,
+    served: Mutex<Vec<GameSessionId>>,
+}
+
+impl FreshAdmissionAuthority for HolderTicketAuthority {
+    async fn admit(
+        &self,
+        attempt: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        assert!(self.root.try_acquire_ready().is_err());
+        let ticket = self.root.holder_waiter();
+        self.tickets.lock().expect("tickets").push(ticket.is_some());
+        self.arrived
+            .lock()
+            .expect("arrived")
+            .push(attempt.game_session_id);
+        self.calls.fetch_add(1, Ordering::SeqCst);
+        self.changed.notify_one();
+        self.release.notified().await;
+        let pass = self
+            .root
+            .issue_ready_semantic_pass()
+            .await
+            .map_err(|_| AdmissionRefusal::Unavailable)?;
+        let value: i32 = pass
+            .run(|holder, _| {
+                Box::pin(async move {
+                    Ok(sqlx::query_scalar("SELECT 1")
+                        .fetch_one(&mut **holder)
+                        .await?)
+                })
+            })
+            .await
+            .map_err(|_| AdmissionRefusal::Unavailable)?;
+        assert_eq!(value, 1);
+        self.served
+            .lock()
+            .expect("served")
+            .push(attempt.game_session_id);
+        drop(ticket);
+        Err(AdmissionRefusal::Rejected)
+    }
+}
+
+#[test]
+fn listener_shared_task_keeps_independent_holder_tickets_in_fifo_order()
+-> Result<(), Box<dyn Error>> {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let result = || -> Result<(), Box<dyn Error>> {
+                let runtime = runtime()?;
+                tokio::task::LocalSet::new().block_on(&runtime, async {
+                    tokio::task::spawn_local(holder_listener_fifo_scenario()).await?
+                })
+            };
+            result().map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "holder listener test panicked")?
+        .map_err(Into::into)
+}
+
+async fn holder_listener_fifo_scenario() -> Result<(), Box<dyn Error>> {
+    use sqlx::Connection;
+    let admin_url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+    let options: sqlx::postgres::PgConnectOptions = admin_url.parse()?;
+    let name = format!(
+        "holder_listener_{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos()
+    );
+    let mut admin = sqlx::PgConnection::connect_with(&options).await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))
+        .execute(&mut admin)
+        .await?;
+    let database_options = options.database(&name);
+    let database_url = sqlx::ConnectOptions::to_url_lossy(&database_options);
+    crate::durability::MigrationExecutor::connect_migration(database_url.as_str())
+        .await?
+        .apply_embedded_ledger()
+        .await?;
+    let root = DurabilityRoot::connect_test_runtime(database_url.as_str())?;
+    assert!(root.maintain_ready_once().await?);
+    let held = root.try_acquire_ready()?;
+    let authority = HolderTicketAuthority {
+        root,
+        calls: AtomicUsize::new(0),
+        changed: Notify::new(),
+        release: Notify::new(),
+        tickets: Mutex::new(Vec::new()),
+        arrived: Mutex::new(Vec::new()),
+        served: Mutex::new(Vec::new()),
+    };
+    let material = material()?;
+    let listener = TcpListener::bind("127.0.0.1:0").await?;
+    let address = listener.local_addr()?;
+    let shutdown = CancellationToken::new();
+    let ends = Ends::default();
+    let limits = ListenerLimits::new(2, 2, Duration::from_secs(5)).ok_or("limits")?;
+    let serve = serve_listener(
+        &listener,
+        &material.server,
+        limits,
+        &authority,
+        &SecureIdentifiers,
+        &ends,
+        &shutdown,
+    );
+    let clients = join(
+        admit_client(material.client.clone(), address),
+        admit_client(material.client.clone(), address),
+    );
+    let check = async {
+        let (clients, ()) = join(clients, async {
+            while authority.calls.load(Ordering::SeqCst) < 2 {
+                authority.changed.notified().await;
+            }
+            drop(held);
+            authority.release.notify_waiters();
+        })
+        .await;
+        shutdown.cancel();
+        clients
+    };
+    let ((), (first, second)) =
+        tokio::time::timeout(Duration::from_secs(5), join(serve, check)).await?;
+    let tickets = authority.tickets.lock().expect("tickets").clone();
+    let served = authority.served.lock().expect("served").clone();
+    let arrived = authority.arrived.lock().expect("arrived").clone();
+    drop(authority);
+    sqlx::query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1")
+        .bind(&name)
+        .execute(&mut admin)
+        .await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!("DROP DATABASE {name}")))
+        .execute(&mut admin)
+        .await?;
+    assert!(
+        first.is_err() && second.is_err(),
+        "the test authority refuses both clients"
+    );
+    assert_eq!(
+        tickets,
+        vec![true, true],
+        "each connection must hold its own ticket"
+    );
+    assert_eq!(
+        served.len(),
+        2,
+        "both admissions must execute their durable pass"
+    );
+    assert_eq!(served, arrived, "holder service must be FIFO");
+    Ok(())
 }

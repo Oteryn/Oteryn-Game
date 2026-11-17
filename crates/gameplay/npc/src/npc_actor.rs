@@ -3,9 +3,10 @@
 //! The Channel's budgeted NPC think must call this once per native think occurrence. This
 //! module owns only the interval and deterministic proposal; the actor's position remains in
 //! Movement. A proposal does not prove catalogue membership in the active runtime, current
-//! field/trigger absence, or permission to commit a step. Those owner handoffs are not installed.
+//! field/trigger absence, or permission to commit a step. Dispatch proves those facts before
+//! committing through the Movement owner.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::time::Duration;
 
 use crate::content::{
@@ -133,13 +134,14 @@ impl WalkProfile {
     }
 }
 
-/// Candidate source data. Matching this catalogue and model does not bind either to the
-/// running bundle; the still-missing catalogue→active-runtime producer must establish that.
-#[derive(Debug)]
+/// Source-qualified profiles. The Channel NPC cadence consumes this catalogue/model-bound
+/// book through the existing production talk-book binding.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcWalkBook {
     source_tree_digest: String,
     project_revision: String,
     profiles: BTreeMap<String, WalkProfile>,
+    terrain_qualified: BTreeSet<String>,
 }
 
 impl NpcWalkBook {
@@ -153,6 +155,7 @@ impl NpcWalkBook {
             return Err(WalkError::ContentSourceMismatch);
         }
         let mut profiles = BTreeMap::new();
+        let mut terrain_qualified = BTreeSet::new();
         // Only the model's admitted NPCs participate. Resolve its exact NPC and Behavior
         // references, including revision, through the native catalogue rather than key joins.
         for reference in model.npcs().keys() {
@@ -170,6 +173,16 @@ impl NpcWalkBook {
             let ProjectV2AuthoringProfileData::Behavior(behavior) = &profile.data else {
                 continue;
             };
+            let mut height_fields = fields.iter().filter(|field| {
+                field.field_path == crate::content::npc_catalogue::walk_terrain::FIELD
+            });
+            if height_fields.next().is_some_and(|field| {
+                matches!(&field.value, ProjectV2CandidateValue::Text(value)
+                    if value == crate::content::npc_catalogue::walk_terrain::digest())
+            }) && height_fields.next().is_none()
+            {
+                terrain_qualified.insert(reference.key.clone());
+            }
             if let Some(profile) = WalkProfile::from_source(fields, behavior)
                 && profiles.insert(reference.key.clone(), profile).is_some()
             {
@@ -180,11 +193,16 @@ impl NpcWalkBook {
             source_tree_digest: catalogue.source_tree_digest().to_owned(),
             project_revision: catalogue.project_revision().to_owned(),
             profiles,
+            terrain_qualified,
         })
     }
 
     pub fn profile(&self, key: &str) -> Option<WalkProfile> {
         self.profiles.get(key).copied()
+    }
+
+    pub fn terrain_qualified(&self, key: &str) -> bool {
+        self.terrain_qualified.contains(key)
     }
 
     pub fn source_tree_digest(&self) -> &str {
@@ -282,14 +300,36 @@ impl NpcWalkProposal {
         Ok(positions)
     }
 
-    /// Partial native terrain preparation, in the original shuffled order. Full room digests
-    /// must match the running Channel. Absent metadata never becomes a default empty tile;
-    /// notably the current bundle has unknown height, so it cannot yield a candidate here.
-    /// This does not replace the missing current field/trigger or active-NPC-source handoff.
+    /// Strict terrain preparation for legacy/synthetic rooms with explicit step facts.
+    /// Full room digests must match the Channel; absent metadata never becomes empty terrain.
+    /// The production bundle caller additionally binds source heights and current Item/trigger facts.
     pub fn terrain_candidates(
         &self,
         runtime: &mut ChannelRuntimeV1,
         room: &QualifiedNativeEntryRoom,
+    ) -> Result<Vec<NpcStepCandidate>, WalkError> {
+        self.prepare_terrain(runtime, room, false)
+    }
+
+    /// A bundle's absent height metadata is qualified only by this NPC's source-bound
+    /// loader catalogue. Existing synthetic/unqualified bundles retain the strict refusal.
+    pub fn bundle_terrain_candidates(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        room: &QualifiedNativeEntryRoom,
+        book: &NpcWalkBook,
+    ) -> Result<Vec<NpcStepCandidate>, WalkError> {
+        let qualified = runtime
+            .npc_key(self.occurrence.actor)
+            .is_some_and(|key| book.terrain_qualified(key));
+        self.prepare_terrain(runtime, room, qualified)
+    }
+
+    fn prepare_terrain(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        room: &QualifiedNativeEntryRoom,
+        qualified_bundle_height: bool,
     ) -> Result<Vec<NpcStepCandidate>, WalkError> {
         let destinations = self.ordered_destinations(runtime)?;
         let pin = runtime.content_pin();
@@ -316,14 +356,21 @@ impl NpcWalkProposal {
                 continue;
             };
             let flags = tile.flags();
-            let Some(step) = tile.source_step() else {
-                continue;
+            let height_and_floor_clear = if let Some(step) = tile.source_step() {
+                step.height_count == 0 && step.floor_changes.is_empty()
+            } else {
+                qualified_bundle_height
+                    && tile.ground_source_id().is_some_and(|id| {
+                        crate::content::npc_catalogue::walk_terrain::has_height(id) == Some(false)
+                    })
+                    && tile.top_source_ids().iter().all(|id| {
+                        crate::content::npc_catalogue::walk_terrain::has_height(*id) == Some(false)
+                    })
             };
             if flags.block_solid
                 || flags.floor_change
                 || flags.protection_zone != anchor.flags().protection_zone
-                || step.height_count != 0
-                || !step.floor_changes.is_empty()
+                || !height_and_floor_clear
                 || crate::map::floor::is_teleport(cells, next)
             {
                 continue;

@@ -1,0 +1,949 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "marapur",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-b/implementation-status.json",
+    "sha256": "98cc334442a4a9fea839a26080688aac4e308fee5a41e2eeeba4d92d7ee9ae92"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 21,
+  "import_counts": {
+    "RĘCZNIE": 13,
+    "AUTO": 8
+  },
+  "content_counts": {
+    "npc_rules_source_only": 0,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 8,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [
+    {
+      "path": "content/quests/world-callbacks/batch3-b-marapur.json",
+      "sha256": "ab21834cd19b94b8cb19947520ebafb8e2480290d738803a72bcc90dd35fdd8c",
+      "count": 0,
+      "category": "world_callbacks_enabled"
+    },
+    {
+      "path": "content/quests/world-callbacks-held/batch3-b-marapur.json",
+      "sha256": "dec674f5c8926cf0353561c8f7e198e995f85cc725420f9cdaae2dd916630257",
+      "count": 8,
+      "category": "world_callbacks_held"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "60c4bab14b2cc419ae04d222e9901aa7d5ff581d01a606892521aff71b1a49d0",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: przyjęcie grupy",
+        "pattern": "P06, P17, P25",
+        "trigger": "lever(33810,32702,8);5pól x33809..33805,y32702,z8",
+        "guard": "level≥250;minPlayers1;occupancy;20hcooldown/20mintimeout zdefault",
+        "effect": "uczestnicy→(33787,32680,10);encounterTimira;zone obejmuje3obszary;exit(33810,32699,8)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/timira_the_many-headed.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/boss_lever.lua:64",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:config.lua.dist:658"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagana sesja Encounter obejmująca fazy, wodę, ikony, wymiany, claimy i cleanup; bez rozszerzania właścicieli. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/timira_the_many-headed.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/boss_lever.lua:64",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:config.lua.dist:658",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "e6429861a0a3aa82a5b065184f9752e9fbb48f0b79cc0014fdb36d62db71b857",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: reset encounter",
+        "pattern": "P25, P30",
+        "trigger": "Encounter reset/start",
+        "guard": "wspólna sesja walki",
+        "effect": "stageFIRST;zero2liczników;restore4buckets,15water,teleports;removechests;clearGUIDclaims;removeMonsters",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:175"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagana sesja Encounter obejmująca fazy, wodę, ikony, wymiany, claimy i cleanup; bez rozszerzania właścicieli. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:175",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "b1192b472381260def6eac517bdeae21e0a5cdcdc85d74f503b75111250a9171",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: podtrzymywanie nag",
+        "pattern": "P27, P15",
+        "trigger": "GlobalEvent1s",
+        "guard": "stage<THIRD i sąplayers",
+        "effect": "utrzymuj po3RogueNaga/CorruptNaga,spawn najwyżej1każdego/brakującego typu per tick wobszarze stage",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:243"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagana sesja Encounter obejmująca fazy, wodę, ikony, wymiany, claimy i cleanup; bez rozszerzania właścicieli. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:243",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "1259c99e8a6950fa6fccfe572e3dbfcdda520f6b74c80e840d0cbf1ac845dd08",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: rytm sparkling water",
+        "pattern": "P15, P22",
+        "trigger": "GlobalEvent2s",
+        "guard": "stageFIRST i sąplayers; skippedUpdates",
+        "effect": "sparkling włączone co pominięciu3updates,na1interval;następnytickusuwa;geometria15pól",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagana sesja Encounter obejmująca fazy, wodę, ikony, wymiany, claimy i cleanup; bez rozszerzania właścicieli. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "fd5de772ba1c90551426540b8d717034890a4f3b7ca33f4bafc641e910b3e6b1",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: napełnianie bucket",
+        "pattern": "P02",
+        "trigger": "Use empty39242 na1722/1723/38125/38134/38130/38126/38136",
+        "guard": "allowFarUse;isWaterSparkling",
+        "effect": "removeempty;givesparkling39244 lubbad39243",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:87",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagana sesja Encounter obejmująca fazy, wodę, ikony, wymiany, claimy i cleanup; bez rozszerzania właścicieli. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:87",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "1e880eae81ff60e158955be039635bb20de31bc42a4bd06216289db41313b0bd",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: oddanie sparkling bucket",
+        "pattern": "P02, P30, P22",
+        "trigger": "Use39244 na39269",
+        "guard": "stageFIRST dopiero przyadvance;points≥currentPlayerCount×2",
+        "effect": "remove39244,give39242;points+1;completionfix39269→39268,activate35500@(33787,32699,10),chest39390@(33789,32699,10),stageSECOND",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagana sesja Encounter obejmująca fazy, wodę, ikony, wymiany, claimy i cleanup; bez rozszerzania właścicieli. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "877af2c67de4d51443725912d2b7d54a9ee53b207b43f350ac2649bf905f87f5",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: wylanie bad water",
+        "pattern": "P02",
+        "trigger": "Use39243 nacel inny niż39269",
+        "guard": "allowFarUse",
+        "effect": "remove39243,give39242,create2886/decay",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagana sesja Encounter obejmująca fazy, wodę, ikony, wymiany, claimy i cleanup; bez rozszerzania właścicieli. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "d160ad6f59c5b040cb26eabf713599aeb3bf464311647b710e62c60a2d2d48fe",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: corrupted water i red shield",
+        "pattern": "P02, P17, P22, P30",
+        "trigger": "Use39267",
+        "guard": "brakRedShield; guard if not activeStage == SECOND jestnieskuteczny (B-Q06)",
+        "effect": "points+1;redshield1 na8s;poquota currentPlayers×2 przejdźTHIRD przednadaniemikony",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagana sesja Encounter obejmująca fazy, wodę, ikony, wymiany, claimy i cleanup; bez rozszerzania właścicieli. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "95f66ada77dd714a31ebd0cb2f37e6ddcdc150a45b6e938fa3c559776cfa4412",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: wejście do finału",
+        "pattern": "P27, P30",
+        "trigger": "drugiquota2/player",
+        "guard": "aktualna liczba graczy walki",
+        "effect": "activate35500@(33804,32704,9),chest39390@(33802,32703,9);removeMonsters;spawnTimira(33815,32703,9)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:221",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:175"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagana sesja Encounter obejmująca fazy, wodę, ikony, wymiany, claimy i cleanup; bez rozszerzania właścicieli. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:221",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:175",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "858a5d46a62610934ebbd145815e0f5d0880c9576bda3eef154654dda001ff99",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: skrzynie stage",
+        "pattern": "P05, P30",
+        "trigger": "Use39390",
+        "guard": "GUIDnieodebrany na odpowiednimfloor10/9;sessionarray",
+        "effect": "GUIDclaim zapisprzedmint;randomgetLootRandom4≤200wybiera1z13equipment,else1z6valuables;każdy×1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagana sesja Encounter obejmująca fazy, wodę, ikony, wymiany, claimy i cleanup; bez rozszerzania właścicieli. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "1f461a6e04774257b6bf1401dead35d85b3ad34667fca50f0315a3c736f44795",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: koniec i sprzątanie",
+        "pattern": "P25, P16",
+        "trigger": "encounter.onReset",
+        "guard": "stanencounter",
+        "effect": "removeMonsters;message60s;after60s refreshzone/removePlayers",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:234"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Wymagana sesja Encounter obejmująca fazy, wodę, ikony, wymiany, claimy i cleanup; bez rozszerzania właścicieli. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:234",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "8d845af1ac3370f21225c7552244658b8a4e8c5cdafc959766229d692de1e275",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: fire rings",
+        "pattern": "P30",
+        "trigger": "spell timira fire ring",
+        "guard": "atakiMonsterType",
+        "effect": "losowy1z3pierścieni;selftarget;cooldown2000;geometriawdonorze",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/timira_fire_ring.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/timira_fire_ring.lua:66"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "EXISTING_COMBAT_PARTIAL",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejące dane zachowano bez drugiego wykonawcy.",
+      "left_out": "Sprawdzono istniejące natywne combat źródła (m.in. Timira chain mana); nie dublowano systemu ani nie uznano go za cały graf Timiry. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/timira_fire_ring.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/timira_fire_ring.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "cd969d47da573d6bbc86eaaa69dde33f87ce815fe347af218480752141855def",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira: fire explosions",
+        "pattern": "P30",
+        "trigger": "spell timira explosion",
+        "guard": "atakiMonsterType",
+        "effect": "losowy1z2obszarówdiamond;selftarget;cooldown2000;geometriawdonorze",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/timira_fire_explosion.lua:9",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/timira_fire_explosion.lua:46"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "EXISTING_COMBAT_PARTIAL",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejące dane zachowano bez drugiego wykonawcy.",
+      "left_out": "Sprawdzono istniejące natywne combat źródła (m.in. Timira chain mana); nie dublowano systemu ani nie uznano go za cały graf Timiry. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/timira_fire_explosion.lua:9",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/timira_fire_explosion.lua:46",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "dee1933d2e167ca9b0ceaa07c2258c7adeca349fafd2846da13b7e8118c70305",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira teleport 1",
+        "pattern": "P03",
+        "trigger": "StepIn(33803,32700,7)",
+        "guard": "player;item35500",
+        "effect": "teleport(33806,32700,8)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Źródłowe B3 ma35500, lecz jedyny palette key donor:crystalserver@00ce02a5:item/35500 jest provisional bez resolved definition. Kompilator non-production usuwa obiekt, production odmawia; matcher wymaga appearance35500 w rzeczywistym bundle i zachowane walkable ground nie spełnia guardu. Brakuje kwalifikacji dokładnego obiektu i jego map bindingu, bez zmiany selektora/ownera. Proof: timira-provisional-proof.json oraz pełne świadki w held source. Decyzja B-Q23: Pięć pełnych callbacków Timiry pozostaje held: brak kanonicznego Item/map object 35500 i jego kwalifikowanego bindingu. Klucz donor:crystalserver@00ce02a5:item/35500 jest provisional. Nie zastąpiono selektora, nie utworzono item.tibia.i35500; syntetyczna paleta PG nie kwalifikuje produkcyjnej mapy.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590862560"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:2",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:38"
+      ],
+      "evidence": {
+        "source_compiler_proof": "quest3-work/group-b/timira-provisional-proof.json"
+      }
+    },
+    {
+      "id": "f810d63cdc8ec5320a8c547bf56a3054a2565a18fb130ef55feb0a01787fe049",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira teleport 2",
+        "pattern": "P03",
+        "trigger": "StepIn(33802,32700,8)",
+        "guard": "player;item35500",
+        "effect": "teleport(33804,32702,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Źródłowe B3 ma35500, lecz jedyny palette key donor:crystalserver@00ce02a5:item/35500 jest provisional bez resolved definition. Kompilator non-production usuwa obiekt, production odmawia; matcher wymaga appearance35500 w rzeczywistym bundle i zachowane walkable ground nie spełnia guardu. Brakuje kwalifikacji dokładnego obiektu i jego map bindingu, bez zmiany selektora/ownera. Proof: timira-provisional-proof.json oraz pełne świadki w held source. Decyzja B-Q23: Pięć pełnych callbacków Timiry pozostaje held: brak kanonicznego Item/map object 35500 i jego kwalifikowanego bindingu. Klucz donor:crystalserver@00ce02a5:item/35500 jest provisional. Nie zastąpiono selektora, nie utworzono item.tibia.i35500; syntetyczna paleta PG nie kwalifikuje produkcyjnej mapy.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590862560"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:2",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:38"
+      ],
+      "evidence": {
+        "source_compiler_proof": "quest3-work/group-b/timira-provisional-proof.json"
+      }
+    },
+    {
+      "id": "5ec8ead4daa3e9f0027f23f28f95bd5e0d38bb4ed322cc27a3ada5f0bb138cbc",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira teleport 3",
+        "pattern": "P03",
+        "trigger": "StepIn(33790,32678,10)",
+        "guard": "player;item35500",
+        "effect": "teleport(33810,32699,8)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Źródłowe B3 ma35500, lecz jedyny palette key donor:crystalserver@00ce02a5:item/35500 jest provisional bez resolved definition. Kompilator non-production usuwa obiekt, production odmawia; matcher wymaga appearance35500 w rzeczywistym bundle i zachowane walkable ground nie spełnia guardu. Brakuje kwalifikacji dokładnego obiektu i jego map bindingu, bez zmiany selektora/ownera. Proof: timira-provisional-proof.json oraz pełne świadki w held source. Decyzja B-Q23: Pięć pełnych callbacków Timiry pozostaje held: brak kanonicznego Item/map object 35500 i jego kwalifikowanego bindingu. Klucz donor:crystalserver@00ce02a5:item/35500 jest provisional. Nie zastąpiono selektora, nie utworzono item.tibia.i35500; syntetyczna paleta PG nie kwalifikuje produkcyjnej mapy.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590862560"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:2",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:38"
+      ],
+      "evidence": {
+        "source_compiler_proof": "quest3-work/group-b/timira-provisional-proof.json"
+      }
+    },
+    {
+      "id": "5c6efec4a5079f65ab28f90168e236967c16331c3f81169c374fdf048cdcaef8",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira teleport 4",
+        "pattern": "P03",
+        "trigger": "StepIn(33787,32699,10)",
+        "guard": "player;item35500",
+        "effect": "teleport(33790,32706,9)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Mapa prawidłowo zawiera inactive portal39238. Crystal actions_boss_timira_fight.lua:210–213/223–226 tworzy active35500 dopiero po zakończeniu faz; ten Encounter jest Left out. Nie podmieniam39238 w statycznej mapie. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "e60aef39e33312aa5c11401f418827865fe47994287c500cf0e4728493dc8cca",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira teleport 5",
+        "pattern": "P03",
+        "trigger": "StepIn(33788,32708,9)",
+        "guard": "player;item35500",
+        "effect": "teleport(33810,32699,8)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Źródłowe B3 ma35500, lecz jedyny palette key donor:crystalserver@00ce02a5:item/35500 jest provisional bez resolved definition. Kompilator non-production usuwa obiekt, production odmawia; matcher wymaga appearance35500 w rzeczywistym bundle i zachowane walkable ground nie spełnia guardu. Brakuje kwalifikacji dokładnego obiektu i jego map bindingu, bez zmiany selektora/ownera. Proof: timira-provisional-proof.json oraz pełne świadki w held source. Decyzja B-Q23: Pięć pełnych callbacków Timiry pozostaje held: brak kanonicznego Item/map object 35500 i jego kwalifikowanego bindingu. Klucz donor:crystalserver@00ce02a5:item/35500 jest provisional. Nie zastąpiono selektora, nie utworzono item.tibia.i35500; syntetyczna paleta PG nie kwalifikuje produkcyjnej mapy.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590862560"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:2",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:38"
+      ],
+      "evidence": {
+        "source_compiler_proof": "quest3-work/group-b/timira-provisional-proof.json"
+      }
+    },
+    {
+      "id": "184f261bcfd92fa0f7d1375a35587517db305d967417673ff016152770954131",
+      "quest_row": 19,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira teleport 6",
+        "pattern": "P03",
+        "trigger": "StepIn(33804,32704,9)",
+        "guard": "player;item35500",
+        "effect": "teleport(33810,32705,9)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Mapa prawidłowo zawiera inactive portal39238. Crystal actions_boss_timira_fight.lua:210–213/223–226 tworzy active35500 dopiero po zakończeniu faz; ten Encounter jest Left out. Nie podmieniam39238 w statycznej mapie. Decyzja B-Q14: Brakuje wspólnej sesji encounteru Timiry: fazy i limity uczestników, timer sparkling, wiadra/tarcza i żywe obiekty świata, claimy sesji i cleanup. Dane zachowano; istniejące ataki nie zastępują tego grafu.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875997"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:154",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:203",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:262",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:298",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:340",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_boss_timira_fight.lua:368"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "385d8ed54bc1c530a0ff4afe2891aec638215e1129b1ed400a979e7012cff594",
+      "quest_row": 20,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Timira teleport 7",
+        "pattern": "P03",
+        "trigger": "StepIn(33816,32710,9)",
+        "guard": "player;item35500",
+        "effect": "teleport(33804,32702,7)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Źródłowe B3 ma35500, lecz jedyny palette key donor:crystalserver@00ce02a5:item/35500 jest provisional bez resolved definition. Kompilator non-production usuwa obiekt, production odmawia; matcher wymaga appearance35500 w rzeczywistym bundle i zachowane walkable ground nie spełnia guardu. Brakuje kwalifikacji dokładnego obiektu i jego map bindingu, bez zmiany selektora/ownera. Proof: timira-provisional-proof.json oraz pełne świadki w held source. Decyzja B-Q23: Pięć pełnych callbacków Timiry pozostaje held: brak kanonicznego Item/map object 35500 i jego kwalifikowanego bindingu. Klucz donor:crystalserver@00ce02a5:item/35500 jest provisional. Nie zastąpiono selektora, nie utworzono item.tibia.i35500; syntetyczna paleta PG nie kwalifikuje produkcyjnej mapy.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590862560"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:2",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/actions_teleports_timira.lua:38"
+      ],
+      "evidence": {
+        "source_compiler_proof": "quest3-work/group-b/timira-provisional-proof.json"
+      }
+    },
+    {
+      "id": "f3a34d0691f6dda8674fb1c0988eb671689236af293719bcbf192e50c8e37829",
+      "quest_row": 21,
+      "inventory": {
+        "quest": "marapur",
+        "step": "Ramp to North Temple",
+        "pattern": "P03",
+        "trigger": "StepIn(33613,32759,9)",
+        "guard": "player",
+        "effect": "teleport(33614,32759,8)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/movements_ramp_to_north-temple.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held. Item39721 na wejściu ma native NORTH floor mask2; floor owner rozwiązuje istniejące33613,32758,z8 przed quest callbackiem, podczas gdy donor ramp.lua:9–16 wymaga StepIn33613,32759,z9 i teleportu33614,32759,z8. Potrzebny kwalifikowany hook przed floor-change lub korekta kolizji mapy; bez zmiany ownera. Decyzja B-Q22: Brakuje wykonania StepIn przed natywną zmianą piętra. Item 39721 / NORTH2 na (33613,32759,9) przejmuje ruch przed źródłowym callbackiem do (33614,32759,8). Pełny callback pozostaje held.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590616025"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/movements_ramp_to_north-temple.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/marapur/movements_ramp_to_north-temple.lua:9-16"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0015-item-use",
+  "kind": "panels",
+  "id": "0015-item-use-feedback",
+  "status": "supported",
+  "entry": "view.rs::targeting_hint"
+}

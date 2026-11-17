@@ -1,0 +1,12 @@
+{
+  "mechanic": "local-account-achievements",
+  "kind": "keybindings",
+  "id": "local-account-achievements-keybindings",
+  "status": "supported",
+  "entry": "input.rs::open_key",
+  "context": "gameplay",
+  "chord": "Ctrl+Shift+A",
+  "not_applicable": {
+    "settings": "The panel has no persistent settings."
+  }
+}

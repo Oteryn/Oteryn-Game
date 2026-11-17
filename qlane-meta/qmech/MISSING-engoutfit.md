@@ -1,0 +1,11 @@
+# ENGOUTFIT — checked M36 scope
+
+| quest | missing mechanic (server or client) | evidence (quest file and step, plus hook/table/command) | blocks the quest fully or partly |
+|---|---|---|---|
+| In Service of Yalahar — outfit and addon steps | none for these steps | `content/dialogues/quest-rules/quest-batch3-a-in_service_of_yalahar.json`: Palimuth `conversation-244-27-1-1` and `conversation-323-38-1-*`. Production NPC dispatch supplies account appearance and creation sex; `quest_state/npc_program.rs` reloads both under the Character/account locks and calls the shared `character_appearance::grant_content_outfit` in the quest transaction. Real-dispatch PostgreSQL cases in `postgres_tests/engoutfit.rs` prove persisted base/addon facts, replay and rollback on a suppressed receipt insert. | No remaining M36 blocker in these steps; unrelated quest mechanics are outside this report. |
+| Rock Steady — Deepling collection addon | none for the authored collection route | `content/quests/shared-reward-callbacks.json`: `m36-rock-steady-start`, `confirm`, `first`, `second`, `weapon`. The five source-backed stages use the existing fenced reward dispatcher and shared account appearance owner. The PG case proves each required item, exact consumption, no early entitlement, final base/addon receipts and replay. | No remaining M36 blocker in this collection route. |
+| Battle Mage Outfits, Beggar Outfits, Assassin Outfit | No missing callback outfit grant found | Their existing callbacks in `content/quests/shared-reward-callbacks.json` now call the shared grant owner. The three `engoutfit_*_atomic_outfit_and_addons` PG cases reuse the full production-dispatch stories, including hand-ins and entitlement selection. | No blocker established for these checked callback routes. |
+
+The shared owner accepts explicitly mapped content outfits and sex-scoped addons; unknown looks, ambiguous identities, missing mappings and unowned effects fail closed. Historical Revenant/Decaying Defender receipts remain compatible. Existing account appearance unlock and receipt tables suffice; M36 uses no migration.
+
+This is a bounded code/proof report, not a claim that every quest in the original 47-entry ledger is complete. Source evidence for Rock Steady is retained in `docs/reference/content-prep/ENGOUTFIT-M36.md`.

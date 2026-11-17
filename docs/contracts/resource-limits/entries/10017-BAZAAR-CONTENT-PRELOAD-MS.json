@@ -1,0 +1,21 @@
+{
+  "id": "BAZAAR-CONTENT-PRELOAD-MS",
+  "owner_contract": "OTERYN_GAME_BAZAAR_AUTHORITY_V1.md",
+  "resource": "Complete bounded local Content preload including queue wait",
+  "unit": "milliseconds",
+  "hard_maximum": 10000,
+  "configurable_range": {
+    "minimum": 10000,
+    "maximum": 10000
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Timeout leaves PENDING without holding SQL locks. A detached read retains its semaphore permit until completion.",
+  "client_visible": false,
+  "boundary_tests": [
+    "bazaar_items_native_postgres_custody_split_replay_and_terminal_races"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/bazaar/preload.rs"
+  ],
+  "notes": "Timeout leaves PENDING without holding SQL locks. A detached read retains its semaphore permit until completion."
+}

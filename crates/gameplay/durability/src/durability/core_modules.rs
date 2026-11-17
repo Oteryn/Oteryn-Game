@@ -18,6 +18,9 @@ mod bank_credit_headroom;
 pub mod bestiary_progress;
 pub mod blessing_purchase;
 pub mod bosstiary;
+pub mod cast_audit;
+pub mod cast_consent;
+pub mod cast_privacy;
 #[allow(
     dead_code,
     reason = "APP-1 production caller awaits admitted content, sex and grant owners"
@@ -45,6 +48,8 @@ pub mod character_progression;
 pub mod character_promotion;
 pub mod character_quick_loot;
 pub mod character_revision_sequencer;
+pub mod character_services;
+pub mod character_services_projection;
 pub mod character_stance;
 pub mod character_stash;
 pub mod character_title;
@@ -55,6 +60,7 @@ pub mod chat_text;
 pub mod coin_exchange;
 pub mod consume_transform;
 mod consume_transform_audit;
+pub mod consume_transform_cosmetics;
 pub mod content_activation;
 pub mod cyclopedia_character;
 pub mod cyclopedia_tracker;
@@ -73,6 +79,7 @@ mod guild_bank_audit;
 pub mod guild_war;
 pub mod highscore_snapshot;
 pub mod house_disposition;
+pub mod house_furniture_destroy;
 pub mod house_hireling;
 pub mod house_interior;
 pub mod house_interior_audit;
@@ -80,6 +87,7 @@ pub mod house_ownership;
 mod house_ownership_audit;
 pub mod house_podium;
 pub mod house_rent;
+pub mod house_sale;
 pub mod house_scope_handoff;
 pub mod house_spell_acl;
 pub mod house_wrap;
@@ -109,11 +117,13 @@ pub mod mail;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;
 pub mod market;
+pub mod mechanics_status;
 pub mod monk_state;
 pub mod native_admission_source;
 pub mod native_map_items;
 pub mod native_map_items_abi;
 pub mod newhaven_travel;
+pub mod npc_marriage;
 pub mod npc_purchase;
 pub mod npc_trade;
 pub mod npc_trade_audit;
@@ -138,6 +148,7 @@ pub mod reward_claim_mint_audit;
 pub mod runtime_scope_assignment;
 mod schema;
 pub mod soulpit;
+pub mod source_creature_names;
 pub mod spell_character_lookup;
 pub mod spell_familiar_group;
 pub mod spell_field_policy;
@@ -156,13 +167,17 @@ pub mod tutorial_corruptor;
 mod tutorial_death;
 pub mod tutorial_islet_placement;
 pub mod world_event;
+pub mod world_event_outcomes;
 pub mod world_house_instance;
 pub mod world_party;
 pub mod world_reset;
 // End sorted module declarations.
 
 pub use admission_journal::AdmissionReconnectJournal;
-pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig, ROOT_RECOVERY_WINDOW};
+pub use db::{
+    DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig, ForegroundDemand, HolderWaiter,
+    IssuedSemanticPass, ROOT_RECOVERY_WINDOW, with_holder_trace,
+};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
 
 #[cfg(test)]
@@ -205,6 +220,10 @@ type V2ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SqlxFailureClass {
     Configuration,
+    /// PostgreSQL lock refusal (55P03), statement cancellation (57014),
+    /// or transaction timeout (25P04).
+    /// Only a caller that knows its operation is read-only may retry this class.
+    RetryableStatement,
     /// A database-raised error, with its registered SQLSTATE kind when it has one; the payload
     /// itself is never kept.
     Database(Option<sqlstate_codes::SqlstateKind>),
@@ -223,12 +242,10 @@ impl SqlxFailureClass {
     fn classify(error: &sqlx::Error) -> Self {
         match error {
             sqlx::Error::Configuration(_) | sqlx::Error::InvalidArgument(_) => Self::Configuration,
-            sqlx::Error::Database(database) => Self::Database(
-                database
-                    .code()
-                    .as_deref()
-                    .and_then(sqlstate_codes::SqlstateKind::from_sqlstate),
-            ),
+            sqlx::Error::Database(database) => match database.code().as_deref() {
+                Some("55P03" | "57014" | "25P04") => Self::RetryableStatement,
+                code => Self::Database(code.and_then(sqlstate_codes::SqlstateKind::from_sqlstate)),
+            },
             sqlx::Error::Io(_) => Self::Transport,
             sqlx::Error::Tls(_) => Self::Tls,
             sqlx::Error::Protocol(_) => Self::Protocol,
@@ -364,7 +381,10 @@ impl DurabilityError {
     pub fn from_commit_error(error: sqlx::Error) -> Self {
         let class = SqlxFailureClass::classify(&error);
         drop(error);
-        if matches!(class, SqlxFailureClass::Database(_)) {
+        if matches!(
+            class,
+            SqlxFailureClass::Database(_) | SqlxFailureClass::RetryableStatement
+        ) {
             Self::CommitRejected
         } else {
             Self::CommitOutcomeUnknown
@@ -1153,14 +1173,14 @@ async fn insert_candidate_session_v2(
             runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
             control_loss_epoch, original_grace_deadline, predecessor_generation, \
             character_lease_generation, scope_ownership_generation, current_generation, \
-            attempt_count, session_state\
+            attempt_count, session_state, admission_security_generation\
          ) VALUES (\
             encode($1, 'hex')::uuid, $2::text::uuid, encode($3, 'hex')::uuid, \
             encode($4, 'hex')::uuid, $5, encode($6, 'hex')::uuid, \
             encode($7, 'hex')::uuid, encode($8, 'hex')::uuid, \
             $9::text::numeric(20, 0), $10, $11::text::numeric(20, 0), \
             $12::text::numeric(20, 0), $13::text::numeric(20, 0), \
-            $11::text::numeric(20, 0), $14, $15\
+            $11::text::numeric(20, 0), $14, $15, $16::text::numeric\
          )",
     )
     .bind(identity.game_session_id().as_bytes().as_slice())
@@ -1184,6 +1204,7 @@ async fn insert_candidate_session_v2(
     )
     .bind(retained_attempt_count)
     .bind(V2_RECONNECTABLE)
+    .bind(record.compatibility().account_security_generation().to_string())
     .execute(&mut **transaction)
     .await?;
     if inserted.rows_affected() != 1 {

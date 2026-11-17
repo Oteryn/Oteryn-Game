@@ -3,6 +3,9 @@ use crate::charm_wire::{push_message_field, push_varint_field, read_bytes, read_
 use crate::item_view::ItemHandle;
 use crate::world_interaction::WorldInteractionWireError as Error;
 
+mod browse;
+pub use browse::{StashFilter, decode_stash_query, encode_stash_query};
+
 pub const CAPABILITY_STASH_V1: u32 = 62;
 pub const COMMAND_TYPE_STASH_INTENT: u32 = 79;
 pub const DOMAIN_STASH: u32 = 27;
@@ -172,9 +175,10 @@ pub fn encode_stash_reply(value: &StashReply) -> Result<Vec<u8>, Error> {
                 || r.definition_revision.len() > 512
                 || !(1..=MAX_STASH_UNITS).contains(&r.quantity)
         })
-        || value.rows.windows(2).any(|r| {
-            (&r[0].definition_key, &r[0].definition_revision)
-                >= (&r[1].definition_key, &r[1].definition_revision)
+        || value.rows.iter().enumerate().any(|(index, row)| {
+            value.rows[..index]
+                .iter()
+                .any(|previous| previous.handle == row.handle)
         })
     {
         return Err(Error::Malformed);

@@ -1,0 +1,18 @@
+[
+  {
+    "name": "actions_life_ring_lever.lua",
+    "path": "data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
+    "sha": "61786e84ec35fc2b857d8894de783c1cec02d16e",
+    "size": 1000,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/61786e84ec35fc2b857d8894de783c1cec02d16e",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/61786e84ec35fc2b857d8894de783c1cec02d16e",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua"
+    }
+  }
+]

@@ -1,0 +1,467 @@
+#![allow(
+    clippy::expect_used,
+    reason = "test-only assertions keep descriptive failures"
+)]
+
+use super::*;
+
+fn position(x: i32, y: i32, floor: i16) -> RoomPosition {
+    RoomPosition { x, y, floor }
+}
+
+fn fixture<'a>(players: &'a [EchoPlayer]) -> BakragoreThinkFacts<'a> {
+    BakragoreThinkFacts {
+        now_ms: 0,
+        interval_ms: 1_000,
+        teleport_paused: false,
+        teleport_bloodjaw_present: true,
+        boss: BAKRAGORE_ROOM_CENTRE,
+        mechanics_disabled: false,
+        bloodjaw_spawn_paused: false,
+        bloodjaw_target: 2,
+        nearby_bloodjaws: 2,
+        nearby_mushrooms: 4,
+        nearby_pillars: 4,
+        active_essences: [false; 4],
+        players,
+    }
+}
+
+#[test]
+fn first_think_starts_the_cycle_and_writes_a_zero_essence_count_once() {
+    let mut owner = BakragoreThinkOwner::default();
+    let facts = fixture(&[]);
+    assert_eq!(
+        owner.think(&facts),
+        vec![
+            BakragoreEffect::StartTeleportCycle,
+            BakragoreEffect::RunAgonyCheck {
+                room_players: vec![]
+            },
+            BakragoreEffect::SetEssenceCount { count: 0 },
+        ]
+    );
+    assert_eq!(
+        owner.think(&facts),
+        vec![BakragoreEffect::RunAgonyCheck {
+            room_players: vec![]
+        }]
+    );
+}
+
+#[test]
+fn summons_top_up_bloodjaws_mushrooms_and_pillars_within_twenty_tiles_only_while_enabled() {
+    let mut owner = BakragoreThinkOwner::default();
+    owner.think(&fixture(&[]));
+    let mut facts = fixture(&[]);
+    facts.bloodjaw_target = 3;
+    facts.nearby_bloodjaws = 0;
+    facts.nearby_mushrooms = 1;
+    facts.nearby_pillars = 2;
+    let effects = owner.think(&facts);
+    let keys: Vec<_> = effects
+        .iter()
+        .filter_map(|effect| match effect {
+            BakragoreEffect::Spawn {
+                creature_key,
+                around,
+                offset_tiles,
+            } => {
+                assert_eq!(*around, BAKRAGORE_ROOM_CENTRE);
+                assert_eq!(*offset_tiles, 1);
+                Some(*creature_key)
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        keys,
+        vec![
+            ELDER_BLOODJAW_KEY,
+            ELDER_BLOODJAW_KEY,
+            ELDER_BLOODJAW_KEY,
+            MUSHROOM_KEY,
+            MUSHROOM_KEY,
+            MUSHROOM_KEY,
+            PILLAR_KEY,
+            PILLAR_KEY,
+        ]
+    );
+    assert!(matches!(
+        effects.last(),
+        Some(BakragoreEffect::RunAgonyCheck { .. })
+    ));
+
+    facts.bloodjaw_spawn_paused = true;
+    assert!(!owner.think(&facts).iter().any(|effect| matches!(
+        effect,
+        BakragoreEffect::Spawn {
+            creature_key: ELDER_BLOODJAW_KEY,
+            ..
+        }
+    )));
+    facts.mechanics_disabled = true;
+    assert!(owner.think(&facts).is_empty());
+
+    assert!(counts_summon(
+        BAKRAGORE_ROOM_CENTRE,
+        position(33_063, 32_397, 15)
+    ));
+    assert!(!counts_summon(
+        BAKRAGORE_ROOM_CENTRE,
+        position(33_064, 32_397, 15)
+    ));
+    assert!(!counts_summon(
+        BAKRAGORE_ROOM_CENTRE,
+        position(33_043, 32_397, 14)
+    ));
+}
+
+#[test]
+fn agony_room_applies_cpp_zero_y_default_41_by_23_viewport() {
+    for inside in [
+        position(33_044, 32_398, 15),
+        position(33_024, 32_398, 15),
+        position(33_064, 32_398, 15),
+        position(33_044, 32_397, 15),
+        position(33_044, 32_399, 15),
+        position(33_024, 32_387, 15),
+        position(33_064, 32_409, 15),
+    ] {
+        assert!(in_agony_room(inside));
+    }
+    for outside in [
+        position(33_065, 32_398, 15),
+        position(33_023, 32_398, 15),
+        position(33_044, 32_386, 15),
+        position(33_044, 32_410, 15),
+        position(33_044, 32_419, 15),
+        position(33_044, 32_398, 14),
+    ] {
+        assert!(!in_agony_room(outside));
+    }
+    let players = [
+        EchoPlayer {
+            actor: 1,
+            position: position(33_044, 32_410, 15),
+            taint_level: 0,
+        },
+        EchoPlayer {
+            actor: 2,
+            position: position(33_070, 32_398, 15),
+            taint_level: 0,
+        },
+        EchoPlayer {
+            actor: 3,
+            position: position(33_044, 32_398, 15),
+            taint_level: 0,
+        },
+        EchoPlayer {
+            actor: 4,
+            position: position(33_044, 32_409, 15),
+            taint_level: 0,
+        },
+    ];
+    let mut owner = BakragoreThinkOwner::default();
+    let effects = owner.think(&fixture(&players));
+    assert!(effects.contains(&BakragoreEffect::RunAgonyCheck {
+        room_players: vec![3, 4]
+    }));
+}
+
+#[test]
+fn echoes_spawn_only_when_every_nearby_player_has_final_taint() {
+    let players = [
+        EchoPlayer {
+            actor: 1,
+            position: BAKRAGORE_ROOM_CENTRE,
+            taint_level: 5,
+        },
+        EchoPlayer {
+            actor: 2,
+            position: position(33_058, 32_412, 15),
+            taint_level: 9,
+        },
+    ];
+    let mut facts = fixture(&players);
+    facts.active_essences = [true, false, true, false];
+    let mut owner = BakragoreThinkOwner::default();
+    let effects = owner.think(&facts);
+    let echo_start = effects
+        .iter()
+        .position(|effect| *effect == BakragoreEffect::SetEssenceCount { count: 2 })
+        .expect("essence count effect");
+    assert_eq!(
+        &effects[echo_start + 1..],
+        &[
+            BakragoreEffect::SpawnEcho {
+                creature_key: ESSENCES[0].echo_key,
+                at: ESSENCES[0].echo_at
+            },
+            BakragoreEffect::ResetEssence {
+                storage: ESSENCES[0].storage
+            },
+            BakragoreEffect::TransformItem {
+                at: ESSENCES[0].flame_at,
+                from: 43_984,
+                to: 43_983
+            },
+            BakragoreEffect::TransformItem {
+                at: ESSENCES[0].pillar_at,
+                from: 43_508,
+                to: 43_507
+            },
+            BakragoreEffect::SpawnEcho {
+                creature_key: ESSENCES[2].echo_key,
+                at: ESSENCES[2].echo_at
+            },
+            BakragoreEffect::ResetEssence {
+                storage: ESSENCES[2].storage
+            },
+            BakragoreEffect::TransformItem {
+                at: ESSENCES[2].flame_at,
+                from: 43_988,
+                to: 43_987
+            },
+            BakragoreEffect::TransformItem {
+                at: ESSENCES[2].pillar_at,
+                from: 43_508,
+                to: 43_507
+            },
+        ]
+    );
+}
+
+#[test]
+fn echoes_are_withheld_but_essences_still_reset_without_final_taint_or_players() {
+    let assert_reset_without_echo = |players: &[EchoPlayer]| {
+        let mut facts = fixture(players);
+        facts.active_essences = [true, false, true, false];
+        let effects = BakragoreThinkOwner::default().think(&facts);
+        assert!(
+            !effects
+                .iter()
+                .any(|effect| matches!(effect, BakragoreEffect::SpawnEcho { .. }))
+        );
+        assert_eq!(
+            effects
+                .iter()
+                .filter(|effect| matches!(effect, BakragoreEffect::ResetEssence { .. }))
+                .count(),
+            2
+        );
+        assert_eq!(
+            effects
+                .iter()
+                .filter(|effect| matches!(effect, BakragoreEffect::TransformItem { .. }))
+                .count(),
+            4
+        );
+    };
+    assert_reset_without_echo(&[EchoPlayer {
+        actor: 1,
+        position: BAKRAGORE_ROOM_CENTRE,
+        taint_level: 4,
+    }]);
+    assert_reset_without_echo(&[]);
+
+    let players = [
+        EchoPlayer {
+            actor: 1,
+            position: position(33_059, 32_397, 15),
+            taint_level: 4,
+        },
+        EchoPlayer {
+            actor: 2,
+            position: BAKRAGORE_ROOM_CENTRE,
+            taint_level: 6,
+        },
+    ];
+    let mut facts = fixture(&players);
+    facts.active_essences = [true, false, true, false];
+    let effects = BakragoreThinkOwner::default().think(&facts);
+    assert_eq!(
+        effects
+            .iter()
+            .filter(|effect| matches!(effect, BakragoreEffect::SpawnEcho { .. }))
+            .count(),
+        2
+    );
+}
+
+#[test]
+fn essence_table_matches_the_donor() {
+    assert_eq!(
+        ESSENCES[1],
+        Essence {
+            storage: "essenceOfIchgahal",
+            echo_key: "oteryn:creature.echo_of_ichgahal",
+            echo_at: position(33_044, 32_393, 15),
+            flame_at: position(33_076, 32_389, 15),
+            flame_item: 43_498,
+            flame_reset_item: 43_497,
+            pillar_at: position(33_076, 32_395, 15),
+            pillar_item: 43_508,
+            pillar_reset_item: 43_507,
+        }
+    );
+    assert_eq!(
+        ESSENCES[3],
+        Essence {
+            storage: "essenceOfVemiath",
+            echo_key: "oteryn:creature.echo_of_vemiath",
+            echo_at: position(33_039, 32_396, 15),
+            flame_at: position(33_076, 32_407, 15),
+            flame_item: 43_986,
+            flame_reset_item: 43_985,
+            pillar_at: position(33_076, 32_401, 15),
+            pillar_item: 43_508,
+            pillar_reset_item: 43_507,
+        }
+    );
+}
+
+#[test]
+fn bakragore_think_emits_its_source_teleport_on_the_owned_deadline() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    owner.think(&facts);
+    assert_eq!(owner.teleport.next_at_ms(), Some(90_000));
+    facts.now_ms = 89_999;
+    assert!(!owner.think(&facts).iter().any(is_teleport));
+    facts.now_ms = 90_000;
+    let effects = owner.think(&facts);
+    let teleports: Vec<_> = effects
+        .iter()
+        .filter(|effect| is_teleport(effect))
+        .collect();
+    assert_eq!(
+        teleports,
+        vec![&BakragoreEffect::CreateCentreTeleport(
+            super::super::chagorz_think::CentreTeleport {
+                centre: BAKRAGORE_ROOM_CENTRE,
+                item_id: 37_000,
+                action_id: 50_001,
+                remove_at_ms: 105_000,
+            }
+        )]
+    );
+    assert!(!owner.think(&facts).iter().any(is_teleport));
+}
+
+fn is_teleport(effect: &BakragoreEffect) -> bool {
+    matches!(effect, BakragoreEffect::CreateCentreTeleport(_))
+}
+
+#[test]
+fn bakragore_room_timers_do_not_share_state_or_restart_on_later_thinks() {
+    let mut first = BakragoreThinkOwner::default();
+    let mut second = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    facts.now_ms = 1_234;
+    first.think(&facts);
+    assert_eq!(first.teleport.next_at_ms(), Some(91_234));
+    assert_eq!(second.teleport.next_at_ms(), None);
+    facts.now_ms = 8_000;
+    first.think(&facts);
+    second.think(&facts);
+    assert_eq!(first.teleport.next_at_ms(), Some(91_234));
+    assert_eq!(second.teleport.next_at_ms(), Some(98_000));
+    facts.now_ms = 91_234;
+    facts.teleport_paused = true;
+    assert!(!first.think(&facts).iter().any(is_teleport));
+    assert_eq!(first.teleport.next_at_ms(), Some(181_234));
+    facts.now_ms = 181_234;
+    facts.teleport_paused = false;
+    facts.teleport_bloodjaw_present = false;
+    assert!(!first.think(&facts).iter().any(is_teleport));
+    assert_eq!(first.teleport.next_at_ms(), Some(271_234));
+    // A boss outside the source centre census stops the source cycle.
+    facts.now_ms = 271_234;
+    facts.boss.floor -= 1;
+    assert!(!first.think(&facts).iter().any(is_teleport));
+    assert_eq!(first.teleport.next_at_ms(), None);
+    assert_eq!(second.teleport.next_at_ms(), Some(98_000));
+}
+
+#[test]
+fn bakragore_teleport_pause_rearms_before_the_centre_census() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    owner.think(&facts);
+    facts.now_ms = 90_000;
+    facts.teleport_paused = true;
+    facts.boss.x += i32::from(TELEPORT_CENSUS_RANGE_TILES) + 1;
+    assert!(!owner.think(&facts).iter().any(is_teleport));
+    assert_eq!(owner.teleport.next_at_ms(), Some(180_000));
+    facts.now_ms = 180_000;
+    facts.teleport_paused = false;
+    assert!(!owner.think(&facts).iter().any(is_teleport));
+    assert_eq!(owner.teleport.next_at_ms(), None);
+}
+
+#[test]
+fn bakragore_teleport_timer_is_independent_of_summon_mechanics_disable() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    owner.think(&facts);
+    facts.now_ms = 90_000;
+    facts.mechanics_disabled = true;
+    facts.nearby_bloodjaws = 0;
+    let effects = owner.think(&facts);
+    assert_eq!(effects.len(), 1);
+    assert!(is_teleport(&effects[0]));
+}
+
+#[test]
+fn bakragore_agony_waits_for_the_accumulated_source_second() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    facts.interval_ms = 250;
+    for tick in 1..=3 {
+        facts.now_ms = tick * 250;
+        assert!(!owner.think(&facts).iter().any(is_agony_check));
+    }
+    facts.now_ms = 1_000;
+    let effects = owner.think(&facts);
+    assert_eq!(
+        effects
+            .iter()
+            .filter(|effect| is_agony_check(effect))
+            .count(),
+        1
+    );
+    facts.interval_ms = 0;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+}
+
+fn is_agony_check(effect: &BakragoreEffect) -> bool {
+    matches!(effect, BakragoreEffect::RunAgonyCheck { .. })
+}
+
+#[test]
+fn bakragore_disabled_mechanics_freeze_the_agony_accumulator() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    facts.interval_ms = 600;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    facts.mechanics_disabled = true;
+    facts.interval_ms = 10_000;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    facts.mechanics_disabled = false;
+    facts.interval_ms = 399;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    facts.interval_ms = 1;
+    assert!(owner.think(&facts).iter().any(is_agony_check));
+}
+
+#[test]
+fn bakragore_agony_discards_overshoot_as_the_source_check_time_reset_does() {
+    let mut owner = BakragoreThinkOwner::default();
+    let mut facts = fixture(&[]);
+    facts.interval_ms = 1_500;
+    assert!(owner.think(&facts).iter().any(is_agony_check));
+    facts.interval_ms = 500;
+    assert!(!owner.think(&facts).iter().any(is_agony_check));
+    assert!(owner.think(&facts).iter().any(is_agony_check));
+}

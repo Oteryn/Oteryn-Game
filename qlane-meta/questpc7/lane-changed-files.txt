@@ -1,0 +1,12 @@
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_reward_slices.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs
+crates/gameplay/durability/src/durability/quest_state/npc_program/fathers_burden.rs
+crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs
+.questpc7/QUEST-STATUS.json
+.questpc7/QUEST-STATUS.md
+.questpc7/QUALIFIED-REWARDS.json
+.questpc7/RESUME.md
+.questpc7/SHARED-FIXES.md
+.questpc7/REVIEW.md
+.questpc7/VALIDATION.json

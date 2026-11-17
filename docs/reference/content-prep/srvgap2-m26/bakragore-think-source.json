@@ -1,0 +1,42 @@
+{
+  "status": "REFERENCE_ONLY_PARTIAL_NATIVE_INTEGRATION",
+  "mechanic": "M26",
+  "repository": "https://github.com/zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "path": "data-global/monster/quests/rotten_blood_quest/bakragore.lua",
+  "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/bakragore.lua",
+  "git_blob": "5aa267092b90f054138e2043fc6db1802a424356",
+  "sha256": "974df9389e734ca947111cd41af9adec44f531adf0cc53233d5a7a94ab190178",
+  "facts": [
+    {
+      "lines": [
+        240,
+        290
+      ],
+      "mechanic": "Teleport cycle",
+      "interval_ms": 90000,
+      "item_id": 37000,
+      "action_id": 50001,
+      "lifetime_ms": 15000,
+      "centre": [
+        33043,
+        32397,
+        15
+      ],
+      "spectator_range_tiles": 15,
+      "pause_rearms_before_census": true
+    },
+    {
+      "lines": [
+        355,
+        435
+      ],
+      "mechanic": "Agony check",
+      "interval_ms": 1000,
+      "accumulator_increments_only_when_mechanics_enabled": true,
+      "after_check_accumulator_ms": 0,
+      "overshoot_is_discarded": true
+    }
+  ],
+  "integration_limit": "The think controller emits requests. Native Instance Item custody, interaction, other callbacks and complete room qualification remain required; these facts alone do not qualify Bakragore."
+}

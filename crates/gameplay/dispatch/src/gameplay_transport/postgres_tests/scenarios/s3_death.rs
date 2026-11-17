@@ -163,6 +163,8 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(items_before, 2);
         let pack:Vec<u8>=sqlx::query_scalar("SELECT decode(replace(item_instance_id::text,'-',''),'hex') FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+        let child_before = backpack_contents_snapshot(&h, &pack).await?;
+        assert_eq!(child_before.len(), 1);
         step_west(&mut owner, actor, session).await?;
         let temple = owner.home_temple(session).await.ok_or("temple")?;
         assert_ne!(position(&owner, actor).await?, temple);
@@ -284,8 +286,18 @@ fn scenario() -> TestResult {
         );
         assert_eq!(
             count(&h, "SELECT count(*) FROM game_item_container_entries").await?,
+            0,
+            "death normalizes the selected backpack's retained custody"
+        );
+        assert_eq!(
+            count(&h, "SELECT count(*) FROM game_item_nested_entries").await?,
             1,
             "child follows the dropped backpack by identity"
+        );
+        assert_eq!(
+            backpack_contents_snapshot(&h, &pack).await?,
+            child_before,
+            "death preserves the child ItemInstance and exact logical placement"
         );
         assert_eq!(
             count(
@@ -320,6 +332,11 @@ fn scenario() -> TestResult {
             snapshot(&h).await?,
             after,
             "replayed death never drops or charges twice"
+        );
+        assert_eq!(
+            backpack_contents_snapshot(&h, &pack).await?,
+            child_before,
+            "death replay preserves the same child and placement provenance"
         );
         logout_relogin(&h, &mut owner, admitted).await?;
         assert_eq!(
@@ -363,4 +380,12 @@ fn scenario() -> TestResult {
         drop(request);
         h.cleanup().await
     })
+}
+
+async fn backpack_contents_snapshot(
+    h: &Harness,
+    parent: &[u8],
+) -> TestResult<Vec<(String, String)>> {
+    Ok(sqlx::query_as("SELECT to_jsonb(i)::text,e.data::text FROM game_item_instances i JOIN (SELECT item_instance_id,to_jsonb(e)-'character_id' AS data FROM game_item_container_entries e WHERE parent_item_instance_id=encode($1,'hex')::uuid UNION ALL SELECT item_instance_id,to_jsonb(n) FROM game_item_nested_entries n WHERE parent_item_instance_id=encode($1,'hex')::uuid) e USING(item_instance_id) ORDER BY e.data::text LIMIT 2")
+        .bind(parent).fetch_all(&h.pool).await?)
 }

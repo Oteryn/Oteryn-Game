@@ -1,0 +1,74 @@
+Source: zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8
+SHA256: e8b1aa7185c34a52e11d97a0b5b7f74b170a5ab71129c7c1ad7b69a72122f37a
+1: local function furyWebhook(message)
+2: 	Webhook.sendMessage(":fire: " .. message, announcementChannels["serverAnnouncements"])
+3: end
+4:
+5: local gates = {
+6: 	{ city = "Ab'dendriel", mapName = "abdendriel", exitPosition = Position(32680, 31720, 7) },
+7: 	{ city = "Ankrahmun", mapName = "ankrahmun", exitPosition = Position(33269, 32841, 7) },
+8: 	{ city = "Carlin", mapName = "carlin", exitPosition = Position(32263, 31848, 7) },
+9: 	{ city = "Darashia", mapName = "darashia", exitPosition = Position(33304, 32371, 7) },
+10: 	{ city = "Edron", mapName = "edron", exitPosition = Position(33221, 31923, 7) },
+11: 	{ city = "Kazordoon", mapName = "kazordoon", exitPosition = Position(32575, 31981, 7) },
+12: 	{ city = "Liberty Bay", mapName = "libertybay", exitPosition = Position(32348, 32693, 7) },
+13: 	{ city = "Port Hope", mapName = "porthope", exitPosition = Position(32530, 32712, 7) },
+14: 	{ city = "Thais", mapName = "thais", exitPosition = Position(32265, 32164, 7) },
+15: 	{ city = "Venore", mapName = "venore", exitPosition = Position(32834, 32082, 7) },
+16: }
+17:
+18: local furyGates = GlobalEvent("Load Fury Gates")
+19:
+20: function furyGates.onStartup(interval)
+21: 	local totalGates = #gates
+22: 	if totalGates == 0 then
+23: 		return true
+24: 	end
+25:
+26: 	local gateId = math.random(1, totalGates)
+27: 	local selectedGate = gates[gateId]
+28: 	Game.loadMap(DATA_DIRECTORY .. "/world/world_changes/fury_gates/" .. selectedGate.mapName .. ".otbm")
+29: 	Game.setStorageValue(GlobalStorage.FuryGates, gateId)
+30:
+31: 	logger.info("[World Change] Fury Gate has arrived in {}!", selectedGate.city)
+32: 	addEvent(furyWebhook, 60000, (string.format("Fury Gate will be active in %s today", selectedGate.city)))
+33: 	return true
+34: end
+35:
+36: furyGates:register()
+37:
+38: local furyGatesTeleports = MoveEvent()
+39:
+40: function furyGatesTeleports.onStepIn(creature, item, position, fromPosition)
+41: 	local player = creature:getPlayer()
+42: 	if not player then
+43: 		return true
+44: 	end
+45:
+46: 	local gateId = Game.getStorageValue(GlobalStorage.FuryGates)
+47: 	if not gates[gateId] then
+48: 		return true
+49: 	end
+50:
+51: 	if item.actionid == 9710 then
+52: 		if not player:isPremium() or not player:isPromoted() or player:getLevel() < 60 then
+53: 			player:teleportTo(fromPosition)
+54: 			player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+55: 			player:say("Only Premium promoted players of level 60 or higher are able to enter this portal.", TALKTYPE_MONSTER_SAY, false, player, fromPosition)
+56: 			return true
+57: 		end
+58:
+59: 		player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+60: 		player:teleportTo(Position(33290, 31786, 13))
+61: 		player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+62: 	elseif item.actionid == 9715 then
+63: 		player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+64: 		player:teleportTo(gates[gateId].exitPosition)
+65: 		player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
+66: 	end
+67: 	return true
+68: end
+69:
+70: furyGatesTeleports:type("stepin")
+71: furyGatesTeleports:aid(9710, 9715)
+72: furyGatesTeleports:register()

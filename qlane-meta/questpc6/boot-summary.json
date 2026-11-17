@@ -1,0 +1,55 @@
+{
+  "red": {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-game-server",
+      "--lib",
+      "quest_catalogue_boot_tests",
+      "--quiet"
+    ],
+    "QPC_SLOT": "1",
+    "exit_code": 101,
+    "seconds": 213.473
+  },
+  "green": {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-game-server",
+      "--lib",
+      "quest_catalogue_boot_tests",
+      "--quiet"
+    ],
+    "QPC_SLOT": "1",
+    "exit_code": 0,
+    "seconds": 25.482
+  },
+  "clippy": {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "clippy",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-game-server",
+      "--all-targets",
+      "--quiet",
+      "--",
+      "-Dwarnings"
+    ],
+    "QPC_SLOT": "1",
+    "exit_code": 0,
+    "seconds": 152.511
+  },
+  "file": "apps/game-server/src/quest_catalogue_boot_tests.rs",
+  "file_sha256": "11223ba55d6a735571849fe629a4b1aab86dd33b1e356db5583aa8a50b6a89f5",
+  "head": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+  "scope": "boot test slice only; uncommitted detached tree"
+}

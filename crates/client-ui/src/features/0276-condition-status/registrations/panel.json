@@ -1,0 +1,7 @@
+{
+  "mechanic": "0276-condition-status",
+  "kind": "panels",
+  "id": "0276-condition-status-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

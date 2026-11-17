@@ -1,0 +1,151 @@
+[
+  {
+    "name": "fmt",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "seconds": 10.12495464299991,
+    "log": ".questpc7/asymmetric-final-fmt.log"
+  },
+  {
+    "name": "mounted-fmt",
+    "command": [
+      "rustfmt",
+      "--edition",
+      "2024",
+      "--check",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_asymmetric_lever.rs",
+      "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs"
+    ],
+    "exit_code": 0,
+    "seconds": 0.04989042899978813,
+    "log": ".questpc7/asymmetric-final-mounted-fmt.log"
+  },
+  {
+    "name": "check",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "--locked",
+      "--offline",
+      "check",
+      "-p",
+      "oteryn-gameplay-quests",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--quiet"
+    ],
+    "exit_code": 0,
+    "seconds": 81.66539393200037,
+    "log": ".questpc7/asymmetric-final-check.log"
+  },
+  {
+    "name": "clippy",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "--locked",
+      "--offline",
+      "clippy",
+      "-p",
+      "oteryn-gameplay-quests",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--all-targets",
+      "--quiet",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "seconds": 135.35916569300025,
+    "log": ".questpc7/asymmetric-final-clippy.log"
+  },
+  {
+    "name": "units",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "--locked",
+      "--offline",
+      "test",
+      "-p",
+      "oteryn-gameplay-quests",
+      "--lib",
+      "world_callbacks",
+      "--quiet"
+    ],
+    "exit_code": 0,
+    "seconds": 13.69761829700019,
+    "log": ".questpc7/asymmetric-final-units.log"
+  },
+  {
+    "name": "pg",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "--locked",
+      "--offline",
+      "test",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--lib",
+      "questpc7_giant_smithhammer",
+      "--",
+      "--nocapture"
+    ],
+    "exit_code": 0,
+    "seconds": 353.67784047700025,
+    "log": ".questpc7/asymmetric-final-pg.log"
+  },
+  {
+    "name": "content",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "--locked",
+      "--offline",
+      "test",
+      "-p",
+      "oteryn-game-server",
+      "--test",
+      "integration_rest",
+      "content_",
+      "--quiet"
+    ],
+    "exit_code": 0,
+    "seconds": 139.97113523400003,
+    "log": ".questpc7/asymmetric-final-content.log"
+  },
+  {
+    "name": "world",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "--locked",
+      "--offline",
+      "test",
+      "-p",
+      "oteryn-game-server",
+      "--test",
+      "content_world_project_repository",
+      "--quiet"
+    ],
+    "exit_code": 0,
+    "seconds": 47.643430267999975,
+    "log": ".questpc7/asymmetric-final-world.log"
+  },
+  {
+    "name": "tree",
+    "command": [
+      "python3",
+      "tools/content-schema/quest-authoring/quest_tree_authoring.py",
+      "content",
+      "--check",
+      "--source-packet",
+      "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"
+    ],
+    "exit_code": 0,
+    "seconds": 29.888032421999924,
+    "log": ".questpc7/asymmetric-final-tree.log"
+  }
+]

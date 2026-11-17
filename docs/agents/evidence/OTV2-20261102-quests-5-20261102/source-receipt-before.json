@@ -1,0 +1,127 @@
+{
+  "audit": "READ_ONLY_PRE_REBIND_WITNESS",
+  "finding": "EXPECTED_SINGLE_CALLBACK_DESCRIPTOR_MISMATCH",
+  "repo": "/home/mole/quests-5-20261102",
+  "working_head": "5fbe99b378d51c9cb69b2a49b28edf3b63ba7de4",
+  "baseline": "798e5b1ce27f441d5cbeece333dc7ac45e19d348",
+  "guard_accepted": false,
+  "generator_run": false,
+  "refresh_authorized": false,
+  "checks": {
+    "approval_bytes_unchanged_from_baseline": true,
+    "receipt_bytes_unchanged_from_baseline": true,
+    "native_admission_false": true,
+    "schemas_preserved": true,
+    "parent_frozen_head_preserved": true,
+    "receipt_approval_path_exact": true,
+    "owner_associations_preserved": true,
+    "immutable_inputs_receipt_approval_equal": true,
+    "immutable_inputs_unchanged_from_baseline": true,
+    "compiler_inputs_receipt_approval_equal": true,
+    "compiler_inputs_unchanged_from_baseline": true,
+    "proof_inputs_receipt_approval_equal": true,
+    "proof_inputs_unchanged_from_baseline": true,
+    "only_callback_descriptor_mismatch": true,
+    "baseline_callback_count_20": true,
+    "current_callback_count_93": true,
+    "current_callback_sha_frozen": true,
+    "callbacks_schema_unchanged": true,
+    "base_callbacks_prefix_and_field_order_unchanged": true,
+    "callback_keys_unique": true,
+    "monk_10_identical_including_order": true,
+    "single_callback_proof": true,
+    "approved_callback_sha_is_baseline": true,
+    "immutable_witness_set_exact": true,
+    "approved_graphs_unchanged_including_order": true,
+    "approved_graphs_valid_distinct_signatures": true,
+    "approved_core_digests_unchanged_including_order": true,
+    "approved_core_digests_valid_distinct_signatures": true,
+    "all_receipt_changes_unchanged": true,
+    "receipt_changed_owners_unique": true,
+    "monk_shard_already_uses_generator_compact_format": true,
+    "all_current_effective_cores_match": true,
+    "monk_reviewed_annotation_exact": true,
+    "monk_old_annotation_restores_immutable_core": true,
+    "audit_source_files_unchanged_from_baseline": true
+  },
+  "descriptor_mismatches": [
+    {
+      "path": "content/quests/world-callbacks.json",
+      "expected_sha256": "897043e92928148d23f8d2177c21b62688d0f24546f19fdfd646d7d36129d1eb",
+      "actual_sha256": "b6d6cbca87402689e7643dc979ed568868949777c04c06e8c720697b1c37c661",
+      "descriptor_locations": [
+        "receipt.proof_inputs[1]",
+        "approval.proof_inputs[1]"
+      ]
+    }
+  ],
+  "descriptor_counts": {
+    "immutable_inputs": 3,
+    "compiler_inputs": 33,
+    "proof_inputs": 42
+  },
+  "callback_summary": {
+    "baseline": 20,
+    "current": 93,
+    "added": 73,
+    "baseline_sha256": "897043e92928148d23f8d2177c21b62688d0f24546f19fdfd646d7d36129d1eb",
+    "current_sha256": "b6d6cbca87402689e7643dc979ed568868949777c04c06e8c720697b1c37c661",
+    "monk_count": 10
+  },
+  "core_summary": {
+    "receipt_changes": 28,
+    "approved_core_signatures": 30,
+    "approved_graph_signatures": 36,
+    "immutable_baseline_cores": 242,
+    "current_cores": 352,
+    "issues": [],
+    "monk_shard": "content/quests/definitions/quests-00200-00299.json"
+  },
+  "protected_projection_digests": {
+    "immutable_inputs": "8b8888b0d60c2ee5edc519ebaf144f48971e18f71e9828aac2ced91f038ef0cc",
+    "approved_graphs": "77daeb7012ba3a472ee7b305de1cd69d8df2cbac3278f09644cdad692bc5b0e4",
+    "approved_core_digests": "a247b0adefb19afed1083bdc1d4a5a1c6305b9d1e4a671643f4690ee3e53e7ae"
+  },
+  "receipt_sha256": "821177de3d311831fc939772206d437080706690a609b3ec2653e18264915d7b",
+  "approval_sha256": "58f9d012fe647a55685825c8c0d297ac4279ff6c53c98f4b6179b78228cf05cd",
+  "candidate_descriptor_rebind": {
+    "computed_in_memory_only": true,
+    "approval_not_granted": true,
+    "requires_existing_writer_and_normal_guard_validation": true,
+    "changed_fields": [
+      "approval:/proof_inputs/1/sha256",
+      "receipt:/proof_inputs/1/sha256",
+      "receipt:/approval/sha256"
+    ],
+    "protected_fields_unchanged": true,
+    "predicted_approval_sha256": "f21a7f740154c22946349ba9bddd379388f967e77c4699ed59c82df61abf4234",
+    "predicted_receipt_sha256": "9974e49b2e0874ed109a22fc9edfaa585d592834299245b4c6d7fff143fb2cf7"
+  },
+  "sources": [
+    {
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/quest-authoring/source_fix_guard.py:17-22,41-98,173-241",
+      "working_sha256": "bdd2a96329c72b70df4fc5c42a32f06f3063c68b7fee4b583a23aa55bf5c9eee",
+      "unchanged_from_baseline": true
+    },
+    {
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/quest-authoring/amend_monk_source_receipt.py:24-85,93-102",
+      "working_sha256": "6ef13056cc46c9263d61415e1bd503f97d31238cf8e63904bbce37627635ec7c",
+      "unchanged_from_baseline": true
+    },
+    {
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/quest-authoring/source_monk_native_guard.py:9-20",
+      "working_sha256": "b6c3c114ee469eef652767d41a8dcaf2482ac28cdce817ba1924d01c5617c9fb",
+      "unchanged_from_baseline": true
+    },
+    {
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/quest-authoring/quest_tree_authoring.py:33-34,146-180",
+      "working_sha256": "64d967028c5d6e8d1ff5ee6c3a07c4e7d47d683b40784c731173152ebadbe45d",
+      "unchanged_from_baseline": true
+    },
+    {
+      "source": "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:tools/content-schema/quest-authoring/samples/completion242/README.md:53-73",
+      "working_sha256": "067a3c3fea85fff2cd994814d3cfd55a0e6cbeac2e4a1fb2052b7c21e9ae6bef",
+      "unchanged_from_baseline": true
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "kind": "panels",
+  "id": "0017-battle-panel",
+  "entry": "view.rs::row_text",
+  "mechanic": "0017-attack",
+  "status": "supported"
+}

@@ -1,0 +1,7 @@
+name=sanction_record
+commands=6240
+transport=sanction_record
+composed=sanction_record
+authority=sanction_record
+[route]
+routing::sanction_record::route(authority, &session.admitted, command).await

@@ -2,7 +2,9 @@
 use super::*;
 
 mod autowalk;
+mod drunk;
 pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
+pub(super) mod monster_trap;
 pub(super) mod special_movement;
 pub(super) mod underwater_drown;
 
@@ -34,31 +36,65 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         expected: Option<crate::foundation::MovementPositionSnapshot>,
         follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> (StepOutcome, Option<Duration>) {
+        if !self.resume_dawnport_departure(actor, session).await {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
+            operator_event("event=step_rejected_dawnport");
+            return (StepOutcome::rejected(), None);
+        }
         if !self.ensure_source_map_initialized().await {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
+            operator_event("event=step_rejected_source_map");
             return (StepOutcome::rejected(), None);
         }
         // DEATH-2 §4.2: a dead player takes no input until its respawn.
         if self.states.spell_states.lock().await.is_dead(actor) {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
+            operator_event("event=step_rejected_dead");
             return (StepOutcome::rejected(), None);
         }
         use crate::movement::{CardinalStep, MovementError};
-        let cardinal = match direction {
-            StepDirection::North => CardinalStep::North,
-            StepDirection::East => CardinalStep::East,
-            StepDirection::South => CardinalStep::South,
-            StepDirection::West => CardinalStep::West,
-        };
         // Preflight SQL shares the field owner's bounded durability holder.
         // Take the lane before those reads so a concurrent field turn cannot
         // exhaust the holder or invalidate their player-state predecessor.
         let Some(mut permit) = self.spell_lane_permit().await else {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
+            operator_event("event=step_rejected_lane");
             return (StepOutcome::rejected(), None);
         };
         if !self.refresh_pvp_locks(actor, session).await {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
+            operator_event("event=step_rejected_pvp_locks");
             return (StepOutcome::rejected(), None);
         }
+        self.refresh_cyclopedia_speed(actor, session).await;
         let equipment = self.read_movement_equipment(actor, session).await;
         let optional_pvp = self.special_movement_policy(&permit, actor, session).await;
+        // Checkout may wait for background durability work. Never wait under
+        // the Channel runtime or spell-state guards; SQL work itself runs once.
+        // Source-qualified blood callbacks also need this read without optional
+        // field capability 30. This is only checkout routing; the locked owner
+        // still proves the current runtime pin and exact scoped Ground custody.
+        let field_pass = if self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .is_some_and(|native| {
+                self.bundle_map().is_none()
+                    || self
+                        .required_capabilities
+                        .effective()
+                        .binary_search(&30)
+                        .is_ok()
+                    || native.qualifies_soul_war_callbacks(native.source_digest())
+            }) {
+            self.acquire_field_step_pass().await
+        } else {
+            Err(crate::gameplay_transport::connection::AdmissionRefusal::Rejected)
+        };
         // Lock order (§1.2): the lane before any Channel guard.
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
@@ -66,6 +102,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // lane or Channel locks. Sample time only after acquiring its owners;
         // field entry must not predate the condition predecessor it observes.
         let now = self.owner_now().get();
+        // Every refusal below returns the field holder observably, after the
+        // Channel guards: a dropped pass returns it only after this task yields,
+        // so the session's next non-blocking checkout would find it busy.
+        if runtime.note_rotten_movement_time(now).is_err() {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
+            drop((states, runtime));
+            let _ = Self::return_unused_field_step_pass(field_pass).await;
+            return (StepOutcome::rejected(), None);
+        }
         // USE-AUTOWALK-1: a relocation (even away and back) invalidates the queued step.
         // Compare while holding the same owner lock as the movement commit.
         if follow.is_some_and(|(target, expected)| {
@@ -82,23 +128,94 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.borrow_movement_position().read(actor) != Ok(expected)
             })
         {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
+            operator_event("event=step_rejected_stale_position");
+            drop((states, runtime));
+            let _ = Self::return_unused_field_step_pass(field_pass).await;
             return (StepOutcome::rejected(), None);
         }
         if states.has_pending_spell_commit(actor, session) {
+            #[cfg(test)]
+            eprintln!("M25 movement preflight rejected at {}", line!());
+            operator_event("event=step_rejected_pending_spell");
+            drop((states, runtime));
+            let _ = Self::return_unused_field_step_pass(field_pass).await;
             return (StepOutcome::rejected(), None);
         }
+        let cardinal = match direction {
+            StepDirection::North => CardinalStep::North,
+            StepDirection::East => CardinalStep::East,
+            StepDirection::South => CardinalStep::South,
+            StepDirection::West => CardinalStep::West,
+            StepDirection::NorthEast => CardinalStep::NorthEast,
+            StepDirection::SouthEast => CardinalStep::SouthEast,
+            StepDirection::SouthWest => CardinalStep::SouthWest,
+            StepDirection::NorthWest => CardinalStep::NorthWest,
+        };
+        // Resolve steering before any direction-dependent field/floor read. Pass
+        // this same frozen `now` to the common movement owner after preflight.
+        let cardinal = match if runtime.forced_player_step_current(actor, session) {
+            Ok(cardinal)
+        } else {
+            states.drome_step_direction(&runtime, actor, session, now, cardinal)
+        } {
+            Ok(direction) => direction,
+            Err(MovementError::Blocked) => {
+                drop((states, runtime));
+                let _ = Self::return_unused_field_step_pass(field_pass).await;
+                return (
+                    StepOutcome {
+                        disposition: StepDisposition::Blocked,
+                        moved_to: None,
+                    },
+                    None,
+                );
+            }
+            Err(_) => {
+                operator_event("event=step_rejected_drome");
+                drop((states, runtime));
+                let _ = Self::return_unused_field_step_pass(field_pass).await;
+                return (StepOutcome::rejected(), None);
+            }
+        };
+        let direction = match cardinal {
+            CardinalStep::North => StepDirection::North,
+            CardinalStep::East => StepDirection::East,
+            CardinalStep::South => StepDirection::South,
+            CardinalStep::West => StepDirection::West,
+            CardinalStep::NorthEast => StepDirection::NorthEast,
+            CardinalStep::SouthEast => StepDirection::SouthEast,
+            CardinalStep::SouthWest => StepDirection::SouthWest,
+            CardinalStep::NorthWest => StepDirection::NorthWest,
+        };
+        let (direction, hicks) = if runtime.forced_player_step_current(actor, session) {
+            (direction, false)
+        } else {
+            drunk::admitted_direction(&mut runtime, &states, actor, session, direction, now)
+        };
+        let cardinal = match direction {
+            StepDirection::North => CardinalStep::North,
+            StepDirection::East => CardinalStep::East,
+            StepDirection::South => CardinalStep::South,
+            StepDirection::West => CardinalStep::West,
+            StepDirection::NorthEast => CardinalStep::NorthEast,
+            StepDirection::SouthEast => CardinalStep::SouthEast,
+            StepDirection::SouthWest => CardinalStep::SouthWest,
+            StepDirection::NorthWest => CardinalStep::NorthWest,
+        };
         // The closed bundle doors are read live per candidate cell, not collected per step: a
         // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
         let (none, bundle_doors, legacy);
         let blocking: &dyn crate::map::floor::CellBlocker = if self
-            .rooms
+            .rooms()
             .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
         {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
             &none
         } else if let Some(map) = self.bundle_map() {
-            bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
+            bundle_doors = crate::map::floor::BundleDoors(&map.facts);
             &bundle_doors
         } else {
             legacy = self.door.lock().await.blocking_cells().clone();
@@ -106,28 +223,65 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let pvp_blocking = super::pvp_live::PvpBlocker {
             inner: blocking,
-            cells: self.movement_cells,
+            cells: self.movement_cells(),
             blocked: super::pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
         };
-        let blocking: &dyn crate::map::floor::CellBlocker = &pvp_blocking;
+        let callback_portals = super::quest_callbacks::CallbackPortals {
+            inner: &pvp_blocking,
+            map: self.bundle_map(),
+            callbacks: self.callback_content(),
+        };
+        let blocking: &dyn crate::map::floor::CellBlocker = &callback_portals;
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
-        // A field-enabled World reads dynamic Ground Items before committing its step.
+        // Environmental StepIn callbacks survive both a missing optional field
+        // capability and loss of volatile MINT hints on owner reconstruction.
+        // The reader and Item writer still prove actual scoped Ground custody.
+        // Field ingress cannot qualify without its registered field-step room
+        // (field_step_ingress.rs); such Worlds keep the ordinary STEP owner.
+        let field_step_room = self.rooms().gate_field_step_ingress().is_some();
+        let native_blood_listener = field_step_room
+            && self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .is_some_and(|native| {
+                    super::soul_war_callbacks::qualifies_source(&runtime, native)
+                });
         let origin = runtime.read_actor_position(actor).ok();
         let snow_origin = self.bundle_map().is_some_and(|map| {
             origin.is_some_and(|at| special_movement::snow_at(map, at.position()))
         });
         let outcome = if self.bundle_map().is_some()
+            && !native_blood_listener
+            && !(field_step_room
+                && origin.is_some_and(|origin| {
+                    states.cloak_blood_ingress_needed(
+                        &runtime,
+                        self.movement_cells(),
+                        actor,
+                        session,
+                        origin,
+                        cardinal,
+                        blocking,
+                    )
+                }))
             && self
                 .required_capabilities
                 .effective()
                 .binary_search(&30)
                 .is_err()
         {
-            states.step_with_creature_field_contact(
+            if Self::return_unused_field_step_pass(field_pass)
+                .await
+                .is_err()
+            {
+                operator_event("event=step_rejected_field_pass_return");
+                return (StepOutcome::rejected(), None);
+            }
+            states.step_with_non_player_field_contact(
                 &mut runtime,
-                self.movement_cells,
+                self.movement_cells(),
                 actor,
                 session,
                 now,
@@ -140,6 +294,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             self.step_with_field_ingress(
                 &mut permit,
+                field_pass,
                 &mut runtime,
                 &mut states,
                 actor,
@@ -151,8 +306,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         };
+        if hicks
+            && matches!(
+                &outcome,
+                Ok(_)
+                    | Err(MovementError::Blocked
+                        | MovementError::Cell(
+                            crate::content::static_cell_engine::StaticCellEngineError::Absent,
+                        ))
+            )
+        {
+            drunk::speech(self, &runtime, actor, session, origin);
+        }
+        #[cfg(test)]
+        if let Err(error) = &outcome {
+            eprintln!("M25 movement commit error={error:?}");
+        }
         match outcome {
             Ok((snapshot, duration)) => {
+                // Crystal hazard_primal.lua:23-55: actual accepted STEP consumes
+                // the exact physical pod, with HP owned by this same player turn.
+                super::primal_pods::step(
+                    self,
+                    &mut runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    now / 1000,
+                );
                 // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
                 // owner turn as the committed step.
                 if let Some(map) = self.bundle_map() {
@@ -177,9 +358,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         underwater_drown::underwater(map, snapshot.position()),
                     );
                 }
-                super::echo_warden::step_in(self, &mut runtime, actor, session, now / 1000);
+                let spite_staged = super::spite_step::stage(
+                    self,
+                    &mut runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    snapshot,
+                )
+                .is_ok();
                 drop(states);
                 drop(runtime);
+                if !spite_staged || !self.resolve_spite_steps(&permit).await {
+                    let runtime = self.runtime.lock().await;
+                    return (
+                        StepOutcome {
+                            disposition: StepDisposition::Moved,
+                            moved_to: self.wire_observation(&runtime, snapshot.position()),
+                        },
+                        Some(duration),
+                    );
+                }
+                let _ = self.resolve_cloak_blood_steps(&permit).await;
+                self.resolve_rotten_movement_callbacks(&permit).await;
+                super::soul_war_world::committed_step(self, actor, session, origin, snapshot, now)
+                    .await;
+                super::primal_callbacks::step_in(self, &permit, actor, session, snapshot, now)
+                    .await;
+                super::rotten_blood_callbacks::step_in(
+                    self, &permit, actor, session, snapshot, now,
+                )
+                .await;
+                super::echo_warden::step_in(self, actor, session, now / 1000).await;
                 if let Some(event) = snowbunny_progress_operation(
                     snow_origin,
                     actor.placement_identity(),
@@ -199,19 +409,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await;
                 }
-                if self
-                    .soulpit_exit_step(actor, session, snapshot.position())
-                    .await
-                    .is_err()
-                {
-                    super::operator_event(
-                        "soulpit_return_pending shared_activity_owner_unavailable",
-                    );
-                }
                 let snapshot = match origin {
                     Some(origin) => {
                         let snapshot = self
                             .citizen_step(actor, session, direction, origin, snapshot)
+                            .await;
+                        let snapshot = self
+                            .soulpit_lobby_step(&permit, actor, session, snapshot)
                             .await;
                         let snapshot = self
                             .step_quest_callback(&permit, actor, session, origin, snapshot)
@@ -220,20 +424,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .step_grizzly_boss(&permit, actor, session, origin, snapshot)
                             .await;
                         self.dawnport_trial_step(actor, session, snapshot).await;
+                        self.cake_errand_step(&permit, actor, session, snapshot)
+                            .await;
                         snapshot
                     }
                     None => snapshot,
                 };
+                self.cyclopedia_step(actor, session, snapshot).await;
+                self.refresh_cyclopedia_speed(actor, session).await;
                 let runtime = self.runtime.lock().await;
                 // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
                 self.states.chat.close_out_of_range(&runtime, session);
-                (
-                    StepOutcome {
-                        disposition: StepDisposition::Moved,
-                        moved_to: Some(Self::observation(&runtime, snapshot.position())),
-                    },
-                    Some(duration),
-                )
+                let outcome = StepOutcome {
+                    disposition: StepDisposition::Moved,
+                    moved_to: self.wire_observation(&runtime, snapshot.position()),
+                };
+                (outcome, Some(duration))
             }
             Err(
                 MovementError::Blocked
@@ -247,7 +453,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 },
                 None,
             ),
-            Err(_) => (StepOutcome::rejected(), None),
+            Err(error) => {
+                // Only the closed variant name is operator evidence; payloads can
+                // contain actor/cell facts and must never enter this event.
+                operator_event(match error {
+                    MovementError::Actor(_) => "event=step_rejected_movement kind=Actor",
+                    MovementError::SnapshotMismatch => {
+                        "event=step_rejected_movement kind=SnapshotMismatch"
+                    }
+                    MovementError::ContextMismatch => {
+                        "event=step_rejected_movement kind=ContextMismatch"
+                    }
+                    MovementError::ScopeMismatch => {
+                        "event=step_rejected_movement kind=ScopeMismatch"
+                    }
+                    MovementError::CoordinateOverflow => {
+                        "event=step_rejected_movement kind=CoordinateOverflow"
+                    }
+                    MovementError::Cell(_) => "event=step_rejected_movement kind=Cell",
+                    MovementError::Blocked => "event=step_rejected_movement kind=Blocked",
+                    MovementError::CapacityExceeded => {
+                        "event=step_rejected_movement kind=CapacityExceeded"
+                    }
+                    MovementError::NotQualified => "event=step_rejected_movement kind=NotQualified",
+                });
+                (StepOutcome::rejected(), None)
+            }
         }
     }
 }
@@ -272,4 +503,40 @@ mod snowbunny_operation_tests {
         );
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), &'static str> {
+    let source = include_str!("paced_movement.rs");
+    let (body, _) = source
+        .split_once("\n#[cfg(test)]\nmod snowbunny_operation_tests")
+        .ok_or("production body")?;
+    for branch in [
+        "dawnport",
+        "source_map",
+        "dead",
+        "lane",
+        "pvp_locks",
+        "stale_position",
+        "pending_spell",
+        "drome",
+        "field_pass_return",
+        "movement",
+    ] {
+        assert!(
+            body.contains(&format!("event=step_rejected_{branch}")),
+            "{branch}"
+        );
+    }
+    assert!(include_str!("field_step_ingress.rs").contains("event=step_rejected_holder_busy"));
+    // The source-owned Rotten movement-time check adds one closed refusal.
+    assert_eq!(
+        body.matches("runtime.note_rotten_movement_time(now).is_err()")
+            .count(),
+        1
+    );
+    assert_eq!(body.matches("StepOutcome::rejected()").count(), 11);
+    assert_eq!(body.matches("operator_event(").count(), 11);
+    Ok(())
 }

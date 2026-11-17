@@ -6,7 +6,8 @@
 //!
 //! Nested under the monk-save PostgreSQL tests to reuse their fresh-admission fixture.
 
-use super::fixture::{Harness, debug, run};
+use super::fixture::{Harness, debug};
+use super::kill_reward_e2e::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
@@ -76,7 +77,7 @@ fn a_bundle_world_owner_requires_18_and_never_holds_domain_2_state() -> TestResu
             .movement_cells(dependencies.room.movement_cells())
             .map_err(debug)?;
         let mut owner = dependencies.owner(&harness, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.required_capabilities =
             crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
                 &[11, CAPABILITY_WORLD_MAP_VIEW_V1, 30],

@@ -1,0 +1,33 @@
+{
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--all-features",
+    "--lib",
+    "quest_catalogue_chests_phase_a_",
+    "--",
+    "--test-threads=2",
+    "--nocapture"
+  ],
+  "exit": 101,
+  "duration_seconds": 442.178,
+  "test_results": {
+    "quest_catalogue_chests_phase_a_01_use_replay_and_refusal": "FAILED",
+    "quest_catalogue_chests_phase_a_02_use_replay_and_refusal": "FAILED",
+    "quest_catalogue_chests_phase_a_03_use_replay_and_refusal": "FAILED",
+    "quest_catalogue_chests_phase_a_04_use_replay_and_refusal": "FAILED",
+    "quest_catalogue_chests_phase_a_05_use_replay_and_refusal": "FAILED",
+    "quest_catalogue_chests_phase_a_06_use_replay_and_refusal": "FAILED",
+    "quest_catalogue_chests_phase_a_07_use_replay_and_refusal": "FAILED",
+    "quest_catalogue_chests_phase_a_08_use_replay_and_refusal": "FAILED",
+    "quest_catalogue_chests_phase_a_09_use_replay_and_refusal": "FAILED",
+    "quest_catalogue_chests_phase_a_10_use_replay_and_refusal": "FAILED",
+    "quest_catalogue_chests_phase_a_11_use_replay_and_refusal": "FAILED"
+  },
+  "qualified_cohorts": 0,
+  "qualified_quests": 0
+}

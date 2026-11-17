@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SanctionPage",
+  "type": "object",
+  "properties": {
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sanctions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Sanction"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "sanctions"
+  ],
+  "$defs": {
+    "Sanction": {
+      "type": "object",
+      "properties": {
+        "account_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "character_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expires_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "sanction_id": {
+          "type": "string"
+        },
+        "starts_at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "sanction_id",
+        "kind",
+        "starts_at",
+        "active"
+      ]
+    }
+  }
+}

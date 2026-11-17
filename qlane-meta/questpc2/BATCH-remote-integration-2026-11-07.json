@@ -1,0 +1,331 @@
+{
+  "state": "GREEN",
+  "lane": "questpc2",
+  "local_green_parent": "5ee9e1c83",
+  "remote_parent": "f9cc1e5508ce71e312bb4806047e6d2628254aed",
+  "reason": "Required pre-push fetch found newer published work overlapping the local bridge; reuse the published owner instead of shipping duplicate mechanisms.",
+  "reused": [
+    "647e33cf3 scoped root owner",
+    "1ee1efc2a native projection binding and exact Primal source corpse checks",
+    "f9cc1e550 source-pinned corpse authoring and guarded canonical-shard fingerprint refresh"
+  ],
+  "published_migration": {
+    "path": "apps/game-server/migrations/1244_instance_corpse_mint.sql",
+    "git_blob": "c89455d0a109379a848015f815f1e3a997b07b48",
+    "byte_identical_to_remote": true,
+    "unpublished_duplicate_removed": "apps/game-server/migrations/1024_instance_creature_mint.sql"
+  },
+  "retained_checks": [
+    "Native real Instance death -> source corpse MINT -> visible binding -> independent W03 custody/replay.",
+    "Raw reservation scope immutability including same-local-UUID Channel substitution.",
+    "Current-owner runtime binding, exact actor scope/generation, stale owner denial.",
+    "Remote foreign permit/no-work-charge and MINT receipt replay checks.",
+    "Remote actual canonical Primal39530 MINT and visible Item identity checks."
+  ],
+  "integration_red": {
+    "seconds": 111.78,
+    "executed": 1,
+    "failed": 1,
+    "reason": "Unpublished exact tag2 assertion mismatched published corpse_ref tag3. Assertion updated to require exactly published3, not to accept multiple formats.",
+    "log": "/tmp/questpc2-remote-integration-native.log"
+  },
+  "python": {
+    "grizzly": {
+      "passed": 7,
+      "seconds": 4.967
+    },
+    "corpse_authoring": {
+      "passed": 10,
+      "seconds": 8.351
+    },
+    "qengine": {
+      "passed": 15,
+      "seconds": 5.667
+    }
+  },
+  "source_scope_note": "Primal canonical admission is already complete and is not reauthored. Missing spell-native provider membership is not authoritative admission evidence. Spite/Bakragore source authoring uses the delivered tools and CONTRACT-NOTES decisions; no external owner deferral.",
+  "validation": [
+    {
+      "name": "primal",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "l3_instance_endgame_primal_native_death_unlocks_hazard_once",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 103.595,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "NATIVE_INSTANCE_CORPSE POSTGRES_CASE_OBSERVED",
+      "passed": true,
+      "log": "/tmp/questpc2-remote-integration-primal.log"
+    },
+    {
+      "name": "soul",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "l3_instance_endgame_soul_war_native_death_progresses_once",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 104.656,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "INSTANCE_CORPSE_MINT POSTGRES_CASE_COMPLETED",
+      "passed": true,
+      "log": "/tmp/questpc2-remote-integration-soul.log"
+    },
+    {
+      "name": "channel",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 104.85,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "CHANNEL_NATIVE_CORPSE POSTGRES_CASE_COMPLETED",
+      "passed": true,
+      "log": "/tmp/questpc2-remote-integration-channel.log"
+    },
+    {
+      "name": "audit",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "item_mint_audit::tests",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 82.09,
+      "counts": [
+        [
+          "31",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-remote-integration-audit.log"
+    },
+    {
+      "name": "corpse-owner",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-entities",
+        "--features",
+        "test-support",
+        "--lib",
+        "corpse",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 1.919,
+      "counts": [
+        [
+          "8",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-remote-integration-corpse-owner.log"
+    },
+    {
+      "name": "migration-numbers",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "migration_numbers_are_unique_and_match_embedded_migrator",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.262,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-remote-integration-migration-numbers.log"
+    },
+    {
+      "name": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-client",
+        "-p",
+        "oteryn-game-server",
+        "-p",
+        "oteryn-gameplay-combat",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-protocol-oteryn"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 92.167,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-remote-integration-check.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-client",
+        "-p",
+        "oteryn-game-server",
+        "-p",
+        "oteryn-gameplay-combat",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 203.053,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-remote-integration-clippy.log"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 15.068,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-remote-integration-fmt.log"
+    }
+  ],
+  "native_green": {
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "postgres_duration_seconds": 109.76,
+    "marker": "INSTANCE_CORPSE POSTGRES_CASE_DURATION elapsed_ms=109760 success=true",
+    "log": "/tmp/questpc2-remote-integration-native-green.log"
+  },
+  "typed_carrier": {
+    "passed": 5,
+    "failed": 0,
+    "ignored": 0,
+    "log": "/tmp/questpc2-remote-integration-typed-carrier.log"
+  },
+  "cache_recovery": {
+    "archives": [
+      "/tmp/questpc2-before-tag3-incremental.tgz",
+      "/tmp/questpc2-obsolete-pre-remote-durability.tgz"
+    ],
+    "verification": "Every regular archived file compared byte-for-byte through SHA256 before removing only older compiler sessions; latest sessions, compiled outputs and PG preserved."
+  }
+}

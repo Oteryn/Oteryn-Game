@@ -1,0 +1,15 @@
+{
+  "mechanic": "0195-weapon-proficiency",
+  "kind": "handlers",
+  "id": "0195-weapon-proficiency-660",
+  "status": "supported",
+  "direction": "client_to_server",
+  "capability": 195,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "The catalogue and progress are server-owned."
+  },
+  "commands": [
+    660
+  ]
+}

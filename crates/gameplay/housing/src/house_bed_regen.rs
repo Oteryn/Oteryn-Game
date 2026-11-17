@@ -2,6 +2,7 @@
 
 /// Apply bounded sleep to durable pools and food milliseconds. Online fractional
 /// periods ride through unchanged; food is charged even when both pools are full.
+/// Saved Soul survives a lower maximum until sleep grants a positive Soul gain.
 #[must_use]
 pub fn settle(
     pools: [u32; 3],
@@ -19,7 +20,11 @@ pub fn settle(
         [
             pools[0].saturating_add(points).min(maxima[0]),
             pools[1].saturating_add(points).min(maxima[1]),
-            pools[2].saturating_add(soul).min(maxima[2]),
+            if soul == 0 {
+                pools[2]
+            } else {
+                pools[2].saturating_add(soul).min(maxima[2])
+            },
         ],
         food_ms.checked_sub(points.checked_mul(30_000)?)?,
     ))

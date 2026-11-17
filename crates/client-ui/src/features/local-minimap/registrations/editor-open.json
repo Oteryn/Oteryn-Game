@@ -1,0 +1,9 @@
+{
+  "mechanic": "local-minimap",
+  "kind": "keybindings",
+  "id": "local-minimap-editor-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+SHIFT+M",
+  "entry": "input.rs::editor_key"
+}

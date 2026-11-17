@@ -1,0 +1,20 @@
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:366:pub(super) fn phase_a_cohort(quests: &[&str]) -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:490:    phase_a_cohort(quests)?;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:571:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:582:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:593:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:604:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:615:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:626:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:637:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:648:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:659:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:670:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:681:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:691:    phase_a_cohort(&["emperor_s_cookies_quest", "life_ring_quest"])
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:699:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:711:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:723:    phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc6_access.rs:9:    super::quest_catalogue_chests::phase_a_cohort(&[
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc6_access.rs:484:    super::quest_catalogue_chests::phase_a_cohort(&["deeper_fibula_quest"])?;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc6_access.rs:495:    super::quest_catalogue_chests::phase_a_cohort(&[

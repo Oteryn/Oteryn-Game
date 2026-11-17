@@ -1,0 +1,17 @@
+{
+  "id": 490,
+  "name": "SERVER_MODAL_INPUT_V1",
+  "constant": "server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1",
+  "requires": [
+    450
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

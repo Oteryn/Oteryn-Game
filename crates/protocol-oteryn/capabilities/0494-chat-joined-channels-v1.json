@@ -1,0 +1,17 @@
+{
+  "id": 494,
+  "name": "CHAT_JOINED_CHANNELS_V1",
+  "constant": "chat::private_channel_extended::CAPABILITY_CHAT_JOINED_CHANNELS_V1",
+  "requires": [
+    80
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-quests --lib tutorial_corruptor_rewards_use_source_items_and_base_vocations",
+  "exit": 0,
+  "duration_seconds": 0.273
+}

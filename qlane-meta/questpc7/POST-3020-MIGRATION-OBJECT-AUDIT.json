@@ -1,0 +1,78 @@
+{
+  "main": "1ae39c7fb9bef09c3cd50d16410374f4134b1676",
+  "shared_migrations": "0999-1008 consumed byte-exact",
+  "no_1200_1205_files_remain": true,
+  "lane_only_forward_changes": [
+    {
+      "removed_file": "1201_corruptor_lifecycle.sql",
+      "defined_objects": [],
+      "objects_mentioned_on_main": []
+    },
+    {
+      "removed_file": "1203_questpc_viola.sql",
+      "defined_objects": [
+        "game_character_viola",
+        "game_viola_receipts",
+        "game_viola_complete",
+        "game_viola_handoff_proven",
+        "game_viola_state_guard",
+        "game_viola_state_proven"
+      ],
+      "objects_mentioned_on_main": []
+    },
+    {
+      "removed_file": "1204_questpc_viola_book.sql",
+      "defined_objects": [
+        "game_character_viola_book_cycles",
+        "game_viola_book_now_ms",
+        "game_viola_book_cycle_guard",
+        "game_viola_book_receipt_guard"
+      ],
+      "objects_mentioned_on_main": []
+    },
+    {
+      "removed_file": "1205_fathers_burden_items.sql",
+      "defined_objects": [
+        "game_father_values_proven"
+      ],
+      "objects_mentioned_on_main": []
+    },
+    {
+      "removed_file": "1200_quest_finish.sql",
+      "defined_objects": [
+        "game_reward_claim_fluid_plan_valid",
+        "game_reward_claim_fluid_initialization_proven",
+        "game_reward_claim_fluids_complete",
+        "game_reward_claim_charges_plan_valid",
+        "game_reward_claim_charge_initialization_proven",
+        "game_reward_claim_charges_complete",
+        "game_quest_npc_program_receipts",
+        "game_quest_npc_program_response_guard",
+        "game_character_falcon_chest_cycles",
+        "game_falcon_now_ms",
+        "game_falcon_draw_index",
+        "game_falcon_cycle_guard",
+        "game_falcon_receipt_guard"
+      ],
+      "objects_mentioned_on_main": []
+    },
+    {
+      "removed_file": "1202_questpc_npc_revision.sql",
+      "defined_objects": [],
+      "objects_mentioned_on_main": []
+    }
+  ],
+  "renames": {
+    "1284_quest_backpack_outputs.sql": "1288_quest_backpack_outputs.sql",
+    "1283_quest_world_item_rewards.sql": "1287_quest_world_item_rewards.sql",
+    "1282_quest_repeatable_exchanges.sql": "1286_quest_repeatable_exchanges.sql",
+    "1281_fathers_burden_xp_proof_name.sql": "1285_fathers_burden_xp_proof_name.sql",
+    "1280_npc_quest_item_exchange.sql": "1284_npc_quest_item_exchange.sql",
+    "1200_quest_finish.sql": "1280_quest_native_reward_initialization.sql",
+    "1201_corruptor_lifecycle.sql": "1281_quest_corruptor_lifecycle.sql",
+    "1202_questpc_npc_revision.sql": "1282_quest_native_npc_revision.sql",
+    "1203_questpc_viola.sql": "1283_quest_viola_rewards.sql",
+    "1205_fathers_burden_items.sql": "1282_quest_native_npc_revision.sql",
+    "1204_questpc_viola_book.sql": "1283_quest_viola_rewards.sql"
+  }
+}

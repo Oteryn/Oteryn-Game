@@ -17,6 +17,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+#[path = "session_ingress/buffered_step.rs"]
+mod buffered_step;
+#[cfg(test)]
+#[path = "session_ingress/buffered_step_tests.rs"]
+mod buffered_step_tests;
 #[path = "session_ingress/native.rs"]
 mod native;
 #[cfg(test)]
@@ -41,6 +46,7 @@ struct PendingDelivery {
     command: u64,
     selected: SelectedCapabilities,
     proven_native: Option<ProvenNativeReply>,
+    buffered_step: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -335,6 +341,7 @@ impl SessionCommands {
     pub(super) fn recover_trade_continuity(&self, admitted: &mut AdmittedSession) -> Option<()> {
         let commands = self.0.lock().ok()?;
         let mut state = commands.get(&admitted.game_session_id)?.lock().ok()?;
+        state.complete_discarded_step(admitted)?;
         state.complete_native_if_disconnected()?;
         let (next, sequence) = state.recovered_continuity(
             admitted.continuity.next_command_id,
@@ -462,6 +469,13 @@ impl SessionCommandStream {
         match state.ingress.classify_duplicate(id, &identity) {
             DuplicateDisposition::PendingOriginal => {
                 return Ok(if buffered_original {
+                    // Taking the original out of its pacing buffer is not terminal proof.
+                    // Before any execution await, stop treating it as never dispatched.
+                    let pending = state.pending_delivery.as_mut().ok_or(unavailable)?;
+                    if pending.command != command {
+                        return Err(unavailable);
+                    }
+                    pending.buffered_step = false;
                     CommandAction::Execute
                 } else {
                     CommandAction::Pending
@@ -492,6 +506,7 @@ impl SessionCommandStream {
                     command,
                     selected: self.selected,
                     proven_native: None,
+                    buffered_step: false,
                 });
                 state.reconciled_sequence = None;
                 Ok(CommandAction::Execute)
@@ -505,6 +520,61 @@ impl SessionCommandStream {
                 Err(unavailable)
             }
         }
+    }
+
+    /// Teardown owns a STEP still in its transport buffer, so it proves that this
+    /// exact original never entered movement. Retain its refusal rather than leave
+    /// an unknown reservation. A taken buffer or an in-flight owner is not proof.
+    pub(super) fn cancel_buffered_step(
+        &mut self,
+        frame: &[u8],
+        generation: u64,
+        server_sequence: u64,
+    ) -> Option<()> {
+        use oteryn_protocol_oteryn::world_spatial::{
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDisposition, decode_step_intent_selected,
+            encode_step_outcome,
+        };
+        let Some(entry) = &self.state else {
+            return Some(());
+        };
+        let envelope = oteryn_protocol_oteryn::decode_wire_envelope(frame).ok()?;
+        let command = envelope.client_command(generation).ok()?;
+        if command.command_type != COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
+            || decode_step_intent_selected(self.selected.as_slice(), command.payload).is_err()
+        {
+            return None;
+        }
+        let id = CommandId::new(command.command_id).ok()?;
+        let result_sequence = server_sequence.checked_add(1)?;
+        let mut state = entry.lock().ok()?;
+        let pending = state.pending_delivery?;
+        if !state.active
+            || state.activity_recovery
+            || state.ingress.outstanding() != 1
+            || pending.command != command.command_id
+            || pending.generation != generation
+            || pending.selected != self.selected
+            || pending.proven_native.is_some()
+            || command.command_id.checked_add(1) != Some(self.next)
+            || state.ingress.next_command_id().map(CommandId::get) != Some(self.next)
+            || state.result_sequence_floor > server_sequence
+            || pending.sequence > result_sequence
+            || !matches!(
+                state.ingress.classify_duplicate(id, &semantic(id)?),
+                DuplicateDisposition::PendingOriginal
+            )
+        {
+            return None;
+        }
+        // Periodic pushes may have advanced the wire while the STEP waited. The
+        // retained cancellation follows the actual final sequence, not its reservation.
+        state.pending_delivery.as_mut()?.sequence = result_sequence;
+        state.complete_reconciled(
+            id,
+            true,
+            &encode_step_outcome(self.selected.as_slice(), StepDisposition::Rejected, 0),
+        )
     }
 
     #[cfg(test)]

@@ -66,9 +66,22 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--crystal', type=Path, required=True)
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--questpc4', action='store_true')
     args = parser.parse_args()
-    target = Path(__file__).with_name('container_native_source.json')
-    text = json.dumps(capture(args.crystal), indent=2, sort_keys=True) + '\n'
+    if args.questpc4:
+        raw, table = read(args.crystal, TABLE)
+        fields = lua_tables.assignments(table, {'ChestUnique'})['ChestUnique']['fields']
+        value = {'schema': 'OTERYN_QUESTPC4_FULL_CHARGE_SOURCE/v1',
+                 'revision': REVISION, 'source_path': TABLE, 'source_blob_sha1': BLOBS[TABLE],
+                 'source_sha256': hashlib.sha256(raw).hexdigest(),
+                 'entries': [{'unique_id': f['key'], 'line': f['line'],
+                              'setting': lua_tables.as_python(f['value'])}
+                             for f in fields if f['key'] in (6039, 6043, 6051)]}
+        target = Path(__file__).with_name('questpc4_charge_source.json')
+    else:
+        value = capture(args.crystal)
+        target = Path(__file__).with_name('container_native_source.json')
+    text = json.dumps(value, indent=2, sort_keys=True) + '\n'
     if args.check:
         if target.read_text() != text: parser.exit(1, 'container source capture is stale\n')
     else:

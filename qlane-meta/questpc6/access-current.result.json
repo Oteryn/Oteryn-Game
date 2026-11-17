@@ -1,0 +1,11 @@
+{
+  "command": "CARGO_BUILD_JOBS=3 /home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --lib questpc6_ -- --nocapture --test-threads=1",
+  "exit_code": 0,
+  "passed": 5,
+  "failed": 0,
+  "test_duration_seconds": 426.13,
+  "log": ".questpc6/access-current.log",
+  "log_sha256": "4fc7ec5b242a740bc3a38413cb4b1c55ac7118c64904d05cef9d6b239d907f8b",
+  "source_hash_record": ".questpc6/access-current-source.sha256",
+  "scope": "five access/reward cases before adding strict SOURCE inventory and stale USE refusal assertions"
+}

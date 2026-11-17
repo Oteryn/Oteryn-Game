@@ -1,0 +1,14 @@
+{
+  "id": 480,
+  "name": "SPELL_AIM_MODE_V1",
+  "owner_decision": "WU26-14 Winter Update 2026 test server spellcasting target options (thread 567); parity rule: current Tibia test server",
+  "owner": "current ChannelRuntime ordinary spell cast owner",
+  "requires": [],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only. Extends command3 intent with field 5 aim_mode FACING=1, CURSOR=2 (with POSITION target_position), TARGET=3 (with NONE); aim_at_target must be false with it. Without selection field 5 fails closed and the old aim_at_target keeps its meaning. A wave or beam aims on a cardinal direction (east/west win ties) with the caster-adjacent origin and never turns the character. Byte bound 32 unchanged.",
+  "extends_core_commands": [
+    3
+  ]
+}

@@ -123,6 +123,7 @@ pub(super) fn native_switch_with_pin() -> Result<
         ..source
     };
     let payload = encode_activity_scope(&ActivityScopeSnapshot {
+        requires_ack: false,
         handoff: id(10),
         source_session: *source_session.as_bytes(),
         session: *destination_session.as_bytes(),
@@ -138,6 +139,7 @@ pub(super) fn native_switch_with_pin() -> Result<
     .map_err(debug)?;
     Ok((
         ActivityConnectionSwitch {
+            movement_effect_start: None,
             source,
             destination,
             payload,

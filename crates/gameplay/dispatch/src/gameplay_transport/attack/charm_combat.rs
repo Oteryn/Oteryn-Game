@@ -1,13 +1,130 @@
 //! Charm consumers at the existing attack, leech and source damage seams.
 use super::*;
+use sha2::{Digest, Sha256};
+pub(in crate::gameplay_transport) mod source_vitals;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use oteryn_gameplay_progression::charm_effects::{
     CharmCatalogueRead, CharmDamageKind, CharmEffectOutcome, CharmElement, CharmHookEvent,
     CharmOutcome, CharmResult,
 };
 
+#[derive(Debug)]
+pub(super) struct DeathCharmSnapshot {
+    pub(super) actor: ExactActorRef,
+    pub(super) session: GameSessionId,
+    stamp: crate::foundation::RuntimeWorkStamp,
+    loss: crate::durability::character_death::promotion::DeathCharmLoss,
+}
+
+impl ChannelAttackStates {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the exact lethal source, actor/session and death occurrence are independently retained"
+    )]
+    pub(in crate::gameplay_transport) fn capture_death_charm(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+        catalogue: &dyn CharmCatalogueRead,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        source: ExactActorRef,
+        death: [u8; 16],
+        root: &GameplayDecisionRoot,
+    ) {
+        if self
+            .death_charms
+            .iter()
+            .any(|entry| entry.actor == actor && entry.session == session)
+            || self.death_charms.len() >= runtime.actor_slot_capacity()
+        {
+            return;
+        }
+        // The already admitted hit still lands if Parry killed its source in this
+        // owner turn. The exact incarnation's retained policy remains its race proof.
+        let Ok(snapshot) = runtime.companion_snapshot_including_dead(source) else {
+            return;
+        };
+        if snapshot.state.master.is_some() || snapshot.state.policy.is_familiar {
+            return;
+        }
+        let race = &snapshot.state.policy.definition_key;
+        let outcome = evaluate(
+            states,
+            runtime,
+            catalogue,
+            actor,
+            session,
+            race,
+            root,
+            DecisionOccurrenceId::from_bytes(death),
+            CharmHookEvent::CharacterDeath,
+        )
+        .into_iter()
+        .find_map(|outcome| match effect(&outcome) {
+            Some(CharmEffectOutcome::DeathLossReduction { percent }) => {
+                u8::try_from(percent.hundredths() / 100)
+                    .ok()
+                    .map(|percent| (outcome.stage, percent))
+            }
+            _ => None,
+        });
+        let Some((stage, percent)) = outcome else {
+            return;
+        };
+        let Ok(stamp) = runtime.issue_owner_work() else {
+            return;
+        };
+        if self.death_charms.try_reserve(1).is_err() {
+            return;
+        }
+        self.death_charms.push(DeathCharmSnapshot {
+            actor,
+            session,
+            stamp,
+            loss: crate::durability::character_death::promotion::DeathCharmLoss {
+                death_occurrence: death,
+                source_actor: source.placement_identity(),
+                race_key: race.clone(),
+                stage,
+                percent,
+            },
+        });
+    }
+
+    pub(in crate::gameplay_transport) fn death_charm(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        session: GameSessionId,
+        death: [u8; 16],
+    ) -> Option<crate::durability::character_death::promotion::DeathCharmLoss> {
+        let entry = self
+            .death_charms
+            .iter()
+            .find(|entry| entry.session == session && entry.loss.death_occurrence == death)?;
+        runtime
+            .player_control_facts(entry.actor, session)
+            .ok()
+            .filter(|facts| facts.control_loss.is_none())?;
+        runtime
+            .owner_fence()
+            .ok()
+            .filter(|fence| fence.accepts_stamp(entry.stamp))?;
+        Some(entry.loss.clone())
+    }
+
+    pub(in crate::gameplay_transport) fn clear_death_charm(
+        &mut self,
+        session: GameSessionId,
+        death: [u8; 16],
+    ) {
+        self.death_charms
+            .retain(|entry| entry.session != session || entry.loss.death_occurrence != death);
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
-pub(super) fn evaluate(
+pub(in crate::gameplay_transport) fn evaluate(
     states: &ChannelSpellStates,
     runtime: &ChannelRuntimeV1,
     catalogue: &dyn CharmCatalogueRead,
@@ -38,7 +155,7 @@ pub(super) fn evaluate(
 
 // The pure evaluator still identifies historically unavailable systems. Only these consumers
 // discharge that marker locally; all other FailedClosed outcomes stay unapplied.
-pub(super) fn effect(outcome: &CharmOutcome) -> Option<CharmEffectOutcome> {
+pub(in crate::gameplay_transport) fn effect(outcome: &CharmOutcome) -> Option<CharmEffectOutcome> {
     match outcome.result {
         CharmResult::Applied(effect)
         | CharmResult::FailedClosed {
@@ -85,27 +202,109 @@ pub(super) fn bonuses(
     outcomes: &[CharmOutcome],
 ) {
     for outcome in outcomes {
-        let (slot, percent) = match effect(outcome) {
+        let (slot, percent, requires_existing_skill) = match effect(outcome) {
             Some(CharmEffectOutcome::CriticalHitChanceBonus { percent }) => {
-                (&mut offence.critical_chance, percent)
+                (&mut offence.critical_chance, percent, false)
             }
             Some(CharmEffectOutcome::CriticalExtraDamageBonus { percent }) => {
-                (&mut offence.critical_damage, percent)
+                (&mut offence.critical_damage, percent, false)
             }
             Some(CharmEffectOutcome::LifeLeechBonus { percent }) => {
-                (&mut offence.life_leech, percent)
+                (&mut offence.life_leech, percent, true)
             }
             Some(CharmEffectOutcome::ManaLeechBonus { percent }) => {
-                (&mut offence.mana_leech, percent)
+                (&mut offence.mana_leech, percent, true)
             }
             _ => continue,
         };
-        // Charms augment the corresponding equipment skill; they do not grant it.
-        if *slot == 0 {
+        // CipSoft news 8421: critical chance and extra damage exist intrinsically
+        // (5% / 10%) even when their additional equipment fields are zero.
+        // Leech has no intrinsic amount, so its existing-skill rule is unchanged.
+        if requires_existing_skill && *slot == 0 {
             continue;
         }
         *slot = slot.saturating_add(u16::try_from(percent.hundredths()).unwrap_or(u16::MAX));
     }
+}
+
+/// The committed hit's passive contributions. Secondary auto targets receive
+/// no ordinary equipment Leech, but retain the accepted D186 charm exceptions.
+pub(in crate::gameplay_transport) fn committed_hit_bonuses(
+    offence: &mut oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    outcomes: &[CharmOutcome],
+    off_target: bool,
+) {
+    let ordinary = (offence.life_leech, offence.mana_leech);
+    // Eligibility uses the original installed skill. Zeroing it first would
+    // also suppress the two D186 secondary-target charm exceptions.
+    bonuses(offence, outcomes);
+    if off_target {
+        offence.life_leech = offence.life_leech.saturating_sub(ordinary.0);
+        offence.mana_leech = offence.mana_leech.saturating_sub(ordinary.1);
+    }
+}
+
+/// Feed passive Low Blow / Savage Blow into the real numerical spell owner.
+/// No chance is rolled here: the qualified AoE owner retains its common roll.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "current actor, source catalogue and spell provenance stay explicit"
+)]
+pub(in crate::gameplay_transport) fn select_spell_critical(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    actor: ExactActorRef,
+    command: CommandRef,
+    magnitude: &mut crate::spell::magnitude_owner::PreparedMagnitudeOwner,
+) -> Result<(), crate::spell::combat_batch::Error> {
+    use crate::spell::combat_batch::Error;
+    let offence = super::equipped_offence::attacker_offence(
+        states,
+        runtime,
+        actor,
+        command.game_session_id(),
+    );
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    let hash = Sha256::new()
+        .chain_update(b"oteryn:spell-passive-charm:v1")
+        .chain_update(actor.placement_identity())
+        .chain_update(command.command_id().get().to_le_bytes())
+        .finalize();
+    let mut bytes = [0; 16];
+    bytes.copy_from_slice(&hash[..16]);
+    let occurrence = DecisionOccurrenceId::from_bytes(bytes);
+    let mut selected = Vec::new();
+    for (target, race) in magnitude.charm_targets() {
+        let outcomes = evaluate(
+            states,
+            runtime,
+            catalogue,
+            actor,
+            command.game_session_id(),
+            race,
+            &root,
+            occurrence,
+            CharmHookEvent::AttackDamageCalculation {
+                source: oteryn_gameplay_progression::charm_effects::CharmHitSource::CharacterAttack,
+            },
+        );
+        let mut augmented = offence.clone();
+        bonuses(&mut augmented, &outcomes);
+        let chance = augmented
+            .critical_chance
+            .saturating_sub(offence.critical_chance);
+        let extra = augmented
+            .critical_damage
+            .saturating_sub(offence.critical_damage);
+        if chance != 0 || extra != 0 {
+            selected
+                .try_reserve(1)
+                .map_err(|_| Error::AllocationFailed)?;
+            selected.push((target, chance, extra));
+        }
+    }
+    magnitude.select_charm_critical(selected)
 }
 
 pub(super) fn damage_amount(
@@ -147,6 +346,270 @@ pub(super) fn damage_amount(
     Some(amount)
 }
 
+/// Cripple/Numb use the existing native actor condition owner and its immunity/CAS rules.
+/// Canary 47dfd51f iobestiary.cpp:105-109,149-153; condition.cpp:2542-2553.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "native source, target, session and deterministic occurrence remain explicit"
+)]
+pub(super) fn paralyse_creature(
+    runtime: &mut ChannelRuntimeV1,
+    source: ExactActorRef,
+    session: GameSessionId,
+    target: ExactActorRef,
+    duration_ms: u32,
+    root: &GameplayDecisionRoot,
+    occurrence: DecisionOccurrenceId,
+    now: u64,
+) -> bool {
+    use crate::foundation::{
+        ActorConditionTransition, ApplicationFacts, ConditionDefinition, ConditionSource,
+        ConditionSourceKind, ConditionValues, SpeedRange,
+    };
+    let Ok(snapshot) = runtime.companion_snapshot(target) else {
+        return false;
+    };
+    if snapshot.health <= 0 || snapshot.state.master.is_some() || snapshot.state.policy.is_familiar
+    {
+        return false;
+    }
+    let Ok(base_speed) = u16::try_from(snapshot.state.policy.base_speed) else {
+        return false;
+    };
+    let Some(definition) = ConditionDefinition::new(
+        "oteryn:charm.paralysis",
+        1,
+        ConditionValues::Speed {
+            paralysis: true,
+            range: SpeedRange {
+                a_min: -1000,
+                a_max: -1000,
+                b_min: 0,
+                b_max: 0,
+            },
+            duration_ms,
+        },
+    ) else {
+        return false;
+    };
+    let facts = ApplicationFacts {
+        now,
+        base_speed,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: false,
+        decision_root: root,
+        occurrence,
+    };
+    let time = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now);
+    let Ok(plan) = runtime.prepare_actor_condition(
+        target,
+        None,
+        ActorConditionTransition::Apply {
+            definition: &definition,
+            source: ConditionSource {
+                actor: source,
+                session: Some(session),
+                kind: ConditionSourceKind::Player,
+            },
+            immunities: &snapshot.state.policy.condition_immunities,
+            facts,
+        },
+        time,
+    ) else {
+        return false;
+    };
+    matches!(runtime.commit_actor_condition(&plan, time), Ok(true))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn evaluate_incoming_category(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    root: &GameplayDecisionRoot,
+    target: ExactActorRef,
+    session: GameSessionId,
+    race: &str,
+    occurrence: DecisionOccurrenceId,
+    base_damage: u32,
+    category: oteryn_gameplay_progression::charm_effects::CharmCategory,
+    source_alive: bool,
+) -> Vec<CharmOutcome> {
+    evaluate_event_category(
+        states,
+        runtime,
+        catalogue,
+        root,
+        target,
+        session,
+        race,
+        occurrence,
+        CharmHookEvent::IncomingCreatureHit {
+            base_damage: u64::from(base_damage),
+        },
+        category,
+        source_alive,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn evaluate_event_category(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    root: &GameplayDecisionRoot,
+    target: ExactActorRef,
+    session: GameSessionId,
+    race: &str,
+    occurrence: DecisionOccurrenceId,
+    event: CharmHookEvent,
+    category: oteryn_gameplay_progression::charm_effects::CharmCategory,
+    source_alive: bool,
+) -> Vec<CharmOutcome> {
+    use oteryn_gameplay_progression::charm_effects::{
+        CharmEvaluationInput, evaluate_charm_hook_category,
+    };
+    let Ok(lease) = runtime.bound_attacker_lease(target, session) else {
+        return Vec::new();
+    };
+    let Some(state) = states.charm_state(runtime, target, session) else {
+        return Vec::new();
+    };
+    // Void Inversion owns the minor slot. Another minor has no mana-drain hook;
+    // do not let the evaluator's legacy mana event draw its health-hit effect.
+    if matches!(event, CharmHookEvent::IncomingManaDrain { .. }) {
+        let Ok(assignments) =
+            oteryn_gameplay_progression::charm_effects::CharmStateRead::assignments_for_race(
+                state, race,
+            )
+        else {
+            return Vec::new();
+        };
+        if !assignments.iter().any(|assignment| {
+            catalogue
+                .charm(&assignment.charm_key)
+                .is_some_and(|definition| {
+                    definition.effect().hook()
+                        == oteryn_gameplay_progression::charm_effects::CharmHook::IncomingManaDrain
+                })
+        }) {
+            return Vec::new();
+        }
+    }
+    evaluate_charm_hook_category(
+        &CharmEvaluationInput {
+            character: *lease.character_id().as_bytes(),
+            race_key: race,
+            decision_root: root,
+            occurrence,
+            event,
+        },
+        state,
+        catalogue,
+        Some(category),
+        source_alive,
+    )
+    .unwrap_or_default()
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn prepare_incoming(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    root: &GameplayDecisionRoot,
+    source: ExactActorRef,
+    target: ExactActorRef,
+    session: GameSessionId,
+    base_damage: u32,
+    text: &str,
+    identity: Option<DecisionOccurrenceId>,
+) -> Option<(DecisionOccurrenceId, String, u32)> {
+    let creature = runtime.companion_snapshot(source).ok()?;
+    if base_damage == 0 || creature.state.master.is_some() || creature.state.policy.is_familiar {
+        return None;
+    }
+    let race = creature.state.policy.definition_key.clone();
+    let digest = Sha256::new()
+        .chain_update(b"oteryn.charm.source.v1")
+        .chain_update(text.as_bytes())
+        .finalize();
+    let mut bytes = [0; 16];
+    bytes.copy_from_slice(&digest[..16]);
+    let occurrence = identity.unwrap_or_else(|| DecisionOccurrenceId::from_bytes(bytes));
+    let major = evaluate_incoming_category(
+        states,
+        runtime,
+        catalogue,
+        root,
+        target,
+        session,
+        &race,
+        occurrence,
+        base_damage,
+        oteryn_gameplay_progression::charm_effects::CharmCategory::Major,
+        true,
+    );
+    let amount = major
+        .iter()
+        .find_map(|outcome| match effect(outcome) {
+            Some(CharmEffectOutcome::ReflectDamage { damage, amount }) => {
+                let draw = oteryn_simulation_determinism::deterministic_decision_u64(
+                    root,
+                    occurrence,
+                    "charm.parry-armor",
+                    0,
+                )
+                .ok()?;
+                damage_amount(runtime, source, damage, amount, draw)
+            }
+            _ => None,
+        })
+        .unwrap_or(0);
+    Some((occurrence, race, amount))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn apply_incoming_minor(
+    states: &mut ChannelSpellStates,
+    runtime: &mut ChannelRuntimeV1,
+    root: &GameplayDecisionRoot,
+    source: ExactActorRef,
+    target: ExactActorRef,
+    session: GameSessionId,
+    occurrence: DecisionOccurrenceId,
+    now: u64,
+    outcomes: &[CharmOutcome],
+) {
+    for outcome in outcomes {
+        match effect(outcome) {
+            Some(CharmEffectOutcome::ParalyseCreature { duration_ms }) => {
+                paralyse_creature(
+                    runtime,
+                    target,
+                    session,
+                    source,
+                    duration_ms,
+                    root,
+                    occurrence,
+                    now,
+                );
+            }
+            Some(
+                effect @ (CharmEffectOutcome::Haste { .. }
+                | CharmEffectOutcome::CleanseOneNegativeCondition),
+            ) => {
+                states.apply_player_charm_condition(
+                    runtime, target, session, effect, root, occurrence, now,
+                );
+            }
+            _ => {}
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
@@ -155,7 +618,7 @@ mod tests {
     use crate::gameplay_transport::actor_spell::tests::runtime_with_player;
 
     #[test]
-    fn charm_bonuses_augment_only_existing_equipment_skills() {
+    fn charm_bonuses_augment_intrinsic_critical_but_require_existing_leech() {
         use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
         use oteryn_gameplay_progression::charm_effects::{
             CharmHook, CharmMissingSystem, CharmPercent,
@@ -180,7 +643,17 @@ mod tests {
         .collect();
         let mut empty = EquippedOffence::default();
         bonuses(&mut empty, &outcomes);
-        assert_eq!(empty, EquippedOffence::default());
+        assert_eq!(
+            (
+                empty.critical_chance,
+                empty.critical_damage,
+                empty.life_leech,
+                empty.mana_leech
+            ),
+            (400, 400, 0, 0),
+            "CipSoft 8421: both critical bonuses augment innate skills without Strike; no free leech"
+        );
+        assert_eq!(empty.player_critical(), (900, 1400));
         let mut equipped = EquippedOffence::from_sums(100, 5000, 100, 200);
         bonuses(&mut equipped, &outcomes);
         assert_eq!(

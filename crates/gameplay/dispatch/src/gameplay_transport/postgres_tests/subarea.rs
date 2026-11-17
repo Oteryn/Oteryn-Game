@@ -18,6 +18,7 @@ impl compile::KeyResolver for Ground {
             kind: bundle::TerrainKind::Ground,
             walkable: Some(true),
             ground_speed: Some(150),
+            blocks_projectile: None,
         }))
     }
     fn floor_change(&self, _: &str) -> bool {
@@ -25,7 +26,7 @@ impl compile::KeyResolver for Ground {
     }
 }
 
-fn world(
+pub(super) fn world(
     deps: &Dependencies,
     generation: &crate::content::ActiveGeneration,
 ) -> TestResult<crate::map::boot::BundleWorld> {
@@ -167,7 +168,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
         assert!(owner.subarea_available());

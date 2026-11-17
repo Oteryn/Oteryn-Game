@@ -5,6 +5,6 @@
   "capability": 9,
   "payload_schema": "docs/contracts/protocol-oteryn/v1/highscores_v1.proto#HighscoresQueryV1",
   "result_schema": "docs/contracts/protocol-oteryn/v1/highscores_v1.proto#HighscoresResultV1",
-  "max_payload_bytes": 25,
-  "max_result_payload_bytes": 9878
+  "max_payload_bytes": 45,
+  "max_result_payload_bytes": 9899
 }

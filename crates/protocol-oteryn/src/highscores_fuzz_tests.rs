@@ -9,6 +9,8 @@ fn fuzz_decode_highscores_query() {
     crate::decoder_fuzz_support::codec(
         "decode_highscores_query",
         |rng| HighscoresQuery {
+            world: None,
+            details: false,
             category: 1,
             vocation: 0,
             page: 1,

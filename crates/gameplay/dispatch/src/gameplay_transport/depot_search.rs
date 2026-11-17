@@ -88,7 +88,7 @@ pub(super) async fn execute(
             states.has_pending_spell_commit(actor, admitted.game_session_id),
         )
         .is_none()
-            || super::bundle_map_position(&mut runtime, owner.movement_cells, actor)
+            || super::bundle_map_position(&mut runtime, owner.movement_cells(), actor)
                 .as_ref()
                 .and_then(super::depot::locker)
                 .is_none()

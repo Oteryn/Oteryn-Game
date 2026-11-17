@@ -43,16 +43,22 @@ pub fn creature_label(key: &str) -> String {
 
 pub fn slot_text(slot: &prey::Slot) -> String {
     if slot.state == 0 {
-        return format!("Slot {} · Locked", slot.slot);
+        return lfmt!("Slot {} · Locked", slot.slot);
     }
     if slot.selected.is_empty() {
-        return format!("Slot {} · Choose a creature", slot.slot);
+        return lfmt!("Slot {} · Choose a creature", slot.slot);
     }
-    let bonus = ["None", "Damage", "Defense", "Experience", "Loot"]
-        .get(usize::from(slot.bonus))
-        .copied()
-        .unwrap_or("Unknown");
-    format!(
+    let bonus = [
+        tr!("None"),
+        tr!("Damage"),
+        tr!("Defense"),
+        tr!("Experience"),
+        tr!("Loot"),
+    ]
+    .get(usize::from(slot.bonus))
+    .copied()
+    .unwrap_or(tr!("Unknown"));
+    lfmt!(
         "Slot {} · {}\r\n{} +{}% · grade {} · {} min",
         slot.slot,
         creature_label(&slot.selected),
@@ -65,23 +71,23 @@ pub fn slot_text(slot: &prey::Slot) -> String {
 
 pub fn panel_text(panel: &PreyPanel) -> String {
     if !panel.selected {
-        return "Prey is unavailable in this session.".into();
+        return tr!("Prey is unavailable in this session.").into();
     }
     if let Some(feedback) = panel.feedback {
         return feedback.into();
     }
     if panel.pending.is_some() {
-        return "Waiting for the server…".into();
+        return tr!("Waiting for the server…").into();
     }
     let Some(reply) = &panel.confirmed else {
-        return "Loading Prey…".into();
+        return tr!("Loading Prey…").into();
     };
-    let mut text = format!(
+    let mut text = lfmt!(
         "Wildcards: {} · {} creatures per list{}",
         reply.wildcard_balance,
         reply.list_size,
         if reply.expansion_owned {
-            " · Prey List Expansion"
+            tr!(" · Prey List Expansion")
         } else {
             ""
         }
@@ -89,7 +95,7 @@ pub fn panel_text(panel: &PreyPanel) -> String {
     for slot in &reply.slots {
         let _ = write!(text, "\n{}", slot_text(slot));
         if !slot.creatures.is_empty() {
-            let _ = write!(text, "\n  Candidates: {}", slot.creatures.join(", "));
+            let _ = lwrite!(text, "\n  Candidates: {}", slot.creatures.join(", "));
         }
     }
     text

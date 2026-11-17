@@ -1,0 +1,20 @@
+crates/gameplay/dispatch/src/gameplay_transport/boss_activity.rs
+crates/gameplay/dispatch/src/gameplay_transport/endgame_entry.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs
+crates/gameplay/durability/src/durability/activity_handoff/boss_room.rs
+crates/gameplay/durability/src/durability/activity_handoff/boss_room/quest_entry.rs
+crates/gameplay/durability/src/durability/quest_state/rotten_blood.rs
+crates/gameplay/durability/src/durability/quest_state/soul_war.rs
+crates/gameplay/durability/src/durability/quest_state/soul_war/storage.rs
+
+Task records/evidence:
+.questpc2/QUEST-STATUS.json
+.questpc2/RESUME.md
+.questpc2/L3-BLOCKERS.md
+.questpc2/L3-CANONICAL-AUDIT.json
+.questpc2/L3-TEST-FILTERS.md
+.questpc2/L3-REVIEW.md
+.questpc2/verify-l3.py
+.questpc2/l3-verification.json
+.questpc2/L3-REPORT.md
+.questpc2/l3-final-caller-search.txt

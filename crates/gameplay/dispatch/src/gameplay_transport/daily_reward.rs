@@ -28,6 +28,23 @@ pub(super) async fn dispatch(
     command_type: u32,
     payload: &[u8],
 ) -> Option<Vec<u8>> {
+    if matches!(command_type, wire::returner::QUERY | wire::returner::CLAIM) {
+        if command_type == wire::returner::QUERY && !payload.is_empty() {
+            return None;
+        }
+        if command_type == wire::returner::CLAIM && wire::returner::decode_claim(payload).is_err() {
+            return refusal(3);
+        }
+        return authority
+            .daily_reward_returner(actor, command, command_type, payload)
+            .await;
+    }
+    if command_type == wire::details::COMMAND_TYPE {
+        if !payload.is_empty() {
+            return None;
+        }
+        return authority.daily_reward_details(actor, command).await;
+    }
     let claim = if command_type == wire::COMMAND_TYPE_DAILY_REWARD_CLAIM {
         match wire::DailyRewardClaim::decode(payload) {
             Ok(claim) => Some(claim),
@@ -68,8 +85,10 @@ pub(super) fn result(
     use crate::foundation::CommandStatus;
     match payload {
         Some(bytes) => (
-            if command_type == wire::COMMAND_TYPE_DAILY_REWARD_CLAIM
-                && !matches!(bytes.get(1), Some(1 | 2))
+            if matches!(
+                command_type,
+                wire::COMMAND_TYPE_DAILY_REWARD_CLAIM | wire::returner::CLAIM
+            ) && !matches!(bytes.get(1), Some(1 | 2))
             {
                 CommandStatus::Rejected
             } else {
@@ -82,7 +101,9 @@ pub(super) fn result(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) fn daily_content(&self) -> Option<(&NativeGameplayState, &'static DailyRewardContent)> {
+    pub(super) fn daily_content(
+        &self,
+    ) -> Option<(&NativeGameplayState, &'static DailyRewardContent)> {
         let native = self.active_generation?.native_gameplay()?;
         Some((native, DailyRewardContent::load(native)?))
     }
@@ -105,7 +126,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Some(at) = super::bundle_map_position::bundle_map_position(
             &mut runtime,
-            self.movement_cells,
+            self.movement_cells(),
             actor,
         ) {
             let Some(index) =
@@ -154,7 +175,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return false;
         }
-        if self.movement_cells.scope().coordinate_frame.as_str()
+        if self.movement_cells().scope().coordinate_frame.as_str()
             != content.entry_shrine.coordinate_frame
         {
             return false;
@@ -165,9 +186,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             z: i32::from(content.entry_shrine.floor),
         };
         if self
-            .movement_cells
+            .movement_cells()
             .index()
-            .lookup(self.movement_cells.scope(), shrine_cell)
+            .lookup(self.movement_cells().scope(), shrine_cell)
             != Ok(crate::content::CollisionClass::Walkable)
         {
             return false;
@@ -272,10 +293,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return refusal(5);
         }
         // One immutable server plan per content revision. No client choices enter it.
-        let digest = Sha256::new()
+        let binding = Sha256::new()
             .chain_update(b"oteryn:daily-reward:v2\0")
-            .chain_update(content.revision.as_bytes());
-        let binding = digest.finalize().into();
+            .chain_update(content.revision.as_bytes())
+            .finalize()
+            .into();
         if let Some(receipt) = view.settled.or(view.receipt) {
             return refusal(if receipt.request_binding == binding {
                 2
@@ -341,8 +363,26 @@ fn plan(content: &DailyRewardContent, day: u8) -> Option<DailyRewardDeliveryPlan
     })
 }
 
+#[path = "daily_reward/details.rs"]
+mod details;
 macro_rules! authority_methods {
     () => {
+        fn daily_reward_returner(
+            &self,
+            _actor: crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+            _kind: u32,
+            _payload: &[u8],
+        ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
+            async { None }
+        }
+        fn daily_reward_details(
+            &self,
+            _actor: crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+        ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
+            async { None }
+        }
         fn daily_reward_available(&self) -> bool {
             false
         }
@@ -359,6 +399,22 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn daily_reward_returner(
+            &self,
+            actor: ExactActorRef,
+            command: connection::UseCommand,
+            kind: u32,
+            payload: &[u8],
+        ) -> Option<Vec<u8>> {
+            self.daily_returner(actor, command, kind, payload).await
+        }
+        async fn daily_reward_details(
+            &self,
+            actor: ExactActorRef,
+            command: connection::UseCommand,
+        ) -> Option<Vec<u8>> {
+            self.daily_details(actor, command).await
+        }
         fn daily_reward_available(&self) -> bool {
             self.daily_content().is_some()
         }
@@ -373,3 +429,50 @@ macro_rules! composed_methods {
     };
 }
 pub(super) use composed_methods;
+
+#[path = "daily_reward/returner.rs"]
+mod returner;
+
+#[cfg(test)]
+mod picker_retired_tests {
+    use super::*;
+
+    /// WU26-05: the retired item picker commands are routed nowhere. Dispatch routes exactly
+    /// the commands capability 182 owns, and neither picker command is among them, so the
+    /// connection refuses both as unregistered without reaching the daily owner.
+    #[test]
+    fn daily_picker_commands_are_not_routed_after_rework() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mechanic = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/mechanics/0464-daily_reward_v2.mechanic"
+        ));
+        let routed = mechanic
+            .lines()
+            .find_map(|line| line.strip_prefix("commands="))
+            .ok_or("daily mechanic commands")?
+            .split(',')
+            .map(str::parse::<u32>)
+            .collect::<Result<Vec<_>, _>>()?;
+        let owned = oteryn_protocol_oteryn::capability_tables::GATED
+            .iter()
+            .find(|(capability, _, _)| *capability == wire::CAPABILITY_DAILY_REWARD_V2)
+            .map(|(_, commands, _)| commands.to_vec())
+            .ok_or("capability 182")?;
+        assert_eq!(routed, owned);
+        assert_eq!(
+            routed,
+            [
+                wire::COMMAND_TYPE_DAILY_REWARD_CLAIM,
+                wire::COMMAND_TYPE_DAILY_REWARD_QUERY,
+                wire::details::COMMAND_TYPE,
+                wire::returner::QUERY,
+                wire::returner::CLAIM,
+            ]
+        );
+        for retired in [wire::picker::QUERY, wire::picker::CLAIM] {
+            assert!(!routed.contains(&retired), "picker command {retired} is not routed");
+        }
+        Ok(())
+    }
+}

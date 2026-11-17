@@ -1,0 +1,29 @@
+{
+  "log": ".questpc/restart4-story-reward-pg-4.log",
+  "log_sha256": "ae48c218c20103084aedab2919693a23045d2b633bdc39654751bf9d6f546879",
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--all-features",
+    "--lib",
+    "--",
+    "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal",
+    "quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_replay_and_refusal",
+    "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "exit": 0,
+  "duration_seconds": 388.003,
+  "test_results": {
+    "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_replay_and_refusal": "ok",
+    "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal": "ok"
+  },
+  "qualified_cohorts": 3,
+  "qualified_quests": 14
+}

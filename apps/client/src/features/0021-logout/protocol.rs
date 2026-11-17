@@ -7,12 +7,12 @@ use oteryn_session::LogoutResult;
 #[must_use]
 pub fn logout_refusal_text(result: Option<LogoutResult>) -> String {
     match result {
-        Some(LogoutResult::InFight { retry_after_ms }) => format!(
+        Some(LogoutResult::InFight { retry_after_ms }) => lfmt!(
             "You may not logout during a fight ({} s)",
             retry_after_ms.div_ceil(1_000)
         ),
         Some(LogoutResult::Busy | LogoutResult::Accepted) | None => {
-            "You cannot logout now, try again".to_owned()
+            tr!("You cannot logout now, try again").to_owned()
         }
     }
 }

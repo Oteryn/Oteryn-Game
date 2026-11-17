@@ -56,7 +56,7 @@ fn run_case(partyskull: bool, reference_level: bool, chat: bool) -> TestResult {
     Ok(())
 }
 #[derive(Clone, Copy)]
-enum Step {
+pub(super) enum Step {
     Query,
     Invite(EntityRef),
     Accept,
@@ -66,7 +66,29 @@ enum Step {
     Malformed,
 }
 
-async fn roundtrip(
+// These fixture peers implement the same live protocol as the native client.
+// Long command reads must acknowledge probes without consuming a command id.
+pub(super) async fn read_live_frame(
+    client: &mut tokio::io::DuplexStream,
+    generation: u64,
+) -> TestResult<Vec<u8>> {
+    loop {
+        let frame = read_frame(client).await?;
+        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+        if envelope.message_type() != MessageType::LivenessProbe {
+            return Ok(frame);
+        }
+        let probe =
+            oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload()).map_err(debug)?;
+        // The fixture does not apply every streamed domain, so report no applied
+        // sequence rather than claim a reducer state it has not observed.
+        let ack =
+            oteryn_protocol_oteryn::encode_liveness_ack(generation, probe, 0).map_err(debug)?;
+        write_frame(client, &ack).await?;
+    }
+}
+
+pub(super) async fn roundtrip(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     steps: &[Step],
@@ -77,7 +99,8 @@ async fn roundtrip(
     let serving = async move { serve_admitted(&mut server, session, owner, IDLE_LIVENESS).await };
     let driving = async move {
         loop {
-            let frame = read_frame(&mut client).await?;
+            let frame =
+                read_live_frame(&mut client, session.continuity.connection_generation).await?;
             if decode_wire_envelope(&frame).map_err(debug)?.message_type()
                 == MessageType::SnapshotCommit
             {
@@ -142,7 +165,8 @@ async fn roundtrip(
             .map_err(debug)?;
             write_frame(&mut client, &frame).await?;
             loop {
-                let frame = read_frame(&mut client).await?;
+                let frame =
+                    read_live_frame(&mut client, session.continuity.connection_generation).await?;
                 let envelope = decode_wire_envelope(&frame).map_err(debug)?;
                 if envelope.message_type() != MessageType::CommandResult {
                     continue;

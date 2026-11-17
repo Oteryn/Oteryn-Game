@@ -1,0 +1,13 @@
+{
+  "id": 370,
+  "name": "SKILL_DISPLAY_V1",
+  "owner_decision": "NX-7 C14",
+  "owner": "Game Character build",
+  "requires": [],
+  "command_types": [
+    640
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES, filtered without native training and progression formulas."
+}

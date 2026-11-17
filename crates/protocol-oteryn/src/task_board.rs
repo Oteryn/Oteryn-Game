@@ -238,3 +238,6 @@ pub fn decode_task_board_reply(bytes: &[u8]) -> Result<TaskBoardReply, Error> {
 #[cfg(test)]
 #[path = "task_board_tests.rs"]
 mod tests;
+
+#[path = "task_board_soulpit.rs"]
+pub mod soulpit;

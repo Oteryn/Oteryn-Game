@@ -99,6 +99,25 @@ pub(in crate::gameplay_transport) fn warden_scroll(
     table.admitted_source_item(id).cloned()
 }
 
+/// Echo Warden wiki revision 1196691: one random lesser, normal or greater catalyst.
+/// No rarity weights are published; SV16 uses equal weights (an explicit assumption).
+pub(in crate::gameplay_transport) fn warden_catalyst(
+    runtime: &ChannelRuntimeV1,
+    table: &CreatureRewardTable,
+    occurrence: [u8; 16],
+) -> Option<LootDefinitionRef> {
+    let index = usize::try_from(super::draw(
+        runtime,
+        occurrence,
+        "ECHO_WARDEN_CATALYST",
+        0,
+        2,
+    )?)
+    .ok()?;
+    let id = *[54_266, 51_588, 51_589].get(index)?;
+    table.admitted_source_item(id).cloned()
+}
+
 /// Append only after stamina and ordinary loot modifiers. The callbacks already made their
 /// source draws; each selected item is one unit, independent of Gut/Prey/event multipliers.
 pub(in crate::gameplay_transport) fn append_callback_loot(

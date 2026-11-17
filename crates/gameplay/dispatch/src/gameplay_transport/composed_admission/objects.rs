@@ -3,6 +3,8 @@ use crate::gameplay_transport::connection::UseCommand;
 use crate::gameplay_transport::item_view::ItemKey;
 use crate::map::overlay::TilePos;
 
+mod dropdown;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn use_bundle_key(
         &self,
@@ -15,7 +17,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let ItemKey::Instance(instance) = key else {
             return None;
         };
-        let _permit = self.spell_lane_permit().await?;
+        let permit = self.spell_lane_permit().await?;
         let fence = command.item_fence?;
         let inventory = self
             .root
@@ -23,43 +25,75 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok()?;
         let action = inventory.key_action(instance)?;
-        let mut runtime = self.runtime.lock().await;
-        let Ok(states) = self.states.spell_states.try_lock() else {
-            return Some(UseOutcome::rejected());
+        let observes_door = self.quest_catalogue.as_ref()
+            .and_then(|catalogue| catalogue.authored_bindings())
+            .is_some_and(|bindings| bindings.quests.iter().flat_map(|quest| &quest.stages).any(|stage| {
+                matches!(&stage.trigger, oteryn_gameplay_quests::quest::authored_bindings::Trigger::DoorUse { usage }
+                    if usage.matches_opening(&target.placement,action))
+            }));
+        // Freeze source authority before the World action; a later scope/lease
+        // change must not reframe this opening under a refreshed gameplay fence.
+        let quest_fence = if observes_door {
+            self.current_quest_fence(command.game_session_id)
+                .await
+                .ok()
+                .flatten()
+                .filter(|captured| captured.item_fence() == fence)
+        } else {
+            None
         };
-        if states.is_dead(actor)
-            || !runtime
-                .player_control_facts(actor, command.game_session_id)
-                .is_ok_and(|facts| facts.control_loss.is_none())
-        {
-            return Some(UseOutcome::rejected());
-        }
-        if !self
-            .states
-            .world_gate
-            .lock()
-            .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
-        {
-            return Some(UseOutcome {
-                disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Exhausted,
-                ..UseOutcome::rejected()
-            });
-        }
-        let expected = runtime.borrow_movement_position().read(actor).ok()?;
-        let position = expected.position();
-        let actor_tile = TilePos {
-            x: u16::try_from(position.x).ok()?,
-            y: u16::try_from(position.y).ok()?,
-            floor: i8::try_from(position.floor).ok()?.checked_neg()?,
+        let (outcome, opening) = {
+            let mut runtime = self.runtime.lock().await;
+            let Ok(states) = self.states.spell_states.try_lock() else {
+                return Some(UseOutcome::rejected());
+            };
+            if states.is_dead(actor)
+                || !runtime
+                    .player_control_facts(actor, command.game_session_id)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+            {
+                return Some(UseOutcome::rejected());
+            }
+            if !self
+                .states
+                .world_gate
+                .lock()
+                .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
+            {
+                return Some(UseOutcome {
+                    disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Exhausted,
+                    ..UseOutcome::rejected()
+                });
+            }
+            let expected = runtime.borrow_movement_position().read(actor).ok()?;
+            let position = expected.position();
+            let actor_tile = TilePos {
+                x: u16::try_from(position.x).ok()?,
+                y: u16::try_from(position.y).ok()?,
+                floor: i8::try_from(position.floor).ok()?.checked_neg()?,
+            };
+            map_door::use_key_observed(
+                &map.overlay,
+                &map.facts,
+                runtime.content_pin().client_artifact_digest(),
+                actor_tile,
+                action,
+                target,
+            )
         };
-        Some(map_door::use_key(
-            &map.overlay,
-            &map.facts,
-            runtime.content_pin().client_artifact_digest(),
-            actor_tile,
-            action,
-            target,
-        ))
+        drop(permit);
+        if let (Some(captured), Some(opening)) = (quest_fence, opening) {
+            quest_door_uses::after_opening(
+                self,
+                captured,
+                command,
+                instance,
+                &target.placement,
+                opening,
+            )
+            .await;
+        }
+        Some(outcome)
     }
 
     /// USE-WIRE-V1 reach (#162 5868482467): same floor, Chebyshev distance <=1 from any of the
@@ -327,7 +361,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
     ) -> Option<oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry> {
         if self
-            .rooms
+            .rooms()
             .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
             || self.bundle_map().is_some()
@@ -355,15 +389,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.open_daily_shrine(actor, command, &target).await {
             return outcome;
         }
+        if let Some(outcome) = self.use_soulpit_exit(actor, command, &target).await {
+            return outcome;
+        }
+        if let Some(outcome) = self.use_cake_world_object(actor, command, &target).await {
+            return outcome;
+        }
+        if let Some(outcome) = self
+            .use_house_base_decoration(actor, command, &target)
+            .await
+        {
+            return outcome;
+        }
         if self
-            .rooms
+            .rooms()
             .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
         {
             return UseOutcome::rejected();
         }
         if let Some(map) = self.bundle_map() {
+            if let Some(outcome) = self
+                .use_dawnport_departure(actor, command, map, &target)
+                .await
+            {
+                return outcome;
+            }
             if let Some(outcome) = self.use_quest_callback(actor, command, map, &target).await {
+                return outcome;
+            }
+            if let Some(outcome) = self
+                .use_bundle_dropdown(actor, command, Some(&target), None)
+                .await
+            {
+                return outcome;
+            }
+            if let Some(outcome) = self.use_bundle_ladder(actor, command, map, &target).await {
+                return outcome;
+            }
+            if let Some(outcome) = self
+                .use_native_bundle_ladder(actor, command, map, &target)
+                .await
+            {
                 return outcome;
             }
             if let Some(outcome) = self.use_bundle_chest(actor, command, map, &target).await {

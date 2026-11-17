@@ -23,6 +23,29 @@ pub struct OneItemGroundContainerEntryV1 {
     pub placement_ordinal: u64,
     #[prost(message, optional, tag = "3")]
     pub parent_ground: Option<OneItemGroundV1>,
+    /// When present, Ground belongs to this death-tree root; `parent` is the actual edge parent.
+    /// Absent for legacy direct Ground-container entries, preserving their encoded bytes.
+    #[prost(bytes = "vec", optional, tag = "4")]
+    pub tree_root_item_instance_id: Option<Vec<u8>>,
+}
+
+pub(super) fn check_entry(
+    entry: &OneItemGroundContainerEntryV1,
+    item: &[u8],
+) -> Result<(), AuditError> {
+    check_uuid_v7(&entry.parent_item_instance_id)?;
+    if entry.parent_item_instance_id == item || entry.placement_ordinal == 0 {
+        return Err(AuditError::InvalidInput);
+    }
+    if let Some(root) = &entry.tree_root_item_instance_id {
+        check_uuid_v7(root)?;
+        if root == item {
+            return Err(AuditError::InvalidInput);
+        }
+    } else if entry.placement_ordinal > mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX {
+        return Err(AuditError::InvalidInput);
+    }
+    Ok(())
 }
 
 pub(super) fn check(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, AuditError> {
@@ -67,13 +90,7 @@ pub(super) fn check(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, Au
     }
     DECAY_RETIRE_USAGE.check()?;
     if let Some(entry) = &value.ground_container_entry {
-        check_uuid_v7(&entry.parent_item_instance_id)?;
-        if entry.parent_item_instance_id == before.item_instance_id
-            || !(1..=mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX)
-                .contains(&entry.placement_ordinal)
-        {
-            return Err(AuditError::InvalidInput);
-        }
+        check_entry(entry, &before.item_instance_id)?;
         Ok(DecayRetireShape::GroundContainerEntry)
     } else {
         Ok(DecayRetireShape::Ground)

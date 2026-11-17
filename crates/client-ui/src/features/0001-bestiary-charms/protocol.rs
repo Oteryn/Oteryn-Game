@@ -11,29 +11,29 @@ pub const MINOR_CHARM_RACE_STAGE: u8 = 2;
 const FINAL_CHARM_STAGE: u8 = 3;
 
 #[must_use]
-pub const fn unlock_feedback_text(disposition: CharmUnlockDisposition) -> &'static str {
+pub fn unlock_feedback_text(disposition: CharmUnlockDisposition) -> &'static str {
     match disposition {
-        CharmUnlockDisposition::Unlocked => "Charm stage unlocked",
-        CharmUnlockDisposition::NotEnoughCharmPoints => "Not enough Charm Points",
-        CharmUnlockDisposition::NotEnoughMinorCharmEchoes => "Not enough Minor Charm Echoes",
-        CharmUnlockDisposition::StageMismatch => "Charm already changed; view refreshed",
-        CharmUnlockDisposition::UnknownCharm => "Unknown charm",
-        CharmUnlockDisposition::Rejected => "Charms unavailable",
+        CharmUnlockDisposition::Unlocked => tr!("Charm stage unlocked"),
+        CharmUnlockDisposition::NotEnoughCharmPoints => tr!("Not enough Charm Points"),
+        CharmUnlockDisposition::NotEnoughMinorCharmEchoes => tr!("Not enough Minor Charm Echoes"),
+        CharmUnlockDisposition::StageMismatch => tr!("Charm already changed; view refreshed"),
+        CharmUnlockDisposition::UnknownCharm => tr!("Unknown charm"),
+        CharmUnlockDisposition::Rejected => tr!("Charms unavailable"),
     }
 }
 
 #[must_use]
-pub const fn assign_feedback_text(disposition: CharmAssignDisposition) -> &'static str {
+pub fn assign_feedback_text(disposition: CharmAssignDisposition) -> &'static str {
     match disposition {
-        CharmAssignDisposition::Assigned => "Charm assigned",
-        CharmAssignDisposition::CharmLocked => "Unlock the charm first",
-        CharmAssignDisposition::AlreadyAssigned => "Charm is already assigned",
-        CharmAssignDisposition::RaceStageTooLow => "Bestiary entry not far enough",
-        CharmAssignDisposition::RaceCharmLimit => "Creature already holds a charm",
-        CharmAssignDisposition::UnknownCharm => "Unknown charm",
-        CharmAssignDisposition::UnknownRace => "Unknown creature",
-        CharmAssignDisposition::Rejected => "Charms unavailable",
-        CharmAssignDisposition::AssignmentSlotsFull => "All charm slots are in use",
+        CharmAssignDisposition::Assigned => tr!("Charm assigned"),
+        CharmAssignDisposition::CharmLocked => tr!("Unlock the charm first"),
+        CharmAssignDisposition::AlreadyAssigned => tr!("Charm is already assigned"),
+        CharmAssignDisposition::RaceStageTooLow => tr!("Bestiary entry not far enough"),
+        CharmAssignDisposition::RaceCharmLimit => tr!("Creature already holds a charm"),
+        CharmAssignDisposition::UnknownCharm => tr!("Unknown charm"),
+        CharmAssignDisposition::UnknownRace => tr!("Unknown creature"),
+        CharmAssignDisposition::Rejected => tr!("Charms unavailable"),
+        CharmAssignDisposition::AssignmentSlotsFull => tr!("All charm slots are in use"),
     }
 }
 

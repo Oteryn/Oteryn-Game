@@ -144,8 +144,26 @@ pub fn now_utc_ms() -> Option<u64> {
             std::time::Instant::now(),
         ))
     }))?;
-    utc_ms.checked_add(u64::try_from(at.elapsed().as_millis()).ok()?)
+    let elapsed = u64::try_from(at.elapsed().as_millis()).ok()?;
+    #[cfg(feature = "qualification-clock")]
+    let elapsed = elapsed.checked_add(qualification_offset_ms())?;
+    utc_ms.checked_add(elapsed)
 }
+/// Additional elapsed time in a disposable qualification build. Production builds
+/// do not compile this file input. Atomic replacement and a retained maximum keep
+/// transient file errors or stale reads from moving either owner clock backward.
+#[cfg(feature = "qualification-clock")]
+pub fn qualification_offset_ms() -> u64 {
+    static OFFSET: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let offset = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE")
+        .and_then(|path| std::fs::read_to_string(path).ok())
+        .and_then(|value| value.trim().parse::<u64>().ok())
+        .unwrap_or(0);
+    OFFSET
+        .fetch_max(offset, std::sync::atomic::Ordering::Relaxed)
+        .max(offset)
+}
+
 const TIBIAN_HOUR_MINUTES: u32 = 60;
 
 /// §11.3: the World light level at a Tibian minute of the day. Panics never; a minute outside the
@@ -260,6 +278,45 @@ mod tests {
     use super::*;
 
     const HOUR_MS: u64 = 3_600_000;
+
+    #[cfg(feature = "qualification-clock")]
+    #[test]
+    fn qualification_clock_file_advances_and_never_rewinds()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const PROBE: &str = "OTERYN_QUALIFICATION_CLOCK_PROBE";
+        if std::env::var_os(PROBE).is_some() {
+            let path = std::env::var_os("OTERYN_QUALIFICATION_CLOCK_FILE").ok_or("clock file")?;
+            let before = now_utc_ms().ok_or("UTC clock")?;
+            assert_eq!(qualification_offset_ms(), 0);
+            std::fs::write(&path, "75000")?;
+            let after = now_utc_ms().ok_or("advanced UTC clock")?;
+            assert!(after >= before + 75_000);
+            assert_eq!(qualification_offset_ms(), 75_000);
+            std::fs::write(&path, "0")?;
+            assert_eq!(qualification_offset_ms(), 75_000);
+            std::fs::write(&path, "incomplete")?;
+            assert_eq!(qualification_offset_ms(), 75_000);
+            assert!(now_utc_ms().ok_or("retained UTC clock")? >= after);
+            return Ok(());
+        }
+        // A child process isolates the environment and the monotonic singleton
+        // from other tests, without changing process environment in Rust.
+        let path =
+            std::env::current_dir()?.join(format!(".qualification-clock-{}", std::process::id()));
+        std::fs::write(&path, "0")?;
+        let status = std::process::Command::new(std::env::current_exe()?)
+            .args([
+                "--exact",
+                "world_clock::tests::qualification_clock_file_advances_and_never_rewinds",
+                "--nocapture",
+            ])
+            .env(PROBE, "1")
+            .env("OTERYN_QUALIFICATION_CLOCK_FILE", &path)
+            .status();
+        std::fs::remove_file(path)?;
+        assert!(status?.success());
+        Ok(())
+    }
 
     #[test]
     fn the_utc_fact_is_anchored_once_and_never_goes_backward() {

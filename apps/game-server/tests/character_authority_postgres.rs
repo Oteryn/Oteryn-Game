@@ -5,6 +5,7 @@
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use oteryn_gameplay_dispatch::gameplay_transport;
+pub use oteryn_gameplay_social::platform_streams;
 pub use production_server::admission_evidence;
 pub use production_server::{
     character_bootstrap_intent, character_recovery_fence, domain, durability, foundation,
@@ -2486,6 +2487,7 @@ mod monk_state_postgres_cases {
             };
         }
         Ok(CharacterDeathRequest {
+            public_cause: None,
             pvp_contributors: Vec::new(),
             occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
             context: context(),
@@ -3407,3 +3409,6 @@ async fn character_commands_flow(database: &Database) -> TestResult {
 // Every case file in `support/authority_cases/` is mounted here by `build.rs`, so a new mechanic
 // adds its file there instead of editing this shared target.
 include!(concat!(env!("OUT_DIR"), "/authority_cases_mounts.rs"));
+
+#[path = "support/qworld_live_admission_cases.rs"]
+mod qm03_world_admission;

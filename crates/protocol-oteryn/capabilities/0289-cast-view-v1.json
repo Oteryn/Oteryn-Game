@@ -1,0 +1,17 @@
+{
+  "id": 289,
+  "name": "CAST_VIEW_V1",
+  "constant": "cast::CAPABILITY_CAST_VIEW_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [
+    102
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

@@ -28,6 +28,9 @@ const CONTENT: [u8; 32] = [0x5c; 32];
 
 fn creature(identity: [u8; 16], position: ActorPosition, revision: u64) -> ChannelEntity {
     ChannelEntity {
+        source_icons: oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(
+        ),
+        display_name: None,
         health_percent: 100,
         direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
         kind: VisibleKind::Creature,
@@ -48,6 +51,7 @@ fn actor() -> ExactActorRef {
 /// The wire entry of an actor of the fixture Channel.
 fn wire(kind: EntityKind, identity: [u8; 16], position: ActorPosition) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        display_name: None,
         kind,
         entity: EntityRef {
             identity,
@@ -113,6 +117,9 @@ impl FreshAdmissionAuthority for Channel {
     async fn observe_visible_entities(&self, actor: ExactActorRef) -> Option<ChannelEntities> {
         let own = actor.placement_identity();
         let mut entities = vec![ChannelEntity {
+            source_icons:
+                oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+            display_name: None,
             health_percent: 100,
             direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
             kind: VisibleKind::Player,
@@ -249,11 +256,12 @@ async fn join_and_step(selected: &[u32]) -> Result<Vec<Vec<u8>>, Box<dyn Error>>
     Ok(frames)
 }
 
+// The scenario future is large; keep it on the heap so the default test stack holds it.
 fn run(test: impl Future<Output = TestResult>) -> TestResult {
     tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()?
-        .block_on(test)
+        .block_on(Box::pin(test))
 }
 
 include!("visibility_tests/interest_set.rs");

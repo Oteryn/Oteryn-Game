@@ -7,6 +7,7 @@
 // only that owner-to-owner delegation is admitted outside the revision slot.
 #[rustfmt::skip]
 const SEQUENCED_WRITERS: &[(&str, &str)] = &[
+    (".commit_arena_match(", "durability/character_revision_sequencer/arena_match.rs"),
     (".commit_bestiary_kill(", "durability/character_revision_sequencer.rs"),
     (".commit_bestiary_kill_with_talisman(", "durability/character_revision_sequencer.rs|durability/bestiary_progress.rs"),
     (".commit_character_atelier(", "durability/character_revision_sequencer/atelier.rs"),
@@ -18,14 +19,20 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_character_grizzly_kill(", "durability/character_revision_sequencer/grizzly.rs"),
     (".commit_character_grizzly_transition(", "durability/character_revision_sequencer/grizzly.rs"),
     (".commit_character_monk_state_save(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_native_quest_door(", "durability/character_revision_sequencer/native_doors.rs"),
+    (".commit_character_native_quest_hit(", "durability/character_revision_sequencer/native_hits.rs"),
+    (".commit_character_native_quest_kill(", "durability/character_revision_sequencer/native_kills.rs"),
+    (".commit_character_npc_teleport(", "durability/character_revision_sequencer/npc_teleport.rs"),
     (".commit_character_proficiency(", "durability/character_revision_sequencer.rs"),
     (".commit_character_proficiency_modification(", "durability/character_revision_sequencer.rs"),
     (".commit_character_quest_experience(", "durability/character_revision_sequencer.rs"),
     (".commit_character_quest_transition(", "durability/character_revision_sequencer.rs"),
     (".commit_character_wheel(", "durability/character_revision_sequencer.rs"),
     (".commit_character_world_callback(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_world_callback_with_requirements(", "durability/character_revision_sequencer.rs"),
     (".commit_charm_command(", "durability/character_revision_sequencer.rs"),
     (".commit_cyclopedia(", "durability/character_revision_sequencer/cyclopedia.rs"),
+    (".commit_npc_marriage(", "durability/character_revision_sequencer/npc_marriage.rs"),
     (".commit_npc_purchase(", "durability/character_revision_sequencer/npc_purchase.rs"),
     (".commit_npc_travel(", "durability/character_revision_sequencer/npc_travel.rs"),
     (".commit_proficiency_catalyst(", "durability/character_revision_sequencer/proficiency_catalyst.rs"),
@@ -40,6 +47,8 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
 // Forge's fee cause retains CharacterRevision and shares its native item transaction.
 // WB2 boss-slot fees also retain CharacterRevision inside their fenced slot transaction.
 const FEE_WRITERS: &[&str] = &[
+    // Arena entry burns its fee inside the sequenced match transaction.
+    "durability/arena_match.rs",
     "durability/bosstiary/slots.rs",
     "durability/character_atelier/actions.rs",
     "durability/character_cyclopedia.rs",
@@ -157,6 +166,10 @@ fn the_structural_gate_catches_a_bypass_writer() {
     // New public wrappers and their inner writer cannot become an unsequenced
     // direct call merely because their spelling differs from an older writer.
     for (call, allowed) in [
+        (
+            ".commit_character_native_quest_hit(",
+            "durability/character_revision_sequencer/native_hits.rs",
+        ),
         (
             ".commit_task_board(",
             "durability/character_revision_sequencer.rs",

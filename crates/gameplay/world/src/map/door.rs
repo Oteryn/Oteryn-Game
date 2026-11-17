@@ -13,6 +13,10 @@
 //! Level and quest doors retain their own predicates; house doors and unqualified open
 //! counterparts stay outside this book.
 
+#[path = "door/key_use_observation.rs"]
+mod key_use_observation;
+pub use key_use_observation::KeyDoorOpening;
+
 pub use super::door_registry::open_of;
 use super::overlay::TilePos;
 use super::view::EntryFacts;
@@ -55,6 +59,7 @@ struct Door {
     closed_solid: bool,
     open_solid: bool,
     open: EntryFacts,
+    initial_state: u64,
     /// Upper bits count transitions; low bits: 0 unlocked closed, 1 open, 2 locked.
     /// One atomic word pins the visible pose and wire revision together.
     state: AtomicU64,
@@ -100,6 +105,54 @@ pub struct DoorBook {
 }
 
 impl DoorBook {
+    /// A private activity starts from authored door states, never the origin's
+    /// mutable Channel door poses or revision counters.
+    pub(super) fn activity_copy(&self, inside: impl Fn(TilePos) -> bool) -> Self {
+        let mut result = Self::default();
+        for door in &self.doors {
+            if !super::view::placement_of(door.key).is_some_and(|(pos, _)| inside(pos)) {
+                continue;
+            }
+            result.doors.push(Door {
+                key: door.key,
+                key_forms: door.key_forms,
+                action: door.action,
+                required_level: door.required_level,
+                required_storage: door.required_storage,
+                closed_solid: door.closed_solid,
+                open_solid: door.open_solid,
+                open: door.open,
+                initial_state: door.initial_state,
+                state: AtomicU64::new(door.initial_state),
+            });
+        }
+        result
+    }
+
+    /// Private activities start from the authored pose, never another scope's toggles.
+    pub(super) fn activity_region(&self, inside: impl Fn(TilePos) -> bool) -> Self {
+        let doors = self
+            .doors
+            .iter()
+            .filter(|door| super::view::placement_of(door.key).is_some_and(|(pos, _)| inside(pos)))
+            .map(|door| Door {
+                key: door.key,
+                key_forms: door.key_forms,
+                action: door.action,
+                required_level: door.required_level,
+                required_storage: door.required_storage,
+                closed_solid: door.closed_solid,
+                open_solid: door.open_solid,
+                open: door.open,
+                state: AtomicU64::new(door.initial_state),
+                initial_state: door.initial_state,
+            })
+            .collect();
+        Self {
+            doors,
+            ..Self::default()
+        }
+    }
     #[allow(clippy::too_many_arguments, reason = "one authored door record")]
     pub fn push(
         &mut self,
@@ -121,6 +174,7 @@ impl DoorBook {
             closed_solid,
             open_solid,
             open,
+            initial_state: if locked { 2 } else { 0 },
             state: AtomicU64::new(if locked { 2 } else { 0 }),
         });
     }
@@ -245,6 +299,14 @@ impl DoorBook {
 
     /// Whether a door entry of `pos` is solid in its current state.
     pub fn blocks(&self, pos: TilePos) -> bool {
+        self.blocks_except(pos, None)
+    }
+
+    pub(super) fn blocks_except(&self, pos: TilePos, except: Option<u64>) -> bool {
+        self.blocks_unless(pos, |key| Some(key) == except)
+    }
+
+    pub(super) fn blocks_unless(&self, pos: TilePos, projected: impl Fn(u64) -> bool) -> bool {
         let Some(tile) = super::view::placement_key(pos, 0) else {
             return false;
         };
@@ -252,7 +314,7 @@ impl DoorBook {
         self.doors[start..]
             .iter()
             .take_while(|door| door.key <= tile | 0xFF)
-            .any(Door::solid)
+            .any(|door| !projected(door.key) && door.solid())
     }
 
     /// Whether any door entry of `pos` exists.
@@ -815,3 +877,7 @@ mod tests {
         assert_eq!(open_key("oteryn:item.tibia.i1628", 1629, 1630), None);
     }
 }
+
+#[cfg(test)]
+#[path = "door/key_use_observation_tests.rs"]
+mod key_use_observation_tests;

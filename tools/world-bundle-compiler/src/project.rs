@@ -25,6 +25,7 @@ pub type LegacyPosition = (u16, u16, u8);
 /// The families one compilation checks the placements against.
 #[derive(Clone, Debug, Default)]
 pub struct Families {
+    pub layers: crate::compile::layers::Source,
     /// Verified client masks; empty only in synthetic compiler fixtures.
     pub subareas: crate::compile::subareas::Source,
     /// `Transition.Teleport` records, keyed by their `from` position, valued by `to`.
@@ -45,6 +46,8 @@ pub struct Families {
     pub routes: Vec<TravelRoute>,
     /// `Npc.Placement` records in file order, positions in the project frame.
     pub npc_placements: Vec<NpcPlacement>,
+    /// Explicit source-backed contacts on solid objects; other terrain holds still apply.
+    pub npc_block_solid_contacts: BTreeSet<String>,
     /// The family's held list (§4.3): NPC key and reason, in file order.
     pub npc_source_held: Vec<(String, String)>,
     /// `npc::catalogue_sha256` of the content tree the NPC, Dialogue and Service records were
@@ -463,6 +466,8 @@ struct RouteRecord {
 
 #[derive(Deserialize)]
 struct PlacementRecord {
+    #[serde(default)]
+    block_solid_contact: bool,
     identity: Identity,
     npc: String,
     cell: Cell,
@@ -586,6 +591,10 @@ impl Families {
                     "NPC placement floor {}",
                     record.cell.floor
                 )));
+            }
+            if record.block_solid_contact {
+                self.npc_block_solid_contacts
+                    .insert(record.identity.key.clone());
             }
             self.npc_placements.push(NpcPlacement {
                 key: record.identity.key,

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0287-actor-spell-catalog",
+  "kind": "panels",
+  "id": "0287-actor-spell-catalog-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

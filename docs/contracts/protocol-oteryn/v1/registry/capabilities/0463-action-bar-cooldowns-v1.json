@@ -1,0 +1,16 @@
+{
+  "id": 463,
+  "name": "ACTION_BAR_COOLDOWNS_V1",
+  "owner_decision": "cg-abar T168, owner allocation 2026-11-09",
+  "owner": "Game own actor item-use exhaustion",
+  "requires": [
+    15,
+    287
+  ],
+  "command_types": [
+    6147
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only, while native gameplay is loaded; a fenced read of the existing item-use gate."
+}

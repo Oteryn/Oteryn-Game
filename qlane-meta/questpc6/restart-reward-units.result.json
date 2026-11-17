@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-quests -p oteryn-gameplay-content -p oteryn-gameplay-durability --lib --quiet -- quest:: world_reward_claims:: reward_claim_mint::tests --test-threads=2",
+  "exit": 101,
+  "duration_seconds": 105.009
+}

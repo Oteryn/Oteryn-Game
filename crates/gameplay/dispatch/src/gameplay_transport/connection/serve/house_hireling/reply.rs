@@ -11,6 +11,15 @@ pub(in super::super) fn result(
         payload
     };
     Ok(match dispatch {
+        Dispatch::ServerModal(
+            crate::gameplay_transport::server_modal::ServerModalOutcome::Reply(payload)
+            | crate::gameplay_transport::server_modal::ServerModalOutcome::LoggedOut(payload),
+        ) => (CommandStatus::Accepted, payload.clone()),
+        Dispatch::ServerModal(
+            crate::gameplay_transport::server_modal::ServerModalOutcome::Unavailable,
+        ) => {
+            return Err(ServeEnd::Disconnected);
+        }
         Dispatch::Logout(result) => (
             if result.is_rejected() {
                 CommandStatus::Rejected
@@ -105,4 +114,43 @@ pub(in super::super) fn result(
         Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
         _ => return Err(ServeEnd::Disconnected),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::gameplay_transport::server_modal::ServerModalOutcome;
+    use oteryn_protocol_oteryn::server_modal::{Answer, Reply};
+
+    #[test]
+    fn server_modal_house_reply_keeps_terminal_receipt_and_unknown_close() -> Result<(), String> {
+        let selected = SelectedCapabilities::select(&[], &[]).ok_or("empty selection")?;
+        let answer = Answer {
+            dialog_id: 1,
+            button_id: 1,
+            choice_id: Some(6),
+        };
+        let bytes = Reply::AnsweredAndLoggedOut(answer).encode()?;
+        let (status, payload) = result(
+            selected,
+            &Dispatch::ServerModal(ServerModalOutcome::LoggedOut(bytes.clone())),
+        )
+        .map_err(|_| "terminal receipt must encode")?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(
+            payload, bytes,
+            "terminal acknowledgement retains the modal codec"
+        );
+        assert!(
+            matches!(
+                result(
+                    selected,
+                    &Dispatch::ServerModal(ServerModalOutcome::Unavailable)
+                ),
+                Err(ServeEnd::Disconnected)
+            ),
+            "uncertain durable completion cannot become a refusal or success receipt"
+        );
+        Ok(())
+    }
 }

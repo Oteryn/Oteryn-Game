@@ -103,3 +103,64 @@ fn boss_lever_wire_never_accepts_client_policy() -> Result<(), Error> {
     assert!(encode_instance_receipt(&[7; 16], u64::MAX).is_err());
     Ok(())
 }
+
+#[test]
+fn srx3_taints_query_accepts_explicit_opt_in_without_changing_legacy_cursor() {
+    assert_eq!(decode_cooldown_query(&[16, 1]), Ok(""));
+    assert_eq!(
+        decode_cooldown_query(&[10, 3, b'a', b':', b'b', 16, 1]),
+        Ok("a:b")
+    );
+    for malformed in [&[16, 0][..], &[16, 2], &[16, 1, 16, 1], &[16], &[16, 1, 0]] {
+        assert!(decode_cooldown_query(malformed).is_err());
+    }
+}
+
+#[test]
+fn srx3_taints_codec_bounds_and_refusal_preserve_the_original_payload() -> Result<(), Error> {
+    let key = format!("oteryn:boss.{}", "a".repeat(500));
+    let mut query = Vec::new();
+    push_message_field(&mut query, 1, key.as_bytes());
+    query.extend_from_slice(&[16, 1]);
+    assert_eq!(query.len(), MAX_TAINT_QUERY_BYTES);
+    assert_eq!(decode_cooldown_query(&query)?, key);
+    let mut bytes = encode_bosstiary_list(0, &[], false, &[], 0, false)?;
+    let before = bytes.clone();
+    let taints = BossTaints {
+        soul_war: 5,
+        rotten_blood: 4,
+        rotten_blood_flags: 15,
+        rotten_blood_final: true,
+    };
+    append_boss_taints(&mut bytes, taints)?;
+    assert_eq!(&bytes[..before.len()], &before);
+    assert!(bytes.ends_with(&[58, 8, 8, 5, 16, 4, 24, 15, 32, 1]));
+    for invalid in [
+        BossTaints {
+            soul_war: 6,
+            ..taints
+        },
+        BossTaints {
+            rotten_blood: 5,
+            ..taints
+        },
+        BossTaints {
+            rotten_blood_flags: 16,
+            ..taints
+        },
+    ] {
+        let mut bytes = before.clone();
+        assert_eq!(
+            append_boss_taints(&mut bytes, invalid),
+            Err(Error::Malformed)
+        );
+        assert_eq!(bytes, before);
+    }
+    let mut full = vec![0; MAX_RESULT_BYTES - 9];
+    assert_eq!(
+        append_boss_taints(&mut full, taints),
+        Err(Error::LimitExceeded)
+    );
+    assert_eq!(full.len(), MAX_RESULT_BYTES - 9);
+    Ok(())
+}

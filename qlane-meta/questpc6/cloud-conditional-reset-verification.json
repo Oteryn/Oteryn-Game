@@ -1,0 +1,65 @@
+{
+  "mechanism": "Exact-value conditional quest reset (SET_IF)",
+  "source": {
+    "byte_count": 708,
+    "cache_path": "blobs/8d9e413024dc127b7b26513127b033ec19bfe615",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/draconia/movement-escape.lua",
+    "git_blob_sha1": "8d9e413024dc127b7b26513127b033ec19bfe615",
+    "path": "data-global/scripts/quests/draconia/movement-escape.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "53f3313e99fb541c3e016b5ac09a2e372c0ad8a382786ccd79db6bb40a700312",
+    "source": "crystalserver"
+  },
+  "source_lines": "17-19",
+  "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/draconia/movement-escape.lua#L17-L19",
+  "behavior": "Replace the exact locked value only; otherwise retain it. Both literals must be in track bounds. Uses existing fenced revision sequencer, quest receipt and replay. Hash tag6 is append-only; absent storage.set_if preserves old callback encoding. Not a read-only guard.",
+  "red": {
+    "failed": 3,
+    "execution_seconds": 3.85,
+    "postgres_version": "18.6",
+    "marker": "POSTGRES_CASE_STARTED for each of the three cases",
+    "error": "expected conditional commit, got Refused(OutOfRange)",
+    "log": "/tmp/questpc6-reset-red.log"
+  },
+  "green": {
+    "passed": 3,
+    "failed": 0,
+    "execution_seconds": 5.88,
+    "markers": [
+      {
+        "name": "conditional-reset-absent",
+        "duration_seconds": 5.851268938
+      },
+      {
+        "name": "conditional-reset-match",
+        "duration_seconds": 5.877449717
+      },
+      {
+        "name": "conditional-reset-later",
+        "duration_seconds": 5.88002973
+      }
+    ],
+    "log": "/tmp/questpc6-reset-green.log"
+  },
+  "setup_failures_not_counted_as_red": [
+    "Compile-only E0505: dropped the sealed recovery fence before fixture cleanup.",
+    "Invalid database tag containing hyphens: changed fixture tag to underscores; setup-only failure0.05s."
+  ],
+  "checks": {
+    "core_units": "PASS6/6; unit only, not PostgreSQL",
+    "callback_units": "PASS10/10; 1.20s",
+    "authoring_units": "PASS23/23; 0.537s",
+    "cargo_check": "PASS quests+dispatch all targets, 38.37s",
+    "clippy": "PASS quests+dispatch all targets/all features -D warnings, 51.38s",
+    "fmt": "PASS packages and directly changed mounted cases"
+  },
+  "source_hashes": {
+    "crates/gameplay/quests/src/quest/mod.rs": "bab808a60ace617007bf34c89fc41ec13550ace242cf2b642f5ec9cf580d25a4",
+    "crates/gameplay/quests/src/quest/world_callbacks.rs": "fc34ae95e4391641833a2b993b46d5e485c4b327881ca35469b773d6a4c7b006",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_conditional_reset.rs": "cab7ba5acaa80049139a751ed718895ec676558c0a4093c2655cbdf1bf8757c7"
+  },
+  "review": "Read all own source/tests against CODEX-CHECKLIST and scanned enum/Storage constructors and callers. No weakened tests, protocol/cause number, dependency, migration, privilege or session-fence change.",
+  "qualification": "Shared mechanism only; whole Draconia still needs source callback and atomic NPC exchange composition."
+}

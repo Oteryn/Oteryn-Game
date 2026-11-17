@@ -1,0 +1,371 @@
+{
+  "batch_id": "native-death-2026-11-06",
+  "base_sha": "c913a88349317056cf8f2db83e52a0911200ce53",
+  "branch": "claude/happy-davinci-ijz3wy-questpc2",
+  "entries": [
+    "Soul War Quest",
+    "Rotten Blood Quest",
+    "Primal Ordeal Quest"
+  ],
+  "scope": "Shared native encounter death progression and Primal alias admission; source room/maps, boss mechanics and Instance physical corpse composition remain active implementation work.",
+  "red": {
+    "command": "cargo test --locked --offline -p oteryn-gameplay-dispatch --lib l3_instance_endgame -- --nocapture --test-threads=1",
+    "duration_seconds": 449.88,
+    "passed": 1,
+    "failed": 4,
+    "log": "/tmp/questpc2-batch-one-red.log",
+    "markers": [
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_OBSERVED oteryn:creature.goshnar_s_spite native_xp_receipts=1 elapsed_ms=1015",
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=1020",
+      "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=90778",
+      "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED",
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_OBSERVED oteryn:creature.bakragore native_xp_receipts=1 elapsed_ms=124",
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_OBSERVED oteryn:creature.goshnar_s_megalomania_green native_xp_receipts=1 elapsed_ms=133",
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_OBSERVED oteryn:creature.goshnar_s_spite native_xp_receipts=1 elapsed_ms=116"
+    ]
+  },
+  "changes": [
+    "Retain sealed Instance room deaths independently of personal loot admission; W03 keeps its existing atomic personal reward owner when admitted.",
+    "Recheck Primal level 500 and five-player bound by native creature identity under W02 Character locks, including alias catalogue keys; qualified preview continues to W02.",
+    "Require native Rotten Blood draining to create exact XP/Quest/party receipt increments. Captured-death consumer calls only replay, without seeding the initial kill.",
+    "Require the admitted Primal personal reward to match this exact Instance victory and damage contributor, with one chest after replay. Ordinary corpse admission remains separately refused."
+  ],
+  "test_corrections": [
+    "The inherited queue filter kill_reward_tests matched zero tests. It was rejected and replaced by kill_reward::tests; final verification requires positive passed counts.",
+    "The inherited blanket zero-personal-chest assertion was false for the already-admitted Primal W03 source. Replaced by exact one-chest, native victory, contributor, item-count and replay assertions; zero physical corpse assertion retained.",
+    "The Rotten channel regression expected corpse refusal to suppress independent source XP/Quest progression, then manually settled the death. Its native drain must now produce exactly one Rotten, XP and party receipt and no Hazard receipt; all chain, replay, cleanse and fence checks remain."
+  ],
+  "source_class": "OTS_HYPOTHESIS_ONLY; pinned donor policy already selected by existing Game code and captured content; no new current-live-Tibia claim.",
+  "verified_donor_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/bosses_levers/the_primal_manace.lua",
+  "verified_donor_sha256": "59768c964e9e6319810e3c0619a1e322b8a8a2c3f03232b021667ae595927703",
+  "source_evidence": [
+    "Crystal 201189f871d23597b82caf88fd611454a2ddefb8 actions/bosses_levers/the_primal_manace.lua:6-12; existing selection documented in crates/gameplay/encounters/src/bosses/endgame_entry.rs:7 and level policy in the same module.",
+    "Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/libs/functions/boss_lever.lua:151-158,183-218,243,266-280 and boss_lever_death.lua:21-32; existing W02 owner crates/gameplay/durability/src/durability/activity_handoff/boss_room.rs:1.",
+    "apps/game-server/migrations/0629_boss_reward_settlement.sql:3 defines the existing native personal reward death/contributor owner; no new loot source is introduced."
+  ],
+  "checks": [
+    {
+      "name": "queue-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "kill_reward::tests",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.417,
+      "counts": [
+        [
+          "47",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_executed": null,
+      "passed": true,
+      "log": "/tmp/questpc2-batch-one-final-queue-units.log",
+      "markers": [],
+      "test_results": [
+        "test result: ok. 47 passed; 0 failed; 0 ignored; 0 measured; 2502 filtered out; finished in 0.04s"
+      ]
+    },
+    {
+      "name": "scope-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "scoped_death_tests",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 124.649,
+      "postgres_executed": null,
+      "passed": true,
+      "log": "/tmp/questpc2-batch-one-scope-units.log",
+      "markers": [],
+      "test_results": [
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 690 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "name": "entry-regression",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "endgame_entry_postgres_real_dispatch_cannot_allocate_or_reset_without_w02",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 4.616,
+      "postgres_executed": true,
+      "passed": true,
+      "log": "/tmp/questpc2-batch-one-entry-regression.log",
+      "markers": [
+        "ENDGAME_ENTRY POSTGRES_CASE_COMPLETED"
+      ],
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2548 filtered out; finished in 4.33s"
+      ]
+    },
+    {
+      "name": "reward-regression",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "boss_activity_postgres_real_instance_native_boss_death_and_reward_custody",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 96.006,
+      "postgres_executed": true,
+      "passed": true,
+      "log": "/tmp/questpc2-batch-one-reward-regression.log",
+      "markers": [
+        "BOSS_ACTIVITY_INSTANCE_REWARD_CUSTODY POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED"
+      ],
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2548 filtered out; finished in 95.68s"
+      ]
+    },
+    {
+      "name": "soul-channel",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "soul_war_postgres_native_taints_xp_reset_and_replay",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 88.446,
+      "postgres_executed": true,
+      "passed": true,
+      "log": "/tmp/questpc2-batch-one-soul-channel.log",
+      "markers": [
+        "SOUL_WAR_REWARD POSTGRES_CASE_COMPLETED source_use_no_room_mint_replay_fences",
+        "SOUL_WAR POSTGRES_CASE_COMPLETED npc_commands_native_xp_taints_reset_reload"
+      ],
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2548 filtered out; finished in 88.12s"
+      ]
+    },
+    {
+      "name": "rotten-channel",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "rotten_blood_postgres_native_chain_final_reward_replay_and_cleanse",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 133.06,
+      "duration_kind": "test_harness",
+      "postgres_executed": true,
+      "passed": true,
+      "log": "/tmp/questpc2-batch-one-rotten-channel-fixed.log",
+      "markers": [
+        "ROTTEN_BLOOD POSTGRES_CASE_COMPLETED primal_corpse_settlement physical_corpse_refusals captured_death_consumer_chain final_reward shared_terminal_failure replay npc_command7_cleanse fences guards"
+      ],
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2548 filtered out; finished in 133.06s"
+      ]
+    },
+    {
+      "name": "primal-channel",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "primal_hazard_postgres_kill_unlock_selection_replay_cap_and_fences",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 49.056,
+      "postgres_executed": true,
+      "passed": true,
+      "log": "/tmp/questpc2-batch-one-primal-channel.log",
+      "markers": [
+        "PRIMAL_HAZARD POSTGRES_CASE_COMPLETED unlock_selection_replay_cap_fences"
+      ],
+      "test_results": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2548 filtered out; finished in 48.74s"
+      ]
+    },
+    {
+      "name": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 141.255,
+      "postgres_executed": null,
+      "passed": true,
+      "log": "/tmp/questpc2-batch-one-check.log",
+      "markers": [],
+      "test_results": []
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 222.885,
+      "postgres_executed": null,
+      "passed": true,
+      "log": "/tmp/questpc2-batch-one-clippy.log",
+      "markers": [],
+      "test_results": []
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 14.71,
+      "postgres_executed": null,
+      "passed": true,
+      "log": "/tmp/questpc2-batch-one-fmt.log",
+      "markers": [],
+      "test_results": []
+    },
+    {
+      "name": "instance-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "l3_instance_endgame",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 447.376,
+      "counts": [
+        [
+          "5",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_executed": true,
+      "passed": true,
+      "log": "/tmp/questpc2-batch-one-final-instance-pg.log",
+      "markers": [
+        "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=1061",
+        "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=91581",
+        "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED",
+        "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.the_primal_menace elapsed_ms=226",
+        "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.the_primal_menace elapsed_ms=88556",
+        "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED",
+        "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.bakragore elapsed_ms=184",
+        "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.bakragore elapsed_ms=88806",
+        "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED",
+        "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_megalomania_green elapsed_ms=159",
+        "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_megalomania_green elapsed_ms=88410",
+        "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED",
+        "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=171",
+        "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.goshnar_s_spite elapsed_ms=88804",
+        "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED"
+      ],
+      "test_results": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 2544 filtered out; finished in 447.05s"
+      ]
+    }
+  ],
+  "review": {
+    "state": "AUTHORING",
+    "self_review": "All seven changed Rust files read against CODEX-CHECKLIST; current scope/session/lease/content fences, death identity, same-transaction progression, late refusal, replay and bounded retained death capture preserved. No workflow, repository tooling, pin, dependency or migration changes.",
+    "independent_review": "No freeze or PR; no final readiness claim."
+  }
+}

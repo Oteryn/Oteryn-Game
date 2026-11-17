@@ -15,9 +15,12 @@
 
 use std::num::NonZeroU64;
 
+pub mod console;
 pub mod guild_room;
+pub mod line_extended;
 pub mod party_room;
 pub mod private_channel;
+pub mod private_channel_extended;
 pub mod public_channels;
 
 pub use crate::charm_wire::CyclopediaWireError as ChatWireError;
@@ -66,6 +69,8 @@ pub enum ChatSpeechMode {
     Say = 1,
     Whisper = 2,
     Yell = 3,
+    /// Server-owned monster speech, negotiated through AMBIENT_SOUND_V1.
+    MonsterSay = 4,
 }
 
 impl ChatSpeechMode {
@@ -74,6 +79,7 @@ impl ChatSpeechMode {
             1 => Ok(Self::Say),
             2 => Ok(Self::Whisper),
             3 => Ok(Self::Yell),
+            4 => Ok(Self::MonsterSay),
             _ => Err(ChatWireError::Malformed),
         }
     }
@@ -270,8 +276,14 @@ fn read_text(input: &[u8], cursor: &mut usize, maximum: usize) -> WireResult<Str
     Ok(text.to_owned())
 }
 
-fn check_position(position: &ActorPosition) -> WireResult<()> {
-    if (0..=MAX_FLOOR).contains(&position.floor) {
+fn check_position(position: &ActorPosition, native: bool) -> WireResult<()> {
+    if (if native {
+        -MAX_FLOOR..=0
+    } else {
+        0..=MAX_FLOOR
+    })
+    .contains(&position.floor)
+    {
         Ok(())
     } else {
         Err(ChatWireError::Malformed)
@@ -307,6 +319,9 @@ pub fn encode_chat_intent(intent: &ChatIntent) -> WireResult<Vec<u8>> {
         ChatIntent::Party { text } => return party_room::encode_intent(text),
         ChatIntent::PrivateChannel(intent) => return private_channel::encode_intent(intent),
         ChatIntent::Say { mode, text } => {
+            if *mode == ChatSpeechMode::MonsterSay {
+                return Err(ChatWireError::Malformed);
+            }
             check_text(text, MAX_CHAT_TEXT_BYTES)?;
             push_varint_field(&mut inner, 1, *mode as u64);
             inner = encode_text_message(&inner, text);
@@ -384,10 +399,16 @@ fn decode_intent_variant(field: u64, inner: &[u8]) -> WireResult<ChatIntent> {
     };
     let text = || text.clone().ok_or(ChatWireError::Malformed);
     Ok(match field {
-        1 => ChatIntent::Say {
-            mode: ChatSpeechMode::from_wire(enum_value(first)?)?,
-            text: text()?,
-        },
+        1 => {
+            let mode = ChatSpeechMode::from_wire(enum_value(first)?)?;
+            if mode == ChatSpeechMode::MonsterSay {
+                return Err(ChatWireError::Malformed);
+            }
+            ChatIntent::Say {
+                mode,
+                text: text()?,
+            }
+        }
         2 => match first {
             Some(FirstField::Name(recipient_name)) => ChatIntent::Private {
                 recipient_name,
@@ -466,6 +487,10 @@ pub fn decode_chat_rooms(payload: &[u8]) -> WireResult<ChatRoomSet> {
 
 /// Encodes a line delta (type 1). A line outside the bounds is a server fault.
 pub fn encode_chat_line(line: &ChatLine) -> WireResult<Vec<u8>> {
+    encode_chat_line_with_basis(line, false)
+}
+
+pub(crate) fn encode_chat_line_with_basis(line: &ChatLine, native: bool) -> WireResult<Vec<u8>> {
     let mut output = Vec::with_capacity(MAX_CHAT_LINE_BYTES);
     match line {
         ChatLine::Guild(line) => return guild_room::encode_line(line),
@@ -482,7 +507,7 @@ pub fn encode_chat_line(line: &ChatLine) -> WireResult<Vec<u8>> {
         } => {
             check_text(speaker_name, MAX_CHAT_NAME_BYTES)?;
             check_text(text, MAX_CHAT_TEXT_BYTES)?;
-            check_position(position)?;
+            check_position(position, native)?;
             push_varint_field(&mut output, 1, 1);
             push_message_field(&mut output, 2, &speaker.identity);
             push_varint_field(&mut output, 3, speaker.generation.get());
@@ -528,6 +553,10 @@ struct LineFields {
 }
 
 pub fn decode_chat_line(payload: &[u8]) -> WireResult<ChatLine> {
+    decode_chat_line_with_basis(payload, false)
+}
+
+pub(crate) fn decode_chat_line_with_basis(payload: &[u8], native: bool) -> WireResult<ChatLine> {
     if payload.len() > MAX_CHAT_LINE_BYTES {
         return Err(ChatWireError::LimitExceeded);
     }
@@ -558,7 +587,7 @@ pub fn decode_chat_line(payload: &[u8]) -> WireResult<ChatLine> {
             (8, 2) => {
                 let position = decode_position(read_bytes(input, cursor)?)
                     .map_err(|_| ChatWireError::Malformed)?;
-                check_position(&position)?;
+                check_position(&position, native)?;
                 set_once(&mut f.position, position)
             }
             _ => Err(ChatWireError::Malformed),

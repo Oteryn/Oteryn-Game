@@ -29,5 +29,21 @@
     "not_applicable": {
       "settings": "No persistent quest settings; tracking is session-owned."
     }
+  },
+  {
+    "mechanic": "0016-quest-log",
+    "kind": "keybindings",
+    "id": "0016-quest-log-tracker-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+SHIFT+Q",
+    "entry": "input.rs::tracker_key"
+  },
+  {
+    "mechanic": "0016-quest-log",
+    "kind": "panels",
+    "id": "0016-quest-log-tracker-panel",
+    "status": "supported",
+    "entry": "view.rs::tracker_text"
   }
 ]

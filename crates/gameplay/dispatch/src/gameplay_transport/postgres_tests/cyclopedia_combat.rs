@@ -258,7 +258,7 @@ fn scenario() -> TestResult {
         stale_admitted.item_fence = Some(stale_fence);
         assert!(
             owner
-                .cyclopedia_character_wire(stale_admitted, tab, &[8, 0, 0, 1])
+                .cyclopedia_character_wire(stale_admitted, 0, tab, &[8, 0, 0, 1])
                 .await
                 .is_err()
         );
@@ -393,7 +393,7 @@ fn scenario() -> TestResult {
             stale_viewer.continuity.connection_generation = refused.connection_generation.get();
             assert!(
                 owner
-                    .cyclopedia_character_wire(stale_viewer, tab, &foreign)
+                    .cyclopedia_character_wire(stale_viewer, 0, tab, &foreign)
                     .await
                     .is_err()
             );

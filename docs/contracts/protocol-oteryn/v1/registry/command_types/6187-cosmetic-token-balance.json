@@ -1,0 +1,10 @@
+{
+  "id": 6187,
+  "name": "COSMETIC_TOKEN_BALANCE",
+  "owner_decision": "Owner 2026-11-09 T193; official Tibia news 8998, character-bound 1:1 Cosmetic Tokens",
+  "capability": 479,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/store-cosmetic-tokens-v1.md#balance",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/store-cosmetic-tokens-v1.md#balance",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 8
+}

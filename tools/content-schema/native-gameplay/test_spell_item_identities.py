@@ -31,6 +31,37 @@ class ItemIdentityTests(unittest.TestCase):
         self.assertEqual(actual["authoring"]["item"]["revision"], "spell-p2-r21")
         self.assertNotIn("production_binding", self.document["records"][0])
 
+    def test_returned_binding_is_independent_of_donor_index(self):
+        bindings = self.index([self.row])
+        before = copy.deepcopy(bindings)
+        actual = bind_profiles(self.document, bindings, {3582})
+        actual["records"][0]["production_binding"]["target"]["revision"] = "changed"
+        self.assertEqual(bindings, before)
+        bindings["3582"]["target"]["key"] = "changed"
+        self.assertEqual(actual["records"][0]["production_definition"]["production_key"],
+                         "oteryn:item.tibia.i3582")
+
+    def test_scoped_binding_reuse_rechecks_pins_and_isolates_consumers(self):
+        import sys
+        sys.path.insert(0, str(identity.ROOT / 'tools/content-migration'))
+        from qualification_inputs import appearance_input_scope
+        raw = json.dumps({"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1",
+                          "family": "Item", "bindings": [self.row]}).encode()
+        digest = hashlib.sha256(raw).hexdigest()
+        with appearance_input_scope(), patch.object(identity, '_binding_index',
+                wraps=identity._binding_index) as parse:
+            first = binding_index(raw, digest)
+            first['3582']['target']['revision'] = 'changed'
+            second = binding_index(raw, digest)
+            self.assertEqual(second['3582'], self.row)
+            self.assertEqual(parse.call_count, 1)
+            with self.assertRaisesRegex(ValueError, 'digest mismatch'):
+                binding_index(raw, '0' * 64)
+            bad = copy.deepcopy(self.row)
+            bad['disposition'] = 'HYPOTHESIS'
+            with self.assertRaises(ValueError):
+                self.index([bad])
+
     def test_missing_binding_cannot_be_derived_from_numeric_id(self):
         with self.assertRaises(ValueError):
             bind_profiles(self.document, {}, {3582})

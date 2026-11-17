@@ -12,6 +12,7 @@ use crate::movement::interest::{
     InterestChange, InterestDiff, InterestEntity, InterestIndex, VisibilityPosition,
     VisibilityQuery, VisibilitySettings, diff_interest,
 };
+pub use oteryn_protocol_oteryn::entity_names::EntityDisplayName;
 pub use oteryn_protocol_oteryn::world_spatial::*;
 pub use oteryn_protocol_oteryn::world_spatial_entities::*;
 
@@ -132,12 +133,19 @@ pub enum VisibleKind {
     Hireling,
     Corpse {
         item_definition_ref: std::num::NonZeroU32,
+        native_appearance_id: Option<std::num::NonZeroU16>,
+    },
+    /// An immovable Source-owned volatile Item, never a durable corpse.
+    GroundItem {
+        item_definition_ref: std::num::NonZeroU32,
     },
 }
 
 /// VIS-3: one entity of the session's Channel, before the interest query.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ChannelEntity {
+    pub source_icons: NativeCreatureIcons,
+    pub display_name: Option<EntityDisplayName>,
     pub health_percent: u8,
     pub direction: StepDirection,
     pub kind: VisibleKind,
@@ -163,10 +171,19 @@ pub struct ChannelEntities {
 }
 
 fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
-    let actor = EntityDetail::Actor {
-        direction: entity.direction,
-        appearance_ref: PLACEHOLDER_APPEARANCE_REF,
-        health_percent: entity.health_percent,
+    let actor = if entity.source_icons.iter().next().is_some() {
+        EntityDetail::ActorWithIcons {
+            direction: entity.direction,
+            appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+            health_percent: entity.health_percent,
+            icons: entity.source_icons,
+        }
+    } else {
+        EntityDetail::Actor {
+            direction: entity.direction,
+            appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+            health_percent: entity.health_percent,
+        }
     };
     let (kind, detail) = match entity.kind {
         VisibleKind::Player => (EntityKind::Player, actor),
@@ -182,8 +199,27 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
         // The handle is attached per session under capability 4 (`attach`).
         VisibleKind::Corpse {
             item_definition_ref,
+            native_appearance_id,
         } => (
             EntityKind::Corpse,
+            match native_appearance_id {
+                Some(appearance_id) => EntityDetail::ObjectWithAppearance {
+                    item_definition_ref: item_definition_ref.get(),
+                    quantity: 1,
+                    item_handle: None,
+                    appearance_id,
+                },
+                None => EntityDetail::Object {
+                    item_definition_ref: item_definition_ref.get(),
+                    quantity: 1,
+                    item_handle: None,
+                },
+            },
+        ),
+        VisibleKind::GroundItem {
+            item_definition_ref,
+        } => (
+            EntityKind::GroundItem,
             EntityDetail::Object {
                 item_definition_ref: item_definition_ref.get(),
                 quantity: 1,
@@ -192,6 +228,7 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
         ),
     };
     WorldSpatialEntity {
+        display_name: entity.display_name,
         kind,
         entity: EntityRef {
             identity: entity.identity,
@@ -339,7 +376,12 @@ impl SessionVisibility {
         let mut index = InterestIndex::new();
         let mut by_identity = BTreeMap::new();
         for entity in &channel.entities {
-            if !self.objects && matches!(entity.kind, VisibleKind::Corpse { .. }) {
+            if !self.objects
+                && matches!(
+                    entity.kind,
+                    VisibleKind::Corpse { .. } | VisibleKind::GroundItem { .. }
+                )
+            {
                 continue;
             }
             // An entity off the -15..=15 floors cannot be shown; the observer then fails below.
@@ -469,16 +511,22 @@ impl SessionVisibility {
                 ),
             }
         }
-        // HP changes do not advance a creature's position revision. Keep the same
-        // interest selection, but publish stationary HP through the existing actor detail.
+        // Actor metadata, corpse Item and display-name changes do not advance
+        // a position revision. Publish them through the same selected record.
         for entity in &selected {
             let identity = entity.entity.identity;
             let Some(prior) = self.entities.get(&identity) else {
                 continue;
             };
-            let health_changed = matches!((&prior.detail, &entity.detail),
-                (EntityDetail::Actor { health_percent: before, .. }, EntityDetail::Actor { health_percent: after, .. }) if before != after);
-            if health_changed
+            let actor_changed = matches!(
+                entity.detail,
+                EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. }
+            ) && prior.detail != entity.detail;
+            let object_changed = matches!(
+                entity.detail,
+                EntityDetail::Object { .. } | EntityDetail::ObjectWithAppearance { .. }
+            ) && prior.detail != entity.detail;
+            if (actor_changed || object_changed || prior.display_name != entity.display_name)
                 && !delta
                     .enter
                     .iter()
@@ -591,6 +639,7 @@ mod tests {
         let mut identity = [0_u8; ENTITY_IDENTITY_BYTES];
         identity[15] = n;
         WorldSpatialEntity {
+            display_name: None,
             kind,
             entity: EntityRef {
                 identity,
@@ -627,6 +676,7 @@ mod tests {
             at(
                 3,
                 VisibleKind::Corpse {
+                    native_appearance_id: None,
                     item_definition_ref: std::num::NonZeroU32::MIN,
                 },
                 103,
@@ -829,6 +879,9 @@ mod tests {
 
     fn at(n: u32, kind: VisibleKind, x: i32, y: i32, floor: i16) -> ChannelEntity {
         ChannelEntity {
+            source_icons:
+                oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
+            display_name: None,
             health_percent: 100,
             direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
             kind,
@@ -1023,6 +1076,47 @@ mod tests {
         assert_eq!(creature.revision, 0);
         assert_eq!(
             view.refresh(&channel([creature]), &mut no_handles)
+                .expect("unchanged"),
+            VisibilityUpdate::Unchanged
+        );
+    }
+
+    #[test]
+    fn skinning_stationary_corpse_definition_is_sent_once_without_a_position_revision() {
+        let mut view = SessionVisibility::with_objects(true);
+        let mut corpse = at(
+            1,
+            VisibleKind::Corpse {
+                native_appearance_id: None,
+                item_definition_ref: std::num::NonZeroU32::MIN,
+            },
+            101,
+            100,
+            7,
+        );
+        view.snapshot(&channel([corpse]), &mut no_handles)
+            .expect("snapshot");
+        corpse.kind = VisibleKind::Corpse {
+            native_appearance_id: None,
+            item_definition_ref: std::num::NonZeroU32::new(2).expect("spent Item ref"),
+        };
+        let changed = view
+            .refresh(&channel([corpse]), &mut no_handles)
+            .expect("corpse Item update");
+        assert_eq!(update_ids(&changed), [id(1)]);
+        let VisibilityUpdate::Delta(delta) = changed else {
+            panic!("corpse Item delta")
+        };
+        assert!(matches!(
+            delta.update[0].detail,
+            EntityDetail::Object {
+                item_definition_ref: 2,
+                ..
+            }
+        ));
+        assert_eq!(corpse.revision, 0);
+        assert_eq!(
+            view.refresh(&channel([corpse]), &mut no_handles)
                 .expect("unchanged"),
             VisibilityUpdate::Unchanged
         );
@@ -1267,6 +1361,7 @@ mod tests {
     #[test]
     fn objects_are_shown_only_to_a_session_with_capability_4() {
         let corpse = VisibleKind::Corpse {
+            native_appearance_id: None,
             item_definition_ref: std::num::NonZeroU32::new(4240).expect("ref"),
         };
         let mut corpse_at = at(2, corpse, 101, 100, 7);
@@ -1318,5 +1413,38 @@ mod tests {
             CAPABILITY_ITEM_VIEW_MOVE_V1,
         ];
         assert!(encode_visibility_snapshot(&selected, &with).is_ok());
+    }
+}
+
+#[cfg(test)]
+mod soulpit_icon_projection_tests {
+    use super::*;
+    #[test]
+    fn srx3_soulpit_actual_entity_projection_retains_native_source_icon() -> Result<(), String> {
+        let entity = ChannelEntity {
+            source_icons: NativeCreatureIcons::new(&[NativeCreatureIcon {
+                category: 1,
+                id: 6,
+                count: 15,
+            }])
+            .map_err(|error| format!("source Powerful badge: {error:?}"))?,
+            display_name: None,
+            health_percent: 100,
+            direction: StepDirection::South,
+            kind: VisibleKind::Creature,
+            identity: [9; 16],
+            generation: 1,
+            position: ActorPosition {
+                x: 32373,
+                y: 31151,
+                floor: -8,
+            },
+            revision: 1,
+        };
+        let EntityDetail::ActorWithIcons { icons, .. } = wire_entity(&entity).detail else {
+            return Err("actual entity projection must preserve source icons".into());
+        };
+        assert_eq!(icons, entity.source_icons);
+        Ok(())
     }
 }

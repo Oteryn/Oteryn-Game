@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-game-server",
+    "--lib",
+    "quest_catalogue_boot_tests",
+    "--quiet"
+  ],
+  "QPC_SLOT": "1",
+  "exit_code": 101,
+  "seconds": 213.473
+}

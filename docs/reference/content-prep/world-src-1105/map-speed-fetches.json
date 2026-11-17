@@ -1,0 +1,632 @@
+[
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "data-otservbr-global/scripts/creaturescripts/others/login.lua",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/scripts/creaturescripts/others/login.lua",
+    "status": 200,
+    "git_blob": "c833dfd90fb496a3323a16bfe5e672b6127b7755",
+    "sha256": "13befd185868d4825be43b9775d4876a3f5ec0e2dd3d4fa3e9da41ba7855101b",
+    "lines": 43
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "data/events/scripts/player.lua",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/events/scripts/player.lua",
+    "status": 200,
+    "git_blob": "921ce0efded459391b7c66ddc72a335f1d9d5d1c",
+    "sha256": "e5f1f4f4a7d7b94f6bf2e2a1a5c2cc692d5ac153fd7d25ae4ae79e79852c3288",
+    "lines": 690
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "data/libs/functions/player.lua",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/libs/functions/player.lua",
+    "status": 200,
+    "git_blob": "0ca29c387806995913db9d955e59f627b50341bd",
+    "sha256": "26e85b0c577b76ef42c429a459428758a6a8dfc3e019bb771403bc33fbbf5c0c",
+    "lines": 896
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "data/libs/gamestore/player.lua",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/libs/gamestore/player.lua",
+    "status": 200,
+    "git_blob": "2020ef5fd3110d6f9225efbaa10787c26331ee22",
+    "sha256": "ef7ec1e3341076b68ce435d2854c4e2367d728f7170ecc065660ec060e111352",
+    "lines": 355
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "data/modules/scripts/gamestore/catalog/boost.lua",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/modules/scripts/gamestore/catalog/boost.lua",
+    "status": 200,
+    "git_blob": "19368571bf95f621c830c5e4266bb4b1357a547b",
+    "sha256": "e3d4a83f4a97f36defd4da3165c514cdc3fe6a72e92af981ae3068f5e5dc7657",
+    "lines": 16
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "data/scripts/creaturescripts/player/login.lua",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/creaturescripts/player/login.lua",
+    "status": 200,
+    "git_blob": "d1aced568e3bf62e2f9234e6a0ea2c8db9721dd9",
+    "sha256": "c80b22f1fc1db9071720831e2632bf61b7e6114190d2818a4b6ff8515c6600b3",
+    "lines": 210
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "data/scripts/lib/register_achievements.lua",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/scripts/lib/register_achievements.lua",
+    "status": 200,
+    "git_blob": "6e6df0e7a37abe3cc72f2066715242ec53b334d5",
+    "sha256": "de33d7341d17e3410da5346c229ce68317526d70785b0a2e277f3fff546f1f7d",
+    "lines": 703
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/creature.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/creature.cpp",
+    "status": 200,
+    "git_blob": "89a4af117d4de4e9373ddcb96c2513006c22c6ab",
+    "sha256": "f77f2c811f0d05a315ddd316a5d61f309814bc477ca290281a2b09e80c403683",
+    "lines": 2239
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/creature.hpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/creature.hpp",
+    "status": 200,
+    "git_blob": "0daf29f4cce526952d1a1e1fd4d5fb3fedcd3dd1",
+    "sha256": "0a405bbf7e92606e37d407266e809a39323218727b79b2deb275bd309b2c5fad",
+    "lines": 1080
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/players/components/player_cyclopedia.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/components/player_cyclopedia.cpp",
+    "status": 200,
+    "git_blob": "91a3235e53e5f7ca4da22649bff6bad34cf44e3a",
+    "sha256": "90b70aad7323508b4c5658ef30b698d33ebe83d637548f7c828b40382276a467",
+    "lines": 254
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/players/components/player_cyclopedia.hpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/components/player_cyclopedia.hpp",
+    "status": 200,
+    "git_blob": "965482379532893df0eb5b2ce2b87001ad13df4f",
+    "sha256": "0ff4a1835677ab6960ebd1c9a6dc632ac91e60cf991422fff99fb35e15eceaa1",
+    "lines": 43
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/players/player.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/player.cpp",
+    "status": 200,
+    "git_blob": "d1b12e93fdf34598af61c7f69adceac9d977e819",
+    "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+    "lines": 13456
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/players/player.hpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/player.hpp",
+    "status": 200,
+    "git_blob": "cd701ab0b45fa174f8deb27854ad54a4beee632a",
+    "sha256": "543db347284aa85f42b1c82297a951cd64b4a1d2ce989a5a3447c7bfa87d32ab",
+    "lines": 2002
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/enums/player_cyclopedia.hpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/enums/player_cyclopedia.hpp",
+    "status": 200,
+    "git_blob": "45fed9ad2f3b7e35bdc7afd9dbd52d5d1b736311",
+    "sha256": "9346bcc70d610213f937598ade88f7b8b9d84832c0f47450bad982f8fe084d14",
+    "lines": 120
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/game/game.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/game/game.cpp",
+    "status": 200,
+    "git_blob": "40a667ac7c28cff9a04324cca18575cebc92f13f",
+    "sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+    "lines": 13141
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/lua/functions/creatures/creature_functions.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/lua/functions/creatures/creature_functions.cpp",
+    "status": 200,
+    "git_blob": "66a8843aa510dc8f93b2cc1b4a6fbe131c12e7ba",
+    "sha256": "399757016f7fd226fdff1e9bbf406a5a65771b0869e1f4daf1644d2eeda47156",
+    "lines": 1263
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/lua/functions/creatures/player/player_functions.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/lua/functions/creatures/player/player_functions.cpp",
+    "status": 200,
+    "git_blob": "a755019727a43bdaa7d1cde6dca720e6e5a6ebb7",
+    "sha256": "d9860d99eb8893b80d7b6d77ac2fad433733c360ce143c1d723d78a0d7de2aac",
+    "lines": 5750
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/server/network/protocol/protocolgame.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/server/network/protocol/protocolgame.cpp",
+    "status": 200,
+    "git_blob": "0659484cf88976eb6d44c455c65792741d6a82e1",
+    "sha256": "267dfdb2f62c279b4166f6e5b9bd96e3cee1e6db4c04a928687ba7e3acbe19c9",
+    "lines": 12461
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/scripts/creaturescripts/others/login.lua",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/others/login.lua",
+    "status": 200,
+    "git_blob": "36529238e11577b6bf88919f60b1581540a326fb",
+    "sha256": "9ff22fb2201ddfb01984ae3511870d6164598ac5364e18a52711704b16c80853",
+    "lines": 33
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/events/scripts/player.lua",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/events/scripts/player.lua",
+    "status": 200,
+    "git_blob": "b31a4baa62f4ded2d1a65edb2a5b8b4b8d4b6907",
+    "sha256": "a2766ae66dbe90c6fb787565debe8fe796117c138a37caa56080776f38ad165c",
+    "lines": 717
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/libs/functions/player.lua",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/libs/functions/player.lua",
+    "status": 200,
+    "git_blob": "6edaa6b2ac2814634bde69782353b0a3c3396bc3",
+    "sha256": "897edd1b4509622480dfc713d226ae54dbef1ce06c7a4a7af556fbc6744f6a0e",
+    "lines": 981
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/scripts/creaturescripts/player/login.lua",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/creaturescripts/player/login.lua",
+    "status": 200,
+    "git_blob": "4235a1e38ed96b43ddb4b787f65e13dba0cc591e",
+    "sha256": "5e7fc9e8a902b95a72cc2685629f3ec8141e3b7b41109a45566c7e23f26138b8",
+    "lines": 229
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/scripts/discovery_geometry.lua",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/discovery_geometry.lua",
+    "status": 200,
+    "git_blob": "0c91a992c1038c3c8df66b079b7f69758277f153",
+    "sha256": "b64960ec0c270591c5605791d525eb358368c2c8cb2203c0cea764641aa9becd",
+    "lines": 1352
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/scripts/discovery_system.lua",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/discovery_system.lua",
+    "status": 200,
+    "git_blob": "a2ae9330dcb4902ff65db73b7e94655dd2b3402b",
+    "sha256": "db42b499100a096954251f3796493702689800e84efa921a2625ab5a5e8ba11b",
+    "lines": 793
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/scripts/lib/register_achievements.lua",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/lib/register_achievements.lua",
+    "status": 200,
+    "git_blob": "d170996e931902c29b716e05d38d52c3ea303892",
+    "sha256": "24ca189087f6403ab994720763b69ee04eab0397ff917ff7700edb9063d6de37",
+    "lines": 718
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data/scripts/talkactions/god/discovery_test.lua",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/scripts/talkactions/god/discovery_test.lua",
+    "status": 200,
+    "git_blob": "a3192feaecb5a125e17a4b4976553a48c4f986ed",
+    "sha256": "464e5422ef45db6493f3afa1ee622346c37d69583a449b8ad7d3694ea809ec36",
+    "lines": 106
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/creature.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/creature.cpp",
+    "status": 200,
+    "git_blob": "d1e52e5881ea75cdc5835e0563dc842b38372f85",
+    "sha256": "c38b9b326b8b6943e33c5b06ea53a8d3d081784453b4a600acfec9185e75e39a",
+    "lines": 1982
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/creature.hpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/creature.hpp",
+    "status": 200,
+    "git_blob": "d813373b62de81394b8d31545cb3972c0309c3b1",
+    "sha256": "df14779052a582d1fc4202ffb788d23310bd9d71ef50452a8bb9175c2b9c1fb6",
+    "lines": 917
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/players/cyclopedia/player_cyclopedia.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/cyclopedia/player_cyclopedia.cpp",
+    "status": 200,
+    "git_blob": "133ff3d7bddccc8f82e05d878d78dbf8f4df0d9b",
+    "sha256": "347888b32d67d5d8a004314c4989bbf4261b1e5d9a332d320a736ab6d266e7c9",
+    "lines": 194
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/players/cyclopedia/player_cyclopedia.hpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/cyclopedia/player_cyclopedia.hpp",
+    "status": 200,
+    "git_blob": "2e5cad47269ee453b7284cc78892712b30f31627",
+    "sha256": "ac28fb74ed4e213945a1df07a028f3e752fed838a5dde368c25005ad5e45b120",
+    "lines": 51
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/players/player.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/player.cpp",
+    "status": 200,
+    "git_blob": "0cad0f7c4560bc6ede267756ff50b8568e266125",
+    "sha256": "1252ef7d27c7f77f5aaaadffdf9f85bb0820bb53beb67f2d900a42dcb187dd85",
+    "lines": 13856
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/players/player.hpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/player.hpp",
+    "status": 200,
+    "git_blob": "9f5b242532a2145e5d610a8b1ea7843f3d8cfdb0",
+    "sha256": "ec85e04043712d09731a86a3caba931a2cea938b6b6cc5d8ac33f9ed37302651",
+    "lines": 2168
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/enums/player_cyclopedia.hpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/enums/player_cyclopedia.hpp",
+    "status": 200,
+    "git_blob": "7314364824ba1ae79992835edf066b952d996ce1",
+    "sha256": "ccca41392e6d173645f75adcea70de740ce96451759f0becbde80f573bc3fdd3",
+    "lines": 130
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/game/game.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/game/game.cpp",
+    "status": 200,
+    "git_blob": "5f421b1b2361280abeb8b392bca0e0344fc04648",
+    "sha256": "5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6",
+    "lines": 13130
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/lua/functions/creatures/creature_functions.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/functions/creatures/creature_functions.cpp",
+    "status": 200,
+    "git_blob": "03242ac84346da6525c6c7ad79fb98726478e804",
+    "sha256": "fb8d8a65fa24edb11d4c068047839be29429981da3803f7a197b8ed97d2623ac",
+    "lines": 1273
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/lua/functions/creatures/player/player_functions.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/functions/creatures/player/player_functions.cpp",
+    "status": 200,
+    "git_blob": "04a738465b03b8354e60d8145b46e8c7ba78c1da",
+    "sha256": "d8a5dbfbfe710863b77b88e22bf1ba3f2353fc1a39c71eabcb8ae38db8ec33b0",
+    "lines": 6578
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/server/network/protocol/protocolgame.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/server/network/protocol/protocolgame.cpp",
+    "status": 200,
+    "git_blob": "ffb6eaf41359cb26228a3356f458f33646ec984b",
+    "sha256": "e180d5a1737c74fdb6bc24ab293021dd91713637d633c220003fbe40260067c0",
+    "lines": 11962
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/players/components/player_achievement.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/components/player_achievement.cpp",
+    "status": 200,
+    "git_blob": "96e7d191093ebb88e710807e40421ce7033fbb36",
+    "sha256": "b2ce01822a11142910911e803e993ed6672ed00be3ea965fb3e85f5e685ff030",
+    "lines": 140
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/players/components/player_achievement.hpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/components/player_achievement.hpp",
+    "status": 200,
+    "git_blob": "b0a6f4bb49a7ffcd1c80426eb2b5618ad32b33ee",
+    "sha256": "f812648034a51bce849c70c630112909f6827f3997917577e519b1b48dcae74d",
+    "lines": 48
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/players/components/player_badge.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/components/player_badge.cpp",
+    "status": 200,
+    "git_blob": "d72f21e3de08aeea80dcfbaa73a23571615b1aad",
+    "sha256": "20df1666eaa7ad625252af7c06e1c9dce3cbd71b930a9f09edf63817185455fb",
+    "lines": 189
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/players/components/player_badge.hpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/components/player_badge.hpp",
+    "status": 200,
+    "git_blob": "d7dd9b80e8350c2467b60fff7cff02aba1291a82",
+    "sha256": "9534e05479684641352e4510a844010d6be3a08966b657f4f53742c0d0442737",
+    "lines": 65
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/players/components/player_title.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/components/player_title.cpp",
+    "status": 200,
+    "git_blob": "c885d5ee55970d8ce93a80bb477bc317fb9faa98",
+    "sha256": "8496f153b65cf56587fc55c853395d56fd0e704722b629bf49e003c50b015d89",
+    "lines": 329
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/players/components/player_title.hpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/players/components/player_title.hpp",
+    "status": 200,
+    "git_blob": "118806fee9ca6d939d73067af14c63c59d291f25",
+    "sha256": "e88db58dddac7f7d18efb00142f313954a5e4451fb2472fea362db3026f139aa",
+    "lines": 101
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/players/achievement/player_achievement.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/achievement/player_achievement.cpp",
+    "status": 200,
+    "git_blob": "0282c41c110acaa235ac618b286807358ef627ca",
+    "sha256": "3cdd1cd25c430446165be71e54e99a4772bfe1f9ab2eb2fafdda6ee92038d326",
+    "lines": 148
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/players/achievement/player_achievement.hpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/achievement/player_achievement.hpp",
+    "status": 200,
+    "git_blob": "4277c5e7cfe81481fae1bd8de737c38a74a50873",
+    "sha256": "ba57d87eca61be4fc72bb617f79e2e1c7c8527e54ed86f2afcb554d4d80f2967",
+    "lines": 56
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/players/cyclopedia/player_badge.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/cyclopedia/player_badge.cpp",
+    "status": 200,
+    "git_blob": "94bd632dd55d17053ecb9b6a981f9a9e73483d93",
+    "sha256": "37379e6b7a850a184724a035983ea3da4f86cd5f26c56541e828e04af8253b94",
+    "lines": 200
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/players/cyclopedia/player_badge.hpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/cyclopedia/player_badge.hpp",
+    "status": 200,
+    "git_blob": "05a4363f2b36d63f01e38d8c3f520a53520c437e",
+    "sha256": "98339ee7dfb9ca9c878162e2c16d47423f7b18cb7330ec781f0b8fd33624ba69",
+    "lines": 73
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/players/cyclopedia/player_title.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/cyclopedia/player_title.cpp",
+    "status": 200,
+    "git_blob": "dfff8c19ac0160a0f9aa51288c783905f75d9af2",
+    "sha256": "3f53eccf5a03a13ab6f495c6afcf748b3670f68523c3befa14cd009140245d22",
+    "lines": 338
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/players/cyclopedia/player_title.hpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/players/cyclopedia/player_title.hpp",
+    "status": 200,
+    "git_blob": "4f6150e43d7af2080eb83162d3b068c87067bc0b",
+    "sha256": "79e5dc1b982a2aa76220f383b7e6bef2403ab45784c93ff4c6ca1f9393477d27",
+    "lines": 109
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "data-otservbr-global/npc/charos.lua",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data-otservbr-global/npc/charos.lua",
+    "status": 200,
+    "git_blob": "2e426dedd33f2e286d9ace43f06ffa90b6c46b7c",
+    "sha256": "3aff5c9a3b7e8eac6bc89cbb73d8036b2f416f17e0669af80683142672a6474e",
+    "lines": 138
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/combat/condition.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/combat/condition.cpp",
+    "status": 200,
+    "git_blob": "77a0b7990757443b033dba79f5ee45756d5472fb",
+    "sha256": "710af23b12fa89132e8994c8cf8c781a3fe7b1482f5db45c55d5d0303c5bc332",
+    "lines": 2955
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/combat/condition.hpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/combat/condition.hpp",
+    "status": 200,
+    "git_blob": "df928847dd342c698d77b8f92ddf30c2565cad54",
+    "sha256": "95d6ac4af25faebdbdfaede9a233337b1bd26caccb2c5b50cd8a27c1bab77de7",
+    "lines": 478
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/npc/charos.lua",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/charos.lua",
+    "status": 200,
+    "git_blob": "3d02aee46d15774e5267c394dc6b9de0c9baba54",
+    "sha256": "4c784b3044bca55810078be4bcb779afd82450e74e42dba564f1129565316d6e",
+    "lines": 122
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/combat/condition.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/combat/condition.cpp",
+    "status": 200,
+    "git_blob": "ad062c3bf48c6f02c09af514f1611a3cfc3c150f",
+    "sha256": "f5816ed3f546d9551facfcf655cf727f20de6ced808027d29da8b287514bf2e4",
+    "lines": 2826
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/combat/condition.hpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/combat/condition.hpp",
+    "status": 200,
+    "git_blob": "d3f2d837b07e25112e4856d3c288603f88cd0a56",
+    "sha256": "f033d32a7ca88fb50d749f71f4ade9211566ddd3abba790f7632649a2bfef3d7",
+    "lines": 441
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/monsters/spawns/spawn_monster.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/monsters/spawns/spawn_monster.cpp",
+    "status": 200,
+    "git_blob": "bdc368168b7fe34aaded2b9509902e72f5960b81",
+    "sha256": "a837b4178009e3e4bbd9ed213ce0220a26520cb22d88ce79ea171dc06180435a",
+    "lines": 531
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/creatures/monsters/spawns/spawn_monster.hpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/creatures/monsters/spawns/spawn_monster.hpp",
+    "status": 200,
+    "git_blob": "a60c67914973d74d4229e9b5af1f87ef073ec040",
+    "sha256": "59f12124d405ef31b62f5897f037c2801f757b69ea3a56d62b98dab855ce206a",
+    "lines": 97
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/game/game.hpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/game/game.hpp",
+    "status": 200,
+    "git_blob": "2b9e9e4ef8055211c7245209148388eddabcf5de",
+    "sha256": "ce8ecad7ff16faa1af808908dd7c3a12dd77244f3f3b3a06d5e991efadebb3b3",
+    "lines": 1013
+  },
+  {
+    "repo": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/lua/functions/core/game/game_functions.cpp",
+    "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/lua/functions/core/game/game_functions.cpp",
+    "status": 200,
+    "git_blob": "71de5b282bd460044456168ce5d2c201dc328a7d",
+    "sha256": "6e15c632e1e8c4174e5b7f310f42060e5498f106530ea5c5446bf570bffbadad",
+    "lines": 1158
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/monsters/spawns/spawn_monster.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/monsters/spawns/spawn_monster.cpp",
+    "status": 200,
+    "git_blob": "b35f57e6368959445b2faa2f17e8d0fae277d809",
+    "sha256": "9fcce3efb191337a6fffcdaf19572ca36233faba8080534131675484d6ca3187",
+    "lines": 595
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/creatures/monsters/spawns/spawn_monster.hpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/creatures/monsters/spawns/spawn_monster.hpp",
+    "status": 200,
+    "git_blob": "ca0447a85cdf306805b6ceee83e9aaf9e21fd41b",
+    "sha256": "5ea07ccfb3cd2591750e58a82529a2cb831188b3190f2f52741d041afaddc57d",
+    "lines": 110
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/game/game.hpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/game/game.hpp",
+    "status": 200,
+    "git_blob": "318e3844dfdf6361c2dec45372adf0dfb95cf81e",
+    "sha256": "766241549ec37ac5001f7102fb022b76995726ed2a6be2c24157f92012b7ace2",
+    "lines": 1058
+  },
+  {
+    "repo": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "src/lua/functions/core/game/game_functions.cpp",
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/src/lua/functions/core/game/game_functions.cpp",
+    "status": 200,
+    "git_blob": "4b2fc25acc22c4bf301361c0b9f0ccc7d57db82f",
+    "sha256": "e75c5a941e9ae67e10a768920b0c508c296c30824834afe90c84c640ef6293c0",
+    "lines": 1305
+  }
+]

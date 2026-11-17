@@ -1,0 +1,22 @@
+{
+  "id": "PUBPROJ-DEATH-RECHECK-BATCH",
+  "owner_contract": "OTERYN_GAME_PUBLIC_PROJECTIONS_V2.md",
+  "resource": "Unavailable death subjects rechecked per reconciled maintenance pass",
+  "unit": "subjects",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "An indexed deadline queue selects at most32 due subjects; source expiry is revalidated under the existing subject lock before a new snapshot is derived.",
+  "client_visible": false,
+  "boundary_tests": [
+    "apps/game-server/tests/support/authority_cases/pubproj_death_expiry.rs:pubproj_unknown_death_window_recheck_expires_only_actual_history_and_suppresses_hidden"
+  ],
+  "consumers": [
+    "apps/game-server/migrations/1352_public_death_capture.sql",
+    "crates/gameplay/durability/src/durability/public_projections/v2.rs"
+  ],
+  "notes": "Owner2026-11-07 PUBPROJ; allocation10093 continues base-next10019 plus lane offset50. No guessed historical classification."
+}

@@ -177,7 +177,7 @@ fn endgame_entry_forwards_primal_soul_policy_and_canonical_final_phase() -> Resu
         (
             "oteryn:creature.goshnar_s_megalomania_purple",
             (33675, 31634, 14),
-            259_200,
+            244_800,
         ),
     ] {
         let encounter = Encounter::from_boss_key(key).ok_or(EntryRefusal::InvalidInput)?;
@@ -210,12 +210,53 @@ fn endgame_entry_forwards_primal_soul_policy_and_canonical_final_phase() -> Resu
                     qualified.source_policy(),
                     Some(SourceEntryPolicy {
                         lever: (33675, 31634, 14),
-                        retry_seconds: 259_200,
+                        retry_seconds: 244_800,
                     })
                 );
                 ready(Ok(()))
             })),
             Poll::Ready(Ok(()))
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn endgame_entry_activity_refusal_keeps_a_low_level_teammate_as_level() -> Result<(), String> {
+    use oteryn_gameplay_durability::durability::activity_handoff::ActivityRefusal;
+    let encounter = Encounter::from_boss_key("oteryn:creature.the_primal_menace")
+        .ok_or("captured Primal encounter")?;
+    let mut participants = [fact(1), fact(2)];
+    participants[1].level = 499;
+    let called = std::cell::Cell::new(false);
+    let result = poll(enter(encounter, &participants, |_| {
+        called.set(true);
+        ready(Ok(()))
+    }));
+    let Poll::Ready(Err(reason)) = result else {
+        return Err(format!("expected immediate party refusal, got {result:?}"));
+    };
+    assert_eq!(ActivityRefusal::from(reason), ActivityRefusal::Level);
+    assert!(!called.get());
+    Ok(())
+}
+
+#[test]
+fn primal_entry_rejects_unversioned_party_member_before_shared_owner() -> Result<(), EntryRefusal> {
+    let encounter = Encounter::from_boss_key("oteryn:creature.the_primal_menace")
+        .ok_or(EntryRefusal::InvalidInput)?;
+    for slot in 0..5 {
+        let mut members: Vec<_> = (1..=5).map(fact).collect();
+        members[slot].character_revision = 0;
+        let called = std::cell::Cell::new(false);
+        let result = poll(enter(encounter, &members, |_| {
+            called.set(true);
+            ready(Ok(()))
+        }));
+        assert_eq!(result, Poll::Ready(Err(EntryRefusal::InvalidInput)));
+        assert!(
+            !called.get(),
+            "invalid party slot {slot} must not reach admission"
         );
     }
     Ok(())

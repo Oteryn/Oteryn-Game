@@ -1,0 +1,7 @@
+{
+  "mechanic": "0491-imbuement-success-chance",
+  "kind": "panels",
+  "id": "0491-imbuement-success-chance-panel",
+  "status": "supported",
+  "entry": "protocol.rs::success_percent"
+}

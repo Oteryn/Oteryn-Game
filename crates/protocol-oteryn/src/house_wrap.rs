@@ -2,6 +2,11 @@
 pub const CAPABILITY_HOUSE_FURNITURE_WRAP_V1: u32 = 207;
 pub const COMMAND_WRAP: u32 = 402;
 
+mod catalogue;
+pub use catalogue::{
+    CATALOGUE_PAGE_SIZE, Catalogue, CatalogueEntry, decode_catalogue_query, encode_catalogue_query,
+};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Action {

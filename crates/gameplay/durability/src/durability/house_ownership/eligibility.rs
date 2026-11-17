@@ -16,7 +16,7 @@ pub(super) async fn read(
     premium_allowed: bool,
 ) -> Result<Candidate> {
     let account = bid.account;
-    let row=sqlx::query("SELECT r.lifecycle=1 AS active,r.account_id=encode($2,'hex')::uuid AS account_matches,r.world_id=encode($3,'hex')::uuid AS world_matches,coalesce(s.level,0) AS level,EXISTS(SELECT 1 FROM game_account_housing_slots WHERE account_id=encode($2,'hex')::uuid AND world_id=encode($3,'hex')::uuid) AS slot_occupied,EXISTS(SELECT 1 FROM game_account_house_bans WHERE account_id=encode($2,'hex')::uuid AND world_id=encode($3,'hex')::uuid AND banned_until>clock_timestamp()) AS banned FROM game_character_roots r LEFT JOIN game_character_progression_state s USING(character_id) WHERE r.character_id=encode($1,'hex')::uuid")
+    let row=sqlx::query("SELECT r.lifecycle=1 AS active,r.account_id=encode($2,'hex')::uuid AS account_matches,r.world_id=encode($3,'hex')::uuid AS world_matches,coalesce(s.level,0) AS level,(EXISTS(SELECT 1 FROM game_account_housing_slots WHERE account_id=encode($2,'hex')::uuid AND world_id=encode($3,'hex')::uuid) OR game_house_sale_reserves_slot(encode($2,'hex')::uuid,encode($3,'hex')::uuid)) AS slot_occupied,EXISTS(SELECT 1 FROM game_account_house_bans WHERE account_id=encode($2,'hex')::uuid AND world_id=encode($3,'hex')::uuid AND banned_until>clock_timestamp()) AS banned FROM game_character_roots r LEFT JOIN game_character_progression_state s USING(character_id) WHERE r.character_id=encode($1,'hex')::uuid")
         .bind(character.as_slice()).bind(account.as_slice()).bind(world.as_slice()).fetch_one(&mut **tx).await?;
     Ok(Candidate {
         bid,

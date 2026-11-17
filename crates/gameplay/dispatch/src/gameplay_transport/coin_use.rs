@@ -15,6 +15,12 @@ use oteryn_gameplay_economy::coin_exchange::CoinExchange;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use sha2::{Digest, Sha256};
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static CONVERTER_COMMIT_LANE_BARRIER:
+        std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 const GOLD_CONVERTER: &str = "oteryn:item.tibia.i23722";
 const TEMPORARY_GOLD_CONVERTER: &str = "oteryn:item.tibia.i25719";
 const GOLD_COIN: &str = "oteryn:item.tibia.i3031";
@@ -286,7 +292,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         converter: ItemKey,
         coin_item: ItemKey,
-    ) -> Option<UseOutcome> {
+    ) -> Option<Result<UseOutcome, ()>> {
         let (ItemKey::Instance(converter), ItemKey::Instance(coin_item)) = (converter, coin_item)
         else {
             return None;
@@ -360,17 +366,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             {
                 Ok(Some(receipt)) => {
-                    return Some(UseOutcome {
+                    return Some(Ok(UseOutcome {
                         disposition: if receipt.changed {
                             UseDisposition::Committed
                         } else {
                             UseDisposition::NotPossible
                         },
                         ..UseOutcome::rejected()
-                    });
+                    }));
                 }
                 Ok(None) => {}
-                Err(_) => return None,
+                Err(_) => return Some(Err(())),
             }
         }
         let converter_definition = converter_definition?;
@@ -378,7 +384,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let tool = match converter_definition.production_key.as_str() {
             GOLD_CONVERTER | TEMPORARY_GOLD_CONVERTER => CoinConverter::Gold(converter),
             MAGIC_CONVERTER_INACTIVE | MAGIC_CONVERTER_ACTIVE => {
-                return self.toggle_magic_converter(actor, command, converter).await;
+                return Some(
+                    self.toggle_magic_converter(actor, command, converter)
+                        .await
+                        .ok_or(()),
+                );
             }
             _ => return None,
         };
@@ -394,21 +404,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 CoinExchange::CrystalToPlatinum
             }
             _ => {
-                return Some(UseOutcome {
+                return Some(Ok(UseOutcome {
                     disposition: UseDisposition::NotPossible,
                     ..UseOutcome::rejected()
-                });
+                }));
             }
         };
+        #[cfg(test)]
+        if let Ok(barrier) = CONVERTER_COMMIT_LANE_BARRIER.try_with(std::sync::Arc::clone) {
+            barrier.0.notify_one();
+            barrier.1.notified().await;
+        }
+        // Checkpoint savers hold the spell lane before taking runtime.
+        let permit = self.spell_lane_permit().await?;
         let runtime = self.runtime.lock().await;
         {
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
             {
-                return Some(UseOutcome::rejected());
+                return Some(Ok(UseOutcome::rejected()));
             }
         }
-        let permit = self.spell_lane_permit().await?;
         let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let coins =
             super::npc_command::bank_coin_definitions(self, &runtime).map(|(a, b, c)| [a, b, c]);
@@ -441,15 +457,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            Ok(Some(receipt)) => Some(UseOutcome {
+            Ok(Some(receipt)) => Some(Ok(UseOutcome {
                 disposition: if receipt.changed {
                     UseDisposition::Committed
                 } else {
                     UseDisposition::NotPossible
                 },
                 ..UseOutcome::rejected()
-            }),
-            _ => None,
+            })),
+            Ok(None) | Err(_) => Some(Err(())),
         }
     }
 

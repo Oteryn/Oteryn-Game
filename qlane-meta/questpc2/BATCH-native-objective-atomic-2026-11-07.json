@@ -1,0 +1,45 @@
+{
+  "batch_id": "native-objective-atomic-2026-11-07",
+  "base_sha": "228abeaee",
+  "lifecycle": "AUTHORING",
+  "scope": "Native objective and XP atomicity; Dragon corpse/loot custody closure. Whole Elvenbane stays UNFINISHED.",
+  "implementation": [
+    "Freeze native death eligibility from coherent admitted Character quest state and exact native projected corpse; retain original capture on existing kill queue.",
+    "Compose native objective persistence in existing XP transaction. Verify fresh native audit transaction identity; exact receipt replay returns its original result. Remove deferred separate writer.",
+    "Extract original Quest SQL into shared helper without moving normal writer gates; preserve session/root/recovery fences and revision serialization.",
+    "Publish phase/revision snapshots only after commit, refresh Quest copies after Character slots release.",
+    "Admit exact pinned Dragon four-body decay chain and ten existing loot identities using repository generators; preserve all non-custody facts and accepted loot probabilities. Refresh derived section, prey results, source overlays, registration and world pins."
+  ],
+  "red": {
+    "version": 180006,
+    "seconds": 74.71,
+    "log": "/tmp/questpc2-native-objective-complete-custody-pg.log",
+    "failure": "Native death queued but isolated fixture had not admitted QuestSession, so zero objectives captured. Earlier 79.95s/73.92s REDs exposed missing corpse custody and stale derived loot section."
+  },
+  "green": {
+    "postgres_version": 180006,
+    "atomic_seconds": 74.95,
+    "atomic_marker_ms": 154,
+    "proof": "Real source Dragon native death, admitted fixture prior phase2, one captured objective, phase3, XP/Quest xmin equality and exact replay. Isolated engine proof, not real client combat/full route.",
+    "authority_seconds": 4.05,
+    "authority_marker_ms": 4045,
+    "annihilator_seconds": 105.2,
+    "annihilator_marker_ms": 104401,
+    "check_seconds": 17.87,
+    "clippy_seconds": 145,
+    "logs": {
+      "atomic": "/tmp/questpc2-native-objective-admitted-pg.log",
+      "authority": "/tmp/questpc2-native-atomic-final-authority-pg.log",
+      "annihilator": "/tmp/questpc2-native-atomic-final-annihilator-pg.log",
+      "check": "/tmp/questpc2-native-atomic-final-check.log",
+      "clippy": "/tmp/questpc2-native-atomic-final-clippy.log",
+      "pin_refresh": "/tmp/questpc2-native-atomic-final-pin-refresh.log",
+      "pin_check": "/tmp/questpc2-native-atomic-final-pin-check.log"
+    },
+    "source_python": "corpse3 tests1.599s;loot3 tests22.665s",
+    "derived": "final prey generator15cases/776creatures;registration43 write+check;overlay source-input verification;repo pin-refresh/check",
+    "format": "cargo fmt --all --check; explicit mounted fixture rustfmt; git diff --check"
+  },
+  "self_review": "Reviewed shared SQL extraction against original writer, native authority/receipt/revision/cache paths, replay branch, fixture setup and exact fourteen-identity semantic delta. No tests weakened. No full suites, freeze, PR, independent review or full-lane readiness claim.",
+  "next": "Implement continuous Elvenbane source exploration callbacks, all six earned real-client kills, guarded physical seven-item terminal reward/replay; qualify whole quest, then remaining owned entries."
+}

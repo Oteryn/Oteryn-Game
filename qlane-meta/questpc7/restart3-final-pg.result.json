@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_corruptor_ viola_mission_yes viola_book_postgres_real_use_repeat_replay_refusal_and_fences --test-threads=1 --nocapture",
+  "exit": 0,
+  "duration_seconds": 909.696
+}

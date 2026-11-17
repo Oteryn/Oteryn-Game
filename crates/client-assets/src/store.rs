@@ -19,6 +19,8 @@ pub const MAX_MANIFEST_BYTES: u64 = 4 * 1024 * 1024;
 
 #[derive(Deserialize)]
 struct RawManifest {
+    #[serde(default)]
+    boss_area_effects: Vec<u32>,
     files: Vec<RawManifestFile>,
 }
 
@@ -31,11 +33,16 @@ struct RawManifestFile {
 /// An asset directory plus the manifest that pins every file in it.
 #[derive(Debug, Clone)]
 pub struct AssetStore {
+    effects: crate::EffectCatalog,
     dir: PathBuf,
     manifest: HashMap<String, String>,
 }
 
 impl AssetStore {
+    #[must_use]
+    pub const fn effects(&self) -> &crate::EffectCatalog {
+        &self.effects
+    }
     /// Opens `dir` against the manifest file at `manifest_path`.
     pub fn open(dir: &Path, manifest_path: &Path) -> Result<Self, AssetError> {
         Self::open_manifest(dir, manifest_path, None)
@@ -67,12 +74,19 @@ impl AssetStore {
                 file: label.clone(),
                 reason: error.to_string(),
             })?;
+        let effects = crate::EffectCatalog::from_ids(raw.boss_area_effects).map_err(|reason| {
+            AssetError::Malformed {
+                file: label.clone(),
+                reason: reason.into(),
+            }
+        })?;
         let manifest = raw
             .files
             .into_iter()
             .map(|file| (file.name, file.sha256.to_ascii_lowercase()))
             .collect();
         Ok(Self {
+            effects,
             dir: dir.to_path_buf(),
             manifest,
         })

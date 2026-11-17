@@ -331,10 +331,14 @@ pub(crate) trait Schedule: Sync + Sized + 'static {
 
 pub(crate) fn oteryn_wp3_task_cell_allocation_size<T, S>() -> usize
 where
-    T: Future + 'static,
+    T: std::future::Future + 'static,
     S: Schedule,
 {
-    mem::size_of::<Cell<T, S>>()
+    // With task tracing every spawned future is wrapped in `Instrumented` first.
+    #[cfg(all(tokio_unstable, feature = "tracing"))]
+    return mem::size_of::<Cell<tracing::instrument::Instrumented<T>, S>>();
+    #[cfg(not(all(tokio_unstable, feature = "tracing")))]
+    return mem::size_of::<Cell<T, S>>();
 }
 
 cfg_rt! {

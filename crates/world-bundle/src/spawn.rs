@@ -83,7 +83,7 @@ pub struct Creature {
 }
 
 /// BOSS-RAID-0 §5: a boss has one durable scheduling policy. Chance is an exact
-/// ratio in (0, 1]; no floating point value crosses the content boundary.
+/// ratio in [0, 1]; no floating point value crosses the content boundary.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum BossPolicy {
@@ -106,7 +106,7 @@ impl BossPolicy {
                 min_s > 0 && min_s <= max_s && max_s <= (i64::MAX / 1000) as u64
             }
             Self::AtReset { chance } => {
-                chance.numerator > 0
+                chance.denominator > 0
                     && chance.numerator <= chance.denominator
                     && chance.denominator <= i64::MAX as u64
             }

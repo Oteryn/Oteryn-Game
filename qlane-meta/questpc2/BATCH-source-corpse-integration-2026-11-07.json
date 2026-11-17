@@ -1,0 +1,373 @@
+{
+  "batch_id": "source-corpse-integration-2026-11-07",
+  "integrated_head": "f1c59a37c8a695cfdef7c53b0a6d7199c93061bf",
+  "local_base": "6006f0db8",
+  "state": "GREEN",
+  "scope": "Compose published source boss corpse admission with reused qengine2 engine and the stricter native Instance scope regressions. No new whole-quest qualification.",
+  "whole_quest_qualifications": 0,
+  "postgres": {
+    "version": 180006,
+    "cases": 7,
+    "native_duration_seconds": 108.54,
+    "endgame_cases": 5,
+    "endgame_duration_seconds": 510.46,
+    "channel_duration_seconds": 104.71,
+    "endgame_completion_markers": 5,
+    "source_roots": {
+      "Spite": 33867,
+      "Bakragore": 44012,
+      "Primal": 39530
+    },
+    "zero_test_or_skip_results_accepted": false
+  },
+  "checks": [
+    {
+      "name": "native",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "instance_corpse_postgres_native_scope_mint_audit_and_replay",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 136.505,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "INSTANCE_CORPSE POSTGRES_CASE_DURATION",
+      "passed": true,
+      "log": "/tmp/questpc2-f1c-integration-native.log"
+    },
+    {
+      "name": "endgame",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "l3_instance_endgame_",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 510.772,
+      "counts": [
+        [
+          "5",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED",
+      "passed": true,
+      "log": "/tmp/questpc2-f1c-integration-endgame.log"
+    },
+    {
+      "name": "channel",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 105.125,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": "CHANNEL_NATIVE_CORPSE POSTGRES_CASE_COMPLETED",
+      "passed": true,
+      "log": "/tmp/questpc2-f1c-integration-channel.log"
+    },
+    {
+      "name": "private-loot-separation",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-content",
+        "--lib",
+        "reward_boss_empty_corpse_does_not_admit_missing_private_loot",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 92.787,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-f1c-integration-private-loot-separation.log"
+    },
+    {
+      "name": "audit",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "item_mint_audit::tests",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 56.582,
+      "counts": [
+        [
+          "31",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-f1c-integration-audit.log"
+    },
+    {
+      "name": "corpse-owner",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-entities",
+        "--features",
+        "test-support",
+        "--lib",
+        "corpse",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 40.239,
+      "counts": [
+        [
+          "8",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-f1c-integration-corpse-owner.log"
+    },
+    {
+      "name": "migration-numbers",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "migration_numbers_are_unique_and_match_embedded_migrator",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.236,
+      "counts": [
+        [
+          "1",
+          "0",
+          "0"
+        ]
+      ],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-f1c-integration-migration-numbers.log"
+    },
+    {
+      "name": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-client",
+        "-p",
+        "oteryn-game-server",
+        "-p",
+        "oteryn-gameplay-combat",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "-p",
+        "oteryn-gameplay-content"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.457,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-f1c-integration-check.log"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-client",
+        "-p",
+        "oteryn-game-server",
+        "-p",
+        "oteryn-gameplay-combat",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-entities",
+        "-p",
+        "oteryn-gameplay-npc",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-world",
+        "-p",
+        "oteryn-protocol-oteryn",
+        "-p",
+        "oteryn-gameplay-content",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 47.914,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-f1c-integration-clippy.log"
+    },
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 14.646,
+      "counts": [],
+      "postgres_marker": null,
+      "passed": true,
+      "log": "/tmp/questpc2-f1c-integration-fmt.log"
+    }
+  ],
+  "additional_checks": {
+    "python": {
+      "corpse_cases": 10,
+      "grizzly_cases": 7,
+      "qengine_reward_cases": 11,
+      "logs": [
+        "/tmp/questpc2-f1c-python-corpse.log",
+        "/tmp/questpc2-f1c-python-grizzly.log",
+        "/tmp/questpc2-f1c-python-qengine.log"
+      ]
+    },
+    "content_integration": {
+      "passed": 123,
+      "failed": 0,
+      "ignored": 0,
+      "duration_seconds": 2.64,
+      "log": "/tmp/questpc2-f1c-content-integration.log"
+    },
+    "world_repository": {
+      "passed": 5,
+      "failed": 0,
+      "ignored": 0,
+      "duration_seconds": 53.41,
+      "log": "/tmp/questpc2-f1c-world-repository-retry.log"
+    },
+    "generation": {
+      "log": "/tmp/questpc2-f1c-regeneration.log",
+      "result": "All generation and Python checks passed. Final World repository build was interrupted by full disk; exact failed target rerun GREEN, then original tooling staging/pin steps resumed. No check omitted.",
+      "prey_model": "Exact merged-source input digest matches retained simulation; no resimulation needed.",
+      "manifest": "Repository three-way key merge helper; 42 native registration files validated."
+    },
+    "pin_refresh_log": "/tmp/questpc2-f1c-pin-refresh.log",
+    "pin_check_log": "/tmp/questpc2-f1c-pin-check.log",
+    "world_digest": "f11e3f836b7b742c69126d7a088001b579f3f9c6fd2ca1da5a42621a634dff1a"
+  },
+  "preserved_invariants": [
+    "Published migration1024 byte-identical (Git blob c89455d0a109379a848015f815f1e3a997b07b48).",
+    "Instance corpse ref tag3 and full typed immutable cause; Channel legacy bytes and ordinary loot preserved.",
+    "Exact current-owner projection binding, foreign-permit no-charge, raw-scope mutation refusal, audit and replay proofs retained.",
+    "Positive source declared capacity remains separate from unchanged30-entry corpse/16-entry plan budgets.",
+    "Private reward admission remains strict; empty physical reward-boss rows grant no fabricated personal chest.",
+    "Access and chest overlays both retained; no parallel group-entry writer introduced."
+  ],
+  "resource_interruptions": {
+    "errors": [
+      "rustc SIGKILL; cgroup memory.max=17179869184, oom_kill=1.",
+      "No space left on device (os error28) creating compiler temporary directory.",
+      "collect2: fatal error: ld terminated with signal7 [Bus error] during full-disk linking.",
+      "bwrap: Cannot create /workspace/.git: No space left on device."
+    ],
+    "recovery": "Reclaimed only superseded inactive compiler sessions, stale executables and failed link temporaries. Current native and two completed inactive caches relocated byte-for-byte with original paths symlinked; latest sessions retained. Cleared obsolete archives on memory-backed /tmp. No source/PG removal, broad clean, changed profiles/RUSTFLAGS or disabled incremental. All required checks subsequently GREEN.",
+    "failed_clippy_preflight_log": "/tmp/questpc2-f1c-preflight-clippy.log",
+    "final_green_clippy_log": "/tmp/questpc2-f1c-integration-clippy.log"
+  },
+  "next": "Integrate fetched inert group-authoring5c45cf2b7, preserve existing effects.encounter runtime owner, push FF; continue whole source quest lifecycles."
+}

@@ -8,6 +8,11 @@ use std::num::NonZeroU32;
 pub const SPELL_SLOTS: u16 = 4;
 const FIRST_DIGIT_KEY: u16 = 30;
 const ACTION_PREFIX: &str = "client.spell.";
+// oteryn-choice: configure bindings with Ctrl+Shift+I; empty fields unbind a slot.
+pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
+    use oteryn_input_actions::{ButtonState, Modifier};
+    events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if code.get() == 12 && modifiers.contains(Modifier::Control) && modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Alt) && !modifiers.contains(Modifier::Super)))
+}
 /// Registration marker for spell-slot defaults.
 pub fn default_spell_binding() {}
 #[derive(Debug)]

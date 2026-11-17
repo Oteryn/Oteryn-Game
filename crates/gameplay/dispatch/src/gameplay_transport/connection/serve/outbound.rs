@@ -2,7 +2,25 @@
 
 use super::*;
 
-fn movement_magic_effect_event(
+/// Keep backpressure from holding a serve phase beyond the existing liveness cadence.
+pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
+    stream: &mut W,
+    frame: &[u8],
+) -> std::io::Result<()> {
+    tokio::time::timeout(
+        IDLE_LIVENESS.interval,
+        crate::gameplay_transport::tcp_tls::write_frame(stream, frame),
+    )
+    .await
+    .map_err(|_| {
+        std::io::Error::new(
+            std::io::ErrorKind::TimedOut,
+            "gameplay frame write timed out",
+        )
+    })?
+}
+
+pub(super) fn movement_magic_effect_event(
     ordinal: u32,
     position: crate::map::overlay::TilePos,
     effect_id: u16,
@@ -22,7 +40,7 @@ fn movement_magic_effect_event(
     })
 }
 
-fn movement_effect_visible(
+pub(super) fn movement_effect_visible(
     observer: oteryn_protocol_oteryn::world_spatial::ActorPosition,
     position: crate::map::overlay::TilePos,
 ) -> bool {
@@ -65,7 +83,13 @@ where
         return Err(ServeEnd::Disconnected);
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
-    if let Dispatch::Logout(LogoutResult::Accepted) = dispatch {
+    if matches!(
+        dispatch,
+        Dispatch::Logout(LogoutResult::Accepted)
+            | Dispatch::ServerModal(
+                crate::gameplay_transport::server_modal::ServerModalOutcome::LoggedOut(_)
+            )
+    ) {
         // §1.6: the release committed before this result. No command is read any more and
         // the transport closes cleanly; a failed write is no control loss either. A second
         // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
@@ -91,6 +115,16 @@ where
     if write_frame(stream, &result).await.is_err() {
         return Err(ServeEnd::Disconnected);
     }
+    // Native movement can commit an activity return and retire this actor.
+    // Send its command result first; the serve loop then crosses the existing
+    // scope barrier before observing any destination-owned state.
+    if authority
+        .current_activity_connection(session.admitted)
+        .game_session_id
+        != session.admitted.game_session_id
+    {
+        return Ok(());
+    }
     if matches!(dispatch, Dispatch::Logout(_) | Dispatch::NoLogout) {
         if outcome.second_logout {
             return Err(close(
@@ -113,7 +147,8 @@ where
         outcome.npc_relocation,
         outcome.training_logged_out,
     )
-    .await
+    .await?;
+    super::analyser::emit(stream, authority, session).await
 }
 
 async fn emit<S, A>(
@@ -129,12 +164,6 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    let committed_step = match &dispatch {
-        Dispatch::Step(outcome, _) if outcome.disposition == StepDisposition::Moved => outcome
-            .moved_to
-            .map(|observation| observation.actor_position),
-        _ => None,
-    };
     // Every native action/trade/travel source can grant through the shared account owner.
     // Passive kill/event grants are observed on the existing liveness cadence as well.
     let observe_achievements = matches!(
@@ -274,13 +303,17 @@ where
             }
         }
         Dispatch::Reply(_, payload)
-            if command.command_type
+            if (command.command_type
                 == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
                 && oteryn_protocol_oteryn::depot_search::decode_reply(&payload).is_ok_and(
                     |reply| {
                         reply.outcome == oteryn_protocol_oteryn::depot_search::Outcome::Retrieved
                     },
-                ) =>
+                ))
+                || (command.command_type
+                    == u32::from(oteryn_protocol_oteryn::mail::COMMAND_TYPE_MAIL)
+                    && payload.as_slice()
+                        == [oteryn_protocol_oteryn::mail::MailOutcome::TextWritten as u8]) =>
         {
             let Some(view) = session.item_view.as_mut() else {
                 return Err(ServeEnd::Disconnected);
@@ -431,6 +464,7 @@ where
         | Dispatch::Highscores(_)
         | Dispatch::Guild(_)
         | Dispatch::Reply(..)
+        | Dispatch::ServerModal(_)
         | Dispatch::Vip(_)
         | Dispatch::Appearance(_)
         | Dispatch::Training(_)
@@ -438,51 +472,10 @@ where
         | Dispatch::House(_)
         | Dispatch::Unregistered => {}
     }
+    refresh::sounds(stream, authority, session).await?;
     player_trade::refresh(stream, authority, session).await?;
     cyclopedia_tracker::refresh(stream, authority, session).await?;
-    if let Some(observer) = committed_step
-        && session
-            .selected_capabilities
-            .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1)
-    {
-        let observed = authority.observe_movement_effects(session.movement_effect_revision);
-        if let Some(revision) = observed.last().map(|effect| effect.0) {
-            let events: Vec<_> = observed
-                .iter()
-                .filter(|(_, position, _)| movement_effect_visible(observer, *position))
-                .enumerate()
-                .filter_map(|(index, (_, position, effect_id))| {
-                    let ordinal = u32::try_from(index + 1).ok()?;
-                    movement_magic_effect_event(ordinal, *position, *effect_id)
-                })
-                .collect();
-            if !events.is_empty() {
-                let payload =
-                    oteryn_protocol_oteryn::presentation::encode_presentation_batch(&events)
-                        .map_err(|_| ServeEnd::Disconnected)?;
-                let sequence = session
-                    .sequence
-                    .checked_add(1)
-                    .ok_or(ServeEnd::Disconnected)?;
-                let frame = encode_state_delta(
-                    session.generation,
-                    sequence,
-                    oteryn_protocol_oteryn::presentation::STATE_DOMAIN_WORLD_PRESENTATION,
-                    session.movement_effect_revision,
-                    revision,
-                    oteryn_protocol_oteryn::presentation::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1,
-                    &payload,
-                )
-                .map_err(|_| ServeEnd::Disconnected)?;
-                write_frame(stream, &frame)
-                    .await
-                    .map_err(|_| ServeEnd::Disconnected)?;
-                session.sequence = sequence;
-                session.admitted.continuity.server_sequence = sequence;
-            }
-            session.movement_effect_revision = revision;
-        }
-    }
+    native_cues::refresh(stream, authority, session).await?;
     if training_logged_out {
         return Err(ServeEnd::LoggedOut);
     }

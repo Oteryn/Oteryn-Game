@@ -1,0 +1,594 @@
+{
+  "schema": 1,
+  "runtime_admission": {
+    "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+    "loaded_by_current_runtime": false,
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+    "qualification": "Literal dialogue and selected owned source rules for the coordinator shared-adapter PR. Source dispatch constraints are mandatory; this is not the active Dialogue family or an executable replacement."
+  },
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission01",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:878",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission03",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:880",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 8,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:877",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:919",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 44,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:893",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/barbarian_test/sven/barbarian",
+      "npc": "oteryn:npc.sven",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "barbarian"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 1,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "lt",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "A true barbarian is something special among our people. Everyone who wants to become a barbarian will have to pass the barbarian {test}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:70-72"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/barbarian_test/sven/test",
+      "npc": "oteryn:npc.sven",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "test"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "barbarian"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 2,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "lt",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "All of our juveniles have to take the barbarian test to become a true member of our community. Foreigners who manage to master the test are granted the title of an honorary barbarian and the respect of our people ...",
+        "Are you willing to take the barbarian test?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:73-78"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/barbarian_test/sven/honey-request",
+      "npc": "oteryn:npc.sven",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "mead"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": 4,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "eq",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "Do you have some honey with you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:79-83"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/barbarian_test/sven/bear-completed",
+      "npc": "oteryn:npc.sven",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "hug"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mead"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": null,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "eq",
+          "value": 5
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "value": 6
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission03",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Amazing. That was as clever and brave as a barbarian is supposed to be. But a barbarian also has to be strong and fearless. To prove that you will have to knock over a mammoth ...",
+        "Did your face just turn into the color of fresh snow? However, you will find a lonely mammoth north west of the town in the wilderness. Knock it over to prove to be a true barbarian ...",
+        "Return to me and talk about the {mammoth} pushing when you are done."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:96-105"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/barbarian_test/sven/test-explanation-new",
+      "npc": "oteryn:npc.sven",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "barbarian",
+            "test",
+            "mead",
+            "hug",
+            "mammoth"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "lt",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "That's the spirit! The barbarian test consists of a few tasks you will have to fulfill. All are rather simple - for a barbarian that is...",
+        "Your first task is to drink some barbarian mead. But be warned, it's a strong brew that could even knock out a bear. You need to make at least ten sips of mead in a row without passing out to pass the test ...",
+        "Do you think you can do this?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:117-134"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/barbarian_test/sven/accept-test-new",
+      "npc": "oteryn:npc.sven",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "barbarian",
+            "test",
+            "mead",
+            "hug",
+            "mammoth"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "lt",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission01",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Good, but to make barbarian mead we need some honey which is rare here. I'd hate to waste mead just to learn you're not worth it ...",
+        "Therefore, you have to get your own honey. You'll probably need more than one try so better get some extra honeycombs. Then talk to me again about barbarian {mead}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:117-143"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/barbarian_test/sven/test-explanation-started",
+      "npc": "oteryn:npc.sven",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mead",
+            "hug",
+            "mammoth"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 2,
+      "next_topic": 3,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "ge",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "That's the spirit! The barbarian test consists of a few tasks you will have to fulfill. All are rather simple - for a barbarian that is...",
+        "Your first task is to drink some barbarian mead. But be warned, it's a strong brew that could even knock out a bear. You need to make at least ten sips of mead in a row without passing out to pass the test ...",
+        "Do you think you can do this?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:117-134"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/barbarian_test/sven/accept-test-started",
+      "npc": "oteryn:npc.sven",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "keywords": [
+        "yes"
+      ],
+      "match_mode": "contains",
+      "unless": [
+        {
+          "keywords": [
+            "mead",
+            "hug",
+            "mammoth"
+          ],
+          "match_mode": "contains"
+        }
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "comparison": "ge",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+          "comparison": "ne",
+          "value": 1
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/questline",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/questline",
+          "value": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u8_0/barbarian_test/mission01",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "Good, but to make barbarian mead we need some honey which is rare here. I'd hate to waste mead just to learn you're not worth it ...",
+        "Therefore, you have to get your own honey. You'll probably need more than one try so better get some extra honeycombs. Then talk to me again about barbarian {mead}."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:117-143"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    }
+  ],
+  "conversations": [
+    {
+      "npc": "oteryn:npc.sven",
+      "quest": "oteryn:quest.the_ice_islands_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [
+            {
+              "track": "oteryn:quest-progress/quest/u8_0/the_ice_islands/husky_kill_status",
+              "comparison": "ne",
+              "value": 1
+            }
+          ],
+          "reply": "Be greeted, |PLAYERNAME|! What brings you {here}?",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:57"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sven.lua:57",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    }
+  ],
+  "source_documents": [
+    {
+      "name": "barbarian_test.npc.json",
+      "authoring_readiness": {
+        "runtime_loaded": false,
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "note": "Literal source dialogue and selected owned branches are prepared; the shared dispatch, matching, greeting and authoritative guard contract is held."
+      }
+    }
+  ]
+}

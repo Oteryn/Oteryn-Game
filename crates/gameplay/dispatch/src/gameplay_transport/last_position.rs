@@ -67,6 +67,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use super::{ComposedFreshAdmission, operator_event, respawn_cell, respawn_cell_admissible};
 use crate::domain::CharacterRevision;
 use crate::durability::DB_PASS_DEADLINE;
+use crate::durability::bed_regen::BedPremiumGate;
 use crate::durability::character_death::ConsumedRespawn;
 use crate::durability::character_last_position::{
     FinalLastPosition, HouseLastPosition, LAST_POSITION_WRITE_BATCH, LastPositionCell,
@@ -711,11 +712,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         // A retained build may have committed its refill before live installation. Keep
         // the transaction's projection until the actor has the committed pools too.
-        if self
-            .states
-            .npc_conversations
-            .dawnport_choice(session)
-            .is_some_and(|choice| choice.retained.is_some())
+        if self.states.dawnport_departures.held(session)
+            || self
+                .states
+                .npc_conversations
+                .dawnport_choice(session)
+                .is_some_and(|choice| choice.retained.is_some())
             || self
                 .states
                 .dawnport_trials
@@ -827,6 +829,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         actor: ExactActorRef,
     ) -> Option<FinalLastPosition> {
+        if !self.resume_dawnport_departure(actor, session).await {
+            return None;
+        }
         let track = self.states.last_positions.tracked(session)?;
         if track.actor != actor {
             return None;
@@ -916,8 +921,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<AdmissionPosition, ()> {
+        if let Some(coordinator) = self.premium_coordinator {
+            // First entry has not registered its session's Premium account yet.
+            // Settle deployment delivery before borrowing the bed transaction's
+            // holder; that transaction resolves the account under its own fence.
+            coordinator
+                .with_premium_batch_gate(&[], |_, _| Box::pin(async {}))
+                .await
+                .map_err(|_| ())?;
+        }
+        let premium: Option<&dyn BedPremiumGate> = self.premium_coordinator.map(|gate| gate as _);
         self.root
-            .settle_bed_regen(self.character, self.holder, fence)
+            .settle_bed_regen(self.character, self.holder, fence, premium)
             .await
             .map_err(|_| ())?;
         match self
@@ -962,7 +977,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (pin.server_artifact_digest(), pin.frame_binding_digest())
         };
         let input = first_entry_input(decided, self.world_id, frame_digest, |cell| {
-            house_cell(self.movement_cells, cell)
+            house_cell(self.movement_cells(), cell)
         });
         // A respawn's fallback is DEATH-2b's; a stored cell's fallback never lands on a house
         // tile either.
@@ -970,13 +985,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let door = self.door.lock().await;
         initialize_first_entry_at(runtime, actor, session, input, |cell| {
             respawn_cell_admissible(
-                self.movement_cells.index(),
-                self.movement_cells.scope(),
+                self.movement_cells().index(),
+                self.movement_cells().scope(),
                 self.world_id,
                 pinned_digest,
                 door.blocking_cells(),
                 cell,
-            ) && !(stored && house_cell(self.movement_cells, cell))
+            ) && !(stored && house_cell(self.movement_cells(), cell))
         })
     }
 
@@ -1043,8 +1058,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn write_due_last_positions(&self, all: bool) -> usize {
         let due = self.states.last_positions.due(Instant::now(), all);
         let mut failed = 0;
-        for batch in due.chunks(LAST_POSITION_WRITE_BATCH) {
-            failed += self.write_last_position_batch(batch).await;
+        let batches: Vec<_> = due.chunks(LAST_POSITION_WRITE_BATCH).collect();
+        let start = self.background_start("last-positions", batches.len());
+        let count = batches.len();
+        for index in (start..count).chain(0..start) {
+            failed += self
+                .background_turn(
+                    "last-positions",
+                    index + 1,
+                    self.write_last_position_batch(batches[index]),
+                )
+                .await;
         }
         failed
     }
@@ -1053,6 +1077,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// sessions' fences in one root pass and write them in one transaction, so the batch costs
     /// two durability passes whatever its size (`CHARPOS0-RL-01`). Returns the failed writes.
     async fn write_last_position_batch(&self, batch: &[(GameSessionId, Track)]) -> usize {
+        self.root
+            .with_background_operation(self.write_last_position_batch_inner(batch))
+            .await
+    }
+
+    async fn write_last_position_batch_inner(&self, batch: &[(GameSessionId, Track)]) -> usize {
         let mut changed = Vec::with_capacity(batch.len());
         for &(session, track) in batch {
             let capture = match self.capture_last_position(&track, session).await {

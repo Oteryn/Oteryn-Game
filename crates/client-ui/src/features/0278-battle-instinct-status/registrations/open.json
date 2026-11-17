@@ -1,0 +1,9 @@
+{
+  "mechanic": "0278-battle-instinct-status",
+  "kind": "keybindings",
+  "id": "0278-battle-instinct-status-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+SHIFT+B",
+  "entry": "input.rs::open_key"
+}

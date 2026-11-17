@@ -1,5 +1,8 @@
 //! Composition for MAIL_V1 through the same admitted command dispatch boundary.
 
+#[path = "mail_text.rs"]
+mod text;
+
 use super::item_move::{LoopMoveRefusal, LoopMoveResult};
 use super::{ComposedFreshAdmission, connection::AdmittedSession, item_view::ItemKey};
 use crate::content::item_ref::ItemDefinitionIndex;
@@ -61,6 +64,9 @@ pub(super) async fn execute(
         .contains(u32::from(oteryn_protocol_oteryn::mail::CAPABILITY_MAIL_V1))
     {
         return Some(MailOutcome::Rejected);
+    }
+    if let Ok(MailIntent::WriteText { text, .. }) = decode_intent(payload) {
+        return text::execute(owner, actor, admitted, command_id, item, text).await;
     }
     let (
         Some(fence),
@@ -152,9 +158,11 @@ async fn mailbox_in_reach(
     {
         return false;
     }
-    let Some(at) =
-        super::bundle_map_position::bundle_map_position(&mut runtime, owner.movement_cells, actor)
-    else {
+    let Some(at) = super::bundle_map_position::bundle_map_position(
+        &mut runtime,
+        owner.movement_cells(),
+        actor,
+    ) else {
         return false;
     };
     let Some(index) = super::item_ref_admission::pinned_index(&runtime, owner.active_generation)

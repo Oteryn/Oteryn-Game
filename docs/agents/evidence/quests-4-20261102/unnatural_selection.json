@@ -1,0 +1,2650 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "unnatural_selection",
+    "frozen_stage1": {
+      "total": 44,
+      "auto": 1,
+      "manual": 43
+    },
+    "authored_callback_definitions": 10,
+    "runtime_catalogue_callback_definitions": 10,
+    "runtime_exclusions": [],
+    "npc_source_files": 2,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "Ray i 9 pól tańca; 3 tory oraz Talented Dancer zapisane atomowo, z dowodem PostgreSQL.",
+    "left_out_summary": "Brak UID1052, kolizja10195/6383/6384, hold10159 i 12 przejść diagonalnych. Nowe rozmowy oraz dokładne VFX/TALKTYPE pozostają Left out."
+  },
+  "steps": [
+    {
+      "cluster": "explorer",
+      "cluster_row": 164,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M1 Skulled: start",
+        "pattern": "P09",
+        "trigger": "Lazaran: help → yes → mission → yes",
+        "condition": "topic12; TheNewFrontier.Mission03=3; Questline<0",
+        "effect": "Questline=1; Mission01=1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 163,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Lazaran: help → yes → mission → yes”: warunki topic12; TheNewFrontier.Mission03=3; Questline<0; wynik Questline=1; Mission01=1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Lazaran `mission` ma wcześniejszy foreign NewFrontier.Questline==8/topic0 gate; start additionally wymaga NewFrontier.Mission03==3. Nie pominięto tego warunku i nie zmieniono obcego ownera (ANSWER pkt6)."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "canonical-unset-tracks"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:63"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 165,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M1 Skulled: kości",
+        "pattern": "P05",
+        "trigger": "quest_system2 UID9259",
+        "condition": "Mission01=1",
+        "effect": "daje10159×1; Mission01=2",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 164,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „quest_system2 UID9259”: warunki Mission01=1; wynik daje10159×1; Mission01=2. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[9259], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:119"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [
+            9259
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 166,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M1 Skulled: zwrot",
+        "pattern": "P10",
+        "trigger": "Lazaran: mission → yes",
+        "condition": "Questline=1; topic2; removeItem(10159,1)",
+        "effect": "zabiera10159×1; Questline=2; Mission01=3",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 165,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Lazaran: mission → yes”: warunki Questline=1; topic2; removeItem(10159,1); wynik zabiera10159×1; Questline=2; Mission01=3. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:120"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 167,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2 All Around the World: start",
+        "pattern": "P09/P11",
+        "trigger": "Lazaran: mission → yes",
+        "condition": "Questline=2; topic3",
+        "effect": "daje10159×1; Questline=3; Mission02=1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 166,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Lazaran: mission → yes”: warunki Questline=2; topic3; wynik daje10159×1; Questline=3; Mission02=1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:130"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 168,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: przystanek 1",
+        "pattern": "P03/P18",
+        "trigger": "stepin: 33263,31834,1",
+        "condition": "Mission02=1; holds10159>=1",
+        "effect": "Mission02=2; tekst z config[1]; przedmiot zostaje",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 167,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin: 33263,31834,1”: warunki Mission02=1; holds10159>=1; wynik Mission02=2; tekst z config[1]; przedmiot zostaje. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:2"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 169,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: przystanek 2",
+        "pattern": "P03/P18",
+        "trigger": "stepin: 32711,31668,1",
+        "condition": "Mission02=2; holds10159>=1",
+        "effect": "Mission02=3; tekst z config[2]; przedmiot zostaje",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 168,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin: 32711,31668,1”: warunki Mission02=2; holds10159>=1; wynik Mission02=3; tekst z config[2]; przedmiot zostaje. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:6"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 170,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: przystanek 3",
+        "pattern": "P03/P18",
+        "trigger": "stepin: 32537,31772,1",
+        "condition": "Mission02=3; holds10159>=1",
+        "effect": "Mission02=4; tekst z config[3]; przedmiot zostaje",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 169,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin: 32537,31772,1”: warunki Mission02=3; holds10159>=1; wynik Mission02=4; tekst z config[3]; przedmiot zostaje. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:10"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 171,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: przystanek 4",
+        "pattern": "P03/P18",
+        "trigger": "stepin: 33216,32450,1",
+        "condition": "Mission02=4; holds10159>=1",
+        "effect": "Mission02=5; tekst z config[4]; przedmiot zostaje",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 170,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin: 33216,32450,1”: warunki Mission02=4; holds10159>=1; wynik Mission02=5; tekst z config[4]; przedmiot zostaje. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:14"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 172,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: przystanek 5",
+        "pattern": "P03/P18",
+        "trigger": "stepin: 33149,32841,2; 33149,32842,2; 33149,32843,2; 33149,32844,2; 33149,32845,2; 33150,32841,2; 33151,32841,2; 33152,32841,2; 33153,32841,2; 33153,32842,2; 33153,32843,2; 33153,32844,2; 33153,32845,2; 33150,32845,2; 33151,32845,2; 33152,32845,2",
+        "condition": "Mission02=5; holds10159>=1",
+        "effect": "Mission02=6; tekst z config[5]; przedmiot zostaje",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 171,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin: 33149,32841,2; 33149,32842,2; 33149,32843,2; 33149,32844,2; 33149,32845,2; 33150,32841,2; 33151,32841,2; 33152,32841,2; 33153,32841,2; 33153,32842,2; 33153,32843,2; 33153,32844,2; 33153,32845,2; 33150,32845,2; 33151,32845,2; 33152,32845,2”: warunki Mission02=5; holds10159>=1; wynik Mission02=6; tekst z config[5]; przedmiot zostaje. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:18"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 173,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: przystanek 6",
+        "pattern": "P03/P18",
+        "trigger": "stepin: 32588,32801,4; 32580,32743,4; 32628,32745,4; 32629,32745,4; 32689,32742,4",
+        "condition": "Mission02=6; holds10159>=1",
+        "effect": "Mission02=7; tekst z config[6]; przedmiot zostaje",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 172,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin: 32588,32801,4; 32580,32743,4; 32628,32745,4; 32629,32745,4; 32689,32742,4”: warunki Mission02=6; holds10159>=1; wynik Mission02=7; tekst z config[6]; przedmiot zostaje. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:39"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 174,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: przystanek 7",
+        "pattern": "P03/P18",
+        "trigger": "stepin: 32346,32808,2",
+        "condition": "Mission02=7; holds10159>=1",
+        "effect": "Mission02=8; tekst z config[7]; przedmiot zostaje",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 173,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin: 32346,32808,2”: warunki Mission02=7; holds10159>=1; wynik Mission02=8; tekst z config[7]; przedmiot zostaje. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:49"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 175,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: przystanek 8",
+        "pattern": "P03/P18",
+        "trigger": "stepin: 32789,31238,3",
+        "condition": "Mission02=8; holds10159>=1",
+        "effect": "Mission02=9; tekst z config[8]; przedmiot zostaje",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 174,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin: 32789,31238,3”: warunki Mission02=8; holds10159>=1; wynik Mission02=9; tekst z config[8]; przedmiot zostaje. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:53"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 176,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: przystanek 9",
+        "pattern": "P03/P18",
+        "trigger": "stepin: 32236,31096,2",
+        "condition": "Mission02=9; holds10159>=1",
+        "effect": "Mission02=10; tekst z config[9]; przedmiot zostaje",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 175,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin: 32236,31096,2”: warunki Mission02=9; holds10159>=1; wynik Mission02=10; tekst z config[9]; przedmiot zostaje. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:57"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 177,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: przystanek 10",
+        "pattern": "P03/P18",
+        "trigger": "stepin: 32344,32265,0",
+        "condition": "Mission02=10; holds10159>=1",
+        "effect": "Mission02=11; tekst z config[10]; przedmiot zostaje",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 176,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin: 32344,32265,0”: warunki Mission02=10; holds10159>=1; wynik Mission02=11; tekst z config[10]; przedmiot zostaje. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:61"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 178,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: przystanek 11",
+        "pattern": "P03/P18",
+        "trigger": "stepin: 32316,31752,0",
+        "condition": "Mission02=11; holds10159>=1",
+        "effect": "Mission02=12; tekst z config[11]; przedmiot zostaje",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 177,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin: 32316,31752,0”: warunki Mission02=11; holds10159>=1; wynik Mission02=12; tekst z config[11]; przedmiot zostaje. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission2_all_around_the_world.lua:65"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 179,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M2: zwrot czaszki",
+        "pattern": "P10",
+        "trigger": "Lazaran: mission → yes",
+        "condition": "Questline=3; Mission02=12; holds10159>=1; topic4",
+        "effect": "zabiera10159×1; Questline=4; Mission02=13",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 178,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Lazaran: mission → yes”: warunki Questline=3; Mission02=12; holds10159>=1; topic4; wynik zabiera10159×1; Questline=4; Mission02=13. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 10159: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Wymagany skull10159 ma utrzymany hold: canonical materializable=false i brak native profile.11 source views mają30 exact positions i pełne teksty; potrzebny prawdziwy carried count>=1 w fenced ownerze, bez zużycia przy widoku. Brak itema nie jest zastępowany bool od callera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "unnatural-skull-admission"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:137"
+        ],
+        "item_facts": {
+          "10159": {
+            "key": "oteryn:item.tibia.i10159",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 175,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10159",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "10159: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589313998"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 180,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: skierowanie do Ulala",
+        "pattern": "P09",
+        "trigger": "Lazaran: mission → yes",
+        "condition": "Questline=4; topic5",
+        "effect": "Questline=5; Mission03=1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 179,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Lazaran: mission → yes”: warunki Questline=4; topic5; wynik Questline=5; Mission03=1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Lazaran `mission` ma wcześniejszy foreign NewFrontier.Questline==8/topic0 gate; start additionally wymaga NewFrontier.Mission03==3. Nie pominięto tego warunku i nie zmieniono obcego ownera (ANSWER pkt6)."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:147"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 181,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: nauka tańca",
+        "pattern": "P09",
+        "trigger": "Ulala: mission → krunus",
+        "condition": "Questline=5; topic1",
+        "effect": "Questline=6; Mission03=2; DanceStatus=1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 180,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Dane są źródłowo zamknięte i nie wymagają Item/foreign mutation. Przygotowany nowy batch4_npcs Quest adapter, pełne topics, unit RED stubs i source placements przeniesiono do deferred-npc-runtime; aktywne2 promocje usunięto. Docelowy status LEFT_OUT_SHARED_ADAPTER wynika z aktualnego ANSWER, a pytanie o wyjątek6590007979 pozostaje bez odpowiedzi.",
+          "Brak podłączonej źródłowej funkcji dla „Ulala: mission → krunus”: warunki Questline=5; topic1; wynik Questline=6; Mission03=2; DanceStatus=1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:60"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "source_closed_plain_branch": true,
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 182,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 1",
+        "pattern": "P18",
+        "trigger": "stepin source position@32991,31497,1",
+        "condition": "DanceStatus=1",
+        "effect": "DanceStatus=2; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 181,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:2"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 183,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 2",
+        "pattern": "P18",
+        "trigger": "stepin source position@32990,31498,1",
+        "condition": "DanceStatus=2",
+        "effect": "DanceStatus=3; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 182,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 184,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 3",
+        "pattern": "P18",
+        "trigger": "stepin source position@32991,31497,1",
+        "condition": "DanceStatus=3",
+        "effect": "DanceStatus=4; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 183,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:4"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 185,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 4",
+        "pattern": "P18",
+        "trigger": "stepin source position@32992,31498,1",
+        "condition": "DanceStatus=4",
+        "effect": "DanceStatus=5; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 184,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:5"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 186,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 5",
+        "pattern": "P18",
+        "trigger": "stepin source position@32991,31497,1",
+        "condition": "DanceStatus=5",
+        "effect": "DanceStatus=6; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 185,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:6"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 187,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 6",
+        "pattern": "P18",
+        "trigger": "stepin source position@32991,31498,1",
+        "condition": "DanceStatus=6",
+        "effect": "DanceStatus=7; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 186,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:7"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 188,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 7",
+        "pattern": "P18",
+        "trigger": "stepin source position@32990,31497,1",
+        "condition": "DanceStatus=7",
+        "effect": "DanceStatus=8; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 187,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:8"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 189,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 8",
+        "pattern": "P18",
+        "trigger": "stepin source position@32991,31496,1",
+        "condition": "DanceStatus=8",
+        "effect": "DanceStatus=9; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 188,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:9"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 190,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 9",
+        "pattern": "P18",
+        "trigger": "stepin source position@32992,31497,1",
+        "condition": "DanceStatus=9",
+        "effect": "DanceStatus=10; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 189,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:10"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 191,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 10",
+        "pattern": "P18",
+        "trigger": "stepin source position@32991,31496,1",
+        "condition": "DanceStatus=10",
+        "effect": "DanceStatus=11; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 190,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:11"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 192,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 11",
+        "pattern": "P18",
+        "trigger": "stepin source position@32991,31497,1",
+        "condition": "DanceStatus=11",
+        "effect": "DanceStatus=12; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 191,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:12"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 193,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 12",
+        "pattern": "P18",
+        "trigger": "stepin source position@32990,31496,1",
+        "condition": "DanceStatus=12",
+        "effect": "DanceStatus=13; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 192,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:13"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 194,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 13",
+        "pattern": "P18",
+        "trigger": "stepin source position@32991,31497,1",
+        "condition": "DanceStatus=13",
+        "effect": "DanceStatus=14; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 193,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:14"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 195,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 14",
+        "pattern": "P18",
+        "trigger": "stepin source position@32992,31496,1",
+        "condition": "DanceStatus=14",
+        "effect": "DanceStatus=15; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 194,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:15"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 196,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 15",
+        "pattern": "P18",
+        "trigger": "stepin source position@32991,31497,1",
+        "condition": "DanceStatus=15",
+        "effect": "DanceStatus=16; efekt na następnej pozycji",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 195,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:16"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 197,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: taniec krok 16",
+        "pattern": "P18",
+        "trigger": "stepin source position@32991,31496,1",
+        "condition": "DanceStatus=16",
+        "effect": "DanceStatus=17; Mission03=3; Questline=7; achievement Talented Dancer",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 196,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:17"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 198,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M3: błędny krok",
+        "pattern": "P18",
+        "trigger": "stepin AID12333",
+        "condition": "DanceStatus1..16; position!=config[DanceStatus]",
+        "effect": "DanceStatus=1; tekst błędu i efekt na pierwszej pozycji; brak dodatkowego sprawdzenia Mission03",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 197,
+        "status": "IMPLEMENTED_DURABLE_RULE_FLOW_LEFT_OUT",
+        "implemented_parts": [
+          "Zamknięta reguła DanceStatus: poprawny krok1..16, reset błędu do1, finał16→17 i Mission03=3/Questline=7; 9 exact-position callbacks, pełny locked snapshot, fenced receipt i Talented Dancer przy committed16→17."
+        ],
+        "left_out_parts": [
+          "Pełna droga ruchu wymaga12 diagonalnych przejść spośród15 między kolejnymi krokami. Istniejące STEP/path search mają tylkoN/E/S/W; dwie drogi cardinalne uruchamiają zły tile i reset.",
+          "Ground9524/9526/9528 jest walkable, ale10195 na wszystkich9 tiles oraz dodatkowe6383/6384 nie mają wymaganej kwalifikacji collision. Nie zmieniono mapy ani ID.",
+          "MAGIC/SMALLPLANTS/CARNIPHILA i donorowy TALKTYPE_MONSTER_SAY wymagają właściciela prezentacji. Dokładny tekst początku, błędu i końca jest zachowany w istniejącym feedbacku po świeżym committed receipt."
+        ],
+        "question_ids": [
+          "unnatural-dance-ingress-admission",
+          "unnatural-dance-diagonal-movement-contract",
+          "batch4-feedback-presentation"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:28"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "supersedes_stage1": "AID12333 w zamrożonym raporcie nie jest wymaganiem zatwierdzonego position-only selector; nie dodano go do mapy.",
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589314361",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589522051",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 199,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M4 Bits and Pieces: start",
+        "pattern": "P09",
+        "trigger": "Ulala: mission",
+        "condition": "Questline=7",
+        "effect": "Questline=8; Mission04=1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 198,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Dane są źródłowo zamknięte i nie wymagają Item/foreign mutation. Przygotowany nowy batch4_npcs Quest adapter, pełne topics, unit RED stubs i source placements przeniesiono do deferred-npc-runtime; aktywne2 promocje usunięto. Docelowy status LEFT_OUT_SHARED_ADAPTER wynika z aktualnego ANSWER, a pytanie o wyjątek6590007979 pozostaje bez odpowiedzi.",
+          "Brak podłączonej źródłowej funkcji dla „Ulala: mission”: warunki Questline=7; wynik Questline=8; Mission04=1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:71"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "source_closed_plain_branch": true,
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 200,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M4: trzy materiały",
+        "pattern": "P10",
+        "trigger": "Ulala: mission → yes",
+        "condition": "Questline=8; topic2; 10196>=5;5878>=5;5876>=5",
+        "effect": "zabiera5 każdego; Questline=9; Mission04=2",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 199,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Ulala: mission → yes”: warunki Questline=8; topic2; 10196>=5;5878>=5;5876>=5; wynik zabiera5 każdego; Questline=9; Mission04=2. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "10196/5878/5876 mają dopuszczone native inventory profiles. Konkretny brak to atomowy NPC hand-in: consume5 każdego, then QL9/M4=2, z brakiem częściowego zużycia; nie jest to brak materiałów źródłowych. Shared NPC exchange rozszerzenie pozostaje Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:117"
+        ],
+        "item_facts": {
+          "5876": {
+            "key": "oteryn:item.tibia.i5876",
+            "definition": {
+              "path": "content/items/definitions/items-29500-29999.json",
+              "line": 1,
+              "record": 142,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5876",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 832,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i5876",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          },
+          "5878": {
+            "key": "oteryn:item.tibia.i5878",
+            "definition": {
+              "path": "content/items/definitions/items-29500-29999.json",
+              "line": 1,
+              "record": 144,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5878",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 834,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i5878",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          },
+          "10196": {
+            "key": "oteryn:item.tibia.i10196",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 215,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10196",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 1309,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i10196",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 201,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M5 Ray of Light: start",
+        "pattern": "P09",
+        "trigger": "Ulala: mission",
+        "condition": "Questline=9",
+        "effect": "Questline=10; Mission05=1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 200,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Dane są źródłowo zamknięte i nie wymagają Item/foreign mutation. Przygotowany nowy batch4_npcs Quest adapter, pełne topics, unit RED stubs i source placements przeniesiono do deferred-npc-runtime; aktywne2 promocje usunięto. Docelowy status LEFT_OUT_SHARED_ADAPTER wynika z aktualnego ANSWER, a pytanie o wyjątek6590007979 pozostaje bez odpowiedzi.",
+          "Brak podłączonej źródłowej funkcji dla „Ulala: mission”: warunki Questline=9; wynik Questline=10; Mission05=1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:83"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "source_closed_plain_branch": true,
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 202,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M5: kryształ",
+        "pattern": "P01",
+        "trigger": "use UID1052",
+        "condition": "Mission05=1",
+        "effect": "Mission05=2; Questline=11",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "AUTO",
+        "row_zero_based": 201,
+        "status": "IMPLEMENTED_CORE_INGRESS_LEFT_OUT",
+        "implemented_parts": [
+          "Źródłowy callback Unnatural ray of light zachowany w authored batch input. Obecny w wygenerowanym runtime catalogue z istniejącym parser/Quest/world caller."
+        ],
+        "left_out_parts": [
+          "Nie jest to dowód kompletnego ani przechodniego questa.",
+          "Brak exact native map binding: UID=[1052], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/actions_mission5_ray_of_light.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            1052
+          ],
+          "aid": []
+        },
+        "callback_key": "oteryn:quest-callback/unnatural-selection-ray-of-light",
+        "runtime_callback_present": true,
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 203,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M5: rozliczenie",
+        "pattern": "P09",
+        "trigger": "Ulala: mission",
+        "condition": "Questline=11",
+        "effect": "Questline=12; Mission05=3",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 202,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Dane są źródłowo zamknięte i nie wymagają Item/foreign mutation. Przygotowany nowy batch4_npcs Quest adapter, pełne topics, unit RED stubs i source placements przeniesiono do deferred-npc-runtime; aktywne2 promocje usunięto. Docelowy status LEFT_OUT_SHARED_ADAPTER wynika z aktualnego ANSWER, a pytanie o wyjątek6590007979 pozostaje bez odpowiedzi.",
+          "Brak podłączonej źródłowej funkcji dla „Ulala: mission”: warunki Questline=11; wynik Questline=12; Mission05=3. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:95"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "source_closed_plain_branch": true,
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 204,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M6 Firewater Burn: skierowanie",
+        "pattern": "P09",
+        "trigger": "Ulala: mission",
+        "condition": "Questline=12",
+        "effect": "Questline=13; Mission06=1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 203,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Dane są źródłowo zamknięte i nie wymagają Item/foreign mutation. Przygotowany nowy batch4_npcs Quest adapter, pełne topics, unit RED stubs i source placements przeniesiono do deferred-npc-runtime; aktywne2 promocje usunięto. Docelowy status LEFT_OUT_SHARED_ADAPTER wynika z aktualnego ANSWER, a pytanie o wyjątek6590007979 pozostaje bez odpowiedzi.",
+          "Brak podłączonej źródłowej funkcji dla „Ulala: mission”: warunki Questline=12; wynik Questline=13; Mission06=1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:100"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "source_closed_plain_branch": true,
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 205,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M6: zamówienie piwa",
+        "pattern": "P09",
+        "trigger": "Lazaran: mission",
+        "condition": "Questline=13",
+        "effect": "Questline=14; Mission06=2",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 204,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Lazaran: mission”: warunki Questline=13; wynik Questline=14; Mission06=2. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Lazaran `mission` ma wcześniejszy foreign NewFrontier.Questline==8/topic0 gate; start additionally wymaga NewFrontier.Mission03==3. Nie pominięto tego warunku i nie zmieniono obcego ownera (ANSWER pkt6)."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:91"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 206,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "M6: nagroda",
+        "pattern": "P10/P11",
+        "trigger": "Lazaran: mission → yes",
+        "condition": "Questline=14; topic6; removeItem(3465,1,3) tj. właściwy subtype płynu",
+        "effect": "zabiera pot3465 subtype3; daje10198×1; Questline=15; Mission06=3",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 205,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Lazaran: mission → yes”: warunki Questline=14; topic6; removeItem(3465,1,3) tj. właściwy subtype płynu; wynik zabiera pot3465 subtype3; daje10198×1; Questline=15; Mission06=3. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Dodatkowo konkretne Item admission: 3465: brak native profile; 10198: brak native profile. Nie zmieniono materializable ani istniejących holds.",
+          "Pot3465 musi mieć dokładny fluid subtype3; żadna butelka/piwo zastępcze.3465 i reward10198 nie mają native profiles, a caller musiałby atomowo połączyć consume, grant i QL15/M6=3."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:152"
+        ],
+        "item_facts": {
+          "3465": {
+            "key": "oteryn:item.tibia.i3465",
+            "definition": {
+              "path": "content/items/definitions/items-21000-21499.json",
+              "line": 1,
+              "record": 127,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i3465",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          },
+          "10198": {
+            "key": "oteryn:item.tibia.i10198",
+            "definition": {
+              "path": "content/items/definitions/items-00000-00499.json",
+              "line": 1,
+              "record": 217,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i10198",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [
+          "3465: brak native profile",
+          "10198: brak native profile"
+        ],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 215,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "unnatural_selection",
+        "step": "Prezentacja: M5: kryształ",
+        "pattern": "P01",
+        "trigger": "use UID1052",
+        "condition": "Mission05=1",
+        "effect": "HOLYAREA na celu; player MONSTER_SAY: A ray of sunlight comes down from the heaven and hits the crystal. Wow. That probably means Fasuon is supporting.",
+        "existing": "NIE w zamkniętym modelu `crates/gameplay/quests/src/quest/world_callbacks.rs:84`; wymagany adapter prezentacji sukcesu",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 214,
+        "status": "LEFT_OUT_PRESENTATION",
+        "implemented_parts": [
+          "Pełny literal wiadomości zachowany przez authored success_message istniejącego callbacka; emisja MONSTER_SAY i efekt pozostają Left out."
+        ],
+        "left_out_parts": [
+          "Brakuje przekazania do właściciela prezentacji capability23: HOLYAREA na celu; player MONSTER_SAY: A ray of sunlight comes down from the heaven and hits the crystal. Wow. That probably means Fasuon is supporting.. ANSWER6589897950 pkt2 jawnie pozostawia efekty i typ mowy do osobnego PR.",
+          "Brak exact native map binding: UID=[1052], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-feedback-presentation",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/actions_mission5_ray_of_light.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            1052
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    }
+  ]
+}

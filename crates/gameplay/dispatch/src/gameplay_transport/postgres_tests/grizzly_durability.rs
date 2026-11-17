@@ -111,6 +111,7 @@ fn entry_context(boss_id: u8) -> TestResult<GrizzlyBossEntryContext> {
             reset_epoch: 0,
             actor_placement: id(91),
             movement_revision: 1,
+            party: Vec::new(),
         },
     })
 }
@@ -331,7 +332,15 @@ fn task_scenario() -> TestResult {
             )
             .await?,
         )?;
-        assert_eq!(join.changes.len(), 4);
+        // The four source storage writes remain exact. The merged chosen
+        // campaign observes joining in its own independently named track.
+        let source_changes: Vec<_> = join.changes.iter()
+            .filter(|change| change.track != quest::campaign::PHASE).collect();
+        assert_eq!(source_changes.len(), 4);
+        let campaign_changes: Vec<_> = join.changes.iter()
+            .filter(|change| change.track == quest::campaign::PHASE).collect();
+        assert_eq!(campaign_changes.len(), 1);
+        assert_eq!(campaign_changes[0].after, 1);
         assert_eq!(value(&h, &authority, quest::JOIN_STORAGE).await?, 1);
         assert_eq!(
             apply(

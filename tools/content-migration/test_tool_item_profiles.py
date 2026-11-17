@@ -13,7 +13,11 @@ class ToolItemProfileTests(unittest.TestCase):
     def test_source_profile_replay_is_bounded_and_has_required_physics(self):
         overlay = json.loads((ROOT / tools.PATH).read_bytes())
         profiles = {r['production_definition']['production_key']: r for r in overlay['records']}
-        self.assertEqual(len(profiles), 17)
+        self.assertEqual(len(profiles), 18)
+        rock = profiles['oteryn:item.tibia.i1791']
+        self.assertIs(rock['attributes']['blocks_movement'], True)
+        self.assertEqual(rock['semantics']['physical']['value']['movable'],
+                         {'state': 'KNOWN', 'value': False})
         for item in (3695, 3701):
             self.assertIs(profiles[f'oteryn:item.tibia.i{item}']['attributes']['blocks_movement'], False)
         for item in (3308, 3483, 3492):

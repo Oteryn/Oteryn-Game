@@ -1,13 +1,12 @@
 //! Quest admission/refresh orchestration; existing durability owners serialize every write.
 
-use super::{
-    ComposedFreshAdmission, FreshAdmissionStore, GameSessionId, QUEST_OBLIGATION_RETRY, domain,
-    operator_event,
-};
+use super::{ComposedFreshAdmission, GameSessionId, QUEST_OBLIGATION_RETRY, operator_event};
 
 /// One admitted session's quest state (QUEST-STATE-0 §5.4, §7).
 #[derive(Debug)]
 pub struct QuestSession {
+    pub map_marks_world: Option<crate::foundation::WorldId>,
+    pub map_marks: Vec<oteryn_protocol_oteryn::quest_log::QuestMapMark>,
     /// `None`: the load failed or exceeded a bound; quest actions fail closed.
     pub copy: Option<crate::durability::quest_state::QuestStateCopy>,
     /// Whether this session already reported an absent progression binding.
@@ -28,6 +27,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let fence = self.current_quest_fence(session).await;
         #[cfg(test)]
         test_pause::after_fence().await;
+        let mut map_marks = None;
+        let mut map_marks_world = None;
         let (copy, retry) = match fence {
             Ok(Some(fence)) => {
                 let mut admission = crate::durability::quest_state::admit_character_quest_state(
@@ -65,6 +66,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         deferred = true;
                     }
                 }
+                map_marks_world = Some(fence.runtime_scope.world_id());
+                match self
+                    .root
+                    .read_character_quest_map_marks(self.character, self.holder, fence)
+                    .await
+                {
+                    Ok(snapshot) => {
+                        map_marks = Some(
+                            snapshot
+                                .marks
+                                .into_iter()
+                                .map(|m| oteryn_protocol_oteryn::quest_log::QuestMapMark {
+                                    x: m.marker.position.x,
+                                    y: m.marker.position.y,
+                                    floor: m.marker.position.floor,
+                                    text: m.marker.text,
+                                })
+                                .collect(),
+                        );
+                    }
+                    // A rejected fence proves this session is no longer current
+                    // (replaced or ended); the current session reads its own marks.
+                    Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected) => {}
+                    Err(_) => {
+                        map_marks = Some(Vec::new());
+                        retry = true;
+                    }
+                }
                 (Some(admission.copy), retry)
             }
             // A proven terminal session: no quest action and nothing to retry.
@@ -79,10 +108,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let entry = sessions.entry(session).or_insert(QuestSession {
                 copy: None,
+                map_marks: Vec::new(),
+                map_marks_world: None,
                 retry_at: None,
                 experience_deferred: false,
                 version: 0,
             });
+            if let Some(marks) = map_marks {
+                entry.map_marks = marks;
+                entry.map_marks_world = map_marks_world;
+            }
             if let Some(copy) = copy {
                 // Exhaustion fails this session closed; never reuse an observed version.
                 entry.copy = entry.version.checked_add(1).and_then(|version| {
@@ -100,6 +135,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("quest_experience_deferred reason=no_progression_binding");
         }
         self.refresh_grizzly_kill_snapshot(session).await;
+        let _ = self.bounty_talisman_for_session(session).await;
+        self.refresh_native_objective_snapshot(session).await;
+        let disguise_retry = self.refresh_quest_disguise(session).await;
+        if (self.refresh_quest_guardians(session).await || disguise_retry)
+            && let Ok(mut sessions) = self.states.quest_sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            let retry = std::time::Instant::now() + std::time::Duration::from_secs(5);
+            entry.retry_at = Some(entry.retry_at.map_or(retry, |existing| existing.min(retry)));
+        }
     }
 
     /// [`Self::current_quest_fence`] for an admission step: a failed read (such as a busy
@@ -128,30 +173,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Result<Option<crate::durability::character_progression::CurrentCharacterGameplayFence>, ()>
     {
-        let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (current, _) = store.current_session_at(session).await.map_err(|_| ())?;
-        if current.session_state() == crate::foundation::GameSessionState::Terminal {
-            return Ok(None);
-        }
-        let character_id =
-            domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
-                .map_err(|_| ())?;
-        let record = self
-            .root
-            .read_current_character(self.character, character_id)
+        self.current_quest_fence_durable(session)
             .await
-            .map_err(|_| ())?;
-        Ok(Some(
-            crate::durability::character_progression::CurrentCharacterGameplayFence {
-                character_id,
-                game_session_id: session,
-                connection_generation: current.current_connection_generation(),
-                character_lease_generation: current.current_character_lease().generation(),
-                runtime_scope: current.current_runtime_scope(),
-                scope_ownership_generation: current.current_scope_generation(),
-                expected_character_revision: record.revision,
-            },
-        ))
+            .map_err(|_| ())
+    }
+
+    /// Preserve the acquisition error for command callers that retry only a busy holder.
+    pub(super) async fn current_quest_fence_durable(
+        &self,
+        session: GameSessionId,
+    ) -> Result<
+        Option<crate::durability::character_progression::CurrentCharacterGameplayFence>,
+        crate::durability::DurabilityError,
+    > {
+        use crate::durability::{DurabilityError, character_authority::CharacterAuthorityError};
+        self.root
+            .read_current_gameplay_fence(self.character, session)
+            .await
+            .map_err(|error| match error {
+                CharacterAuthorityError::Unavailable(error) => error,
+                CharacterAuthorityError::Rejected
+                | CharacterAuthorityError::Conflict
+                | CharacterAuthorityError::NameUnavailable => DurabilityError::CommitRejected,
+            })
     }
 }
 

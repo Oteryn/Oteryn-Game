@@ -1,0 +1,264 @@
+{
+  "status": "PARTIAL: bounded Corruptor and Mintwallin paths qualified; remaining story/engine/integration dependencies unresolved",
+  "task_id": "questpc",
+  "changed_product_files": [
+    "content/content.lock.json",
+    "content/items/definitions/spell-native-profiles.json",
+    "content/items/index.json",
+    "content/manifest.json",
+    "content/quests/grizzly-boss-rooms.json",
+    "content/spells.manifest.json",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs",
+    "docs/agents/evidence/quest-claim-qualification.json",
+    "docs/repository/QUEST_CALLBACK_COVERAGE.json",
+    "tools/content-migration/quest_finish_newhaven_items.py",
+    "tools/content-migration/test_quest_finish_newhaven_items.py",
+    "tools/content-schema/quest-authoring/check_quest_claim_qualification.py",
+    "tools/content-schema/quest-authoring/quest_callback_coverage.py",
+    "tools/content-schema/quest-authoring/test_quest_claim_qualification.py"
+  ],
+  "source_sha256": {
+    "content/content.lock.json": "ad56ad2f500d7259e6ba526b0ec84c5ee1e6e320445accb1fc92a9cf1e067d08",
+    "content/items/definitions/spell-native-profiles.json": "1c59b6a9516efd06eeb46c123d6a3d4cb5d09e8f6453806fc51d63f12c891c6e",
+    "content/items/index.json": "b877eda4ad6bde0726035a24868594e7c8f195f9a39d7048c0520654a8ec1439",
+    "content/manifest.json": "bfd3154a9c48d02c0fbc5ef263451cb3593517eb8dd13a8622c21b6ca1704276",
+    "content/quests/grizzly-boss-rooms.json": "9cae9c5c54e31bb10306e2d752f127617fc50b0b4697863a82a8fc9a53c92720",
+    "content/spells.manifest.json": "95af13eb1cd99f7e073ecbab7624cb23476aafdae911a7ee6d18340a2595c0e8",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs": "0d2edd700b4b1ca1c17fe2a16ef27ad7111911505550fe7d9555b0e0a8649be8",
+    "docs/agents/evidence/quest-claim-qualification.json": "826842a9923310d1b0bbd08a299559127e7d8cc9895e1ddf95496b99e7754193",
+    "docs/repository/QUEST_CALLBACK_COVERAGE.json": "1203681f33e9a1e231852368fbbe5e576d08433d023db665ae11b9126d718653",
+    "tools/content-migration/quest_finish_newhaven_items.py": "0b7f4149ebb51f8d1331c08a7c4d90915dd0659540796a1684af165baa144703",
+    "tools/content-migration/test_quest_finish_newhaven_items.py": "b15b6f9010ea74475b8f1429963c62c3b801ce3fcd7824e81c47e8e98b010abf",
+    "tools/content-schema/quest-authoring/check_quest_claim_qualification.py": "6088b61681c28f4e03859a63feab13a620985aff3e62d4470eaab58beba08474",
+    "tools/content-schema/quest-authoring/quest_callback_coverage.py": "99269356d6a1597f91cea00377375807c817e48b75f515d0c78956d20e093b12",
+    "tools/content-schema/quest-authoring/test_quest_claim_qualification.py": "18e8de077477145c79f21b360a16f4a59da8f5a46426fd75b464b6eca96f7e9f"
+  },
+  "retained_phase_a": {
+    "cohorts": 12,
+    "quest_reward_sets": 56,
+    "claims": 104,
+    "placements": 106,
+    "qualification": "retained PG proof audited; no new PG run or promotion",
+    "current_chest_test_unchanged": true
+  },
+  "checks": {
+    "restart3-dispatch-check": {
+      "command": "CARGO_BUILD_JOBS=4 /home/mole/oteryn-cache/codex-bin/cargo check --locked --offline -p oteryn-gameplay-dispatch --all-targets --all-features --quiet",
+      "exit": 0,
+      "log": ".questpc/restart3-dispatch-check.log"
+    },
+    "restart3-equipment-facts-red": {
+      "command": "python3 -m unittest test_quest_finish_newhaven_items.NewhavenItemTests.test_guaranteed_gear_has_complete_plain_equipment_requirements",
+      "exit": 1,
+      "duration_seconds": 0.044
+    },
+    "restart3-equipment-facts-green": {
+      "command": "python3 -m unittest test_quest_finish_newhaven_items",
+      "exit": 0,
+      "duration_seconds": 2.796
+    },
+    "restart3-native-generation": {
+      "command": "python3 tools/content-migration/register_spell_families.py",
+      "exit": 0,
+      "duration_seconds": 43.462
+    },
+    "restart3-native-check": {
+      "command": "python3 tools/content-migration/register_spell_families.py --check",
+      "exit": 0,
+      "duration_seconds": 56.877
+    },
+    "restart3-grizzly-regeneration": {
+      "command": "python3 tools/content-schema/quest-authoring/grizzly_rooms.py",
+      "exit": 0,
+      "duration_seconds": 2.834
+    },
+    "restart3-grizzly-units": {
+      "command": "python3 -m unittest test_grizzly_rooms",
+      "exit": 0,
+      "duration_seconds": 3.139
+    },
+    "restart3-corruptor-before": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_corruptor_all_five_vocations_kill_loot_take_equip newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set --test-threads=1 --nocapture",
+      "exit": 101,
+      "duration_seconds": 129.461
+    },
+    "restart3-corruptor-stamina": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_corruptor_all_five_vocations_kill_loot_take_equip newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set --test-threads=1 --nocapture",
+      "exit": 101,
+      "duration_seconds": 270.69
+    },
+    "restart3-corruptor-repaired": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_corruptor_all_five_vocations_kill_loot_take_equip newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set newhaven_corruptor_lifecycle_recovers_original_corpse_and_child_custody newhaven_corruptor_guarantee_survives_low_factor_and_keeps_independent_ordinary_drop --test-threads=1 --nocapture",
+      "exit": 101,
+      "duration_seconds": 206.041
+    },
+    "restart3-corruptor-equipment": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_corruptor_all_five_vocations_kill_loot_take_equip newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set newhaven_corruptor_lifecycle_recovers_original_corpse_and_child_custody newhaven_corruptor_guarantee_survives_low_factor_and_keeps_independent_ordinary_drop --test-threads=1 --nocapture",
+      "exit": 0,
+      "duration_seconds": 578.67
+    },
+    "restart3-stamina-boundary-red": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib newhaven_corruptor_ordinary_loot_is_frozen_across_stamina_boundary -- --test-threads=1 --nocapture",
+      "exit": 101,
+      "duration_seconds": 125.847
+    },
+    "restart3-stamina-boundary-green": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib newhaven_corruptor_ordinary_loot_is_frozen_across_stamina_boundary -- --test-threads=1 --nocapture",
+      "exit": 0,
+      "duration_seconds": 107.273
+    },
+    "restart3-mounted-fmt-check": {
+      "command": "rustup run 1.99.1 rustfmt --edition 2024 --check --config skip_children=true crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs",
+      "exit": 0,
+      "duration_seconds": 0.028
+    },
+    "restart3-fmt-check": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all -- --check",
+      "exit": 0,
+      "duration_seconds": 9.915
+    },
+    "restart3-clippy": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-dispatch -p oteryn-gameplay-content --all-targets --all-features --quiet -- -D warnings",
+      "exit": 0,
+      "duration_seconds": 146.186
+    },
+    "restart3-content-unit": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-content --lib equipment_projection_tests",
+      "exit": 0,
+      "duration_seconds": 27.057
+    },
+    "restart3-quest-unit": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-quests --lib tutorial_corruptor_rewards_use_source_items_and_base_vocations",
+      "exit": 0,
+      "duration_seconds": 0.273
+    },
+    "restart3-diff-check": {
+      "command": "git diff --check -- <all product paths>",
+      "exit": 0
+    },
+    "restart3-final-pg": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_corruptor_ viola_mission_yes viola_book_postgres_real_use_repeat_replay_refusal_and_fences --test-threads=1 --nocapture",
+      "exit": 0,
+      "duration_seconds": 909.696
+    },
+    "restart3-governance-units": {
+      "command": "python3 -m unittest discover -s tools/agents/tests",
+      "exit": 0,
+      "duration_seconds": 0.573
+    },
+    "restart3-governance": {
+      "command": "python3 tools/agents/validate_governance.py",
+      "exit": 0,
+      "duration_seconds": 0.544
+    },
+    "restart3-key-clippy": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-dispatch -p oteryn-gameplay-content --all-targets --all-features --quiet -- -D warnings",
+      "exit": 0,
+      "duration_seconds": 18.203
+    },
+    "restart3-key-coverage-check": {
+      "command": "python3 tools/content-schema/quest-authoring/quest_callback_coverage.py --canary .questpc/sources/canary --crystal .questpc/sources/crystal --check",
+      "exit": 0,
+      "duration_seconds": 0.46
+    },
+    "restart3-key-final-pg": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal -- --test-threads=1 --nocapture",
+      "exit": 0,
+      "duration_seconds": 55.148
+    },
+    "restart3-key-fmt-check": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all -- --check",
+      "exit": 0,
+      "duration_seconds": 10.197
+    },
+    "restart3-key-ledger-check": {
+      "command": "python3 tools/content-schema/quest-authoring/check_quest_claim_qualification.py --check",
+      "exit": 0,
+      "duration_seconds": 0.037
+    },
+    "restart3-key-qualification-units": {
+      "command": "python3 -m unittest discover -s tools/content-schema/quest-authoring -p test_quest_claim_qualification.py",
+      "exit": 0,
+      "duration_seconds": 0.242
+    },
+    "restart3-mintwallin-key-pg": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal -- --test-threads=1 --nocapture",
+      "exit": 0,
+      "duration_seconds": 78.57
+    },
+    "restart3-profile-baseline-review": {
+      "command": "python3 -",
+      "exit": 0,
+      "duration_seconds": 48.864
+    }
+  },
+  "unfinished": [
+    "Original aggregate scoped NPC case: JeanPierre command2603 hi Rejected!=Ok; authoritative calendar owner absent; no source guards relaxed",
+    "Remaining complete A..M item/trade/outfit/story/World paths need the native owners documented in restart2-phase-b-c-blockers.md and QENGINE integration",
+    "Coordinator staged Worldpin refresh, migration allocation, independent exact-candidate review and CI/publication; no Git mutation authorized"
+  ],
+  "global_claim_counts": {
+    "dispatch_pg_qualified": 128,
+    "not_playable": 2,
+    "supported_unqualified": 206
+  },
+  "corruptor": {
+    "qualification": "Corruptor vocation reward/corpse path; not complete Newhaven World/quest admission",
+    "tests": [
+      "newhaven_corruptor_all_five_vocations_kill_loot_take_equip",
+      "newhaven_corruptor_lifecycle_recovers_original_corpse_and_child_custody",
+      "newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set",
+      "newhaven_corruptor_ordinary_loot_is_frozen_across_stamina_boundary"
+    ],
+    "markers": [
+      "NEWHAVEN_knight POSTGRES_CASE_COMPLETED 52.060546053s",
+      "NEWHAVEN_paladin POSTGRES_CASE_COMPLETED 50.422797435s",
+      "NEWHAVEN_sorcerer POSTGRES_CASE_COMPLETED 54.364376947s",
+      "NEWHAVEN_druid POSTGRES_CASE_COMPLETED 49.718641472s",
+      "NEWHAVEN_monk POSTGRES_CASE_COMPLETED 51.008822175s",
+      "NEWHAVEN_LIFECYCLE POSTGRES_CASE_COMPLETED 70.695106673s",
+      "NEWHAVEN_MODIFIERS POSTGRES_CASE_COMPLETED 131.887451894s",
+      "NEWHAVEN_STAMINA_BOUNDARY POSTGRES_CASE_COMPLETED 62.055068549s"
+    ],
+    "source_sha256": "0d2edd700b4b1ca1c17fe2a16ef27ad7111911505550fe7d9555b0e0a8649be8",
+    "native_profile_sha256": "1c59b6a9516efd06eeb46c123d6a3d4cb5d09e8f6453806fc51d63f12c891c6e",
+    "log": ".questpc/restart3-final-pg.log",
+    "combined_command": "PASS9selected:7actualPGcases,1guaranteeunit,1childprocesshelper",
+    "combined_duration_seconds": 909.696
+  },
+  "mintwallin_key": {
+    "claim": "oteryn:reward-claim.quest.key.id3620",
+    "qualification": "Mintwallin prison-key source USE/mint/replay/refusal; source association stays unlinked; no whole Mintwallin access certificate",
+    "test": "quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal",
+    "marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3620 (32411, 32155, -15) native_source=true duration=5.630022771s",
+    "duration_seconds": 5.630022771,
+    "result": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal -- --test-threads=1 --nocapture",
+      "exit": 0,
+      "duration_seconds": 78.57
+    },
+    "test_source_sha256": "ce2010cf61f9269218c6b4c7c90af073b76f45fd2aa590e7f61879b90ebde4e6",
+    "post_promotion_result": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal -- --test-threads=1 --nocapture",
+      "exit": 0,
+      "duration_seconds": 55.148
+    },
+    "post_promotion_marker": "QUEST_CATALOGUE_CHEST POSTGRES_CASE_COMPLETED oteryn:reward-claim.quest.key.id3620 (32411, 32155, -15) native_source=true duration=5.542130326s"
+  },
+  "final_regression": {
+    "selected_tests": 9,
+    "actual_postgres_cases": 7,
+    "guarantee_unit_tests": 1,
+    "internal_restart_helper": 1,
+    "positive_postgres_markers": 11,
+    "result": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib -- newhaven_corruptor_ viola_mission_yes viola_book_postgres_real_use_repeat_replay_refusal_and_fences --test-threads=1 --nocapture",
+      "exit": 0,
+      "duration_seconds": 909.696
+    }
+  },
+  "final_product_whitespace_exit": 0,
+  "conflict_markers": false,
+  "head": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+  "frozen_sha": null
+}

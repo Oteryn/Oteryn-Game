@@ -1,0 +1,168 @@
+{
+  "schema": 1,
+  "runtime_admission": {
+    "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+    "loaded_by_current_runtime": false,
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+    "qualification": "Literal dialogue and selected owned source rules for the coordinator shared-adapter PR. Source dispatch constraints are mandatory; this is not the active Dialogue family or an executable replacement."
+  },
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forge_master/access_door",
+      "quest": "oteryn:quest.no_rest_for_the_wicked_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3084",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/questline",
+      "quest": "oteryn:quest.no_rest_for_the_wicked_quest",
+      "initial": -1,
+      "minimum": -1,
+      "maximum": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3080",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:src/creatures/players/player.cpp:1341-1350"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/no_rest_for_the_wicked/the_forgemaster/grant-door",
+      "npc": "oteryn:npc.the_forgemaster",
+      "quest": "oteryn:quest.no_rest_for_the_wicked_quest",
+      "keywords": [
+        "key"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/questline",
+          "comparison": "eq",
+          "value": 2
+        }
+      ],
+      "set": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/questline",
+          "value": 3
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forge_master/access_door",
+          "value": 1
+        }
+      ],
+      "experience": null,
+      "replies": [
+        "You have proven yourself worthy. The door to the Forgemaster's chamber is now accessible."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_forgemaster.lua:176-184"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    },
+    {
+      "key": "oteryn:quest-npc/no_rest_for_the_wicked/the_forgemaster/door-not-ready",
+      "npc": "oteryn:npc.the_forgemaster",
+      "quest": "oteryn:quest.no_rest_for_the_wicked_quest",
+      "keywords": [
+        "key"
+      ],
+      "match_mode": "contains",
+      "unless": [],
+      "topic": null,
+      "next_topic": null,
+      "guards": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u14_10/no_rest_for_the_wicked/forgemaster_door/questline",
+          "comparison": "ne",
+          "value": 2
+        }
+      ],
+      "set": [],
+      "experience": null,
+      "replies": [
+        "You are not ready yet. Proove yourself worthy first."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_forgemaster.lua:176-184"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "source_matcher": {
+        "function": "MsgContains",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc.lua:13-20"
+      },
+      "source_dispatch_constraints": {
+        "callback_prerequisite": "KeywordHandler.processMessage must return false before the dynamic callback can run.",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:446-455",
+        "static_nodes": [],
+        "static_matcher": "Lua string.find; every keyword in source order; KeywordNode children visited with pairs, without an invented stable tie order.",
+        "static_matcher_sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:42-73",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/keyword_handler.lua:178-189"
+        ],
+        "qualification": "The draft match_mode/unless fields alone do not prove this prerequisite. Shared adapter work must implement and test it before activation."
+      }
+    }
+  ],
+  "conversations": [
+    {
+      "npc": "oteryn:npc.the_forgemaster",
+      "quest": "oteryn:quest.no_rest_for_the_wicked_quest",
+      "greetings": [
+        "hi",
+        "hello"
+      ],
+      "greet": [
+        {
+          "guards": [],
+          "reply": "What brings you here this time, do you want to {craft} weapon in the forge?",
+          "sources": [
+            "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_forgemaster.lua:276"
+          ]
+        }
+      ],
+      "farewell": "Good bye, |PLAYERNAME|.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_forgemaster.lua:276",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/npc_handler.lua:82",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data/npclib/npc_system/modules.lua:5"
+      ],
+      "runtime_status": "DATA_PREPARED_RUNTIME_LEFT_OUT"
+    }
+  ],
+  "source_documents": [
+    {
+      "name": "no_rest_for_the_wicked.npc.json",
+      "authoring_readiness": {
+        "runtime_loaded": false,
+        "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+        "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "note": "Literal source dialogue and selected owned branches are prepared; the shared dispatch, matching, greeting and authoritative guard contract is held."
+      }
+    }
+  ]
+}

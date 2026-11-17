@@ -81,6 +81,22 @@
           }
         }
       ]
+    },
+    {
+      "event": "christmas",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/santa_claus.lua:103-122 supplies the gift producer; Christmas availability December12-December31 server save: docs/reference/content-prep/season-20261107/seasonal-calendar-source.json:9 retains TibiaWiki BR Christmas revision431702 original lines27,83; permanent donor claim is not converted to annual",
+      "windows": [
+        {
+          "start": {
+            "month": 12,
+            "day": 12
+          },
+          "end_exclusive": {
+            "month": 12,
+            "day": 31
+          }
+        }
+      ]
     }
   ]
 }

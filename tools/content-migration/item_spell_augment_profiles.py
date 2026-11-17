@@ -3,6 +3,8 @@ import hashlib
 import importlib.util
 import json
 
+from native_profile_composition import encode_native_profile
+
 
 def apply_native(root, generated, path, manifest_path, canonical_bytes):
     spec = importlib.util.spec_from_file_location(
@@ -15,7 +17,7 @@ def apply_native(root, generated, path, manifest_path, canonical_bytes):
         item_id = int(record["production_binding"]["external_id"])
         if item_id in facts:
             record["attributes"]["spell_augments"] = facts[item_id]
-    data = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
+    data = encode_native_profile(document)
     generated[path] = data
     manifest = json.loads(generated[manifest_path])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(data).hexdigest()

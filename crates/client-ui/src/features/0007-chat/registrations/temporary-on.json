@@ -1,0 +1,9 @@
+{
+  "mechanic": "0007-chat",
+  "kind": "keybindings",
+  "id": "0007-chat-temporary-on",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "KEYPADENTER",
+  "entry": "input.rs::temporary_mode_key"
+}

@@ -1,0 +1,45 @@
+{
+  "slice": "Goblin Merchant source contact placement",
+  "whole_quest": "ACTIVE",
+  "placement_test": {
+    "red_seconds": 0.315,
+    "red": "0 != 1: Rafzan absent",
+    "green_seconds": 0.27,
+    "tests": 2
+  },
+  "converter_tests": {
+    "passed": 12,
+    "seconds": 0.394
+  },
+  "pins": {
+    "state": "PASS",
+    "world_digest": "cf412119b1943d9736515677e09f2d2fb22191384ed43f4945fc132ecb0c561d",
+    "log": "/tmp/questpc7-rafzan-final-pin-refresh.log"
+  },
+  "workspace_check": {
+    "state": "PASS",
+    "duration": "3m03s",
+    "log": "/tmp/questpc7-rafzan-workspace.log"
+  },
+  "fmt": {
+    "state": "PASS",
+    "log": "/tmp/questpc7-rafzan-fmt.log"
+  },
+  "retained_native_pg": {
+    "state": "PRIOR_PUSHED_GREEN_UNCHANGED_MECHANIC",
+    "proof": "qlane-meta/questpc7/GOBLIN-INTRO-PG-PROOF.json",
+    "postgres": "18.6",
+    "duration_seconds": 68.51049825,
+    "optional_rebuild": "Stopped before execution under owner compile+fmt push rule; not counted as a PG run."
+  },
+  "authoring_regressions": {
+    "goblin": {
+      "passed": 3,
+      "seconds": 10.655
+    },
+    "placements": {
+      "passed": 14,
+      "seconds": 0.583
+    }
+  }
+}

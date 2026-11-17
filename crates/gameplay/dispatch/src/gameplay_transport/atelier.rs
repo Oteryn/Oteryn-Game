@@ -2,6 +2,8 @@
 
 #[path = "atelier/resources.rs"]
 mod resources;
+#[path = "atelier/v2.rs"]
+mod v2;
 #[path = "atelier/workshop.rs"]
 mod workshop;
 
@@ -22,7 +24,7 @@ pub fn dispatch_atelier(
 /// Server commands on the admitted Character owner, shared by admission and the Wheel wire route.
 pub enum GemBuildCommand<'a> {
     Atelier(crate::durability::character_atelier::AtelierRequest<'a>),
-    Wheel(crate::durability::character_wheel::WheelChangeRequest),
+    Wheel(Box<crate::durability::character_wheel::WheelChangeRequest>),
 }
 #[derive(Debug)]
 pub enum GemBuildOutcome {
@@ -39,6 +41,22 @@ pub enum AtelierWireReply {
 
 impl super::ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn atelier_wire(
+        &self,
+        admitted: super::connection::AdmittedSession,
+        kind: u32,
+        payload: &[u8],
+    ) -> AtelierWireReply {
+        use oteryn_protocol_oteryn::atelier::v2 as wire;
+        if (wire::COMMAND_TYPE_ATELIER_V2_QUERY..=wire::COMMAND_TYPE_ATELIER_V2_RESHAPE)
+            .contains(&kind)
+        {
+            self.atelier_v2_wire(admitted, kind, payload).await
+        } else {
+            self.atelier_v1_wire(admitted, kind, payload).await
+        }
+    }
+
+    async fn atelier_v1_wire(
         &self,
         admitted: super::connection::AdmittedSession,
         kind: u32,
@@ -65,6 +83,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 .atelier_resources_wire(admitted, expected, payload)
                 .await;
         }
+        // Switch Domain is retired with the gem domain (Winter Update 2026): a capability 148
+        // client still decodes it and receives a refusal without any write.
+        let mut refused = false;
         let request = match kind {
             wire::COMMAND_TYPE_ATELIER_QUERY => {
                 if wire::decode_query(payload).is_err() {
@@ -90,21 +111,72 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 let Ok(request) = wire::decode_mutate(payload) else {
                     return AtelierWireReply::Rejected;
                 };
-                let Some(mutation) = paid_wire_mutation(request.mutation) else {
-                    return AtelierWireReply::Rejected;
-                };
-                Some(crate::durability::character_atelier::AtelierRequest {
-                    occurrence: request.occurrence,
-                    expected_atelier_revision: request.expected_revision,
-                    mutation,
-                    resources: None,
-                })
+                if matches!(request.mutation, wire::Mutation::SwitchDomain { .. }) {
+                    refused = true;
+                    None
+                } else {
+                    let Some(mutation) = paid_wire_mutation(request.mutation) else {
+                        return AtelierWireReply::Rejected;
+                    };
+                    Some(crate::durability::character_atelier::AtelierRequest {
+                        occurrence: request.occurrence,
+                        expected_atelier_revision: request.expected_revision,
+                        mutation,
+                        resources: None,
+                    })
+                }
             }
             _ => return AtelierWireReply::Rejected,
         };
-        let mut refused = false;
+        self.atelier_v1_apply(admitted, expected, kind, request, refused)
+            .await
+    }
+
+    /// Mod Reshaping reads the Supply Stash through a hireling only where the stash owner
+    /// already grants it: the current Steward hireling serving this session's open stash.
+    pub(super) async fn reshape_hireling_stash(
+        &self,
+        actor: Option<crate::foundation::ExactActorRef>,
+        game_session_id: crate::foundation::GameSessionId,
+        item_fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+    ) -> bool {
+        let Some(actor) = actor else {
+            return false;
+        };
+        let command = super::connection::UseCommand {
+            game_session_id,
+            command_id: 0,
+            item_fence,
+        };
+        super::npc_command::hireling_services::stash_access(self, actor, command)
+            .await
+            .is_some()
+    }
+
+    /// Commits one decoded request through the one Atelier writer and builds the capability
+    /// 148 reply. Mod Reshaping (capability 483) enters here with its own decoded request.
+    /// A request that arrives already `refused` is a replay probe: it reaches the writer
+    /// without resources, so a committed occurrence replays its receipt and a fresh one is
+    /// refused with nothing written.
+    pub(super) async fn atelier_v1_apply(
+        &self,
+        admitted: super::connection::AdmittedSession,
+        expected: crate::durability::item_transfer::CurrentCharacterItemFence,
+        kind: u32,
+        request: Option<crate::durability::character_atelier::AtelierRequest<'static>>,
+        mut refused: bool,
+    ) -> AtelierWireReply {
+        use oteryn_protocol_oteryn::atelier as wire;
         let mut recorded = None;
-        if let Some(mut request) = request {
+        let replay_only = refused;
+        if let Some(request) = request {
+            // Rebuilt so the resources may borrow this call's pinned content.
+            let mut request = crate::durability::character_atelier::AtelierRequest {
+                occurrence: request.occurrence,
+                expected_atelier_revision: request.expected_atelier_revision,
+                mutation: request.mutation,
+                resources: None,
+            };
             let Some(permit) = self.spell_lane_permit().await else {
                 return AtelierWireReply::Unavailable;
             };
@@ -117,6 +189,21 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     return AtelierWireReply::Rejected;
                 }
             }
+            // A Steward hireling serving an open stash grants the same stash access as a
+            // depot locker; it is re-read here, before the runtime lock is taken.
+            let reshape = matches!(
+                request.mutation,
+                crate::durability::character_atelier::AtelierMutation::Reshape { .. }
+            );
+            let hireling_stash = reshape
+                && !replay_only
+                && self
+                    .reshape_hireling_stash(
+                        admitted.runtime_actor,
+                        admitted.game_session_id,
+                        Some(expected),
+                    )
+                    .await;
             let backpack = match self
                 .root
                 .read_character_backpack(self.character, expected.character_id)
@@ -133,7 +220,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         .with_wheel(self.premium_coordinator)
                 });
             {
-                let runtime = self.runtime.lock().await;
+                let mut runtime = self.runtime.lock().await;
                 let binding = runtime.binding();
                 if admitted.world_id != binding.world_id()
                     || binding.channel_id() != Some(admitted.channel_id)
@@ -158,7 +245,22 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // Pinned native definitions and the ordinary backpack/coin owner supply all
                 // economic facts. Missing resources do not hide an already committed receipt.
-                if let Some(content) = &content {
+                // Mod Reshaping may draw on the Supply Stash only where the stash is open:
+                // at a depot locker, read from the live position at commit time, or at a
+                // Steward hireling serving the stash (owner decisions WU26-10).
+                let at_locker = reshape
+                    && admitted.runtime_actor.is_some_and(|actor| {
+                        super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
+                            .as_ref()
+                            .and_then(super::depot::locker)
+                            .is_some()
+                    });
+                let supply_stash = reshape
+                    && oteryn_gameplay_progression::atelier::reshape::supply_stash_open(
+                        at_locker,
+                        hireling_stash,
+                    );
+                if !replay_only && let Some(content) = &content {
                     request.resources = atelier_wire_resources(
                         self,
                         &runtime,
@@ -166,6 +268,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         content,
                         admitted.game_session_id,
                         &request,
+                        supply_stash,
                     );
                 }
             }
@@ -184,7 +287,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 Ok(GemBuildOutcome::Atelier(
                     crate::durability::character_atelier::AtelierOutcome::Committed { state, .. }
                     | crate::durability::character_atelier::AtelierOutcome::AlreadyCommitted { state, .. },
-                )) => recorded = Some(state),
+                )) => {
+                    refused = false;
+                    recorded = Some(state);
+                }
                 Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput
                     | crate::durability::character_progression::CharacterProgressionError::AuthorityRejected
                     | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence) => return AtelierWireReply::Rejected,
@@ -287,25 +393,33 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .collect()
         };
+        let legacy = oteryn_gameplay_progression::atelier::vessels::legacy_cells(
+            &oteryn_gameplay_progression::atelier::vessels::from_state(&state),
+        );
         let gems = state
             .gems
             .values()
-            .map(|gem| wire::GemView {
-                id: gem.id.to_be_bytes(),
-                quality: match gem.quality {
-                    oteryn_gameplay_progression::atelier::GemQuality::Lesser => 0,
-                    oteryn_gameplay_progression::atelier::GemQuality::Regular => 1,
-                    oteryn_gameplay_progression::atelier::GemQuality::Greater => 2,
-                },
-                domain: match gem.domain {
-                    oteryn_gameplay_progression::wheel::WheelDomain::Green => 0,
-                    oteryn_gameplay_progression::wheel::WheelDomain::Red => 1,
-                    oteryn_gameplay_progression::wheel::WheelDomain::Purple => 2,
-                    oteryn_gameplay_progression::wheel::WheelDomain::Blue => 3,
-                },
-                locked: gem.locked,
-                vessel: gem.vessel,
-                modifiers: gem.mods.clone(),
+            .map(|gem| {
+                // Gems have no domain. Capability 148 clients index their four vessel
+                // cells by this field, so a gem in a legacy cell reports that cell. A gem
+                // socketed beyond the four cells stays socketed but is shown unsocketed,
+                // since the client refuses two socketed gems in one cell.
+                let cell = legacy
+                    .iter()
+                    .position(|cell| *cell == Some(gem.id.to_be_bytes()))
+                    .and_then(|cell| u8::try_from(cell).ok());
+                wire::GemView {
+                    id: gem.id.to_be_bytes(),
+                    quality: match gem.quality {
+                        oteryn_gameplay_progression::atelier::GemQuality::Lesser => 0,
+                        oteryn_gameplay_progression::atelier::GemQuality::Regular => 1,
+                        oteryn_gameplay_progression::atelier::GemQuality::Greater => 2,
+                    },
+                    domain: cell.unwrap_or(0),
+                    locked: gem.locked,
+                    vessel: cell.is_some(),
+                    modifiers: gem.mods.clone(),
+                }
             })
             .collect();
         wire::encode_reply(&wire::AtelierReply {
@@ -414,7 +528,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     self.character,
                     self.holder,
                     fence,
-                    request,
+                    *request,
                     std::sync::Arc::clone(ruleset),
                     crate::durability::character_wheel::WheelChangeFacts { at_temple },
                     gate,
@@ -510,7 +624,7 @@ fn paid_wire_mutation(
             },
         },
         Mutation::Dismantle { gem } => AtelierMutation::Dismantle { gem },
-        Mutation::SwitchDomain { gem } => AtelierMutation::SwitchDomain { gem },
+        Mutation::SwitchDomain { .. } => return None,
         Mutation::GradeUp { kind, mod_id } => AtelierMutation::GradeUp {
             kind: match kind {
                 0 => FragmentKind::Basic,
@@ -549,6 +663,7 @@ fn atelier_wire_resources<'a>(
     content: &'a dyn crate::durability::item_loop_move::ItemLoopContent,
     session: crate::foundation::GameSessionId,
     request: &crate::durability::character_atelier::AtelierRequest<'_>,
+    supply_stash: bool,
 ) -> Option<Box<crate::durability::character_atelier::AtelierResources<'a>>> {
     use crate::durability::character_atelier::{AtelierMutation, AtelierResources};
     use oteryn_gameplay_progression::atelier::{FragmentKind, GemQuality};
@@ -560,6 +675,8 @@ fn atelier_wire_resources<'a>(
     }
     let supreme = match request.mutation {
         AtelierMutation::GradeUp { kind, .. } => kind == FragmentKind::Supreme,
+        // Mod Reshaping pays greater fragments only for the third position.
+        AtelierMutation::Reshape { position, .. } => position == 3,
         AtelierMutation::Dismantle { gem } => admission
             .states
             .atelier_sessions
@@ -598,6 +715,7 @@ fn atelier_wire_resources<'a>(
             production_key: key.into(),
             revision_ref: index.revision(key)?.into(),
         },
+        supply_stash,
     }))
 }
 
@@ -627,10 +745,7 @@ pub(super) use composed_methods;
 #[allow(clippy::unwrap_used, reason = "test fixtures")]
 mod tests {
     use super::*;
-    use oteryn_gameplay_progression::{
-        atelier::{FragmentKind, GemQuality},
-        wheel::WheelDomain,
-    };
+    use oteryn_gameplay_progression::atelier::{FragmentKind, GemQuality};
 
     fn funded_state() -> AtelierState {
         AtelierState {
@@ -703,15 +818,7 @@ mod tests {
 
     fn reveal(state: &mut AtelierState, id: u128, quality: GemQuality, mods: Vec<u16>) {
         apply(state, AtelierAction::Drop { quality });
-        apply(
-            state,
-            AtelierAction::Reveal {
-                id,
-                quality,
-                domain: WheelDomain::Green,
-                mods,
-            },
-        );
+        apply(state, AtelierAction::Reveal { id, quality, mods });
     }
 
     fn refused(state: &mut AtelierState, action: AtelierAction, expected: AtelierRefusal) {
@@ -757,7 +864,6 @@ mod tests {
                 AtelierAction::Reveal {
                     id: 4,
                     quality: GemQuality::Greater,
-                    domain: WheelDomain::Green,
                     mods,
                 },
                 AtelierRefusal::InvalidDraw,
@@ -769,7 +875,6 @@ mod tests {
             AtelierAction::Reveal {
                 id: 4,
                 quality: GemQuality::Greater,
-                domain: WheelDomain::Green,
                 mods: vec![3, 1, 0],
             },
             AtelierRefusal::InsufficientGold,
@@ -777,50 +882,33 @@ mod tests {
     }
 
     #[test]
-    fn atelier_one_socket_per_domain_and_remove_releases_the_vessel() {
+    fn atelier_gems_of_one_quality_socket_together_and_remove_releases_the_vessel() {
+        // Slot occupancy and quality belong to the Gem Vessel owner; gems have no domain.
         let mut state = funded_state();
         reveal(&mut state, 1, GemQuality::Lesser, vec![3]);
         reveal(&mut state, 2, GemQuality::Lesser, vec![3]);
         apply(&mut state, AtelierAction::Socket { id: 1 });
+        apply(&mut state, AtelierAction::Socket { id: 2 });
         refused(
             &mut state,
             AtelierAction::Socket { id: 2 },
-            AtelierRefusal::VesselOccupied,
-        );
-        refused(
-            &mut state,
-            AtelierAction::SwitchDomain { id: 1 },
-            AtelierRefusal::InVessel,
+            AtelierRefusal::AlreadySocketed,
         );
         apply(&mut state, AtelierAction::Remove { id: 1 });
-        apply(&mut state, AtelierAction::Socket { id: 2 });
         assert!(!state.gems[&1].vessel);
         assert!(state.gems[&2].vessel);
     }
 
     #[test]
-    fn atelier_switch_lock_dismantle_ranges_and_last_domain_guards() {
+    fn atelier_lock_and_dismantle_ranges_guards() {
         let mut state = funded_state();
         reveal(&mut state, 1, GemQuality::Regular, vec![3, 1]);
-        refused(
-            &mut state,
-            AtelierAction::Dismantle {
-                id: 1,
-                yield_amount: 2,
-            },
-            AtelierRefusal::LastDomainGem,
-        );
         apply(
             &mut state,
             AtelierAction::Lock {
                 id: 1,
                 locked: true,
             },
-        );
-        refused(
-            &mut state,
-            AtelierAction::SwitchDomain { id: 1 },
-            AtelierRefusal::Locked,
         );
         refused(
             &mut state,
@@ -837,17 +925,6 @@ mod tests {
                 locked: false,
             },
         );
-        let before = state.gold;
-        for domain in [
-            WheelDomain::Red,
-            WheelDomain::Purple,
-            WheelDomain::Blue,
-            WheelDomain::Green,
-        ] {
-            apply(&mut state, AtelierAction::SwitchDomain { id: 1 });
-            assert_eq!(state.gems[&1].domain, domain);
-        }
-        assert_eq!(state.gold, before - 4 * 250_000);
         reveal(&mut state, 2, GemQuality::Lesser, vec![3]);
         // Crystal 201189f player_wheel.cpp:1311-1312: Regular yields 2..=10.
         for yield_amount in [1, 11] {
@@ -961,7 +1038,6 @@ mod tests {
                 locked: true,
             },
             AtelierAction::Remove { id: 1 },
-            AtelierAction::SwitchDomain { id: 1 },
             AtelierAction::Dismantle {
                 id: 1,
                 yield_amount: 1,
@@ -1009,7 +1085,6 @@ mod tests {
             AtelierAction::Reveal {
                 id: 226,
                 quality: GemQuality::Lesser,
-                domain: WheelDomain::Green,
                 mods: vec![3],
             },
             AtelierRefusal::Full,
@@ -1051,7 +1126,6 @@ mod tests {
             AtelierAction::Reveal {
                 id: 1,
                 quality: GemQuality::Greater,
-                domain: WheelDomain::Green,
                 mods: vec![3, 1, 0],
             },
         )
@@ -1085,7 +1159,6 @@ mod tests {
             AtelierAction::Reveal {
                 id: 2,
                 quality: GemQuality::Lesser,
-                domain: WheelDomain::Green,
                 mods: vec![3],
             },
         )

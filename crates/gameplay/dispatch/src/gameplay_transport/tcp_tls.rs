@@ -51,6 +51,7 @@ pub(super) async fn read_frame<R: AsyncRead + Unpin>(reader: &mut R) -> io::Resu
 /// buffered, so an admitted connection can race reads against its liveness cadence.
 #[derive(Default)]
 pub(super) struct FrameReader {
+    max_body: Option<usize>,
     prefix: [u8; 4],
     prefix_filled: usize,
     body: Option<Vec<u8>>,
@@ -58,6 +59,12 @@ pub(super) struct FrameReader {
 }
 
 impl FrameReader {
+    pub(super) fn bounded(max_body: usize) -> Self {
+        Self {
+            max_body: Some(max_body),
+            ..Self::default()
+        }
+    }
     pub(super) async fn next<R: AsyncRead + Unpin>(
         &mut self,
         reader: &mut R,
@@ -86,6 +93,9 @@ impl FrameReader {
             if self.prefix_filled == self.prefix.len() {
                 let length = crate::foundation::FrameLength::from_prefix(&self.prefix)
                     .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+                if self.max_body.is_some_and(|max| length.get() as usize > max) {
+                    return Err(io::ErrorKind::InvalidData.into());
+                }
                 self.body = Some(vec![0; length.get() as usize]);
             }
         }

@@ -13,6 +13,7 @@ pub(super) async fn permitted(
     let direction = match request.cause.side {
         NpcTradeSide::Buy => ProjectV2ServiceOfferDirection::SellToPlayer,
         NpcTradeSide::Sell => ProjectV2ServiceOfferDirection::BuyFromPlayer,
+        NpcTradeSide::Exchange => return Ok(matches!(request.cause.npc_key.as_str(), "oteryn:npc.al_dee" | "oteryn:npc.seymour" | "oteryn:npc.uzgod")),
     };
     let minimum = match grizzly_shop::required_points(
         &request.cause.npc_key,

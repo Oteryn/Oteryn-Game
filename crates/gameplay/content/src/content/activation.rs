@@ -617,7 +617,7 @@ pub fn activate_native_entry_room_with_gameplay(
     activate_qualified_native_entry_room(controller, quiescence, issuance, room)
 }
 
-fn activate_qualified_native_entry_room(
+pub(crate) fn activate_qualified_native_entry_room(
     controller: &mut ContentActivationController,
     quiescence: &NodeBootQuiescence,
     issuance: &NativeEntryActivationIssuance,

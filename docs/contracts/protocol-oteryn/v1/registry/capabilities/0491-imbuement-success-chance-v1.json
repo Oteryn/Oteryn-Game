@@ -1,0 +1,13 @@
+{
+  "id": 491,
+  "name": "IMBUEMENT_SUCCESS_CHANCE_V1",
+  "owner_decision": "WU26 native-client mechanics batch package 2 (client PR #3098); parity rule: Crystal 201189f8 and current Tibia",
+  "owner": "Game imbuement shrine window (command 85) and the imbuement tier rules",
+  "requires": [
+    68
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only, with IMBUE_V1. Each command 85 query offer row appends field 5 success_percent (0..=100) from the tier rule that apply enforces; ruling R2 makes it 100 for every tier. Without selection, and for every reply without a window, payloads are unchanged."
+}

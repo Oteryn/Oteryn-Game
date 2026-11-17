@@ -1,0 +1,7 @@
+{
+  "mechanic": "0117-boss-encounter",
+  "kind": "panels",
+  "id": "0117-boss-encounter-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

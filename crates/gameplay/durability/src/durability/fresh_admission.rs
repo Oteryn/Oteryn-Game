@@ -1,9 +1,9 @@
 //! Strict historical fresh-operation storage. No decoded value is a live capability.
 //! Runtime ceilings follow the accepted DFR registry; codec bounds remain explicit.
 mod activity_loss;
+mod house_lifecycle;
 mod retired_holder_release;
 mod terminal_release;
-mod house_lifecycle;
 mod training_lineage;
 use super::DurabilityError;
 use super::admission_authority_guards::*;
@@ -321,10 +321,12 @@ impl ControlLossCompletionSourceV1 for DurableLossCompletionSource {
 /// a separate adapter requirement; runtime arguments must match fixed registry caps.
 #[derive(Clone)]
 pub struct FreshAdmissionStore {
+    security_revocation_freshness_required: bool,
     retired_holder: Option<retired_holder_release::RetiredHolderProof>,
     // Rare Activity release proofs must not enlarge every ordinary admission
     // and reconnect future. Clones retain the same immutable, revalidated proof.
     departed_activity: Option<std::sync::Arc<super::activity_handoff::DepartedActivityRelease>>,
+    staff_loss: Option<ControlLossEpochRefV1>,
     offline_activity_mismatch:
         Option<std::sync::Arc<super::activity_handoff::OfflineActivityMismatchRelease>>,
     guards: AdmissionGuardStore,
@@ -333,11 +335,15 @@ pub struct FreshAdmissionStore {
     /// own transaction, before `session_state` becomes 3. `None` writes nothing.
     final_position: Option<super::character_last_position::FinalLastPosition>,
     /// Q16: named House metadata and the same current node proof used for its final capture.
-    final_house: Option<(super::character_last_position::HouseLastPosition, super::runtime_scope_assignment::NodeIncarnationProof)>,
+    final_house: Option<(
+        super::character_last_position::HouseLastPosition,
+        super::runtime_scope_assignment::NodeIncarnationProof,
+    )>,
     /// Original entry reservation cleanup shares the terminal commit even when no living capture exists.
     house_release_node: Option<super::runtime_scope_assignment::NodeIncarnationProof>,
     /// OFFLINE0: revalidated in the same physical terminal-release transaction.
     training_logout: Option<std::sync::Arc<dyn TerminalReleaseParticipant>>,
+    journal_catalogue: Option<std::sync::Arc<super::journal::LogoutCatalogue>>,
 }
 
 /// OFFLINE0: a terminal-release participant owned outside the shared core (LOOP-TRAIN-1's
@@ -351,6 +357,11 @@ pub trait TerminalReleaseParticipant: Send + Sync {
         'c: 'a;
 }
 impl FreshAdmissionStore {
+    /// Require a current stream read at PREPARE and COMMIT, independently of entry checks.
+    pub fn with_security_revocation_freshness(mut self,required:bool)->Self {
+        self.security_revocation_freshness_required=required;self
+    }
+
     /// One ADMIT0 predicate at both deciding owners. The caller holds the admission
     /// relation locks; read the current guard through its full mirror/history validator.
     /// Neither the prepared operation nor a callback can supply current runtime facts.
@@ -419,18 +430,36 @@ impl FreshAdmissionStore {
     /// Q16: final named-House capture in the existing terminal release transaction.
     #[must_use]
     pub fn with_final_house_position(
-        &self, position: super::character_last_position::FinalLastPosition,
+        &self,
+        position: super::character_last_position::FinalLastPosition,
         house: super::character_last_position::HouseLastPosition,
         node: &super::runtime_scope_assignment::NodeIncarnationProof,
     ) -> Self {
-        Self { final_position: Some(position), final_house: Some((house, node.clone())), house_release_node: Some(node.clone()), ..self.clone() }
+        Self {
+            final_position: Some(position),
+            final_house: Some((house, node.clone())),
+            house_release_node: Some(node.clone()),
+            ..self.clone()
+        }
     }
 
     /// The current named-House carrier owner retains its node proof for native
     /// entry-reservation cleanup at terminal release, including a dead actor.
     #[must_use]
-    pub fn with_house_release_owner(&self, node: &super::runtime_scope_assignment::NodeIncarnationProof) -> Self {
-        Self { house_release_node: Some(node.clone()), ..self.clone() }
+    pub fn with_house_release_owner(
+        &self,
+        node: &super::runtime_scope_assignment::NodeIncarnationProof,
+    ) -> Self {
+        Self {
+            house_release_node: Some(node.clone()),
+            ..self.clone()
+        }
+    }
+
+    /// Complete admitted-World root catalogue for the terminal journal capture.
+    #[must_use]
+    pub fn with_journal_catalogue(&self, catalogue: super::journal::LogoutCatalogue) -> Self {
+        Self { journal_catalogue: Some(std::sync::Arc::new(catalogue)), ..self.clone() }
     }
 
     /// OFFLINE0 participant: the final build marker commits with the terminal release.
@@ -474,11 +503,14 @@ impl FreshAdmissionStore {
             guards: AdmissionGuardStore::from_root(root),
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
+            journal_catalogue: None,
             final_position: None,
             final_house: None,
             house_release_node: None,
             retired_holder: None,
             departed_activity: None,
+            staff_loss: None,
+            security_revocation_freshness_required: false,
             offline_activity_mismatch: None,
         }
     }
@@ -563,12 +595,18 @@ impl FreshAdmissionStore {
             .collect::<Result<_>>()?;
         let replay = b.facts.replay_key().to_bytes();
         let mut tx = super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+        // Match service decisions: account portfolio before CharacterLease relations.
+        sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE")
+            .bind(&b.account_id).fetch_optional(&mut *tx).await?;
         super::db::lock_admission_relations(&mut tx).await?;
         if let Some(receipt) = store.receipt_locked(&mut tx, &replay).await? {
             let outcome = receipt.classify_retry(operation);
             super::admission_journal::commit_pass_transaction(tx, deadline).await?;
             return Ok(outcome);
         }
+        let service_blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle IN(3,4))")
+            .bind(checked(b.initial_commit())?.character_id().as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+        if service_blocked { return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority); }
         if let Some(revalidate) = revalidate
             && !revalidate(&mut tx).await?
         {
@@ -620,6 +658,11 @@ impl FreshAdmissionStore {
         {
             return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
         }
+        let minimum: Option<i64> = sqlx::query_scalar("SELECT native_security_generation FROM game_security_revocation_floors WHERE account_id=$1::text::uuid")
+            .bind(&b.account_id).fetch_optional(&mut *tx).await?;
+        if minimum.is_some_and(|minimum| u128::from(b.signed_security_generation) < minimum as u128) {
+            return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
+        }
         // All relation protection and conflict/history observations precede L.
         // No SQL-generated source revision, decision or source timestamp exists.
         let decided_at: i64 =
@@ -632,8 +675,8 @@ impl FreshAdmissionStore {
         commit_session_use(&mut tx, initial.character_id(), b.candidate_session, b.transport.to_bytes(), use_state.revision).await?;
         sqlx::query("INSERT INTO game_durability_fresh_admission_receipts (replay_key, game_session_id, account_id, character_id, world_id, channel_id, character_lease_generation, scope_ownership_generation, connection_generation, transport_ref, semantic_version, operation_json, authorization_decided_at) VALUES ($1, encode($2,'hex')::uuid, $3::text::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, encode($6,'hex')::uuid, $7::text::numeric(20,0), $8::text::numeric(20,0), 1, $9, 1, $10, $11)")
             .bind(replay.as_slice()).bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_durability_reconnect_sessions (game_session_id, account_id, character_id, world_id, runtime_scope_kind, runtime_scope_world_id, runtime_scope_channel_id, character_lease_generation, scope_ownership_generation, current_generation, current_transport_ref, session_state, fresh_replay_key) VALUES (encode($1,'hex')::uuid, $2::text::uuid, encode($3,'hex')::uuid, encode($4,'hex')::uuid, 1, encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6::text::numeric(20,0), $7::text::numeric(20,0), 1, $8, 2, $9)")
-            .bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(replay.as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_durability_reconnect_sessions (game_session_id, account_id, character_id, world_id, runtime_scope_kind, runtime_scope_world_id, runtime_scope_channel_id, character_lease_generation, scope_ownership_generation, current_generation, current_transport_ref, session_state, fresh_replay_key, admission_security_generation) VALUES (encode($1,'hex')::uuid, $2::text::uuid, encode($3,'hex')::uuid, encode($4,'hex')::uuid, 1, encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6::text::numeric(20,0), $7::text::numeric(20,0), 1, $8, 2, $9, $10::text::numeric)")
+            .bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(replay.as_slice()).bind(b.signed_security_generation.to_string()).execute(&mut *tx).await?;
         store.guards
             .persist_locked(&mut tx, successors, &previous, &encoded_successors)
             .await?;
@@ -1838,19 +1881,30 @@ async fn write_final_position(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
     final_position: &super::character_last_position::FinalLastPosition,
-    house: Option<&(super::character_last_position::HouseLastPosition, super::runtime_scope_assignment::NodeIncarnationProof)>,
+    house: Option<&(
+        super::character_last_position::HouseLastPosition,
+        super::runtime_scope_assignment::NodeIncarnationProof,
+    )>,
 ) -> Result<()> {
-    if final_position.write_sequence == 0 { return Ok(()); }
+    if final_position.write_sequence == 0 {
+        return Ok(());
+    }
     let lease = current.current_character_lease();
     let named_house = match (current.current_runtime_scope(), house) {
         (RuntimeScopeRefV1::Channel { world_id, .. }, None)
-            if world_id == final_position.record.world_id => None,
+            if world_id == final_position.record.world_id =>
+        {
+            None
+        }
         (RuntimeScopeRefV1::Instance { world_id, .. }, Some((saved, node)))
             if world_id == final_position.record.world_id
-                && saved.house.runtime_scope()? == current.current_runtime_scope() => {
+                && saved.house.runtime_scope()? == current.current_runtime_scope() =>
+        {
             let fence = super::item_transfer::CurrentCharacterItemFence {
-                character_id: crate::domain::CharacterId::from_bytes(*lease.character_id().as_bytes())
-                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                character_id: crate::domain::CharacterId::from_bytes(
+                    *lease.character_id().as_bytes(),
+                )
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
                 game_session_id: current.current_game_session_id(),
                 connection_generation: current.current_connection_generation(),
                 character_lease_generation: lease.generation(),
@@ -1858,8 +1912,15 @@ async fn write_final_position(
                 scope_ownership_generation: current.current_scope_generation(),
             };
             if super::house_hireling::fence::assert_house_custody_fence(
-                tx, node, &fence, *saved.origin_channel.as_bytes(),
-            ).await?.as_ref() != Some(&saved.house) {
+                tx,
+                node,
+                &fence,
+                *saved.origin_channel.as_bytes(),
+            )
+            .await?
+            .as_ref()
+                != Some(&saved.house)
+            {
                 // Terminal release must remain available after ownership,
                 // eligibility or node authority is lost. Keep the last valid
                 // projection; never retain Account/Character claims for a save.
@@ -1870,10 +1931,16 @@ async fn write_final_position(
         _ => return Ok(()),
     };
     super::character_last_position::upsert_scoped_last_position(
-        tx, lease.character_id().as_bytes(), super::character_last_position::LastPositionKey {
-            character_lease_generation: lease.generation(), write_sequence: final_position.write_sequence,
-        }, &final_position.record, named_house,
-    ).await?;
+        tx,
+        lease.character_id().as_bytes(),
+        super::character_last_position::LastPositionKey {
+            character_lease_generation: lease.generation(),
+            write_sequence: final_position.write_sequence,
+        },
+        &final_position.record,
+        named_house,
+    )
+    .await?;
     Ok(())
 }
 
@@ -2020,6 +2087,29 @@ impl FreshAdmissionStore {
         self.release_current_claims(current, now, account_id).await
     }
 
+    /// Signed staff removal of the exact recorded loss, independent of its
+    /// grace deadline. Uses the same current-claims save/terminal transaction.
+    pub async fn release_staff_lost_session(
+        &self,
+        session: GameSessionId,
+        account_id: &str,
+        epoch: ControlLossEpochRefV1,
+    ) -> Result<ExpiredLossReleaseV1> {
+        let (current, now) = self.current_session_at(session).await?;
+        if current.session_state() == GameSessionState::Terminal {
+            return Ok(ExpiredLossReleaseV1::Terminal);
+        }
+        if current.session_state() != GameSessionState::Reconnectable
+            || current.current_control_loss_epoch() != Some(epoch)
+            || current.current_transport().is_some()
+        {
+            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        }
+        let mut staff = self.clone();
+        staff.staff_loss = Some(epoch);
+        staff.release_current_claims(current, now, account_id).await
+    }
+
     /// D449 (ARCH-BATCH-ITEM-EQUIP-PACKETS §1.13): terminal release, with no successor, of a
     /// RECONNECTABLE session whose resume passed every check but the capability check. The
     /// client gave up the same-session path by changing its supported set, so its fresh
@@ -2064,11 +2154,14 @@ impl FreshAdmissionStore {
             },
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
             training_logout: None,
+            journal_catalogue: None,
             final_position: None,
             final_house: None,
             house_release_node: None,
             retired_holder: None,
             departed_activity: None,
+            staff_loss: None,
+            security_revocation_freshness_required: false,
             offline_activity_mismatch: None,
         }
     }
@@ -2572,13 +2665,14 @@ impl FreshAdmissionStore {
         source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
         capabilities: CurrentCapabilityCheck,
     ) -> Result<CompleteReconnectOutcomeV1> {
-        self.with_house_lifecycle_owner(custody).apply_complete_reconnect_with(
-            Some(custody.clone()),
-            request,
-            source,
-            Some(capabilities),
-        )
-        .await
+        self.with_house_lifecycle_owner(custody)
+            .apply_complete_reconnect_with(
+                Some(custody.clone()),
+                request,
+                source,
+                Some(capabilities),
+            )
+            .await
     }
 
     /// Test seam: the same decision against the source's own recovery evidence.
@@ -2772,6 +2866,10 @@ impl FreshAdmissionStore {
             (None, None) if cfg!(any(test, feature = "test-support")) => {}
             _ => return Ok(CompleteReconnectOutcomeV1::Rejected),
         }
+        if store.security_revocation_freshness_required
+            && !super::platform_streams::revocation_fresh_in_transaction(&mut tx).await? {
+            return Ok(CompleteReconnectOutcomeV1::Rejected);
+        }
         if commit {
             if !store.complete_prepare_exists(&mut tx, identity, epoch, &encoded).await? {
                 return Ok(CompleteReconnectOutcomeV1::Rejected);
@@ -2902,7 +3000,9 @@ impl FreshAdmissionStore {
             checked(fresh.authorization.initial_commit())?,
         )?;
         if loss.observation.session.current_game_session_id() != session
-            || loss.observation.loss_epoch != epoch || decided_at < loss.authorized_at {
+            || loss.observation.loss_epoch != epoch
+            || decided_at < loss.authorized_at
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
         Ok(Some((loss, decided_at)))

@@ -1,0 +1,10 @@
+name=forge_preview
+commands=6116
+transport=forge_preview
+composed=forge_preview
+authority=forge_preview
+[route]
+match routing::forge_preview::route(authority, &session.admitted, command, &session.item_view).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

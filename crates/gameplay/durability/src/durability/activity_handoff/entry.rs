@@ -71,9 +71,24 @@ pub(super) fn valid_request(r: &ActivityEnterRequest, boss_room: bool) -> bool {
     has_initiator
 }
 
-fn binding(r: &ActivityEnterRequest) -> [u8; 32] {
+fn binding(
+    r: &ActivityEnterRequest,
+    soulpit: Option<&super::soulpit::SoulpitEntryContext<'_>>,
+) -> [u8; 32] {
     let mut hash = Sha256::new();
     hash_field(&mut hash, b"native-activity-enter-v1");
+    if let Some(context) = soulpit {
+        match &context.request.funding {
+            crate::durability::soulpit::SoulpitFunding::Core { source, definition } => {
+                hash_field(&mut hash, source);
+                for text in [&definition.family,&definition.production_key,&definition.revision_ref] { hash_field(&mut hash,text.as_bytes()); }
+            }
+            crate::durability::soulpit::SoulpitFunding::Soulseals { species } => {
+                hash_field(&mut hash,b"soulseals-v1");hash_field(&mut hash,species.as_bytes());
+            }
+        }
+        hash_field(&mut hash, &context.request.intent);
+    }
     for text in [&r.activity_key, &r.template_revision, &r.content_revision] {
         hash_field(&mut hash, text.as_bytes());
     }
@@ -127,32 +142,96 @@ fn binding(r: &ActivityEnterRequest) -> [u8; 32] {
             }
         }
     }
+    if let Some(admission) = soulpit {
+        match &admission.request.funding {
+            super::super::soulpit::SoulpitFunding::Core { source, definition } => {
+                hash_field(&mut hash, b"soulpit-core-v2");
+                hash_field(&mut hash, source);
+                hash_field(&mut hash, definition.family.as_bytes());
+                hash_field(&mut hash, definition.production_key.as_bytes());
+                hash_field(&mut hash, definition.revision_ref.as_bytes());
+            }
+            super::super::soulpit::SoulpitFunding::Soulseals { species } => {
+                hash_field(&mut hash, b"soulpit-soulseals-v1");
+                hash_field(&mut hash, species.as_bytes());
+            }
+        }
+        hash_field(&mut hash, &admission.request.intent);
+        hash_field(
+            &mut hash,
+            &admission.request.started_at_micros.to_be_bytes(),
+        );
+        let mut participants = admission.request.participants.clone();
+        participants.sort_by_key(|fact| *fact.character.as_bytes());
+        for fact in participants {
+            hash_field(&mut hash, fact.character.as_bytes());
+            hash_field(&mut hash, &[u8::from(fact.game_master)]);
+        }
+    }
     hash.finalize().into()
 }
 
-pub(super) async fn enter_in_transaction(
-    tx: &mut Transaction<'_, Postgres>,
+#[allow(
+    clippy::too_many_arguments,
+    reason = "shared entry consumes the recovery fence and optional atomic Soulpit debit"
+)]
+pub(super) async fn enter_in_transaction<
+    G: super::super::quest_state::grizzly::GrizzlyPremiumGate,
+>(
+    tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
     root: &DurabilityRoot,
     node: &NodeIncarnationProof,
     r: &ActivityEnterRequest,
     boss_room: bool,
+    soulpit: Option<super::soulpit::SoulpitEntryContext<'_>>,
+    premium: &G,
 ) -> Result<ActivityEnterOutcome> {
+    if (r.activity_key == super::super::soulpit::SOULPIT_ACTIVITY_KEY) != soulpit.is_some()
+        || soulpit.as_ref().is_some_and(|context| {
+            boss_room
+                || r.time_limit_ms != 600_000
+                || context.request.handoff_id != r.handoff_id
+                || context.request.command.command_id().get() != r.command_id
+                || r.participants
+                    .iter()
+                    .find(|participant| {
+                        participant.source.character_id.as_bytes()
+                            == r.initiating_character_id.as_bytes()
+                    })
+                    .is_none_or(|participant| {
+                        participant.source.game_session_id
+                            != context.request.command.game_session_id()
+                    })
+                || context.request.participants.len() != r.participants.len()
+                || r.participants.iter().any(|participant| {
+                    context
+                        .request
+                        .participants
+                        .iter()
+                        .filter(|fact| fact.character == participant.source.character_id)
+                        .count()
+                        != 1
+                })
+        })
+    {
+        return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
+    }
     let initiator = r
         .participants
         .iter()
         .find(|p| p.source.character_id.as_bytes() == r.initiating_character_id.as_bytes())
         .ok_or(DurabilityError::InvalidStoredState)?;
-    let request_binding = binding(r);
+    let request_binding = binding(r, soulpit.as_ref());
     // Lock all source sessions before roots, both in Character order. This also
     // serializes command receipt absence without reversing a progression writer's
     // session-then-root order or locking the initiator ahead of other members.
     for p in &r.participants {
         sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")
-            .bind(p.source.game_session_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+            .bind(p.source.game_session_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     }
     for p in &r.participants {
         sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
-            .bind(p.source.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+            .bind(p.source.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     }
     let old: Option<(Vec<u8>, Vec<u8>)> = sqlx::query_as(
         "SELECT uuid_send(handoff_id), request_binding FROM game_activity_runtime_entries \
@@ -160,7 +239,7 @@ pub(super) async fn enter_in_transaction(
            AND initiating_connection_generation=$3::text::numeric AND command_id=$4::text::numeric")
         .bind(r.initiating_character_id.as_bytes().as_slice()).bind(initiator.source.game_session_id.as_bytes().as_slice())
         .bind(initiator.source.connection_generation.get().to_string()).bind(r.command_id.to_string())
-        .fetch_optional(&mut **tx).await?;
+        .fetch_optional(&mut ***tx).await?;
     if let Some((handoff, old_binding)) = old {
         if old_binding != request_binding {
             return Ok(ActivityEnterOutcome::Refused(
@@ -204,7 +283,7 @@ pub(super) async fn enter_in_transaction(
            AND NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.runtime_scope_world_id=a.world_id \
              AND s.runtime_scope_instance_id=a.activity_instance_id))")
         .bind(assignment_scope_key(r.destination_scope).as_slice()).bind(r.destination_assignment_source_revision.to_string())
-        .fetch_one(&mut **tx).await?;
+        .fetch_one(&mut ***tx).await?;
     if !exact {
         return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::NoCapacity));
     }
@@ -217,7 +296,7 @@ pub(super) async fn enter_in_transaction(
         };
         if let Some(transport) = p.destination_transport {
             let used: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref=$1)")
-                .bind(transport.to_bytes().as_slice()).fetch_one(&mut **tx).await?;
+                .bind(transport.to_bytes().as_slice()).fetch_one(&mut ***tx).await?;
             if used {
                 return Ok(ActivityEnterOutcome::Refused(ActivityRefusal::InvalidInput));
             }
@@ -252,9 +331,9 @@ pub(super) async fn enter_in_transaction(
             ));
         }
     }
-    let now = now_ms(tx).await?;
+    let now = quest_activity_now_ms(tx, root).await?;
     let boss_plan = if boss_room {
-        match super::boss_room::prepare_in_transaction(tx, r, now).await? {
+        match super::boss_room::prepare_in_transaction(tx, r, now, premium).await? {
             Ok(plan) => Some(plan),
             Err(reason) => return Ok(ActivityEnterOutcome::Refused(reason)),
         }
@@ -276,7 +355,7 @@ pub(super) async fn enter_in_transaction(
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,$6,$7::text::numeric,$8,1,$9)")
         .bind(r.handoff_id.as_slice()).bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(&r.activity_key)
         .bind(&r.template_revision).bind(&r.content_revision).bind(r.destination_generation.get().to_string())
-        .bind(i16::try_from(r.participants.len()).map_err(|_| DurabilityError::InvalidStoredState)?).bind(now).execute(&mut **tx).await?;
+        .bind(i16::try_from(r.participants.len()).map_err(|_| DurabilityError::InvalidStoredState)?).bind(now).execute(&mut ***tx).await?;
     let fact = node.fact();
     sqlx::query("INSERT INTO game_activity_runtime_entries(handoff_id,initiating_character_id,initiating_game_session_id,initiating_connection_generation,command_id,request_binding,holder_node_id,holder_registration_revision,assignment_source_revision,destination_coordinate_frame_digest,destination_map_revision_digest,destination_server_artifact_digest,deadline) \
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5::text::numeric,$6,encode($7,'hex')::uuid,$8::text::numeric,$9::text::numeric,$10,$11,$12,$13)")
@@ -284,14 +363,39 @@ pub(super) async fn enter_in_transaction(
         .bind(initiator.source.connection_generation.get().to_string()).bind(r.command_id.to_string()).bind(request_binding.as_slice())
         .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string()).bind(r.destination_assignment_source_revision.to_string())
         .bind(r.destination_content.coordinate_frame_digest.as_slice()).bind(r.destination_content.map_revision_digest.as_slice())
-        .bind(r.destination_content.server_artifact_digest.as_slice()).bind(deadline).execute(&mut **tx).await?;
+        .bind(r.destination_content.server_artifact_digest.as_slice()).bind(deadline).execute(&mut ***tx).await?;
     for p in &r.participants {
         insert_participant(tx, r, p).await?;
     }
+    // Crystal 201189f data-global/scripts/quests/soulpit/soulpit_fight.lua:37-106:
+    // validate the whole staging group and burn one core before entry. Keep the
+    // debit in this transaction, before any source session becomes terminal.
+    if let Some(context) = soulpit {
+        match super::super::soulpit::write_shared_entry(
+            root,
+            tx,
+            context.recovery,
+            node,
+            initiator.source,
+            context.request,
+            context.native,
+        )
+        .await
+        {
+            Ok(_) => {}
+            Err(super::super::soulpit::SoulpitWriteError::Unavailable(error)) => return Err(error),
+            Err(_) => {
+                return Ok(ActivityEnterOutcome::Refused(
+                    ActivityRefusal::AuthorityRejected,
+                ));
+            }
+        }
+    }
+    super::super::quest_state::rotten_flame::record_entry_origin(tx, r).await?;
     // 0265 source-ended trigger would abort PREPARED. Decide before terminalizing
     // any source; its deferred proof checks all fresh destinations at COMMIT.
     sqlx::query("UPDATE game_activity_handoff_groups SET state=2,decided_at=$2 WHERE handoff_id=encode($1,'hex')::uuid AND state=1")
-        .bind(r.handoff_id.as_slice()).bind(now).execute(&mut **tx).await?;
+        .bind(r.handoff_id.as_slice()).bind(now).execute(&mut ***tx).await?;
     for p in &r.participants {
         let RuntimeScopeRefV1::Channel { channel_id, .. } = p.source.runtime_scope else {
             return Err(DurabilityError::InvalidStoredState);
@@ -300,6 +404,7 @@ pub(super) async fn enter_in_transaction(
             tx,
             root,
             SuccessorSession {
+                terminal_security_return: false,
                 source: p.source,
                 destination: p.destination_game_session_id,
                 decision: r.handoff_id,
@@ -308,7 +413,6 @@ pub(super) async fn enter_in_transaction(
                 origin: Some(*channel_id.as_bytes()),
                 transport: p.destination_transport,
             },
-            now,
         )
         .await?;
     }
@@ -366,6 +470,7 @@ async fn insert_participant(
 
 /// Inputs for one successor; issuance revalidates its source inside the transaction.
 pub(super) struct SuccessorSession {
+    pub(super) terminal_security_return: bool,
     pub(super) source: CurrentCharacterItemFence,
     pub(super) destination: GameSessionId,
     pub(super) decision: [u8; 16],
@@ -381,9 +486,13 @@ pub(super) async fn issue_successor(
     tx: &mut Transaction<'_, Postgres>,
     root: &DurabilityRoot,
     successor: SuccessorSession,
-    now: i64,
 ) -> Result<()> {
+    // Session protection and authority publications use transaction wall time.
+    // Encounter test clocks can advance deadlines without backdating or
+    // future-dating the existing admission owner's claims.
+    let now = now_ms(tx).await?;
     let SuccessorSession {
+        terminal_security_return,
         source,
         destination,
         decision,
@@ -406,6 +515,10 @@ pub(super) async fn issue_successor(
         .bind(source.game_session_id.as_bytes().as_slice()).bind(source.character_id.as_bytes().as_slice())
         .bind(source.connection_generation.get().to_string()).bind(source.character_lease_generation.to_string()).fetch_optional(&mut **tx).await?
         .ok_or(DurabilityError::Unavailable)?;
+    let (admission_generation, security_revoked) = super::super::platform_streams::session_security_lineage(tx, source.game_session_id).await?;
+    if security_revoked && !terminal_security_return {
+        return Err(DurabilityError::Unavailable);
+    }
     let account: String = row.try_get("account_id")?;
     let initial: Vec<u8> = row
         .try_get::<Option<Vec<u8>>, _>("initial_fresh")?
@@ -446,15 +559,15 @@ pub(super) async fn issue_successor(
         RuntimeScopeRefV1::Instance { instance_id, .. } => (2_i16, None, Some(instance_id)),
     };
     let active = transport.is_some();
-    sqlx::query("INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,runtime_scope_instance_id,origin_channel_id,character_lease_generation,scope_ownership_generation,current_generation,current_transport_ref,session_state,control_loss_epoch,original_grace_deadline,predecessor_generation,initial_fresh_replay_key,activity_handoff_id,activity_return_id,activity_recovery_protection) \
-        VALUES(encode($1,'hex')::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($4,'hex')::uuid,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9::text::numeric,$10::text::numeric,1,$11,$12,$13::text::numeric,$14,$15::text::numeric,$16,encode($17,'hex')::uuid,encode($18,'hex')::uuid,$19)")
+    sqlx::query("INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,runtime_scope_instance_id,origin_channel_id,character_lease_generation,scope_ownership_generation,current_generation,current_transport_ref,session_state,control_loss_epoch,original_grace_deadline,predecessor_generation,initial_fresh_replay_key,activity_handoff_id,activity_return_id,activity_recovery_protection,admission_security_generation,security_revoked) \
+        VALUES(encode($1,'hex')::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($4,'hex')::uuid,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9::text::numeric,$10::text::numeric,1,$11,$12,$13::text::numeric,$14,$15::text::numeric,$16,encode($17,'hex')::uuid,encode($18,'hex')::uuid,$19,$20::text::numeric,$21)")
         .bind(destination.as_bytes().as_slice()).bind(&account).bind(source.character_id.as_bytes().as_slice()).bind(scope.world_id().as_bytes().as_slice())
         .bind(kind).bind(channel.as_ref().map(|v| v.as_slice())).bind(instance.as_ref().map(|v| v.as_slice())).bind(origin.as_ref().map(|v| v.as_slice()))
         .bind(lease.to_string()).bind(scope_generation.get().to_string()).bind(transport.as_deref()).bind(if active {2_i16} else {1_i16})
         .bind(if active {None} else {Some("1")}).bind(if active {None} else {Some(grace)}).bind(if active {None} else {Some("1")})
         .bind(initial.as_slice()).bind(if kind == 2 { Some(decision.as_slice()) } else { None })
         .bind(if kind == 1 { Some(decision.as_slice()) } else { None })
-        .bind(protection)
+        .bind(protection).bind(admission_generation.map(|g| g.to_string())).bind(security_revoked)
         .execute(&mut **tx).await?;
     if let Some(transport) = transport {
         sqlx::query("INSERT INTO game_durability_transport_ref_reservations(transport_ref,game_session_id,reconnect_attempt_ref,reservation_owner,fresh_replay_key,activity_handoff_id,activity_return_id) VALUES($1,encode($2,'hex')::uuid,NULL,3,NULL,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")

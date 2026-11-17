@@ -62,7 +62,7 @@ evidence.
    if it is full, search open PRs for
    a pending raise and depend on it instead of opening another one.
    `SELECTED_CAPACITY` must stay below `MAX_CAPABILITY_COUNT`
-   (`crates/protocol-oteryn/src/lib.rs`, 128 at the time of writing); when a
+   (`crates/protocol-oteryn/src/lib.rs`, 256 since CAPCAP-3); when a
    raise would reach it, stop and raise it with the owner, because the next
    step is a protocol change, not another constant bump.
 

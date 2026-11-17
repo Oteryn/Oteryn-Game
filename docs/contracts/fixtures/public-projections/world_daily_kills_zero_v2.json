@@ -1,0 +1,1 @@
+{"contract_version":2,"operation":"PublishWorldDailyKillsV2","source_authority":"oteryn:game:primary","world_id":"01934f10-7c02-7001-805b-3b1122334401","day_start":"1789948800","projection_epoch":"1","projection_revision":"1","source_observed_at":"1790035201","days":[{"day_end":"1790035200","monsters_killed":"0","bosses_killed":"0","complete":true}]}

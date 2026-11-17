@@ -1,0 +1,5 @@
+{
+  "command": "python3 .questpc/regenerate_items.py",
+  "exit": 0,
+  "duration_seconds": 3.898
+}

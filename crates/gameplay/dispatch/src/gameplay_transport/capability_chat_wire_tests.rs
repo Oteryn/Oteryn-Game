@@ -59,6 +59,25 @@ impl FreshAdmissionAuthority for ChatAuthority {
         ChatRoomSet::default()
     }
 
+    async fn console_levels(
+        &self,
+        _admitted: AdmittedSession,
+        names: Vec<String>,
+    ) -> Option<Vec<Option<u32>>> {
+        // This authority fixture models durable level 20 for its named characters.
+        Some(
+            names
+                .iter()
+                .map(|name| {
+                    self.names
+                        .iter()
+                        .any(|(_, known)| *known == name)
+                        .then_some(20)
+                })
+                .collect(),
+        )
+    }
+
     async fn chat_intent(
         &self,
         actor: ExactActorRef,
@@ -107,8 +126,8 @@ fn admitted(
 }
 
 /// Serves `admitted` over `frames`, then keeps the client open for `linger`.
-async fn serve_lingering(
-    authority: &ChatAuthority,
+async fn serve_lingering<A: FreshAdmissionAuthority>(
+    authority: &A,
     admitted: AdmittedSession,
     frames: &[Vec<u8>],
     linger: Duration,
@@ -488,4 +507,263 @@ fn party_chat_egress_custody_refuses_nonmembers_and_reserves_members_once()
         "replacement must negotiate again"
     );
     Ok(())
+}
+
+#[test]
+fn console_metadata_dispatch_checks_selection_and_preserves_unavailable_levels()
+-> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                use oteryn_protocol_oteryn::chat::console;
+                use tokio::io::{AsyncReadExt, AsyncWriteExt};
+                for selected in [false, true] {
+                    let (runtime, actor, session) = runtime_with_capacity(0x71, 3);
+                    let authority = ChatAuthority {
+                        runtime: RefCell::new(runtime),
+                        chat: ChatRuntime::default(),
+                        names: vec![(session, "Aela")],
+                    };
+                    let mut admitted = admitted(actor, session)?;
+                    if !selected {
+                        admitted.continuity.selected_capabilities = super::selection(&[]);
+                    }
+                    let payload = console::encode_names(&["Aela".into(), "Unknown".into()])
+                        .ok_or("encode")?;
+                    let request = command(1, 6117, &payload);
+                    let (mut client, mut server) = tokio::io::duplex(64 * 1024);
+                    client
+                        .write_all(&(request.len() as u32).to_be_bytes())
+                        .await?;
+                    client.write_all(&request).await?;
+                    client.shutdown().await?;
+                    let serving = async {
+                        let end =
+                            serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+                        drop(server);
+                        end
+                    };
+                    let reading = async {
+                        let mut bytes = Vec::new();
+                        client.read_to_end(&mut bytes).await?;
+                        Ok::<_, std::io::Error>(bytes)
+                    };
+                    let (_, output) = tokio::join!(serving, reading);
+                    let mut accepted = false;
+                    for frame in split(&output?)? {
+                        let envelope = decode_wire_envelope(&frame)?;
+                        if envelope.message_type() == MessageType::CommandResult {
+                            let result = decode_command_result(envelope.payload())?;
+                            if result.status == oteryn_protocol_oteryn::CommandStatus::Accepted {
+                                assert_eq!(
+                                    console::decode_levels(result.payload),
+                                    Some(vec![Some(20), None])
+                                );
+                                accepted = true;
+                            }
+                        }
+                    }
+                    assert_eq!(accepted, selected);
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "console dispatch scenario panicked")?
+        .map_err(Into::into)
+}
+
+/// WU26 capability 493: a private-message owner whose World relay accepts every line to "Bryn"
+/// and finds nobody else online, so the wire producer and the refresh drain run without the
+/// PostgreSQL relay. The echo queue is the production `ChatRuntime` one.
+struct EchoAuthority {
+    chat: ChatRuntime,
+}
+
+impl FreshAdmissionAuthority for EchoAuthority {
+    async fn admit(
+        &self,
+        _attempt: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Unavailable)
+    }
+
+    async fn resume(
+        &self,
+        _attempt: ResumeAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+
+    async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+        Some(WorldSpatialObservation {
+            content_generation: [0x5c; 32],
+            actor_position: ActorPosition {
+                x: 0,
+                y: 0,
+                floor: 0,
+            },
+        })
+    }
+
+    async fn step(&self, _actor: ExactActorRef, _direction: StepDirection) -> StepOutcome {
+        StepOutcome {
+            disposition: StepDisposition::Blocked,
+            moved_to: None,
+        }
+    }
+
+    async fn chat_admit(&self, _actor: ExactActorRef, session: GameSessionId) -> ChatRoomSet {
+        self.chat.admit(session, "Aela", NOW);
+        ChatRoomSet::default()
+    }
+
+    async fn chat_intent(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _command_id: u64,
+        intent: ChatIntent,
+    ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+        let disposition = match intent {
+            ChatIntent::Private { recipient_name, .. } if recipient_name == "Bryn" => {
+                ChatDisposition::Ok
+            }
+            _ => ChatDisposition::NotOnline,
+        };
+        oteryn_protocol_oteryn::chat::ChatIntentResult {
+            disposition,
+            wait_seconds: 0,
+        }
+    }
+
+    async fn chat_next(&self, session: GameSessionId) -> Option<ChatLine> {
+        self.chat.next(session)
+    }
+
+    async fn chat_private_echo(
+        &self,
+        admitted: AdmittedSession,
+        recipient_name: String,
+        text: String,
+    ) {
+        self.chat
+            .push_private_echo(admitted.game_session_id, &recipient_name, &text);
+    }
+
+    async fn chat_private_echo_next(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::chat::line_extended::PrivateEcho> {
+        self.chat.next_private_echo(admitted.game_session_id)
+    }
+}
+
+#[test]
+fn an_accepted_private_message_echoes_to_its_sender_with_a_strictly_increasing_sequence()
+-> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::chat::line_extended::{
+        ChatLineBody, PrivateEcho, decode_chat_line_extended,
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                let (_runtime, actor, session) = runtime_with_capacity(0x71, 1);
+                let private = |recipient: &str| {
+                    encode_chat_intent(&ChatIntent::Private {
+                        recipient_name: recipient.into(),
+                        text: " hi there ".into(),
+                    })
+                    .map_err(|e| format!("{e:?}"))
+                };
+                let frames = [
+                    command(1, 13, &private("Bryn")?),
+                    command(2, 13, &private("Nobody")?),
+                    command(3, 13, &private("Bryn")?),
+                ];
+                let echo = PrivateEcho {
+                    speaker_name: "Aela".into(),
+                    recipient_name: "Bryn".into(),
+                    text: "hi there".into(),
+                };
+                for (supported, echoed, sequenced) in [
+                    (&[7][..], false, false),
+                    (&[7, 496][..], false, true),
+                    (&[7, 493][..], true, false),
+                    (&[7, 493, 496][..], true, true),
+                ] {
+                    let authority = EchoAuthority {
+                        chat: ChatRuntime::default(),
+                    };
+                    let mut admitted = admitted(actor, session)?;
+                    admitted.continuity.selected_capabilities = super::selection(supported);
+                    let (end, output) =
+                        serve_lingering(&authority, admitted, &frames, Duration::from_millis(700))
+                            .await?;
+                    let mut results = Vec::new();
+                    let mut lines = Vec::new();
+                    for frame in &output {
+                        let envelope = decode_wire_envelope(frame)?;
+                        match envelope.message_type() {
+                            MessageType::CommandResult => {
+                                let result = decode_command_result(envelope.payload())?;
+                                results.push(
+                                    decode_chat_intent_result(result.payload)
+                                        .map_err(|e| format!("{e:?}"))?
+                                        .disposition,
+                                );
+                            }
+                            MessageType::StateDelta => {
+                                let delta = decode_state_delta(envelope.payload())?;
+                                if delta.domain_id == 12 && delta.delta_type == 1 {
+                                    lines.push((
+                                        delta.new_revision,
+                                        decode_chat_line_extended(delta.payload)
+                                            .map_err(|e| format!("{e:?}"))?,
+                                    ));
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    assert_eq!(
+                        results,
+                        vec![
+                            ChatDisposition::Ok,
+                            ChatDisposition::NotOnline,
+                            ChatDisposition::Ok
+                        ]
+                    );
+                    if !echoed {
+                        // Without 493 nothing is queued or sent: the bytes are unchanged.
+                        assert!(lines.is_empty(), "{lines:?}");
+                        assert_eq!(end.continuity.chat_revision, 1);
+                        continue;
+                    }
+                    // Only the two accepted lines echo, to the sender, with the recipient.
+                    assert_eq!(lines.len(), 2, "{lines:?}");
+                    let mut last = 0;
+                    for (revision, line) in &lines {
+                        assert_eq!(line.body, ChatLineBody::PrivateEcho(echo.clone()));
+                        if sequenced {
+                            let sequence = line.line_sequence.ok_or("line sequence")?;
+                            assert_eq!(sequence, *revision);
+                            assert!(sequence > last);
+                            last = sequence;
+                        } else {
+                            assert_eq!(line.line_sequence, None);
+                        }
+                    }
+                    assert_eq!(end.continuity.chat_revision, 3);
+                }
+                Ok(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "private echo wire test panic")?
+        .map_err(Into::into)
 }

@@ -618,7 +618,7 @@ fn coin_use_scenario() -> TestResult {
         let cells = map.movement_cells(deps.room.movement_cells()).map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         deps.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
         let fence = owner.current_quest_fence(deps.admitted.game_session_id).await.map_err(|_| "fence")?.ok_or("fence")?.item_fence();
@@ -666,7 +666,22 @@ fn coin_use_scenario() -> TestResult {
             let key = format!("oteryn:item.tibia.i{input}");
             let definition = index.definition_ref("Item", &key, "definition-r1").ok_or("coin definition")?;
             let command_id = u64::try_from(command_index)? + 1;
-            let (end, result, _) = super::item_craft::exchange(&owner, admitted, command_id, &payload, Some(definition)).await?;
+            let diagnostic_command = crate::foundation::CommandRef::new(
+                fence.game_session_id,
+                crate::foundation::CommandId::new(command_id).map_err(debug)?,
+            );
+            let (exchange_result, commits) = crate::durability::coin_exchange::audit_commit_probe::capture(
+                &h.root,
+                diagnostic_command,
+                super::item_craft::exchange(&owner, admitted, command_id, &payload, Some(definition)),
+            ).await;
+            let (end, result, _) = match exchange_result {
+                Ok(result) => result,
+                Err(error) => {
+                    report_coin_use_failure(&h, diagnostic_command, source, &commits, error.as_ref()).await;
+                    return Err(error);
+                }
+            };
             assert_eq!(result, expected, "round {round}");
             let retained_source: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_source) FROM game_coin_exchange_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
                 .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string()).fetch_one(&h.pool).await?;
@@ -681,7 +696,7 @@ fn coin_use_scenario() -> TestResult {
             // retired inputs, and cannot borrow another stack or replay a bank command.
             let mut restarted = deps.owner(&h, &authority);
             restarted.active_generation = Some(active);
-            restarted.movement_cells = &cells;
+            restarted.movement_cells = (&cells).into();
             let replay = restarted.use_item_completion(deps.actor, UseCommand { game_session_id: fence.game_session_id, command_id, item_fence: Some(fence) }, ItemKey::Instance(source)).await.ok_or_else(|| format!("round {round} replay"))?;
             assert_eq!(replay.disposition, expected);
             assert_eq!(h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("replayed")?, after);
@@ -711,7 +726,7 @@ fn coin_use_scenario() -> TestResult {
         sqlx::raw_sql("DROP TRIGGER goldconvr_test_failure ON game_coin_exchange_receipts; DROP FUNCTION goldconvr_test_failure();").execute(&h.pool).await?;
         let mut restarted = deps.owner(&h, &authority);
         restarted.active_generation = Some(active);
-        restarted.movement_cells = &cells;
+        restarted.movement_cells = (&cells).into();
         assert!(restarted.resume_npc_bank(deps.actor, command).await.is_none());
         assert_eq!(h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("bank cannot resume use")?, before);
         // A different source under the same command is rejected before executing the pending use.
@@ -733,6 +748,40 @@ fn coin_use_scenario() -> TestResult {
         drop(owner); drop(authority); drop(seal);
         h.cleanup().await
     })
+}
+
+async fn report_coin_use_failure(
+    h: &Harness,
+    command: crate::foundation::CommandRef,
+    source: [u8; 16],
+    commits: &crate::durability::coin_exchange::audit_commit_probe::Report,
+    error: &dyn std::error::Error,
+) {
+    // One bounded, read-only snapshot after failure; never replay an unknown write.
+    let game_session_id = command.game_session_id();
+    let snapshot = sqlx::query_scalar::<_, serde_json::Value>(
+        r#"SELECT jsonb_build_object(
+         'receipt',(SELECT jsonb_build_object('transaction',r.transaction_id,'result',r.result,
+          'source',r.item_source,'inputs',r.inputs,'outputs',r.outputs)
+          FROM game_coin_exchange_receipts r WHERE r.game_session_id=encode($1,'hex')::uuid
+           AND r.command_id=$2::text::numeric LIMIT 1),
+         'source',(SELECT jsonb_build_object('quantity',i.quantity,'lifecycle',i.lifecycle,
+          'last_transaction',i.last_transaction_id) FROM game_item_instances i
+          WHERE i.item_instance_id=encode($3,'hex')::uuid LIMIT 1))"#,
+    )
+    .bind(game_session_id.as_bytes().as_slice())
+    .bind(command.command_id().get().to_string())
+    .bind(source.as_slice())
+    .fetch_one(&h.pool);
+    let retained = match tokio::time::timeout(std::time::Duration::from_secs(1), snapshot).await {
+        Ok(Ok(value)) => Ok(value),
+        Ok(Err(error)) => Err(format!("diagnostic query: {error}")),
+        Err(_) => Err("diagnostic query deadline".into()),
+    };
+    eprintln!(
+        "[DBG-audit-765f34] coin_command={} original_error={error} commits={commits:?} retained={retained:?}",
+        command.command_id().get()
+    );
 }
 
 #[test]
@@ -818,11 +867,52 @@ fn converter_scenario() -> TestResult {
 
         // gold_converter.lua L17-36: a fresh converter spends one of its 500 charges.
         seed_converter_bag(&h, &[(162, "oteryn:item.tibia.i23722", 1, None), (164, gold, 100, None)]).await?;
-        let converted = owner.use_gold_converter(deps.actor, command(1), ItemKey::Instance(id(162)), ItemKey::Instance(id(164))).await.ok_or("gold converter")?;
+        let converted = {
+            // Contend after replay lookup, at the fresh conversion's second lane acquisition.
+            let barrier = Arc::new((tokio::sync::Notify::new(), tokio::sync::Notify::new()));
+            let conversion = crate::gameplay_transport::coin_use::CONVERTER_COMMIT_LANE_BARRIER
+                .scope(
+                    Arc::clone(&barrier),
+                    owner.use_gold_converter(
+                        deps.actor,
+                        command(1),
+                        ItemKey::Instance(id(162)),
+                        ItemKey::Instance(id(164)),
+                    ),
+                );
+            tokio::pin!(conversion);
+            tokio::select! {
+                () = barrier.0.notified() => {}
+                result = &mut conversion => return Err(format!("conversion ended before lane contention: {result:?}").into()),
+            }
+            let permit = owner
+                .spell_lane_permit()
+                .await
+                .ok_or("competing checkpoint lane")?;
+            barrier.1.notify_one();
+            // A cooperative yield must not masquerade as waiting for the occupied lane.
+            let polled = {
+                let mut waiting = std::pin::pin!(tokio::task::unconstrained(conversion.as_mut()));
+                std::future::poll_fn(|cx| {
+                    std::task::Poll::Ready(std::future::Future::poll(waiting.as_mut(), cx))
+                })
+                .await
+            };
+            assert!(
+                polled.is_pending(),
+                "conversion must wait for the occupied spell lane"
+            );
+            assert!(
+                deps.runtime.try_lock().is_ok(),
+                "a converter waiting for the lane must leave runtime available to its owner"
+            );
+            drop(permit);
+            conversion.await.ok_or("gold converter")?.map_err(|_| "unknown converter outcome")?
+        };
         assert_eq!(converted.disposition, UseDisposition::Committed);
         assert_eq!(converter_row(&h, 162).await?, ("oteryn:item.tibia.i23722".into(), 1, Some(499)));
         assert_eq!(quantity(&h, "3035").await?, 1);
-        let replay = owner.use_gold_converter(deps.actor, command(1), ItemKey::Instance(id(162)), ItemKey::Instance(id(164))).await.ok_or("replay")?;
+        let replay = owner.use_gold_converter(deps.actor, command(1), ItemKey::Instance(id(162)), ItemKey::Instance(id(164))).await.ok_or("replay")?.map_err(|_| "unknown converter outcome")?;
         assert_eq!(replay.disposition, UseDisposition::Committed);
         assert_eq!(converter_row(&h, 162).await?.2, Some(499));
         // A plain use needs a coin target and spends nothing.
@@ -832,7 +922,7 @@ fn converter_scenario() -> TestResult {
 
         // The temporary converter burns with its last charge, together with the conversion.
         seed_converter_bag(&h, &[(168, "oteryn:item.tibia.i25719", 1, Some(1)), (170, gold, 100, None)]).await?;
-        let last = owner.use_gold_converter(deps.actor, command(3), ItemKey::Instance(id(168)), ItemKey::Instance(id(170))).await.ok_or("last charge")?;
+        let last = owner.use_gold_converter(deps.actor, command(3), ItemKey::Instance(id(168)), ItemKey::Instance(id(170))).await.ok_or("last charge")?.map_err(|_| "unknown converter outcome")?;
         assert_eq!(last.disposition, UseDisposition::Committed);
         let (_, lifecycle, charges) = converter_row(&h, 168).await?;
         // The expiry retires the item in place; its last checkpoint row is never rewritten.
@@ -879,6 +969,52 @@ fn converter_scenario() -> TestResult {
         assert!(sqlx::query("UPDATE game_item_timed_states SET charges=500 WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(180).as_slice()).execute(&h.pool).await.is_err());
         eprintln!("POSTGRES_COMPLETED goldconv2");
         drop(owner); drop(authority); drop(seal);
+        h.cleanup().await
+    })
+}
+
+#[test]
+fn coin_converter_unknown_commit_does_not_decline_ownership() -> TestResult {
+    std::thread::Builder::new().stack_size(64 << 20)
+        .spawn(|| converter_unknown_scenario().map_err(|error| error.to_string()))?
+        .join().map_err(|_| "converter unknown scenario panicked")?
+        .map_err(Into::into)
+}
+
+fn converter_unknown_scenario() -> TestResult {
+    use crate::gameplay_transport::item_view::ItemKey;
+    run(async |admin| {
+        reset();
+        let h = Harness::create_with_admission_seed(admin, "coin_converter_unknown", true, false).await?;
+        eprintln!("POSTGRES_STARTED goldconv2");
+        prepare_current_session(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) = activated_with_loot_tables(world, None);
+        let active = controller.active().ok_or("active")?;
+        let channel_pin = ChannelContentPin::from_activation(world, pin.activation_sequence(), pin.identity().server_artifact_digest(), pin.identity().client_artifact_digest(), pin.frame_binding().digest(), pin.qualified_room().map_revision_digest(), (2, 0, 7));
+        let deps = Dependencies::with_content(channel_pin, crate::content::qualify_native_entry_room(world).map_err(debug)?, crate::spell::cast::v1_spell_book().map_err(debug)?)?;
+        let mut owner = deps.owner(&h, &authority);
+        owner.active_generation = Some(active);
+        deps.initialize(&owner).await;
+        deps.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
+        let session = deps.admitted.game_session_id;
+        let fence = owner.current_quest_fence(session).await.map_err(|_| "fence")?.ok_or("fence")?.item_fence();
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING").bind(id(41).as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+        let command = |command_id| UseCommand { game_session_id: session, command_id, item_fence: Some(fence) };
+        let gold = "oteryn:item.tibia.i3031";
+
+        seed_converter_bag(&h, &[(162, "oteryn:item.tibia.i23722", 1, None), (164, gold, 100, None)]).await?;
+        sqlx::raw_sql("CREATE FUNCTION reject_converter() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected converter commit failure'; END $$; CREATE TRIGGER reject_converter BEFORE INSERT ON game_coin_exchange_receipts FOR EACH ROW EXECUTE FUNCTION reject_converter()")
+            .execute(&h.pool).await?;
+        let outcome = FreshAdmissionAuthority::use_coin_converter(&owner, deps.actor, command(1), ItemKey::Instance(id(162)), ItemKey::Instance(id(164))).await;
+        assert_eq!(format!("{outcome:?}"), "Err(())", "unknown converter commit must disconnect");
+        drop(owner);
+        drop(authority);
+        drop(seal);
         h.cleanup().await
     })
 }

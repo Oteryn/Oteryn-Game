@@ -33,6 +33,8 @@ pub mod harmony;
 mod harmony_crystal_parity_tests;
 #[cfg(test)]
 mod harmony_tests;
+#[cfg(test)]
+mod healing_parity_matrix_tests;
 
 pub mod magnitude_owner;
 pub mod mana_training;
@@ -838,4 +840,4 @@ pub mod source_map_initialization;
 
 pub mod periodic_execution;
 
-mod source_player_conditions;
+pub mod source_player_conditions;

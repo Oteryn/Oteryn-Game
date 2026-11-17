@@ -1,0 +1,84 @@
+{
+  "batch": "main-6f61ac15d-integration",
+  "date": "2026-11-08",
+  "branch": "claude/happy-davinci-ijz3wy-questpc2b",
+  "parent_head": "3df0d0c43b0cad0a9198bddba46d041058875750",
+  "merged_main": "6f61ac15d93bbda9f9d718721233c0d067f40530",
+  "state": "compiling merge checkpoint; fresh dispatch PG pending",
+  "conflicts_resolved": 44,
+  "validation": {
+    "workspace_all_targets": "PASS 4m22s initial; PASS5m58s final before derived pin refresh",
+    "clippy": "PASS7m18s quests/durability/dispatch alltargets allfeatures -Dwarnings; includes lock wait",
+    "quest_units": {
+      "passed": 316,
+      "failed": 0,
+      "ignored": 0,
+      "duration_seconds": 51.22
+    },
+    "producer_tests": {
+      "composition": [
+        2,
+        2.061
+      ],
+      "source_gate": [
+        5,
+        11.354
+      ],
+      "callback_profiles": [
+        16,
+        103.767
+      ],
+      "key_profiles": [
+        2,
+        0.127
+      ],
+      "exact_desert_charge": [
+        4,
+        1.609
+      ],
+      "main_source_rewards": [
+        7,
+        13.184
+      ],
+      "reward_variants": [
+        13,
+        36.532
+      ],
+      "equipment_pin_tool": [
+        5,
+        0.001
+      ]
+    },
+    "postgres_server_version": "180006 via actual SHOW server_version_num; fresh dispatch cases pending",
+    "equipment_profile_union": 3820,
+    "dup_migrations": "PASS on staged merge tree",
+    "fmt": "PASS",
+    "final_generation": "PASS world_project_v2_to_tree.py; all central authorers; equipment3820; exact coverage/ledger283; main-merge fingerprint rebase; pin-refresh; fmt. Accepted WorldProject base identical in both parents, unnecessary predecessor re-admission stopped.",
+    "workspace_postpin": "PASS cargo check --workspace --all-targets, 3m29s",
+    "npc_carried_ground_refusal_unit": {
+      "passed": 1,
+      "ignored": 0,
+      "pg": false,
+      "scope": "carried NPC owner refuses Ground; pure unit, not PostgreSQL proof"
+    }
+  },
+  "prepush_exception": "Owner PREPUSH-2 permits pending step3 tests after cadence budget, provided steps1/2/4 pass. No new whole-quest qualification claimed.",
+  "pending_tests": [
+    "Fresh merged dispatch PG: Oldrak, Hero four pipes, Father11track atomic acceptance, XP physical hand-in, Rotten Blood native death, Annihilator party route, Elvenbane ladder route, main floor assembly.",
+    "Dispatch raw-equipment/cap371 focused unit assertions on merged generated content.",
+    "Remaining changed-crate unit suites remain pending; no full-suite pass claimed."
+  ],
+  "own_migrations": [
+    "1240_al_dee_item_exchange.sql",
+    "1241_uzgod_obsidian_knife_exchange.sql",
+    "1242_seymour_present_exchange.sql",
+    "1243_native_encounter_progression_scope.sql",
+    "1244_instance_corpse_mint.sql"
+  ],
+  "whole_quest_counts_unchanged": {
+    "qualified": 3,
+    "owned": 29,
+    "packet": 35,
+    "excluded": 6
+  }
+}

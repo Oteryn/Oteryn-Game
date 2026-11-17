@@ -49,8 +49,8 @@ pub(in crate::durability::item_decay_retire) async fn admit_ground(
             DecayRetireRefusal::NotACorpse,
         )));
     };
-    // Only death-dropped containers admit retained direct contents; they retire
-    // atomically with the root. All other nested Ground shapes remain refused.
+    // Only receipt-proven death trees retire their retained contents atomically
+    // with the root. Other nested Ground shapes remain refused.
     crate::durability::world_reset::ground_step::validate_root(tx, step.corpse_item_instance_id)
         .await?;
     let entries = sqlx::query("SELECT item_instance_id::text,placement_ordinal::text FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal LIMIT $2")
@@ -98,6 +98,7 @@ pub(in crate::durability::item_decay_retire) async fn admit_ground(
         key_number: u32::try_from(item.try_get::<i64, _>("key_number")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         placement_ordinal,
+        death_entry: None,
         corpse_ground: OneItemGroundV1 {
             world_id: scope.world_id().as_bytes().to_vec(),
             channel_id: scope

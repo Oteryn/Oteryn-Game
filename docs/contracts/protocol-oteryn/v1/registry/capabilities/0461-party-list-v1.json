@@ -1,0 +1,13 @@
+{
+  "id": 461,
+  "name": "PARTY_LIST_V1",
+  "owner_decision": "T172 cg-party owner allocation 2026-11-09",
+  "owner": "Game Party List",
+  "requires": [
+    42
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Negotiates repeated field 6 on member entries of query 46; see party-list-v1.md. Legacy sessions omit the extension."
+}

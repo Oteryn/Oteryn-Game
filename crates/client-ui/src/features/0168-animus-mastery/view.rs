@@ -3,26 +3,28 @@ use std::fmt::Write;
 
 pub fn panel_text(panel: &AnimusPanel) -> String {
     if !panel.selected {
-        return "Animus Mastery is unavailable in this session".into();
+        return tr!("Animus Mastery is unavailable in this session").into();
     }
-    let mut text = String::from("Animus Mastery\r\n");
+    let mut text = String::from(tr!("Animus Mastery\r\n"));
     if panel.loaded {
-        let _ = writeln!(text, "Completed species: {}\r", panel.total);
+        let _ = lwriteln!(text, "Completed species: {}\r", panel.total);
         if panel.total == 0 {
-            text.push_str(
-                "No completed species yet. Complete a Soulpit encounter to earn mastery.\r\n",
-            );
+            text.push_str(tr!(
+                "No completed species yet. Complete a Soulpit encounter to earn mastery.\r\n"
+            ));
         } else if panel.keys.is_empty() {
-            text.push_str("No species on this page. Refresh the list.\r\n");
+            text.push_str(tr!("No species on this page. Refresh the list.\r\n"));
         } else {
-            let _ = writeln!(
+            let _ = lwriteln!(
                 text,
                 "Species {}-{} of {}\r",
                 usize::from(panel.offset) + 1,
                 usize::from(panel.offset) + panel.keys.len(),
                 panel.total
             );
-            text.push_str("The Animus XP bonus applies to mastered species.\r\n\r\n");
+            text.push_str(tr!(
+                "The Animus XP bonus applies to mastered species.\r\n\r\n"
+            ));
             for key in &panel.keys {
                 let label = key
                     .strip_prefix("oteryn:creature.")
@@ -33,7 +35,7 @@ pub fn panel_text(panel: &AnimusPanel) -> String {
         }
     }
     if panel.pending.is_some() {
-        text.push_str("Loading...\r\n");
+        text.push_str(tr!("Loading...\r\n"));
     }
     if let Some(error) = panel.error {
         text.push_str(error);

@@ -14,7 +14,7 @@
 //! it to `<out directory>` with `artifact-name.txt`.
 //!
 //! `oteryn-world-bundle-compiler pin-refresh <repository root>`: rewrites every World pin, its
-//! identity file and the preproduction manifest to the tree's staged inputs (`pin_refresh`).
+//! identity file, preproduction manifest and client placement-index source pin to the tree's staged inputs (`pin_refresh`).
 
 mod cargo_inputs;
 mod entry_start;
@@ -160,6 +160,8 @@ fn run_compile(
 const INPUT_PATHS: &[&str] = &[
     "content/world/",
     "content/cyclopedia/",
+    "content/encounters/world-changes/layers.json",
+    "content/encounters/world-changes/runtime.json",
     "content/assets/files/",
     "imports/cipsoft-staticdata/map/subareas/",
     "content/houses/",

@@ -1,4 +1,4 @@
-//! Global modifier order: a Character's party/damage share, Prey, daily XP boost plus the
+//! Global modifier order: a Character's party/damage share, Prey, daily + Store XP boost plus the
 //! low-level bonus, then stamina, with integer conversion once at the end.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidHuntingExperience;
@@ -18,7 +18,8 @@ pub fn hunting_experience(
     premium: bool,
     level: u32,
 ) -> Result<i64, InvalidHuntingExperience> {
-    if !matches!(xp_boost_percent, 0 | 10 | 20 | 25 | 50)
+    // Winter Update 2026: a Daily Reward boost (10/20/25/50) adds to the Store's 50.
+    if !matches!(xp_boost_percent, 0 | 10 | 20 | 25 | 50 | 60 | 70 | 75 | 100)
         || share < 0
         || !(0..=100).contains(&prey_percent)
         || !(0..=2520).contains(&stamina_minutes)

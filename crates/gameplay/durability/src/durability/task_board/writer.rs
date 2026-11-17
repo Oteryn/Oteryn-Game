@@ -50,6 +50,9 @@ impl DurabilityRoot {
             return Err(Error::InvalidInput);
         }
         match (&request.action, request.cause) {
+            (_, QuestCause::SourceThink(_) | QuestCause::SourceStep(_)) => {
+                return Err(Error::AuthorityRejected);
+            }
             (TaskBoardAction::CreditKill { .. }, QuestCause::CreatureDeath(_)) => {}
             (TaskBoardAction::CreditKill { .. }, _) | (_, QuestCause::CreatureDeath(_)) => {
                 return Err(Error::InvalidInput);
@@ -186,7 +189,7 @@ impl DurabilityRoot {
                 .and_then(|value| value.checked_add(u64::from(effects.reroll_tokens_granted)))
                 .ok_or(DurabilityError::InvalidStoredState)?;
             let transition = if let Some(changes) = changes {
-                Some(super::state::advance(&mut tx, fence, &request, &binding, &view, changes, effects.experience).await?)
+                Some(super::state::advance(&mut tx, fence, request.cause, &binding, &view, changes, effects.experience).await?)
             } else { None };
             // Client and expansion replies take one post-command item snapshot.
             // Kill settlement consumes no full reply, so its internal receipt can

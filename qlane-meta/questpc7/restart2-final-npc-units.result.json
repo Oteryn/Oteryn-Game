@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-npc --all-features --lib --quiet -- --test-threads=2",
+  "exit": 0,
+  "duration_seconds": 216.677
+}

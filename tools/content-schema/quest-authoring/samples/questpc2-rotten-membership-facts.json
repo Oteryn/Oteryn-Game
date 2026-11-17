@@ -1,0 +1,116 @@
+{
+  "items": [
+    {
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43961",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43961",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "darklight figurine",
+      "source_item_id": 43961,
+      "source_line": 76781
+    },
+    {
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43962",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43962",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "putrefactive figurine",
+      "source_item_id": 43962,
+      "source_line": 76785
+    },
+    {
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43964",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43964",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "Ichgahal's fungal infestation",
+      "source_item_id": 43964,
+      "source_line": 76793
+    },
+    {
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43966",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43966",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "Chagorz igneous obsidian",
+      "source_item_id": 43966,
+      "source_line": 76801
+    },
+    {
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43967",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43967",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "Vemiath's infused basalt",
+      "source_item_id": 43967,
+      "source_line": 76805
+    },
+    {
+      "identity_binding": {
+        "disposition": "EXACT",
+        "external_id": "43968",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i43968",
+          "revision": "definition-r1"
+        }
+      },
+      "name": "Bakragore's amalgamation",
+      "source_item_id": 43968,
+      "source_line": 76809
+    }
+  ],
+  "native_admission": false,
+  "schema": "OTERYN_ROTTEN_BLOOD_ITEM_MEMBERSHIP_FACTS/v1",
+  "source": {
+    "git_blob_sha1": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+    "path": "data/items/items.xml",
+    "repository": "zimbadev/crystalserver",
+    "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+  },
+  "use_effects_admitted": false
+}

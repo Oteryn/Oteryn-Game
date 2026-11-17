@@ -10,6 +10,7 @@ pub const HISTORY_WINDOW_MS: i64 = 30 * 24 * 60 * 60 * 1_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CharacterInfoOperation {
+    QueryPremium,
     QuerySelf(PageRequest),
     QueryVisible {
         character: [u8; 16],
@@ -108,7 +109,7 @@ macro_rules! title_catalogue {
     };
 }
 
-pub const TITLE_COUNT: usize = 84;
+pub const TITLE_COUNT: usize = 94;
 
 title_catalogue! {
     AdeptArmorer = 1, "Adept Armorer", None, true, WeaponMastery,
@@ -279,6 +280,26 @@ title_catalogue! {
         "Unlocked all bosses.";
     BossSlayer = 84, "Boss Slayer", None, false, CompleteBossCategory(BossCategory::Bane),
         "Unlocked all Bane bosses.";
+    AspiringHuntsman = 85, "Aspiring Huntsman", Some("Aspiring Huntswoman"), true, TaskBoardPoints(160_000),
+        "Reached 160,000 Task Board points.";
+    CompetentBeastslayer = 86, "Competent Beastslayer", None, true, TaskBoardPoints(320_000),
+        "Reached 320,000 Task Board points.";
+    FearedBountyhunter = 87, "Feared Bountyhunter", None, true, TaskBoardPoints(430_000),
+        "Reached 430,000 Task Board points.";
+    Chompmeister = 88, "Chompmeister", None, true, HotCuisineMenu,
+        "Completed all of Jean Pierre's dishes.";
+    DedicatedEntrepreneur = 89, "Dedicated Entrepreneur", None, false, MapPercent(50),
+        "Explored 50% of all the map areas.";
+    HeroOfBounac = 90, "Hero of Bounac", None, true, HeroOfBounacFinale,
+        "Prevailed during the battle of Bounac and reported to Kesar the Younger.";
+    Planegazer = 91, "Planegazer", None, true, PlanegazerFinale,
+        "Followed the trail of the Planestrider to the end.";
+    TimeTraveller = 92, "Time Traveller", None, true, FormalDressQuest,
+        "Anywhere in time or space.";
+    ProconsulOfIksupan = 93, "Proconsul of Iksupan", None, true, CompleteOutfit(FullOutfit::AncientAucar),
+        "Won the complete Ancient Aucar outfit.";
+    RobinsonCrusoe = 94, "Robinson Crusoe", None, true, SchrodingerVisit,
+        "Visited Schrödinger's Island.";
 }
 
 impl CharacterTitle {
@@ -400,16 +421,23 @@ pub enum FullOutfit {
     RoyalCostume = 0,
     Golden = 1,
     RoyalBounacean = 2,
+    AncientAucar = 3,
 }
 
 impl FullOutfit {
-    pub const ALL: [Self; 3] = [Self::RoyalCostume, Self::Golden, Self::RoyalBounacean];
+    pub const ALL: [Self; 4] = [
+        Self::RoyalCostume,
+        Self::Golden,
+        Self::RoyalBounacean,
+        Self::AncientAucar,
+    ];
 
     pub const fn looks(self) -> [u32; 2] {
         match self {
             Self::RoyalCostume => [1457, 1456],
             Self::Golden => [1211, 1210],
             Self::RoyalBounacean => [1437, 1436],
+            Self::AncientAucar => [1598, 1597],
         }
     }
 }
@@ -432,6 +460,16 @@ const TRACKED_AHAU: usize = 4;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TitleRule {
     MonkPilgrimage,
+    /// SRV6 owner decision: existing Task Board points, never Prey Hunting Tasks.
+    TaskBoardPoints(u64),
+    /// Crystal player_title.cpp:309-310: all Jean Pierre dishes; separate from Culinary Master.
+    HotCuisineMenu,
+    HeroOfBounacFinale,
+    PlanegazerFinale,
+    FormalDressQuest,
+    SchrodingerVisit,
+    /// Crystal discovery_system.lua:527-538: completed main areas / all main areas.
+    MapPercent(u8),
     WeaponMastery,
     AllGradeThreeMods,
     AllMapAreas,
@@ -489,21 +527,15 @@ pub enum NotAdmitted {
     DonorRule,
 }
 
-/// The 28 Global titles outside the catalogue, with the missing fact. Together with
+/// The 18 Global titles outside the catalogue, with the missing fact. Together with
 /// `CharacterTitle::ALL` they are the 112 titles of TibiaWiki revid 1197515.
-pub const NOT_ADMITTED_TITLES: [(&str, NotAdmitted); 28] = [
+pub const NOT_ADMITTED_TITLES: [(&str, NotAdmitted); 18] = [
     ("Armor Breaker", NotAdmitted::DonorRule),
-    ("Aspiring Huntsman", NotAdmitted::TaskPoints),
     ("Big Boss", NotAdmitted::NoHighscore),
     ("Bringer of Rain", NotAdmitted::Tibiadrome),
-    ("Chompmeister", NotAdmitted::Quest),
     ("Cleansing Conqueror", NotAdmitted::DonorRule),
-    ("Competent Beastslayer", NotAdmitted::TaskPoints),
-    ("Dedicated Entrepreneur", NotAdmitted::MapPercent),
     ("Djinn Dominator", NotAdmitted::DonorRule),
     ("Eclipse Bringer", NotAdmitted::DonorRule),
-    ("Feared Bountyhunter", NotAdmitted::TaskPoints),
-    ("Hero of Bounac", NotAdmitted::Quest),
     ("Jack of all Taints", NotAdmitted::NoHighscore),
     ("Lamp Breaker", NotAdmitted::DonorRule),
     ("Light Reaver", NotAdmitted::DonorRule),
@@ -512,11 +544,7 @@ pub const NOT_ADMITTED_TITLES: [(&str, NotAdmitted); 28] = [
     ("Master of the Arsenal", NotAdmitted::DonorRule),
     ("Novice Enhancer", NotAdmitted::DonorRule),
     ("Pit Fighter", NotAdmitted::DonorRule),
-    ("Planegazer", NotAdmitted::Quest),
-    ("Proconsul of Iksupan", NotAdmitted::Quest),
-    ("Robinson Crusoe", NotAdmitted::Quest),
     ("Seasoned Armorer", NotAdmitted::DonorRule),
-    ("Time Traveller", NotAdmitted::Quest),
     ("Unbreakable Purifier", NotAdmitted::DonorRule),
     ("Usurper of the Demon Throne", NotAdmitted::DonorRule),
     ("Veteran Armorer", NotAdmitted::DonorRule),
@@ -532,6 +560,13 @@ pub enum TitleLifetime {
 /// Observations from the native owners; never persisted as title truth.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct TitleFacts {
+    pub task_board_points: u64,
+    pub hot_cuisine_menu: bool,
+    pub hero_of_bounac_finale: bool,
+    pub planegazer_finale: bool,
+    pub formal_dress_quest: bool,
+    pub schrodinger_visit: bool,
+    pub explored_map_percent: u8,
     pub monk_pilgrimage: bool,
     pub weapon_mastery: bool,
     pub all_grade_three_mods: bool,
@@ -556,7 +591,7 @@ pub struct TitleFacts {
     /// Distinct admitted mounts with a compatible native earned grant.
     pub mounts_unlocked: u32,
     /// Full outfit ownership in `FullOutfit` order; includes both donor look ids and addons.
-    pub full_outfits: [bool; 3],
+    pub full_outfits: [bool; 4],
     /// Distinct earned canonical outfit identities. A male/female look pair counts once.
     pub outfits_unlocked: u32,
     /// Every canonical class member has reached its Bestiary final kill threshold.
@@ -576,6 +611,13 @@ pub struct Qualification {
 pub fn qualify(title: CharacterTitle, facts: TitleFacts) -> Qualification {
     let eligible = match title.rule() {
         TitleRule::MonkPilgrimage => facts.monk_pilgrimage,
+        TitleRule::TaskBoardPoints(points) => facts.task_board_points >= points,
+        TitleRule::HotCuisineMenu => facts.hot_cuisine_menu,
+        TitleRule::HeroOfBounacFinale => facts.hero_of_bounac_finale,
+        TitleRule::PlanegazerFinale => facts.planegazer_finale,
+        TitleRule::FormalDressQuest => facts.formal_dress_quest,
+        TitleRule::SchrodingerVisit => facts.schrodinger_visit,
+        TitleRule::MapPercent(percent) => facts.explored_map_percent >= percent,
         TitleRule::WeaponMastery => facts.weapon_mastery,
         TitleRule::AllGradeThreeMods => facts.all_grade_three_mods,
         TitleRule::AllMapAreas => facts.all_map_areas_discovered,
@@ -932,6 +974,78 @@ mod tests {
         ));
         assert_eq!(
             qualified_selection(Some(CharacterTitle::Globetrotter), TitleFacts::default(), 1),
+            None
+        );
+    }
+
+    #[test]
+    fn srv6_task_board_titles_are_admitted_with_source_thresholds() {
+        for name in [
+            "Aspiring Huntsman",
+            "Competent Beastslayer",
+            "Feared Bountyhunter",
+            "Chompmeister",
+            "Dedicated Entrepreneur",
+        ] {
+            assert!(
+                CharacterTitle::ALL.iter().any(|title| title.name() == name),
+                "Task Board title missing: {name}"
+            );
+        }
+    }
+
+    #[test]
+    fn srv6_title_sources_thresholds_and_lifetimes() {
+        for (title, threshold) in [
+            (CharacterTitle::AspiringHuntsman, 160_000),
+            (CharacterTitle::CompetentBeastslayer, 320_000),
+            (CharacterTitle::FearedBountyhunter, 430_000),
+        ] {
+            let facts = |task_board_points| TitleFacts {
+                task_board_points,
+                ..TitleFacts::default()
+            };
+            assert!(!qualify(title, facts(threshold - 1)).eligible);
+            assert!(qualify(title, facts(threshold)).eligible);
+            assert_eq!(qualified_selection(Some(title), facts(0), 0), Some(title));
+        }
+        assert!(!qualify(CharacterTitle::Chompmeister, TitleFacts::default()).eligible);
+        assert!(
+            qualify(
+                CharacterTitle::Chompmeister,
+                TitleFacts {
+                    hot_cuisine_menu: true,
+                    ..TitleFacts::default()
+                }
+            )
+            .eligible
+        );
+        assert!(
+            !qualify(
+                CharacterTitle::DedicatedEntrepreneur,
+                TitleFacts {
+                    explored_map_percent: 49,
+                    ..TitleFacts::default()
+                }
+            )
+            .eligible
+        );
+        assert!(
+            qualify(
+                CharacterTitle::DedicatedEntrepreneur,
+                TitleFacts {
+                    explored_map_percent: 50,
+                    ..TitleFacts::default()
+                }
+            )
+            .eligible
+        );
+        assert_eq!(
+            qualified_selection(
+                Some(CharacterTitle::DedicatedEntrepreneur),
+                TitleFacts::default(),
+                0
+            ),
             None
         );
     }

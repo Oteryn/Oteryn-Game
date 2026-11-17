@@ -1,15 +1,20 @@
 {
   "mechanic": "0026-world-weather",
   "kind": "handlers",
-  "id": "0026-world-weather-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0026-world-weather-push",
+  "status": "supported",
   "commands": [],
+  "direction": "server_to_client",
+  "capability": 26,
+  "entry": "protocol.rs::apply",
+  "push_messages": [
+    "WorldWeather"
+  ],
+  "reducer": "protocol.rs::apply",
+  "test": "tests/state.rs::weather_replacement_intensity_and_floors",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "state": "The optional typed weather observation is owned by the play view and mailbox.",
+    "input": "Server-owned visual weather requires no input.",
+    "settings": "No local settings or persistence."
   }
 }

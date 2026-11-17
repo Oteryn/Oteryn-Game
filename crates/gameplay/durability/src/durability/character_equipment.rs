@@ -4,10 +4,17 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+#[path = "character_equipment/activity_read.rs"]
+mod activity_read;
+#[path = "character_equipment/cast_read.rs"]
+mod cast_read;
 #[path = "character_equipment/hotkey.rs"]
 mod hotkey;
 #[path = "character_equipment/house_read.rs"]
 mod house_read;
+#[path = "character_equipment/instance_read.rs"]
+mod instance_read;
+pub use cast_read::{CastEquipmentReader, read_cast_equipment_in_transaction};
 pub(crate) use house_read::read_house_equipment_in_transaction;
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -115,14 +122,14 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run_with_context(&mut context,move |holder,deadline,content| Box::pin(async move {
             let content=*content;
             let mut tx=super::db::begin_semantic_transaction(holder,deadline).await?;
-            let authority=assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,None,content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
-            let actual=read_equipment_in_transaction(&mut tx,&authority).await.map_err(|_| DurabilityError::Unavailable)?;
+            let actual=read_current_equipment_snapshot_in_transaction(&mut tx,&record,&node,&fence,content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
+            let world=*fence.runtime_scope.world_id().as_bytes();
             if actual != expected { return Err(DurabilityError::Unavailable); }
             let mut entries=Vec::new();
             for slot in [10,6] {
                 let Some(quiver)=actual.items.iter().find(|i|i.slot==slot && content.is_quiver(&i.definition)) else { continue; };
                 let rows=sqlx::query("SELECT COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal DESC LIMIT 21 FOR UPDATE OF i")
-                    .bind(quiver.item_instance_id.as_slice()).bind(authority.world.as_slice()).fetch_all(&mut *tx).await?;
+                    .bind(quiver.item_instance_id.as_slice()).bind(world.as_slice()).fetch_all(&mut *tx).await?;
                 if rows.len()>20 { return Err(DurabilityError::InvalidStoredState); }
                 for row in rows {
                     let definition=super::item_mint::TypedDefinitionRef {family:row.try_get("definition_family")?,production_key:row.try_get("definition_production_key")?,revision_ref:row.try_get("definition_revision_ref")?};
@@ -146,6 +153,10 @@ pub enum EquipmentIntent {
         #[serde(serialize_with = "serialize_equipment_definition")]
         definition: super::item_mint::TypedDefinitionRef,
         slot: u8,
+        /// Capability 485: the exact stored classification tier. Absent keeps the
+        /// original binding text, so pre-485 receipts replay unchanged.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        upgrade_tier: Option<u8>,
     },
     HotkeyMove {
         item: [u8; 16],
@@ -188,24 +199,6 @@ fn admission_equipment_unavailable(
     _stage: &'static str,
     _error: EquipmentError,
 ) -> DurabilityError {
-    #[cfg(any(test, feature = "test-support"))]
-    if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
-        match &_error {
-            EquipmentError::Rejected(reason) => {
-                eprintln!("SEAM_EVIDENCE equipment_owner stage={_stage} rejected={reason}")
-            }
-            EquipmentError::Database(sqlx::Error::Database(error)) => eprintln!(
-                "SEAM_EVIDENCE equipment_owner stage={_stage} sqlstate={}",
-                error.code().as_deref().unwrap_or("unknown")
-            ),
-            EquipmentError::Durability(error) => {
-                eprintln!("SEAM_EVIDENCE equipment_owner stage={_stage} durability={error:?}")
-            }
-            EquipmentError::Database(_) => {
-                eprintln!("SEAM_EVIDENCE equipment_owner stage={_stage} database=non_server_error")
-            }
-        }
-    }
     DurabilityError::Unavailable
 }
 fn uuid(text: String) -> Result<[u8; 16]> {
@@ -346,6 +339,49 @@ pub(super) async fn assert_current_equipment_in_transaction(
         character_revision: number(character.try_get("character_revision")?)?,
         account: uuid(character.try_get("account_id")?)?,
     })
+}
+/// Read paths may use a real activity Instance. The Channel-only writer
+/// authority above remains unchanged and no Instance authority is returned.
+/// Read portable equipment under the actual current tagged session in the
+/// caller's physical transaction. This returns data, never writer authority.
+pub async fn read_current_equipment_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+    recovery: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    content_digest: [u8; 32],
+) -> Result<EquipmentSnapshot> {
+    let recovery = recovery
+        .record_for(root)
+        .map_err(|_| rejected("equipment recovery"))?;
+    read_current_equipment_snapshot_in_transaction(tx, &recovery, node, fence, content_digest).await
+}
+
+async fn read_current_equipment_snapshot_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    content_digest: [u8; 32],
+) -> Result<EquipmentSnapshot> {
+    if matches!(
+        fence.runtime_scope,
+        crate::foundation::RuntimeScopeRefV1::Instance { .. }
+    ) {
+        return instance_read::read_instance_equipment_in_transaction(
+            tx,
+            recovery,
+            node,
+            fence,
+            content_digest,
+        )
+        .await;
+    }
+    let authority =
+        assert_current_equipment_in_transaction(tx, recovery, node, fence, None, content_digest)
+            .await?;
+    read_equipment_in_transaction(tx, &authority).await
 }
 /// Creates only the equipment owner's declared empty seed under the actual current fence.
 /// Its combat mode stays explicitly unknown until a real SetCombatMode command commits.
@@ -621,10 +657,15 @@ async fn apply_resolved_equipment_in_transaction(
                         {
                             return Err(rejected("equipment swap container semantics"));
                         }
-                        if content.is_timed_item(
+                        if unhosted_timed_item(
+                            tx,
+                            content,
+                            old.item_instance_id,
                             &old.definition.production_key,
                             &old.definition.revision_ref,
-                        ) {
+                        )
+                        .await?
+                        {
                             return Err(rejected("equipment swap timed not hosted"));
                         }
                         continue;
@@ -657,10 +698,15 @@ async fn apply_resolved_equipment_in_transaction(
                             {
                                 return Err(rejected("equipment swap container semantics"));
                             }
-                            if content.is_timed_item(
+                            if unhosted_timed_item(
+                                tx,
+                                content,
+                                old.item_instance_id,
                                 &old.definition.production_key,
                                 &old.definition.revision_ref,
-                            ) {
+                            )
+                            .await?
+                            {
                                 return Err(rejected("equipment swap timed not hosted"));
                             }
                             hand_displacement = Some((old.clone(), 0));
@@ -713,7 +759,7 @@ async fn apply_resolved_equipment_in_transaction(
                     {
                         return Err(rejected("equipment swap container semantics"));
                     }
-                    if content.is_timed_item(&key, &revision) {
+                    if unhosted_timed_item(tx, content, *identity, &key, &revision).await? {
                         return Err(rejected("equipment swap timed not hosted"));
                     }
                     use super::item_transfer::ItemStackClass;
@@ -968,6 +1014,7 @@ mod tests {
 
 #[derive(Debug, Clone)]
 pub struct RawCastDurableFacts {
+    pub learned: std::collections::BTreeSet<String>,
     pub account: [u8; 16],
     pub loyalty_points: u32,
     pub equipment: EquipmentSnapshot,
@@ -990,7 +1037,11 @@ pub async fn read_raw_cast_facts_in_transaction(
         .command
         .ok_or_else(|| rejected("cast read needs actual command"))?;
     let raw = read_lifecycle_facts_in_transaction(tx, authority).await?;
+    let learned =
+        super::character_known_spells::read_known_spells_in_transaction(tx, raw.fence.character_id)
+            .await?;
     Ok(RawCastDurableFacts {
+        learned,
         account: raw.account,
         loyalty_points: raw.loyalty_points,
         equipment: raw.equipment,
@@ -1069,6 +1120,13 @@ impl DurabilityRoot {
         command: CommandRef,
         content_digest: [u8; 32],
     ) -> Result<RawCastDurableFacts> {
+        if matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return activity_read::read_cast(self, recovery, node, fence, command, content_digest)
+                .await;
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| rejected("equipment recovery root"))?;
@@ -1128,6 +1186,12 @@ impl DurabilityRoot {
         fence: &CurrentCharacterItemFence,
         content_digest: [u8; 32],
     ) -> Result<MovementEquipmentSnapshot> {
+        if matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return activity_read::read(self, recovery, node, fence, content_digest).await;
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| rejected("equipment recovery root"))?;
@@ -1137,19 +1201,15 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                    let authority = assert_current_equipment_in_transaction(
+                    let equipment = read_current_equipment_snapshot_in_transaction(
                         &mut tx,
                         &record,
                         &node,
                         &fence,
-                        None,
                         content_digest,
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let equipment = read_equipment_in_transaction(&mut tx, &authority)
-                        .await
-                        .map_err(|_| DurabilityError::Unavailable)?;
                     super::db::commit_semantic_transaction(tx, deadline).await?;
                     Ok(MovementEquipmentSnapshot { fence, equipment })
                 })
@@ -1164,6 +1224,13 @@ impl DurabilityRoot {
         fence: &super::character_progression::CurrentCharacterGameplayFence,
         content_digest: [u8; 32],
     ) -> Result<RawLifecycleDurableFacts> {
+        if matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return activity_read::read_lifecycle(self, recovery, node, fence, content_digest)
+                .await;
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| rejected("equipment recovery root"))?;
@@ -1288,6 +1355,12 @@ pub trait EquipmentMoveContent: EquipmentPolicyLookup + Sync {
     /// True unless the definition is known to have no timed field (`temporal` active-time
     /// budget or `charges`); unknown or conflicting timed content is timed.
     fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool;
+    /// The immutable definition has an absolute lifetime. The writer still
+    /// requires this exact ItemInstance's original pending deadline proof.
+    fn supports_absolute_deadline(&self, _production_key: &str, _revision_ref: &str) -> bool {
+        false
+    }
+
     /// The exact definition's inventory-admitted class in this same Content generation.
     /// Unknown never permits a same-definition exchange; stacks need the separate merge shape.
     fn equipment_stack_class(
@@ -1400,7 +1473,7 @@ async fn precheck_move(
                     !matches!((key,revision),(Ok(key),Ok(revision)) if content.is_ammunition_item(&key,&revision))
                 }) {return Ok(Some(EquipmentMoveRefusal::SlotMismatch));}
             }
-            if content.is_timed_item(&key, &revision) {
+            if unhosted_timed_item(tx, content, request.item, &key, &revision).await? {
                 return Ok(Some(EquipmentMoveRefusal::TimedNotHosted));
             }
             if let Some(old) = snapshot.items.iter().find(|item| item.slot == to) {
@@ -1411,8 +1484,14 @@ async fn precheck_move(
                 {
                     return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
                 }
-                if content
-                    .is_timed_item(&old.definition.production_key, &old.definition.revision_ref)
+                if unhosted_timed_item(
+                    tx,
+                    content,
+                    old.item_instance_id,
+                    &old.definition.production_key,
+                    &old.definition.revision_ref,
+                )
+                .await?
                 {
                     return Ok(Some(EquipmentMoveRefusal::TimedNotHosted));
                 }
@@ -1522,6 +1601,31 @@ impl DurabilityRoot {
         std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
         DurabilityError,
     > {
+        self.commit_hotkey_equipment_tiered(recovery, node, fence, command, content, selection, None)
+            .await
+    }
+
+    /// Capability 485: the carried selection matches definition and exact upgrade tier.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the fenced equipment inputs plus the capability 485 tier"
+    )]
+    pub async fn commit_hotkey_equipment_tiered<C: EquipmentMoveContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        selection: (super::item_mint::TypedDefinitionRef, u8),
+        upgrade_tier: Option<u8>,
+    ) -> std::result::Result<
+        std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
+        DurabilityError,
+    > {
+        if upgrade_tier.is_some_and(|tier| tier > crate::domain::forge::ItemTier::MAX) {
+            return Ok(Err(EquipmentMoveRefusal::Rejected));
+        }
         self.commit_equipment_intent(
             recovery,
             node,
@@ -1531,6 +1635,7 @@ impl DurabilityRoot {
             EquipmentIntent::Hotkey {
                 definition: selection.0,
                 slot: selection.1,
+                upgrade_tier,
             },
         )
         .await
@@ -1610,9 +1715,19 @@ impl DurabilityRoot {
                         .await?;
                         let snapshot = read_equipment_in_transaction(&mut tx, &authority).await?;
                         let resolved = match &intent {
-                            EquipmentIntent::Hotkey { definition, slot } => {
+                            EquipmentIntent::Hotkey {
+                                definition,
+                                slot,
+                                upgrade_tier,
+                            } => {
                                 hotkey::resolve(
-                                    &mut tx, &authority, &snapshot, content, definition, *slot,
+                                    &mut tx,
+                                    &authority,
+                                    &snapshot,
+                                    content,
+                                    definition,
+                                    *slot,
+                                    *upgrade_tier,
                                 )
                                 .await?
                             }
@@ -1709,4 +1824,22 @@ impl DurabilityRoot {
             })
             .await
     }
+}
+
+async fn unhosted_timed_item<C: EquipmentMoveContent>(
+    tx: &mut Transaction<'_, Postgres>,
+    content: &C,
+    item: [u8; 16],
+    key: &str,
+    revision: &str,
+) -> Result<bool> {
+    if !content.is_timed_item(key, revision) {
+        return Ok(false);
+    }
+    if !content.supports_absolute_deadline(key, revision) {
+        return Ok(true);
+    }
+    let hosted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_floor_transform_deadlines d JOIN game_floor_transform_receipts r ON r.transaction_id=d.source_transaction_id JOIN game_floor_transform_recipes p ON p.recipe=r.recipe WHERE d.item_instance_id=encode($1,'hex')::uuid AND p.output_key=$2 AND $3='definition-r1') OR EXISTS(SELECT 1 FROM game_spell_item_temporal_schedules p WHERE p.item_instance_id=encode($1,'hex')::uuid AND p.definition_production_key=$2 AND p.definition_revision=$3 AND NOT EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts done WHERE done.item_instance_id=p.item_instance_id))")
+        .bind(item.as_slice()).bind(key).bind(revision).fetch_one(&mut **tx).await?;
+    Ok(!hosted)
 }

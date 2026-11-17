@@ -17,6 +17,7 @@ fn instance(n: u16) -> ItemKey {
 
 fn item(key: ItemKey) -> ViewItem {
     ViewItem {
+        appearance_id: 2854,
         key,
         item_definition_ref: NonZeroU32::new(2854).expect("fixture"),
         count: NonZeroU32::new(1).expect("fixture"),
@@ -77,7 +78,15 @@ fn shown(delta: &ItemViewDelta) -> ContainerViews {
     assert_eq!(delta.domain_id, STATE_DOMAIN_CONTAINER_VIEWS);
     assert_eq!(delta.delta_type, DELTA_TYPE_CONTAINER_VIEWS_V1);
     assert_eq!(delta.to, delta.from + 1);
-    decode_container_views(&delta.payload).expect("domain 14 payload")
+    let views = decode_container_views(&delta.payload).expect("domain 14 payload");
+    assert!(
+        views
+            .views
+            .iter()
+            .flat_map(|view| &view.entries)
+            .all(|item| item.appearance_id == 0)
+    );
+    views
 }
 
 #[test]
@@ -553,6 +562,14 @@ mod connection {
             id: CAPABILITY_CONTAINER_TREE_V1,
             requires: CAPABILITY_CONTAINER_TREE_V1_REQUIRES,
         },
+        OfferedCapability {
+            id: 49,
+            requires: &[],
+        },
+        OfferedCapability {
+            id: oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+            requires: &[14, 49],
+        },
     ];
 
     fn select(supported: &[u32]) -> SelectedCapabilities {
@@ -571,6 +588,7 @@ mod connection {
     struct TreeAuthority {
         containers: RefCell<VecDeque<Option<ContainerObservation>>>,
         container_reads: RefCell<Vec<ItemKey>>,
+        house_capacity_flags: RefCell<Vec<bool>>,
     }
 
     impl TreeAuthority {
@@ -578,6 +596,7 @@ mod connection {
             Self {
                 containers: RefCell::new(containers.into()),
                 container_reads: RefCell::new(Vec::new()),
+                house_capacity_flags: RefCell::new(Vec::new()),
             }
         }
     }
@@ -639,6 +658,19 @@ mod connection {
         ) -> Option<ContainerObservation> {
             self.container_reads.borrow_mut().push(target);
             self.containers.borrow_mut().pop_front().flatten()
+        }
+
+        async fn observe_container_with_house_capacity(
+            &self,
+            actor: ExactActorRef,
+            fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+            target: ItemKey,
+            house_capacity_v2: bool,
+        ) -> Option<ContainerObservation> {
+            self.house_capacity_flags
+                .borrow_mut()
+                .push(house_capacity_v2);
+            self.observe_container(actor, fence, target).await
         }
     }
 
@@ -745,11 +777,13 @@ mod connection {
         let world_id = WorldId::decode(&uuid_v7(0x33)).expect("world");
         let channel_id = ChannelId::decode(&uuid_v7(0x44)).expect("channel");
         let own = WorldSpatialEntity {
+            display_name: None,
             kind: EntityKind::Player,
             entity: EntityRef {
                 identity: ExactActorRef::transport_fixture(world_id, channel_id)
                     .placement_identity(),
-                generation: 0,
+                generation: ExactActorRef::transport_fixture(world_id, channel_id)
+                    .actor_local_generation(),
             },
             position: HERE,
             detail: EntityDetail::Actor {
@@ -833,6 +867,31 @@ mod connection {
             assert_eq!(frames, expected);
             assert_eq!(ended(end)?.item_view, view.continuity());
             assert_eq!(view.continuity().views_revision, 1);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn house_capacity_v2_is_forwarded_only_from_authenticated_closed_selection() -> TestResult {
+        run(async {
+            for (supported, expected) in [
+                (vec![4, 6, 12, 14], false),
+                (vec![4, 6, 12, 14, 446], false),
+                (vec![4, 6, 12, 14, 49, 446], true),
+            ] {
+                let authority = TreeAuthority::new(vec![Some(container(None, &[]))]);
+                let (view, _) = mirror(true);
+                let bag = handle_of(&view, instance(1));
+                let (end, _) = serve(
+                    &authority,
+                    session(&supported)?,
+                    &[view_command(1, open(bag))?],
+                )
+                .await?;
+                ended(end)?;
+                assert_eq!(*authority.house_capacity_flags.borrow(), vec![expected]);
+                assert_eq!(*authority.container_reads.borrow(), vec![instance(1)]);
+            }
             Ok(())
         })
     }
@@ -1011,5 +1070,38 @@ mod connection {
             assert_eq!(output, expected);
             Ok(())
         })
+    }
+}
+
+#[test]
+fn container_delta_appearance_encoding_follows_the_item_session_selection() {
+    use oteryn_protocol_oteryn::container_tree::decode_container_views_with_appearances;
+    for appearances in [false, true] {
+        let mut view = session(1);
+        if appearances {
+            view = view.with_appearances();
+        }
+        let mut state = ContainerViewState::default();
+        let bag = handle_of(&view, instance(1));
+        let (outcome, delta) = run(
+            &mut state,
+            &mut view,
+            open(bag),
+            Some(container(Some(instance(0)), &[2])),
+        );
+        assert_eq!(outcome, ContainerViewOutcome::Opened);
+        let delta = delta.expect("opened view delta");
+        let decoded =
+            decode_container_views_with_appearances(&delta.payload, false, false, appearances)
+                .expect("selected domain 14 schema");
+        assert_eq!(
+            decoded.views[0].entries[0].appearance_id,
+            if appearances { 2854 } else { 0 }
+        );
+        if appearances {
+            assert!(decode_container_views(&delta.payload).is_err());
+        } else {
+            assert_eq!(decode_container_views(&delta.payload), Ok(decoded));
+        }
     }
 }

@@ -218,7 +218,7 @@ fn bootstrap_metadata_limits_cover_build_id_and_capabilities() -> Result<(), Fou
     );
 
     let mut packed = Vec::new();
-    for capability in 1..=128usize {
+    for capability in 1..=crate::MAX_CAPABILITY_COUNT {
         packed.extend(test_varint(capability));
     }
     let mut payload = test_client_bootstrap_payload(1, 1, 1, &id, &[]);
@@ -227,7 +227,7 @@ fn bootstrap_metadata_limits_cover_build_id_and_capabilities() -> Result<(), Fou
     payload.extend_from_slice(&packed);
     assert!(decode_wire_envelope(&test_envelope(1, &payload)).is_ok());
 
-    packed.extend(test_varint(129));
+    packed.extend(test_varint(crate::MAX_CAPABILITY_COUNT + 1));
     let mut payload = vec![0x22];
     payload.extend(test_varint(packed.len()));
     payload.extend_from_slice(&packed);
@@ -256,5 +256,39 @@ fn bootstrap_metadata_limits_cover_build_id_and_capabilities() -> Result<(), Fou
             Err(FoundationProtocolError::InvalidCapabilitySet)
         );
     }
+    Ok(())
+}
+
+#[test]
+fn preadm_bootstrap_value_debug_redacts_grant() -> Result<(), FoundationProtocolError> {
+    let value = ClientBootstrapValue {
+        schema_revision: 1,
+        character_id: CharacterId::decode(&test_uuid_v7(4))?,
+        admission_material: b"private-admission-grant",
+        client_build_id: "debug-redaction-test",
+        supported_capabilities: &[],
+    };
+    let debug = format!("{value:?}");
+    assert!(debug.contains("[REDACTED]"));
+    assert!(!debug.contains("private-admission-grant"));
+    assert!(!debug.contains(&format!("{:?}", value.admission_material)));
+    Ok(())
+}
+
+#[test]
+fn preadm_bootstrap_view_debug_redacts_grant() -> Result<(), FoundationProtocolError> {
+    let view = ClientBootstrapView {
+        protocol_major: 1,
+        transport_profile: 1,
+        schema_revision: 1,
+        character_id: CharacterId::decode(&test_uuid_v7(4))?,
+        admission_material: b"private-admission-grant",
+        client_build_id: "debug-redaction-test",
+        supported_capabilities: &[],
+    };
+    let debug = format!("{view:?}");
+    assert!(debug.contains("[REDACTED]"));
+    assert!(!debug.contains("private-admission-grant"));
+    assert!(!debug.contains(&format!("{:?}", view.admission_material)));
     Ok(())
 }

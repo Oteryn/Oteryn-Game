@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --test character_authority_postgres filled_fluid_claims_commit_root_and_children_and_replay_without_refilling -- --nocapture",
+  "exit": 101,
+  "duration_seconds": 147.382
+}

@@ -5,7 +5,7 @@ use oteryn_protocol_oteryn::charm_progression::CharmRemoveDisposition;
 #[test]
 fn canonical_bestiary_binds_every_race_with_its_charm_points() {
     let bestiary = bestiary().expect("canonical Bestiary source");
-    assert_eq!(bestiary.races.len(), 823);
+    assert_eq!(bestiary.races.len(), 824);
     assert!(bestiary.races.iter().all(|race| race.final_kill_threshold() > 0));
 }
 

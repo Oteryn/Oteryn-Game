@@ -1,0 +1,654 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_shattered_isles_quest",
+  "runtime_enabled": false,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/shattered-isles-energy-barrier-32575",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32091,
+          "y": 32575,
+          "floor": -8
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:13"
+      ],
+      "failure_teleport": {
+        "x": 32093,
+        "y": 32575,
+        "floor": -8
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-energy-barrier-32576",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32091,
+          "y": 32576,
+          "floor": -8
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:13"
+      ],
+      "failure_teleport": {
+        "x": 32093,
+        "y": 32576,
+        "floor": -8
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-energy-barrier-32577",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32091,
+          "y": 32577,
+          "floor": -8
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/the_counterspell",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 4,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:13"
+      ],
+      "failure_teleport": {
+        "x": 32093,
+        "y": 32577,
+        "floor": -8
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-plan-1",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "use",
+      "selector": {
+        "unique": 40001
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map1",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-plan-2",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "use",
+      "selector": {
+        "unique": 40002
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map2",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-plan-3",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "use",
+      "selector": {
+        "unique": 40003
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/rays_mission3",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/tavern_map3",
+          "minimum": -1,
+          "maximum": -1,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:12"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-turtle-3206",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "step_in",
+      "selector": {
+        "unique": 3206
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32359,
+        "y": 32901,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_laguna_island",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:2",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20"
+      ],
+      "failure_teleport": {
+        "x": 32340,
+        "y": 32540,
+        "floor": -7
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-turtle-3207",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "step_in",
+      "selector": {
+        "unique": 3207
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32340,
+        "y": 32538,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-turtle-3208",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "step_in",
+      "selector": {
+        "unique": 3208
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32472,
+        "y": 32869,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-turtle-3209",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "step_in",
+      "selector": {
+        "unique": 3209
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32415,
+        "y": 32916,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-turtle-3210",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "step_in",
+      "selector": {
+        "unique": 3210
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32490,
+        "y": 32979,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-turtle-3211",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "step_in",
+      "selector": {
+        "unique": 3211
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32440,
+        "y": 32971,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-turtle-3212",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "step_in",
+      "selector": {
+        "unique": 3212
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32527,
+        "y": 32951,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/shattered-isles-turtle-3213",
+      "quest": "oteryn:quest.the_shattered_isles_quest",
+      "trigger": "step_in",
+      "selector": {
+        "unique": 3213
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32523,
+        "y": 32923,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ]
+    }
+  ],
+  "holds": [
+    {
+      "source_presentation": {
+        "effect": "CONST_ME_ENERGYHIT",
+        "on": "failed_counterspell_guard",
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/movement_energy_barrier.lua:14"
+      },
+      "reason": "The existing movement owner may refuse an occupied failure destination after stepping onto the barrier. A later step can then cross it. These callbacks require the source force teleport semantics or refusal of the whole entry step before movement; neither owner contract is extended in this batch.",
+      "required_operation": "Force teleport to current position.x + 2, or atomic refusal of the complete entry step before entering the guarded barrier.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "decision_points": [
+        5,
+        7
+      ],
+      "teleport_evidence": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/lua/functions/creatures/creature_functions.cpp:890",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/game/game.cpp:3186",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:src/items/tile.cpp:606",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/world/src/map/floor/quest_callback.rs:43",
+        "Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks.rs:567"
+      ],
+      "reproduction": {
+        "counterspell_not_equal": 4,
+        "occupied_destination": {
+          "x": 32093,
+          "y": 32576,
+          "floor": -8
+        },
+        "movement": [
+          {
+            "x": 32092,
+            "y": 32576,
+            "floor": -8
+          },
+          {
+            "x": 32091,
+            "y": 32576,
+            "floor": -8
+          },
+          {
+            "x": 32090,
+            "y": 32576,
+            "floor": -8
+          }
+        ]
+      },
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-energy-barrier-32575",
+        "oteryn:quest-callback/shattered-isles-energy-barrier-32576",
+        "oteryn:quest-callback/shattered-isles-energy-barrier-32577"
+      ],
+      "missing_fields": [
+        "storage.read_only",
+        "failure_teleport"
+      ],
+      "schema_decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+      "source_guard_proof": "Crystal reads Counterspell~=4 without writing it, then teleports to current.x+2. SET substitutes a write for a read-only guard; returning to the previous position is not the literal current.x+2 destination."
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-plan-1"
+      ],
+      "missing_fields": [
+        "storage.read_only"
+      ],
+      "proof": "Crystal reads RaysMission3 without writing it, and writes only the selected TavernMap from missing to1. Encoding SET1 on RaysMission3 would substitute a write for the source read-only guard, prohibited by the coordinator. Omitting the guard would admit plan reads before mission3.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:28"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-plan-2"
+      ],
+      "missing_fields": [
+        "storage.read_only"
+      ],
+      "proof": "Crystal reads RaysMission3 without writing it, and writes only the selected TavernMap from missing to1. Encoding SET1 on RaysMission3 would substitute a write for the source read-only guard, prohibited by the coordinator. Omitting the guard would admit plan reads before mission3.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:28"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-plan-3"
+      ],
+      "missing_fields": [
+        "storage.read_only"
+      ],
+      "proof": "Crystal reads RaysMission3 without writing it, and writes only the selected TavernMap from missing to1. Encoding SET1 on RaysMission3 would substitute a write for the source read-only guard, prohibited by the coordinator. Omitting the guard would admit plan reads before mission3.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:24",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:28"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-turtle-3206"
+      ],
+      "missing_fields": [
+        "failure_teleport",
+        "storage.read_only"
+      ],
+      "proof": "Crystal reads AccessToLagunaIsland without changing it; refusal teleports to32340,32540,z7 rather than the previous position. SET would substitute a write for the source guard and return_on_failure would select a different destination.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:22"
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-turtle-3207"
+      ],
+      "reason": "The full1208-region scan found no matching source unique=3207. BundleFacts matches the exact stored attribute and has no overlay fallback. Keep the source selector; no guessed map placement.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ],
+      "map_index": "content/world/placements/index.json",
+      "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+      "map_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-turtle-3208"
+      ],
+      "reason": "The full1208-region scan found no matching source unique=3208. BundleFacts matches the exact stored attribute and has no overlay fallback. Keep the source selector; no guessed map placement.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ],
+      "map_index": "content/world/placements/index.json",
+      "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+      "map_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-turtle-3209"
+      ],
+      "reason": "The full1208-region scan found no matching source unique=3209. BundleFacts matches the exact stored attribute and has no overlay fallback. Keep the source selector; no guessed map placement.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ],
+      "map_index": "content/world/placements/index.json",
+      "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+      "map_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-turtle-3210"
+      ],
+      "reason": "The full1208-region scan found no matching source unique=3210. BundleFacts matches the exact stored attribute and has no overlay fallback. Keep the source selector; no guessed map placement.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ],
+      "map_index": "content/world/placements/index.json",
+      "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+      "map_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-turtle-3211"
+      ],
+      "reason": "The full1208-region scan found no matching source unique=3211. BundleFacts matches the exact stored attribute and has no overlay fallback. Keep the source selector; no guessed map placement.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ],
+      "map_index": "content/world/placements/index.json",
+      "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+      "map_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-turtle-3212"
+      ],
+      "reason": "The full1208-region scan found no matching source unique=3212. BundleFacts matches the exact stored attribute and has no overlay fallback. Keep the source selector; no guessed map placement.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ],
+      "map_index": "content/world/placements/index.json",
+      "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+      "map_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    },
+    {
+      "callback_keys": [
+        "oteryn:quest-callback/shattered-isles-turtle-3213"
+      ],
+      "reason": "The full1208-region scan found no matching source unique=3213. BundleFacts matches the exact stored attribute and has no overlay fallback. Keep the source selector; no guessed map placement.",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+      "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:1",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:28"
+      ],
+      "map_index": "content/world/placements/index.json",
+      "map_index_sha256": "9d492647ae0fbe15eccfe89dd888a27c51611cafbc848d6e3917b4b033118393",
+      "map_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    }
+  ]
+}

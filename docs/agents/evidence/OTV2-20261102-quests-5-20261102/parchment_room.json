@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "parchment_room",
+    "elements": 4,
+    "auto": 0,
+    "manual": 4,
+    "statuses": {
+      "LEFT_OUT": 4
+    },
+    "new_callbacks": 0,
+    "prepared_npc": {
+      "rules": 0,
+      "reply_paragraphs": 0,
+      "conversations": 0
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Ustawienie pieczęci na mapie",
+      "pattern": "P15",
+      "trigger": "startup: (33063,31624,15)",
+      "condition": "item2819",
+      "effect": "actionid104; rejestracja usunięcia",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:15",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brakuje dopuszczonego kontraktu onRemoveItem104→spawn4Demons→odtworzenie2819 po2h z idempotencją/timerem świata. WorldBundle/BossActivity/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_REMOVE_ITEM_AND_DELAYED_SPAWN",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 2,
+      "step": "Usunięcie pieczęci",
+      "pattern": "P19/P30",
+      "trigger": "onRemoveItem aid104",
+      "condition": "usunięty item",
+      "effect": "usuń aid; zaplanuj odtworzenie po7200000ms; spawn4 Demons w(33060,31623,15),(33066,31623,15),(33060,31627,15),(33066,31627,15)",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/parchment_room/parchment.lua:23",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brakuje dopuszczonego kontraktu onRemoveItem104→spawn4Demons→odtworzenie2819 po2h z idempotencją/timerem świata. WorldBundle/BossActivity/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_REMOVE_ITEM_AND_DELAYED_SPAWN",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 3,
+      "step": "Odtworzenie pieczęci",
+      "pattern": "P14/P16",
+      "trigger": "callback7200000ms",
+      "condition": "item2819 istnieje albo brak",
+      "effect": "istniejącemu nadaj aid104; brakujący utwórz2819 z tekstem źródła i aid104",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/parchment_room/parchment.lua:8",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brakuje dopuszczonego kontraktu onRemoveItem104→spawn4Demons→odtworzenie2819 po2h z idempotencją/timerem świata. WorldBundle/BossActivity/temporal owner zamrożone.",
+      "missing_owner_function": "WORLD_REMOVE_ITEM_AND_DELAYED_SPAWN",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    },
+    {
+      "row": 4,
+      "step": "Jednorazowa nagroda",
+      "pattern": "P05",
+      "trigger": "aid6076; item2474; (33063,31624,15)",
+      "condition": "Bag10065 nieodebrane; pojemność/masa42",
+      "effect": "container2853:2972,3114,3034×2,3049,3115; klucz6010; Bag=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1161",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Pełny claim wymaga bag2853 z2972/3114/3034×2/3049/3115 i kluczem6010 na konkretnym obiekcie. Istniejąca definicja danych nie kwalifikuje nowego placement; ownerRewardClaimMint zamrożony.",
+      "missing_owner_function": "REWARD_CLAIM_MINT_PLACEMENT",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110"
+      ],
+      "remaining_effects": [],
+      "scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "scope_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590001741",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+      "prior_answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ]
+    }
+  ]
+}

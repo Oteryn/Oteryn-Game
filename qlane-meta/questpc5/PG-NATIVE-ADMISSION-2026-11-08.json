@@ -1,0 +1,69 @@
+{
+  "feature": "authored_trigger_and_delivery_bindings",
+  "scope": "generic NPC/carried/world/kill bindings plus canonical native boot recipe admission; no production quest qualification",
+  "source_sha": "c7f9d9ba79ec4a53c4b874af54affe6898780c5a",
+  "main": "98d6ae8ce",
+  "red": {
+    "seconds": 52.0,
+    "marker_seconds": 51.941706214,
+    "error": "native boot accepted a stale authored recipe digest"
+  },
+  "green": {
+    "passed": 7,
+    "failed": 0,
+    "seconds": 386.448,
+    "cases": [
+      {
+        "case": "qengine-rewards-authored-kills-burst",
+        "seconds": 143.321256638,
+        "success": true
+      },
+      {
+        "case": "qengine-rewards-authored-kills",
+        "seconds": 163.223984015,
+        "success": true
+      },
+      {
+        "case": "qengine-rewards-authored-native-admission",
+        "seconds": 59.105387685,
+        "success": true
+      },
+      {
+        "case": "qengine-rewards-authored-bindings",
+        "seconds": 128.640106703,
+        "success": true
+      },
+      {
+        "case": "qengine-rewards-authored-world-rewards-full",
+        "seconds": 60.321910095,
+        "success": true
+      },
+      {
+        "case": "qengine-rewards-authored-world-rewards",
+        "seconds": 60.350855324,
+        "success": true
+      },
+      {
+        "case": "qengine-rewards-l12-dragon-slayer-story",
+        "seconds": 103.415207709,
+        "success": true
+      }
+    ],
+    "log": "/tmp/qengine2-native-admission-confirm.log"
+  },
+  "earlier_run": {
+    "passed": 6,
+    "failed": 1,
+    "seconds": 411.599,
+    "native_admission_marker_seconds": 67.375607899,
+    "failure_case": "authored_bindings_native_kill_threshold_completion_postgres",
+    "failure": "earned appearance catalogue did not arrive",
+    "log": "/tmp/qengine2-native-admission-green.log",
+    "confirmation": "full7case rerun passed unchanged; no timeout, test or implementation weakened; no claim the intermittent drain failure was fixed"
+  },
+  "quest_units": {
+    "passed": 326,
+    "seconds": 42.66
+  },
+  "production_binding_documents_added": 0
+}

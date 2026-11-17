@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.m01c_board_fixture",
+      "recipe_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "sources": [
+        "M01c engine fixture, no production qualification"
+      ],
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/m01c-board-fixture",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "board",
+          "completes": false,
+          "trigger": {
+            "kind": "task_board_use",
+            "usage": {
+              "key": "oteryn:quest-task-board-use/m01c-fixture",
+              "programme": "weekly",
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/m01c-board-fixture",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "sources": [
+                "native Task Board acceptance fixture"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

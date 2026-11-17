@@ -1,0 +1,15 @@
+{
+  "mechanic": "0291-cast-chat",
+  "kind": "handlers",
+  "id": "0291-cast-chat-command",
+  "status": "supported",
+  "commands": [
+    504
+  ],
+  "direction": "client_to_server",
+  "capability": 291,
+  "entry": "protocol.rs::command",
+  "not_applicable": {
+    "settings": "Room state is connection-local and never persisted in a player preference."
+  }
+}

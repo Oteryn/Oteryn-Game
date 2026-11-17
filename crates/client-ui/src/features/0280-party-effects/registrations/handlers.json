@@ -1,0 +1,15 @@
+{
+  "mechanic": "0280-party-effects",
+  "kind": "handlers",
+  "id": "0280-party-effects-query",
+  "status": "supported",
+  "commands": [
+    496
+  ],
+  "direction": "client_to_server",
+  "capability": 280,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "Party effects are server-owned; there are no local authority settings."
+  }
+}

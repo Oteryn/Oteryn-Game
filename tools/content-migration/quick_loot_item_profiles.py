@@ -9,6 +9,8 @@ import hashlib
 import json
 import xml.etree.ElementTree as ET
 
+from native_profile_composition import encode_native_profile
+
 IDS = {23721, 35524, 35562, 35848, 35849, 36666, 39150, 39160, 45644}
 SOURCE = 'imports/canary/items-xml/items.xml'
 SOURCE_SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
@@ -69,7 +71,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if key in taxonomy:
             record['authoring']['taxonomy'] = copy.deepcopy(taxonomy[key])
     document['records'].sort(key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()

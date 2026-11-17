@@ -12,7 +12,14 @@ impl NpcPurchaseGate for SpellPremiumCoordinator {
         service: &PurchaseService,
     ) -> Result<bool, DurabilityError> {
         // Inquisition completion permits this offer even after Premium lapses.
-        if service.key() == "oteryn:service.blessing.henricus" {
+        if service.key() == "oteryn:service.blessing.henricus"
+            || service.key() == crate::content::npc_catalogue::premium_services::PHOENIX_PREPARATION
+            || crate::content::blessing_catalogue::BlessingCatalogue::load()
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+                .blessings
+                .iter()
+                .any(|blessing| !blessing.premium && blessing.service == service.key())
+        {
             return Ok(true);
         }
         self.transaction_permission(tx, account, |status| match service {
@@ -63,6 +70,16 @@ impl crate::durability::daily_reward_delivery::DailyRewardPremiumGate for DailyR
             }
             None => Ok(false),
         }
+    }
+}
+
+impl crate::durability::bed_regen::BedPremiumGate for SpellPremiumCoordinator {
+    fn current<'a>(
+        &'a self,
+        tx: &'a mut PremiumGateTx<'_>,
+        account: [u8; 16],
+    ) -> Pin<Box<dyn Future<Output = Result<bool, DurabilityError>> + Send + 'a>> {
+        Box::pin(self.transaction_permission(tx, account, |status| status.gate().premium_current()))
     }
 }
 

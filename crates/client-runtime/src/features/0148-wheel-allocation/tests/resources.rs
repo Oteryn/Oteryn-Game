@@ -136,7 +136,7 @@ async fn exchange(selected: bool, replay: bool, reject_resources: bool) -> Resul
     }
     let (client, mut server) = tokio::io::duplex(16 * 1024);
     let peer = tokio::spawn(async move {
-        admit_peer(&mut server, selected).await?;
+        admit_peer(&mut server, selected, false).await?;
         for (index, (command, answers)) in frames.iter().enumerate() {
             assert_eq!(
                 read_frame(&mut server).await?,
@@ -238,7 +238,7 @@ fn atelier_reply(revision: u64) -> Result<Vec<u8>, BoxError> {
 
 // Foundation wire fixtures keep this client test on its existing Session dependency.
 // Session itself decodes and validates every admission, snapshot and result frame.
-async fn admit_peer(stream: &mut DuplexStream, selected: bool) -> Result<(), BoxError> {
+async fn admit_peer(stream: &mut DuplexStream, selected: bool, v2: bool) -> Result<(), BoxError> {
     let mut bootstrap = vec![8, 1, 16, 1, 24, 1];
     for &capability in CLIENT_SUPPORTED_CAPABILITIES {
         scalar(&mut bootstrap, 4, u64::from(capability));
@@ -263,6 +263,13 @@ async fn admit_peer(stream: &mut DuplexStream, selected: bool) -> Result<(), Box
             &mut accepted,
             10,
             u64::from(atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1),
+        );
+    }
+    if v2 {
+        scalar(
+            &mut accepted,
+            10,
+            u64::from(atelier::v2::CAPABILITY_GEM_ATELIER_V2),
         );
     }
     write_frame(stream, &envelope(2, 0, 0, &accepted)).await?;
@@ -334,4 +341,103 @@ fn varint(output: &mut Vec<u8>, mut value: u64) {
         value >>= 7;
     }
     output.push(value as u8);
+}
+
+#[test]
+fn reshape_6214_session_exchange_is_gated_on_483() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?
+                .block_on(async {
+                    for selected in [false, true] {
+                        let payload = atelier::v2::encode_reshape(&atelier::v2::ReshapeRequest {
+                            occurrence: identity(7),
+                            expected_revision: 4,
+                            gem: identity(8),
+                            position: 2,
+                        })
+                        .map_err(|e| format!("{e:?}"))?;
+                        let request =
+                            WheelCommand::new(6214, payload.clone()).ok_or("6214 codec")?;
+                        assert!(request.mutation);
+                        let (client, mut server) = tokio::io::duplex(16 * 1024);
+                        let peer = tokio::spawn(async move {
+                            admit_peer(&mut server, false, selected).await?;
+                            if selected {
+                                for (index, (kind, body)) in [
+                                    (6214, payload),
+                                    (161, vec![8, 0]),
+                                    (6210, atelier::v2::encode_query()),
+                                ]
+                                .iter()
+                                .enumerate()
+                                {
+                                    let mut command = Vec::new();
+                                    scalar(&mut command, 1, 7 + index as u64);
+                                    scalar(&mut command, 2, *kind);
+                                    bytes(&mut command, 4, body);
+                                    assert_eq!(
+                                        read_frame(&mut server).await?,
+                                        envelope(7, 1, 0, &command)
+                                    );
+                                    write_frame(
+                                        &mut server,
+                                        &answer(
+                                            41 + index as u64,
+                                            7 + index as u64,
+                                            CommandStatus::Accepted,
+                                            &[index as u8],
+                                        ),
+                                    )
+                                    .await?;
+                                }
+                            }
+                            let mut extra = [0];
+                            assert_eq!(
+                                server.read(&mut extra).await?,
+                                0,
+                                "unexpected command without 483"
+                            );
+                            Ok::<_, BoxError>(())
+                        });
+                        let mut session = Session::admit(
+                            client,
+                            Admission {
+                                appearance_items: None,
+                                schema_revision: 1,
+                                character_id: CharacterId::decode(&identity(4))?,
+                                admission_material: b"grant",
+                                client_build_id: "atelier-resources-session-test",
+                                supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+                                deadline: DEADLINE,
+                            },
+                        )
+                        .await?;
+                        let result = send(&mut session, &request).await;
+                        if selected {
+                            let result = result?;
+                            assert_eq!(result.kind, 6214);
+                            assert_eq!(result.payload, [0]);
+                            assert_eq!(result.wheel, Some(vec![1]));
+                            assert_eq!(result.atelier, Some(vec![2]));
+                        } else {
+                            assert!(matches!(
+                                result,
+                                Err(oteryn_session::SessionError::CapabilityNotSelected {
+                                    capability: 483
+                                })
+                            ));
+                            assert_eq!(session.next_command_id(), 7);
+                        }
+                        drop(session);
+                        peer.await??;
+                    }
+                    Ok::<_, BoxError>(())
+                })
+        })?
+        .join()
+        .map_err(|_| std::io::Error::other("reshape session thread"))?
 }

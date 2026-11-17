@@ -46,16 +46,21 @@ use sqlx::Row;
 use sqlx::postgres::PgConnection;
 
 mod carried_inventory;
+pub(in crate::durability) use carried_inventory::reconcile_carried_death_tree;
 mod carried_source;
 pub mod concoction;
-pub mod drome_cube;
-pub mod gourmet;
 pub mod condition_potions;
+pub mod drome_cube;
 pub mod fluid;
+pub mod gourmet;
 pub mod mining;
 pub mod mount_taming;
 pub mod proficiency_catalyst;
 pub mod proficiency_orb;
+pub mod temple_scroll;
+pub mod rotten_essence;
+pub mod soul_war_source;
+mod tibiadrome;
 
 pub use carried_inventory::ItemUseInventory;
 mod hireling_lamp;
@@ -73,19 +78,29 @@ pub enum ItemUseKind {
     ProficiencyCatalyst,
     /// P08: one Lunar Ascension Orb composed with its `ORB_RANK` modification line.
     ProficiencyOrb,
+    RottenEssence,
+    SoulWarSourceUse {
+        wire_binding: [u8; 32],
+    },
     Concoction,
     /// W09: the Cube's bounded original USE bytes, retained beside the atomic transform.
     DromeCube {
         wire_binding: [u8; 32],
     },
     /// E12: native lamp burn under a named House fence, composed with placement.
-    HirelingLamp { origin_channel: [u8; 16] },
-    HirelingFood { origin_channel: [u8; 16] },
+    HirelingLamp {
+        origin_channel: [u8; 16],
+    },
+    HirelingFood {
+        origin_channel: [u8; 16],
+    },
     PickRefine {
         tool: [u8; 16],
         wire_binding: [u8; 32],
         percentile: u8,
     },
+    /// WU26-06: one Temple Teleport Scroll composed with its `game_temple_scroll_uses` row.
+    TempleScroll,
 }
 
 impl ItemUseKind {
@@ -96,11 +111,14 @@ impl ItemUseKind {
             Self::MountTaming => mount_taming::TAMING_CAUSE,
             Self::ProficiencyCatalyst => proficiency_catalyst::CATALYST_CAUSE,
             Self::ProficiencyOrb => proficiency_orb::ORB_CAUSE,
+            Self::RottenEssence => rotten_essence::ESSENCE_CAUSE,
+            Self::SoulWarSourceUse { .. } => soul_war_source::SOURCE_USE_CAUSE,
             Self::Concoction => concoction::CONCOCTION_CAUSE,
             Self::DromeCube { .. } => drome_cube::DROME_CUBE_CAUSE,
             Self::HirelingLamp { .. } => super::house_hireling::LAMP_USE_CAUSE,
             Self::HirelingFood { .. } => gourmet::GOURMET_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
+            Self::TempleScroll => temple_scroll::TEMPLE_SCROLL_CAUSE,
         }
     }
 }
@@ -216,6 +234,17 @@ impl ItemUseRequest {
         {
             return Err(ItemUseError::InvalidInput);
         }
+        if let ItemUseKind::SoulWarSourceUse { wire_binding } = self.kind
+            && (wire_binding == [0; 32]
+                || soul_war_source::source_use(&self.source_definition).is_none())
+        {
+            return Err(ItemUseError::InvalidInput);
+        }
+        if self.kind == ItemUseKind::RottenEssence
+            && rotten_essence::storage_key(&self.source_definition).is_none()
+        {
+            return Err(ItemUseError::InvalidInput);
+        }
         let flask_valid = match (&self.flask, self.kind) {
             (
                 ItemUseFlaskPlan::None,
@@ -225,8 +254,11 @@ impl ItemUseRequest {
                 | ItemUseKind::Concoction
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
+                | ItemUseKind::RottenEssence
+                | ItemUseKind::SoulWarSourceUse { .. }
                 | ItemUseKind::HirelingLamp { .. }
-                | ItemUseKind::HirelingFood { .. },
+                | ItemUseKind::HirelingFood { .. }
+                | ItemUseKind::TempleScroll,
             ) => true,
             (
                 _,
@@ -235,8 +267,11 @@ impl ItemUseRequest {
                 | ItemUseKind::Concoction
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
+                | ItemUseKind::RottenEssence
+                | ItemUseKind::SoulWarSourceUse { .. }
                 | ItemUseKind::HirelingLamp { .. }
-                | ItemUseKind::HirelingFood { .. },
+                | ItemUseKind::HirelingFood { .. }
+                | ItemUseKind::TempleScroll,
             ) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
@@ -290,7 +325,7 @@ impl ItemUseRequest {
     }
 
     /// SHA-256 over the semantic request: a changed request for the same CommandRef conflicts.
-    fn binding(&self) -> [u8; 32] {
+    pub(super) fn binding(&self) -> [u8; 32] {
         fn text(hasher: &mut Sha256, value: &str) {
             hasher.update((value.len() as u64).to_be_bytes());
             hasher.update(value.as_bytes());
@@ -303,7 +338,9 @@ impl ItemUseRequest {
         let mut hasher = Sha256::new();
         hasher.update(b"oteryn.item_use.request.v1");
         hasher.update(self.kind.code().to_be_bytes());
-        if let ItemUseKind::HirelingLamp { origin_channel } | ItemUseKind::HirelingFood { origin_channel } = self.kind {
+        if let ItemUseKind::HirelingLamp { origin_channel }
+        | ItemUseKind::HirelingFood { origin_channel } = self.kind
+        {
             hasher.update(origin_channel);
         }
         if let ItemUseKind::PickRefine {
@@ -316,7 +353,9 @@ impl ItemUseRequest {
             hasher.update(wire_binding);
             hasher.update([percentile]);
         }
-        if let ItemUseKind::DromeCube { wire_binding } = self.kind {
+        if let ItemUseKind::DromeCube { wire_binding }
+        | ItemUseKind::SoulWarSourceUse { wire_binding } = self.kind
+        {
             hasher.update(wire_binding);
         }
         hasher.update(self.command_id.to_be_bytes());
@@ -403,9 +442,14 @@ impl DurabilityRoot {
                 | ItemUseKind::MountTaming
                 | ItemUseKind::ProficiencyCatalyst
                 | ItemUseKind::ProficiencyOrb
+                | ItemUseKind::TempleScroll
+                | ItemUseKind::RottenEssence
+                | ItemUseKind::SoulWarSourceUse { .. }
         ) || oteryn_gameplay_progression::condition_potions::ConditionPotion::from_key(
             &request.source_definition.production_key,
-        ).is_some() {
+        )
+        .is_some()
+        {
             return Err(ItemUseError::InvalidInput);
         }
         self.commit_use(authority, node, fence, request, None).await
@@ -423,7 +467,7 @@ impl DurabilityRoot {
         if matches!(request.kind, ItemUseKind::DromeCube { .. }) {
             return Err(ItemUseError::InvalidInput);
         }
-        self.commit_use_inner(authority, node, fence, request, weights)
+        self.commit_use_inner(authority, node, fence, request, weights, None)
             .await
             .map_err(|error| match error {
                 DromeCubeError::ItemUse(error) => error,
@@ -438,8 +482,21 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: ItemUseRequest,
         weights: Option<&dyn super::item_loop_move::ItemLoopContent>,
+        source_target: Option<soul_war_source::QualifiedSoulWarUseTarget>,
     ) -> drome_cube::Result<ItemUseOutcome> {
         request.validate()?;
+        // Only Sorrow is Item-only. Maw and Sanity must use the existing fused
+        // Quest writer, and a raw cause5 request cannot grant source authority.
+        match (&request.kind, source_target.as_ref()) {
+            (ItemUseKind::SoulWarSourceUse { .. }, Some(target))
+                if target.source_use() == soul_war_source::SourceUse::Sorrow
+                    && target.target_accepted()
+                    && target.matches_item_request(&fence, &request) => {}
+            (ItemUseKind::SoulWarSourceUse { .. }, _) | (_, Some(_)) => {
+                return Err(ItemUseError::InvalidInput.into());
+            }
+            _ => {}
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemUseError::AuthorityRejected)?;
@@ -451,6 +508,13 @@ impl DurabilityRoot {
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
+                    if let Some(outcome) = tibiadrome::replay(&mut tx, &fence, &request)
+                        .await
+                        .map_err(|_| DurabilityError::InvalidStoredState)?
+                    {
+                        tx.commit(deadline).await?;
+                        return Ok(Ok(outcome));
+                    }
                     match replay(&mut tx, &fence, &request).await {
                         Ok(Some(outcome)) => {
                             tx.commit(deadline).await?;
@@ -498,6 +562,13 @@ impl DurabilityRoot {
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
                         Err(_) => return Ok(Err(ItemUseError::AuthorityRejected.into())),
                     }
+                    if let Some(outcome) = tibiadrome::preserve(&mut tx, &fence, &request)
+                        .await
+                        .map_err(|_| DurabilityError::InvalidStoredState)?
+                    {
+                        tx.commit(deadline).await?;
+                        return Ok(Ok(outcome));
+                    }
                     let tuple = tx.tuple();
                     if let ItemUseKind::PickRefine { .. } = request.kind {
                         match mining::admit(&mut tx, &fence, &request, *weights).await {
@@ -517,6 +588,17 @@ impl DurabilityRoot {
                     }
                     if request.kind == ItemUseKind::Concoction {
                         match concoction::admit(&mut tx, &fence, &request).await {
+                            Ok(()) => {}
+                            Err(ItemUseError::Unavailable(error)) => return Err(error),
+                            Err(error) => return Ok(Err(error.into())),
+                        }
+                    }
+                    if let Some(target) = &source_target {
+                        match soul_war_source::record_source_use_proof(
+                            &mut tx, &fence, &node, &request, target, None,
+                        )
+                        .await
+                        {
                             Ok(()) => {}
                             Err(ItemUseError::Unavailable(error)) => return Err(error),
                             Err(error) => return Ok(Err(error.into())),
@@ -543,10 +625,13 @@ impl DurabilityRoot {
                                 | ItemUseKind::MountTaming
                                 | ItemUseKind::ProficiencyCatalyst
                                 | ItemUseKind::ProficiencyOrb
+                                | ItemUseKind::RottenEssence
+                                | ItemUseKind::SoulWarSourceUse { .. }
                                 | ItemUseKind::Concoction
                                 | ItemUseKind::HirelingLamp { .. }
                                 | ItemUseKind::HirelingFood { .. }
-                                | ItemUseKind::DromeCube { .. } => None,
+                                | ItemUseKind::DromeCube { .. }
+                                | ItemUseKind::TempleScroll => None,
                             };
                             if let Some(counted) = counted {
                                 add_progress(
@@ -699,21 +784,62 @@ pub(super) async fn write(
     request: &ItemUseRequest,
     tuple: SelectedType2Tuple,
 ) -> Result<ItemUseOutcome> {
-    // Only the typed Hireling owner can reach this branch, after its named-House fence.
-    // The original Channel is audit provenance; it does not replace the current House scope.
-    let (world, channel) = match (fence.runtime_scope, request.kind) {
-        (RuntimeScopeRefV1::Channel { world_id, channel_id }, _) =>
-            (*world_id.as_bytes(), *channel_id.as_bytes()),
-        (RuntimeScopeRefV1::Instance { world_id, .. }, ItemUseKind::HirelingLamp { origin_channel } | ItemUseKind::HirelingFood { origin_channel }) =>
-            (*world_id.as_bytes(), origin_channel),
+    // A named House keeps its explicit origin provenance. Source essence
+    // consumption carries an actual Activity Instance, never a Channel alias.
+    let (world, mut channel, mut activity_instance) = match (fence.runtime_scope, request.kind) {
+        (
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            },
+            _,
+        ) => (*world_id.as_bytes(), Some(*channel_id.as_bytes()), None),
+        (
+            RuntimeScopeRefV1::Instance {
+                world_id,
+                instance_id,
+            },
+            ItemUseKind::RottenEssence | ItemUseKind::SoulWarSourceUse { .. },
+        ) => (*world_id.as_bytes(), None, Some(instance_id)),
+        (
+            RuntimeScopeRefV1::Instance { world_id, .. },
+            ItemUseKind::HirelingLamp { origin_channel }
+            | ItemUseKind::HirelingFood { origin_channel },
+        ) => (*world_id.as_bytes(), Some(origin_channel), None),
         _ => return Err(ItemUseError::AuthorityRejected),
+    };
+    // A real named House uses its legacy origin provenance. The reconnect
+    // relation identifies custody; an arbitrary Instance UUID never becomes a House.
+    let essence_house = if request.kind == ItemUseKind::RottenEssence
+        && matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
+    {
+        let origin: Option<String> = sqlx::query_scalar(
+            "SELECT origin_channel_id::text FROM game_durability_reconnect_sessions \
+             WHERE game_session_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid \
+               AND runtime_scope_house_key IS NOT NULL FOR SHARE",
+        )
+        .bind(fence.game_session_id.as_bytes().as_slice())
+        .bind(fence.character_id.as_bytes().as_slice())
+        .fetch_optional(&mut *connection)
+        .await?;
+        if let Some(origin) = origin {
+            let house = hireling_lamp::house_scope(connection, fence).await?;
+            channel = Some(uuid_text(&origin)?);
+            activity_instance = None;
+            Some(house)
+        } else {
+            None
+        }
+    } else {
+        None
     };
     let holder = *fence.character_id.as_bytes();
     if let Some(outcome) = replay(connection, fence, request).await? {
         return Ok(outcome);
     }
     if matches!(request.kind, ItemUseKind::HirelingLamp { .. })
-        && let Some(outcome) = hireling_lamp::write_if_inbox(connection, fence, request, tuple).await?
+        && let Some(outcome) =
+            hireling_lamp::write_if_inbox(connection, fence, request, tuple).await?
     {
         return Ok(outcome);
     }
@@ -838,10 +964,18 @@ pub(super) async fn write(
         }),
         ItemUseFlaskPlan::None | ItemUseFlaskPlan::Missing => None,
     };
-    let source_house = if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
-        && matches!(request.kind, ItemUseKind::HirelingLamp { .. } | ItemUseKind::HirelingFood { .. }) {
+    let source_house = if essence_house.is_some() {
+        essence_house
+    } else if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
+        && matches!(
+            request.kind,
+            ItemUseKind::HirelingLamp { .. } | ItemUseKind::HirelingFood { .. }
+        )
+    {
         Some(hireling_lamp::house_scope(connection, fence).await?)
-    } else { None };
+    } else {
+        None
+    };
     let item_use = OneItemUseV1 {
         source_before: Some(state(
             &request.source_item_instance_id,
@@ -875,7 +1009,7 @@ pub(super) async fn write(
         }),
         character_id: holder.to_vec(),
         world_id: world.to_vec(),
-        channel_id: channel.to_vec(),
+        channel_id: channel.map_or_else(Vec::new, |value| value.to_vec()),
         runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
         expected_session_generation: fence.connection_generation.get(),
         expected_game_session_id: fence.game_session_id.as_bytes().to_vec(),
@@ -883,6 +1017,7 @@ pub(super) async fn write(
         flask_missing: request.flask == ItemUseFlaskPlan::Missing,
         source_inbox_ordinal: None,
         house_key: source_house.clone(),
+        instance_id: activity_instance.map(|value| value.to_vec()),
     };
     let envelope = encode_item_use_event(
         ItemUseEventIdentity {
@@ -909,14 +1044,14 @@ pub(super) async fn write(
            source_placement_ordinal, source_quantity_before, source_quantity_after, \
            flask_item_instance_id, flask_definition_family, flask_definition_production_key, \
            flask_definition_revision_ref, flask_placement_ordinal, flask_quantity_before, \
-           flask_quantity_after, occurred_at, envelope_sha256, source_house_key) \
+           flask_quantity_after, occurred_at, envelope_sha256, source_house_key, activity_instance_id) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, encode($4,'hex')::uuid, \
            $5::text::numeric(20,0), $6, $7, $8, $9, encode($10,'hex')::uuid, \
            encode($11,'hex')::uuid, encode($12,'hex')::uuid, $13::text::numeric(20,0), \
            $14::text::numeric(20,0), $15, encode($16,'hex')::uuid, $17, $18, $19, \
            encode($20,'hex')::uuid, $21::text::numeric(20,0), $22, $23, \
-           encode($24,'hex')::uuid, $25, $26, $27, $28::text::numeric(20,0), $29, $30, $31, \
-           sha256($32), $33)",
+           encode($24,'hex')::uuid, $25, $26, $27, $28::text::numeric(20,0), ($29::bigint[])[1], ($29::bigint[])[2], $30, \
+           sha256($31), ($32::text[])[1], ($32::text[])[2]::uuid)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -929,7 +1064,7 @@ pub(super) async fn write(
     .bind(request.binding().as_slice())
     .bind(holder.as_slice())
     .bind(world.as_slice())
-    .bind(channel.as_slice())
+    .bind(channel.as_ref().map(|value| value.as_slice()))
     .bind(fence.scope_ownership_generation.get().to_string())
     .bind(fence.connection_generation.get().to_string())
     .bind(shape_code(shape))
@@ -954,22 +1089,27 @@ pub(super) async fn write(
     .bind(flask_definition(request).map(|definition| &definition.production_key))
     .bind(flask_definition(request).map(|definition| &definition.revision_ref))
     .bind(flask_entry.map(|ordinal| ordinal.to_string()))
-    .bind(match &request.flask {
-        ItemUseFlaskPlan::Stack {
-            quantity_before, ..
-        } => Some(i64::from(*quantity_before)),
-        _ => None,
-    })
-    .bind(match &request.flask {
-        ItemUseFlaskPlan::Stack {
-            quantity_before, ..
-        } => Some(i64::from(*quantity_before) + 1),
-        ItemUseFlaskPlan::New { .. } => Some(1_i64),
-        _ => None,
-    })
+    .bind(vec![
+        match &request.flask {
+            ItemUseFlaskPlan::Stack {
+                quantity_before, ..
+            } => Some(i64::from(*quantity_before)),
+            _ => None,
+        },
+        match &request.flask {
+            ItemUseFlaskPlan::Stack {
+                quantity_before, ..
+            } => Some(i64::from(*quantity_before) + 1),
+            ItemUseFlaskPlan::New { .. } => Some(1_i64),
+            _ => None,
+        },
+    ])
     .bind(request.occurred_at_unix_ms)
     .bind(envelope.as_slice())
-    .bind(source_house)
+    .bind(vec![
+        source_house,
+        activity_instance.map(|value| sqlx::types::Uuid::from_bytes(value).to_string()),
+    ])
     .execute(&mut *connection)
     .await?;
 

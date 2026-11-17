@@ -1,0 +1,3065 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_order_of_the_stag_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 13,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3137",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:96"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2147483647,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3138",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:96"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/corpses",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 7,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3146",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:96"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harlan",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3147",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:96"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/demeron",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3148",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:96"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/kings_council",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3149",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/others/order_of_the_stag.lua:96"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/kesar_the_younger_day/problem",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "trigger": "say",
+      "keywords": [
+        "problem"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission",
+          "op": "ge",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I have sent a party of my best men on a mission to a certain island to... investigate a royal matter. However, they have yet to send news from their quest. ...",
+        "Hero of {Bounac} and royal advisor of the court, I am in need of your {help} once again."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:75"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/kesar_the_younger_day/banner",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "trigger": "say",
+      "keywords": [
+        "banner"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission",
+          "op": "ge",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Strong, resilient and completely trustworthy. Currently out on an expedition, it's been a while, actually..."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:82"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/kesar_the_younger_day/writ-offer",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission",
+          "op": "ge",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "My knights embarked on the Emmanuelle, our flagship. They were to set sail for the Isle of Ada to retrieve word from an old order of... knights, residing there. ...",
+        "There is, however, another twist to this tale, I fear I cannot keep from you. A long kept Bounacean secret is about to be lifted, all in due time. ...",
+        "There is a room below the cathedral that was once the stage for quite the spectacle. By decree a guard was to be garrisoned there at all times, day as well as night, an armed magic wielder. ...",
+        "The room was locked from the inside and there was no other direct access. All of this to protect a single chest. Its... precarious content was subject of several attacks, in hope to destabilise the then still struggling Bounaceans and their leader. ...",
+        "During one of these attacks, a hired magician found a way to enter the room. The warlock down there managed to subdue the perpetrator but had to seal the room... and ultimately himself from the inside. ...",
+        "The shift was never changed again, the room was kept unbreached until this day. The chest houses a writ that was quite important for Kesar Etzel, my ancestor. And it still is to the Etzels, in this case: me. ...",
+        "I will not tell you what is written there but I want you to retrieve it and bring it to me. You will have to find a way from the sacred halls directly above it."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:90"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/kesar_the_younger_day/writ-reminder",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission",
+          "op": "ge",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "The writ is still sealed below the cathedral. Find a way down from the sacred halls directly above it."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:103"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/kesar_the_younger_day/ada-offer",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission",
+          "op": "ge",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Now that you know our family secret, I want you to take the writ with you and show it to Captain {Banner}, leader of this expedition. ...",
+        "The Isle of Ada is uncharted and difficult to reach. Either you have a very strong ship or a very nimble boat. ...",
+        "Since the port of Bounac is still in quite the turmoil, find a boat to the south near the old fisherman's hut. Say no word to anyone besides the captain and make utmost haste. Are you prepared?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 10
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:109"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/kesar_the_younger_day/council-grant",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission",
+          "op": "ge",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "ge",
+          "value": 13
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/kings_council",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You have done Bounac and the Etzels a service that will not be forgotten. From this day on, you have a permanent place at my council."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/kings_council",
+          "value": 1
+        },
+        {
+          "kind": "outfit_addon",
+          "look_type": 1436,
+          "addon": 2
+        },
+        {
+          "kind": "outfit_addon",
+          "look_type": 1437,
+          "addon": 2
+        },
+        {
+          "kind": "achievement",
+          "name": "King's Council"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:127"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/kesar_the_younger_day/council-repeat",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission",
+          "op": "ge",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "ge",
+          "value": 13
+        }
+      ],
+      "reply": [
+        "Your place at my council is secure, advisor."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:129"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/kesar_the_younger_day/journey-reminder",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission",
+          "op": "ge",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Find Captain Banner on the Isle of Ada, state the purpose of your mission, which is to support them as well as the Stags and bring word of the expedition."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:135"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/kesar_the_younger_day/ada-confirm",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission",
+          "op": "ge",
+          "value": 5
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Then make it so. Find Captain Banner on the Isle of Ada, state the purpose of your mission, which is to support them as well as the Stags and bring word of the expedition."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:143"
+      ],
+      "topics": [
+        10
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/kesar_the_younger_day/ada-stale-topic",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission",
+          "op": "ge",
+          "value": 5
+        }
+      ],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:140"
+      ],
+      "topics": [
+        10
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/kesar_the_younger_day/lion-prerequisite",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.kesar_the_younger_day",
+      "trigger": "say",
+      "keywords": [
+        "problem",
+        "help"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/kesar_mission",
+          "op": "lt",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "Talk to me again once you have proven yourself to Bounac."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:152"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/spares-early",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "spares"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "I will get back to this later. Now either you're just a confused bystander or you're on a {mission} to get on my nerves. What will it be?"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:79"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/spares-complete",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "spares"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/demeron",
+          "op": "ge",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "The Emmanuelle will never be what she was, but thanks to you she might float again one day."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:86"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/spares-offer",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "spares"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i52635",
+          "count": 30
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i52758",
+          "count": 20
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i52743",
+          "count": 10
+        }
+      ],
+      "reply": [
+        "Are those salvaged parts for the Emmanuelle? 30 iron, 20 bronze and 10 silver parts, that is just what we need. Will you hand them over?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 20
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:91"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/spares-request",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "spares"
+      ],
+      "guards": [],
+      "reply": [
+        "The Emmanuelle is wrecked, but not beyond repair. If you come across any salvaged parts on this isle, bring them to me. ...",
+        "I need 30 salvaged iron parts, 20 salvaged bronze parts and 10 salvaged silver parts. The knights that hold the castle might carry some."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/demeron",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:98"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/mission",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "If you can't {tell} me why you're here, stop distracting me and at least try helping some of my men knocking this measly camp into shape!"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:105"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/tell",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "tell"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "How did you even manage to get here with that sorry excuse of a sailing boat? So you say Kesar himself sent you, giving you details he did not disclose, even to us? And do you have any proof for that outrageous claim?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:110"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/proof-first",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Royal Bounacean advisor? Why should Kesar constitute someone like you, this is saying nothing without proof. Has he really told you what this is all about?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:117"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/proof-second",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "A bastard?! Lower your voice, stranger, that's no trifling matter. At all... you say you have solid evidence of this?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:123"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/proof-accepted-advance",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "ge",
+          "value": 3
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i52586",
+          "count": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "A certificate of... oh my. That should have stirred something up in the ivory tower, heh. ...",
+        "Alright... well, excuse my temper, it's all hands on deck for us since we barely set foot on this accursed rock. Let's take a break and start this conversation properly. ...",
+        "We need to find the heir of this Eldoran then. His knights must be on this island somewhere, but we did not encounter any of them so far. If the threat you mentioned is real, they may be in grave danger, as are we. ...",
+        "Fight your way through the mines and further into the isle. We need to get to the bottom of this and we also need to find a way to survive: there is no escaping for us in our current state."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "value": 4
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:138"
+      ],
+      "topics": [
+        3
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/proof-accepted-replay",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "ge",
+          "value": 3
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i52586",
+          "count": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "ge",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "A certificate of... oh my. That should have stirred something up in the ivory tower, heh. ...",
+        "Alright... well, excuse my temper, it's all hands on deck for us since we barely set foot on this accursed rock. Let's take a break and start this conversation properly. ...",
+        "We need to find the heir of this Eldoran then. His knights must be on this island somewhere, but we did not encounter any of them so far. If the threat you mentioned is real, they may be in grave danger, as are we. ...",
+        "Fight your way through the mines and further into the isle. We need to get to the bottom of this and we also need to find a way to survive: there is no escaping for us in our current state."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:138"
+      ],
+      "topics": [
+        3
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/proof-missing",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Evidence? I see nothing of the sort. Come back when you can prove what you say."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:132"
+      ],
+      "topics": [
+        3
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/spares-deliver",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i52635",
+          "count": 30
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i52758",
+          "count": 20
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i52743",
+          "count": 10
+        }
+      ],
+      "reply": [
+        "Excellent! Take this compass, it was salvaged from the Antoinette. May it guide you better than it guided her."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i52635",
+          "count": 30
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i52758",
+          "count": 20
+        },
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i52743",
+          "count": 10
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i52759",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/demeron",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:160"
+      ],
+      "topics": [
+        20
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/spares-missing",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "You don't have all the parts with you."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:151"
+      ],
+      "topics": [
+        20
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/decline",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Then move along."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:167"
+      ],
+      "topics": [
+        1,
+        2,
+        3,
+        20
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/business",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "business"
+      ],
+      "guards": [],
+      "reply": [
+        "So you tell me you took a stroll all the way up the mountain, right through the middle of the enemy lines, past the bulk of the cursed hordes in the outskirts and in here. ...",
+        "All this with a healthy disregard of our bastion's massive walls, the defense perimeter of my guards down in the dell and the influence of the warlock. {Explain} yourself."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:80"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/explain",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "explain"
+      ],
+      "guards": [],
+      "reply": [
+        "I see. If Kesar himself got wind of this and decided to send help, then his court wizards must have come to the same conclusion as Eldoran. We're screwed. ...",
+        "Royally so, if I might add. There is no way through the outer perimeter right now. We need to defend the castle yard and I have no men to spare. ...",
+        "That's the situation. If the others are pinned down and the mines are still lost, then we cannot get outside help or supplies. ...",
+        "You have been very lucky - and very bold to make an attempt like this on your own. Alas, a few warriors would indeed have a greater chance than a battallion under these circumstances. ...",
+        "I say we continue to stick to that plan. Say, are you in for another round?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:88"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/winged",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "winged"
+      ],
+      "guards": [],
+      "reply": [
+        "We first encountered these winged terrors on a routine patrol through the outskirts. They must have started nesting here only recently. We never had any harpies on the isle before the warlock took service with Eldoran the Ambitious. ...",
+        "So maybe there's a connection. In any case, they attack viciously but only at night. They have a roost far to the south of the island, somewhere in the mountains. But none of us is strong enough to muster a raid party."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:100"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/news-ready",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "news"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "Do you bring proof of the night harpies you have slain?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:111"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/news-other",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "news"
+      ],
+      "guards": [],
+      "reply": [
+        "Nothing new. Keep your eyes on the sky when night falls."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:108"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-early",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "First make sure the way through the mines is safe. Then we talk."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:120"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-accept-advance",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "I counted on you. We have two main issues here: the {cursed} onslaught and the {death} from above. ...",
+        "While we can still hold a considerable number of the {cursed puppets} in check, they keep coming and the warlock manages to recruit a steady amount of new material day by day. ...",
+        "The numbers of order knights to succumb to the warlock's power is dwindling, for whatever reason. Yet they are increasingly difficult to defeat, the more men we lose. ...",
+        "The {winged} horrors that haunt us during the night are another story entirely. We do not yet know how many of them exist or where their roost is located, but they want to occupy the bastion. ...",
+        "If you can help us with those {night harpies}, we would be grateful and far in your debt. Just bring me a few of their beaks. ...",
+        "To do so, gently pull the beak of a killed harpy, then press it downward and pull it slightly to the left or right in a single, firm move. It takes some skill and might not always work but I need proof of at least a few more of them dead. ...",
+        "If you show your goodwill, I will give you access to the upper hall, you will be able to contact Eldoran himself, if you can get through."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "value": 6
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:125"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-accept-replay",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "ge",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "I counted on you. We have two main issues here: the {cursed} onslaught and the {death} from above. ...",
+        "While we can still hold a considerable number of the {cursed puppets} in check, they keep coming and the warlock manages to recruit a steady amount of new material day by day. ...",
+        "The numbers of order knights to succumb to the warlock's power is dwindling, for whatever reason. Yet they are increasingly difficult to defeat, the more men we lose. ...",
+        "The {winged} horrors that haunt us during the night are another story entirely. We do not yet know how many of them exist or where their roost is located, but they want to occupy the bastion. ...",
+        "If you can help us with those {night harpies}, we would be grateful and far in your debt. Just bring me a few of their beaks. ...",
+        "To do so, gently pull the beak of a killed harpy, then press it downward and pull it slightly to the left or right in a single, firm move. It takes some skill and might not always work but I need proof of at least a few more of them dead. ...",
+        "If you show your goodwill, I will give you access to the upper hall, you will be able to contact Eldoran himself, if you can get through."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:125"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-0",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "le",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "You have pulled 0 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-1",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You have pulled 1 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-2",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You have pulled 2 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-3",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "You have pulled 3 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-4",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "You have pulled 4 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-5",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 5
+        }
+      ],
+      "reply": [
+        "You have pulled 5 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-6",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 6
+        }
+      ],
+      "reply": [
+        "You have pulled 6 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-7",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "You have pulled 7 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-8",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "You have pulled 8 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-9",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "You have pulled 9 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-10",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "You have pulled 10 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-11",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 11
+        }
+      ],
+      "reply": [
+        "You have pulled 11 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-12",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "You have pulled 12 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-13",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 13
+        }
+      ],
+      "reply": [
+        "You have pulled 13 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-14",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "You have pulled 14 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-15",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 15
+        }
+      ],
+      "reply": [
+        "You have pulled 15 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-16",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 16
+        }
+      ],
+      "reply": [
+        "You have pulled 16 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-17",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 17
+        }
+      ],
+      "reply": [
+        "You have pulled 17 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-18",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 18
+        }
+      ],
+      "reply": [
+        "You have pulled 18 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-count-19",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harpy_beaks",
+          "op": "eq",
+          "value": 19
+        }
+      ],
+      "reply": [
+        "You have pulled 19 of 20 beaks so far. Bought beaks prove nothing, I need beaks you pulled yourself."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:140"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-report-advance",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Well done. Keep the beaks, your word is enough for me now. You have access to the upper hall. Go and find Eldoran."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "value": 7
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:144"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/beaks-report-replay",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "ge",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Well done. Keep the beaks, your word is enough for me now. You have access to the upper hall. Go and find Eldoran."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:144"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/decline",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Then stay out of my way."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:151"
+      ],
+      "topics": [
+        1,
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/word",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "word"
+      ],
+      "guards": [],
+      "reply": [
+        "Wait, you are not one of the Stags, how did you get past the guard - can they still hold the yard?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:114"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/news-corpses",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "news"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "eq",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Did you burn the corpses in the lower dungeons?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:121"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/news-reward",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "news"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "eq",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "...let this sink a moment. Unbelievable. Outstanding! ...",
+        "Please, return to Bounac, go forth and tell Kesar we are safe. My navigator sends his regards and an easier route to reach the Adaean harbour safely in the future, once this mess is all cleaned up. Deliver it to him. ...",
+        "Maybe that one time we talked about trade connections was only the start of something far greater. And as to you... ...",
+        "I want you to take the sword of my forefather Eldoran. As it lies broken, it shall be a reminder of how this order once was in shackles but thanks to you, ultimately prevailed. ...",
+        "On behalf of all the knights of the Stag and myself, Eldoran Etzel, I bestow upon you the title of 'Honourable member of the Adaean Order of the Stag': come forth as a knight of the stag. ...",
+        "May your honourable life be filled with the spirit of adventure and fueled by the fire of the hunt. You have earned it."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i52824",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "value": 13
+        },
+        {
+          "kind": "achievement",
+          "name": "Bastard"
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:90"
+      ],
+      "inventory_failure_reply": [
+        "You carry too much to take what I have for you. Come back when you have made some room."
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/news-other",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "news"
+      ],
+      "guards": [],
+      "reply": [
+        "No news from the outskirts, I fear."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:140"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/mission-warlock",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "eq",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "There is only one task left: the warlock himself. Go down to the frazzlemaws, through the Bloodfire Gorge and into the west tower. ...",
+        "Captain Banner was last seen there. If anyone knows a way into his tower, it is her."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "value": 10
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:148"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/mission-active",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "ge",
+          "value": 10
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 12
+        }
+      ],
+      "reply": [
+        "The Court Warlock still lives. Find a way into his tower through the west tower."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:155"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/word-early",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Then go back and help Guard Captain Hartford hold the yard first."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:164"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/word-ready",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "Good to hear. And you came all the way here to help the {Stags}?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:167"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/corpses-early",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 7
+        }
+      ],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:175"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/corpses-accept-advance",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Impressive. I must say, your attitude is quite to my liking. Now. There is not much we can do to get out of this stalemate unless we can breach enemy lines and get through to the warlock himself. ...",
+        "You say you made it through the outskirts, passt the mines and my men in the valley. How do they fare? I hope they are well. ...",
+        "My heralds did not get through to me for days now, supply lines have been cut, the harbour is out of reach and our flagship has already been destroyed in a warlock attack. ...",
+        "Besides parts of the bastion being already in ruins, the warlock also attacked the tower bridge and blocked any means of entry with verminous growth of the extremely unpleasant kind. ...",
+        "The same goes for the wretched remains of this once-proud bastion. Fire, destruction, plague and famine, the warlock did not spare a single one of us. ...",
+        "Most of the walls are crumbling and the piling dead are poisoning us. There is a stench lingering in the catacombs as excrutiating as it is deadly. ...",
+        "Now that you can picture the situation, there is the added inconvenience that we are pinned down right here. My men are to exhausted to be sent on another mission, I need you for this one. ...",
+        "First we need to burn the corpses that litter the lower dungeons and poison the river. Set fire to this piles of shame and return to me with word on the situation down there. ...",
+        "Afterwards I will grant you access to the lowest ward connecting the bastion with the gorge and the only remaining pathway to the warlock's tower."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "value": 8
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:68"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/corpses-accept-replay",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "ge",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "Impressive. I must say, your attitude is quite to my liking. Now. There is not much we can do to get out of this stalemate unless we can breach enemy lines and get through to the warlock himself. ...",
+        "You say you made it through the outskirts, passt the mines and my men in the valley. How do they fare? I hope they are well. ...",
+        "My heralds did not get through to me for days now, supply lines have been cut, the harbour is out of reach and our flagship has already been destroyed in a warlock attack. ...",
+        "Besides parts of the bastion being already in ruins, the warlock also attacked the tower bridge and blocked any means of entry with verminous growth of the extremely unpleasant kind. ...",
+        "The same goes for the wretched remains of this once-proud bastion. Fire, destruction, plague and famine, the warlock did not spare a single one of us. ...",
+        "Most of the walls are crumbling and the piling dead are poisoning us. There is a stench lingering in the catacombs as excrutiating as it is deadly. ...",
+        "Now that you can picture the situation, there is the added inconvenience that we are pinned down right here. My men are to exhausted to be sent on another mission, I need you for this one. ...",
+        "First we need to burn the corpses that litter the lower dungeons and poison the river. Set fire to this piles of shame and return to me with word on the situation down there. ...",
+        "Afterwards I will grant you access to the lowest ward connecting the bastion with the gorge and the only remaining pathway to the warlock's tower."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:68"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/corpses-missing",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/corpses",
+          "op": "lt",
+          "value": 7
+        }
+      ],
+      "reply": [
+        "Not all of them. Three corpses are still lying down there next to the burning piles."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:185"
+      ],
+      "topics": [
+        3
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/corpses-report-advance",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "lt",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "Most excellent! That finally gives us enough breathing room to regroup. I will see if I can send a fresh post to change the outer guard. It looks like I am in your debt, outsider. ...",
+        "Thanks to you, with a dwindling number of puppets and harpies, fresh supplies for my men and most of the remaining corpses burned, we can finally start pushing back. ...",
+        "There is a way down the lower catacombs, connecting the bastion with an ancient cave system, the Bloodfire Gorge. If all goes well and the warlock didn't seal this passage, there should be an entrance to his tower. ...",
+        "Neverind the frazzlemaws down there, we tamed them. Besides our regular steeds, they have proven quite an asset in melee combat while gnawing through the thick of any battlefield. ...",
+        "I have also granted you full access to our proud silver mines, maybe you can find something of use for your quest down there. ...",
+        "Try to find the warlock and challenge him in his tower, you are as strong as the best of us. We are still holding the onslaught at bay and may be able to have your back when you confront him. ...",
+        "If you can surprise him in his tower while attack his forces from the courtyard and in the outskirts, he will not amass enough of his minions to overwhelm you. We got this, now go!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "value": 9
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:80"
+      ],
+      "topics": [
+        3
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/corpses-report-replay",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "ge",
+          "value": 9
+        }
+      ],
+      "reply": [
+        "Most excellent! That finally gives us enough breathing room to regroup. I will see if I can send a fresh post to change the outer guard. It looks like I am in your debt, outsider. ...",
+        "Thanks to you, with a dwindling number of puppets and harpies, fresh supplies for my men and most of the remaining corpses burned, we can finally start pushing back. ...",
+        "There is a way down the lower catacombs, connecting the bastion with an ancient cave system, the Bloodfire Gorge. If all goes well and the warlock didn't seal this passage, there should be an entrance to his tower. ...",
+        "Neverind the frazzlemaws down there, we tamed them. Besides our regular steeds, they have proven quite an asset in melee combat while gnawing through the thick of any battlefield. ...",
+        "I have also granted you full access to our proud silver mines, maybe you can find something of use for your quest down there. ...",
+        "Try to find the warlock and challenge him in his tower, you are as strong as the best of us. We are still holding the onslaught at bay and may be able to have your back when you confront him. ...",
+        "If you can surprise him in his tower while attack his forces from the courtyard and in the outskirts, he will not amass enough of his minions to overwhelm you. We got this, now go!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:80"
+      ],
+      "topics": [
+        3
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/decline",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Then don't waste my time."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:196"
+      ],
+      "topics": [
+        1,
+        2,
+        3
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/captain_marie-denise_banner/wall-open",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.captain_marie_denise_banner",
+      "trigger": "say",
+      "keywords": [
+        "wall"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "op": "eq",
+          "value": 10
+        }
+      ],
+      "reply": [
+        "It's... alright. Alright... I can stand- no, well... I can't stand. But... I can still... help you. ...",
+        "When I came to my {senses}, that golem... over there... was watching me. When I came to, it quickly pressed a combination of... buttons... at that wall... next to me. ...",
+        "The combination is... upper, upper, lower, lower, left, right... just... go, or I... aaah. ...",
+        "May this at least... be of... use to you... I know... what I have done."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline",
+          "value": 11
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_marie-denise_banner.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/captain_marie-denise_banner/wall-other",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.captain_marie_denise_banner",
+      "trigger": "say",
+      "keywords": [
+        "wall"
+      ],
+      "guards": [],
+      "reply": [
+        "It's... alright. Alright... I can stand- no, well... I can't stand. But... I can still... help you. ...",
+        "When I came to my {senses}, that golem... over there... was watching me. When I came to, it quickly pressed a combination of... buttons... at that wall... next to me. ...",
+        "The combination is... upper, upper, lower, lower, left, right... just... go, or I... aaah. ...",
+        "May this at least... be of... use to you... I know... what I have done."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_marie-denise_banner.lua:59"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/captain_marie-denise_banner/senses",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.captain_marie_denise_banner",
+      "trigger": "say",
+      "keywords": [
+        "senses"
+      ],
+      "guards": [],
+      "reply": [
+        "I... killed... everyone. Their faces, their eyes... blood, everywhere. Aaah... I don't... know how it came to pass. But there is an... aaach.. entity, on this isle... ...",
+        "Something... controls the doomed knights that roam this... isle. They must all have... succumbed, to the power of this... thing. Like I did... my... self. ...",
+        "It was like a veil of blood before my eyes, I lost control of... everything. Witnessing... everything... aaah- helpless. ...",
+        "After some time... I managed... to get ahold of myself and... dragged my body forward, deeper into the isle. I did... *cough* not encounter a single souls on my... way here, willing to... talk. ...",
+        "You are the first... I meet who is not... openly hostile. Aaah...",
+        "I... am sorry. Don't tell... Demeron... I survived. The captain he once looked up to... died in that silver mine. I... aaah... won't come back... I... leaving, the unit. ...",
+        "There is... something... I have to do, when I recover. I can't help you much more... right now. But... ah... we will meet again."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_marie-denise_banner.lua:72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/intro-first",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harlan",
+          "op": "le",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Demeron sent you through the mines? Then you know how bad things are. Will you hear me out?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:82"
+      ],
+      "topics": [
+        0
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/intro-second",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harlan",
+          "op": "le",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Good. My men are exhausted, but we can still hold this camp. Do you need to rest here before you move on?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:85"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/passage",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "Then don't let me keep you. I will tell my men to let you pass to the north east. If you want to {help} us, come back to me."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harlan",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:94"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/help-first",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harlan",
+          "op": "le",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "First things first. Are you with Demeron?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:100"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/help-complete",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harlan",
+          "op": "ge",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Thanks to you, my men will not go hungry for a while."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:106"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/help-offer",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i52636",
+          "count": 20
+        }
+      ],
+      "reply": [
+        "Is that tender venison? Will you give us 20 of them?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:111"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/help-request",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "say",
+      "keywords": [
+        "help"
+      ],
+      "guards": [],
+      "reply": [
+        "Our supplies are running out. Bring me 20 tender venisons from the stags of this isle and you will not regret it."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harlan",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/supplies-deliver",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i52636",
+          "count": 20
+        }
+      ],
+      "reply": [
+        "This will keep my men on their feet. Thank you, adventurer."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i52636",
+          "count": 20
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harlan",
+          "value": 3
+        },
+        {
+          "kind": "experience",
+          "amount": 10000
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:129"
+      ],
+      "topics": [
+        3
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/supplies-missing",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "You don't have enough tender venison with you."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:124"
+      ],
+      "topics": [
+        3
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/decline",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "say",
+      "keywords": [
+        "no"
+      ],
+      "guards": [],
+      "reply": [
+        "As you wish."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:135"
+      ],
+      "topics": [
+        1,
+        3
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/greet",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "If you don't carry any spares, state your business quickly or move along."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:174"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/farewell",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "farewell",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Move along."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:175"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/second_in_command_demeron/walkaway",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.second_in_command_demeron",
+      "trigger": "walkaway",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "..."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/second_in_command_demeron.lua:176"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/greet",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "HALT! Outsider, state your business!"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:158"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/farewell",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "farewell",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Stay vigilant."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:159"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/guard_captain_hartford/walkaway",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.guard_captain_hartford",
+      "trigger": "walkaway",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "..."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/guard_captain_hartford.lua:160"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/greet",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Someone made it! Do you bring word from my men in the outskirts?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:203"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/farewell",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "farewell",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Until we meet again."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:204"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/eldoran_the_ambitious/walkaway",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.eldoran_the_ambitious",
+      "trigger": "walkaway",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "..."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/eldoran_the_ambitious.lua:205"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/captain_marie-denise_banner/greet",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.captain_marie_denise_banner",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Wait... the wall... the... combination... aaah."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_marie-denise_banner.lua:86"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/captain_marie-denise_banner/farewell",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.captain_marie_denise_banner",
+      "trigger": "farewell",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "..."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_marie-denise_banner.lua:87"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/captain_marie-denise_banner/walkaway",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.captain_marie_denise_banner",
+      "trigger": "walkaway",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "..."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/captain_marie-denise_banner.lua:88"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/greet",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Hold it! Are you one of Demeron's men?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:143"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/farewell",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "farewell",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Stay alert out there."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:144"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_order_of_the_stag/lieutenant_harlan/walkaway",
+      "quest": "oteryn:quest.the_order_of_the_stag_quest",
+      "npc": "oteryn:npc.lieutenant_harlan",
+      "trigger": "walkaway",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Stay alert."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lieutenant_harlan.lua:145"
+      ]
+    }
+  ]
+}

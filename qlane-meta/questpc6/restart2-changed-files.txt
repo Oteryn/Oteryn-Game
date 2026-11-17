@@ -1,0 +1,11 @@
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/viola.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/viola.rs
+crates/gameplay/npc/src/npc_talk.rs
+docs/agents/evidence/quest-claim-qualification.json
+docs/repository/QUEST_CALLBACK_COVERAGE.json
+tools/content-schema/quest-authoring/check_quest_claim_qualification.py
+tools/content-schema/quest-authoring/quest_callback_coverage.py
+tools/content-schema/quest-authoring/test_quest_claim_qualification.py

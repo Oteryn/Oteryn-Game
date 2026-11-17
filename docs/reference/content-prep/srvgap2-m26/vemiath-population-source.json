@@ -1,0 +1,23 @@
+{
+  "reference_scope": "OTS_HYPOTHESIS_ONLY",
+  "repository": "https://github.com/zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "path": "data-global/monster/quests/rotten_blood_quest/vemiath.lua",
+  "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/vemiath.lua",
+  "sha256": "d0b477325e4d3e058490023870075dd6e1b159cd614f82610d122510f7c7a8e7",
+  "checked_facts": [
+    {
+      "lines": "167-178",
+      "fact": "Close placement tries ten one-tile offsets using Tile:isWalkable(), then falls back to the boss tile."
+    },
+    {
+      "lines": "195-219",
+      "fact": "Taint population uses the fixed (33043,32335,15) centre and thresholds 5, 8 and 9, capped at five Bloodjaws."
+    },
+    {
+      "lines": "304-343",
+      "fact": "Both minion kinds count within seventeen same-floor tiles; Bloodjaw spawning is paused by either mechanicsDisabled or the spawn-paused storage; four Pillars remain required even while mechanics are disabled."
+    }
+  ],
+  "remaining": "Population phase only; native teleport/agony and complete source-room qualification remain separate requirements."
+}

@@ -226,6 +226,23 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
                 {
                     let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
                     assert!(mailbox.wheel.set_points(14, 50));
+                    let path = std::env::temp_dir()
+                        .join(format!("oteryn-wheel-play-{}.json", std::process::id()));
+                    mailbox.wheel.preset_fields[0] = "Hunting".into();
+                    super::super::feature_0148_wheel_allocation::view::presets::submit(
+                        &mut mailbox,
+                        0,
+                        &path,
+                    );
+                    assert!(mailbox.wheel.preset_book.0.contains_key("Hunting"));
+                    assert!(mailbox.wheel.set_points(14, 0));
+                    super::super::feature_0148_wheel_allocation::view::presets::submit(
+                        &mut mailbox,
+                        1,
+                        &path,
+                    );
+                    assert_eq!(mailbox.wheel.points[14], 50);
+                    std::fs::remove_file(path)?;
                     assert!(mailbox.wheel.socket_selected());
                 }
                 link.wheel_request(Intent::Save);
@@ -244,15 +261,22 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
                 assert!(link.wheel_panel().selected_gem().ok_or("gem")?.locked);
                 link.wheel_request(Intent::ToggleLock);
                 ready(&link, Some((6, 6))).await?;
-                link.wheel_request(Intent::SwitchDomain);
-                ready(&link, Some((6, 7))).await?;
-                assert_eq!(link.wheel_panel().selected_gem().ok_or("gem")?.domain, 1);
+                // Mod Reshaping stays disabled until the server reports temple and Premium state.
+                link.wheel_request(Intent::Reshape);
+                assert!(link.wheel_panel().pending.is_none());
+                assert!(link.wheel_panel().gems.review.is_none());
                 crate::play::mailbox::lock(&link.mailbox).wheel.modifier = Some((1, 5));
                 link.wheel_request(Intent::GradeUp);
-                ready(&link, Some((6, 8))).await?;
+                assert!(link.wheel_panel().pending.is_none());
+                assert!(link.wheel_panel().gems.review.is_some());
+                link.gem_confirm();
+                ready(&link, Some((6, 7))).await?;
                 assert_eq!(link.wheel_panel().grade(1, 5), 1);
                 link.wheel_request(Intent::Reveal);
-                ready(&link, Some((6, 9))).await?;
+                assert!(link.wheel_panel().pending.is_none());
+                assert!(link.wheel_panel().gems.review.is_some());
+                link.gem_confirm();
+                ready(&link, Some((6, 8))).await?;
                 assert_eq!(
                     link.wheel_panel()
                         .confirmed_atelier
@@ -263,10 +287,13 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
                     2
                 );
                 link.wheel_request(Intent::Dismantle);
-                ready(&link, Some((6, 10))).await?;
+                assert!(link.wheel_panel().pending.is_none());
+                assert!(link.wheel_panel().gems.review.is_some());
+                link.gem_confirm();
+                ready(&link, Some((6, 9))).await?;
                 assert_eq!(link.wheel_panel().gem, Some([18; 16]));
                 link.wheel_request(Intent::Reset);
-                ready(&link, Some((7, 10))).await?;
+                ready(&link, Some((7, 9))).await?;
                 assert_eq!(link.wheel_panel().points, [0; 36]);
                 let recorded = commands
                     .lock()
@@ -274,7 +301,7 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
                     .clone();
                 assert_eq!(
                     recorded.iter().map(|value| value.kind).collect::<Vec<_>>(),
-                    vec![161, 161, 161, 309, 309, 424, 424, 424, 424, 161]
+                    vec![161, 161, 161, 309, 309, 424, 424, 424, 161]
                 );
                 let ids = recorded
                     .iter()
@@ -303,4 +330,125 @@ fn wheel_panel_controls_reach_the_session_queue_and_apply_live_server_views() ->
         })?
         .join()
         .map_err(|_| "Wheel UI test thread panicked")?
+}
+
+#[test]
+fn wheel_presets_window_handoff_preserves_the_session_owner() {
+    use crate::play::feature_0148_wheel_allocation::view::presets::{open_shared, window_open};
+    let (link, _receiver, _outbox) = play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.properties.house.model.selected = true;
+    }
+    open_shared(&link.mailbox, &link.commands);
+    {
+        let mailbox = crate::play::mailbox::lock(&link.mailbox);
+        assert!(window_open(&mailbox));
+        assert!(!mailbox.wheel_shutdown);
+        assert!(!mailbox.depot_shutdown);
+        assert!(mailbox.properties.house.model.selected);
+    }
+    let shared = Arc::clone(&link.mailbox);
+    drop(link);
+    assert!(!window_open(&crate::play::mailbox::lock(&shared)));
+}
+
+#[path = "gem_presentation.rs"]
+mod gem_presentation;
+
+#[path = "wheel_presentation.rs"]
+mod wheel_presentation;
+
+#[test]
+fn reshape_native_stage_confirm_dispatches_6214_and_displays_rerolled_mods() -> Result<(), Error> {
+    use crate::play::feature_0148_wheel_allocation::input::gem_presentation::{Action, activate};
+    use crate::play::mailbox::lock;
+    use atelier::v2;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.wheel_initialize(true, true);
+    let wheel = wheel::WheelAllocationReply {
+        refused: false,
+        revision: 4,
+        points: [0; 36],
+        vessels: None,
+    };
+    let mut live = v2::AtelierReply {
+        refused: false,
+        revision: 4,
+        wheel_revision: 4,
+        in_temple: true,
+        premium: true,
+        gems: vec![v2::GemView {
+            id: [17; 16],
+            quality: 2,
+            locked: false,
+            slot: None,
+            modifiers: vec![31, 0, 5],
+        }],
+        grades: vec![],
+        quality_quotes: vec![],
+        grade_quotes: vec![],
+        vessels: vec![],
+        vessel_nodes: vec![],
+        vessel_node_bonus: 1,
+        resistance_capped: false,
+    };
+    let encode = |live: &v2::AtelierReply| -> Result<WheelResponse, Error> {
+        Ok(WheelResponse {
+            kind: if live.revision == 4 { 161 } else { 6214 },
+            status: CommandStatus::Accepted,
+            payload: v2::encode_reply(live).map_err(|e| format!("{e:?}"))?,
+            wheel: Some(wheel::encode_wheel_reply(&wheel).map_err(|e| format!("{e:?}"))?),
+            atelier: Some(v2::encode_reply(live).map_err(|e| format!("{e:?}"))?),
+            resources: Some(atelier::resources::encode_reply(
+                &atelier::resources::ResourceBalances {
+                    carried_gold: 125_000,
+                    basic_fragments: 0,
+                    ..Default::default()
+                },
+            )),
+        })
+    };
+    link.wheel_request(Intent::Refresh);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Wheel(_)
+    ));
+    outbox.wheel_result(&encode(&live)?);
+    lock(&link.mailbox).wheel.modifier = Some((0, 31));
+    assert!(link.wheel_panel().can_reshape());
+    activate(
+        &mut lock(&link.mailbox),
+        &link.commands,
+        Action::Stage(Intent::Reshape),
+    );
+    let review = link.wheel_panel().gems.review.ok_or("reshape review")?;
+    assert!(review.text.contains("125000 gold and 1 lesser fragments"));
+    assert!(commands.try_recv().is_err());
+    activate(&mut lock(&link.mailbox), &link.commands, Action::Confirm);
+    let crate::combat_input::PlayCommand::Wheel(command) = commands.try_recv()? else {
+        return Err("wheel command".into());
+    };
+    assert_eq!(command.kind, 6214);
+    let request = v2::decode_reshape(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (request.expected_revision, request.gem, request.position),
+        (4, [17; 16], 1)
+    );
+    live.revision = 5;
+    live.gems[0].modifiers[0] = 7;
+    outbox.wheel_result(&encode(&live)?);
+    let panel = link.wheel_panel();
+    assert_eq!(panel.selected_gem().ok_or("gem")?.modifiers, [7, 0, 5]);
+    assert!(panel_text(&panel).contains("The server confirmed the request"));
+    lock(&link.mailbox).wheel.atelier_v2 = false;
+    assert!(!link.wheel_panel().can_reshape());
+    activate(
+        &mut lock(&link.mailbox),
+        &link.commands,
+        Action::Stage(Intent::Reshape),
+    );
+    assert!(commands.try_recv().is_err());
+    assert!(link.wheel_panel().gems.review.is_none());
+    Ok(())
 }

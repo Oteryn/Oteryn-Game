@@ -1,3 +1,12 @@
+#[path = "account_fixture_tests.rs"]
+mod account_fixtures;
+#[path = "bazaar_tests.rs"]
+mod bazaar;
+#[path = "challenge_tests.rs"]
+mod challenge;
+#[path = "platform_fixture_tests.rs"]
+mod platform_fixtures;
+
 use super::*;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -159,16 +168,44 @@ fn secrets_are_redacted() {
 struct MockServer {
     base: String,
     requests: Arc<Mutex<Vec<String>>>,
+    request_times: Arc<Mutex<Vec<tokio::time::Instant>>>,
 }
 
 fn spawn_server(
     runtime: &tokio::runtime::Runtime,
     responses: Vec<(u16, &'static str, String)>,
 ) -> Result<MockServer, Box<dyn std::error::Error>> {
+    spawn_server_with_headers(
+        runtime,
+        responses
+            .into_iter()
+            .map(|(status, headers, body)| (status, headers.to_owned(), body))
+            .collect(),
+    )
+}
+
+fn spawn_server_with_headers(
+    runtime: &tokio::runtime::Runtime,
+    responses: Vec<(u16, String, String)>,
+) -> Result<MockServer, Box<dyn std::error::Error>> {
+    let responses = responses.into_iter().map(|(status, headers, body)| {
+        (status, format!("content-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n{headers}", body.len()), body)
+    }).collect();
+    spawn_fixture_server(runtime, responses)
+}
+
+// Fixture responses are close-delimited: shutdown supplies framing, without
+// injecting Content-Type, Content-Length, Connection, or any other header.
+fn spawn_fixture_server(
+    runtime: &tokio::runtime::Runtime,
+    responses: Vec<(u16, String, String)>,
+) -> Result<MockServer, Box<dyn std::error::Error>> {
     let listener = runtime.block_on(TcpListener::bind("127.0.0.1:0"))?;
     let base = format!("http://127.0.0.1:{}/", listener.local_addr()?.port());
     let requests = Arc::new(Mutex::new(Vec::new()));
     let recorded = Arc::clone(&requests);
+    let request_times = Arc::new(Mutex::new(Vec::new()));
+    let times = Arc::clone(&request_times);
     runtime.spawn(async move {
         for (status, extra_headers, body) in responses {
             let Ok((mut stream, _)) = listener.accept().await else {
@@ -200,18 +237,22 @@ fn spawn_server(
                     }
                 }
             };
+            if let Ok(mut log) = times.lock() {
+                log.push(tokio::time::Instant::now());
+            }
             if let Ok(mut log) = recorded.lock() {
                 log.push(request);
             }
-            let response = format!(
-                "HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n{extra_headers}\r\n{body}",
-                body.len()
-            );
+            let response = format!("HTTP/1.1 {status} X\r\n{extra_headers}\r\n{body}");
             let _ = stream.write_all(response.as_bytes()).await;
             let _ = stream.shutdown().await;
         }
     });
-    Ok(MockServer { base, requests })
+    Ok(MockServer {
+        base,
+        requests,
+        request_times,
+    })
 }
 
 fn client_for(server: &MockServer) -> Result<NativeLoginClient, PlatformClientError> {
@@ -266,6 +307,7 @@ fn retryable_rows_reuse_the_identical_request() -> TestResult {
     let login = GatewayLogin {
         attempt_ref: &attempt_ref,
         character_id: CHARACTER,
+        channel_id: None,
         client_build: "dev-1",
     };
     let grant =
@@ -320,6 +362,7 @@ fn terminal_rows_stop_and_retries_are_bounded() -> TestResult {
     let login = GatewayLogin {
         attempt_ref: &attempt_ref,
         character_id: CHARACTER,
+        channel_id: None,
         client_build: "dev-1",
     };
     let spent_ticket = ticket();
@@ -439,11 +482,132 @@ fn token_exchange_and_ticket_issuance() -> TestResult {
     let requests = server.requests.lock().map_err(|_| "poisoned")?.clone();
     assert!(requests[0].starts_with("POST /oauth/token "));
     assert!(request_body(&requests[0]).contains("code_verifier=verifier-1"));
-    assert!(requests[1].starts_with("POST /v1/game-auth/tickets "));
+    assert!(requests[1].starts_with("POST /api/v1/game-auth/tickets "));
     assert!(
         requests[1]
             .to_ascii_lowercase()
             .contains("authorization: bearer access-1")
     );
     Ok(())
+}
+
+#[test]
+fn owner_characters_borrow_token_and_classify_responses() -> TestResult {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
+    let valid = format!(
+        r#"{{"protocol_version":2,"characters":[{{"character_id":"{CHARACTER}","world_id":"{WORLD}","name":"Ari","availability":"AVAILABLE"}}]}}"#
+    );
+    let server = spawn_server(
+        &runtime,
+        vec![
+            (200, "", valid),
+            (401, "", String::new()),
+            (429, "retry-after: 60\r\n", String::new()),
+            (503, "", String::new()),
+            (200, "", "x".repeat(16_385)),
+            (200, "", r#"{"protocol_version":2,"characters":[]}"#.into()),
+            (
+                200,
+                "",
+                r#"{"protocol_version":1,"ticket":"ticket-1","expires_in":60}"#.into(),
+            ),
+        ],
+    )?;
+    let client = client_for(&server)?;
+    let token = AccessToken(SecretText("owner-access".into()));
+    let rows = runtime.block_on(client.owner_characters(&token, CancellationToken::new()))?;
+    assert_eq!(rows[0].character_id, CHARACTER);
+    assert_eq!(rows[0].availability, CharacterAvailability::Available);
+    for expected in [
+        NativeLoginError::TokenRefused,
+        NativeLoginError::Platform(PlatformClientError::HttpStatus(429)),
+        NativeLoginError::Platform(PlatformClientError::HttpStatus(503)),
+        NativeLoginError::Platform(PlatformClientError::ResponseTooLarge),
+    ] {
+        assert_eq!(
+            runtime
+                .block_on(client.owner_characters(&token, CancellationToken::new()))
+                .err(),
+            Some(expected)
+        );
+    }
+    assert!(
+        runtime
+            .block_on(client.owner_characters(&token, CancellationToken::new()))?
+            .is_empty()
+    );
+    runtime.block_on(client.issue_native_ticket(token, CancellationToken::new()))?;
+    let requests = server.requests.lock().map_err(|_| "request lock")?;
+    assert_eq!(requests.len(), 7);
+    for request in &requests[..6] {
+        assert!(request.starts_with("GET /api/v1/game-auth/native-characters "));
+        assert!(
+            request
+                .to_ascii_lowercase()
+                .contains("authorization: bearer owner-access")
+        );
+    }
+    assert!(requests[6].starts_with("POST /api/v1/game-auth/tickets "));
+    Ok(())
+}
+
+#[path = "coin_purchase_tests.rs"]
+mod coin_purchase_tests;
+
+// Observe entry/exit of the real Tokio sleep; never replace its duration.
+thread_local! {
+    static TICKET_WAIT: std::cell::Cell<(Option<tokio::time::Instant>, Option<tokio::time::Instant>)> = const {
+        std::cell::Cell::new((None, None))
+    };
+}
+pub(super) fn ticket_wait(finished: bool) {
+    TICKET_WAIT.with(|clock| {
+        let (start, end) = clock.get();
+        let now = Some(tokio::time::Instant::now());
+        clock.set(if finished { (start, now) } else { (now, end) });
+    });
+}
+
+// Thread-local controlled time affects only opt-in current-thread fixture tests.
+// Other tests and every production build retain real sleeps.
+thread_local! {
+    static CLOCK: std::cell::RefCell<Option<(Instant, Duration)>> = const {
+        std::cell::RefCell::new(None)
+    };
+}
+
+fn pause_clock() {
+    let received = Instant::now();
+    CLOCK.with(|clock| *clock.borrow_mut() = Some((received, Duration::ZERO)));
+}
+
+fn clock_now() -> Result<Instant, Box<dyn std::error::Error>> {
+    CLOCK.with(|clock| {
+        clock
+            .borrow()
+            .as_ref()
+            .map(|(base, elapsed)| *base + *elapsed)
+            .ok_or_else(|| "fixture clock is not paused".into())
+    })
+}
+
+fn clock_elapsed() -> Duration {
+    CLOCK.with(|clock| {
+        clock
+            .borrow()
+            .as_ref()
+            .map_or(Duration::ZERO, |(_, elapsed)| *elapsed)
+    })
+}
+
+pub(super) fn delay(duration: Duration) -> Duration {
+    CLOCK.with(|clock| match clock.borrow_mut().as_mut() {
+        Some((_, elapsed)) => {
+            *elapsed += duration;
+            Duration::ZERO
+        }
+        None => duration,
+    })
 }

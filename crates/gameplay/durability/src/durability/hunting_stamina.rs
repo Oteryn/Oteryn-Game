@@ -60,7 +60,7 @@ impl DurabilityRoot {
             let replay: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_build_receipts WHERE build_occurrence_id=encode($1,'hex')::uuid)")
                 .bind(occurrence.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             if !replay && let Err(error) = super::character_progression::assert_gameplay_fence(&mut tx, &fence, &node).await? { return Ok(Err(error)); }
-            let row = sqlx::query("SELECT * FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid")
+            let row = sqlx::query("SELECT vocation, magic_level, mana_spent, fist_level, fist_tries, club_level, club_tries, sword_level, sword_tries, axe_level, axe_tries, distance_level, distance_tries, shielding_level, shielding_tries, fishing_level, fishing_tries FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let before = row.as_ref().map(|row| super::character_build::DurableBuildState::stored(row,"vocation", ""))
                 .transpose()?.unwrap_or_default();
@@ -108,7 +108,7 @@ impl DurabilityRoot {
             let replay: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_build_receipts WHERE build_occurrence_id=encode($1,'hex')::uuid)")
                 .bind(occurrence.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             if !replay && let Err(error) = super::character_progression::assert_gameplay_fence(&mut tx, &fence, &node).await? { return Ok(Err(error)); }
-            let row = sqlx::query("SELECT * FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid")
+            let row = sqlx::query("SELECT vocation, magic_level, mana_spent, fist_level, fist_tries, club_level, club_tries, sword_level, sword_tries, axe_level, axe_tries, distance_level, distance_tries, shielding_level, shielding_tries, fishing_level, fishing_tries FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let before = row.as_ref().map(|row| super::character_build::DurableBuildState::stored(row,"vocation", ""))
                 .transpose()?.unwrap_or_default();

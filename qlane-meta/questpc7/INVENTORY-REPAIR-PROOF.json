@@ -1,0 +1,146 @@
+{
+  "state": "FIVE_INVENTORY_REGRESSIONS_GREEN_HOT_ENGINE_REQUEST_OPEN",
+  "compiled_baseline": "ec0ad9a1b7660c6df29cc8d2bacdfa7859f3ffd2",
+  "main": "78294c081a099c96a57948573d5dbf0caf398abf",
+  "unit_baseline": {
+    "command": "cargo test --locked --lib --bins --no-fail-fast (all12 changed packages) -- --test-threads=2",
+    "postgres_admin_unset": true,
+    "passed": 5470,
+    "failed": 5,
+    "retained_ignored": 23,
+    "summed_binary_seconds": 3343.07,
+    "build_duration": "12m36s",
+    "log": "/tmp/questpc7-collector3030-unit-final.log"
+  },
+  "repairs": [
+    {
+      "test": "reward_boss_test_fixture_preserves_source_loot_and_production_unavailability",
+      "actual": [
+        52,
+        329,
+        1
+      ],
+      "previous_expected": [
+        52,
+        334,
+        1
+      ],
+      "rule": "Restore the original exact329 after full provider regeneration; preserve five shared-body admissions."
+    },
+    {
+      "test": "equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
+      "actual": 3877,
+      "previous_expected": 3842,
+      "rule": "Count pinned source composition: base3842 + SRX25new + starter10new. Preserve per-record raw speed and unknown-speed checks."
+    },
+    {
+      "test": "quest_callbacks_binding_and_coverage_require_exact_source_witnesses",
+      "rule": "Exact supported334 = actual generic binder328 + dedicated Falcon runtime catalogue6, with no overlap. Preserve every bad-UID/appearance/offset refusal."
+    },
+    {
+      "test": "owner_scope_excludes_dawnport_from_runtime_state_and_callbacks",
+      "actual": 449,
+      "previous_expected": 384,
+      "rule": "Include the closed65 native callback inputs added by collector3030, subject to the same Dawnport exclusion."
+    },
+    {
+      "test": "lane_npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_rollback",
+      "actual": {
+        "-1": 192,
+        "0": 52
+      },
+      "previous_expected": {
+        "-1": 180,
+        "0": 50
+      },
+      "rule": "Derive registered source corpus defaults with repo audit tool, retaining exact hashes and rollback rejection."
+    }
+  ],
+  "postgres_baseline": {
+    "selected": 3,
+    "passed": 2,
+    "failed": 1,
+    "duration_seconds": 104.396,
+    "version": "18.6",
+    "log": "/tmp/questpc7-collector3030-pg-final.log",
+    "cases": [
+      {
+        "test": "catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction",
+        "result": "PASS",
+        "seconds": 70.173630946
+      },
+      {
+        "test": "questpc7_goblin_six_jobs_and_exact_paid_tools",
+        "result": "PASS",
+        "seconds": 68.007026843
+      },
+      {
+        "test": "npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay",
+        "result": "FAIL",
+        "seconds": 36.31,
+        "request": "hot-native-recipe-restoration",
+        "error": "Refused(StageMismatch)"
+      }
+    ]
+  },
+  "binary_provenance": {
+    "compiled_source_head": "ec0ad9a1b7660c6df29cc8d2bacdfa7859f3ffd2",
+    "compiled_source_tree": "2ff5b1b42a87497144d13c903cece95c134ff744",
+    "dispatch_binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-04232fc480f34567",
+    "dispatch_binary_sha256": "252bdcbe6f96f119d69ee88aaac720dc9db936fdea1818b4ea7aae804b780ecc",
+    "dispatch_binary_bytes": 1005580416,
+    "production_source_worktree_clean": true,
+    "note": "Binary provenance only. No PG success is claimed until actual case markers and durations are collected."
+  },
+  "scope": "Test inventories and source audit only; production content inputs unchanged. No new whole quest qualification. Native Hot planner restoration is routed to qengine2 under current owner rule.",
+  "pending": [
+    "full content and dispatch crate unit reruns after test-assertion repairs; PREPUSH-2 budget exception",
+    "Hot native recipe restoration and actor-level/Premium support remain qengine2 requests; original recipe test remains enabled and RED"
+  ],
+  "focused_rerun": {
+    "log": "/tmp/questpc7-inventory-repair-focused.log",
+    "passed": 4,
+    "failed": 1,
+    "duration_seconds": 63.718,
+    "late_failure": "final loaded legacy inventory still used old total6; restored original-source subset6 while retaining main corpus checks",
+    "green_cases": {
+      "reward_boss_test_fixture_preserves_source_loot_and_production_unavailability": 63.711,
+      "equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes": 43.582,
+      "quest_callbacks_binding_and_coverage_require_exact_source_witnesses": 0.308,
+      "owner_scope_excludes_dawnport_from_runtime_state_and_callbacks": 3.377
+    }
+  },
+  "final_quests_units": {
+    "command": "cargo test --locked -p oteryn-gameplay-quests --lib -- --test-threads=4",
+    "passed": 308,
+    "failed": 0,
+    "ignored": 0,
+    "seconds": 21.68,
+    "log": "/tmp/questpc7-inventory-repair-quests-full.log"
+  },
+  "strict_clippy": {
+    "result": "PASS",
+    "log": "/tmp/questpc7-inventory-repair-clippy.log",
+    "reported_wall_duration": "15m45s including build-lock wait"
+  },
+  "generated_freshness": {
+    "coverage": "PASS; both pinned reference tables verified in /tmp only",
+    "native_providers": "PASS",
+    "quest_tree": "PASS",
+    "world_metadata": "PASS",
+    "audit_tool": "Idempotent bytes and mtimes verified"
+  },
+  "final_workspace_check": {
+    "result": "PASS",
+    "seconds": 5.19,
+    "log": "/tmp/questpc7-inventory-repair-final-check.log"
+  },
+  "final_strict_clippy": {
+    "result": "PASS",
+    "seconds": 5.57,
+    "log": "/tmp/questpc7-inventory-repair-final-clippy.log"
+  },
+  "final_fmt": "PASS",
+  "duplicate_migrations": "PASS",
+  "unit_validation_note": "Four focused regressions passed; then the full quests suite passed308/308 after fixing its final original-programme legacy-subset assertion. No production content changed. All other full-baseline unit cases retained; no ignored test was added."
+}

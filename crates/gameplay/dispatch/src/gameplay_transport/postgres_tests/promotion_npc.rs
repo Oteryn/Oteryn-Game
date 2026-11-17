@@ -19,17 +19,21 @@ use std::sync::Arc;
 fn promotion_npc_postgres_dispatch_purchase_replay_bank_login_and_death() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| run_source_promotion_scenario("eremo").map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "promotion PostgreSQL thread panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+pub(super) fn run_source_promotion_scenario(npc_stem: &'static str) -> TestResult {
     run(async |admin| {
         reset();
+        // Compile content before opening the admission holder; cold Native setup can exceed
+        // the holder's idle lifetime on a contended CI worker.
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) = activated_with_loot_tables(world, None);
         let h = Harness::create_with_admission_seed(admin, "promotion_npc", true, false).await?;
-        eprintln!("POSTGRES_STARTED PREM-2b+PREM-5 promotion_npc version=17.6");
+        eprintln!("POSTGRES_STARTED PREM-2b+PREM-5 promotion_npc source_npc={npc_stem}");
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -37,8 +41,6 @@ fn scenario() -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let (controller, pin) = activated_with_loot_tables(world, None);
         let active = controller.active().ok_or("active content")?;
         let policy = active
             .native_gameplay()
@@ -79,10 +81,14 @@ fn scenario() -> TestResult {
         .map_err(debug)?;
         let model = catalogue.service_model_for_project().map_err(debug)?;
         owner
-            .states.chat
+            .states
+            .chat
             .install_npc_talk(Arc::new(NpcTalkBook::from_model(&model)));
         let session = dependencies.admitted.game_session_id;
-        owner.states.chat.admit(session, "Fixture Hero", owner.owner_now());
+        owner
+            .states
+            .chat
+            .admit(session, "Fixture Hero", owner.owner_now());
         owner.states.chat.set_npc_service(session);
         let npc = {
             let mut runtime = dependencies.runtime.lock().await;
@@ -97,7 +103,7 @@ fn scenario() -> TestResult {
                 .place_npcs(
                     &NpcPlacementTable {
                         npcs: vec![NpcPlacements {
-                            key: "oteryn:npc.eremo".into(),
+                            key: format!("oteryn:npc.{npc_stem}"),
                             placements: vec![NpcPlacement {
                                 floor: -i8::try_from(spot.floor)?,
                                 x: u16::try_from(spot.x + 1)?,
@@ -199,6 +205,26 @@ fn scenario() -> TestResult {
         assert_eq!(counts, (1, 1));
         let coins:i64=sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(72).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(coins, 3);
+        if npc_stem != "eremo" {
+            // New source promotion givers use the same permanent effect, fee and replay path.
+            // Eremo's existing blessing, login and death assertions below remain unchanged.
+            let binding: (String, String) = sqlx::query_as(
+                "SELECT npc_key,service_key FROM game_character_npc_purchase_receipts",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(
+                binding,
+                (
+                    format!("oteryn:npc.{npc_stem}"),
+                    format!("oteryn:service.promotion.{npc_stem}")
+                )
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         // Before delivery the promotion exception is available, while blessing stays closed.
         tokio::time::sleep(std::time::Duration::from_millis(1050)).await;
         for (command_id, text) in [(4, "blessing"), (5, "yes")] {
@@ -238,7 +264,8 @@ fn scenario() -> TestResult {
         owner.admit_promotion(session).await;
         assert_eq!(
             owner
-                .states.premium_sessions
+                .states
+                .premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
@@ -249,8 +276,7 @@ fn scenario() -> TestResult {
         consumer.release(id(40));
         assert_eq!(
             owner
-                .states
-                .premium_sessions
+                .states.premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
@@ -261,8 +287,7 @@ fn scenario() -> TestResult {
         owner.admit_promotion(session).await;
         assert_eq!(
             owner
-                .states
-                .premium_sessions
+                .states.premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
@@ -280,8 +305,7 @@ fn scenario() -> TestResult {
         owner.admit_promotion(session).await;
         assert_eq!(
             owner
-                .states
-                .premium_sessions
+                .states.premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
@@ -407,6 +431,7 @@ fn scenario() -> TestResult {
             .map_err(debug)?
             .position();
         let death = crate::gameplay_transport::actor_spell::PlayerDeath {
+            public_cause: None,
             occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(
                 220,
             ))
@@ -458,7 +483,8 @@ fn scenario() -> TestResult {
         }
         assert_eq!(
             owner
-                .states.premium_sessions
+                .states
+                .premium_sessions
                 .lock()
                 .map_err(debug)?
                 .1
@@ -468,6 +494,7 @@ fn scenario() -> TestResult {
 
         // A fresh death after lapse must ignore the still-promoted login display.
         let lapsed_death = crate::gameplay_transport::actor_spell::PlayerDeath {
+            public_cause: None,
             occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(
                 221,
             ))
@@ -508,7 +535,9 @@ fn scenario() -> TestResult {
             blocker.rollback().await?;
             Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
         });
-        let (settled, _) = owner.commit_death(session, &progression, lapsed_death).await;
+        let (settled, _) = owner
+            .commit_death(session, &progression, lapsed_death)
+            .await;
         revoke_when_blocked.await?.map_err(debug)?;
         assert_eq!(settled, crate::gameplay_transport::DeathCommit::Settled);
         let (level, lost, held): (i64, i64, Vec<String>) = sqlx::query_as(

@@ -5,8 +5,12 @@ use crate::durability::character_death::promotion::DeathPremiumOwner;
 struct PremiumDeathGate<'a, 'r, 'c, 'n> {
     admission: &'a ComposedFreshAdmission<'r, 'c, 'n>,
     session: GameSessionId,
+    charm: Option<crate::durability::character_death::promotion::DeathCharmLoss>,
 }
 impl DeathPremiumOwner for PremiumDeathGate<'_, '_, '_, '_> {
+    fn charm_loss(&self) -> Option<&crate::durability::character_death::promotion::DeathCharmLoss> {
+        self.charm.as_ref()
+    }
     fn current<'a>(
         &'a self,
         tx: &'a mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -77,15 +81,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let premium = PremiumDeathGate {
             admission: self,
             session,
+            charm: {
+                let runtime = self.runtime.lock().await;
+                let Ok(attack) = self.states.attack.try_lock() else {
+                    return (DeathCommit::Unavailable, None);
+                };
+                attack.death_charm(&runtime, session, *death.occurrence.as_bytes())
+            },
         };
         match self
             .settle_source_player_death(fence, request, formula, Some(&premium))
             .await
         {
-            Ok(committed) => (
-                DeathCommit::Settled,
-                committed.build_loss.map(|loss| loss.after),
-            ),
+            Ok(committed) => {
+                self.states
+                    .attack
+                    .lock()
+                    .await
+                    .clear_death_charm(session, *death.occurrence.as_bytes());
+                (
+                    DeathCommit::Settled,
+                    committed.build_loss.map(|loss| loss.after),
+                )
+            }
             Err(error) => {
                 operator_event(&format!("player_death_settle_failed reason={error}"));
                 (death_commit_refusal(&error), None)

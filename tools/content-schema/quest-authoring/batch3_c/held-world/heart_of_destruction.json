@@ -1,0 +1,609 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14321",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14321,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32149,
+        "y": 31359,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14322",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14322,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32092,
+        "y": 31330,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:3-3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14324",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14324,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32104,
+        "y": 31329,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:4-4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14325",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14325,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32216,
+        "y": 31380,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:5-5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14340",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14340,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32159,
+        "y": 31329,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:6-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14341",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14341,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32078,
+        "y": 31320,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:7-7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14343",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14343,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32088,
+        "y": 31321,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:8-8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14345",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14345,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32230,
+        "y": 31358,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:9-9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14347",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14347,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32225,
+        "y": 31347,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:10-10"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14348",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14348,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32218,
+        "y": 31375,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:11-11"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14350",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14350,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32208,
+        "y": 31372,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:12-12"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14352",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14352,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32214,
+        "y": 31376,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:13-13"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-14354",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 14354,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32112,
+        "y": 31375,
+        "floor": -14
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:14-14"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-48060",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 48060,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32017,
+        "y": 31357,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-2"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-48061",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 48061,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33183,
+        "y": 31643,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:3-3"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-48062",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 48062,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32522,
+        "y": 32020,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:4-4"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-48063",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 48063,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32448,
+        "y": 32389,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:5-5"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-48064",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 48064,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33158,
+        "y": 32636,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:6-6"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-48065",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 48065,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32130,
+        "y": 31359,
+        "floor": -12
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:7-7"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-48066",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 48066,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32159,
+        "y": 31294,
+        "floor": -7
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:8-8"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-48067",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 48067,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32113,
+        "y": 31386,
+        "floor": -11
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:9-9"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-48068",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 48068,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33026,
+        "y": 31367,
+        "floor": -8
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:10-10"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/heart-of-destruction-teleport-48069",
+      "quest": "oteryn:quest.heart_of_destruction_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 48069,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32117,
+        "y": 31355,
+        "floor": -13
+      },
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:11-11"
+      ]
+    }
+  ],
+  "left_out": {
+    "runtime_enabled": false,
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "reason": "All 23 source AIDs are absent from the 1208 pinned native map regions. No arbitrary position or native map binding is invented."
+  }
+}

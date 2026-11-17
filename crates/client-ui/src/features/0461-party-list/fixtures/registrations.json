@@ -1,0 +1,32 @@
+[
+  {
+    "mechanic": "0461-party-list",
+    "kind": "panels",
+    "id": "0461-party-list-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0461-party-list",
+    "kind": "handlers",
+    "id": "0461-party-list-result",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "capability": 461,
+    "entry": "protocol.rs::apply_result",
+    "push_messages": [
+      "PartyResult"
+    ],
+    "reducer": "protocol.rs::apply_result",
+    "test": "tests/state.rs::party_list_uses_existing_party_query",
+    "shared_commands": [
+      46
+    ],
+    "not_applicable": {
+      "settings": "Rename, group filters and sorting are session-local controls in the existing party panel.",
+      "state": "Uses 0042-party PartyPanel list rows and local list preferences.",
+      "input": "The existing Party shortcut and native list controls use 0042-party input."
+    }
+  }
+]

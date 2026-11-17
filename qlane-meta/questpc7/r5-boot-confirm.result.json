@@ -1,0 +1,5 @@
+{
+  "command": "/home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-game-server --lib quest_catalogue_boot_tests --quiet",
+  "exit": 0,
+  "duration_seconds": 21.23
+}

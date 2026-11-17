@@ -41,6 +41,25 @@ pub struct ChannelView {
     pub joined: Vec<JoinedChannel>,
 }
 
+/// Capabilities 494 and 495: one member of a channel the session is in, joined or invited, whose
+/// session is a current capability-80 participant. Server-only; the wire carries names only.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChannelMember {
+    pub channel_id: u16,
+    pub epoch: u64,
+    pub session: [u8; 16],
+    pub joined: bool,
+    pub name: String,
+}
+
+/// The channel list with the members of its joined channels, read in one transaction.
+pub struct MemberView {
+    pub view: ChannelView,
+    pub members: Vec<ChannelMember>,
+    /// The probed sessions that are still current capability-80 participants of the World.
+    pub active: Vec<[u8; 16]>,
+}
+
 /// A proposed encrypted publication; commit validates membership and the epoch again.
 pub struct Publication {
     pub channel_id: u16,

@@ -2,7 +2,8 @@
 fn raids_global_server_messages_reach_typed_events_in_order_only_when_selected() -> Result<(), BoxError> {
     use oteryn_protocol_oteryn::zones_nologout::{ServerMessage, encode_server_message};
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&92));
-    assert!(!CLIENT_SUPPORTED_CAPABILITIES.contains(&149));
+    // P-C03 negotiates the raid query; global raid messages remain owned by 92.
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&149));
     block_on(async {
         for selected in [false, true] {
             let (client, mut server) = tokio::io::duplex(64 * 1024);

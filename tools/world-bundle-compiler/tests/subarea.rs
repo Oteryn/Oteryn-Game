@@ -15,6 +15,7 @@ impl KeyResolver for Ground {
             kind: TerrainKind::Ground,
             walkable: Some(true),
             ground_speed: Some(150),
+            blocks_projectile: None,
         }))
     }
     fn floor_change(&self, _: &str) -> bool {

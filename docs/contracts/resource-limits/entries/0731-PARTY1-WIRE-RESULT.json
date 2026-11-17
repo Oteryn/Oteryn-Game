@@ -3,16 +3,18 @@
   "owner_contract": "protocol-oteryn/v1/party_v1.proto",
   "resource": "Party result payload",
   "unit": "bytes",
-  "hard_maximum": 8192,
+  "hard_maximum": 65536,
   "configurable_range": {
     "minimum": 8192,
-    "maximum": 8192
+    "maximum": 65536
   },
   "failure_category": "PARTY_UNAVAILABLE",
-  "allocation_impact": "Bounded basic party command/query; existing PARTYPVP0 bounds remain unchanged.",
+  "allocation_impact": "Negotiated result budget, not an arbitrary deployment setting: 65536 bytes only with selected PARTY_LIST_V1 (461); 8192 bytes otherwise, enforced by the peer-aware encoder. See protocol-oteryn/v1/party-list-v1.md.",
   "client_visible": true,
   "boundary_tests": [
-    "party_wire_bounds_and_malformed_inputs"
+    "party_wire_bounds_and_malformed_inputs",
+    "party_result_legacy_peer_enforces_8192_bytes",
+    "party_result_party_list_peer_supports_65536_bytes"
   ],
   "consumers": [
     "crates/protocol-oteryn/src/party.rs",

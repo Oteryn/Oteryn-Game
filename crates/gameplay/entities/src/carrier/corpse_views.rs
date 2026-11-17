@@ -1,6 +1,6 @@
 use super::*;
 
-/// MAP-ITEM-REF-1 Part B: the durable corpse Item a projected death materialized as. The Channel
+/// MAP-ITEM-REF-1 Part B: the durable corpse Item a projected death materialized as. The runtime
 /// owner binds it once the corpse's MINT has committed: KILL-REWARD part B calls
 /// [`ChannelRuntimeV1::bind_corpse_item`] with the item instance id `commit_corpse_mint` returned
 /// and the corpse's typed definition. Not durable, like the projection it belongs to: an unbound
@@ -37,9 +37,10 @@ impl ChannelActorCarrier {
         actor: ExactActorRef,
         item: RuntimeCorpseItem,
     ) -> Result<(), CarrierError> {
-        // A runtime projection alone never proves a committed Item MINT in
-        // Instance custody. That durable owner is not implemented yet.
-        self.channel_id()?;
+        // Crystal boss_lever.lua:241 and boss_lever_death.lua:1-39 retain
+        // the physical body in an isolated Instance too. The durable caller
+        // supplies the committed MINT; this projection independently requires
+        // the same exact scope, ownership generation and lethal occurrence.
         if actor.runtime_scope() != self.runtime_scope
             || actor.scope_generation() != self.scope_generation
             || !self
@@ -129,6 +130,7 @@ impl ChannelRuntimeV1 {
         production_key: &str,
         revision_ref: &str,
     ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
         self.carrier.bind_corpse_item_inner(
             actor,
             RuntimeCorpseItem {
@@ -164,10 +166,96 @@ impl ChannelRuntimeV1 {
             .retain(|pinned| held.contains(pinned));
     }
 
-    /// Whether `actor`'s corpse projection is pinned against eviction.
-    #[cfg(any(test, feature = "test-support"))]
+    /// Retain the canonical FIFO's one qualified rowless source corpse through
+    /// its copied handlers and physical MINT. Ordinary reward cleanup cannot
+    /// release this independent pin or consume its one-slot source capacity.
+    pub fn pin_uncredited_source_corpse_projection(
+        &mut self,
+        begin: &native_source_death::SourceCreatureDeathSeal,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if !begin.current_for(self)
+            || begin.uncredited_corpse_item_key().is_none()
+            || !self.next_source_creature_death()?.is_some_and(|notice| {
+                notice.actor() == begin.actor() && notice.death_key() == begin.death_key()
+            })
+            || !self.carrier.retains_corpse_projection(begin.actor())
+            || self
+                .carrier
+                .source_corpse_projection_pin
+                .as_ref()
+                .is_some_and(|retained| retained != begin)
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.carrier.source_corpse_projection_pin = Some(begin.clone());
+        Ok(())
+    }
+
+    /// Release only the retained source's exact completed task after the
+    /// physical writer bound its committed corpse; Unknown keeps the pin.
+    pub fn release_uncredited_source_corpse_projection(
+        &mut self,
+        completed: &native_source_death::SourceCreatureDeathCompletion,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        let corpse = completed
+            .begin()
+            .uncredited_corpse_item_key()
+            .ok_or(CarrierError::PlanConflict)?;
+        if !completed.current_for(self)
+            || self.carrier.source_corpse_projection_pin.as_ref() != Some(completed.begin())
+            || !self.carrier.corpse_item_bindings.iter().any(|binding| {
+                binding.actor == completed.actor()
+                    && binding.minted_item.family == "Item"
+                    && binding.minted_item.production_key == corpse
+                    && binding.minted_item.revision_ref == "definition-r1"
+            })
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        if corpse == "oteryn:item.tibia.i33891" {
+            // Its exact binding above proves the physical ACK. Mortal Essence
+            // stays a plain Ground Item, never an openable corpse projection.
+            self.carrier
+                .corpse_item_bindings
+                .retain(|binding| binding.actor != completed.actor());
+        }
+        self.carrier.source_corpse_projection_pin = None;
+        Ok(())
+    }
+
+    /// Release a completed source after its physical writer has reconciled a
+    /// terminal refusal to no MINT. The dispatch owner retains that proof;
+    /// neither an Unknown outcome nor a capacity error alone permits this call.
+    /// An existing Item binding always wins over a claimed absence.
+    pub fn release_unminted_source_corpse_projection(
+        &mut self,
+        completed: &native_source_death::SourceCreatureDeathCompletion,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if !completed.current_for(self)
+            || self.carrier.source_corpse_projection_pin.as_ref() != Some(completed.begin())
+            || self
+                .carrier
+                .corpse_item_bindings
+                .iter()
+                .any(|binding| binding.actor == completed.actor())
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.carrier.source_corpse_projection_pin = None;
+        Ok(())
+    }
+
+    /// Whether `actor`'s corpse projection is pinned against production guardian eviction.
     pub fn corpse_projection_pinned(&self, actor: ExactActorRef) -> bool {
         self.carrier.corpse_projection_pins.contains(&actor)
+            || self
+                .carrier
+                .source_corpse_projection_pin
+                .as_ref()
+                .is_some_and(|seal| seal.actor() == actor)
     }
 
     /// Whether `actor`'s committed death is still projected and retained in this generation.

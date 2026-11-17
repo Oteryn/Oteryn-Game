@@ -1,0 +1,9 @@
+{
+  "mechanic": "0232-team-finder-members",
+  "status": "supported",
+  "kind": "keybindings",
+  "id": "0232-team-finder-members-open",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+T",
+  "entry": "input.rs::open_key"
+}

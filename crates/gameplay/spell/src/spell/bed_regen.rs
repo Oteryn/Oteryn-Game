@@ -18,13 +18,19 @@ impl PlayerSpellState {
 
     /// Restore only on creation of a fresh actor; a reconnect retains its live state.
     pub fn restore_bed_rest(&mut self, rest: [u32; 4], now_us: u64) -> Option<()> {
-        if rest[1] > 1_200_000 || rest[2] > 12_000 || rest[3] > 6_000 {
+        if rest[0] > oteryn_protocol_oteryn::actor_spell::MAX_SOUL
+            || rest[1] > 1_200_000
+            || rest[2] > 12_000
+            || rest[3] > 6_000
+        {
             return None;
         }
         if rest[1] > 0 {
             super::actor_conditions::restore_bed_food(self, rest[1], now_us / 1000)?;
         }
-        self.soul = rest[0].min(self.facts.max_soul);
+        // Fresh actors start with base maxima before current promotion/Premium is
+        // projected. Restoring saved Soul is not a gain and must preserve its pool.
+        self.soul = rest[0];
         self.regen_health_ms = rest[2];
         self.regen_mana_ms = rest[3];
         Some(())

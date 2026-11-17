@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.primal_ordeal_quest",
+  "tracks": [],
+  "rules": [
+    {
+      "creature": "oteryn:creature.magma_bubble",
+      "transition": "oteryn:quest-transition/quest/u12_90/primal_ordeal/bosses/magma_bubble_killed/creature_event_1",
+      "room": null,
+      "define_transition": false,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_90/primal_ordeal/bosses/magma_bubble_killed",
+          "from": {
+            "kind": "lt",
+            "value": 1
+          },
+          "set": 1,
+          "default": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua:12-23"
+      ]
+    },
+    {
+      "creature": "oteryn:creature.the_primal_menace",
+      "transition": "oteryn:quest-transition/quest/u12_90/primal_ordeal/bosses/the_primal_menace_killed/creature_event_1",
+      "room": null,
+      "define_transition": false,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/quest/u12_90/primal_ordeal/bosses/the_primal_menace_killed",
+          "from": {
+            "kind": "lt",
+            "value": 1
+          },
+          "set": 1,
+          "default": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua:4-18"
+      ]
+    }
+  ],
+  "runtime_enabled": false,
+  "scope": {
+    "disposition": "left_out",
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590527568",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "missing_functions": [
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_batch3_c.rs::capture",
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_batch3_c.rs::settle"
+    ],
+    "note": "Exact inactive donor source. The coordinator excludes the parser and kill-settlement adapter from this publication, including the test-only parser. No production loader or runtime consumer is registered.",
+    "future_adapter_review": "Do not map permanent ProgressionContextMismatch to Retry: it can block the ordered kill queue. This is recorded for the separate adapter PR, not fixed in this quest batch."
+  }
+}

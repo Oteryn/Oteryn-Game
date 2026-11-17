@@ -8,6 +8,8 @@ import argparse
 import copy
 import hashlib
 import json
+
+from native_profile_composition import encode_native_profile
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -260,7 +262,7 @@ def apply_native(root, generated, profile_path, manifest_path, order, canonical)
                 raise ValueError(f"WRITABLE_LEAF_CONFLICT:{key}:{field}") from error
         record["semantics"]["readable_writeable"] = group
     document["records"].sort(key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
+    raw = encode_native_profile(document)
     manifest = json.loads(generated[manifest_path])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(raw).hexdigest()
     # No partial output if a later row conflicts.

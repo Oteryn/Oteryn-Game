@@ -1,0 +1,18 @@
+{
+  "mechanic": "0462-support-intake",
+  "kind": "handlers",
+  "id": "0462-support-intake-crash",
+  "status": "supported",
+  "entry": "protocol.rs::submission",
+  "direction": "client_to_server",
+  "capability": 462,
+  "commands": [
+    6144
+  ],
+  "not_applicable": {
+    "settings": "Each submission requires fresh native dialog consent; no persistent opt-in.",
+    "input": "The native sign-in crash/survey dialogs queue reviewed previews for the next play session.",
+    "state": "Delivery state is the consented file, retained until durable acknowledgement.",
+    "view": "The existing native crash and survey dialogs show the exact preview and delivery consent."
+  }
+}

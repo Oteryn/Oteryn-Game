@@ -16,7 +16,7 @@ pub fn search(p: &mut DepotSearchPanel) -> Option<ServerMechanicCommand> {
     })
     .ok()
     .or_else(|| {
-        p.feedback = Some("Enter a valid item id".into());
+        p.feedback = Some(tr!("Enter a valid item id").into());
         None
     })?;
     request(p, command(payload))
@@ -46,7 +46,7 @@ pub fn apply_result(p: &mut DepotSearchPanel, r: &ServerMechanicResponse) {
         r.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) {
-        p.feedback = Some(format!("Server refused depot search: {:?}", r.status));
+        p.feedback = Some(lfmt!("Server refused depot search: {:?}", r.status));
         return;
     }
     match depot_search::decode_reply(&r.payload) {
@@ -54,7 +54,7 @@ pub fn apply_result(p: &mut DepotSearchPanel, r: &ServerMechanicResponse) {
             p.reply = Some(v);
             p.feedback = None
         }
-        Err(_) => p.feedback = Some("The server returned invalid depot results".into()),
+        Err(_) => p.feedback = Some(tr!("The server returned invalid depot results").into()),
     }
 }
 #[cfg(test)]

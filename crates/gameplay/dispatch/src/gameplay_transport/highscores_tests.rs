@@ -34,6 +34,7 @@ fn highscores_reply_for(page: Result<SnapshotPage, SnapshotError>) -> Highscores
 
 fn page(rows: Vec<SnapshotRow>, own_row: Option<SnapshotRow>) -> SnapshotPage {
     SnapshotPage {
+        own_page: None,
         snapshot: SnapshotInfo {
             snapshot_id: 300,
             category: 5,

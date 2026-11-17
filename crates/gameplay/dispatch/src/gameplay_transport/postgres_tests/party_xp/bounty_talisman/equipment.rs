@@ -211,7 +211,7 @@ pub(super) async fn equip_after_unworn_death(
         assert_eq!(
             owner.states.attack.lock().await.set_target(
                 &runtime,
-                owner.rooms.gate_auto_attack(),
+                owner.rooms().gate_auto_attack(),
                 actor,
                 session,
                 owner.owner_now(),

@@ -15,9 +15,10 @@ impl PlayLink {
             return false;
         }
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).boss_rewards.open = true;
         }
         true
@@ -32,6 +33,6 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::BossRewards(command)).is_err()
     {
         mailbox.boss_rewards.pending = false;
-        mailbox.boss_rewards.feedback = Some("The session has ended");
+        mailbox.boss_rewards.feedback = Some(tr!("The session has ended"));
     }
 }

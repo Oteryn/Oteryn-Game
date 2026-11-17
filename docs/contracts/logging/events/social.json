@@ -1,0 +1,80 @@
+{
+  "module": "social",
+  "owner": "crates",
+  "events": [
+    {
+      "event": "account_achievement_integrity_fault",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    },
+    {
+      "event": "enforcement_alarm",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "reason"
+      ],
+      "codes": [],
+      "note": "Bounded enforcement transport refusal, reconcile drift or overdue result; no payload or target identity."
+    },
+    {
+      "event": "platform_stream_failed",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "stream",
+        "reason"
+      ],
+      "codes": [],
+      "note": "Platform stream polling failed."
+    },
+    {
+      "event": "platform_stream_page",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "stream",
+        "applied",
+        "replayed",
+        "stale",
+        "skipped"
+      ],
+      "codes": [],
+      "note": "Platform stream page applied."
+    },
+    {
+      "event": "profile_b_alarm",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "operation",
+        "reason"
+      ],
+      "codes": [],
+      "note": "Bounded Profile-B transport/fence alarm; never identities, entitlements, payloads or credentials."
+    },
+    {
+      "event": "security_revocation_stream_failed",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "result"
+      ],
+      "codes": [],
+      "note": "P1-a failed stream read; current play continues. Contains no credential or identity."
+    },
+    {
+      "event": "security_revocation_stream_page",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "result"
+      ],
+      "codes": [],
+      "note": "P1-a successfully applied page, including empty. Contains no credential or identity."
+    }
+  ]
+}

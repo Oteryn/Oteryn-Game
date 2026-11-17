@@ -1,0 +1,15 @@
+{
+  "mechanic": "0054-training",
+  "kind": "handlers",
+  "id": "0054-training-command-66",
+  "status": "supported",
+  "commands": [
+    66
+  ],
+  "direction": "client_to_server",
+  "capability": 54,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "This panel has no persistent client settings."
+  }
+}

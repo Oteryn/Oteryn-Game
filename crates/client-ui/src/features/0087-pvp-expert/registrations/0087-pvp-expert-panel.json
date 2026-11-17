@@ -1,0 +1,7 @@
+{
+  "mechanic": "0087-pvp-expert",
+  "kind": "panels",
+  "id": "0087-pvp-expert-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

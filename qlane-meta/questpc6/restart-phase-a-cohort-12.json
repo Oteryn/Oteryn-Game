@@ -1,0 +1,122 @@
+{
+  "quest_catalogue_chests_phase_a_12_use_replay_and_refusal": {
+    "quests": [
+      "canary:quest/emperor_s_cookies_quest",
+      "canary:quest/life_ring_quest"
+    ],
+    "claims": {
+      "oteryn:reward-claim.quest.key.id3800": {
+        "claim": "oteryn:reward-claim.quest.key.id3800",
+        "placements": [
+          {
+            "position": {
+              "x": 32605,
+              "y": 31908,
+              "z": 3
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:112",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5003
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:394",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5003
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.key.id3802": {
+        "claim": "oteryn:reward-claim.quest.key.id3802",
+        "placements": [
+          {
+            "position": {
+              "x": 32599,
+              "y": 31923,
+              "z": 6
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:131",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5005
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:413",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5005
+              }
+            ]
+          }
+        ],
+        "reason": "requires exact World binding and native Item admission",
+        "status": "supported_unqualified"
+      },
+      "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies": {
+        "claim": "oteryn:reward-claim.quest.u6_1.emperors_cookies.rewards.cookies",
+        "placements": [
+          {
+            "position": {
+              "x": 32648,
+              "y": 31905,
+              "z": 3
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:120",
+                "reward_matches_current_source": true,
+                "server": "canary",
+                "unique_id": 5004
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:402",
+                "reward_matches_current_source": true,
+                "server": "crystalserver",
+                "unique_id": 5004
+              }
+            ]
+          }
+        ],
+        "reason": "quest_container_chests_key_attributes_are_atomic",
+        "status": "dispatch_pg_qualified"
+      },
+      "oteryn:reward-claim.kv.lifering": {
+        "claim": "oteryn:reward-claim.kv.lifering",
+        "placements": [
+          {
+            "position": {
+              "x": 32443,
+              "y": 32238,
+              "z": 11
+            },
+            "sources": [
+              {
+                "citation": "canary:data-otservbr-global/startup/tables/chest.lua:1308",
+                "reward_matches_current_source": false,
+                "server": "canary",
+                "unique_id": 6131
+              },
+              {
+                "citation": "crystal:data-global/startup/tables/chest.lua:1593",
+                "reward_matches_current_source": false,
+                "server": "crystalserver",
+                "unique_id": 6131
+              }
+            ]
+          }
+        ],
+        "reason": "quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal",
+        "status": "dispatch_pg_qualified"
+      }
+    }
+  }
+}

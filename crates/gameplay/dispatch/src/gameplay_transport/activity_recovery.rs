@@ -8,35 +8,42 @@ use oteryn_protocol_oteryn::activity_scope::{
     ActivityScope, ActivityScopeSnapshot, encode_activity_scope,
 };
 
+pub(super) fn projection_refusal(
+    error: crate::durability::DurabilityError,
+) -> super::connection::AdmissionRefusal {
+    match error {
+        crate::durability::DurabilityError::RootUnavailable => {
+            super::connection::AdmissionRefusal::Unavailable
+        }
+        _ => super::connection::AdmissionRefusal::Rejected,
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn note_activity_input(&self, admitted: AdmittedSession) -> bool {
+    pub(super) async fn note_activity_input(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<(), crate::durability::DurabilityError> {
         if !admitted
             .continuity
             .selected_capabilities
             .contains(oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1)
         {
-            return true;
+            return Ok(());
         }
         let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
-            return false;
+            return Err(crate::durability::DurabilityError::Unavailable);
         };
-        // This idempotent input receipt shares the root with background enrichment.
-        // Wait briefly for its holder, re-proving the same transport/fences on every
-        // attempt. Exhaustion and every non-busy error still refuse before dispatch.
-        super::AdmissionRetryBudget::for_command(self.root)
-            .retry_unavailable(async || {
+        // Re-prove the same transport/fences on every idempotent attempt, retaining
+        // the distinction between a transient holder failure and a lost fence.
+        let budget = super::AdmissionRetryBudget::for_foreground_command(self.root)?;
+        budget
+            .retry_command_guard(async || {
                 ActivityHandoffOwner::new(self.root.clone())
                     .note_transfer_input(self.holder, fence, controller.transport)
                     .await
-                    .map_err(|error| match error {
-                        crate::durability::DurabilityError::RootUnavailable => {
-                            super::connection::AdmissionRefusal::Unavailable
-                        }
-                        _ => super::connection::AdmissionRefusal::Rejected,
-                    })
             })
             .await
-            .is_ok()
     }
 
     /// After a real ClientResume this is the committed binding projected in the
@@ -65,8 +72,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         }
         let handoffs = ActivityHandoffOwner::new(self.root.clone());
-        let Some(candidate) = handoffs
-            .transfer_recovery(admitted.game_session_id)
+        let retry =
+            super::AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
+                .map_err(|_| ())?;
+        let Some(candidate) = retry
+            .retry_unavailable(async || {
+                self.root.await_ready().await.map_err(projection_refusal)?;
+                handoffs
+                    .transfer_recovery(admitted.game_session_id)
+                    .await
+                    .map_err(projection_refusal)
+            })
             .await
             .map_err(|_| ())?
         else {
@@ -84,8 +100,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(());
         }
-        let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
-            .current_session_at(admitted.game_session_id)
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let (current, _) = retry
+            .retry_unavailable(async || {
+                self.root.await_ready().await.map_err(projection_refusal)?;
+                store
+                    .current_session_at(admitted.game_session_id)
+                    .await
+                    .map_err(projection_refusal)
+            })
             .await
             .map_err(|_| ())?;
         if super::item_fence_of(current) != Some(fence)
@@ -139,6 +162,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         };
         encode_activity_scope(&ActivityScopeSnapshot {
+            requires_ack: false,
             // A return is its own immutable transition, as in the live barrier.
             // The group handoff remains separate authority/audit provenance.
             handoff: candidate.return_id.unwrap_or(candidate.handoff_id),

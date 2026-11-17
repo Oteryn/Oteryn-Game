@@ -1,0 +1,56 @@
+{
+  "batch_id": "elvenbane-exploration-ladder-2026-11-07",
+  "state": "GREEN_SOURCE_SLICE",
+  "lifecycle": "AUTHORING",
+  "scope": "Three earned exploration callbacks, generic fixed-ladder USE, six source-qualified static traversal profiles; not whole Elvenbane qualification.",
+  "base_sha": "3862d47bd",
+  "red": {
+    "postgres_version": 180006,
+    "basement_seconds": 73.42,
+    "ladder_use_seconds": 73.99,
+    "ladder_use_failure": "NothingToUse instead of Committed",
+    "frontier_seconds": 74.19,
+    "pacing_setup_seconds": 75.49,
+    "finding": "Fixture needed both paced13 and diagonal371 plus existing receipt runtime flag; assertions retained."
+  },
+  "green": {
+    "postgres_version": 180006,
+    "exploration_seconds": 88.74,
+    "exploration_marker_ms": 10498,
+    "authority_seconds": 5.19,
+    "defender_cases": 2,
+    "defenders_seconds": 84.39,
+    "atomic_seconds": 77.97,
+    "atomic_marker_ms": 131,
+    "check_seconds": 64,
+    "clippy_seconds": 146,
+    "scope": "quests, durability, dispatch, entities; all-targets/all-features clippy -D warnings; fmt PASS",
+    "source_tests": "4source tests GREEN9.318s after RED9.544s; exact native flags/class/custody/bindings; existing door assertions retained.",
+    "logs": {
+      "exploration": "/tmp/questpc2-r2-combined-exploration-link-recovered-pg.log",
+      "authority": "/tmp/questpc2-r2-traversal-authority-pg.log",
+      "defenders": "/tmp/questpc2-r2-traversal-defender-regression-pg.log",
+      "atomic": "/tmp/questpc2-r2-traversal-atomic-regression-pg.log",
+      "check": "/tmp/questpc2-r2-traversal-final-check.log",
+      "clippy": "/tmp/questpc2-r2-traversal-final-clippy.log",
+      "annihilator": "/tmp/questpc2-r2-traversal-annihilator-regression-pg.log",
+      "pin_check": "/tmp/questpc2-r2-traversal-pin-check.log"
+    },
+    "annihilator_seconds": 107.7,
+    "annihilator_marker_ms": 107185,
+    "pin_check": "PASS",
+    "world_pin_digest": "32170e60e0f946dd1ba74dc68e45399579b85e66e819259a7adfef3bc5ad8502",
+    "pin_inputs_digest": "53806f56d1ee04d4b4ba877e419fd8c3be1ff83d9b58c03505a4906382d5ac5c"
+  },
+  "implementation": [
+    "Earn basement visit, independent poison crossing, then Dragon-floor phase2 through source protocol movement.",
+    "Typed native LADDER class, current source target visibility/revision, control/death/idle/world gate, native landing preference/PZ/occupancy/collision and existing stair cooldown; exact command replay retains full position.",
+    "Six new source profiles1626/1627/1634/1635/1948/21935; all3623 incoming profiles preserved byte-value unchanged.",
+    "Merged3718cc196 verified native defender goals/ordinary corpse and loot closure; retain incoming ownership skips. Scoped repository regeneration write/check43 each PASS."
+  ],
+  "self_review": "Reviewed source class/resolution, asynchronous target recheck, native movement/PZ/cooldown, phase ordering, replay, immutable source geometry and profile preservation. No test weakened, no workflow/tools/repository edits, no full suites/PR/readiness claim.",
+  "pending": [
+    "Whole Elvenbane: activate exact native goals, earned wire combat six defenders, atomic seven-item treasure/replay and source exit.",
+    "Strengthen/combine native-goal transaction ownership as needed before whole-quest qualification."
+  ]
+}

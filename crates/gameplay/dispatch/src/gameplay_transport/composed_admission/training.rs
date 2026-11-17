@@ -14,7 +14,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         death: actor_spell::PlayerDeath,
         releasing: bool,
     ) -> bool {
-        if !self.stop_timed_actor(actor, session).await {
+        if !self.reconcile_pending_item_effects(actor, session).await
+            || !self.stop_timed_actor(actor, session).await
+        {
             return false;
         }
         if !super::super::item_use::gourmet::checkpoint(self, actor, session, true).await {

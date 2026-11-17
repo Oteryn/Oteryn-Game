@@ -1,6 +1,12 @@
 // Included topic files share this module so test paths and private access stay stable.
+#[path = "tests/buffered_step_recovery.rs"]
+mod buffered_step_recovery;
+
 #[path = "tests/capability_tests.rs"]
 mod capability_tests;
+
+#[path = "tests/guard_deferral.rs"]
+mod guard_deferral;
 
 #[path = "tests/hotkey_coalescing.rs"]
 mod hotkey_coalescing;
@@ -31,6 +37,11 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 
 #[path = "tests/support.rs"]
 mod support;
+
+#[path = "tests/source_positions.rs"]
+mod source_positions;
+#[path = "tests/spell_catalog.rs"]
+mod spell_catalog;
 use support::*;
 
 include!("../step_dispatch_fixture.rs");
@@ -50,3 +61,29 @@ include!("tests/spell_vitals.rs");
 include!("tests/spell_resume.rs");
 include!("tests/achievements_highscores.rs");
 include!("tests/notices.rs");
+
+#[tokio::test]
+async fn malformed_frame_yields_protocol_error_then_close() -> Result<(), Box<dyn Error>> {
+    let (mut client, mut server) = tokio::io::duplex(256);
+    let admitted = positioned()?;
+    let task = tokio::spawn(async move { hold_admitted(&mut server, admitted).await });
+
+    // A zero body length is forbidden by FND-02 framing.
+    client.write_all(&0_u32.to_be_bytes()).await?;
+    client.shutdown().await?;
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
+    let frames = split_frames(&output)?;
+    assert_eq!(frames.len(), 1);
+    let envelope = decode_wire_envelope(&frames[0])?;
+    assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+    assert_eq!(
+        oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?.error_code,
+        FoundationProtocolError::MalformedFrame.code()
+    );
+    assert!(matches!(
+        task.await?,
+        ConnectionEnd::AdmittedThenClosed(_, FoundationProtocolError::MalformedFrame)
+    ));
+    Ok(())
+}

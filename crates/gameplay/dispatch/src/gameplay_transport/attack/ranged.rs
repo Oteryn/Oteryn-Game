@@ -294,7 +294,13 @@ impl RangedLoadout {
         }
     }
     pub(super) fn split(&self, damage: i64) -> Option<(i64, i64, Element)> {
-        match self.damage {
+        self.damage.split(damage)
+    }
+}
+
+impl RangedDamage {
+    fn split(self, damage: i64) -> Option<(i64, i64, Element)> {
+        match self {
             RangedDamage::Magic { element, .. } => Some((0, damage, element)),
             RangedDamage::Distance {
                 attack,
@@ -438,6 +444,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(_) => {
                 let attempt = window.install();
+                states.analyser.supplies(
+                    attempt.actor,
+                    attempt.session,
+                    &attempt.request.operations,
+                );
                 if !states.commit(runtime, attempt.actor, attempt.session, attempt.paid) {
                     return false;
                 }
@@ -493,25 +504,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let pass = self.root.try_issue_semantic_pass().ok()?;
         let mut context = (self, permit, &*runtime, objects, room, content);
         let equipment = ranged.equipment.clone();
-        let projectile = match ranged.consumption {
-            Consumption::Always => ranged.projectile.clone(),
-            Consumption::Never => None,
-            Consumption::Break(chance) => {
-                let root = GameplayDecisionRoot::from_bytes(content.source_digest());
-                let draw = swing_draw(
-                    &root,
-                    entry.actor,
-                    selected.swing.lineage,
-                    selected.ordinal,
-                    b"break",
-                    "attack.break",
-                    0,
-                    99,
-                )?;
-                if i64::from(chance) > draw {
-                    ranged.projectile.clone()
-                } else {
-                    None
+        let projectile = if runtime.is_tibiadrome(entry.actor)
+            && ranged
+                .projectile
+                .as_ref()
+                .is_some_and(|p| p.item_instance_id != ranged.weapon.item_instance_id)
+        {
+            None
+        } else {
+            match ranged.consumption {
+                Consumption::Always => ranged.projectile.clone(),
+                Consumption::Never => None,
+                Consumption::Break(chance) => {
+                    let root = GameplayDecisionRoot::from_bytes(content.source_digest());
+                    let draw = swing_draw(
+                        &root,
+                        entry.actor,
+                        selected.swing.lineage,
+                        selected.ordinal,
+                        b"break",
+                        "attack.break",
+                        0,
+                        99,
+                    )?;
+                    if i64::from(chance) > draw {
+                        ranged.projectile.clone()
+                    } else {
+                        None
+                    }
                 }
             }
         };
@@ -538,21 +558,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let eq_authority = equipment_owner::assert_equipment_authority_in_transaction(
+                    let actual = equipment_owner::read_current_equipment_in_transaction(
                         &mut tx,
                         owner.root,
                         owner.character,
                         owner.holder,
                         &fence,
-                        command,
                         content.source_digest(),
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    let actual =
-                        equipment_owner::read_equipment_in_transaction(&mut tx, &eq_authority)
-                            .await
-                            .map_err(|_| DurabilityError::Unavailable)?;
                     if actual != equipment {
                         return Err(DurabilityError::Unavailable);
                     }
@@ -740,6 +755,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut attack = self.states.attack.lock().await;
         let attempt = window.install();
+        states
+            .analyser
+            .supplies(attempt.actor, attempt.session, &attempt.request.operations);
         // Receipt reconciliation releases the item reservation. It never delivers a late hit.
         if states.commit(&runtime, attempt.actor, attempt.session, attempt.paid)
             && let Some(index) = attack.index(attempt.actor, attempt.session)
@@ -776,8 +794,12 @@ pub(super) fn train_distance(
 pub(super) fn immune(
     ranged: &RangedLoadout,
     policy: &crate::content::creature_policy::CompiledCreaturePolicy,
+    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
 ) -> bool {
-    let (physical, elemental, element) = ranged.split(100).unwrap_or((0, 0, Element::Physical));
+    let (physical, elemental, element) = ranged
+        .split(100)
+        .and_then(|(p, s, e)| offence.convert_physical(p, s, e))
+        .unwrap_or((0, 0, Element::Physical));
     (physical == 0 || policy.damage_immunities.iter().any(|key| key == "physical"))
         && (elemental == 0
             || policy
@@ -797,10 +819,24 @@ fn element_key(element: Element) -> &'static str {
     }
 }
 
+fn resolved_damage(
+    damage: RangedDamage,
+    magnitude: i64,
+    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+) -> Option<(i64, i64, Element)> {
+    let (primary, secondary, element) = damage.split(magnitude)?;
+    offence.convert_physical(primary, secondary, element)
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "keep independent weapon, target, decision, native health, Cruelty and Wheel inputs explicit"
+)]
 pub(super) fn creature_damage(
     ranged: &RangedLoadout,
     policy: &crate::content::creature_policy::CompiledCreaturePolicy,
     damage: i64,
+    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
     (root, constants, actor, lineage, ordinal): (
         &GameplayDecisionRoot,
         &AttackConstants,
@@ -808,8 +844,10 @@ pub(super) fn creature_damage(
         CommandRef,
         u16,
     ),
+    cruelty_drain: Option<u64>,
+    health_change: Option<&crate::foundation::NativeHealthChangeObservation>,
     wheel: Option<(&crate::spell::cast::PlayerSpellState, u64, u64, u64, bool)>,
-) -> Option<[i64; 2]> {
+) -> Option<([i64; 2], Element)> {
     use oteryn_gameplay_combat_rules::resolution::{
         creature_damage_response_with_reduction, swing_mitigated,
     };
@@ -820,7 +858,7 @@ pub(super) fn creature_damage(
             && state.wheel_equipment().and_then(|hands| hands.ammunition())
                 == Some(crate::content::ReferenceAmmoType::Arrow)
     });
-    let (physical, elemental, element) = ranged.split(damage)?;
+    let (physical, elemental, element) = resolved_damage(ranged.damage, damage, offence)?;
     let physical = if physical > 0 {
         let physical = swing_mitigated(
             root,
@@ -844,7 +882,7 @@ pub(super) fn creature_damage(
     } else {
         0
     };
-    let element = match element {
+    let element_key = match element {
         Element::Physical => "physical",
         Element::Death => "death",
         Element::Earth => "earth",
@@ -855,9 +893,20 @@ pub(super) fn creature_damage(
     let elemental = creature_damage_response_with_reduction(
         policy,
         elemental,
-        element,
-        if bow && element == "physical" { 2 } else { 0 },
+        element_key,
+        if bow && element_key == "physical" {
+            2
+        } else {
+            0
+        },
     )?;
+    let [physical, elemental] =
+        native_health_primary_components(ranged.damage, [physical, elemental], health_change)?;
+    let physical = super::cruelty_health_component(physical, cruelty_drain)?;
+    let elemental = super::cruelty_health_component(elemental, cruelty_drain)?;
+    if cruelty_drain.is_some() && physical == 0 && elemental == 0 {
+        return Some(([0, 0], element));
+    }
     let (physical, elemental) = if let Some((state, now, health, maximum, adjacent)) = wheel {
         if matches!(ranged.damage, RangedDamage::Magic { .. }) {
             let (primary, _) = state
@@ -871,7 +920,30 @@ pub(super) fn creature_damage(
     } else {
         (physical, elemental)
     };
-    Some([physical, elemental])
+    Some(([physical, elemental], element))
+}
+
+// Distance weapons keep their elemental contribution in the secondary slot;
+// wands/rods store their ONLY primary in the elemental slot instead.
+fn native_health_primary_components(
+    damage: RangedDamage,
+    [physical, elemental]: [i64; 2],
+    observation: Option<&crate::foundation::NativeHealthChangeObservation>,
+) -> Option<[i64; 2]> {
+    let Some(observation) = observation else {
+        return Some([physical, elemental]);
+    };
+    let primary = |value: i64| {
+        observation
+            .primary(value.checked_neg()?)
+            .ok()?
+            .checked_neg()
+    };
+    if matches!(damage, RangedDamage::Magic { .. }) {
+        Some([physical, primary(elemental)?])
+    } else {
+        Some([primary(physical)?, elemental])
+    }
 }
 
 #[cfg(test)]
@@ -892,7 +964,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(|a| a.native_gameplay())
             .ok_or("content")?;
-        let room = self.rooms.gate_auto_attack().ok_or("room")?;
+        let room = self.rooms().gate_auto_attack().ok_or("room")?;
         let constants = AttackConstants::checked_in().ok_or("constants")?;
         let selected = super::drain::select_swing(
             entry,
@@ -939,9 +1011,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+pub(super) fn analyser_element(
+    element: Element,
+) -> oteryn_protocol_oteryn::damage_element::DamageElement {
+    use oteryn_protocol_oteryn::damage_element::DamageElement as D;
+    match element {
+        Element::Physical => D::Physical,
+        Element::Death => D::Death,
+        Element::Earth => D::Earth,
+        Element::Energy => D::Energy,
+        Element::Fire => D::Fire,
+        Element::Ice => D::Ice,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn t174_converted_arrow_analyser_keeps_resolved_fire_element() -> Result<(), &'static str> {
+        let offence = oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence {
+            elemental_conversion: Some((Element::Fire, 50)),
+            ..Default::default()
+        };
+        let arrow = RangedDamage::Distance {
+            attack: 40,
+            elemental_attack: 0,
+            element: Element::Physical,
+            chance: 0,
+            cap: 100,
+            launcher_bonus: 0,
+        };
+        let (physical, elemental, element) =
+            resolved_damage(arrow, 100, &offence).ok_or("damage")?;
+        assert_eq!((physical, elemental), (50, 50));
+        assert_eq!(
+            analyser_element(element),
+            oteryn_protocol_oteryn::damage_element::DamageElement::Fire
+        );
+        Ok(())
+    }
+
     #[test]
     fn ranged_range_los_ammunition_and_mana_gates() {
         assert_eq!(
@@ -961,5 +1071,120 @@ mod tests {
             Err(ShotRefusal::NotEnoughMana)
         );
         assert_eq!(shot_gate(6, 4, true, true, 1, 1), Ok(()));
+    }
+    #[test]
+    fn srx3_actual_health_forgotten_keeps_ranged_secondary_and_selects_magic_primary()
+    -> Result<(), Box<dyn std::error::Error>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), String> {
+                let world = crate::content::native_gameplay_test_world_id()
+                    .map_err(|error| format!("{error:?}"))?;
+                let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../../content/spells.manifest.json");
+                let native =
+                    crate::content::native_gameplay::callback_native_policy_fixture_at(&manifest)
+                        .map_err(|error| format!("{error:?}"))?;
+                let id = |tag| {
+                    let mut bytes = [tag; 16];
+                    bytes[6] = 0x70;
+                    bytes[8] = 0x80;
+                    bytes
+                };
+                let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                    world,
+                    crate::foundation::ChannelId::decode(&id(101))
+                        .map_err(|error| format!("{error:?}"))?,
+                    crate::foundation::NodeId::decode(&id(102))
+                        .map_err(|error| format!("{error:?}"))?,
+                    1,
+                    1,
+                    1,
+                    "runtime-scope-assignment:1",
+                    2,
+                    crate::foundation::ChannelContentPin::from_activation(
+                        world,
+                        1,
+                        native.source_digest(),
+                        [2; 32],
+                        [3; 32],
+                        [4; 32],
+                        (100, 100, 7),
+                    ),
+                )
+                .map_err(|error| format!("{error:?}"))?;
+                runtime
+                    .install_companion_policies(native.policies().clone())
+                    .map_err(|error| format!("{error:?}"))?;
+                let key = "oteryn:creature.lady_tenebris";
+                let maximum = runtime
+                    .companion_policy(key)
+                    .map_err(|error| format!("{error:?}"))?
+                    .maximum_health;
+                let actor = runtime
+                    .admit_source_pinned_lab_creature(
+                        crate::foundation::MovementLocalPosition {
+                            x: 100,
+                            y: 100,
+                            floor: 7,
+                        },
+                        key,
+                        maximum,
+                    )
+                    .map_err(|error| format!("{error:?}"))?;
+                runtime
+                    .install_creature_policy(actor, key)
+                    .map_err(|error| format!("{error:?}"))?;
+                let observation = runtime
+                    .observe_native_health_change(
+                        actor,
+                        &|_: crate::foundation::ExactActorRef,
+                          _: crate::foundation::MovementPositionSnapshot| {
+                            None
+                        },
+                    )
+                    .map_err(|error| format!("{error:?}"))?
+                    .ok_or("actual attached native HealthForgotten observation")?;
+                runtime
+                    .validate_native_health_change_observation(&observation)
+                    .map_err(|error| format!("{error:?}"))?;
+                let distance = RangedDamage::Distance {
+                    attack: 31,
+                    elemental_attack: 11,
+                    element: Element::Fire,
+                    chance: 100,
+                    cap: 100,
+                    launcher_bonus: 0,
+                };
+                let magic = RangedDamage::Magic {
+                    min: 11,
+                    max: 11,
+                    element: Element::Fire,
+                    mana: 0,
+                };
+                assert_eq!(
+                    native_health_primary_components(distance, [31, 11], Some(&observation)),
+                    Some([62, 11]),
+                    "distance elemental contribution is SECONDARY and unchanged"
+                );
+                assert_eq!(
+                    native_health_primary_components(distance, [0, 11], Some(&observation)),
+                    Some([0, 11]),
+                    "a blocked primary cannot turn its secondary into a primary"
+                );
+                assert_eq!(
+                    native_health_primary_components(magic, [0, 11], Some(&observation)),
+                    Some([0, 22]),
+                    "wand/rod elemental slot is its only PRIMARY"
+                );
+                assert_eq!(
+                    native_health_primary_components(distance, [31, 11], None),
+                    Some([31, 11])
+                );
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "native ranged HealthForgotten worker panicked")?
+            .map_err(Into::into)
     }
 }

@@ -1,0 +1,9 @@
+{
+  "mechanic": "0003-npc-service",
+  "kind": "keybindings",
+  "id": "0003-npc-service-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+SHIFT+X",
+  "entry": "input.rs::open_key"
+}

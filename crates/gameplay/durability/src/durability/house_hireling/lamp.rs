@@ -1,5 +1,8 @@
 use super::super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::super::db::{begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction, lock_admission_relations};
+use super::super::db::{
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
+};
 use super::super::item_transfer::CurrentCharacterItemFence;
 use super::super::item_use::{self, ItemUseError, ItemUseInventory, ItemUseKind, ItemUseRequest};
 use super::super::runtime_scope_assignment::NodeIncarnationProof;
@@ -26,8 +29,9 @@ impl HirelingLampPlacement {
 }
 
 impl DurabilityRoot {
-    /// The same carried-tree projection as ordinary USE, after independent named House proof.
-    pub async fn read_hireling_use_inventory(
+    /// Actor-owned carried projection under the existing current House custody fence.
+    /// This read grants no service ACL and performs no later item mutation.
+    pub async fn read_house_carried_inventory(
         &self, authority: &ReconciledCharacterAuthority<'_, '_>, node: &NodeIncarnationProof,
         current: CurrentCharacterItemFence, origin_channel: [u8; 16],
     ) -> Result<ItemUseInventory, DurabilityError> {
@@ -37,9 +41,39 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
+            if fence::assert_house_custody_fence(&mut tx, &node, &current, origin_channel).await?.is_none() {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            item_use::reconcile_carried_death_tree(&mut tx, &current, &node, Some(origin_channel)).await?;
+            let row = sqlx::query("SELECT content_revision,ruleset_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(current.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            let inventory = item_use::read_use_inventory(&mut tx, &current, row.try_get("content_revision")?, row.try_get("ruleset_revision")?)
+                .await.map_err(item_error)?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(inventory)
+        })).await
+    }
+
+    /// The same carried-tree projection as ordinary USE, after independent named House proof.
+    pub async fn read_hireling_use_inventory(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        current: CurrentCharacterItemFence,
+        origin_channel: [u8; 16],
+    ) -> Result<ItemUseInventory, DurabilityError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
             if !fence::assert_house_inventory_fence(&mut tx, &node, &current, origin_channel).await? {
                 return Err(DurabilityError::InvalidStoredState);
             }
+            item_use::reconcile_carried_death_tree(&mut tx, &current, &node, Some(origin_channel)).await?;
             let row = sqlx::query("SELECT content_revision,ruleset_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
                 .bind(current.character_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             let inventory = item_use::read_use_inventory(&mut tx, &current, row.try_get("content_revision")?, row.try_get("ruleset_revision")?)
@@ -52,19 +86,31 @@ impl DurabilityRoot {
     /// Consume the owned physical lamp and activate its identity atomically. A receipt replay
     /// returns the original outcome and does not reapply its obsolete runtime placement.
     pub async fn commit_hireling_lamp(
-        &self, authority: &ReconciledCharacterAuthority<'_, '_>, node: &NodeIncarnationProof,
-        current: CurrentCharacterItemFence, plan: HirelingLampPlacement,
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        current: CurrentCharacterItemFence,
+        plan: HirelingLampPlacement,
     ) -> Result<Reply, DurabilityError> {
         plan.item_use.validate().map_err(item_error)?;
-        plan.input.validate(plan.item_use.source_item_instance_id,plan.position)?;
-        if plan.house.is_empty() || plan.house.len() > 512 || !(-15..=0).contains(&plan.position.2)
-            || plan.item_use.kind != (ItemUseKind::HirelingLamp { origin_channel: plan.origin_channel })
+        plan.input
+            .validate(plan.item_use.source_item_instance_id, plan.position)?;
+        if plan.house.is_empty()
+            || plan.house.len() > 512
+            || !(-15..=0).contains(&plan.position.2)
+            || plan.item_use.kind
+                != (ItemUseKind::HirelingLamp {
+                    origin_channel: plan.origin_channel,
+                })
             || plan.item_use.source_quantity_before != 1
             || plan.item_use.source_definition.family != "Item"
-            || plan.item_use.source_definition.production_key != model::HIRELING_LAMP_KEY {
+            || plan.item_use.source_definition.production_key != model::HIRELING_LAMP_KEY
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
@@ -144,5 +190,8 @@ impl DurabilityRoot {
 }
 
 fn item_error(error: ItemUseError) -> DurabilityError {
-    match error { ItemUseError::Unavailable(error) => error, _ => DurabilityError::InvalidStoredState }
+    match error {
+        ItemUseError::Unavailable(error) => error,
+        _ => DurabilityError::InvalidStoredState,
+    }
 }

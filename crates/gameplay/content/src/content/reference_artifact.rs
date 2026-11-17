@@ -824,6 +824,11 @@ impl<'a> ReferencePlayableArtifactView<'a> {
         self.artifact_digest
     }
 
+    /// The authoritative World embedded in this immutable artifact.
+    pub const fn world_id(&self) -> WorldId {
+        self.metadata.world_id
+    }
+
     pub fn artifact_profile_id(&self) -> &'static str {
         self.profile.artifact_profile_id()
     }

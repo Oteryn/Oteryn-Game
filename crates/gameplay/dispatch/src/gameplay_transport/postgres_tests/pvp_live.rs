@@ -307,7 +307,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         if let Some(cells) = cells.as_ref() {
-            owner.movement_cells = cells;
+            owner.movement_cells = (cells).into();
         }
         let mut admitted = deps.admitted;
         let actor = deps.actor;

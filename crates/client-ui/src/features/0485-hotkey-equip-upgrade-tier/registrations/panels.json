@@ -1,0 +1,7 @@
+{
+  "mechanic": "0485-hotkey-equip-upgrade-tier",
+  "kind": "panels",
+  "id": "0485-hotkey-equip-upgrade-tier-panel",
+  "status": "supported",
+  "entry": "protocol.rs::equip_payload"
+}

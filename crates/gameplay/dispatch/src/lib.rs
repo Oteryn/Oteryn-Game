@@ -1,6 +1,7 @@
 //! ADR-0019 gameplay crate `oteryn-gameplay-dispatch`: modules moved verbatim from `oteryn-game-server` (re-exported there at the old path).
 
 pub mod gameplay_transport;
+pub mod observability;
 
 #[allow(unused_imports)]
 use oteryn_gameplay_admission_evidence as admission_evidence;
@@ -118,6 +119,7 @@ use oteryn_gameplay_social::chat;
 use oteryn_gameplay_social::interaction_chest_use;
 #[allow(unused_imports)]
 use oteryn_gameplay_social::party;
+use oteryn_gameplay_social::platform_streams;
 #[allow(unused_imports)]
 use oteryn_gameplay_social::premium;
 #[allow(unused_imports)]

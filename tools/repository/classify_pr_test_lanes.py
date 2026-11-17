@@ -891,6 +891,8 @@ def server_qualification_required(files, changed_count, complete=True) -> bool:
 WORLD_BUNDLE_INPUT_FILES = frozenset({
     "Cargo.toml", "Cargo.lock", "rust-toolchain.toml",
     "tools/content-schema/area-authoring/samples/crystal-world-towns-00ce02a5.json",
+    "content/encounters/world-changes/layers.json",
+    "content/encounters/world-changes/runtime.json",
 })
 WORLD_BUNDLE_INPUT_PREFIXES = (
     "content/world/",

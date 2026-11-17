@@ -1289,6 +1289,85 @@ fn build_writer_is_fenced_replayed_and_reconciled() -> TestResult {
     })
 }
 
+/// The root fixture uses the production WP3 profile. Distinct family values detect
+/// array ordering mistakes in both the INSERT and retained receipt projection.
+#[test]
+fn wp3_build_receipt_round_trips_every_family() -> TestResult {
+    fn scenario() -> TestResult {
+        run("wp3_build_families", async |h| {
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let after = DurableBuildState::new(
+                "none",
+                (2, 3),
+                [
+                    (11, 4),
+                    (12, 5),
+                    (13, 6),
+                    (14, 7),
+                    (15, 8),
+                    (16, 9),
+                    (17, 10),
+                ],
+            )
+            .map_err(debug)?;
+            let request = change(
+                62,
+                BuildCause::Training,
+                &DurableBuildState::default(),
+                &after,
+                None,
+            )?;
+            let first = h
+                .root
+                .commit_character_build(&authority, &h.node, fence(1)?, request.clone(), &TABLE)
+                .await
+                .map_err(debug)?;
+            let BuildCommitOutcome::Committed(receipt) = first else {
+                return Err(format!("unexpected first commit: {first:?}").into());
+            };
+            assert_eq!(receipt.before, DurableBuildState::default());
+            assert_eq!(receipt.after, after);
+            assert_eq!(receipt.committed_character_revision.get(), 2);
+            assert_eq!(
+                h.root
+                    .commit_character_build(&authority, &h.node, fence(1)?, request.clone(), &TABLE)
+                    .await
+                    .map_err(debug)?,
+                BuildCommitOutcome::AlreadyCommitted(receipt.clone())
+            );
+            assert_eq!(
+                h.root
+                    .reconcile_character_build(&authority, request.occurrence)
+                    .await
+                    .map_err(debug)?,
+                Some(receipt)
+            );
+            assert_eq!(
+                h.root
+                    .read_character_build_state(
+                        &authority,
+                        CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?
+                    )
+                    .await
+                    .map_err(debug)?,
+                after
+            );
+            Ok(())
+        })
+    }
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "WP3 build PG panic")??;
+    Ok(())
+}
+
 /// CHAR-REV-SEQ-1: a build change runs in the Character's revision slot. A write that bypassed
 /// the sequencer makes the next one fail closed with nothing written (the binding includes the
 /// revision, so it is not retried); the next request reloads the cursor.

@@ -1,0 +1,15 @@
+[
+  {
+    "mechanic": "local-lens-help",
+    "kind": "panels",
+    "id": "local-lens-help-panel",
+    "status": "supported",
+    "entry": "view.rs::help_text",
+    "not_applicable": {
+      "state": "Lens mode is a session-local on/off flag; nothing persists.",
+      "protocol": "Client-local help; no server message is sent or read.",
+      "input": "The Show Lens help action (Ctrl+H by default) is a utility custom hotkey.",
+      "settings": "The key is rebindable through the custom hotkey list."
+    }
+  }
+]

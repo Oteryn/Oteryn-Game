@@ -37,6 +37,17 @@ texts, random choices and achievements are later children.
   Duplicate legacy unique ids are server-scoped and recorded with every claim/position;
   validation rejects missing or stale collision diagnostics. Position bindings remain authoritative.
 
+## Poison Daggers target reward
+
+Poison Daggers Quest uses the target's two daggers and thirty poison arrows.
+The [Wiki quest](https://tibia.fandom.com/wiki/Poison_Daggers_Quest) and
+[spoiler](https://tibia.fandom.com/wiki/Poison_Daggers_Quest/Spoiler), captured
+2026-11-06, agree with both pinned donors' comments, while their numeric recipe
+contains only one dagger. `poison_daggers.py` corrects only UID6068 at the exact
+source position and recipe. It keeps the original donor in `source_variant`
+and emits two quantity1 children through the existing container reward owner.
+A changed source recipe, position or container fails closed.
+
 ## D277 charged source rewards
 
 Architect ruling [5933264015](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5933264015)
@@ -59,6 +70,49 @@ Build and committed validation recompute quantity and exact source diagnostics;
 forged normalization, missing diagnostics and false ready status are rejected.
 An explicit source list must contain the original reward binding; an empty, removed
 or moved binding is an error. Optional `None` is fixture consistency mode only.
+
+The finite questpc4 admission covers Time Ring UID6051 (50 charges), Troll Cave
+UID6039 (150), Wedding Ring UID6043 (200), and the Garlic Necklace in Triangle
+Tower UID6160. Each reward is one physical Item. The existing native Item profile
+must agree with the canonical physical/custody facts, exact identity and binding, default
+charges and portable admission. The existing timed Item owner interprets absent
+instance state as those full definition values. Partial charges, altered source
+positions, incompatible native profiles and other claims retain their holds.
+This qualification changes neither the source-wide Item catalogue nor the
+original source dispositions. The three leaf claims become ready; Triangle
+Tower gains a complete native bag recipe, preserving its two small sapphires
+and dwarven ring. No quest mission or access gate is implied by this admission.
+
+Capture the leaf source evidence and reproduce the dispatch fixtures from the
+exact Crystal revision using:
+
+```sh
+python3 tools/content-schema/reward-claim-authoring/capture_container_native_source.py --crystal <source-root> --questpc4 --check
+python3 tools/content-schema/quest-authoring/questpc4/build_reward_cases.py --crystal <source-root> --check
+```
+
+The fixture generator checks source UIDs, positions, appearances and every
+reward against the authored claims. Its 28 quest cohorts are exercised by the
+filtered dispatch library tests `source_quest_rewards`, including stale-fence
+refusal, duplicate replay, new-command refusal, reconstruction of the owner,
+exact custody and single-transaction audit rows. Shared choices (Troll Cave,
+Pits of Inferno and Thieves Guild) approach every alternate source box with real
+STEP commands and refuse it after the first claim, including refusal replay.
+The Annihilator's four choices also assert the exact source achievement grant
+through duplicate, alternate-choice and reconstructed-owner replay.
+Numbered key cases assert the exact source key number and mint transaction;
+authored book cases assert the persisted source text, initial revision and no
+player writer. Quest-linked chests use the existing catalogue/session and prove
+one consumed obligation and one quest receipt across reconstructed-owner replay.
+Explorer UID6078 explicitly retains canonical Item12510 under PR2770 Q5=A,
+with the pinned donor Item3208 difference preserved in its fixture citation.
+The fixtures qualify reward paths; whole quests with NPC missions or access
+puzzles need additional tests.
+
+Desert Dungeon UID6158 uses the same finite admission for its Protection Amulet's
+full 250 source charges. The complete green bag retains its Ring of Healing,
+Ankh and Magic Light Wand. All six required native Item profiles already existed;
+this admission changes none of them and preserves the historical SOURCE hold.
 
 ```sh
 cd tools/content-schema/reward-claim-authoring
@@ -117,3 +171,18 @@ python tools/content-schema/reward-claim-authoring/reward_claim_variant_migratio
 python tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content --check
 python tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py --check
 ```
+
+## Authored native selectors
+
+The runtime binder also accepts an explicitly authored `source_binding` with
+`project_position` and `native_ordinal` instead of `legacy_unique_ids`. The ordinal
+is zero based among top-level entries, excluding nested container contents. The
+binder verifies the exact cell, ordinal and `appearance_tibia_id` against the pinned
+base map. Missing entries, ambiguous palette appearances, mixed selector namespaces
+and malformed ordinals remain unserved. It never falls back from a missing donor UID.
+
+This selector uses the existing claim reservation, fenced mint and receipt replay
+owners. It does not supply stage progress or qualify a quest completion graph, and
+it changes no source charge or fluid rules. The source-pilot generator continues
+to emit its original donor selectors; authored records must declare their native
+selector explicitly in their own authoring input.

@@ -170,6 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     reset_epoch: self.reset_epoch,
                     actor_placement: actor.placement_identity(),
                     movement_revision: entered.revision(),
+                    party: Vec::new(),
                 },
             }
         };
@@ -245,8 +246,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
         });
         let at = local(boss.boss_position);
-        let spawn_open = self.movement_cells.index().lookup(
-            self.movement_cells.scope(),
+        let spawn_open = self.movement_cells().index().lookup(
+            self.movement_cells().scope(),
             crate::content::LogicalCell {
                 x: at.x,
                 y: at.y,
@@ -262,16 +263,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .companion_policy(&boss.creature_key)
             .ok()
             .filter(|policy| policy.definition_key == boss.creature_key);
-        let closed = crate::map::floor::BundleDoors(map.facts.doors());
-        let teleport = crate::map::floor::prepare_quest_callback_teleport(
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let teleport = crate::map::floor::prepare_quest_callback_teleport_facing(
             &runtime,
-            self.movement_cells,
+            self.movement_cells(),
             pending.actor,
             pending.session,
             pending.entered,
             local(boss.player_position),
             false,
             &closed,
+            None,
         );
         if qualified.is_none()
             || occupied
@@ -471,16 +473,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if before.position() == exit {
             return true;
         }
-        let closed = crate::map::floor::BundleDoors(map.facts.doors());
-        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+        let closed = crate::map::floor::BundleDoors(&map.facts);
+        let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport_facing(
             runtime,
-            self.movement_cells,
+            self.movement_cells(),
             actor,
             session,
             before,
             exit,
             false,
             &closed,
+            None,
         ) else {
             return false;
         };

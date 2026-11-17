@@ -176,8 +176,12 @@ fn admitted_empty_overlay_is_present_and_records_its_delivered_revision()
         assert_eq!(ended.continuity.overlay_revision, 0);
         admitted.continuity.overlay_revision = 7;
         let (end, frames) = drive_session(&authority, admitted, &[]).await?;
-        assert!(
-            frames.is_empty(),
+        assert_eq!(
+            frames,
+            [error_frame(
+                FoundationProtocolError::SessionJoinUnavailable,
+                admitted.continuity.connection_generation,
+            )],
             "an unavailable previous overlay must not publish empty"
         );
         let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {

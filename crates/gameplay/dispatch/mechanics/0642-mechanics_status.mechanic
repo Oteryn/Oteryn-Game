@@ -1,0 +1,8 @@
+name=mechanics_status
+commands=669
+transport=mechanics_status
+composed=mechanics_status
+authority=mechanics_status
+offer=639,mechanics_status::offered,mechanics_status_available
+[route]
+routing::mechanics_status::route(authority, &session.admitted, command).await

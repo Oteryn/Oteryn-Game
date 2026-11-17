@@ -21,6 +21,8 @@ use oteryn_protocol_oteryn::{
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+#[path = "wheel_allocation/atelier_v2.rs"]
+mod atelier_v2;
 #[path = "wheel_allocation/capacity.rs"]
 mod capacity;
 
@@ -29,12 +31,21 @@ async fn send(
     admitted: &mut AdmittedSession,
     body: &[u8],
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
+    send_kind(owner, admitted, wire::COMMAND_TYPE_WHEEL_ALLOCATION, body).await
+}
+
+async fn send_kind(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    command_type: u32,
+    body: &[u8],
+) -> TestResult<(CommandStatus, Vec<u8>)> {
     let command = admitted.continuity.next_command_id;
     let frame = encode_client_command(
         admitted.continuity.connection_generation,
         &ClientCommandValue {
             command_id: command,
-            command_type: wire::COMMAND_TYPE_WHEEL_ALLOCATION,
+            command_type,
             payload: body,
         },
     )
@@ -67,6 +78,27 @@ async fn send(
         }
     }
     Err(format!("Wheel result missing: {end:?}").into())
+}
+
+fn move_wheel_actor(
+    runtime: &mut crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    x: i32,
+    y: i32,
+) -> TestResult {
+    loop {
+        let before = runtime.read_actor_position(actor).map_err(debug)?;
+        let mut position = before.position();
+        assert_eq!(position.floor, -5);
+        if position.x != x {
+            position.x += (x - position.x).signum();
+        } else if position.y != y {
+            position.y += (y - position.y).signum();
+        } else {
+            return Ok(());
+        }
+        runtime.borrow_movement_position().commit_cardinal(before, position).map_err(debug)?;
+    }
 }
 
 fn next_fresh_wheel_action(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
@@ -110,6 +142,11 @@ fn wheel_allocation_postgres_gift_trigger_snapshot_receipts_and_relogin() -> Tes
 }
 
 #[test]
+fn wheel_allocation_postgres_atelier_v2_replace_vessel_accepts_refuses_and_replays() -> TestResult {
+    run_wheel_case(Some(WheelExtensionCase::ReplaceVessel))
+}
+
+#[test]
 fn wheel_allocation_postgres_capacity_uses_current_allocation_and_live_premium_at_commit()
 -> TestResult {
     run_wheel_case(Some(WheelExtensionCase::Capacity))
@@ -121,6 +158,47 @@ enum WheelExtensionCase {
     Unsocket,
     Gift,
     Capacity,
+    ReplaceVessel,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum WheelCombatCase {
+    Unlocked,
+    Pve,
+    Pvp,
+    ProtectionZone,
+}
+
+#[test]
+fn wheel_pz_postgres_removal_outside_temple_without_lock() -> TestResult {
+    run_wheel_combat_case(WheelCombatCase::Unlocked)
+}
+
+#[test]
+fn wheel_pz_postgres_removal_refused_until_pve_expires() -> TestResult {
+    run_wheel_combat_case(WheelCombatCase::Pve)
+}
+
+#[test]
+fn wheel_pz_postgres_removal_refused_until_pvp_expires() -> TestResult {
+    run_wheel_combat_case(WheelCombatCase::Pvp)
+}
+
+#[test]
+fn wheel_pz_postgres_removal_in_non_temple_pz_while_in_fight() -> TestResult {
+    run_wheel_combat_case(WheelCombatCase::ProtectionZone)
+}
+
+fn run_wheel_combat_case(case: WheelCombatCase) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || scenario(None, Some(case)).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "Wheel combat PostgreSQL thread panic")??;
+    Ok(())
 }
 
 fn run_wheel_case(transition: Option<WheelExtensionCase>) -> TestResult {
@@ -129,13 +207,13 @@ fn run_wheel_case(transition: Option<WheelExtensionCase>) -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(transition).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(transition, None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Wheel live PostgreSQL thread panic")??;
     Ok(())
 }
 
-fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
+fn scenario(transition: Option<WheelExtensionCase>, combat: Option<WheelCombatCase>) -> TestResult {
     run(async |admin| {
         let h =
             Harness::create_with_admission_seed(admin, "wheel_live_dispatch", true, false).await?;
@@ -304,13 +382,11 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
         if let Some(transition) = transition {
             let initial = h.root.read_character_atelier(&authority, fence.character_id)
                 .await.map_err(debug)?.ok_or("initial Atelier")?;
+            // Gems have no domain. The full green slice unlocks three Gem Vessel nodes, so the
+            // Regular gem takes the first Regular slot; the legacy reply lists it first.
             let gem = initial.gems.values().find(|gem| {
-                gem.domain == oteryn_gameplay_progression::wheel::WheelDomain::Green
-                    && gem.quality == oteryn_gameplay_progression::atelier::GemQuality::Regular
-            }).ok_or("green initial gem")?;
-            let wrong_domain = initial.gems.values().find(|gem| {
-                gem.domain == oteryn_gameplay_progression::wheel::WheelDomain::Red
-            }).ok_or("red initial gem")?;
+                gem.quality == oteryn_gameplay_progression::atelier::GemQuality::Regular
+            }).ok_or("regular initial gem")?;
             let vessels = [Some(gem.id.to_be_bytes()), None, None, None];
             let save = wire::WheelAllocationRequest {
                 action: 1,
@@ -336,7 +412,7 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
             admitted.item_fence = Some(original_fence);
             // Crystal permits vessel replacement anywhere. No retained temple evidence is
             // needed when points are only added or kept (player_wheel.cpp:1763-1772).
-            let rooms = owner.rooms;
+            let rooms = owner.rooms.clone();
             owner.rooms = SeamRooms::new(None, None);
             assert_eq!(send(&owner, &mut admitted, &payload).await?, expected(false, 1, vessels)?);
             let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
@@ -349,16 +425,47 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
                 .await.map_err(debug)?.ok_or("socketed Atelier")?;
             assert!(stored.gems[&gem.id].vessel);
             assert_eq!(stored.gems.values().filter(|gem| gem.vessel).count(), 1);
-            for (seed, gem_id) in [(171, wrong_domain.id.to_be_bytes()), (172, id(199))] {
+            let socketed = gem.id.to_be_bytes();
+            for (seed, cells) in [
+                (171, [Some(socketed), Some(socketed), None, None]),
+                (172, [Some(id(199)), None, None, None]),
+            ] {
                 next_fresh_wheel_action(&mut owner)?;
                 let bad = wire::WheelAllocationRequest {
                     occurrence: id(seed),
                     expected_revision: 1,
-                    vessels: Some([Some(gem_id), None, None, None]),
+                    vessels: Some(cells),
                     ..save.clone()
                 };
-                assert_eq!(send(&owner, &mut admitted, &wire::encode_wheel_request(&bad).map_err(debug)?).await?,
-                    expected(true, 1, vessels)?, "wrong-domain or unowned gem refuses atomically");
+                if seed == 171 {
+                    // Duplicate identities are malformed on the wire, before the owner.
+                    assert!(wire::encode_wheel_request(&bad).is_err());
+                    let mut distinct = bad.clone();
+                    distinct.vessels = Some([Some(socketed), Some(id(199)), None, None]);
+                    let mut malformed = wire::encode_wheel_request(&distinct).map_err(debug)?;
+                    let offset = malformed.windows(16).position(|bytes| bytes == id(199))
+                        .ok_or("second vessel identity")?;
+                    malformed[offset..offset + 16].copy_from_slice(&socketed);
+                    assert_eq!(send(&owner, &mut admitted, &malformed).await?.0,
+                        CommandStatus::Rejected, "duplicated gems are rejected at ingress");
+                } else {
+                    assert_eq!(send(&owner, &mut admitted, &wire::encode_wheel_request(&bad).map_err(debug)?).await?,
+                        expected(true, 1, vessels)?, "an unowned gem refuses atomically");
+                }
+                assert_eq!(sqlx::query_scalar::<_, String>("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?, revision,
+                    "neither refusal changes the Character");
+            }
+            let stored = h.root.read_character_atelier(&authority, fence.character_id)
+                .await.map_err(debug)?.ok_or("socketed Atelier")?;
+            assert_eq!(stored.gems.values().filter(|gem| gem.vessel).count(), 1);
+            if matches!(transition, WheelExtensionCase::ReplaceVessel) {
+                atelier_v2::replace_vessel(&h, &mut owner, &mut admitted, socketed).await?;
+                eprintln!("WHEEL_REPLACE_VESSEL POSTGRES_CASE_COMPLETED");
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
             }
             next_fresh_wheel_action(&mut owner)?;
             let stale_revision = wire::WheelAllocationRequest { occurrence: id(173), ..save.clone() };
@@ -505,7 +612,9 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
                     assert_eq!(send(&restarted, &mut admitted, &[8, 0]).await?, reply(false, 2, points)?);
                     ([None; 4], 2)
                 }
-                WheelExtensionCase::Capacity => return Err("capacity case already handled".into()),
+                WheelExtensionCase::Capacity | WheelExtensionCase::ReplaceVessel => {
+                    return Err("case already handled".into());
+                }
             };
             let conflicting = wire::WheelAllocationRequest {
                 vessels: Some([None; 4]), ..save
@@ -525,7 +634,9 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
                 WheelExtensionCase::Socket => eprintln!("WHEEL_SOCKET POSTGRES_CASE_COMPLETED"),
                 WheelExtensionCase::Unsocket => eprintln!("WHEEL_UNSOCKET POSTGRES_CASE_COMPLETED"),
                 WheelExtensionCase::Gift => eprintln!("WHEEL_GIFT POSTGRES_CASE_COMPLETED"),
-                WheelExtensionCase::Capacity => return Err("capacity case already handled".into()),
+                WheelExtensionCase::Capacity | WheelExtensionCase::ReplaceVessel => {
+                    return Err("case already handled".into());
+                }
             }
             drop(restarted);
             drop(owner);
@@ -554,6 +665,74 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
             send(&owner, &mut admitted, &bytes).await?,
             reply(false, 1, points)?
         );
+        if let Some(case) = combat {
+            let in_pz = matches!(case, WheelCombatCase::ProtectionZone);
+            {
+                let mut runtime = owner.runtime.lock().await;
+                move_wheel_actor(&mut runtime, deps.actor, if in_pz { 2 } else { 0 }, if in_pz { 0 } else { 5 })?;
+                assert_eq!(
+                    crate::gameplay_transport::actor_spell::qualified_protection_zone(
+                        &mut runtime, owner.movement_cells(), deps.actor,
+                    ),
+                    Some(in_pz),
+                );
+                let source = deps.room.source_world().ok_or("source world")?;
+                assert!(!source.permits_wheel_removal(
+                    crate::content::LogicalCell {
+                        x: if in_pz { 2 } else { 0 },
+                        y: if in_pz { 0 } else { 5 },
+                        z: -5,
+                    },
+                    oteryn_gameplay_progression::wheel::TEMPLE_REMOVAL_HORIZONTAL_RANGE,
+                    oteryn_gameplay_progression::wheel::TEMPLE_REMOVAL_RADIUS,
+                ), "case must be outside the legacy temple rectangle");
+                if matches!(case, WheelCombatCase::Pve | WheelCombatCase::ProtectionZone) {
+                    owner.states.attack.lock().await.record_hit_taken(
+                        &runtime, deps.actor, session, owner.owner_now(),
+                    );
+                }
+            }
+            if matches!(case, WheelCombatCase::Pvp | WheelCombatCase::ProtectionZone) {
+                crate::gameplay_transport::pvp_live::lock_mut(
+                    &mut *owner.states.spell_states.lock().await, deps.actor, session,
+                ).on_aggression(owner.owner_now());
+            }
+            let fact = owner.combat_lock_fact(deps.actor, session).await;
+            assert_eq!(fact.pve_in_fight_until.is_some(), matches!(case, WheelCombatCase::Pve | WheelCombatCase::ProtectionZone));
+            assert_eq!(fact.pvp == crate::gameplay_transport::combat_lock_fact::PvpLockSource::LiveBlocked, matches!(case, WheelCombatCase::Pvp | WheelCombatCase::ProtectionZone));
+            next_fresh_wheel_action(&mut owner)?;
+            let mut removal = wire::WheelAllocationRequest {
+                action: 1,
+                occurrence: id(180),
+                expected_revision: 1,
+                points: [0; 36],
+                vessels: None,
+            };
+            let blocked = matches!(case, WheelCombatCase::Pve | WheelCombatCase::Pvp);
+            assert_eq!(
+                send(&owner, &mut admitted, &wire::encode_wheel_request(&removal).map_err(debug)?).await?,
+                if blocked { reply(true, 1, points)? } else { reply(false, 2, [0; 36])? },
+                "Wheel removal must follow the logout combat lock with the current PZ fact",
+            );
+            if blocked {
+                owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(61)).ok_or("expire combat lock")?;
+                let expired = owner.combat_lock_fact(deps.actor, session).await;
+                assert_eq!(expired.pve_in_fight_until, None);
+                assert_ne!(expired.pvp, crate::gameplay_transport::combat_lock_fact::PvpLockSource::LiveBlocked);
+                removal.action = 2;
+                removal.occurrence = id(181);
+                assert_eq!(
+                    send(&owner, &mut admitted, &wire::encode_wheel_request(&removal).map_err(debug)?).await?,
+                    reply(false, 2, [0; 36])?,
+                    "reset is permitted as soon as the lock expires",
+                );
+            }
+            eprintln!("WHEEL_PZ {case:?} POSTGRES_CASE_COMPLETED");
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         let (allocated_revision, allocated_vitals) = owner
             .observe_actor_vitals(deps.actor, session)
             .await
@@ -658,8 +837,15 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
             points: [0; 36],
             vessels: None,
         };
-        let rooms = owner.rooms;
+        let rooms = owner.rooms.clone();
         owner.rooms = SeamRooms::new(None, None);
+        {
+            let mut runtime = owner.runtime.lock().await;
+            move_wheel_actor(&mut runtime, deps.actor, 0, 5)?;
+            owner.states.attack.lock().await.record_hit_taken(
+                &runtime, deps.actor, session, owner.owner_now(),
+            );
+        }
         assert_eq!(
             send(
                 &owner,
@@ -668,9 +854,9 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
             )
             .await?,
             reply(true, 1, points)?,
-            "reset action cannot manufacture temple authority"
+            "reset action cannot bypass a running combat lock"
         );
-        owner.rooms = rooms;
+        owner.rooms = rooms.clone();
         // A fresh composed owner reloads the committed allocation through admission.
         let mut restarted = deps.owner(&h, &authority);
         restarted.active_generation = controller.active();

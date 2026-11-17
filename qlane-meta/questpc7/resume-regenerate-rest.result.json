@@ -1,0 +1,5 @@
+{
+  "command": "python3 -c import subprocess,sys; from pathlib import Path; commands=Path(\".questpc/generation-order.txt\").read_text().splitlines(); start=next(i for i,c in enumerate(commands) if c.endswith(\"grizzly_rooms.py\")); [subprocess.run(c.split(),check=True) for c in commands[start:-1]]; subprocess.run([\"/home/mole/oteryn-cache/venv-ci312/bin/python\",commands[-1].split()[1]],check=True)",
+  "exit": 0,
+  "duration_seconds": 499.492
+}

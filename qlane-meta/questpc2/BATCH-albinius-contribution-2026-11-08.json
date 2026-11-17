@@ -1,0 +1,81 @@
+{
+  "batch": "albinius-source-tome-contribution",
+  "state": "OWN MECHANIC GREEN; dispatch unit selection running under cadence exception",
+  "source_parent": "d1feaafe625281215acc71ed334dce651b706506",
+  "quest": "oteryn:quest.forgotten_knowledge_quest",
+  "whole_quest_qualified": false,
+  "qualification_scope": "Initial Albinius temple contribution only; portal/rune/shop/boss/reward composition remains unqualified.",
+  "source": {
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "path": "data-global/npc/albinius.lua:105-137",
+    "sha256": "1a476ee079849acee80dd99fb107ae5fd674c2d3c3343beed8002840d09cea18"
+  },
+  "postgres": {
+    "version_num": 180006,
+    "red_cases_seconds": [
+      45.946136951,
+      46.000766252,
+      44.965514807
+    ],
+    "red_errors": [
+      "combined source replies:0 instead of2",
+      "missing source contribution:[]",
+      "missing exact four-tome refusal"
+    ],
+    "green_cases_seconds": [
+      48.121325993,
+      48.162816023,
+      46.231552174
+    ],
+    "green_total_seconds": 94.35,
+    "passed": 3,
+    "fixture": "Existing fenced mint and transfer helper; no SQL quest progress seeds.",
+    "assertions": [
+      "four exact tomes plus another book cannot pay",
+      "five exact tomes consumed with one progress receipt",
+      "other book remains carried",
+      "stale/declined/tomes-info confirmations cannot pay",
+      "source success retains topic1 until already-donated reply",
+      "combined templeyes preserves independent-if order"
+    ]
+  },
+  "unit_tests": {
+    "quests_passed": 322,
+    "quest_seconds": 15.24,
+    "authorer_passed": 2,
+    "authorer_seconds": 1.022,
+    "dispatch_non_postgres": "RUNNING1613selection; no success claimed"
+  },
+  "checks": {
+    "workspace_all_targets": "PASS3m13s",
+    "clippy_changed_crates": "PASS2m26s incl queue",
+    "fmt": "PASS",
+    "generation": "PASS binding/matrix/equipment/audit/ledger283; Native profiles unchanged, no Item admission",
+    "world_pin_refresh": "PASS unchanged digest2f5895585ad48276acbad63bd32c2f65f020448dea7df51e76b47cd76d9ae21d",
+    "duplicate_migrations": "PASS; own1240-1244 unchanged"
+  },
+  "artifact_sha256": {
+    "program": "d83b3a8c149e6dca60c26b29ead12aeccc3d363802420be7209e820ba2ff72f2"
+  },
+  "logs": {
+    "/tmp/questpc2b-albinius-red-pg-5.log": "2394646f65238ce491d9b043dd1350446fa198bd28b3440f2ffcb10901d1a149",
+    "/tmp/questpc2b-albinius-green-pg.log": "ae517e2c97352bc79a5c85a7ff7acf3e93bd7898abcadc94a2b31b120cb6de18",
+    "/tmp/questpc2b-albinius-quest-units.log": "a91ca0b11a792d2e47d646b9639d1350f09c6e5a70ffb9b98f4b3c476ea3f6c3",
+    "/tmp/questpc2b-albinius-authorer.log": "383b65e3c334055e54d78ce961046eb1a62b0c843383f499acd1fc4df1b1050e",
+    "/tmp/questpc2b-albinius-workspace-check.log": "2c37f55e9f4e76a5061e9b38d2508e8e7cedf6624b3f8fad27efc002da6da467",
+    "/tmp/questpc2b-albinius-clippy.log": "9f6561c59fd621c94d4a097c5fae4390bcc74aaf49f0d08e8b844685148ee07c",
+    "/tmp/questpc2b-albinius-pin-refresh.log": "93d35b8ab2dd539edd5e2a785bbecc416b08c338c20a5f8455b47be6fbb3fdb0"
+  },
+  "main_integration": {
+    "sha": "3209d3d61",
+    "result": "CLEAN merge; five Rust/test files, no runtime content or generated input changes",
+    "workspace_all_targets": "PASS4m09s on combined tree",
+    "fmt": "PASS",
+    "own_mechanic_proof": "The3PG+322quest units+2authorer tests and clippy were green before this last main merge; no stronger post-merge test claim.",
+    "pending": [
+      "dispatch unit selection running against pre-main3209 binary",
+      "durability classification unit tests queued",
+      "changed-crate clippy recheck queued"
+    ]
+  }
+}

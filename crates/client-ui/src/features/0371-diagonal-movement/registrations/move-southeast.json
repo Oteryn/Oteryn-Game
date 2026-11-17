@@ -1,0 +1,9 @@
+{
+  "mechanic": "0371-diagonal-movement",
+  "kind": "keybindings",
+  "id": "0371-diagonal-movement-move-southeast",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "NUMPAD3",
+  "entry": "input.rs::default_diagonal_binding"
+}

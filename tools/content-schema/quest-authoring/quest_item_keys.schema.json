@@ -1,0 +1,98 @@
+{
+  "target_items": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "item": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "family",
+            "key",
+            "revision"
+          ],
+          "properties": {
+            "family": {
+              "const": "Item"
+            },
+            "key": {
+              "type": "string",
+              "pattern": "^oteryn:item\\.[a-z0-9_.-]+$"
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "item_resolution": {
+          "enum": [
+            "ambiguous",
+            "unresolved",
+            "not_an_item"
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "item"
+          ],
+          "not": {
+            "required": [
+              "item_resolution"
+            ]
+          }
+        },
+        {
+          "required": [
+            "item_resolution"
+          ],
+          "not": {
+            "required": [
+              "item"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "item": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "family",
+      "key",
+      "revision"
+    ],
+    "properties": {
+      "family": {
+        "const": "Item"
+      },
+      "key": {
+        "type": "string",
+        "pattern": "^oteryn:item\\.[a-z0-9_.-]+$"
+      },
+      "revision": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "item_resolution": {
+    "enum": [
+      "ambiguous",
+      "unresolved",
+      "not_an_item"
+    ]
+  }
+}

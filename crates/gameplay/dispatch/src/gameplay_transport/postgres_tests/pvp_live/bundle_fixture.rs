@@ -37,6 +37,7 @@ pub(super) fn world(
                 kind: TerrainKind::Ground,
                 walkable: Some(true),
                 ground_speed: Some(150),
+                blocks_projectile: None,
             }),
         }],
         draft_areas: vec![],

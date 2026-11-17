@@ -1,6 +1,6 @@
-use super::SCENARIO_LIVENESS;
 use super::super::TestResult;
 use super::super::fixture::{debug, id};
+use super::SCENARIO_LIVENESS;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::ExactActorRef;
 use crate::gameplay_transport::ComposedFreshAdmission;
@@ -12,7 +12,14 @@ use oteryn_protocol_oteryn::{CommandStatus, MessageType, item_view::ItemHandle, 
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 
 async fn send(client: &mut DuplexStream, command_id: u64, intent: StashIntent) -> TestResult {
-    let payload = encode_stash_intent(intent).map_err(debug)?;
+    let payload = encode_stash_query(
+        intent,
+        Some(&StashFilter {
+            search: "i3028".into(),
+            ..StashFilter::default()
+        }),
+    )
+    .map_err(debug)?;
     let frame = oteryn_protocol_oteryn::encode_client_command(
         1,
         &oteryn_protocol_oteryn::ClientCommandValue {
@@ -66,6 +73,9 @@ pub(super) async fn exercise(
     actor: ExactActorRef,
     fence: CurrentCharacterItemFence,
 ) -> TestResult {
+    // Production stash writes run as the runtime role; the admin role hid a missing
+    // UPDATE privilege on backpack slot rows (node boot run 79).
+    runtime_role(owner.root).await?;
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 37, 62, 153])
             .ok_or("stash capability")?;
@@ -242,12 +252,17 @@ pub(super) async fn exercise(
                     if delta.domain_id
                         == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
                     {
-                        let inventory = oteryn_protocol_oteryn::item_view::decode_character_inventory(
-                            delta.payload,
-                        )
-                        .map_err(debug)?;
+                        let inventory =
+                            oteryn_protocol_oteryn::item_view::decode_character_inventory(
+                                delta.payload,
+                            )
+                            .map_err(debug)?;
                         assert_eq!(
-                            inventory.entries.iter().map(|item| item.count.get()).sum::<u32>(),
+                            inventory
+                                .entries
+                                .iter()
+                                .map(|item| item.count.get())
+                                .sum::<u32>(),
                             300,
                         );
                         break;
@@ -616,5 +631,25 @@ pub(super) async fn exercise(
         replay.rows.is_empty(),
         "a historical receipt grants no locker access"
     );
+    Ok(())
+}
+
+/// Run the root's only connection as `oteryn_game_runtime`, as the node does.
+async fn runtime_role(root: &crate::durability::DurabilityRoot) -> TestResult {
+    let mut connection = root.try_acquire_ready()?;
+    sqlx::query("SET ROLE oteryn_game_runtime")
+        .execute(&mut *connection)
+        .await?;
+    let role: String = sqlx::query_scalar("SELECT current_user")
+        .fetch_one(&mut *connection)
+        .await?;
+    assert_eq!(role, "oteryn_game_runtime");
+    let returned = connection
+        .return_to_pool_observed_until(std::time::Instant::now() + std::time::Duration::from_secs(5))
+        .await;
+    assert!(matches!(
+        returned,
+        sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
+    ));
     Ok(())
 }

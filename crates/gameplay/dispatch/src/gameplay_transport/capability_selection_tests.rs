@@ -368,7 +368,17 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
             .ok_or("bundle-only capability")?;
         assert_eq!(entry["offered"].as_bool(), Some(false));
         let gate = entry["offer_gate"].as_str().ok_or("offer_gate")?;
-        assert!(gate.contains("BUNDLE_WORLD_OFFERED_CAPABILITIES"), "{id}");
+        if id == oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_OBJECT_APPEARANCE_V1 {
+            // SRX-3: this optional object field has a qualified native Bundle gate,
+            // independently of the generic Bundle offer-list gate.
+            assert_eq!(ids(&entry["requires"])?, [4, 6]);
+            assert_eq!(ids(&entry["command_types"])?, Vec::<u32>::new());
+            assert_eq!(ids(&entry["state_domains"])?, Vec::<u32>::new());
+            assert!(gate.starts_with("Qualified native Bundle offer;"));
+            assert!(gate.contains("optional domain1 object field15"));
+        } else {
+            assert!(gate.contains("BUNDLE_WORLD_OFFERED_CAPABILITIES"), "{id}");
+        }
     }
     let entry = registry
         .iter()
@@ -603,4 +613,41 @@ fn npc_wire_capability_3_is_registered_not_offered_and_gates_commands_7_and_8()
         assert!(written.contains(&rejected(2, 2)?));
         Ok(())
     })
+}
+
+#[test]
+fn house_extensions_keep_bundle_admission_and_dependency_closure() -> Result<(), Box<dyn Error>> {
+    for offers in [
+        PRODUCTION_OFFERED_CAPABILITIES,
+        ITEM_VIEW_OFFERED_CAPABILITIES,
+    ] {
+        assert!(offers.iter().all(|offer| ![445, 446].contains(&offer.id)));
+    }
+    let select = |supported: &[u32]| {
+        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, supported)
+            .ok_or("bounded House extension selection")
+    };
+    let unclosed = select(&[445, 446])?;
+    assert!(!unclosed.contains(445) && !unclosed.contains(446));
+    let without_house = select(&[4, 6, 12, 14, 445, 446])?;
+    assert!(!without_house.contains(445) && !without_house.contains(446));
+    let without_tree = select(&[49, 445, 446])?;
+    assert!(without_tree.contains(445) && !without_tree.contains(446));
+    let closed = select(&[4, 6, 12, 14, 49, 445, 446])?;
+    assert!(closed.contains(445) && closed.contains(446));
+    assert!(closed.command_selected(730));
+    assert!(!without_house.command_selected(730));
+    for id in [445, 446] {
+        let entry = registry_capabilities()?
+            .into_iter()
+            .find(|entry| entry["id"] == id)
+            .ok_or("House registry capability")?;
+        assert_eq!(entry["offered"], false);
+        assert!(
+            entry["offer_gate"]
+                .as_str()
+                .is_some_and(|gate| gate.contains("BUNDLE_WORLD_OFFERED_CAPABILITIES"))
+        );
+    }
+    Ok(())
 }

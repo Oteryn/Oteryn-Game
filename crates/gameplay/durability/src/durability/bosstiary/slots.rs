@@ -30,6 +30,10 @@ impl DurabilityRoot {
         let bytes = request
             .encode()
             .ok_or(CharacterProgressionError::InvalidInput)?;
+        let (request, detailed) = match request {
+            BossSlotRequest::Detailed(inner) => (*inner, true),
+            plain => (plain, false),
+        };
         if catalogue.len() > 1024 {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -75,10 +79,16 @@ impl DurabilityRoot {
             let points=rows.iter().try_fold(0_u32,|n,(_,_,p)|u32::try_from(*p).ok().and_then(|p|n.checked_add(p))).ok_or(DurabilityError::InvalidStoredState)?;
             let qualifies=|key:&str|catalogue.iter().find(|b|b.key==key).and_then(|b|rows.iter().find(|r|r.0==key).and_then(|r|u64::try_from(r.1).ok()).and_then(|n|progress(&b.category,n))).is_some_and(|p|p.stage>=1);
             let prowess=rows.iter().any(|r|r.0!=boosted && qualifies(&r.0));
-            let mut reply=BossSlotReply {status:0,unlocked:u8::from(slot_unlocked(1,points,prowess)) | (u8::from(slot_unlocked(2,points,prowess))<<1),bonus:loot_bonus_percent(points,false),points,remove_fee:remove_fee(removals),ready_at_ms:ready,bosses:bosses.clone()};
+            let display_points=if detailed {
+                let n:i64=sqlx::query_scalar("SELECT COALESCE(sum(boss_points),0)::bigint FROM game_character_bosstiary_progress WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+                u32::try_from(n).map_err(|_|DurabilityError::InvalidStoredState)?
+            }else{points};
+            let details=|assigned:&[String;2]| detailed.then(||slot_details(assigned,&catalogue,&rows,display_points,&boosted,now));
+            let mut reply=BossSlotReply {details:details(&bosses),status:0,unlocked:u8::from(slot_unlocked(1,points,prowess)) | (u8::from(slot_unlocked(2,points,prowess))<<1),bonus:loot_bonus_percent(points,false),points,remove_fee:remove_fee(removals),ready_at_ms:ready,bosses:bosses.clone()};
             let unchanged=reply.clone();
             let mut paid=0;
             match &request {
+                BossSlotRequest::Detailed(_)=>return Ok(Err(CharacterProgressionError::InvalidInput)),
                 BossSlotRequest::Query=>{tx.commit(deadline).await?;return Ok(Ok(reply));}
                 BossSlotRequest::Equip {slot,boss}=>{
                     let at=usize::from(*slot-1);
@@ -96,7 +106,7 @@ impl DurabilityRoot {
             if reply.status!=0 {return Ok(Ok(reply));}
             // Crystal game.cpp:11068-11093, config.lua.dist:469: UI action cooldown 500-10ms.
             ready=now.checked_add(490).ok_or(DurabilityError::InvalidStoredState)?;
-            reply.bosses=bosses.clone();reply.ready_at_ms=ready;reply.remove_fee=remove_fee(removals);
+            reply.details=details(&bosses);reply.bosses=bosses.clone();reply.ready_at_ms=ready;reply.remove_fee=remove_fee(removals);
             let after=json!({"bosses":bosses,"removals":removals,"epoch":epoch,"ready":ready});
             let transaction=fee.as_ref().filter(|_|paid>0).map(|f|f.transaction_id);
             sqlx::query("INSERT INTO game_character_boss_slot_operations(character_id,occurrence_id,ordinal,request,reply,state_before,state_after,fee_gold,fee_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,COALESCE((SELECT max(ordinal)+1 FROM game_character_boss_slot_operations WHERE character_id=encode($1,'hex')::uuid),1),$3,$4,$5,$6,$7,CASE WHEN $8::bytea IS NULL THEN NULL ELSE encode($8,'hex')::uuid END)")
@@ -167,3 +177,6 @@ impl DurabilityRoot {
         })).await
     }
 }
+
+mod details;
+use details::slot_details;

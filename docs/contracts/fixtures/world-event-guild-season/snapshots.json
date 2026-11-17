@@ -1,0 +1,67 @@
+{
+  "vectors": [
+    {
+      "name": "advance_schedule",
+      "wire": "{\"contract_version\":1,\"operation\":\"PublishWorldEventOutcomeV1\",\"source_authority\":\"oteryn:game:primary\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"event_id\":\"0192a000-0000-7000-8000-000000000040\",\"projection_epoch\":\"3\",\"projection_revision\":\"1\",\"source_observed_at\":\"1790000000\",\"event\":[{\"kind\":\"RAID\",\"source_key\":\"fixture:approved-raid\",\"occurrence_id\":\"0192a000-0000-7000-8000-000000000041\",\"ruleset_revision\":\"fixture:raid-result-v1\",\"content_sha256\":\"2b0651992ab2137dafbfbf37f6d5358419c0917b9833465a89bba63b49e2fe51\",\"scheduled_start\":\"1790000100\",\"scheduled_end\":\"1790000200\",\"lock_at\":\"1790000090\",\"options\":[\"completed\",\"timed-out\"],\"state\":\"SCHEDULED\",\"outcome\":[],\"decided_at\":[],\"correction_of\":[],\"reason_code\":\"NONE\",\"evidence_sha256\":[]}]}",
+      "sha256": "f2bf6bc70665fe14e5a4d430d5252e3a1f08356d4817a2dc081682bbf1833012",
+      "expect": "submissions require fresh family watermark and now+1 < lock_at"
+    },
+    {
+      "name": "settlement",
+      "wire": "{\"contract_version\":1,\"operation\":\"PublishWorldEventOutcomeV1\",\"source_authority\":\"oteryn:game:primary\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"event_id\":\"0192a000-0000-7000-8000-000000000040\",\"projection_epoch\":\"3\",\"projection_revision\":\"2\",\"source_observed_at\":\"1790000200\",\"event\":[{\"kind\":\"RAID\",\"source_key\":\"fixture:approved-raid\",\"occurrence_id\":\"0192a000-0000-7000-8000-000000000041\",\"ruleset_revision\":\"fixture:raid-result-v1\",\"content_sha256\":\"2b0651992ab2137dafbfbf37f6d5358419c0917b9833465a89bba63b49e2fe51\",\"scheduled_start\":\"1790000100\",\"scheduled_end\":\"1790000200\",\"lock_at\":\"1790000090\",\"options\":[\"completed\",\"timed-out\"],\"state\":\"SETTLED\",\"outcome\":[\"completed\"],\"decided_at\":[\"1790000200\"],\"correction_of\":[],\"reason_code\":\"NATIVE_RESULT\",\"evidence_sha256\":[\"1a21174f6bb3c2c0c7111bc7babae10659b8c9b1dc56f251cb0e0f45c46b6219\"]}]}",
+      "sha256": "e2c43ba49b2eb55a79c31b2e6e5304bf42186f7b580e2bdc6c380b77d800fe2e",
+      "expect": "replace contribution once",
+      "record_sha256": "531450524c4a450747ad4187cb7784ace524230aea642c314e56106da44024c2"
+    },
+    {
+      "name": "correction",
+      "wire": "{\"contract_version\":1,\"operation\":\"PublishWorldEventOutcomeV1\",\"source_authority\":\"oteryn:game:primary\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"event_id\":\"0192a000-0000-7000-8000-000000000040\",\"projection_epoch\":\"3\",\"projection_revision\":\"3\",\"source_observed_at\":\"1790000200\",\"event\":[{\"kind\":\"RAID\",\"source_key\":\"fixture:approved-raid\",\"occurrence_id\":\"0192a000-0000-7000-8000-000000000041\",\"ruleset_revision\":\"fixture:raid-result-v1\",\"content_sha256\":\"2b0651992ab2137dafbfbf37f6d5358419c0917b9833465a89bba63b49e2fe51\",\"scheduled_start\":\"1790000100\",\"scheduled_end\":\"1790000200\",\"lock_at\":\"1790000090\",\"options\":[\"completed\",\"timed-out\"],\"state\":\"SETTLED\",\"outcome\":[\"timed-out\"],\"decided_at\":[\"1790000200\"],\"correction_of\":[\"531450524c4a450747ad4187cb7784ace524230aea642c314e56106da44024c2\"],\"reason_code\":\"CORRECTION\",\"evidence_sha256\":[\"a45a92ff9011043dc95d31a3b77afc9dde327425b80da02d27a815b432c01425\"]}]}",
+      "sha256": "d152700bd45aafdb103b14ad9407cff846402269b5aceff22213c90d4be06ecc",
+      "expect": "replace previous contribution; never reopen",
+      "record_sha256": "52e80964e2515104e9f4251f827432a384e4c04c4df9fab195ec662f552ef0f3"
+    },
+    {
+      "name": "void",
+      "wire": "{\"contract_version\":1,\"operation\":\"PublishWorldEventOutcomeV1\",\"source_authority\":\"oteryn:game:primary\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"event_id\":\"0192a000-0000-7000-8000-000000000042\",\"projection_epoch\":\"3\",\"projection_revision\":\"2\",\"source_observed_at\":\"1790000200\",\"event\":[{\"kind\":\"RAID\",\"source_key\":\"fixture:approved-raid\",\"occurrence_id\":\"0192a000-0000-7000-8000-000000000043\",\"ruleset_revision\":\"fixture:raid-result-v1\",\"content_sha256\":\"2b0651992ab2137dafbfbf37f6d5358419c0917b9833465a89bba63b49e2fe51\",\"scheduled_start\":\"1790000100\",\"scheduled_end\":\"1790000200\",\"lock_at\":\"1790000090\",\"options\":[\"completed\",\"timed-out\"],\"state\":\"VOID\",\"outcome\":[],\"decided_at\":[\"1790000200\"],\"correction_of\":[],\"reason_code\":\"CANCELLED\",\"evidence_sha256\":[\"5dff2b00ede95230d8bc93311c18d1c244e3d0723bf9f942d9f741fba60a9060\"]}]}",
+      "sha256": "b88b7be19db5e7eec81764f833f12616361cb3a35890f1a6e8e90324b6f65ec6",
+      "expect": "no prediction score"
+    },
+    {
+      "name": "final_freeze",
+      "wire": "{\"contract_version\":1,\"operation\":\"PublishWorldEventOutcomeV1\",\"source_authority\":\"oteryn:game:primary\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"event_id\":\"0192a000-0000-7000-8000-000000000040\",\"projection_epoch\":\"3\",\"projection_revision\":\"4\",\"source_observed_at\":\"1790000200\",\"event\":[{\"kind\":\"RAID\",\"source_key\":\"fixture:approved-raid\",\"occurrence_id\":\"0192a000-0000-7000-8000-000000000041\",\"ruleset_revision\":\"fixture:raid-result-v1\",\"content_sha256\":\"2b0651992ab2137dafbfbf37f6d5358419c0917b9833465a89bba63b49e2fe51\",\"scheduled_start\":\"1790000100\",\"scheduled_end\":\"1790000200\",\"lock_at\":\"1790000090\",\"options\":[\"completed\",\"timed-out\"],\"state\":\"CLOSED\",\"outcome\":[\"timed-out\"],\"decided_at\":[\"1790000200\"],\"correction_of\":[\"531450524c4a450747ad4187cb7784ace524230aea642c314e56106da44024c2\"],\"reason_code\":\"FINAL_FREEZE\",\"evidence_sha256\":[\"a45a92ff9011043dc95d31a3b77afc9dde327425b80da02d27a815b432c01425\"]}]}",
+      "sha256": "4f984e427133509e485d8adf66512a9afdd316b0cb07f896913ed9d030684f67",
+      "expect": "immutable final lineage"
+    },
+    {
+      "name": "tied_guilds_frozen",
+      "wire": "{\"contract_version\":1,\"operation\":\"PublishGuildSeasonV1\",\"source_authority\":\"oteryn:game:primary\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"season_id\":\"0192a000-0000-7000-8000-00000000004f\",\"projection_epoch\":\"3\",\"projection_revision\":\"2\",\"source_observed_at\":\"1790000200\",\"season\":[{\"ruleset_revision\":\"fixture:season-v1\",\"starts_at\":\"1790000000\",\"ends_at\":\"1790000100\",\"freeze_at\":\"1790000200\",\"state\":\"FROZEN\",\"challenges\":[{\"challenge_id\":\"0192a000-0000-7000-8000-000000000050\",\"source_key\":\"fixture:approved-challenge\",\"scoring_revision\":\"fixture:score-v1\",\"max_score\":\"100\"}],\"standings\":[{\"guild_id\":\"0192a000-0000-7000-8000-000000000051\",\"guild_name\":\"Aldric Guild\",\"scores\":[{\"challenge_id\":\"0192a000-0000-7000-8000-000000000050\",\"score\":\"10\"}],\"total_score\":\"10\",\"rank\":\"1\"},{\"guild_id\":\"0192a000-0000-7000-8000-000000000052\",\"guild_name\":\"Second Guild\",\"scores\":[{\"challenge_id\":\"0192a000-0000-7000-8000-000000000050\",\"score\":\"10\"}],\"total_score\":\"10\",\"rank\":\"2\"}],\"computed_at\":\"1790000200\",\"source_complete_through\":\"1790000100\",\"correction_of\":[]}]}",
+      "sha256": "cb71786af5e08c15f0d95ac4a995b30b8bd053a4472f216a67cde91d36f48b65",
+      "expect": "equal scores break by guild UUID; ranks 1 and 2"
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "lock_equality",
+      "now": "1790000089",
+      "uncertainty": "1",
+      "lock_at": "1790000090",
+      "expect": "closed: now+uncertainty equals lock"
+    },
+    {
+      "name": "metadata_done_without_boss_death",
+      "expect": "cannot settle killed; wait for native evidence or explicit void"
+    },
+    {
+      "name": "late_contribution",
+      "expect": "FROZEN snapshot unchanged"
+    },
+    {
+      "name": "revision_gap",
+      "expect": "suspend scoring; resync full subject plus correction lineage"
+    },
+    {
+      "name": "unsafe_source",
+      "expect": "no new prediction; no hidden draw or schedule invented"
+    }
+  ]
+}

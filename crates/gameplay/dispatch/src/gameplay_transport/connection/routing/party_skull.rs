@@ -8,13 +8,23 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     payload: &[u8],
     visibility: Option<&crate::gameplay_transport::world_spatial::SessionVisibility>,
 ) -> Dispatch {
-    if !payload.is_empty()
+    if !matches!(payload, [] | [8, 1])
         || !admitted
             .continuity
             .selected_capabilities
             .contains(CAPABILITY_PARTY_SKULL_V1)
     {
         return Dispatch::Unregistered;
+    }
+    if payload == [8, 1] {
+        return match authority
+            .observe_pvp_status(admitted)
+            .await
+            .and_then(|status| status.encode().ok())
+        {
+            Some(bytes) => Dispatch::Reply(crate::foundation::CommandStatus::Accepted, bytes),
+            None => Dispatch::Unregistered,
+        };
     }
     let Some(mut icons) = authority.observe_party_icons(admitted).await else {
         return Dispatch::Unregistered;
@@ -26,3 +36,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         Err(_) => Dispatch::Unregistered,
     }
 }
+
+#[cfg(test)]
+#[path = "party_skull/tests.rs"]
+mod tests;

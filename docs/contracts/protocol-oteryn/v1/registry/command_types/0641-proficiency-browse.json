@@ -1,0 +1,10 @@
+{
+  "id": 641,
+  "name": "PROFICIENCY_BROWSE",
+  "owner_decision": "CL7-P08",
+  "capability": 195,
+  "payload_schema": "weapon-proficiency-v1.md#browse-request",
+  "result_schema": "weapon-proficiency-v1.md#browse-reply",
+  "max_payload_bytes": 4,
+  "max_result_payload_bytes": 2929
+}

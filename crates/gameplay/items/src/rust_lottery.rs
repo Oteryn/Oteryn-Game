@@ -87,6 +87,17 @@ pub fn lottery_conversion(
     used: &TypedDefinitionRef,
     draw: u64,
 ) -> Option<CookingConversion> {
+    // Crystal 201189f potions.lua:51,132-139: one unit of demonic blood
+    // becomes either strong health or strong mana, with equal probability.
+    if used.production_key == "oteryn:item.tibia.i6558" && admitted(native, used) {
+        return Some(CookingConversion {
+            recipe: "oteryn:potion.demonic-blood.v1".into(),
+            outputs: vec![(
+                definition(native, if draw.is_multiple_of(2) { 236 } else { 237 })?,
+                1,
+            )],
+        });
+    }
     (used.production_key == LOTTERY_TICKET && admitted(native, used)).then_some(())?;
     let outputs = if lottery_wins(draw) {
         vec![(definition(native, 5958)?, 1)]

@@ -1,0 +1,16 @@
+{
+  "mechanic": "0182-daily-reward",
+  "kind": "handlers",
+  "id": "0182-daily-reward-details",
+  "status": "supported",
+  "commands": [
+    738
+  ],
+  "direction": "client_to_server",
+  "capability": 182,
+  "entry": "protocol.rs::request_details",
+  "not_applicable": {
+    "settings": "Reward history and catalogue are server-owned.",
+    "input": "The native daily wall exposes a catalogue/history button."
+  }
+}

@@ -9,7 +9,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Exiva(payload)).is_err()
         {
             mailbox.exiva.pending = false;
-            mailbox.exiva.error = Some("Session ended");
+            mailbox.exiva.error = Some(tr!("Session ended"));
         }
     }
     pub fn exiva_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -18,9 +18,10 @@ impl PlayLink {
         }
         self.exiva_request(vec![5]);
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).exiva.open = true;
         }
         true

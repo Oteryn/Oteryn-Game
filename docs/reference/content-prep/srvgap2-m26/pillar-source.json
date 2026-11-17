@@ -1,0 +1,19 @@
+{
+  "reference_scope": "OTS_HYPOTHESIS_ONLY",
+  "repository": "https://github.com/zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "path": "data-global/monster/quests/rotten_blood_quest/pillar of dark energy.lua",
+  "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/pillar%20of%20dark%20energy.lua",
+  "sha256": "7337c13a36b75afd65eae1fe0075a950f7b940413a24b74e0e7d5a04a857c041",
+  "checked_facts": [
+    {
+      "lines": "100-118",
+      "fact": "Each onThink increments a per-identity count; the tenth think removes the Pillar before the spectator query."
+    },
+    {
+      "lines": "120-140",
+      "fact": "Before expiry, only a living Vemiath, Chagorz or Bakragore within the same-floor 15-tile spectator square keeps the Pillar; absence removes it."
+    }
+  ],
+  "remaining": "This callback alone does not qualify the complete source boss rooms."
+}

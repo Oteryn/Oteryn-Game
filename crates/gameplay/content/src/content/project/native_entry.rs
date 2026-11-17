@@ -18,7 +18,7 @@ use crate::content::{
     FirstProductionLootTable, FirstProductionPresentation, FirstProductionRegion,
     FirstProductionRelocation, FirstProductionRevisionSet, FirstProductionRngContext,
     FirstProductionSpawn, FirstProductionTerrain, FirstProductionXpDefinition,
-    LocalObjectCollisionPresence, MultiplicityClass, OwnerCapabilityRequirement,
+    LocalObjectCollisionPresence, LogicalCell, MultiplicityClass, OwnerCapabilityRequirement,
     ProjectFilesystemLimits, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
     REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinition, ReferenceDefinitionKind,
     ReferencePlayableContentSource, SpawnRecoveryClass, TransitionBinding, TransitionKey,
@@ -571,7 +571,8 @@ impl NativeEntryProject {
     ) -> Result<QualifiedNativeEntryRoom, ProjectError> {
         let movement_cells = self.movement_cells(compiled.server_digest())?;
         Ok(QualifiedNativeEntryRoom {
-            compiled,
+            item_profiles: qualified_item_profile_source(&compiled)?,
+            compiled: compiled.into(),
             frame_binding: self.frame_binding(),
             entry_start: self.entry_start()?,
             movement_cells,
@@ -580,6 +581,7 @@ impl NativeEntryProject {
             ),
             door: self.door.clone(),
             spawn_source: self.spawn_source.clone(),
+            activity_source: None,
         })
     }
 
@@ -626,6 +628,20 @@ impl NativeEntryProject {
     }
 }
 
+fn qualified_item_profile_source(
+    compiled: &crate::content::CompiledFirstProductionContent,
+) -> Result<Option<crate::content::native_gameplay::NativeItemProfileSource>, ProjectError> {
+    let (_, runtime) = crate::content::production::StagedGeneration::stage(
+        &compiled.server_artifact,
+        &compiled.client_artifact,
+        compiled.expectation(),
+    )?
+    .into_parts();
+    Ok(runtime
+        .native_gameplay()
+        .and_then(|native| native.item_profile_source()))
+}
+
 const NATIVE_ENTRY_FRAME_BINDING_DOMAIN: &[u8] =
     b"OTERYN_NATIVE_ENTRY_FRAME_BINDING/v1;axes=east,south,up\0";
 
@@ -652,7 +668,8 @@ impl NativeEntryFrameBinding {
 /// deterministic ordinary-release pair, with the frame binding of the same qualification.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QualifiedNativeEntryRoom {
-    compiled: crate::content::CompiledFirstProductionContent,
+    compiled: std::sync::Arc<crate::content::CompiledFirstProductionContent>,
+    item_profiles: Option<crate::content::native_gameplay::NativeItemProfileSource>,
     frame_binding: NativeEntryFrameBinding,
     entry_start: NativeEntryStart,
     map_revision_digest: [u8; 32],
@@ -665,6 +682,7 @@ pub struct QualifiedNativeEntryRoom {
     /// The qualified spawn of the same qualification (SPAWN-1A-PACKET-1 §1.3), handed to the
     /// Channel activation owner with the content pin, never re-read.
     spawn_source: Option<NativeEntrySpawnSource>,
+    activity_source: Option<super::native_spell_world::PinnedActivitySourceRoom>,
 }
 
 /// The qualified room's cells as the Movement kernel's direct-lookup index, scoped to the exact
@@ -698,18 +716,18 @@ impl NativeEntryMovementCells {
     }
 
     /// The movement cells of a Channel booted from a world bundle (MAP-CUTOVER-1a): the bundle
-    /// index and the bundle's own spell tiles (BUNDLE-TILES-1) under `scope`. `entry`'s house
-    /// tiles are kept under their own scope, so their lookups refuse the bundle's cells until
-    /// the bundle supplies its own.
+    /// index and the bundle's own spell tiles (BUNDLE-TILES-1) under `scope`. House absence
+    /// is derived only from the bundle index's complete, matching-scope marker evidence.
+    /// Entry-frame House facts and unavailable evidence grant no bundle House authority.
     pub fn from_bundle(
-        entry: &Self,
+        _entry: &Self,
         scope: crate::content::static_cell_engine::EngineeringStaticCellScope,
         index: crate::content::native_cell_lookup::BundleCollisionIndex,
         spell_tiles: std::sync::Arc<crate::content::bundle_spell_tiles::BundleSpellTiles>,
     ) -> Self {
         Self {
             spell_tiles: QualifiedSpellTiles::from_bundle(scope.clone(), spell_tiles),
-            house_tiles: entry.house_tiles.clone(),
+            house_tiles: QualifiedHouseTiles::from_bundle(scope.clone(), &index),
             index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index),
             scope,
         }
@@ -726,6 +744,197 @@ pub struct NativeEntryStart {
 }
 
 impl QualifiedNativeEntryRoom {
+    /// The World map owner supplies the same immutable base under its freshly
+    /// allocated Instance's independent overlay and mutable fact owners.
+    pub fn with_activity_bundle_index(
+        &self,
+        index: crate::content::native_cell_lookup::BundleCollisionIndex,
+        bounds: [i32; 6],
+    ) -> Option<Self> {
+        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+        if !matches!(
+            self.movement_cells.index(),
+            NativeMovementCollisionIndex::Bundle(_)
+        ) {
+            return None;
+        }
+        let mut view = self.clone();
+        view.movement_cells.index = NativeMovementCollisionIndex::Bundle(index);
+        view.bounded_bundle_activity_view(bounds, self.entry_start)
+    }
+
+    /// W07 bounds an already qualified full World bundle without changing any
+    /// frame, map or artifact identity. Crystal soulpit.lua:31-84 supplies bounds.
+    pub(in crate::content) fn bounded_bundle_activity_view(
+        &self,
+        bounds: [i32; 6],
+        start: NativeEntryStart,
+    ) -> Option<Self> {
+        use crate::content::native_cell_lookup::{
+            BundleCollisionIndex, NativeMovementCollisionIndex,
+        };
+        let NativeMovementCollisionIndex::Bundle(parent) = self.movement_cells.index() else {
+            return None;
+        };
+        if bounds[0] > bounds[2] || bounds[1] > bounds[3] || bounds[4] > bounds[5] {
+            return None;
+        }
+        let start_cell = LogicalCell {
+            x: start.x,
+            y: start.y,
+            z: i32::from(start.floor),
+        };
+        let index = BoundedActivityBundle {
+            parent: parent.clone(),
+            bounds,
+        };
+        if crate::content::native_cell_lookup::BundleCollisionLookup::lookup(
+            &index,
+            self.movement_cells.scope(),
+            start_cell,
+        )
+        .ok()
+            != Some(CollisionClass::Walkable)
+        {
+            return None;
+        }
+        let mut view = self.clone();
+        view.entry_start = start;
+        view.movement_cells.index =
+            NativeMovementCollisionIndex::Bundle(BundleCollisionIndex(std::sync::Arc::new(index)));
+        view.spawn_source = None;
+        Some(view)
+    }
+
+    /// Crystal BossLever's `fromPosition`/`toPosition` room is a bounded view
+    /// of the already booted bundle, never a second map or an origin Channel overlay.
+    pub(in crate::content) fn bundle_activity_view(
+        &self,
+        bounds: [i32; 6],
+        start: NativeEntryStart,
+    ) -> Option<Self> {
+        self.bundle_activity_view_inner(bounds, start, None)
+    }
+    /// Preserve the combat rectangle while admitting exactly one source-proven exit tile.
+    pub(in crate::content) fn bundle_activity_view_with_exit(
+        &self,
+        bounds: [i32; 6],
+        start: NativeEntryStart,
+        exit: LogicalCell,
+    ) -> Option<Self> {
+        self.bundle_activity_view_inner(bounds, start, Some(exit))
+    }
+    fn bundle_activity_view_inner(
+        &self,
+        bounds: [i32; 6],
+        start: NativeEntryStart,
+        exit: Option<LogicalCell>,
+    ) -> Option<Self> {
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            self.movement_cells.index()
+        else {
+            return None;
+        };
+        let mut view = self.clone();
+        let start_cell = [start.x, start.y, i32::from(start.floor)];
+        view.movement_cells.index =
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(match exit {
+                Some(exit) => index.activity_region_with_exit(bounds, None, start_cell, exit)?,
+                None => index.activity_region(bounds, None, start_cell)?,
+            });
+        view.movement_cells.spell_tiles = match exit {
+            Some(exit) => self
+                .movement_cells
+                .spell_tiles
+                .bundle_activity_region_with_exit(bounds, exit)?,
+            None => self
+                .movement_cells
+                .spell_tiles
+                .bundle_activity_region(bounds)?,
+        };
+        let cell = crate::content::LogicalCell {
+            x: start.x,
+            y: start.y,
+            z: i32::from(start.floor),
+        };
+        if view
+            .movement_cells
+            .index
+            .lookup(view.movement_cells.scope(), cell)
+            .ok()
+            != Some(CollisionClass::Walkable)
+        {
+            return None;
+        }
+        view.entry_start = start;
+        view.spawn_source = None;
+        Some(view)
+    }
+
+    /// Bind fresh mutable map facts/overlay to the independently allocated
+    /// Instance. Static source cells, frame and active artifact stay unchanged.
+    pub fn for_activity_instance(&self, instance: [u8; 16]) -> Option<Self> {
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+            self.movement_cells.index()
+        else {
+            // Existing source-qualified rooms have no bundle overlay to rebind.
+            return Some(self.clone());
+        };
+        let mut view = self.clone();
+        view.movement_cells.index =
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
+                index.for_activity_instance(instance)?,
+            );
+        Some(view)
+    }
+
+    /// A task-owned source capture is a different map, like a qualified bundle
+    /// view. Its frame and map digest are issued here, never copied from the
+    /// origin Channel or supplied by an entering player.
+    pub(in crate::content) fn pinned_activity_source_view(
+        &self,
+        source: super::native_spell_world::PinnedActivitySourceRoom,
+    ) -> Result<Self, ProjectError> {
+        let bytes = source.bytes();
+        let (coordinate_frame, map_revision) = super::native_spell_world::source_frame(bytes)?;
+        let mut scope = self.movement_cells.scope.clone();
+        scope.coordinate_frame = crate::content::CoordinateFrameRef::new(&coordinate_frame)
+            .map_err(|_| ProjectError::InvalidProject("activity source frame"))?;
+        scope.map_revision = crate::content::MapRevisionRef::new(&map_revision)
+            .map_err(|_| ProjectError::InvalidProject("activity source map"))?;
+        let map = super::native_spell_world::qualify(bytes, scope.clone())?;
+        let mut frame = self.frame_binding.frame.clone();
+        frame.coordinate_frame = coordinate_frame;
+        frame.origin = NativeEntryOrigin {
+            x: 0,
+            y: 0,
+            floor: 0,
+        };
+        let mut binding = b"OTERYN_PINNED_ACTIVITY_SOURCE_FRAME/v1\0".to_vec();
+        binding.extend_from_slice(scope.world_id.as_bytes());
+        binding.extend_from_slice(&scope.generation_digest);
+        binding.extend_from_slice(&crate::content::digest::sha256(bytes));
+        binding.extend_from_slice(
+            &serde_json::to_vec(&frame)
+                .map_err(|_| ProjectError::InvalidProject("activity source frame encoding"))?,
+        );
+        let mut view = self.clone();
+        view.entry_start = map.entry_start();
+        view.map_revision_digest = crate::content::digest::sha256(bytes);
+        view.frame_binding = NativeEntryFrameBinding {
+            frame,
+            digest: crate::content::digest::sha256(&binding),
+        };
+        view.movement_cells = NativeEntryMovementCells {
+            spell_tiles: map.spell_tiles(),
+            house_tiles: super::QualifiedHouseTiles::from_source_world(&map),
+            scope,
+            index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Source(map),
+        };
+        view.spawn_source = None;
+        view.activity_source = Some(source);
+        Ok(view)
+    }
     /// Activity-local cells remain in the original qualified map/frame. Unlike
     /// a bundle view, this view cannot substitute a different coordinate source.
     pub(in crate::content) fn activity_view(
@@ -755,6 +964,7 @@ impl QualifiedNativeEntryRoom {
         // BossLever creates a single encounter boss. The origin's ordinary
         // creature respawn schedule is never copied into the private activity.
         view.spawn_source = None;
+        view.activity_source = None;
         Some(view)
     }
 
@@ -787,6 +997,7 @@ impl QualifiedNativeEntryRoom {
             return None;
         }
         Some(Self {
+            item_profiles: self.item_profiles.clone(),
             compiled: self.compiled.clone(),
             frame_binding: NativeEntryFrameBinding {
                 frame: self.frame_binding.frame.clone(),
@@ -797,11 +1008,71 @@ impl QualifiedNativeEntryRoom {
             movement_cells: cells,
             door: self.door.clone(),
             spawn_source: None,
+            activity_source: None,
         })
     }
 
+    /// A role is retained only by the exact bounded-source bundle qualifier.
+    /// Generic bundle_view deliberately clears it.
+    pub const fn pinned_activity_source_room(
+        &self,
+    ) -> Option<super::native_spell_world::PinnedActivitySourceRoom> {
+        self.activity_source
+    }
+    pub fn pinned_activity_bundle_view(
+        &self,
+        cells: NativeEntryMovementCells,
+        frame_binding_digest: [u8; 32],
+        map_revision_digest: [u8; 32],
+        start: NativeEntryStart,
+        bundle_bytes: &[u8],
+    ) -> Option<Self> {
+        let source = self.activity_source?;
+        let decoded = oteryn_world_bundle::bundle::read(bundle_bytes).ok()?;
+        let map_revision = format!(
+            "sha256:{}",
+            decoded
+                .digest
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        );
+        if cells.scope().map_revision.as_str() != map_revision
+            || map_revision_digest != crate::content::digest::sha256(map_revision.as_bytes())
+            || cells
+                .index()
+                .lookup(
+                    cells.scope(),
+                    crate::content::LogicalCell {
+                        x: start.x,
+                        y: start.y,
+                        z: i32::from(start.floor),
+                    },
+                )
+                .ok()
+                != Some(crate::content::CollisionClass::Walkable)
+        {
+            return None;
+        }
+
+        if self.map_revision_digest() != crate::content::digest::sha256(source.bytes())
+            || !super::native_spell_world::qualifies_activity_bundle_cells(self, source, &cells)
+        {
+            return None;
+        }
+        let mut view = self.bundle_view(cells, frame_binding_digest, map_revision_digest, start)?;
+        view.activity_source = Some(source);
+        Some(view)
+    }
     pub fn source_world(&self) -> Option<&super::native_spell_world::QualifiedNativeSpellWorld> {
         self.movement_cells.source_world()
+    }
+    /// Immutable Item DATA of the same qualified artifact. Current runtime and
+    /// durable Item custody are independently checked by every read owner.
+    pub fn item_profile_source(
+        &self,
+    ) -> Option<crate::content::native_gameplay::NativeItemProfileSource> {
+        self.item_profiles.clone()
     }
     pub fn compiled(&self) -> &crate::content::CompiledFirstProductionContent {
         &self.compiled
@@ -833,6 +1104,44 @@ impl QualifiedNativeEntryRoom {
     /// See [`NativeEntryProject::spawn_source`].
     pub fn spawn_source(&self) -> Option<&NativeEntrySpawnSource> {
         self.spawn_source.as_ref()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct BoundedActivityBundle {
+    parent: crate::content::native_cell_lookup::BundleCollisionIndex,
+    bounds: [i32; 6],
+}
+
+impl crate::content::native_cell_lookup::BundleCollisionLookup for BoundedActivityBundle {
+    fn parent_index(&self) -> Option<&crate::content::native_cell_lookup::BundleCollisionIndex> {
+        Some(&self.parent)
+    }
+
+    fn lookup(
+        &self,
+        scope: &crate::content::static_cell_engine::EngineeringStaticCellScope,
+        cell: LogicalCell,
+    ) -> Result<CollisionClass, crate::content::static_cell_engine::StaticCellEngineError> {
+        if cell.x < self.bounds[0]
+            || cell.x > self.bounds[2]
+            || cell.y < self.bounds[1]
+            || cell.y > self.bounds[3]
+            || cell.z < self.bounds[4]
+            || cell.z > self.bounds[5]
+        {
+            return Err(crate::content::static_cell_engine::StaticCellEngineError::Absent);
+        }
+        self.parent.lookup(scope, cell)
+    }
+
+    fn same_index(
+        &self,
+        other: &dyn crate::content::native_cell_lookup::BundleCollisionLookup,
+    ) -> bool {
+        (other as &dyn std::any::Any)
+            .downcast_ref::<Self>()
+            .is_some_and(|other| self == other)
     }
 }
 
@@ -2219,6 +2528,17 @@ mod tests {
     }
 
     #[test]
+    fn qualified_room_clones_share_only_immutable_compiled_artifacts() {
+        let room = qualify_native_entry_room(test_world_id()).expect("qualified source");
+        let cloned = room.clone();
+        assert!(
+            std::ptr::eq(room.compiled(), cloned.compiled()),
+            "source scene derivation must retain one immutable compiled artifact pair"
+        );
+        assert_eq!(room.movement_cells(), cloned.movement_cells());
+    }
+
+    #[test]
     fn qualified_room_preserves_the_entire_authored_spawn_creature_profile() {
         let documents = native_entry_room_documents(test_world_id()).expect("entry source");
         let snapshot = ProjectSnapshot::new(
@@ -2521,7 +2841,8 @@ pub fn qualify_native_source_spell_world_with_gameplay(
         digest: crate::content::digest::sha256(&binding),
     };
     Ok(QualifiedNativeEntryRoom {
-        compiled,
+        item_profiles: qualified_item_profile_source(&compiled)?,
+        compiled: compiled.into(),
         frame_binding,
         entry_start,
         map_revision_digest: crate::content::digest::sha256(
@@ -2539,5 +2860,6 @@ pub fn qualify_native_source_spell_world_with_gameplay(
         door: base.door,
         // The source world is a different map: the entry room's den cells are not in it.
         spawn_source: None,
+        activity_source: None,
     })
 }

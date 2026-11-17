@@ -1,0 +1,190 @@
+{
+  "status": "QUALIFIED",
+  "test": "questpc7_golden_full_commission_charges_exactly_once",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 76.55003838,
+    "log": "/tmp/questpc7-golden-red-executed.log",
+    "assertion": "unfunded confirmation returned Ok instead of Rejected"
+  },
+  "reuse": {
+    "branch": "claude/happy-davinci-ijz3wy-qengine2",
+    "commit": "33b640335",
+    "head": "e06058c74",
+    "migration": "1000_quest_reward_payments.sql"
+  },
+  "author_tests": {
+    "cases": 13,
+    "seconds": 5.366,
+    "result": "PASS"
+  },
+  "check": {
+    "result": "PASS",
+    "seconds": 102
+  },
+  "excluded_attempts": [
+    "missing test helper compilation",
+    "disk-full compilation",
+    "missing appearance trait import compilation"
+  ],
+  "intermediate_failed_pg": {
+    "seconds": 79.353844131,
+    "log": "/tmp/questpc7-golden-payment-green2.log",
+    "result": "First exact payment and replay passed; following offer correctly refused without a new conversation after wire disconnect",
+    "fix": "Begin a fresh hi conversation for every milestone and final confirmation"
+  },
+  "fee_units": {
+    "result": "PASS",
+    "cases": 3,
+    "proof": [
+      "/tmp/questpc7-golden-fee-unit.log",
+      "/tmp/questpc7-golden-final-fee-wire.log"
+    ],
+    "scope": "exact price/policy audit; exact tag inventory; all retained fee wire goldens and new tag18"
+  },
+  "green": {
+    "seconds": 85.616165933,
+    "log": "/tmp/questpc7-golden-payment-green3.log",
+    "result": "PASS",
+    "scope": [
+      "fresh unseeded quest start",
+      "three selected exact prices",
+      "each unfunded confirmation refused",
+      "three separate source-bound fee receipts",
+      "each wire replay without a second debit",
+      "once-only final quest completion",
+      "three immutable appearance grants",
+      "normal client selection with both addons"
+    ]
+  },
+  "clippy_final": {
+    "result": "PASS",
+    "seconds": 23.174,
+    "scope": "all targets/features of quests, durability, dispatch; -D warnings"
+  },
+  "checks": [
+    {
+      "check": "fee-wire",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--lib",
+        "every_fee_cause_matches_pre_structure_wire_bytes",
+        "--",
+        "--nocapture"
+      ],
+      "seconds": 196.785,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-golden-final-fee-wire.log"
+    },
+    {
+      "check": "quest-unit",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "reward_callbacks"
+      ],
+      "seconds": 71.63,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-golden-final-quest-unit.log"
+    },
+    {
+      "check": "clippy-final",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 23.174,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-golden-final-clippy-final.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 174.438,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-golden-final-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 49.122,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-golden-final-world.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 119.468,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-golden-final-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-golden-pin-check"
+      ],
+      "seconds": 128.452,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-golden-final-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.111,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-golden-final-fmt.log"
+    }
+  ],
+  "world_digest": "8d0063eb4b12f5e3ef714d7a05e7e1ff2604b96e92b301ae5b8f501d96d2c762",
+  "inputs_digest": "685b4b80f7b586b8fd61dc36904c1642c3ace3c209702458a507d74b8f37d983"
+}

@@ -1,0 +1,14 @@
+{
+  "module": "tool",
+  "owner": "apps/game-server",
+  "events": [
+    {
+      "event": "failed",
+      "level": "error",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seeded from current server code."
+    }
+  ]
+}

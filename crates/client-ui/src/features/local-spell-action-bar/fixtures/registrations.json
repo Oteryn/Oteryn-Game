@@ -2,13 +2,28 @@
   {
     "mechanic": "local-spell-action-bar",
     "kind": "keybindings",
+    "id": "local-spell-action-bar-open",
+    "status": "supported",
+    "entry": "input.rs::open_key",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+I"
+  },
+  {
+    "mechanic": "local-spell-action-bar",
+    "kind": "panels",
+    "id": "local-spell-action-bar-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "local-spell-action-bar",
+    "kind": "keybindings",
     "id": "local-spell-action-bar-spell-1",
     "status": "supported",
     "context": "spell-gameplay",
     "chord": "1",
     "entry": "input.rs::default_spell_binding",
     "not_applicable": {
-      "state": "Local hotkey routing has no state concern.",
       "protocol": "Local hotkey routing has no protocol concern.",
       "settings": "Local hotkey routing has no settings concern."
     }

@@ -1,0 +1,19 @@
+{
+  "id": 291,
+  "name": "CAST_CHAT_V1",
+  "constant": "cast::CAPABILITY_CAST_CHAT_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    504
+  ],
+  "domains": [
+    103
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

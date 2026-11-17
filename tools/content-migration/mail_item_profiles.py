@@ -9,6 +9,8 @@ import copy
 import hashlib
 import json
 
+from native_profile_composition import encode_native_profile
+
 FACTS = 'tools/content-schema/native-gameplay/mail-item-facts.json'
 REVISION = '52550d5e3c0ffe565f4bd1014f4e5575abf1059b'
 ITEMS_SHA256 = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
@@ -78,7 +80,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         record['admission'] = {'materializable': True, 'stack_class': 'NonStackable',
                                'legal_destinations': ['CharacterInventory', 'Ground']}
     document['records'].sort(key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(raw).hexdigest()

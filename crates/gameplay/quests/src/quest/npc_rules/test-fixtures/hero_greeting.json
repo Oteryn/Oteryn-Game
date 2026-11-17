@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.hero_of_rathleton_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/hero_rathleton/access_door",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:62",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:195"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/hero_of_rathleton_quest/strange_pipe/greet-access",
+      "quest": "oteryn:quest.hero_of_rathleton_quest",
+      "npc": "oteryn:npc.strange_pipe",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/hero_rathleton/access_door",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ]
+    }
+  ]
+}

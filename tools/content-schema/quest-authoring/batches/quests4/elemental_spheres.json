@@ -1,0 +1,977 @@
+{
+  "schema": 1,
+  "quest_directory": "elemental_spheres",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/elemental_spheres/lord_room_exit",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 9029,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33265,
+        "y": 31838,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/storage/10005",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/storage/10006",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/storage/10007",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": -1
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/storage/10008",
+          "minimum": -1,
+          "maximum": 2147483647,
+          "set": -1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_aoe_teleport_out.lua:3-19"
+      ]
+    }
+  ],
+  "runtime_exclusions": [],
+  "npc_source": {
+    "quest": "elemental_spheres",
+    "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+    "runtime_admission": false,
+    "entries": [
+      {
+        "npc_source_name": "arkulius",
+        "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:1-214",
+        "source_blob_sha256": "3d9f5879d653c522d80b7548e547acd150d43fa1c301feb43ec7a0788af36985",
+        "full_source_lua": "local internalNpcName = \"Arkulius\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 130,\n\tlookHead = 0,\n\tlookBody = 79,\n\tlookLegs = 90,\n\tlookFeet = 117,\n\tlookAddons = 3,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"...the arithmetical paradox has the same value in a metaphysical way, then...\" },\n\t{ text = \"Oh my! Alverus!! Did you really...?!?! I have to recalculate it to make sure that I made no mistake.\" },\n\t{ text = \"<mumbles>\" },\n\t{ text = \"...the minimum square deviation could cause a dislocation, in a matter of fact...\" },\n\t{ text = \"...it could be possible to bring the sphere to a destination where...\" },\n\t{ text = \"Yes, that's it! The elementary particle are corresponding to the... the ... UNBELIEVEABLE!!!\" },\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal greetMsg = {\n\t\"...if the expected constant is higher than... Hmmm, who are you?? What do you want?\",\n\t\"...then I could transform a spell to bend... How can anyone expect me to work under these conditions?? What do you want?\",\n\t\"...if my calculations are correct, I will be able to revive... Arrgghh!! What do you want?\",\n}\n\nlocal function greetCallback(npc, creature)\n\tlocal playerId = creature:getId()\n\tnpcHandler:setMessage(MESSAGE_GREET, greetMsg[math.random(#greetMsg)])\n\tnpcHandler:setTopic(playerId, 0)\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"alverus\") then\n\t\tnpcHandler:say({\n\t\t\t\"It happened while he carried out an experiment concerning the creation of the elemental {shrines}. I still get goose bumps just by thinking of it. ...\",\n\t\t\t\"You need to know about the process of creating an elemental shrine to understand it completely, but I don't want to go into detail now. ...\",\n\t\t\t\"Anyway, his spell had a different outcome than he had planned. He accidentally created an Ice Overlord, pure living elemental ice, who froze him in a blink of an eye.\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\telseif MsgContains(message, \"shrine\") then\n\t\tnpcHandler:say({\n\t\t\t\"The creation of the elemental shrines is a really complex matter. They are actually nodes, locations where the matching elemental sphere is very close. ...\",\n\t\t\t\"The shrine itself is like a portal between our world and the elemental {sphere} and enables us to use the elemental energy emerging from it.\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\telseif MsgContains(message, \"sphere\") and player:getLevel() >= 80 then\n\t\tnpcHandler:say({\n\t\t\t\"There are four spheres we know of: ice, fire, earth and energy. ....<mumbles> Hmmm, should I ask or not?....The heck with it! Now that you know about the spheres ...\",\n\t\t\t\"I found a way to visit them. It's VERY dangerous and there is a decent chance that you won't come back BUT if you succeed you'll write history!!! Ask me about that {mission} if you're interested.\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\telseif MsgContains(message, \"mission\") or MsgContains(message, \"quest\") then\n\t\tlocal value = player:getStorageValue(Storage.Quest.U8_2.ElementalSpheres.QuestLine)\n\t\tif value < 1 then\n\t\t\tif player:getLevel() >= 80 then\n\t\t\t\tif player:isSorcerer() then\n\t\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\t\"Okay, listen closely: First of all, you need to gather 20 enchanted rubies in order to go to the fire sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\",\n\t\t\t\t\t\t\"Once you got there, find a way to gather elemental fire in any form. You will face fire elementals, that's for sure, but I don't know how the fire is stored. ...\",\n\t\t\t\t\t\t\"Anyway, there should be a way to use that elemental fire and strengthen one of the elementals. If my calculations are right, you will create a Fire Overlord who hopefully will consist of some sort of 'concentrated' fire or something similar. ...\",\n\t\t\t\t\t\t\"THAT'S what we need!! Are you in on it?\",\n\t\t\t\t\t}, npc, creature)\n\t\t\t\telseif player:isDruid() then\n\t\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\t\"Okay, listen closely: First of all, you need to gather 20 enchanted emeralds in order to go to the earth sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\",\n\t\t\t\t\t\t\"Once you got there, find a way to gather elemental earth in any form. You will face earth elementals, that's for sure, but I don't know how the earth is stored. ...\",\n\t\t\t\t\t\t\"Anyway, there should be a way to use that elemental earth and strengthen one of the elementals. If my calculations are right, you will create an Earth Overlord who hopefully will consist of some sort of 'concentrated' earth or something similar. ...\",\n\t\t\t\t\t\t\"THAT'S what we need!! Are you in on it?\",\n\t\t\t\t\t}, npc, creature)\n\t\t\t\telseif player:isPaladin() then\n\t\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\t\"Okay, listen closely: First of all, you need to gather 20 enchanted sapphires in order to go to the ice sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\",\n\t\t\t\t\t\t\"Once you got there, find a way to gather elemental ice in any form. You will face ice elementals, that's for sure, but I don't know how the ice is stored. ...\",\n\t\t\t\t\t\t\"Anyway, there should be a way to use that elemental ice and strengthen one of the elementals. If my calculations are right, you will create an Ice Overlord who hopefully will consist of some sort of 'concentrated' ice or something similar. ...\",\n\t\t\t\t\t\t\"THAT'S what we need!! Are you in on it?\",\n\t\t\t\t\t}, npc, creature)\n\t\t\t\telseif player:isKnight() then\n\t\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\t\"Okay, listen closely: First of all, you need to gather 20 enchanted amethysts in order to go to the energy sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\",\n\t\t\t\t\t\t\"Once you got there, find a way to gather elemental energy in any form. You will face energy elementals, that's for sure, but I don't know how the energy is stored. ...\",\n\t\t\t\t\t\t\"Anyway, there should be a way to use that energy and strengthen one of the elementals. If my calculations are right, you will create an Energy Overlord who hopefully will consist of some sort of 'concentrated' energy. ...\",\n\t\t\t\t\t\t\"THAT'S what we need!! Are you in on it?\",\n\t\t\t\t\t}, npc, creature)\n\t\t\t\tend\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"I'm sorry this task is highly dangerous and I need experienced people for it.\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\t\treturn false\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif value == 1 then\n\t\t\tif player:getItemCount(player:isSorcerer() and 946 or player:isDruid() and 947 or player:isPaladin() and 942 or player:isKnight() and 948) > 0 then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.ElementalSpheres.QuestLine, 2)\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Impressive!! Let me take a look.......Ahh, \"\n\t\t\t\t\t\t.. (\n\t\t\t\t\t\t\tplayer:isSorcerer() and \"an ETERNAL FLAME! Now you need to find a knight, a druid, and a paladin who also completed this first task. ...\"\n\t\t\t\t\t\t\tor player:isDruid() and \"MOTHER SOIL! Now you need to find a knight, a paladin, and a sorcerer who also completed this first task. ...\"\n\t\t\t\t\t\t\tor player:isPaladin() and \"a FLAWLESS ICE CRYSTAL! Now you need to find a knight, a druid, and a sorcerer who also completed this first task. ...\"\n\t\t\t\t\t\t\tor player:isKnight() and \"PURE ENERGY! Now you need to find a druid, a paladin, and a sorcerer who also completed this first task. ...\"\n\t\t\t\t\t\t),\n\t\t\t\t\t\"Go down in the cellar again. I prepared a room under the academy where it should be safe. Your task is to charge the machines with the elemental substances and summon the LORD OF THE ELEMENTS. ...\",\n\t\t\t\t\t\"When you use an obsidian knife on it's corpse you hopefully get some of the precious neutral matter. It's the only way to revive my dear friend Alverus!!\",\n\t\t\t\t}, npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You need some kind of pure elemental soil from the \" .. (player:isSorcerer() and \"Fire\" or player:isDruid() and \"Earth\" or player:isPaladin() and \"Ice\" or player:isKnight() and \"Energy\") .. \" Overlord. Come back when you've got it.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif value == 2 then\n\t\t\tif player:removeItem(954, 1) and player:getStorageValue(Storage.Quest.U8_2.ElementalSpheres.QuestLine) < 3 then\n\t\t\t\tnpcHandler:say(\"AMAZING!! I'm going to start immediately with the research. If it turns out the way I expect it, Alverus will be revived soon!! Here, take this as a reward and try to collect more of this substance. I'll make you a good offer, I promise. \", npc, creature)\n\t\t\t\tplayer:addItem(player:isSorcerer() and 8039 or player:isDruid() and 8041 or player:isPaladin() and 8025 or player:isKnight() and 8055, 1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.ElementalSpheres.QuestLine, 3)\n\t\t\tend\n\t\tend\n\telseif npcHandler:getTopic(playerId) == 1 and MsgContains(message, \"yes\") then\n\t\tplayer:setStorageValue(Storage.Quest.U8_2.ElementalSpheres.QuestLine, 1)\n\t\tnpcHandler:say(\"Good, don't waste time! Come back here when you have the elemental object!\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\tend\n\treturn true\nend\n\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"How dare you asking me this?!? I'm Arkulius - Master of Elements, the HEADMASTER of this academy!!\" })\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm Arkulius - Master of Elements, the headmaster of this academy.\" })\nkeywordHandler:addKeyword({ \"help\" }, StdModule.say, { npcHandler = npcHandler, text = \"I have better things to do than helping you. See that ice statue over there? My dear friend Alverus needs to be revived!\" })\nkeywordHandler:addKeyword({ \"time\" }, StdModule.say, { npcHandler = npcHandler, text = \"Time is an illusion and completely irrelevant to me.\" })\nkeywordHandler:addKeyword({ \"weapon\" }, StdModule.say, { npcHandler = npcHandler, text = \"Weapons are for those people who aren't able to use their heads or better what's INSIDE their heads. No offence <coughs>.\" }) -- < Knight; FIXME !!!\nkeywordHandler:addKeyword({ \"pits of inferno\" }, StdModule.say, { npcHandler = npcHandler, text = \"Yeye, I believe you almost feel like home among all those brainless creatures!\" })\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Good bye and please stay away, okay?\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"At last! Good things come to those who wait.\")\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"energy soil\", clientId = 945, sell = 2000 },\n\t{ itemName = \"eternal flames\", clientId = 946, sell = 5000 },\n\t{ itemName = \"flawless ice crystal\", clientId = 942, sell = 5000 },\n\t{ itemName = \"glimmering soil\", clientId = 941, sell = 2000 },\n\t{ itemName = \"iced soil\", clientId = 944, sell = 2000 },\n\t{ itemName = \"mother soil\", clientId = 947, sell = 5000 },\n\t{ itemName = \"natural soil\", clientId = 940, sell = 2000 },\n\t{ itemName = \"neutral matter\", clientId = 954, sell = 5000 },\n\t{ itemName = \"pure energy\", clientId = 948, sell = 5000 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+        "sections": [
+          {
+            "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:1-214",
+            "line_start": 1,
+            "line_end": 214,
+            "source_sha256": "3d9f5879d653c522d80b7548e547acd150d43fa1c301feb43ec7a0788af36985",
+            "guarded_source_lua": "local internalNpcName = \"Arkulius\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 130,\n\tlookHead = 0,\n\tlookBody = 79,\n\tlookLegs = 90,\n\tlookFeet = 117,\n\tlookAddons = 3,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"...the arithmetical paradox has the same value in a metaphysical way, then...\" },\n\t{ text = \"Oh my! Alverus!! Did you really...?!?! I have to recalculate it to make sure that I made no mistake.\" },\n\t{ text = \"<mumbles>\" },\n\t{ text = \"...the minimum square deviation could cause a dislocation, in a matter of fact...\" },\n\t{ text = \"...it could be possible to bring the sphere to a destination where...\" },\n\t{ text = \"Yes, that's it! The elementary particle are corresponding to the... the ... UNBELIEVEABLE!!!\" },\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal greetMsg = {\n\t\"...if the expected constant is higher than... Hmmm, who are you?? What do you want?\",\n\t\"...then I could transform a spell to bend... How can anyone expect me to work under these conditions?? What do you want?\",\n\t\"...if my calculations are correct, I will be able to revive... Arrgghh!! What do you want?\",\n}\n\nlocal function greetCallback(npc, creature)\n\tlocal playerId = creature:getId()\n\tnpcHandler:setMessage(MESSAGE_GREET, greetMsg[math.random(#greetMsg)])\n\tnpcHandler:setTopic(playerId, 0)\n\treturn true\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"alverus\") then\n\t\tnpcHandler:say({\n\t\t\t\"It happened while he carried out an experiment concerning the creation of the elemental {shrines}. I still get goose bumps just by thinking of it. ...\",\n\t\t\t\"You need to know about the process of creating an elemental shrine to understand it completely, but I don't want to go into detail now. ...\",\n\t\t\t\"Anyway, his spell had a different outcome than he had planned. He accidentally created an Ice Overlord, pure living elemental ice, who froze him in a blink of an eye.\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\telseif MsgContains(message, \"shrine\") then\n\t\tnpcHandler:say({\n\t\t\t\"The creation of the elemental shrines is a really complex matter. They are actually nodes, locations where the matching elemental sphere is very close. ...\",\n\t\t\t\"The shrine itself is like a portal between our world and the elemental {sphere} and enables us to use the elemental energy emerging from it.\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\telseif MsgContains(message, \"sphere\") and player:getLevel() >= 80 then\n\t\tnpcHandler:say({\n\t\t\t\"There are four spheres we know of: ice, fire, earth and energy. ....<mumbles> Hmmm, should I ask or not?....The heck with it! Now that you know about the spheres ...\",\n\t\t\t\"I found a way to visit them. It's VERY dangerous and there is a decent chance that you won't come back BUT if you succeed you'll write history!!! Ask me about that {mission} if you're interested.\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\telseif MsgContains(message, \"mission\") or MsgContains(message, \"quest\") then\n\t\tlocal value = player:getStorageValue(Storage.Quest.U8_2.ElementalSpheres.QuestLine)\n\t\tif value < 1 then\n\t\t\tif player:getLevel() >= 80 then\n\t\t\t\tif player:isSorcerer() then\n\t\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\t\"Okay, listen closely: First of all, you need to gather 20 enchanted rubies in order to go to the fire sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\",\n\t\t\t\t\t\t\"Once you got there, find a way to gather elemental fire in any form. You will face fire elementals, that's for sure, but I don't know how the fire is stored. ...\",\n\t\t\t\t\t\t\"Anyway, there should be a way to use that elemental fire and strengthen one of the elementals. If my calculations are right, you will create a Fire Overlord who hopefully will consist of some sort of 'concentrated' fire or something similar. ...\",\n\t\t\t\t\t\t\"THAT'S what we need!! Are you in on it?\",\n\t\t\t\t\t}, npc, creature)\n\t\t\t\telseif player:isDruid() then\n\t\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\t\"Okay, listen closely: First of all, you need to gather 20 enchanted emeralds in order to go to the earth sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\",\n\t\t\t\t\t\t\"Once you got there, find a way to gather elemental earth in any form. You will face earth elementals, that's for sure, but I don't know how the earth is stored. ...\",\n\t\t\t\t\t\t\"Anyway, there should be a way to use that elemental earth and strengthen one of the elementals. If my calculations are right, you will create an Earth Overlord who hopefully will consist of some sort of 'concentrated' earth or something similar. ...\",\n\t\t\t\t\t\t\"THAT'S what we need!! Are you in on it?\",\n\t\t\t\t\t}, npc, creature)\n\t\t\t\telseif player:isPaladin() then\n\t\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\t\"Okay, listen closely: First of all, you need to gather 20 enchanted sapphires in order to go to the ice sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\",\n\t\t\t\t\t\t\"Once you got there, find a way to gather elemental ice in any form. You will face ice elementals, that's for sure, but I don't know how the ice is stored. ...\",\n\t\t\t\t\t\t\"Anyway, there should be a way to use that elemental ice and strengthen one of the elementals. If my calculations are right, you will create an Ice Overlord who hopefully will consist of some sort of 'concentrated' ice or something similar. ...\",\n\t\t\t\t\t\t\"THAT'S what we need!! Are you in on it?\",\n\t\t\t\t\t}, npc, creature)\n\t\t\t\telseif player:isKnight() then\n\t\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\t\"Okay, listen closely: First of all, you need to gather 20 enchanted amethysts in order to go to the energy sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\",\n\t\t\t\t\t\t\"Once you got there, find a way to gather elemental energy in any form. You will face energy elementals, that's for sure, but I don't know how the energy is stored. ...\",\n\t\t\t\t\t\t\"Anyway, there should be a way to use that energy and strengthen one of the elementals. If my calculations are right, you will create an Energy Overlord who hopefully will consist of some sort of 'concentrated' energy. ...\",\n\t\t\t\t\t\t\"THAT'S what we need!! Are you in on it?\",\n\t\t\t\t\t}, npc, creature)\n\t\t\t\tend\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"I'm sorry this task is highly dangerous and I need experienced people for it.\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\t\treturn false\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif value == 1 then\n\t\t\tif player:getItemCount(player:isSorcerer() and 946 or player:isDruid() and 947 or player:isPaladin() and 942 or player:isKnight() and 948) > 0 then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.ElementalSpheres.QuestLine, 2)\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Impressive!! Let me take a look.......Ahh, \"\n\t\t\t\t\t\t.. (\n\t\t\t\t\t\t\tplayer:isSorcerer() and \"an ETERNAL FLAME! Now you need to find a knight, a druid, and a paladin who also completed this first task. ...\"\n\t\t\t\t\t\t\tor player:isDruid() and \"MOTHER SOIL! Now you need to find a knight, a paladin, and a sorcerer who also completed this first task. ...\"\n\t\t\t\t\t\t\tor player:isPaladin() and \"a FLAWLESS ICE CRYSTAL! Now you need to find a knight, a druid, and a sorcerer who also completed this first task. ...\"\n\t\t\t\t\t\t\tor player:isKnight() and \"PURE ENERGY! Now you need to find a druid, a paladin, and a sorcerer who also completed this first task. ...\"\n\t\t\t\t\t\t),\n\t\t\t\t\t\"Go down in the cellar again. I prepared a room under the academy where it should be safe. Your task is to charge the machines with the elemental substances and summon the LORD OF THE ELEMENTS. ...\",\n\t\t\t\t\t\"When you use an obsidian knife on it's corpse you hopefully get some of the precious neutral matter. It's the only way to revive my dear friend Alverus!!\",\n\t\t\t\t}, npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You need some kind of pure elemental soil from the \" .. (player:isSorcerer() and \"Fire\" or player:isDruid() and \"Earth\" or player:isPaladin() and \"Ice\" or player:isKnight() and \"Energy\") .. \" Overlord. Come back when you've got it.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif value == 2 then\n\t\t\tif player:removeItem(954, 1) and player:getStorageValue(Storage.Quest.U8_2.ElementalSpheres.QuestLine) < 3 then\n\t\t\t\tnpcHandler:say(\"AMAZING!! I'm going to start immediately with the research. If it turns out the way I expect it, Alverus will be revived soon!! Here, take this as a reward and try to collect more of this substance. I'll make you a good offer, I promise. \", npc, creature)\n\t\t\t\tplayer:addItem(player:isSorcerer() and 8039 or player:isDruid() and 8041 or player:isPaladin() and 8025 or player:isKnight() and 8055, 1)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_2.ElementalSpheres.QuestLine, 3)\n\t\t\tend\n\t\tend\n\telseif npcHandler:getTopic(playerId) == 1 and MsgContains(message, \"yes\") then\n\t\tplayer:setStorageValue(Storage.Quest.U8_2.ElementalSpheres.QuestLine, 1)\n\t\tnpcHandler:say(\"Good, don't waste time! Come back here when you have the elemental object!\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\tend\n\treturn true\nend\n\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"How dare you asking me this?!? I'm Arkulius - Master of Elements, the HEADMASTER of this academy!!\" })\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm Arkulius - Master of Elements, the headmaster of this academy.\" })\nkeywordHandler:addKeyword({ \"help\" }, StdModule.say, { npcHandler = npcHandler, text = \"I have better things to do than helping you. See that ice statue over there? My dear friend Alverus needs to be revived!\" })\nkeywordHandler:addKeyword({ \"time\" }, StdModule.say, { npcHandler = npcHandler, text = \"Time is an illusion and completely irrelevant to me.\" })\nkeywordHandler:addKeyword({ \"weapon\" }, StdModule.say, { npcHandler = npcHandler, text = \"Weapons are for those people who aren't able to use their heads or better what's INSIDE their heads. No offence <coughs>.\" }) -- < Knight; FIXME !!!\nkeywordHandler:addKeyword({ \"pits of inferno\" }, StdModule.say, { npcHandler = npcHandler, text = \"Yeye, I believe you almost feel like home among all those brainless creatures!\" })\n\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Good bye and please stay away, okay?\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"At last! Good things come to those who wait.\")\nnpcHandler:setCallback(CALLBACK_GREET, greetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"energy soil\", clientId = 945, sell = 2000 },\n\t{ itemName = \"eternal flames\", clientId = 946, sell = 5000 },\n\t{ itemName = \"flawless ice crystal\", clientId = 942, sell = 5000 },\n\t{ itemName = \"glimmering soil\", clientId = 941, sell = 2000 },\n\t{ itemName = \"iced soil\", clientId = 944, sell = 2000 },\n\t{ itemName = \"mother soil\", clientId = 947, sell = 5000 },\n\t{ itemName = \"natural soil\", clientId = 940, sell = 2000 },\n\t{ itemName = \"neutral matter\", clientId = 954, sell = 5000 },\n\t{ itemName = \"pure energy\", clientId = 948, sell = 5000 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+            "string_literals_in_original_context": [
+              {
+                "line": 1,
+                "lua_literal": "\"Arkulius\""
+              },
+              {
+                "line": 29,
+                "lua_literal": "\"...the arithmetical paradox has the same value in a metaphysical way, then...\""
+              },
+              {
+                "line": 30,
+                "lua_literal": "\"Oh my! Alverus!! Did you really...?!?! I have to recalculate it to make sure that I made no mistake.\""
+              },
+              {
+                "line": 31,
+                "lua_literal": "\"<mumbles>\""
+              },
+              {
+                "line": 32,
+                "lua_literal": "\"...the minimum square deviation could cause a dislocation, in a matter of fact...\""
+              },
+              {
+                "line": 33,
+                "lua_literal": "\"...it could be possible to bring the sphere to a destination where...\""
+              },
+              {
+                "line": 34,
+                "lua_literal": "\"Yes, that's it! The elementary particle are corresponding to the... the ... UNBELIEVEABLE!!!\""
+              },
+              {
+                "line": 65,
+                "lua_literal": "\"...if the expected constant is higher than... Hmmm, who are you?? What do you want?\""
+              },
+              {
+                "line": 66,
+                "lua_literal": "\"...then I could transform a spell to bend... How can anyone expect me to work under these conditions?? What do you want?\""
+              },
+              {
+                "line": 67,
+                "lua_literal": "\"...if my calculations are correct, I will be able to revive... Arrgghh!! What do you want?\""
+              },
+              {
+                "line": 85,
+                "lua_literal": "\"alverus\""
+              },
+              {
+                "line": 87,
+                "lua_literal": "\"It happened while he carried out an experiment concerning the creation of the elemental {shrines}. I still get goose bumps just by thinking of it. ...\""
+              },
+              {
+                "line": 88,
+                "lua_literal": "\"You need to know about the process of creating an elemental shrine to understand it completely, but I don't want to go into detail now. ...\""
+              },
+              {
+                "line": 89,
+                "lua_literal": "\"Anyway, his spell had a different outcome than he had planned. He accidentally created an Ice Overlord, pure living elemental ice, who froze him in a blink of an eye.\""
+              },
+              {
+                "line": 92,
+                "lua_literal": "\"shrine\""
+              },
+              {
+                "line": 94,
+                "lua_literal": "\"The creation of the elemental shrines is a really complex matter. They are actually nodes, locations where the matching elemental sphere is very close. ...\""
+              },
+              {
+                "line": 95,
+                "lua_literal": "\"The shrine itself is like a portal between our world and the elemental {sphere} and enables us to use the elemental energy emerging from it.\""
+              },
+              {
+                "line": 98,
+                "lua_literal": "\"sphere\""
+              },
+              {
+                "line": 100,
+                "lua_literal": "\"There are four spheres we know of: ice, fire, earth and energy. ....<mumbles> Hmmm, should I ask or not?....The heck with it! Now that you know about the spheres ...\""
+              },
+              {
+                "line": 101,
+                "lua_literal": "\"I found a way to visit them. It's VERY dangerous and there is a decent chance that you won't come back BUT if you succeed you'll write history!!! Ask me about that {mission} if you're interested.\""
+              },
+              {
+                "line": 104,
+                "lua_literal": "\"mission\""
+              },
+              {
+                "line": 104,
+                "lua_literal": "\"quest\""
+              },
+              {
+                "line": 110,
+                "lua_literal": "\"Okay, listen closely: First of all, you need to gather 20 enchanted rubies in order to go to the fire sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\""
+              },
+              {
+                "line": 111,
+                "lua_literal": "\"Once you got there, find a way to gather elemental fire in any form. You will face fire elementals, that's for sure, but I don't know how the fire is stored. ...\""
+              },
+              {
+                "line": 112,
+                "lua_literal": "\"Anyway, there should be a way to use that elemental fire and strengthen one of the elementals. If my calculations are right, you will create a Fire Overlord who hopefully will consist of some sort of 'concentrated' fire or something similar. ...\""
+              },
+              {
+                "line": 113,
+                "lua_literal": "\"THAT'S what we need!! Are you in on it?\""
+              },
+              {
+                "line": 117,
+                "lua_literal": "\"Okay, listen closely: First of all, you need to gather 20 enchanted emeralds in order to go to the earth sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\""
+              },
+              {
+                "line": 118,
+                "lua_literal": "\"Once you got there, find a way to gather elemental earth in any form. You will face earth elementals, that's for sure, but I don't know how the earth is stored. ...\""
+              },
+              {
+                "line": 119,
+                "lua_literal": "\"Anyway, there should be a way to use that elemental earth and strengthen one of the elementals. If my calculations are right, you will create an Earth Overlord who hopefully will consist of some sort of 'concentrated' earth or something similar. ...\""
+              },
+              {
+                "line": 120,
+                "lua_literal": "\"THAT'S what we need!! Are you in on it?\""
+              },
+              {
+                "line": 124,
+                "lua_literal": "\"Okay, listen closely: First of all, you need to gather 20 enchanted sapphires in order to go to the ice sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\""
+              },
+              {
+                "line": 125,
+                "lua_literal": "\"Once you got there, find a way to gather elemental ice in any form. You will face ice elementals, that's for sure, but I don't know how the ice is stored. ...\""
+              },
+              {
+                "line": 126,
+                "lua_literal": "\"Anyway, there should be a way to use that elemental ice and strengthen one of the elementals. If my calculations are right, you will create an Ice Overlord who hopefully will consist of some sort of 'concentrated' ice or something similar. ...\""
+              },
+              {
+                "line": 127,
+                "lua_literal": "\"THAT'S what we need!! Are you in on it?\""
+              },
+              {
+                "line": 131,
+                "lua_literal": "\"Okay, listen closely: First of all, you need to gather 20 enchanted amethysts in order to go to the energy sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...\""
+              },
+              {
+                "line": 132,
+                "lua_literal": "\"Once you got there, find a way to gather elemental energy in any form. You will face energy elementals, that's for sure, but I don't know how the energy is stored. ...\""
+              },
+              {
+                "line": 133,
+                "lua_literal": "\"Anyway, there should be a way to use that energy and strengthen one of the elementals. If my calculations are right, you will create an Energy Overlord who hopefully will consist of some sort of 'concentrated' energy. ...\""
+              },
+              {
+                "line": 134,
+                "lua_literal": "\"THAT'S what we need!! Are you in on it?\""
+              },
+              {
+                "line": 138,
+                "lua_literal": "\"I'm sorry this task is highly dangerous and I need experienced people for it.\""
+              },
+              {
+                "line": 147,
+                "lua_literal": "\"Impressive!! Let me take a look.......Ahh, \""
+              },
+              {
+                "line": 149,
+                "lua_literal": "\"an ETERNAL FLAME! Now you need to find a knight, a druid, and a paladin who also completed this first task. ...\""
+              },
+              {
+                "line": 150,
+                "lua_literal": "\"MOTHER SOIL! Now you need to find a knight, a paladin, and a sorcerer who also completed this first task. ...\""
+              },
+              {
+                "line": 151,
+                "lua_literal": "\"a FLAWLESS ICE CRYSTAL! Now you need to find a knight, a druid, and a sorcerer who also completed this first task. ...\""
+              },
+              {
+                "line": 152,
+                "lua_literal": "\"PURE ENERGY! Now you need to find a druid, a paladin, and a sorcerer who also completed this first task. ...\""
+              },
+              {
+                "line": 154,
+                "lua_literal": "\"Go down in the cellar again. I prepared a room under the academy where it should be safe. Your task is to charge the machines with the elemental substances and summon the LORD OF THE ELEMENTS. ...\""
+              },
+              {
+                "line": 155,
+                "lua_literal": "\"When you use an obsidian knife on it's corpse you hopefully get some of the precious neutral matter. It's the only way to revive my dear friend Alverus!!\""
+              },
+              {
+                "line": 158,
+                "lua_literal": "\"You need some kind of pure elemental soil from the \""
+              },
+              {
+                "line": 158,
+                "lua_literal": "\"Fire\""
+              },
+              {
+                "line": 158,
+                "lua_literal": "\"Earth\""
+              },
+              {
+                "line": 158,
+                "lua_literal": "\"Ice\""
+              },
+              {
+                "line": 158,
+                "lua_literal": "\"Energy\""
+              },
+              {
+                "line": 158,
+                "lua_literal": "\" Overlord. Come back when you've got it.\""
+              },
+              {
+                "line": 163,
+                "lua_literal": "\"AMAZING!! I'm going to start immediately with the research. If it turns out the way I expect it, Alverus will be revived soon!! Here, take this as a reward and try to collect more of this substance. I'll make you a good offer, I promise. \""
+              },
+              {
+                "line": 168,
+                "lua_literal": "\"yes\""
+              },
+              {
+                "line": 170,
+                "lua_literal": "\"Good, don't waste time! Come back here when you have the elemental object!\""
+              },
+              {
+                "line": 176,
+                "lua_literal": "\"job\""
+              },
+              {
+                "line": 176,
+                "lua_literal": "\"How dare you asking me this?!? I'm Arkulius - Master of Elements, the HEADMASTER of this academy!!\""
+              },
+              {
+                "line": 177,
+                "lua_literal": "\"name\""
+              },
+              {
+                "line": 177,
+                "lua_literal": "\"I'm Arkulius - Master of Elements, the headmaster of this academy.\""
+              },
+              {
+                "line": 178,
+                "lua_literal": "\"help\""
+              },
+              {
+                "line": 178,
+                "lua_literal": "\"I have better things to do than helping you. See that ice statue over there? My dear friend Alverus needs to be revived!\""
+              },
+              {
+                "line": 179,
+                "lua_literal": "\"time\""
+              },
+              {
+                "line": 179,
+                "lua_literal": "\"Time is an illusion and completely irrelevant to me.\""
+              },
+              {
+                "line": 180,
+                "lua_literal": "\"weapon\""
+              },
+              {
+                "line": 180,
+                "lua_literal": "\"Weapons are for those people who aren't able to use their heads or better what's INSIDE their heads. No offence <coughs>.\""
+              },
+              {
+                "line": 181,
+                "lua_literal": "\"pits of inferno\""
+              },
+              {
+                "line": 181,
+                "lua_literal": "\"Yeye, I believe you almost feel like home among all those brainless creatures!\""
+              },
+              {
+                "line": 183,
+                "lua_literal": "\"Good bye and please stay away, okay?\""
+              },
+              {
+                "line": 184,
+                "lua_literal": "\"At last! Good things come to those who wait.\""
+              },
+              {
+                "line": 190,
+                "lua_literal": "\"energy soil\""
+              },
+              {
+                "line": 191,
+                "lua_literal": "\"eternal flames\""
+              },
+              {
+                "line": 192,
+                "lua_literal": "\"flawless ice crystal\""
+              },
+              {
+                "line": 193,
+                "lua_literal": "\"glimmering soil\""
+              },
+              {
+                "line": 194,
+                "lua_literal": "\"iced soil\""
+              },
+              {
+                "line": 195,
+                "lua_literal": "\"mother soil\""
+              },
+              {
+                "line": 196,
+                "lua_literal": "\"natural soil\""
+              },
+              {
+                "line": 197,
+                "lua_literal": "\"neutral matter\""
+              },
+              {
+                "line": 198,
+                "lua_literal": "\"pure energy\""
+              },
+              {
+                "line": 206,
+                "lua_literal": "\"Sold %ix %s for %i gold.\""
+              },
+              {
+                "line": 212,
+                "lua_literal": "\"trade\""
+              },
+              {
+                "line": 212,
+                "lua_literal": "\"bye\""
+              }
+            ]
+          }
+        ],
+        "review_elements": [
+          "Arkulius: rozpoczęcie",
+          "Arkulius: potwierdzenie rzadkiego żywiołu",
+          "Arkulius: zakończenie"
+        ],
+        "excluded_from_this_quest": [],
+        "ownership_constraint": null,
+        "runtime_admission": false,
+        "admission_reason": "Complete text and guards/topics/effects are preserved. No generic mission-NPC runtime is qualified for these branches; no ungated keywords are installed."
+      }
+    ],
+    "policy": "Full source is evidence only. Authoring must preserve each branch guard, topic and effect. Source literals do not authorize dialogue activation; canonical track ownership and native item/world admission remain unchanged."
+  },
+  "step_inventory": [
+    {
+      "element": "Arkulius: rozpoczęcie",
+      "patterns": [
+        "P09"
+      ],
+      "trigger": "mission/quest→yes",
+      "condition": "level≥80;QuestLine<1;topic1",
+      "effect": "QuestLine=1;4 warianty profesji;Monk brak w źródle",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:104"
+      ],
+      "existing": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Arkulius: potwierdzenie rzadkiego żywiołu",
+      "patterns": [
+        "P09"
+      ],
+      "trigger": "mission/quest",
+      "condition": "QuestLine=1;Sorcerer946/Druid947/Paladin942/Knight948 w plecaku",
+      "effect": "QuestLine=2;nie konsumuje",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:143"
+      ],
+      "existing": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Arkulius: zakończenie",
+      "patterns": [
+        "P09",
+        "P10",
+        "P11"
+      ],
+      "trigger": "mission/quest",
+      "condition": "QuestLine=2;removeItem954,1",
+      "effect": "QuestLine=3;Sorcerer8039/Druid8041/Paladin8025/Knight8055",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:161"
+      ],
+      "existing": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ładowanie gemami:Paladin",
+      "patterns": [
+        "P02"
+      ],
+      "trigger": "Use675 na33268/33269,31830,10",
+      "condition": "QuestLine>0;zgodna vocation;target nie846/847",
+      "effect": "MachineGemCount=max(1,old+1);gemstack-1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ładowanie gemami:Sorcerer",
+      "patterns": [
+        "P02"
+      ],
+      "trigger": "Use676 na33268/33269,31830,10",
+      "condition": "QuestLine>0;zgodna vocation;target nie846/847",
+      "effect": "MachineGemCount=max(1,old+1);gemstack-1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ładowanie gemami:Druid",
+      "patterns": [
+        "P02"
+      ],
+      "trigger": "Use677 na33268/33269,31830,10",
+      "condition": "QuestLine>0;zgodna vocation;target nie846/847",
+      "effect": "MachineGemCount=max(1,old+1);gemstack-1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Ładowanie gemami:Knight",
+      "patterns": [
+        "P02"
+      ],
+      "trigger": "Use678 na33268/33269,31830,10",
+      "condition": "QuestLine>0;zgodna vocation;target nie846/847",
+      "effect": "MachineGemCount=max(1,old+1);gemstack-1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Maszyna:wejścieSorcerer",
+      "patterns": [
+        "P01",
+        "P03"
+      ],
+      "trigger": "Use842/843/846/847",
+      "condition": "przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20",
+      "effect": "teleport33183,32197,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Maszyna:wejścieDruid",
+      "patterns": [
+        "P01",
+        "P03"
+      ],
+      "trigger": "Use842/843/846/847",
+      "condition": "przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20",
+      "effect": "teleport33331,32076,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Maszyna:wejściePaladin",
+      "patterns": [
+        "P01",
+        "P03"
+      ],
+      "trigger": "Use842/843/846/847",
+      "condition": "przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20",
+      "effect": "teleport33265,32202,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:4"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Maszyna:wejścieKnight",
+      "patterns": [
+        "P01",
+        "P03"
+      ],
+      "trigger": "Use842/843/846/847",
+      "condition": "przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20",
+      "effect": "teleport33087,32096,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:5"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Naładowanie pierścienia:item940",
+      "patterns": [
+        "P02",
+        "P16"
+      ],
+      "trigger": "Use940 na7742",
+      "condition": "zgodny target",
+      "effect": "target→7746 zdecay;soil stack-1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Naładowanie pierścienia:item941",
+      "patterns": [
+        "P02",
+        "P16"
+      ],
+      "trigger": "Use941 na7743",
+      "condition": "zgodny target",
+      "effect": "target→7745 zdecay;soil stack-1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:3"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Naładowanie pierścienia:item944",
+      "patterns": [
+        "P02",
+        "P16"
+      ],
+      "trigger": "Use944 na7741",
+      "condition": "zgodny target",
+      "effect": "target→7744 zdecay;soil stack-1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:4"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Naładowanie pierścienia:item945",
+      "patterns": [
+        "P02",
+        "P16"
+      ],
+      "trigger": "Use945 na7737",
+      "condition": "zgodny target",
+      "effect": "target→tworzy2126 zdecay;soil stack-1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:5"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Przywołanie:Energy Overlord",
+      "patterns": [
+        "P19",
+        "P22"
+      ],
+      "trigger": "AddItem8139 naaltar7738",
+      "condition": "8 pól ma item2126;worldboss!=1",
+      "effect": "usuwa corpse;spawnEnergy Overlord@33095,32194,13;worldboss=1;charged pól nie usuwa",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:2"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Przywołanie:Fire Overlord",
+      "patterns": [
+        "P19",
+        "P22"
+      ],
+      "trigger": "AddItem8141 naaltar7739",
+      "condition": "8 pól ma item7745;worldboss!=1",
+      "effect": "usuwa corpse;spawnFire Overlord@33199,32103,13;worldboss=1;charged pól nie usuwa",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:21"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Przywołanie:Ice Overlord",
+      "patterns": [
+        "P19",
+        "P22"
+      ],
+      "trigger": "AddItem8140 naaltar7740",
+      "condition": "8 pól ma item7744;worldboss!=1",
+      "effect": "usuwa corpse;spawnIce Overlord@33286,32102,13;worldboss=1;charged pól nie usuwa",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:40"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Przywołanie:Earth Overlord",
+      "patterns": [
+        "P19",
+        "P22"
+      ],
+      "trigger": "AddItem8106 naaltar7748",
+      "condition": "8 pól ma item7746;worldboss!=1",
+      "effect": "usuwa corpse;spawnEarth Overlord@33347,32208,13;worldboss=1;charged pól nie usuwa",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:60"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Overlords:progres uczestników",
+      "patterns": [
+        "P07",
+        "P21",
+        "P22"
+      ],
+      "trigger": "ElementalOverlordDeath",
+      "condition": "Energy/Fire/Ice/Earth Overlord;damage-participation",
+      "effect": "worldboss=0;BossStorage min1 dla każdego kwalifikującego;Lord of Elements nie daje storage w tym hooku",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/creaturescripts_overlord_kill.lua:1"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Wyjście ze sfer",
+      "patterns": [
+        "P03"
+      ],
+      "trigger": "StepIn aid24545",
+      "condition": "pierwszy player storage10130..10133≥1",
+      "effect": "teleportEK33264,31835,10/RP33272,31835,10/ED33268,31840,10/SORC33268,31831,10;wybrany=0;fallback town temple",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_soil_exit.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komnata Lord:wpuszczenie4profesji",
+      "patterns": [
+        "P06"
+      ],
+      "trigger": "Use uid1010;2772;actor33270,31835,10",
+      "condition": "4 pola:Sorc+946,Druid+947,Knight+948,Paladin+942;każdyQuestLine≥1;room bez gracza i BossRoom≤0",
+      "effect": "teleport4osób na osobne pozycje;nie zabiera rzadkich przedmiotów;lever2773",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lever.lua:1"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komnata Lord:przełączniki maszyn",
+      "patterns": [
+        "P01"
+      ],
+      "trigger": "Use844/845/848/849",
+      "condition": "target w33238,31806,12..33297,31865,12",
+      "effect": "obie połówki±4 iON/OFF",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine2.lua:2"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komnata Lord:ładowanie4rdzeni",
+      "patterns": [
+        "P02",
+        "P22"
+      ],
+      "trigger": "942/946/947/948 na842..849",
+      "condition": "zgodna profesja;target wkomnacie ioff842..845",
+      "effect": "world raw10005..10008=1;item-1;nie są to Machine1..4=41659..41662",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils2.lua:1"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komnata Lord:4dźwignie",
+      "patterns": [
+        "P01",
+        "P06",
+        "P22"
+      ],
+      "trigger": "Use uid1011..1014;2772",
+      "condition": "actor na1 z4 pozycji;donor najpierw ustawia wszystkieMachine1..4=1",
+      "effect": "lever2773;5walli na stronę;po4 aktywnych BossRoom=1;Lord@33267,31836,12;warning5min;reset10min",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua:129"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komnata Lord:timeout/reset",
+      "patterns": [
+        "P16",
+        "P25"
+      ],
+      "trigger": "timer10min",
+      "condition": "wyłonieni gracze nadal warea",
+      "effect": "teleport33265,31838,10;usuwa20walli iLord;reset4lever;BossRoom=-1;Machine1..4=-1",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua:63"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Komnata Lord:wyjście",
+      "patterns": [
+        "P03",
+        "P29"
+      ],
+      "trigger": "StepIn aid9029",
+      "condition": "player",
+      "effect": "teleport33265,31838,10;PLAYER raw10005..10008=-1 (world pozostaje)",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_aoe_teleport_out.lua:3"
+      ],
+      "existing": "TAK — kształt Use/StepIn+storage/teleport (powiązanie wymaga importu); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Neutral matter:świeże zwłoki",
+      "patterns": [
+        "P02",
+        "P11"
+      ],
+      "trigger": "obsidian knife5908 na8181",
+      "condition": "player raw789100≤1",
+      "effect": "+954;789100=1;donor nie zmienia corpse,można powtarzać",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:259"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Neutral matter:starsze zwłoki",
+      "patterns": [
+        "P02",
+        "P11"
+      ],
+      "trigger": "obsidian knife5908 na8182",
+      "condition": "player raw789100≤1",
+      "effect": "+954;789100=2",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:264"
+      ],
+      "existing": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Przedmiot rzadkiego żywiołu:Earth Overlord",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "loot Earth Overlord",
+      "condition": "standardowy rozdział łupu/reward boss",
+      "effect": "mother soil;chance100000 w donorze",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/earth_overlord.lua:74"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Przedmiot rzadkiego żywiołu:Energy Overlord",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "loot Energy Overlord",
+      "condition": "standardowy rozdział łupu/reward boss",
+      "effect": "pure energy;chance100000 w donorze",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/energy_overlord.lua:72"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Przedmiot rzadkiego żywiołu:Fire Overlord",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "loot Fire Overlord",
+      "condition": "standardowy rozdział łupu/reward boss",
+      "effect": "eternal flames;chance100000 w donorze",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/fire_overlord.lua:73"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Przedmiot rzadkiego żywiołu:Ice Overlord",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "loot Ice Overlord",
+      "condition": "standardowy rozdział łupu/reward boss",
+      "effect": "flawless ice crystal;chance100000 w donorze",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/ice_overlord.lua:72"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Podstawowy soil loot:Muddy Earth Elemental",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "loot Muddy Earth Elemental",
+      "condition": "standardowy rozdział łupu",
+      "effect": "natural soil;chance3750; silniejszy wariant elementala ma oddzielną tabelę",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/muddy_earth_elemental.lua:70"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Podstawowy soil loot:Blazing Fire Elemental",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "loot Blazing Fire Elemental",
+      "condition": "standardowy rozdział łupu",
+      "effect": "glimmering soil;chance2500; silniejszy wariant elementala ma oddzielną tabelę",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/blazing_fire_elemental.lua:66"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Podstawowy soil loot:Charged Energy Elemental",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "loot Charged Energy Elemental",
+      "condition": "standardowy rozdział łupu",
+      "effect": "energy soil;chance2063; silniejszy wariant elementala ma oddzielną tabelę",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/charged_energy_elemental.lua:69"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Podstawowy soil loot:Slick Water Elemental",
+      "patterns": [
+        "P30"
+      ],
+      "trigger": "loot Slick Water Elemental",
+      "condition": "standardowy rozdział łupu",
+      "effect": "iced soil;chance6000; silniejszy wariant elementala ma oddzielną tabelę",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/slick_water_elemental.lua:71"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Lord of the Elements: walka i przemiany",
+      "patterns": [
+        "P20",
+        "P30"
+      ],
+      "trigger": "standardowe ataki/defense/summon bossa",
+      "condition": "4typy summon;maxSummons4",
+      "effect": "melee do690;heal100..195;czasowe wyglądy4Overlords na3000ms; corpse8181",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/lord_of_the_elements.lua:69"
+      ],
+      "existing": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+      "initial_import_mode": "RĘCZNIE"
+    }
+  ],
+  "preserved_claims": []
+}

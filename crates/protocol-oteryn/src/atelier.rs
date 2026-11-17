@@ -2,6 +2,7 @@
 use crate::charm_wire::{CyclopediaWireError as Error, push_varint_field, read_varint, set_once};
 
 pub mod resources;
+pub mod v2;
 
 pub const CAPABILITY_WHEEL_ALLOCATION_V1: u32 = 148;
 pub const COMMAND_TYPE_ATELIER_QUERY: u32 = 308;

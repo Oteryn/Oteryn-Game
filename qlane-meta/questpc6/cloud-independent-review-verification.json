@@ -1,0 +1,22 @@
+{
+  "candidate": "6eac53e5d7bd58bd1ff5009a9780f98f95fa872c",
+  "base": "2e42d08fa463eaa47045274ed5a41bd5b28a07b3",
+  "result": "No significant findings",
+  "blocking_findings": 0,
+  "method": "Fresh-context independent platform review agent; read-only packet, no inherited implementation conversation; exact head held unchanged throughout review.",
+  "coverage": [
+    "Changed Rust, SQL migrations, authoring tools, tests and generated content",
+    "Atomic fee/MINT rollback and exact command/source/payment proof",
+    "Immutable Character claim/receipt indexed joins and terminal level/claim guards",
+    "Native death origin/lease capture, cancellation, replay and production callers",
+    "Pinned donor selectors and all21 source origin pointers; prior item profiles/NPC placements preserved"
+  ],
+  "limits": "Reviewer did not rerun builds/tests, live migration allocation or remote CI. Parent deterministic checks and live number-allocation proof are recorded separately. No remote CI/mergeability claim.",
+  "cli_preflight_failure": {
+    "exit_code": 1,
+    "error": "failed to initialize in-process app-server client: Read-only file system (os error 30)",
+    "disposition": "Failed before external/model initialization; no review dispatched by CLI. The available independent platform reviewer performed the sole actual review for this candidate.",
+    "log_sha256": "8e3330eeb312ddb37b9da73c3ece4a8aa7e2ade4b7bb255573aa487bc89f0f58"
+  },
+  "lifecycle": "Frozen candidate review completed cleanly; returned to AUTHORING for evidence-only qualification. Product code remains byte-identical to reviewed candidate."
+}

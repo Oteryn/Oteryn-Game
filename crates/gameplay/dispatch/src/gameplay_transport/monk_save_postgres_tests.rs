@@ -7,8 +7,7 @@ pub(in crate::gameplay_transport) mod equipment_scenarios;
 mod first_vocation_vitals;
 #[path = "../../../../../apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs"]
 mod fixture;
-#[path = "monk_save_fresh_fixture.rs"]
-mod fresh_fixture;
+use crate::gameplay_transport::composed_test_owner::fresh_fixture;
 #[path = "item_look_postgres_tests.rs"]
 mod item_look;
 #[path = "kill_reward_postgres_e2e_tests.rs"]
@@ -57,6 +56,25 @@ use {
 };
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+async fn maintain_ready(root: &crate::durability::DurabilityRoot) -> TestResult {
+    // Direct test owners have no node maintenance loop to replace a retired holder.
+    if root.has_ready_demand() {
+        root.maintain_ready_once().await.map_err(debug)?;
+    }
+    Ok(())
+}
+
+pub async fn maintain_authority_ready<
+    A: crate::gameplay_transport::connection::FreshAdmissionAuthority,
+>(
+    authority: &A,
+) {
+    if let Some(root) = authority.test_durability_root() {
+        maintain_ready(root).await.expect("direct serve readiness");
+    }
+}
+
 thread_local! {
     static HOST_NOW: Cell<Option<i64>> = const { Cell::new(None) };
     static SAVES: Cell<usize> = const { Cell::new(0) };
@@ -83,6 +101,7 @@ use fresh_session::prepare_current_session;
 
 struct Dependencies {
     runtime: Mutex<ChannelRuntimeV1>,
+    clock_origin: std::time::Instant,
     room: crate::content::QualifiedNativeEntryRoom,
     combat_room: Option<crate::content::QualifiedNativeEntryRoom>,
     door: Mutex<crate::world_runtime::LocalObjectRuntime>,
@@ -169,6 +188,7 @@ impl Dependencies {
         .map_err(debug)?;
         Ok(Self {
             runtime: Mutex::new(runtime),
+            clock_origin: std::time::Instant::now(),
             room,
             combat_room: None,
             door: Mutex::new(door),
@@ -200,10 +220,18 @@ impl Dependencies {
         harness: &'a Harness,
         authority: &'a ReconciledCharacterAuthority<'f, 's>,
     ) -> ComposedFreshAdmission<'a, 'f, 's> {
+        self.owner_from(&harness.root, &harness.node, authority)
+    }
+    fn owner_from<'a, 'f, 's>(
+        &'a self,
+        root: &'a crate::durability::DurabilityRoot,
+        holder: &'a crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+        authority: &'a ReconciledCharacterAuthority<'f, 's>,
+    ) -> ComposedFreshAdmission<'a, 'f, 's> {
         let mut owner = crate::gameplay_transport::composed_test_owner::ComposedTestOwner {
-            root: &harness.root,
+            root,
             character: authority,
-            holder: &harness.node,
+            holder,
             evidence: &self.evidence,
             world_id: self.admitted.world_id,
             channel_id: self.admitted.channel_id,
@@ -225,6 +253,8 @@ impl Dependencies {
             room: &self.room,
         }
         .build();
+        // Rebuilt session projections share the retained runtime's monotonic clock.
+        owner.clock_origin = self.clock_origin;
         // Combat suites (creature move, kill reward) install their bundle combat view here.
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, self.combat_room.as_ref());
         owner
@@ -673,11 +703,8 @@ mod death_ml_loss_composed {
     use super::fixture::{Harness, debug, id, run};
     use super::{Dependencies, TestResult, prepare_current_session};
     use crate::ability::creature_bite::CreatureBiteVitals;
+    use crate::content::ContentActivationController;
     use crate::content::native_gameplay::NativeGameplayInput;
-    use crate::content::{
-        ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
-        activate_native_entry_room_with_gameplay,
-    };
     use crate::durability::character_build::{
         BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildFormula, BuildOccurrence,
         DurableBuildState, convert_vocation,
@@ -799,6 +826,16 @@ mod death_ml_loss_composed {
         ContentActivationController,
         crate::content::NativeEntryContentPin,
     )> {
+        let supplied = production_input_with_source(content, source)?;
+        crate::content::native_gameplay::test_support::try_activate_input(world, &supplied)
+            .map_err(debug)
+    }
+
+    /// Keep initial and successor generations on the same fixture revision.
+    pub(super) fn production_input_with_source(
+        content: &str,
+        source: Option<&[u8]>,
+    ) -> TestResult<NativeGameplayInput> {
         use sha2::Digest;
         let manifest = std::path::Path::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
@@ -821,33 +858,33 @@ mod death_ml_loss_composed {
             .as_mut()
             .ok_or("the manifest pins build training")?
             .content_revision = content.into();
-        let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied)
-            .map_err(debug)?;
-        let issuance = NativeEntryActivationIssuance {
-            world_id: world,
-            activation_sequence: 1,
-            server_artifact_digest: room.compiled().server_digest(),
-            client_artifact_digest: room.compiled().client_digest(),
-            frame_binding_digest: room.frame_binding().digest(),
-        };
-        let mut controller = ContentActivationController::new();
-        let pin = activate_native_entry_room_with_gameplay(
-            &mut controller,
-            &NodeBootQuiescence::before_channel_runtime(),
-            world,
-            &issuance,
-            &supplied,
-        )
-        .map_err(debug)?;
-        Ok((controller, pin))
+        {
+            let cosmetics = &mut supplied.cosmetics;
+            let mut packet: serde_json::Value = serde_json::from_slice(&cosmetics.bytes)?;
+            if packet["availability"] == "authored" {
+                // The fixture rebinds the Character content revision above;
+                // its admitted appearance packet must use that same revision.
+                packet["authoring"]["document"]["content_revision"] = content.into();
+                cosmetics.bytes = serde_json::to_vec(&packet)?;
+                cosmetics.sha256 = sha2::Sha256::digest(&cosmetics.bytes)
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect();
+            }
+        }
+        Ok(supplied)
     }
 
     pub(super) async fn current_fence(
         owner: &ComposedFreshAdmission<'_, '_, '_>,
         session: GameSessionId,
     ) -> TestResult<CurrentCharacterGameplayFence> {
+        // Setup needs the same bounded holder recovery as fresh admission:
+        // a completed durable pass can retire its holder before the next read.
+        let budget =
+            crate::gameplay_transport::AdmissionRetryBudget::for_root(&session, owner.root);
         Ok(owner
-            .current_quest_fence(session)
+            .current_quest_fence_within(&budget, session)
             .await
             .map_err(|()| "fence read")?
             .ok_or("terminal session")?)

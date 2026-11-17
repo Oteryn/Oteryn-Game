@@ -12,6 +12,19 @@ pub struct PlayerTypingPanel {
     pub open: bool,
     pub own_typing: bool,
     pub pending: bool,
+    pub(crate) composer_typing: bool,
+    pub(crate) start_wanted: bool,
+    pub(crate) last_start: Option<std::time::Instant>,
     pub indicators: Vec<TypingIndicator>,
     pub feedback: Option<&'static str>,
+}
+
+impl PlayerTypingPanel {
+    /// Reset composer intent and its local rate gate on session initialization.
+    pub fn initialize(&mut self, selected: bool) {
+        self.selected = selected;
+        self.composer_typing = false;
+        self.start_wanted = false;
+        self.last_start = None;
+    }
 }

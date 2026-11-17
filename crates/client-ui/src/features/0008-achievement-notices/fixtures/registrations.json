@@ -1,17 +1,37 @@
 [
   {
     "mechanic": "0008-achievement-notices",
+    "kind": "keybindings",
+    "id": "0008-achievement-notices-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+M",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0008-achievement-notices",
+    "kind": "panels",
+    "id": "0008-achievement-notices-panel",
+    "status": "supported",
+    "entry": "view.rs::notices_panel_text"
+  },
+  {
+    "mechanic": "0008-achievement-notices",
     "kind": "handlers",
-    "id": "0008-achievement-notices-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0008-achievement-notices-push",
+    "status": "supported",
     "commands": [],
+    "direction": "server_to_client",
+    "capability": 8,
+    "entry": "protocol.rs::apply",
+    "push_messages": [
+      "AchievementEarned"
+    ],
+    "reducer": "protocol.rs::apply",
+    "test": "tests/state.rs::pushed_achievement_shows_popup_and_one_advancement_line",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "input": "Achievement notices need no player input; the pop-up closes with the shared dismiss action.",
+      "settings": "Achievement grants and history are server-owned; nothing is persisted locally."
     }
   }
 ]

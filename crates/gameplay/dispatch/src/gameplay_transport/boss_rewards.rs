@@ -197,7 +197,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let source = super::bundle_map_position::bundle_map_position(
                 &mut runtime,
-                self.movement_cells,
+                self.movement_cells(),
                 actor,
             )
             .as_ref()

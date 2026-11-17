@@ -1,0 +1,22 @@
+TASK BOARD (Invalid Monk, 2026-11-15 ~17:47), screenshots in /tmp/ct-static/
+Bounty Tasks: difficulty Adept, Elite checked; Preferred List; Reroll Tasks (10 reroll tokens shown).
+ Offers: Renegade Knight 0/181 kills -> 63,259 XP, 7 + 15 points, 1 token (Limit reached!)
+         Thornback Tortoise 0/156 -> 60,838 XP, 14 + 30, 1 token (Limit reached!)
+         Haunted Treeling 0/163 -> 31,785 XP, 7 + 15, 1 token (Limit reached!)
+ Bounty Talisman: Damage Against Creatures 9.5% (upgrade to 10% for 173), Life Leech 5.5% (to 6%: 77), More Loot 5.5% (to 6%: 77), Chance for extra Bestiary Progress 10% (to 11%: 65).
+ Currencies bottom: 551 (bounty points), 93,065 (hunting task points), 147 (soulseals?).
+Weekly Tasks: 9 kill tasks + 9 delivery tasks, "Each task rewards you with 1,509,464 XP."
+ Kill: Any Creature 5/4000, Gorerilla 0/406, Norcferatu Nightweaver 0/875, Lion Hydra 0/435, White Weretiger 0/778, Vulcongra 0/539, Reality Reaver 0/550, Feral Sphinx 0/766, Juggernaut 0/556.
+ Delivery: Terra Mantle 8/20, Lamassu Horn 0/60, Bone Toothpick DONE, Ripptor Scales 0/44, Deepling Scales 33/31 (Deliver active), Human Teeth 0/16, Afflicted Strider Head 0/14, Mammoth Whopper 14/19, Deepling Breaktime Snack 56/85.
+ Weekly Progress: reward multiplier x1 (0-3 tasks), x2 (4), x3 (8), x5 (12), x8 (16), bar to 18; Completed 1.
+ Weekly Rewards: 75 Hunting Task Points; tooltip: "0*110 (from Kill Tasks) + 1*75 (from Delivery Tasks); * 1 (from completing Tasks) = 75 Hunting Task Points". 1 Soulseal; tooltip: "You receive 1 Soulseal for each completed task... Soulpit. Click the obelisk there, then your character can select a creature you want to challenge on" (cut off). 17 hour(s) remaining.
+ => kill task = 110 HTP, delivery task = 75 HTP, sum multiplied by the multiplier tier.
+Hunting Task Shop (prices in Hunting Task Points): Feral Trapper outfit 100,000 / addons 35,000 each; Falconer outfit 100,000 / addons 35,000; mounts Tidal Seawater/Ashen Coast/Crimson Bay Predator 145,000, Antelope 145,000; Falcon Pet 135,000; Cerberus Champion Puppy 75,000; trophies Hellflayer/Gold Hunter/Brachiodemon 80,000, Many Faces 50,000, Sea Serpent 15,000, Silver Hunter 15,000, Bronze Hunter 3,000, Gozzler 3,000; Demon Doll 37,500, Vexclaw Doll 37,500, Bone Bed 35,000; Bonus Promotion Point (Wheel of Destiny, up to 50) 25,400, already purchased 22/50.
+Nothing was bought or changed.
+
+## Actions tested 17:56-17:59 (owner allowed clicking)
+- Weekly Deliver "Deepling Scales" (33/31): confirm dialog "Do you really want to deliver 31x Deepling Scales?" -> Ok. Log: "You gained 1509464 experience points (Weekly Task)." Experience 7,183,514,119 -> 7,185,023,583 (+1,509,464). Completed Tasks 1 -> 2, Weekly Rewards 75 -> 150 Hunting Task Points, Soulseals 1 -> 2. Slot shows a green check. Multiplier still x1 (next x2 at 4 tasks).
+- Bounty "Reroll Tasks": Renegade Knight/Thornback Tortoise/Haunted Treeling -> Gazer 0/174 (67,860 XP, 14+30, Silver-shield icon), Enlightened Of The Cult 0/166 (32,369 XP, 7+15), Assassin 0/105 (20,475 XP, 7+15). Reroll token counter stayed 10 (warning icon tooltip: "Limit reached."), so the reroll was effectively free at the 10-token cap (or the counter refills immediately).
+- Bounty info (i) verbatim: "[Tasks are grouped by difficulty.] Beginner tasks include easy creatures. Adept tasks include easy and medium creatures. Expert tasks include medium and hard creatures. Master tasks include hard and challenging creatures. When Elite is enabled, all new tasks roll as Elite tasks, where monsters deal 100% more damage and take 50% less. In return, rewards include 100% more XP and additional dust based on difficulty. Dust is only awarded to Premium accounts. You can change the difficulty and Elite setting at any time, but changes only apply to your next task. Use the Preferred List to customise which tasks can appear when you roll. Tasks can be re-rolled using Reroll Tokens. One token can be claimed for free each day from the Daily Reward Wall. You can store up to 10 Reroll Tokens at a time. There is a chance for Silver and Gold tasks to appear, which grant greater rewards. Whenever you don't choose a monster, its chance for these improved tasks increases and even a chance for Platinum tasks is added."
+- Reward icons: "+N <bounty points> and M <dust>", "+1 <reroll token> (Limit reached!)". The shield icon on the task header = Silver task (Thornback Tortoise and Gazer: doubled points 14+30).
+- Winter Update: the client does not label which parts are new; the screenshots are the source for the comparison.

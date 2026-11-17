@@ -247,11 +247,22 @@ async fn run_stalls_after_admission_case() -> Result<(), Box<dyn StdError + Send
         deadline: Duration::from_millis(200),
     })
     .await;
+    let diagnostic = result
+        .as_ref()
+        .err()
+        .map(ToString::to_string)
+        .ok_or("stalled join unexpectedly succeeded")?;
+    assert!(diagnostic.contains("in join_snapshot after "));
+    assert!(diagnostic.contains("last frame ServerAccepted"));
     assert!(matches!(
         result,
-        Err(DevClientError::Session(SessionError::Timeout(
-            "SnapshotBegin"
-        )))
+        Err(DevClientError::Context {
+            phase: "join_snapshot",
+            last_frame,
+            source,
+            ..
+        }) if last_frame == "ServerAccepted"
+            && matches!(*source, DevClientError::Session(SessionError::Timeout("SnapshotBegin")))
     ));
     server.abort();
     Ok(())

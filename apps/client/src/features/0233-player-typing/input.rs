@@ -18,9 +18,10 @@ impl PlayLink {
             return false;
         }
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).player_typing.open = true;
         }
         true
@@ -35,6 +36,30 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::PlayerTyping(command)).is_err()
     {
         mailbox.player_typing.pending = false;
-        mailbox.player_typing.feedback = Some("The session has ended");
+        mailbox.player_typing.feedback = Some(tr!("The session has ended"));
+    }
+}
+
+impl PlayLink {
+    /// Composer state is also exposed to synthetic clients through the production path.
+    pub fn chat_composer(&self, focused: bool, text: String) {
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.chat.text = text;
+        composer(&mut mailbox, &self.commands, focused);
+    }
+}
+
+pub(in crate::play) fn composer(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    focused: bool,
+) {
+    if let Some(command) = oteryn_client_ui::player_typing::composer(
+        &mut mailbox.player_typing,
+        focused,
+        &mailbox.chat.text,
+        std::time::Instant::now(),
+    ) {
+        let _ = commands.send(PlayCommand::PlayerTyping(command));
     }
 }

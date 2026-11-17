@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MigrationPage",
+  "type": "object",
+  "properties": {
+    "migrations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Migration"
+      }
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "migrations"
+  ],
+  "$defs": {
+    "Migration": {
+      "type": "object",
+      "properties": {
+        "applied": {
+          "type": "boolean"
+        },
+        "checksum_drift": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "description",
+        "applied",
+        "checksum_drift"
+      ]
+    }
+  }
+}

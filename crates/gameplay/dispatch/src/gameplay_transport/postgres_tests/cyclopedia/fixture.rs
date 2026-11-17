@@ -91,6 +91,13 @@ pub(in super::super) fn world(
     deps: &Dependencies,
     generation: &crate::content::ActiveGeneration,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    world_with_subareas(deps, generation, true)
+}
+pub(in super::super) fn world_with_subareas(
+    deps: &Dependencies,
+    generation: &crate::content::ActiveGeneration,
+    canonical: bool,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{
         bundle,
         sector::{Attrs, Item, Tile},
@@ -114,7 +121,7 @@ pub(in super::super) fn world(
     // Two rows hold at most six POIs four tiles apart outside the entry window (x <= 10),
     // so x >= 11 extends to eight rows; walks to POIs stay on rows that exist.
     let mut tiles = Vec::new();
-    for y in 0..8 {
+    for y in 0..if canonical { 9 } else { 8 } {
         for x in (0..32).filter(|x| y < 2 || *x >= 11) {
             tiles.push(Tile {
                 x,
@@ -136,6 +143,56 @@ pub(in super::super) fn world(
         sy: 0,
         tiles,
     }];
+    if canonical {
+        use oteryn_world_bundle::subarea::{Area, Mask, Run, Table};
+        let hash = "a".repeat(64);
+        parsed.manifest.subareas = Table {
+            client_version: "15.30".into(),
+            candidate_sha256: hash.clone(),
+            areas: [1, 2, 3]
+                .into_iter()
+                .map(|id| Area {
+                    id,
+                    key: format!("oteryn:content.area.fixture{id}"),
+                    name: format!("Area {id}"),
+                    parent: (id != 1).then_some(1),
+                    source_record_sha256: hash.clone(),
+                    town_id: None,
+                    hometown: false,
+                    temple: None,
+                })
+                .collect(),
+            masks: [2, 3]
+                .into_iter()
+                .map(|subarea| Mask {
+                    subarea,
+                    asset: format!("content/assets/files/subarea-{subarea:04}-{hash}.bmp.lzma"),
+                    compressed_sha256: hash.clone(),
+                    bmp_sha256: hash.clone(),
+                    source_record_sha256: hash.clone(),
+                    source_tiles: 256,
+                    admitted_tiles: if subarea == 2 { 256 } else { 7 },
+                })
+                .collect(),
+            runs: (0..8)
+                .map(|y| Run {
+                    floor: -7,
+                    y,
+                    begin: 0,
+                    end: 32,
+                    subarea: 2,
+                })
+                .chain([Run {
+                    floor: -7,
+                    y: 8,
+                    begin: 11,
+                    end: 18,
+                    subarea: 3,
+                }])
+                .collect(),
+            ..Table::default()
+        };
+    }
     let bytes =
         oteryn_world_bundle::writer::write(&parsed.manifest, &parsed.sectors, &Default::default())?;
     pins.digest = bundle::read(&bytes)?.digest;

@@ -1292,7 +1292,17 @@ fn prepare_familiar_parts(
     let name = p["creature_name"]
         .as_str()
         .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
-    let policy = runtime.companion_policy(name)?;
+    let policy = if let Some(definition) = spell.familiar_creature_definition() {
+        let policy = runtime.companion_policy(&definition.key)?;
+        if policy.definition_revision != definition.revision
+            || !policy.display_name.eq_ignore_ascii_case(name)
+        {
+            return Err(CompanionExecutionError::UnqualifiedProfile);
+        }
+        policy
+    } else {
+        runtime.companion_policy(name)?
+    };
     if !policy.is_familiar {
         return Err(CompanionExecutionError::UnqualifiedProfile);
     }

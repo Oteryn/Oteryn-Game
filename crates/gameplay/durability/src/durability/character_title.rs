@@ -23,19 +23,30 @@ mod charm;
 mod completion;
 #[path = "character_title/cosmetics.rs"]
 mod cosmetics;
+#[path = "character_title/enhancements.rs"]
+mod enhancements;
+#[path = "character_title/exploration.rs"]
+mod exploration;
 
 struct Sources {
     charm: Option<&'static charm::Source>,
     completion: Option<&'static completion::Source>,
     cosmetics: Option<cosmetics::Source>,
+    enhancements: Option<&'static enhancements::Source>,
+    exploration: Option<exploration::Source>,
 }
 
 impl Sources {
-    fn new(cosmetics: Option<NativeCosmeticsView>) -> Self {
+    fn new(
+        cosmetics: Option<NativeCosmeticsView>,
+        discovery: Option<&oteryn_world_bundle::subarea::Table>,
+    ) -> Self {
         Self {
             charm: charm::source(),
             completion: completion::source(),
             cosmetics: cosmetics.map(cosmetics::Source::new),
+            enhancements: enhancements::source(),
+            exploration: discovery.and_then(exploration::Source::new),
         }
     }
 }
@@ -126,10 +137,43 @@ async fn read_title_facts(
         Some(source) => source.read(tx, character).await?,
         None => completion::Facts::default(),
     };
+    let enhancements = match sources.enhancements {
+        Some(source) => source.read(tx, character).await?,
+        None => enhancements::Facts::default(),
+    };
+    let explored_map_percent = match &sources.exploration {
+        Some(source) => source.read(tx, character).await?,
+        None => 0,
+    };
+    let rotation = now_unix_ms / 1000 / i64::from(super::tibiadrome::ROTATION_SECONDS);
+    super::tibiadrome::publish(
+        tx,
+        character,
+        u32::try_from(rotation).map_err(|_| super::DurabilityError::InvalidStoredState)?,
+    )
+    .await?;
+    let drome_champion: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_tibiadrome_awards WHERE character_id=encode($1,'hex')::uuid AND rotation=$2 AND rank<=5)")
+        .bind(character.as_bytes().as_slice()).bind(rotation-1).fetch_one(&mut **tx).await?;
     Ok(TitleFacts {
+        task_board_points: u64::try_from(row.try_get::<i64, _>("task_board_points")?.max(0))
+            .unwrap_or(u64::MAX),
+        hot_cuisine_menu: row.try_get("hot_cuisine_menu")?,
+        hero_of_bounac_finale: row.try_get("hero_of_bounac_finale")?,
+        planegazer_finale: row.try_get("planegazer_finale")?,
+        schrodinger_visit: row.try_get("schrodinger_visit")?,
+        formal_dress_quest: cosmetics.formal_dress_quest,
+        explored_map_percent,
+        drome_rota_top_five: drome_champion,
+        next_rotation_unix_ms: drome_champion
+            .then_some((rotation + 1) * i64::from(super::tibiadrome::ROTATION_SECONDS) * 1000),
         monk_pilgrimage: row.try_get("monk_pilgrimage")?,
-        weapon_mastery: row.try_get("weapon_mastery")?,
-        all_map_areas_discovered: row.try_get("map_discovered")?,
+        weapon_mastery: enhancements.weapon_mastery,
+        all_grade_three_mods: enhancements.all_grade_three_mods,
+        all_map_areas_discovered: if sources.exploration.is_some() {
+            explored_map_percent == 100
+        } else {
+            row.try_get("map_discovered")?
+        },
         bank_balance: row.try_get("bank_balance")?,
         level: count(row.try_get("level")?),
         world_leads: leads
@@ -150,7 +194,6 @@ async fn read_title_facts(
         all_bestiary_complete: completion.all_bestiary,
         boss_categories_complete: completion.boss_categories,
         all_bosses_complete: completion.all_bosses,
-        ..TitleFacts::default()
     })
 }
 
@@ -158,7 +201,11 @@ async fn read_title_facts(
 // rescanned receipts without a (Character, boss) index and exhausted the semantic pass.
 const TITLE_FACTS_SQL: &str = "WITH me AS (SELECT character_id,account_id,world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid), \
  boss_categories AS MATERIALIZED (SELECT DISTINCT ON (boss_key) boss_key,category FROM game_character_bosstiary_kill_receipts WHERE character_id=encode($1,'hex')::uuid) SELECT \
- COALESCE((SELECT greatest(sword_level,axe_level,club_level,distance_level)>=100 FROM game_character_build_state b WHERE b.character_id=me.character_id),false) AS weapon_mastery, \
+ COALESCE((SELECT value FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key='oteryn:taskboard/weekly/points'),0)::bigint AS task_board_points, \
+ (SELECT count(*)=15 FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key=ANY(ARRAY(SELECT 'oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/kv/cookcount-'||n::text FROM generate_series(2,16) n)) AND q.value>=1) AS hot_cuisine_menu, \
+ EXISTS(SELECT 1 FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key='oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/augustin_door' AND q.value=1) AS hero_of_bounac_finale, \
+ EXISTS(SELECT 1 FROM game_character_quest_states q WHERE q.character_id=me.character_id AND q.quest_key='oteryn:quest.opticording_sphere_quest' AND q.completed_character_revision IS NOT NULL) AS planegazer_finale, \
+ EXISTS(SELECT 1 FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key='oteryn:quest-progress/schrodingers_island/visited' AND q.value=1) AS schrodinger_visit, \
  COALESCE((SELECT (progress->>'discovered')::boolean FROM game_character_cyclopedia c WHERE c.character_id=me.character_id),false) AS map_discovered, \
  EXISTS(SELECT 1 FROM game_character_quest_tracks q WHERE q.character_id=me.character_id AND q.track_key=$4 AND q.value=1) AS monk_pilgrimage, \
  COALESCE((SELECT balance FROM game_account_bank_balances b WHERE b.account_id=me.account_id AND b.world_id=me.world_id),0)::bigint AS bank_balance, \
@@ -187,11 +234,12 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         now_unix_ms: i64,
         cosmetics: Option<NativeCosmeticsView>,
+        discovery: Option<&oteryn_world_bundle::subarea::Table>,
     ) -> Result<Vec<CharacterTitle>, CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
         let character = fence.character_id;
-        let sources = Sources::new(cosmetics);
+        let sources = Sources::new(cosmetics, discovery);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -200,16 +248,27 @@ impl DurabilityRoot {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             }
             let facts = read_title_facts(&mut tx, character, now_unix_ms, &sources).await?;
-            let rows: Vec<i16> = sqlx::query_scalar("SELECT title FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND (expires_at_unix_ms IS NULL OR expires_at_unix_ms>$2) ORDER BY title FOR UPDATE")
-                .bind(character.as_bytes().as_slice()).bind(now_unix_ms).fetch_all(&mut *tx).await?;
+            let rows: Vec<(i16, Option<i64>)> = sqlx::query_as("SELECT title,expires_at_unix_ms FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid ORDER BY title FOR UPDATE")
+                .bind(character.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
             let mut earned = Vec::with_capacity(rows.len());
-            for raw in rows {
-                match decode_title(raw) { Ok(title) => earned.push(title), Err(error) => return Ok(Err(error)) }
+            let mut expired = Vec::new();
+            for (raw, expiry) in rows {
+                let title = match decode_title(raw) { Ok(title) => title, Err(error) => return Ok(Err(error)) };
+                if expiry.is_some_and(|expiry| expiry <= now_unix_ms) {
+                    expired.push(raw);
+                } else {
+                    earned.push(title);
+                }
+            }
+            if !expired.is_empty() {
+                // Expiration ends the old selection even when the title is earned again below.
+                sqlx::query("UPDATE game_character_title_selection SET title=NULL,revision=revision+1 WHERE character_id=encode($1,'hex')::uuid AND title=ANY($2)")
+                    .bind(character.as_bytes().as_slice()).bind(&expired).execute(&mut *tx).await?;
             }
             let granted = newly_eligible(facts, &earned, now_unix_ms);
             for title in &granted {
                 let expiry = match qualify(*title, facts).lifetime { TitleLifetime::Until(value) => Some(value), _ => None };
-                sqlx::query("INSERT INTO game_character_titles(character_id,title,earned_at_unix_ms,expires_at_unix_ms) VALUES(encode($1,'hex')::uuid,$2,$3,$4) ON CONFLICT DO NOTHING")
+                sqlx::query("INSERT INTO game_character_titles(character_id,title,earned_at_unix_ms,expires_at_unix_ms) VALUES(encode($1,'hex')::uuid,$2,$3,$4) ON CONFLICT(character_id,title) DO UPDATE SET earned_at_unix_ms=excluded.earned_at_unix_ms,expires_at_unix_ms=excluded.expires_at_unix_ms WHERE game_character_titles.expires_at_unix_ms<=excluded.earned_at_unix_ms")
                     .bind(character.as_bytes().as_slice()).bind(i16::from(title.id())).bind(now_unix_ms).bind(expiry)
                     .execute(&mut *tx).await?;
             }
@@ -292,6 +351,8 @@ impl DurabilityRoot {
     /// Reads native qualification and earned state in the same fenced transaction,
     /// then clears a selection and conditional award which no longer qualify.
     /// A page read cannot revoke a newer grant using an earlier facts snapshot.
+    // Keep current authority, character/time and independently admitted world/cosmetic facts explicit.
+    #[allow(clippy::too_many_arguments)]
     pub async fn read_and_requalify_character_titles(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -300,10 +361,11 @@ impl DurabilityRoot {
         character: CharacterId,
         now_unix_ms: i64,
         cosmetics: Option<NativeCosmeticsView>,
+        discovery: Option<&oteryn_world_bundle::subarea::Table>,
     ) -> Result<CharacterTitleState, CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
-        let sources = Sources::new(cosmetics);
+        let sources = Sources::new(cosmetics, discovery);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -353,6 +415,8 @@ impl DurabilityRoot {
     /// Live command seam: qualification and its durable grant share the current session fence
     /// and transaction. In particular, Charm Points cannot be spent between a separate
     /// qualification read and this write. Content is prepared before entering the transaction.
+    // Keep current authority, character/time and independently admitted world/cosmetic facts explicit.
+    #[allow(clippy::too_many_arguments)]
     pub async fn qualify_and_unlock_character_title(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -361,13 +425,14 @@ impl DurabilityRoot {
         title: CharacterTitle,
         now_unix_ms: i64,
         cosmetics: Option<NativeCosmeticsView>,
+        discovery: Option<&oteryn_world_bundle::subarea::Table>,
     ) -> Result<bool, CharacterAuthorityError> {
         if now_unix_ms < 0 {
             return Err(CharacterAuthorityError::Rejected);
         }
         let recovery = authority.record_for(self)?;
         let node = node.clone();
-        let sources = Sources::new(cosmetics);
+        let sources = Sources::new(cosmetics, discovery);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -384,7 +449,14 @@ impl DurabilityRoot {
                 TitleLifetime::Until(value) => Some(value),
                 _ => None,
             };
-            let changed = sqlx::query("INSERT INTO game_character_titles(character_id,title,earned_at_unix_ms,expires_at_unix_ms) VALUES(encode($1,'hex')::uuid,$2,$3,$4) ON CONFLICT DO NOTHING")
+            let expired: Option<i16> = sqlx::query_scalar("SELECT title FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND title=$2 AND expires_at_unix_ms<=$3 FOR UPDATE")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(i16::from(title.id())).bind(now_unix_ms)
+                .fetch_optional(&mut *tx).await?;
+            if let Some(expired) = expired {
+                sqlx::query("UPDATE game_character_title_selection SET title=NULL,revision=revision+1 WHERE character_id=encode($1,'hex')::uuid AND title=$2")
+                    .bind(fence.character_id.as_bytes().as_slice()).bind(expired).execute(&mut *tx).await?;
+            }
+            let changed = sqlx::query("INSERT INTO game_character_titles(character_id,title,earned_at_unix_ms,expires_at_unix_ms) VALUES(encode($1,'hex')::uuid,$2,$3,$4) ON CONFLICT(character_id,title) DO UPDATE SET earned_at_unix_ms=excluded.earned_at_unix_ms,expires_at_unix_ms=excluded.expires_at_unix_ms WHERE game_character_titles.expires_at_unix_ms<=excluded.earned_at_unix_ms")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(i16::from(title.id()))
                 .bind(now_unix_ms).bind(expiry).execute(&mut *tx).await?.rows_affected() == 1;
             commit_semantic_transaction(tx, deadline).await?;
@@ -443,6 +515,35 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         title: Option<CharacterTitle>,
     ) -> Result<u64, CharacterAuthorityError> {
+        self.select_character_title_inner(authority, node, fence, title, None)
+            .await
+    }
+
+    /// Client selection must reference an award still alive at the server's observation time
+    /// (Crystal player_title.cpp:97-99 selects only an unlocked title).
+    pub async fn select_character_title_at(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        title: Option<CharacterTitle>,
+        now_unix_ms: i64,
+    ) -> Result<u64, CharacterAuthorityError> {
+        if now_unix_ms < 0 {
+            return Err(CharacterAuthorityError::Rejected);
+        }
+        self.select_character_title_inner(authority, node, fence, title, Some(now_unix_ms))
+            .await
+    }
+
+    async fn select_character_title_inner(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        title: Option<CharacterTitle>,
+        now_unix_ms: Option<i64>,
+    ) -> Result<u64, CharacterAuthorityError> {
         let recovery = authority.record_for(self)?;
         let node = node.clone();
         let character = fence.character_id;
@@ -457,6 +558,12 @@ impl DurabilityRoot {
                         .is_err()
                     {
                         return Ok(Err(CharacterAuthorityError::Rejected));
+                    }
+                    if let (Some(title), Some(now)) = (title, now_unix_ms) {
+                        let earned: Option<i16> = sqlx::query_scalar("SELECT title FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND title=$2 AND (expires_at_unix_ms IS NULL OR expires_at_unix_ms>$3) FOR UPDATE")
+                            .bind(character.as_bytes().as_slice()).bind(i16::from(title.id())).bind(now)
+                            .fetch_optional(&mut *tx).await?;
+                        if earned.is_none() { return Ok(Err(CharacterAuthorityError::Rejected)); }
                     }
                     let revision: i64 = sqlx::query_scalar(
                         "INSERT INTO game_character_title_selection(character_id,title,revision) \
@@ -514,8 +621,10 @@ mod tests {
             2, 3, 7, 19, 20, 21, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 41, 42,
         ];
         revoked.extend(59..=84);
+        revoked.push(89);
         assert_eq!(revoked_conditional_titles(TitleFacts::default()), revoked);
         let all = TitleFacts {
+            explored_map_percent: 100,
             monk_pilgrimage: true,
             weapon_mastery: true,
             all_grade_three_mods: true,

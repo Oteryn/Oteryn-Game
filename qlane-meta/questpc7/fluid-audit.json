@@ -1,0 +1,29 @@
+{
+  "task": "QUESTPC fluid durable qualification",
+  "head": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+  "product_edits": false,
+  "source_sha256": {
+    "crates/gameplay/durability/src/durability/reward_claim_mint/fluid.rs": "7ff0d7e0a8aeac3e204e67e08c4f36c407309032010fbe27caafe5e1aa549f55",
+    "apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs": "0c6edd25c9dd1692c0b87220f75b6e22bcb935e049ea33b3f695ad0d7ff891a0",
+    "crates/gameplay/durability/src/durability/reward_claim_mint.rs": "dc8b35af6ed2d04b9225398dc7acc44d3c43555d21cd3d185757fcf123f5173e",
+    "crates/gameplay/durability/src/durability/reward_claim_mint/contents.rs": "d003e122f9b52822c3a94c81b44ff1aa77aef230ff98d9d6433143f57f6e195e",
+    "apps/game-server/migrations/1280_quest_native_reward_initialization.sql": "17b2492031a0e6bccae2e6a7945cdc984c00771a1c652c1b036b60024a215493"
+  },
+  "findings": [],
+  "static_review": {
+    "identity_binding": "fluid::plan fixes root ordinal 0 and each child ordinal; the nonempty plan enters the intent binding, reservation and receipt. contents::reservation_matches compares the full fluid plan. apply uses the reserved world and deterministic child identities/transactions.",
+    "current_authority": "apply is internal and runs within the existing claim commit transaction after recovery/current character admission checks; no new authority-bearing entry point is exposed.",
+    "temporal_replay": "The receipt replay branch precedes apply. A committed claim therefore cannot refill a subsequently emptied item. Initialization SQL requires the matching reservation and receipt from the current transaction and the exact fresh minted item.",
+    "atomicity": "Root and all child rows are inserted in the same claim transaction. Migration0969 installs the fresh-state proof and deferred complete-plan receipt check; dropped writes or mismatched subtypes fail the entire claim.",
+    "bounds": "Request contents and SQL plan limits bound iteration; the existing 0762 partial GIN contents-plan index covers child receipt lookups.",
+    "reference_scope": "No production recipe or subtype was inferred; unresolved source choices remain coordinator work."
+  },
+  "runtime_limitations": [
+    "Focused PostgreSQL case selected but failed on connection setup before database work; no POSTGRES_CASE_COMPLETED marker.",
+    "Unit results are separate and cannot qualify SQL atomicity, persistence/restart, current-authority negative cases, or real dispatch."
+  ],
+  "checks": {
+    "postgres_result": ".questpc/fluid-postgres.result.json",
+    "unit_result": ".questpc/fluid-unit.result.json"
+  }
+}

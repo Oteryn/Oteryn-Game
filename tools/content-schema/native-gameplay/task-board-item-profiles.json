@@ -1866,7 +1866,7 @@
     {
       "key": "oteryn:item.tibia.i3275",
       "path": "content/items/definitions/items-19500-19999.json",
-      "definition_sha256": "a894b81cf190de37f370f557758cd51699862c89ef50db51ec269d3626b12db2"
+      "definition_sha256": "7561a5b6775efad144e26c36cdc5ea087cced3ee8cf61aa6ba7599834814818b"
     },
     {
       "key": "oteryn:item.tibia.i3291",
@@ -1886,7 +1886,7 @@
     {
       "key": "oteryn:item.tibia.i3306",
       "path": "content/items/definitions/items-20000-20499.json",
-      "definition_sha256": "5dcc49e4c60cc4a2d129a88130b20e7b3a7d900a24b23e2473141e4c68065995"
+      "definition_sha256": "7c5ab16fda64e42f5016d2cc1c23f7e10c4b0a0b2872cd1af78fb84af2a7604d"
     },
     {
       "key": "oteryn:item.tibia.i3307",
@@ -1911,7 +1911,7 @@
     {
       "key": "oteryn:item.tibia.i3322",
       "path": "content/items/definitions/items-20000-20499.json",
-      "definition_sha256": "75ed28ae8a6546405b0d051a3ce48d4bdb75a309ef6cdde25c6b3da43bcfdff7"
+      "definition_sha256": "46fc6a72afbc030c9808b9a0f5a76bc16ed7f7d0e21abe41fe36e35e4937b740"
     },
     {
       "key": "oteryn:item.tibia.i3330",
@@ -1941,7 +1941,7 @@
     {
       "key": "oteryn:item.tibia.i3364",
       "path": "content/items/definitions/items-20000-20499.json",
-      "definition_sha256": "4312070c8ec3f9e61823d44c7085091a878228f1ffce27b0128a3766300d12f4"
+      "definition_sha256": "c6c8ff09a62a8a31afa5c22991e08bbf69706f6647a899b34f85afa29058bdaf"
     },
     {
       "key": "oteryn:item.tibia.i3371",
@@ -1951,17 +1951,17 @@
     {
       "key": "oteryn:item.tibia.i3373",
       "path": "content/items/definitions/items-20500-20999.json",
-      "definition_sha256": "de9981fc09a228efe2ddffab441ab61e579c4a86fb02fb78f32dbbfd7d21bbee"
+      "definition_sha256": "35be951f11cb163f70ee59f17850d8b01fe76462c799a798e7c3e3eb227f4ac0"
     },
     {
       "key": "oteryn:item.tibia.i3413",
       "path": "content/items/definitions/items-20500-20999.json",
-      "definition_sha256": "e03c9b3c6397d1ba7679226517d0b55fae76345582e2c7cb4c3f9710058a2a3a"
+      "definition_sha256": "8a432b55bebf74686fe571025673e15545887785a015f329adbbdf6d92140ea9"
     },
     {
       "key": "oteryn:item.tibia.i3415",
       "path": "content/items/definitions/items-20500-20999.json",
-      "definition_sha256": "f8662d9d619825016ca3ba8035d8ce1db6c15a89658a79f3ee1515b2ead4e8c5"
+      "definition_sha256": "21db5331a9cf60f691f44920382bf2284fbdd0bea5044e75e22b07d1acf4146b"
     },
     {
       "key": "oteryn:item.tibia.i3421",
@@ -2036,7 +2036,7 @@
     {
       "key": "oteryn:item.tibia.i7402",
       "path": "content/items/definitions/items-31000-31499.json",
-      "definition_sha256": "f10ed47e257f3feb6afe80ba5d68418fea27c22f2c2af5cca55136f4bef0dc55"
+      "definition_sha256": "a78068672bd10226c71f3229d62d2ba8083480ebcb97e40c71e96390961506f4"
     },
     {
       "key": "oteryn:item.tibia.i7413",
@@ -2046,7 +2046,7 @@
     {
       "key": "oteryn:item.tibia.i7425",
       "path": "content/items/definitions/items-31000-31499.json",
-      "definition_sha256": "d85b50b55ecabb21f7b8883427cd05735e8219bc7eb37be7f0d22d166664c72f"
+      "definition_sha256": "75687571a2662aebce4426a9fe860b0789e9840b2f31ec398aa0c8e3cc99f02b"
     },
     {
       "key": "oteryn:item.tibia.i7427",
@@ -2201,7 +2201,7 @@
     {
       "key": "oteryn:item.tibia.i10301",
       "path": "content/items/definitions/items-00000-00499.json",
-      "definition_sha256": "2a8227d3d6f1fbea0a5c7df6c2481d1c9aa7b8be495b7214b226ec79674fd06b"
+      "definition_sha256": "b6c51106cdb9993333c0a154cba9135b60222cb4ba6a7fa17c596addcea81057"
     },
     {
       "key": "oteryn:item.tibia.i10303",
@@ -2391,12 +2391,12 @@
     {
       "key": "oteryn:item.tibia.i11457",
       "path": "content/items/definitions/items-01000-01499.json",
-      "definition_sha256": "4f5c1f51dcbc1708e10b77690a667f61f93577915e8135b1ae067a3f4bdd81e7"
+      "definition_sha256": "e02cdf2eed0e1bf09ec1337dd435488b304eb9ee3b010950d5f1e0ae3de25d36"
     },
     {
       "key": "oteryn:item.tibia.i11465",
       "path": "content/items/definitions/items-01000-01499.json",
-      "definition_sha256": "2b136a6c362ee00dc5bb2430df28ee0f2033ab459a46389019c6e4f371b82f90"
+      "definition_sha256": "1453e22f9eb881b722c0227e7e36a7bc02a5e857166a61a4d08b8697ebfb2501"
     },
     {
       "key": "oteryn:item.tibia.i11471",
@@ -2941,7 +2941,7 @@
     {
       "key": "oteryn:item.tibia.i22188",
       "path": "content/items/definitions/items-11000-11499.json",
-      "definition_sha256": "0b3bbe9f31f5746c048b8d38268aa7d1a2fb3dfb6924d6954f22b9c541ab98f2"
+      "definition_sha256": "91673fce67fb6fc8b99038c27e85b7841f6b95eaa60412736607e80a1ce96147"
     },
     {
       "key": "oteryn:item.tibia.i22191",
@@ -3071,7 +3071,7 @@
     {
       "key": "oteryn:item.tibia.i25697",
       "path": "content/items/definitions/items-14000-14499.json",
-      "definition_sha256": "4fa1ef362afec4443cc31bb9ff98b6b0d35517b690a526b9c731fd35748ecd73"
+      "definition_sha256": "bdace4f63a37b681f3ab049c6151c7d779ba3a5d6eea44121d156fa39a2b0f1c"
     },
     {
       "key": "oteryn:item.tibia.i25699",
@@ -3081,7 +3081,7 @@
     {
       "key": "oteryn:item.tibia.i25701",
       "path": "content/items/definitions/items-14000-14499.json",
-      "definition_sha256": "f1ebcc79cf25585978996bc7ecf035327950773e13e9cd44137ab71bf175d0d8"
+      "definition_sha256": "fa42336180e3182fe75d8766b9a0616b53eaad6b8503a060b6b5ed4852ff53c5"
     },
     {
       "key": "oteryn:item.tibia.i25742",
@@ -3576,7 +3576,7 @@
     {
       "key": "oteryn:item.tibia.i39395",
       "path": "content/items/definitions/items-24000-24499.json",
-      "definition_sha256": "f00c0764d8bf1d2add4f857ff76c9a932036c40bdacb1385b40ec9498de56f7e"
+      "definition_sha256": "140bdb8feaabbe40b4f89445f857add234b5bab60b65fd16cbd80a23a675ff87"
     },
     {
       "key": "oteryn:item.tibia.i39401",
@@ -3771,12 +3771,12 @@
     {
       "key": "oteryn:item.tibia.i48508",
       "path": "content/items/definitions/items-27000-27499.json",
-      "definition_sha256": "3a63ceb9e3a96de1b73fd76a73ff88d33c2ca6bc28a6c827c0673ce04b1644cc"
+      "definition_sha256": "7665c5c6f634b19595fa1a2b4f5d351f826e5afd0077fa09c2c858407b986110"
     },
     {
       "key": "oteryn:item.tibia.i48509",
       "path": "content/items/definitions/items-27000-27499.json",
-      "definition_sha256": "8eb61aeb6edd5342c714c0195f662bc5a9bf08094c7502620ff072c490b12d81"
+      "definition_sha256": "4980bb2c5142d08a73d7930b90295ead9a7a56e3b143d4a06fe570f25c188cb3"
     },
     {
       "key": "oteryn:item.tibia.i48510",
@@ -3786,7 +3786,7 @@
     {
       "key": "oteryn:item.tibia.i48511",
       "path": "content/items/definitions/items-27000-27499.json",
-      "definition_sha256": "b7ceebe2ee63acc85d016cab20e8f687ba02715c106fbe4dec0e4b0faa6f53dd"
+      "definition_sha256": "f1dc9c131f9bfcce038697c29e1ac731e6392852f149e40d5f9747e855062b66"
     },
     {
       "key": "oteryn:item.tibia.i49894",
@@ -21020,7 +21020,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 69
+              "value": 68
             },
             "movable": {
               "state": "KNOWN",
@@ -46680,7 +46680,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 1600
+              "value": 320
             },
             "movable": {
               "state": "KNOWN",
@@ -50892,7 +50892,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 60
+              "value": 120
             },
             "movable": {
               "state": "KNOWN",
@@ -51335,7 +51335,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 60
+              "value": 150
             },
             "movable": {
               "state": "KNOWN",
@@ -67415,7 +67415,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 10
+              "value": 470
             },
             "movable": {
               "state": "KNOWN",
@@ -73749,7 +73749,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 25
+              "value": 130
             },
             "movable": {
               "state": "KNOWN",
@@ -73920,7 +73920,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 25
+              "value": 80
             },
             "movable": {
               "state": "KNOWN",
@@ -74253,7 +74253,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 25
+              "value": 110
             },
             "movable": {
               "state": "KNOWN",

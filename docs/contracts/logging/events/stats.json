@@ -1,0 +1,19 @@
+{
+  "module": "stats",
+  "owner": "crates/error-codes",
+  "events": [
+    {
+      "event": "stats",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "series",
+        "overflow",
+        "top",
+        "top_value"
+      ],
+      "codes": [],
+      "note": "Bounded process metric snapshot; top fields are optional."
+    }
+  ]
+}

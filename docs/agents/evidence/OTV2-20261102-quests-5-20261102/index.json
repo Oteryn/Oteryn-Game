@@ -1,0 +1,357 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "alawars_vault",
+      "elements": 7,
+      "auto": 5,
+      "manual": 2,
+      "statuses": {
+        "CALLBACK_DATA_IMPLEMENTED": 3,
+        "ALREADY_PRESENT_DATA": 2,
+        "LEFT_OUT": 2
+      },
+      "new_callbacks": 3,
+      "prepared_npc": {
+        "rules": 0,
+        "reply_paragraphs": 0,
+        "conversations": 0
+      }
+    },
+    {
+      "quest": "barbarian_test",
+      "elements": 18,
+      "auto": 0,
+      "manual": 18,
+      "statuses": {
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 5,
+        "LEFT_OUT": 13
+      },
+      "new_callbacks": 0,
+      "prepared_npc": {
+        "rules": 8,
+        "reply_paragraphs": 17,
+        "conversations": 1
+      }
+    },
+    {
+      "quest": "between_the_lines",
+      "elements": 9,
+      "auto": 8,
+      "manual": 1,
+      "statuses": {
+        "CALLBACK_DATA_IMPLEMENTED": 8,
+        "LEFT_OUT": 1
+      },
+      "new_callbacks": 8,
+      "prepared_npc": {
+        "rules": 0,
+        "reply_paragraphs": 0,
+        "conversations": 0
+      }
+    },
+    {
+      "quest": "blood_brothers_quest",
+      "elements": 66,
+      "auto": 1,
+      "manual": 65,
+      "statuses": {
+        "LEFT_OUT": 50,
+        "CALLBACK_DATA_IMPLEMENTED": 1,
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 15
+      },
+      "new_callbacks": 1,
+      "prepared_npc": {
+        "rules": 57,
+        "reply_paragraphs": 77,
+        "conversations": 1
+      }
+    },
+    {
+      "quest": "candia_bosses",
+      "elements": 6,
+      "auto": 0,
+      "manual": 6,
+      "statuses": {
+        "LEFT_OUT": 6
+      },
+      "new_callbacks": 0,
+      "prepared_npc": {
+        "rules": 0,
+        "reply_paragraphs": 0,
+        "conversations": 0
+      }
+    },
+    {
+      "quest": "children_of_the_revolution",
+      "elements": 37,
+      "auto": 2,
+      "manual": 35,
+      "statuses": {
+        "LEFT_OUT": 27,
+        "CALLBACK_DATA_IMPLEMENTED": 2,
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 8
+      },
+      "new_callbacks": 2,
+      "prepared_npc": {
+        "rules": 22,
+        "reply_paragraphs": 54,
+        "conversations": 1
+      }
+    },
+    {
+      "quest": "dangerous_depth",
+      "elements": 92,
+      "auto": 3,
+      "manual": 89,
+      "statuses": {
+        "LEFT_OUT": 86,
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 3,
+        "CALLBACK_DATA_IMPLEMENTED": 3
+      },
+      "new_callbacks": 3,
+      "prepared_npc": {
+        "rules": 40,
+        "reply_paragraphs": 87,
+        "conversations": 2
+      }
+    },
+    {
+      "quest": "deeplings_worldchange",
+      "elements": 16,
+      "auto": 3,
+      "manual": 13,
+      "statuses": {
+        "LEFT_OUT": 13,
+        "CALLBACK_DATA_IMPLEMENTED": 3
+      },
+      "new_callbacks": 3,
+      "prepared_npc": {
+        "rules": 0,
+        "reply_paragraphs": 0,
+        "conversations": 0
+      }
+    },
+    {
+      "quest": "demon_oak",
+      "elements": 24,
+      "auto": 6,
+      "manual": 18,
+      "statuses": {
+        "CALLBACK_DATA_IMPLEMENTED": 6,
+        "LEFT_OUT": 16,
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 2
+      },
+      "new_callbacks": 6,
+      "prepared_npc": {
+        "rules": 11,
+        "reply_paragraphs": 13,
+        "conversations": 1
+      }
+    },
+    {
+      "quest": "feaster_of_souls",
+      "elements": 45,
+      "auto": 14,
+      "manual": 31,
+      "statuses": {
+        "CALLBACK_DATA_IMPLEMENTED": 14,
+        "PHYSICAL_SELECTOR_LEFT_OUT": 2,
+        "LEVEL_GATE_LEFT_OUT": 12,
+        "LEFT_OUT": 17
+      },
+      "new_callbacks": 14,
+      "prepared_npc": {
+        "rules": 0,
+        "reply_paragraphs": 0,
+        "conversations": 0
+      }
+    },
+    {
+      "quest": "forgotten_knowledge",
+      "elements": 111,
+      "auto": 1,
+      "manual": 110,
+      "statuses": {
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 15,
+        "LEFT_OUT": 95,
+        "CALLBACK_DATA_IMPLEMENTED": 1
+      },
+      "new_callbacks": 1,
+      "prepared_npc": {
+        "rules": 51,
+        "reply_paragraphs": 79,
+        "conversations": 4
+      }
+    },
+    {
+      "quest": "no_rest_for_the_wicked",
+      "elements": 34,
+      "auto": 0,
+      "manual": 34,
+      "statuses": {
+        "LEFT_OUT": 33,
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 1
+      },
+      "new_callbacks": 0,
+      "prepared_npc": {
+        "rules": 2,
+        "reply_paragraphs": 2,
+        "conversations": 1
+      }
+    },
+    {
+      "quest": "parchment_room",
+      "elements": 4,
+      "auto": 0,
+      "manual": 4,
+      "statuses": {
+        "LEFT_OUT": 4
+      },
+      "new_callbacks": 0,
+      "prepared_npc": {
+        "rules": 0,
+        "reply_paragraphs": 0,
+        "conversations": 0
+      }
+    },
+    {
+      "quest": "sea_of_light",
+      "elements": 19,
+      "auto": 0,
+      "manual": 19,
+      "statuses": {
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 7,
+        "LEFT_OUT": 12
+      },
+      "new_callbacks": 0,
+      "prepared_npc": {
+        "rules": 31,
+        "reply_paragraphs": 32,
+        "conversations": 2
+      }
+    },
+    {
+      "quest": "the_ancient_tombs",
+      "elements": 60,
+      "auto": 17,
+      "manual": 43,
+      "statuses": {
+        "LEFT_OUT": 43,
+        "CALLBACK_DATA_IMPLEMENTED": 17
+      },
+      "new_callbacks": 17,
+      "prepared_npc": {
+        "rules": 0,
+        "reply_paragraphs": 0,
+        "conversations": 0
+      }
+    },
+    {
+      "quest": "the_djinn_war_quest",
+      "elements": 23,
+      "auto": 0,
+      "manual": 23,
+      "statuses": {
+        "LEFT_OUT": 20,
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 3
+      },
+      "new_callbacks": 0,
+      "prepared_npc": {
+        "rules": 8,
+        "reply_paragraphs": 18,
+        "conversations": 3
+      }
+    },
+    {
+      "quest": "the_ice_islands_quest",
+      "elements": 69,
+      "auto": 0,
+      "manual": 69,
+      "statuses": {
+        "LEFT_OUT": 53,
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 16
+      },
+      "new_callbacks": 0,
+      "prepared_npc": {
+        "rules": 43,
+        "reply_paragraphs": 65,
+        "conversations": 5
+      }
+    },
+    {
+      "quest": "the_secret_library_quest",
+      "elements": 207,
+      "auto": 15,
+      "manual": 192,
+      "statuses": {
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 6,
+        "LEFT_OUT": 186,
+        "CALLBACK_DATA_IMPLEMENTED": 15
+      },
+      "new_callbacks": 15,
+      "prepared_npc": {
+        "rules": 40,
+        "reply_paragraphs": 66,
+        "conversations": 1
+      }
+    },
+    {
+      "quest": "the_tainted_soul",
+      "elements": 3,
+      "auto": 0,
+      "manual": 3,
+      "statuses": {
+        "LEFT_OUT": 3
+      },
+      "new_callbacks": 0,
+      "prepared_npc": {
+        "rules": 0,
+        "reply_paragraphs": 0,
+        "conversations": 0
+      }
+    },
+    {
+      "quest": "their_masters_voice",
+      "elements": 15,
+      "auto": 0,
+      "manual": 15,
+      "statuses": {
+        "DATA_PREPARED_RUNTIME_LEFT_OUT": 1,
+        "LEFT_OUT": 14
+      },
+      "new_callbacks": 0,
+      "prepared_npc": {
+        "rules": 4,
+        "reply_paragraphs": 4,
+        "conversations": 1
+      }
+    },
+    {
+      "quest": "tinder_box_quest_chyllfroest",
+      "elements": 7,
+      "auto": 0,
+      "manual": 7,
+      "statuses": {
+        "LEFT_OUT": 7
+      },
+      "new_callbacks": 0,
+      "prepared_npc": {
+        "rules": 0,
+        "reply_paragraphs": 0,
+        "conversations": 0
+      }
+    }
+  ],
+  "total_elements": 872,
+  "new_callbacks": 73,
+  "prepared_npc_rules": 317,
+  "full_quest_runtime_qualification": false,
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590302110",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6590729496",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6591355533"
+  ]
+}

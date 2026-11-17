@@ -127,6 +127,17 @@ impl UnresolvedLane {
 }
 
 impl SpellLanePermit {
+    /// Infallible fresh scoped permit for the MINT test-support facade. The typed
+    /// scope has already been validated; acquiring its empty lane cannot fail.
+    #[cfg(any(test, feature = "test-support"))]
+    pub(crate) async fn fresh_mint_scope(scope: RuntimeScopeRefV1) -> Self {
+        let lane = SpellLane::for_scope(scope);
+        Self {
+            scope,
+            guard: Arc::clone(&lane.state).lock_owned().await,
+        }
+    }
+
     /// The permit of a fresh lane, which never holds a parked attempt: for the PostgreSQL test
     /// support of the DB-only item writers, which owns no Channel runtime.
     #[cfg(any(test, feature = "test-support"))]
@@ -137,11 +148,16 @@ impl SpellLanePermit {
     pub async fn of_fresh_scope(
         scope: crate::foundation::RuntimeScopeRefV1,
     ) -> Result<Self, DurabilityError> {
+        Ok(Self::of_fresh_scope_lane(scope).await)
+    }
+
+    #[cfg(any(test, feature = "test-support"))]
+    pub(crate) async fn of_fresh_scope_lane(scope: RuntimeScopeRefV1) -> Self {
         let lane = SpellLane::for_scope(scope);
-        Ok(Self {
+        Self {
             scope,
             guard: Arc::clone(&lane.state).lock_owned().await,
-        })
+        }
     }
 
     #[cfg(any(test, feature = "test-support"))]
@@ -294,6 +310,19 @@ impl<T: Send + 'static> SpellCommitWindow<'_, T> {
     /// owns the attempt exactly as after its own `COMMIT` call.
     pub fn mark_already_committed(&mut self) {
         self.commit_called = true;
+    }
+
+    /// Keep an audited item-owner attempt parked if its real COMMIT is cancelled
+    /// or ambiguous. Only a definite rejection makes it reclaimable again.
+    pub(in crate::durability) async fn commit_type2_transaction(
+        &mut self,
+        tx: super::item_mint_audit::Type2Transaction<'_>,
+        deadline: Instant,
+    ) -> Result<(), DurabilityError> {
+        self.commit_called = true;
+        tx.commit(deadline)
+            .await
+            .map_err(|error| self.observe_commit_error(error))
     }
 
     /// A definite `COMMIT` rejection proves the transaction rolled back, so the attempt is

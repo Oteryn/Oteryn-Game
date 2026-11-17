@@ -38,15 +38,86 @@ impl CreatureAiTable {
         player_waiting: bool,
         map: &mut CurrentMonsterMap<'_, '_>,
     ) -> Option<u64> {
+        self.drive_current_movement_through(
+            runtime,
+            cells,
+            blocking,
+            source,
+            root,
+            now,
+            now,
+            budget,
+            player_waiting,
+            map,
+        )
+        .await
+    }
+
+    /// An original retained pass limits which scheduled inputs may fire.
+    /// Current speed/conditions, path accounting and new cadence use the real
+    /// execution clock, while all later original deadlines stay in their lane.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn drive_current_movement_through(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &NativeEntryMovementCells,
+        blocking: &dyn CellBlocker,
+        source: &(impl CurrentCreatureSpeedReader + Sync),
+        root: &GameplayDecisionRoot,
+        through_us: u64,
+        execution_now: u64,
+        budget: &mut ChannelPathBudget,
+        player_waiting: bool,
+        map: &mut CurrentMonsterMap<'_, '_>,
+    ) -> Option<u64> {
+        let now = execution_now;
         if !map.view().matches(runtime)
+            || through_us > execution_now
             || cells.scope().world_id != runtime.binding().world_id()
             || cells.scope().generation_digest != runtime.content_pin().server_artifact_digest()
         {
             return None;
         }
+        if map.view().source_ground_step_pending() {
+            // A prior real translation is awaiting its original physical Item
+            // outcome. Do not refresh goals, paths or consume later deadlines.
+            return self
+                .entries
+                .values()
+                .filter_map(|entry| entry.motion.due)
+                .min();
+        }
         self.forget_dead(runtime);
         // All awaited reads precede goal/timer publication. Dropping this future retains inputs,
         // route cursor and cadence. A fresh physical transaction always starts with a fresh cache.
+        // The whole current census is already held by this Channel owner. Batch its
+        // exact addresses before the per-actor reads: actors spread across a World
+        // must not issue one 256-cell query for each mostly empty spatial chunk.
+        let mut positions = Vec::new();
+        for entry in self.entries.values() {
+            let Ok(snapshot) = runtime.read_actor_position(entry.state.actor) else {
+                continue;
+            };
+            if snapshot.context() != runtime.pinned_movement_context() {
+                return None;
+            }
+            let at = snapshot.position();
+            positions.push(at);
+            for step in [
+                crate::movement::CardinalStep::North,
+                crate::movement::CardinalStep::East,
+                crate::movement::CardinalStep::South,
+                crate::movement::CardinalStep::West,
+            ] {
+                if let Some(next) = destination(at, step) {
+                    positions.push(next);
+                }
+            }
+            positions.extend(entry.state.spawn);
+        }
+        if map.prefetch_empty_tiles(runtime, &positions).await.is_err() {
+            return None;
+        }
         for entry in self.entries.values() {
             let Ok(snapshot) = runtime.read_actor_position(entry.state.actor) else {
                 continue;
@@ -158,7 +229,7 @@ impl CreatureAiTable {
         if !map.validate_transaction(runtime).await {
             return None;
         }
-        self.fire_steps(
+        self.fire_steps_through(
             runtime,
             cells,
             blocking,
@@ -166,6 +237,7 @@ impl CreatureAiTable {
             source,
             map.view(),
             root,
+            through_us,
             now,
         );
         let next = self

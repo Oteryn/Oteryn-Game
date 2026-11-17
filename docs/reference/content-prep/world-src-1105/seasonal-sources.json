@@ -1,0 +1,85 @@
+{
+  "fetched_utc": "2026-11-05T20:18:21.728107+00:00",
+  "donors": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+      "sha256": "48471262a6d87ca938218890cc10f3839bd072dbf9f71301e63df155933595cf",
+      "bytes": 2912,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/santa_claus.lua",
+      "sha256": "16f900a55116b6298044c4105b2f1550f9b91c797aefc56f201d60f61596c06c",
+      "bytes": 2711,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/ruprecht.lua",
+      "sha256": "6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f",
+      "bytes": 9249,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/scripts/globalevents/others/raids_schedule.lua",
+      "sha256": "71f468bb018eb2f1ed0ab4b9c53061241cb64f2178c5cc522166a6198e0fb5ff",
+      "bytes": 1468,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "commit": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/raids/raids.xml",
+      "sha256": "590841d11807081e7d0a6a39a8e6218b10f8c8932377e5fb87daf13c6958d653",
+      "bytes": 16275,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "commit": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/npc/santa_claus.lua",
+      "sha256": "1acaaab3f6b05ba0918e3641addd5f919080a59f055da093d825dccffbb2ff1c",
+      "bytes": 2779,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "commit": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/globalevents/others/raids_schedule.lua",
+      "sha256": "ae8d1e052e46b282fd6353aeeb9e5005919474fb84ea2c565854ff06655c62ae",
+      "bytes": 1356,
+      "classification": "OTS_HYPOTHESIS_ONLY"
+    }
+  ],
+  "wiki_request": {
+    "url": "https://tibia.fandom.com/api.php?action=query&prop=revisions&rvprop=ids%7Ccontent&rvslots=main&titles=Cake_Golem%7CChristmas%7CThe_Halloween_Hare&format=json&formatversion=2",
+    "user_agent": "OterynCompatibilityResearch/1.0",
+    "status": 402,
+    "revision": null,
+    "disposition": "Stopped permitted route after HTTP error; no HTML page fetch, spoofing, captcha bypass or alternate Wiki endpoint."
+  },
+  "retained_mediawiki_api_sources": [],
+  "retained_engine_witnesses": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "src/creatures/monsters/monsters.hpp",
+      "line": 244,
+      "fact": "MonsterSpell.combatType default is COMBAT_UNDEFINEDDAMAGE"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "src/creatures/monsters/monsters.cpp",
+      "line": 131,
+      "fact": "combat branch sends spell.combatType unchanged to Combat"
+    }
+  ]
+}

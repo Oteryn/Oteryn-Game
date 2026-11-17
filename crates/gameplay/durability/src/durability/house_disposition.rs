@@ -199,6 +199,15 @@ pub(in crate::durability) async fn write_disposition_audit(
     audit::write(tx, node, &p, operation).await
 }
 
+/// Current named-House actor proofs accompany the exact physical disposition audit.
+pub(in crate::durability) async fn write_actor_disposition_audit(tx: &mut Transaction<'_,Postgres>,node:&NodeIncarnationProof,actor:&Value,operation:&str)->std::result::Result<(),DurabilityError> {
+    let mut p=serde_json::json!({});
+    for key in ["world","channel","generation","instance","session","character","connection","lease"] {
+        if let Some(value)=actor.get(key) {p[key]=value.clone();}
+    }
+    audit::write(tx,node,&p,operation).await
+}
+
 fn scope_payload(scope: RuntimeScopeRefV1, generation: u64) -> Result<Value> {
     let RuntimeScopeRefV1::Channel {
         world_id,

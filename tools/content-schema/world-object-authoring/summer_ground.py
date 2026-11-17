@@ -120,7 +120,8 @@ def outputs(root=ROOT):
     ).encode()
     marker_path = "content/world/terrain/index.json"
     marker = json.loads((root / marker_path).read_bytes())
-    marker["notes"] = marker["notes"].removesuffix(MARKER_NOTE) + MARKER_NOTE
+    if MARKER_NOTE not in marker["notes"]:
+        marker["notes"] += MARKER_NOTE
     marker_bytes = (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
     return {
         SHARD: encode({"family": "Terrain", "records": [record]}),

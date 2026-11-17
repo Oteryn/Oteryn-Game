@@ -1,0 +1,7 @@
+{
+  "mechanic": "0498-highscores-loyalty",
+  "kind": "panels",
+  "id": "0498-highscores-loyalty-panel",
+  "status": "supported",
+  "entry": "protocol.rs::categories"
+}

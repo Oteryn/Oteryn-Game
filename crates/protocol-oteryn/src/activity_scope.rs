@@ -6,6 +6,7 @@ use crate::charm_wire::{
 };
 
 pub const STATE_DOMAIN_ACTIVITY_SCOPE: u32 = 99;
+pub const COMMAND_TYPE_ACTIVITY_SCOPE_ACK: u32 = 710;
 pub const MAX_ACTIVITY_SCOPE_BYTES: usize = 2048;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,6 +25,8 @@ pub struct ActivityScopeSnapshot {
     pub connection_generation: u64,
     pub lease_generation: u64,
     pub selection: Vec<u32>,
+    /// A live Soulpit barrier requires command1 acknowledgement before gameplay.
+    pub requires_ack: bool,
 }
 
 impl ActivityScopeSnapshot {
@@ -81,6 +84,9 @@ pub fn encode_activity_scope(value: &ActivityScopeSnapshot) -> Result<Vec<u8>, E
     for capability in &value.selection {
         scalar(&mut output, 10, u64::from(*capability));
     }
+    if value.requires_ack {
+        scalar(&mut output, 11, 1);
+    }
     if output.len() > MAX_ACTIVITY_SCOPE_BYTES {
         return Err(Error::LimitExceeded);
     }
@@ -96,6 +102,7 @@ pub fn decode_activity_scope(body: &[u8]) -> Result<ActivityScopeSnapshot, Error
     let (mut scope_generation, mut connection_generation, mut lease_generation) =
         (None, None, None);
     let mut selection = Vec::new();
+    let mut requires_ack = None;
     while cursor < body.len() {
         match read_varint(body, &mut cursor)? {
             10 => set_once(&mut handoff, id(read_bytes(body, &mut cursor)?)?)?,
@@ -114,6 +121,14 @@ pub fn decode_activity_scope(body: &[u8]) -> Result<ActivityScopeSnapshot, Error
                 selection.push(
                     u32::try_from(read_varint(body, &mut cursor)?).map_err(|_| Error::Malformed)?,
                 );
+            }
+            88 => {
+                let value = match read_varint(body, &mut cursor)? {
+                    0 => false,
+                    1 => true,
+                    _ => return Err(Error::Malformed),
+                };
+                set_once(&mut requires_ack, value)?;
             }
             _ => return Err(Error::Malformed),
         }
@@ -142,9 +157,42 @@ pub fn decode_activity_scope(body: &[u8]) -> Result<ActivityScopeSnapshot, Error
         connection_generation: connection_generation.ok_or(Error::Malformed)?,
         lease_generation: lease_generation.ok_or(Error::Malformed)?,
         selection,
+        requires_ack: requires_ack.unwrap_or(false),
     };
     result.validate()?;
     Ok(result)
+}
+
+/// Bound acknowledgement of a completely validated destination snapshot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ActivityScopeAck {
+    pub handoff: [u8; 16],
+    pub session: [u8; 16],
+}
+
+pub fn encode_activity_scope_ack(value: &ActivityScopeAck) -> Result<Vec<u8>, Error> {
+    if [value.handoff, value.session]
+        .iter()
+        .any(|id| id[6] >> 4 != 7 || id[8] & 0xc0 != 0x80)
+    {
+        return Err(Error::Malformed);
+    }
+    let mut output = Vec::with_capacity(32);
+    output.extend_from_slice(&value.handoff);
+    output.extend_from_slice(&value.session);
+    Ok(output)
+}
+
+pub fn decode_activity_scope_ack(payload: &[u8]) -> Result<ActivityScopeAck, Error> {
+    if payload.len() != 32 {
+        return Err(Error::Malformed);
+    }
+    let value = ActivityScopeAck {
+        handoff: id(&payload[..16])?,
+        session: id(&payload[16..])?,
+    };
+    let _ = encode_activity_scope_ack(&value)?;
+    Ok(value)
 }
 
 fn id(bytes: &[u8]) -> Result<[u8; 16], Error> {
@@ -173,6 +221,7 @@ mod tests {
             connection_generation: 1,
             lease_generation: 4,
             selection: vec![1, 117],
+            requires_ack: false,
         }
     }
     #[test]
@@ -201,7 +250,7 @@ mod tests {
         scalar(&mut duplicate, 8, 2);
         assert!(decode_activity_scope(&duplicate).is_err());
         let mut unknown = encoded;
-        scalar(&mut unknown, 11, 1);
+        scalar(&mut unknown, 12, 1);
         assert!(decode_activity_scope(&unknown).is_err());
         let mut value = snapshot();
         value.selection = vec![117, 1];
@@ -210,6 +259,50 @@ mod tests {
         assert!(encode_activity_scope(&value).is_err());
         value.selection = vec![1];
         assert!(encode_activity_scope(&value).is_err());
+        Ok(())
+    }
+    #[test]
+    fn soulpit_acknowledgement_is_optional_bounded_and_binds_handoff_and_session()
+    -> Result<(), Error> {
+        let mut value = snapshot();
+        let legacy = encode_activity_scope(&value)?;
+        assert!(!decode_activity_scope(&legacy)?.requires_ack);
+        value.requires_ack = true;
+        let encoded = encode_activity_scope(&value)?;
+        assert_eq!(decode_activity_scope(&encoded)?, value);
+        let mut duplicate = encoded;
+        scalar(&mut duplicate, 11, 1);
+        assert!(decode_activity_scope(&duplicate).is_err());
+        let mut invalid = legacy;
+        scalar(&mut invalid, 11, 2);
+        assert!(decode_activity_scope(&invalid).is_err());
+        let ack = ActivityScopeAck {
+            handoff: value.handoff,
+            session: value.session,
+        };
+        let encoded = encode_activity_scope_ack(&ack)?;
+        assert_eq!(encoded.len(), 32);
+        assert_eq!(decode_activity_scope_ack(&encoded)?, ack);
+        for end in 0..32 {
+            assert!(decode_activity_scope_ack(&encoded[..end]).is_err());
+        }
+        let mut oversized = encoded;
+        oversized.push(0);
+        assert!(decode_activity_scope_ack(&oversized).is_err());
+        assert!(
+            encode_activity_scope_ack(&ActivityScopeAck {
+                handoff: [0; 16],
+                ..ack
+            })
+            .is_err()
+        );
+        assert!(
+            encode_activity_scope_ack(&ActivityScopeAck {
+                session: [0; 16],
+                ..ack
+            })
+            .is_err()
+        );
         Ok(())
     }
 }

@@ -16,7 +16,7 @@ MERGE_GROUP_GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 CORE = Path(__file__).with_name("validate_repository_policy_core.py")
 FAST_PR_JOBS = [
     "scope", "lanes", "governance", "dependency_review", "routing_contract",
-    "world_bundle", "rust_policy", "rust_fast", "rust_supply_chain", "validate", "game_gate",
+    "world_bundle", "rust_policy", "runner_route", "rust_fast", "rust_supply_chain", "validate", "game_gate",
 ]
 
 

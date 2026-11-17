@@ -95,6 +95,7 @@ fn subsequent_switch(
         },
     };
     let payload = encode_activity_scope(&ActivityScopeSnapshot {
+        requires_ack: false,
         handoff: id(tag + 2),
         source_session: *source.game_session_id.as_bytes(),
         session: *session.as_bytes(),
@@ -106,6 +107,7 @@ fn subsequent_switch(
     })
     .map_err(debug)?;
     Ok(ActivityConnectionSwitch {
+        movement_effect_start: None,
         source,
         destination,
         payload,

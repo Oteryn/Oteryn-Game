@@ -1,0 +1,2347 @@
+{
+  "authoring_rows": 5776,
+  "authoring_status_counts": {
+    "authored": 5115,
+    "unavailable": 661
+  },
+  "missing_schedule_bodies": [
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/rat/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/rat",
+      "index": 0,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/druid_familiar/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/druid_familiar",
+      "index": 0,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/druid_familiar/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/druid_familiar",
+      "index": 1,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/druid_familiar/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/druid_familiar",
+      "index": 2,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/spell/summon_challenge",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/druid_familiar",
+      "index": 3,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/druid_familiar/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/druid_familiar",
+      "index": 0,
+      "phase": "defenses"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/knight_familiar/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/knight_familiar",
+      "index": 0,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/spell/sudden_death_rune",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/knight_familiar",
+      "index": 1,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/knight_familiar/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/knight_familiar",
+      "index": 2,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/knight_familiar/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/knight_familiar",
+      "index": 3,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/knight_familiar/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/knight_familiar",
+      "index": 4,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/knight_familiar/attack-6",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/knight_familiar",
+      "index": 5,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/spell/ice_strike",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/knight_familiar",
+      "index": 6,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/knight_familiar/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/knight_familiar",
+      "index": 0,
+      "phase": "defenses"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/monk_familiar/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/monk_familiar",
+      "index": 0,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/monk_familiar/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/monk_familiar",
+      "index": 1,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/monk_familiar/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/monk_familiar",
+      "index": 2,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/monk_familiar/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/monk_familiar",
+      "index": 3,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/monk_familiar/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/monk_familiar",
+      "index": 4,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/monk_familiar/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/monk_familiar",
+      "index": 0,
+      "phase": "defenses"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/paladin_familiar/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/paladin_familiar",
+      "index": 0,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/paladin_familiar/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/paladin_familiar",
+      "index": 1,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/paladin_familiar/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/paladin_familiar",
+      "index": 2,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/paladin_familiar/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/paladin_familiar",
+      "index": 3,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/paladin_familiar/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/paladin_familiar",
+      "index": 4,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/paladin_familiar/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/paladin_familiar",
+      "index": 0,
+      "phase": "defenses"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/sorcerer_familiar/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/sorcerer_familiar",
+      "index": 0,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/sorcerer_familiar/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/sorcerer_familiar",
+      "index": 1,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/sorcerer_familiar/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/sorcerer_familiar",
+      "index": 2,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/spell/summon_challenge",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/sorcerer_familiar",
+      "index": 3,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/sorcerer_familiar/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/sorcerer_familiar",
+      "index": 0,
+      "phase": "defenses"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/skeleton/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/skeleton",
+      "index": 0,
+      "phase": "attacks"
+    },
+    {
+      "ability": {
+        "family": "Ability",
+        "key": "canary:ability/skeleton/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "creature": "canary:creature/skeleton",
+      "index": 1,
+      "phase": "attacks"
+    }
+  ],
+  "no_effects_parent_split": {
+    "actual_variant_parent": 23,
+    "existing_callback_parent": 13
+  },
+  "pinned_current_donor_sources": {
+    "canary:creature/druid_familiar": {
+      "git_blob": "2c4f3a55ab2e8e2383da2e82c9c2a6bfa49fedb5",
+      "path": "data-otservbr-global/monster/familiars/druid_familiar.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "schedule_evidence": [
+        {
+          "line": 68,
+          "text": "monster.attacks = {"
+        },
+        {
+          "line": 69,
+          "text": "\t{ name = \"melee\", interval = 2000, chance = 100, minDamage = 0, maxDamage = -300 },"
+        },
+        {
+          "line": 70,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 20, type = COMBAT_EARTHDAMAGE, minDamage = -230, maxDamage = -260, range = 5, shootEffect = CONST_ANI_EARTH, effect = CONST_ME_STONES, target = true },"
+        },
+        {
+          "line": 71,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 25, type = COMBAT_EARTHDAMAGE, minDamage = -90, maxDamage = -150, length = 2, spread = 0, effect = CONST_ME_GROUNDSHAKER, target = false },"
+        },
+        {
+          "line": 72,
+          "text": "\t{ name = \"summon challenge\", interval = 2000, chance = 40, target = false },"
+        },
+        {
+          "line": 73,
+          "text": "}"
+        },
+        {
+          "line": 75,
+          "text": "monster.defenses = {"
+        },
+        {
+          "line": 76,
+          "text": "\tdefense = 55,"
+        },
+        {
+          "line": 77,
+          "text": "\tarmor = 55,"
+        },
+        {
+          "line": 78,
+          "text": "\t--\tmitigation = ???,"
+        },
+        {
+          "line": 79,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 75, type = COMBAT_HEALING, minDamage = 600, maxDamage = 600, effect = CONST_ME_MAGIC_GREEN, target = false },"
+        },
+        {
+          "line": 80,
+          "text": "}"
+        }
+      ],
+      "sha256": "cca0a4d6cb4c07b6ddad7edd7151b0a795d30b389ed41953af6115036ead5016"
+    },
+    "canary:creature/knight_familiar": {
+      "git_blob": "83c619695910876e8dbb1f24287fa755b5d9d0c8",
+      "path": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "schedule_evidence": [
+        {
+          "line": 68,
+          "text": "monster.attacks = {"
+        },
+        {
+          "line": 69,
+          "text": "\t{ name = \"melee\", interval = 2000, chance = 100, minDamage = 0, maxDamage = -200 },"
+        },
+        {
+          "line": 70,
+          "text": "\t{ name = \"sudden death rune\", interval = 2000, chance = 17, minDamage = -300, maxDamage = -350, range = 7, target = false },"
+        },
+        {
+          "line": 71,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 15, type = COMBAT_DEATHDAMAGE, minDamage = -200, maxDamage = -250, range = 6, radius = 2, effect = CONST_ME_MORTAREA, target = true },"
+        },
+        {
+          "line": 72,
+          "text": "\t{ name = \"combat\", interval = 3000, chance = 25, type = COMBAT_DEATHDAMAGE, minDamage = -180, maxDamage = -250, range = 5, radius = 3, effect = CONST_ME_MORTAREA, target = true },"
+        },
+        {
+          "line": 73,
+          "text": "\t{ name = \"combat\", interval = 3000, chance = 25, type = COMBAT_ICEDAMAGE, minDamage = -180, maxDamage = -250, range = 5, radius = 3, effect = CONST_ME_ICEAREA, target = true },"
+        },
+        {
+          "line": 74,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 15, type = COMBAT_ICEDAMAGE, minDamage = -200, maxDamage = -250, range = 6, radius = 2, effect = CONST_ME_ICETORNADO, target = true },"
+        },
+        {
+          "line": 75,
+          "text": "\t{ name = \"ice strike\", interval = 2000, chance = 17, minDamage = -300, maxDamage = -350, range = 5, target = true },"
+        },
+        {
+          "line": 76,
+          "text": "}"
+        },
+        {
+          "line": 78,
+          "text": "monster.defenses = {"
+        },
+        {
+          "line": 79,
+          "text": "\tdefense = 55,"
+        },
+        {
+          "line": 80,
+          "text": "\tarmor = 55,"
+        },
+        {
+          "line": 81,
+          "text": "\t--\tmitigation = ???,"
+        },
+        {
+          "line": 82,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 75, type = COMBAT_HEALING, minDamage = 300, maxDamage = 300, effect = CONST_ME_MAGIC_GREEN, target = false },"
+        },
+        {
+          "line": 83,
+          "text": "}"
+        }
+      ],
+      "sha256": "0a7630ef4ad7b7e124d28c3a0e5ee6815e647a199d658f98bce2526a026ca527"
+    },
+    "canary:creature/monk_familiar": {
+      "git_blob": "93a6e898ffa1fc62e921e9c4d7ed5b23c7f90c17",
+      "path": "data-otservbr-global/monster/familiars/monk_familiar.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "schedule_evidence": [
+        {
+          "line": 68,
+          "text": "monster.attacks = {"
+        },
+        {
+          "line": 69,
+          "text": "\t{ name = \"melee\", interval = 2000, chance = 100, minDamage = 0, maxDamage = -200 },"
+        },
+        {
+          "line": 70,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 18, type = COMBAT_HOLYDAMAGE, minDamage = -200, maxDamage = -270, range = 5, radius = 3, shootEffect = CONST_ANI_HOLY, effect = CONST_ME_HOLYAREA, target = true },"
+        },
+        {
+          "line": 71,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 18, type = COMBAT_FIREDAMAGE, minDamage = -200, maxDamage = -270, range = 5, radius = 3, shootEffect = CONST_ANI_FIRE, effect = CONST_ME_FIREATTACK, target = true },"
+        },
+        {
+          "line": 72,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 18, type = COMBAT_FIREDAMAGE, minDamage = -170, maxDamage = -230, range = 5, radius = 5, shootEffect = CONST_ANI_FIRE, effect = CONST_ME_FIREATTACK, target = true },"
+        },
+        {
+          "line": 73,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 18, type = COMBAT_HOLYDAMAGE, minDamage = -170, maxDamage = -230, range = 5, radius = 5, shootEffect = CONST_ANI_HOLY, effect = CONST_ME_HOLYAREA, target = true },"
+        },
+        {
+          "line": 74,
+          "text": "}"
+        },
+        {
+          "line": 76,
+          "text": "monster.defenses = {"
+        },
+        {
+          "line": 77,
+          "text": "\tdefense = 55,"
+        },
+        {
+          "line": 78,
+          "text": "\tarmor = 55,"
+        },
+        {
+          "line": 79,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 75, type = COMBAT_HEALING, minDamage = 450, maxDamage = 450, effect = CONST_ME_MAGIC_GREEN, target = false },"
+        },
+        {
+          "line": 80,
+          "text": "}"
+        }
+      ],
+      "sha256": "2bd4dab7451a89f91d9f6853189a1ddc3185eabe80e58a1e8e48a5c9ac16034c"
+    },
+    "canary:creature/paladin_familiar": {
+      "git_blob": "181e96f394c48c4dd1f6675252cbe62b93392361",
+      "path": "data-otservbr-global/monster/familiars/paladin_familiar.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "schedule_evidence": [
+        {
+          "line": 68,
+          "text": "monster.attacks = {"
+        },
+        {
+          "line": 69,
+          "text": "\t{ name = \"melee\", interval = 2000, chance = 100, minDamage = 0, maxDamage = -200 },"
+        },
+        {
+          "line": 70,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 18, type = COMBAT_HOLYDAMAGE, minDamage = -200, maxDamage = -270, range = 5, radius = 3, shootEffect = CONST_ANI_HOLY, effect = CONST_ME_HOLYAREA, target = true },"
+        },
+        {
+          "line": 71,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 18, type = COMBAT_FIREDAMAGE, minDamage = -200, maxDamage = -270, range = 5, radius = 3, shootEffect = CONST_ANI_FIRE, effect = CONST_ME_FIREATTACK, target = true },"
+        },
+        {
+          "line": 72,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 18, type = COMBAT_FIREDAMAGE, minDamage = -170, maxDamage = -230, range = 5, radius = 5, shootEffect = CONST_ANI_FIRE, effect = CONST_ME_FIREATTACK, target = true },"
+        },
+        {
+          "line": 73,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 18, type = COMBAT_HOLYDAMAGE, minDamage = -170, maxDamage = -230, range = 5, radius = 5, shootEffect = CONST_ANI_HOLY, effect = CONST_ME_HOLYAREA, target = true },"
+        },
+        {
+          "line": 74,
+          "text": "}"
+        },
+        {
+          "line": 76,
+          "text": "monster.defenses = {"
+        },
+        {
+          "line": 77,
+          "text": "\tdefense = 55,"
+        },
+        {
+          "line": 78,
+          "text": "\tarmor = 55,"
+        },
+        {
+          "line": 79,
+          "text": "\t--\tmitigation = ???,"
+        },
+        {
+          "line": 80,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 75, type = COMBAT_HEALING, minDamage = 450, maxDamage = 450, effect = CONST_ME_MAGIC_GREEN, target = false },"
+        },
+        {
+          "line": 81,
+          "text": "}"
+        }
+      ],
+      "sha256": "e8674b2495283c6314a248d1e7389e688d3e8e15d242373a9d72407766bfcd84"
+    },
+    "canary:creature/rat": {
+      "git_blob": "205888f9a55b66f6e05fbd2dc653b33d401ffcd1",
+      "path": "data-otservbr-global/monster/mammals/rat.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "schedule_evidence": [
+        {
+          "line": 85,
+          "text": "monster.attacks = {"
+        },
+        {
+          "line": 86,
+          "text": "\t{ name = \"melee\", interval = 2000, chance = 100, minDamage = 0, maxDamage = -8 },"
+        },
+        {
+          "line": 87,
+          "text": "}"
+        },
+        {
+          "line": 89,
+          "text": "monster.defenses = {"
+        },
+        {
+          "line": 90,
+          "text": "\tdefense = 5,"
+        },
+        {
+          "line": 91,
+          "text": "\tarmor = 1,"
+        },
+        {
+          "line": 92,
+          "text": "\tmitigation = 0.07,"
+        },
+        {
+          "line": 93,
+          "text": "}"
+        }
+      ],
+      "sha256": "d4bfd4bc61f28e8b22b218b7cb36f5d715d72b79cb9cb7e667a052a3792a2f37"
+    },
+    "canary:creature/skeleton": {
+      "git_blob": "22b05bff44dddfdd71e743fa7ecf7884cc1b6b01",
+      "path": "data-otservbr-global/monster/undeads/skeleton.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "schedule_evidence": [
+        {
+          "line": 91,
+          "text": "monster.attacks = {"
+        },
+        {
+          "line": 92,
+          "text": "\t{ name = \"melee\", interval = 2000, chance = 100, minDamage = 0, maxDamage = -20 },"
+        },
+        {
+          "line": 93,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 15, type = COMBAT_LIFEDRAIN, minDamage = -7, maxDamage = -13, range = 1, target = false },"
+        },
+        {
+          "line": 94,
+          "text": "}"
+        },
+        {
+          "line": 96,
+          "text": "monster.defenses = {"
+        },
+        {
+          "line": 97,
+          "text": "\tdefense = 10,"
+        },
+        {
+          "line": 98,
+          "text": "\tarmor = 2,"
+        },
+        {
+          "line": 99,
+          "text": "\tmitigation = 0.23,"
+        },
+        {
+          "line": 100,
+          "text": "}"
+        }
+      ],
+      "sha256": "dd9df80a1a5f392996e23ca78a6227562ce0fb960cf3632c97544117f2881ff1"
+    },
+    "canary:creature/sorcerer_familiar": {
+      "git_blob": "31d61dfbf280cee1f30a0758f99828f06bf61f63",
+      "path": "data-otservbr-global/monster/familiars/sorcerer_familiar.lua",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "schedule_evidence": [
+        {
+          "line": 68,
+          "text": "monster.attacks = {"
+        },
+        {
+          "line": 69,
+          "text": "\t{ name = \"melee\", interval = 2000, chance = 100, minDamage = 0, maxDamage = -280 },"
+        },
+        {
+          "line": 70,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 25, type = COMBAT_LIFEDRAIN, minDamage = -90, maxDamage = -150, length = 2, spread = 0, effect = CONST_ME_MAGIC_RED, target = false },"
+        },
+        {
+          "line": 71,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 25, type = COMBAT_ENERGYDAMAGE, minDamage = -190, maxDamage = -210, length = 2, spread = 0, effect = CONST_ME_ENERGYHIT, target = false },"
+        },
+        {
+          "line": 72,
+          "text": "\t{ name = \"summon challenge\", interval = 2000, chance = 40, target = false },"
+        },
+        {
+          "line": 73,
+          "text": "}"
+        },
+        {
+          "line": 75,
+          "text": "monster.defenses = {"
+        },
+        {
+          "line": 76,
+          "text": "\tdefense = 55,"
+        },
+        {
+          "line": 77,
+          "text": "\tarmor = 55,"
+        },
+        {
+          "line": 78,
+          "text": "\t{ name = \"combat\", interval = 2000, chance = 75, type = COMBAT_HEALING, minDamage = 600, maxDamage = 600, effect = CONST_ME_MAGIC_GREEN, target = false },"
+        },
+        {
+          "line": 79,
+          "text": "}"
+        }
+      ],
+      "sha256": "c9bbdc224311d112fbe0f9bbce9bbbf405ad2795a7cc90026e87e02d708b6aa7"
+    }
+  },
+  "present_native_schedule_bodies_without_effects_variants_or_encounter": [],
+  "production_routes": {
+    "familiars": "actual familiar acquisition binds current player master; Familiar role refused by ordinary native AI/melee; dedicated familiar_defense consumes five defense slots, not the twenty-five offensive slots",
+    "rat": "builtin monster_melee fallback exists in real native loop; qualification_wild_spawn is explicitly TEST ONLY and is not claimed as a production alias spawn",
+    "remaining_gap": "twenty-seven controlled companion offensive slots remain W01-relevant; neither C13 DONE nor role exclusion proves their execution; no offense completion claim",
+    "skeleton": "actual animate-dead acquisition binds a current player master; ordinary native loop refuses that role; controlled companion offense is still missing"
+  },
+  "runtime_role_trace": {
+    "actual_profile_roles": {
+      "canary:creature/druid_familiar": {
+        "identity": {
+          "family": "Creature",
+          "key": "canary:creature/druid_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "monster_melee_fallback": {
+          "ability": {
+            "family": "Ability",
+            "key": "canary:ability/druid_familiar/attack-1",
+            "revision": "canary-47dfd51f"
+          },
+          "chance_ppm": 1000000,
+          "execution_status": "approximate_nonlethal_physical_melee",
+          "interval_ms": 2000,
+          "maximum": 300,
+          "minimum": 0,
+          "source_path": "data-otservbr-global/monster/familiars/druid_familiar.lua",
+          "source_repository": "opentibiabr/canary",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_sha256": "cca0a4d6cb4c07b6ddad7edd7151b0a795d30b389ed41953af6115036ead5016"
+        },
+        "ordinary_role_does_not_prove_familiar_offense": true,
+        "summoning": {
+          "convinceable": false,
+          "is_familiar": true,
+          "summonable": false
+        }
+      },
+      "canary:creature/knight_familiar": {
+        "identity": {
+          "family": "Creature",
+          "key": "canary:creature/knight_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "monster_melee_fallback": {
+          "ability": {
+            "family": "Ability",
+            "key": "canary:ability/knight_familiar/attack-1",
+            "revision": "canary-47dfd51f"
+          },
+          "chance_ppm": 1000000,
+          "execution_status": "approximate_nonlethal_physical_melee",
+          "interval_ms": 2000,
+          "maximum": 200,
+          "minimum": 0,
+          "source_path": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+          "source_repository": "opentibiabr/canary",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_sha256": "0a7630ef4ad7b7e124d28c3a0e5ee6815e647a199d658f98bce2526a026ca527"
+        },
+        "ordinary_role_does_not_prove_familiar_offense": true,
+        "summoning": {
+          "convinceable": false,
+          "is_familiar": true,
+          "summonable": false
+        }
+      },
+      "canary:creature/monk_familiar": {
+        "identity": {
+          "family": "Creature",
+          "key": "canary:creature/monk_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "monster_melee_fallback": {
+          "ability": {
+            "family": "Ability",
+            "key": "canary:ability/monk_familiar/attack-1",
+            "revision": "canary-47dfd51f"
+          },
+          "chance_ppm": 1000000,
+          "execution_status": "approximate_nonlethal_physical_melee",
+          "interval_ms": 2000,
+          "maximum": 200,
+          "minimum": 0,
+          "source_path": "data-otservbr-global/monster/familiars/monk_familiar.lua",
+          "source_repository": "opentibiabr/canary",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_sha256": "2bd4dab7451a89f91d9f6853189a1ddc3185eabe80e58a1e8e48a5c9ac16034c"
+        },
+        "ordinary_role_does_not_prove_familiar_offense": true,
+        "summoning": {
+          "convinceable": false,
+          "is_familiar": true,
+          "summonable": false
+        }
+      },
+      "canary:creature/paladin_familiar": {
+        "identity": {
+          "family": "Creature",
+          "key": "canary:creature/paladin_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "monster_melee_fallback": {
+          "ability": {
+            "family": "Ability",
+            "key": "canary:ability/paladin_familiar/attack-1",
+            "revision": "canary-47dfd51f"
+          },
+          "chance_ppm": 1000000,
+          "execution_status": "approximate_nonlethal_physical_melee",
+          "interval_ms": 2000,
+          "maximum": 200,
+          "minimum": 0,
+          "source_path": "data-otservbr-global/monster/familiars/paladin_familiar.lua",
+          "source_repository": "opentibiabr/canary",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_sha256": "e8674b2495283c6314a248d1e7389e688d3e8e15d242373a9d72407766bfcd84"
+        },
+        "ordinary_role_does_not_prove_familiar_offense": true,
+        "summoning": {
+          "convinceable": false,
+          "is_familiar": true,
+          "summonable": false
+        }
+      },
+      "canary:creature/rat": {
+        "identity": {
+          "family": "Creature",
+          "key": "canary:creature/rat",
+          "revision": "canary-47dfd51f"
+        },
+        "monster_melee_fallback": {
+          "ability": {
+            "family": "Ability",
+            "key": "canary:ability/rat/attack-1",
+            "revision": "canary-47dfd51f"
+          },
+          "chance_ppm": 1000000,
+          "execution_status": "approximate_nonlethal_physical_melee",
+          "interval_ms": 2000,
+          "maximum": 8,
+          "minimum": 0,
+          "source_path": "data-otservbr-global/monster/mammals/rat.lua",
+          "source_repository": "opentibiabr/canary",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_sha256": "d4bfd4bc61f28e8b22b218b7cb36f5d715d72b79cb9cb7e667a052a3792a2f37"
+        },
+        "ordinary_role_does_not_prove_familiar_offense": true,
+        "summoning": {
+          "convinceable": true,
+          "is_familiar": false,
+          "mana_cost": 200,
+          "summonable": true
+        }
+      },
+      "canary:creature/skeleton": {
+        "identity": {
+          "family": "Creature",
+          "key": "canary:creature/skeleton",
+          "revision": "canary-47dfd51f"
+        },
+        "monster_melee_fallback": {
+          "ability": {
+            "family": "Ability",
+            "key": "canary:ability/skeleton/attack-1",
+            "revision": "canary-47dfd51f"
+          },
+          "chance_ppm": 1000000,
+          "execution_status": "approximate_nonlethal_physical_melee",
+          "interval_ms": 2000,
+          "maximum": 20,
+          "minimum": 0,
+          "source_path": "data-otservbr-global/monster/undeads/skeleton.lua",
+          "source_repository": "opentibiabr/canary",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_sha256": "dd9df80a1a5f392996e23ca78a6227562ce0fb960cf3632c97544117f2881ff1"
+        },
+        "ordinary_role_does_not_prove_familiar_offense": true,
+        "summoning": {
+          "convinceable": true,
+          "is_familiar": false,
+          "mana_cost": 300,
+          "summonable": true
+        }
+      },
+      "canary:creature/sorcerer_familiar": {
+        "identity": {
+          "family": "Creature",
+          "key": "canary:creature/sorcerer_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "monster_melee_fallback": {
+          "ability": {
+            "family": "Ability",
+            "key": "canary:ability/sorcerer_familiar/attack-1",
+            "revision": "canary-47dfd51f"
+          },
+          "chance_ppm": 1000000,
+          "execution_status": "approximate_nonlethal_physical_melee",
+          "interval_ms": 2000,
+          "maximum": 280,
+          "minimum": 0,
+          "source_path": "data-otservbr-global/monster/familiars/sorcerer_familiar.lua",
+          "source_repository": "opentibiabr/canary",
+          "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "source_sha256": "c9bbdc224311d112fbe0f9bbce9bbbf405ad2795a7cc90026e87e02d708b6aa7"
+        },
+        "ordinary_role_does_not_prove_familiar_offense": true,
+        "summoning": {
+          "convinceable": false,
+          "is_familiar": true,
+          "summonable": false
+        }
+      }
+    },
+    "code_references": {
+      "actual_player_master_at_birth": {
+        "file_sha256": "71c2732c56398357f3dbf247b9ac2b253a5ef2b1ea88690eb239a7ddbddb4c00",
+        "lines": [
+          {
+            "line": 454,
+            "text": "            master: Some(CompanionMaster {"
+          },
+          {
+            "line": 455,
+            "text": "                actor: owner,"
+          },
+          {
+            "line": 456,
+            "text": "                session,"
+          },
+          {
+            "line": 457,
+            "text": "            }),"
+          },
+          {
+            "line": 458,
+            "text": "            creation_speed_delta,"
+          },
+          {
+            "line": 459,
+            "text": "            conditions: ConditionStore::default(),"
+          }
+        ],
+        "path": "crates/gameplay/entities/src/carrier/runtime_actor_companion.rs"
+      },
+      "animate_dead_acquisition": {
+        "file_sha256": "07458fe7db869ee31bb27cdc0c04d659015d424688ee45b184b489ec7cd9f38f",
+        "lines": [
+          {
+            "line": 651,
+            "text": "    let spawn = crate::spell::companion_lifecycle::prepare_animate_dead("
+          },
+          {
+            "line": 652,
+            "text": "        runtime,"
+          },
+          {
+            "line": 653,
+            "text": "        room.movement_cells(),"
+          },
+          {
+            "line": 654,
+            "text": "        b.actor,"
+          },
+          {
+            "line": 655,
+            "text": "        b.session,"
+          },
+          {
+            "line": 656,
+            "text": "        crate::domain::CharacterId::from_bytes(b.character)"
+          },
+          {
+            "line": 657,
+            "text": "            .map_err(|_| SpellCastDisposition::Rejected)?,"
+          },
+          {
+            "line": 658,
+            "text": "        profile,"
+          },
+          {
+            "line": 659,
+            "text": "        &corpse,"
+          },
+          {
+            "line": 660,
+            "text": "        current,"
+          },
+          {
+            "line": 661,
+            "text": "    )"
+          },
+          {
+            "line": 662,
+            "text": "    .map_err(|_| SpellCastDisposition::TargetIllegal)?;"
+          },
+          {
+            "line": 663,
+            "text": "    if !spawn.consume_rune_charge() {"
+          },
+          {
+            "line": 664,
+            "text": "        return reject();"
+          },
+          {
+            "line": 665,
+            "text": "    }"
+          },
+          {
+            "line": 666,
+            "text": "    let mut operations = corpse"
+          }
+        ],
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/native_companion_item_cast.rs"
+      },
+      "builtin_melee_fallback": {
+        "file_sha256": "c93cd50d41cb1429f1df62025781fb6144abc6c5346b0305cdfceda7bd1191c8",
+        "lines": [
+          {
+            "line": 815,
+            "text": "        let legacy = record.monster_melee.as_ref().filter(|melee| {"
+          },
+          {
+            "line": 816,
+            "text": "            schedule.ability == melee.ability"
+          },
+          {
+            "line": 817,
+            "text": "                && schedule.interval_ms == melee.interval_ms"
+          },
+          {
+            "line": 818,
+            "text": "                && schedule.chance_ppm == melee.chance_ppm"
+          },
+          {
+            "line": 819,
+            "text": "        });"
+          },
+          {
+            "line": 820,
+            "text": "        let (minimum, maximum) = if let Some(melee) = legacy {"
+          },
+          {
+            "line": 821,
+            "text": "            (melee.minimum, melee.maximum)"
+          },
+          {
+            "line": 822,
+            "text": "        } else if let Some(source) = &source {"
+          },
+          {
+            "line": 823,
+            "text": "            (source.minimum, source.maximum)"
+          },
+          {
+            "line": 824,
+            "text": "        } else {"
+          },
+          {
+            "line": 825,
+            "text": "            continue;"
+          },
+          {
+            "line": 826,
+            "text": "        };"
+          },
+          {
+            "line": 827,
+            "text": "        let make_definition = if legacy.is_some() {"
+          },
+          {
+            "line": 828,
+            "text": "            MeleeDefinition::new"
+          },
+          {
+            "line": 829,
+            "text": "        } else {"
+          },
+          {
+            "line": 830,
+            "text": "            MeleeDefinition::new_native"
+          },
+          {
+            "line": 831,
+            "text": "        };"
+          },
+          {
+            "line": 832,
+            "text": "        let Some(definition) = make_definition("
+          },
+          {
+            "line": 833,
+            "text": "            content.source_digest(),"
+          },
+          {
+            "line": 834,
+            "text": "            schedule.interval_ms,"
+          },
+          {
+            "line": 835,
+            "text": "            schedule.chance_ppm,"
+          },
+          {
+            "line": 836,
+            "text": "            minimum,"
+          },
+          {
+            "line": 837,
+            "text": "            maximum,"
+          },
+          {
+            "line": 838,
+            "text": "        ) else {"
+          },
+          {
+            "line": 839,
+            "text": "            continue;"
+          },
+          {
+            "line": 840,
+            "text": "        };"
+          },
+          {
+            "line": 841,
+            "text": "        let definition = definition.with_entry_index(u16::try_from(index).ok()?);"
+          },
+          {
+            "line": 842,
+            "text": "        let conditions = source"
+          },
+          {
+            "line": 843,
+            "text": "            .as_ref()"
+          },
+          {
+            "line": 844,
+            "text": "            .map_or_else(Vec::new, |source| source.conditions().to_vec());"
+          },
+          {
+            "line": 845,
+            "text": "        let source ="
+          },
+          {
+            "line": 846,
+            "text": "            source.filter(|source| source.admits_bite_definition(runtime, actor, definition));"
+          },
+          {
+            "line": 847,
+            "text": "        if source.is_none() && legacy.is_none() {"
+          },
+          {
+            "line": 848,
+            "text": "            continue;"
+          }
+        ],
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs"
+      },
+      "compiled_familiar_flag": {
+        "file_sha256": "b53ff7b23edceb4106b3768c81da26ca7336e1dc301ac83148220b66e85fe41c",
+        "lines": [
+          {
+            "line": 1794,
+            "text": "            is_familiar: details.summoning.is_familiar,"
+          },
+          {
+            "line": 1795,
+            "text": "            condition_immunities,"
+          },
+          {
+            "line": 1796,
+            "text": "        });"
+          }
+        ],
+        "path": "crates/gameplay/content/src/content/native_gameplay.rs"
+      },
+      "current_role": {
+        "file_sha256": "c96a081f621c29e769a40ed36ac8a712bbef2bdc5f69b2aa6af95e2877ab2d9d",
+        "lines": [
+          {
+            "line": 1746,
+            "text": "pub fn current_source_creature_role("
+          },
+          {
+            "line": 1747,
+            "text": "    runtime: &ChannelRuntimeV1,"
+          },
+          {
+            "line": 1748,
+            "text": "    actor: ExactActorRef,"
+          },
+          {
+            "line": 1749,
+            "text": ") -> Result<CurrentSourceCreatureRole, CarrierError> {"
+          },
+          {
+            "line": 1750,
+            "text": "    // Exact slot identity/generation is independently validated by native owner."
+          },
+          {
+            "line": 1751,
+            "text": "    let intrinsic = runtime.native_summon_role(actor)?;"
+          },
+          {
+            "line": 1752,
+            "text": "    match runtime.companion_snapshot_including_dead(actor) {"
+          },
+          {
+            "line": 1753,
+            "text": "        Ok(snapshot) => {"
+          },
+          {
+            "line": 1754,
+            "text": "            let player_owned = snapshot.state.master;"
+          },
+          {
+            "line": 1755,
+            "text": "            if intrinsic.is_some() && (player_owned.is_some() || snapshot.state.policy.is_familiar)"
+          },
+          {
+            "line": 1756,
+            "text": "            {"
+          },
+          {
+            "line": 1757,
+            "text": "                return Err(CarrierError::PlanConflict);"
+          },
+          {
+            "line": 1758,
+            "text": "            }"
+          },
+          {
+            "line": 1759,
+            "text": "            if snapshot.state.policy.is_familiar {"
+          },
+          {
+            "line": 1760,
+            "text": "                return Ok(CurrentSourceCreatureRole::Familiar);"
+          },
+          {
+            "line": 1761,
+            "text": "            }"
+          },
+          {
+            "line": 1762,
+            "text": "            if let Some(master) = player_owned {"
+          },
+          {
+            "line": 1763,
+            "text": "                return Ok(CurrentSourceCreatureRole::PlayerCompanion("
+          },
+          {
+            "line": 1764,
+            "text": "                    master.actor,"
+          },
+          {
+            "line": 1765,
+            "text": "                    master.session,"
+          },
+          {
+            "line": 1766,
+            "text": "                ));"
+          },
+          {
+            "line": 1767,
+            "text": "            }"
+          },
+          {
+            "line": 1768,
+            "text": "            Ok(intrinsic"
+          },
+          {
+            "line": 1769,
+            "text": "                .map(CurrentSourceCreatureRole::IntrinsicMonsterSummon)"
+          },
+          {
+            "line": 1770,
+            "text": "                .unwrap_or(CurrentSourceCreatureRole::Ordinary))"
+          },
+          {
+            "line": 1771,
+            "text": "        }"
+          },
+          {
+            "line": 1772,
+            "text": "        // Legacy qualified monster-parent admission lacks a main player-companion payload."
+          },
+          {
+            "line": 1773,
+            "text": "        // This fallback is allowed only AFTER the exact current native role proved the slot."
+          },
+          {
+            "line": 1774,
+            "text": "        Err(CarrierError::NotCreature) => Ok(intrinsic"
+          },
+          {
+            "line": 1775,
+            "text": "            .map(CurrentSourceCreatureRole::IntrinsicMonsterSummon)"
+          },
+          {
+            "line": 1776,
+            "text": "            .unwrap_or(CurrentSourceCreatureRole::Ordinary)),"
+          },
+          {
+            "line": 1777,
+            "text": "        Err(error) => Err(error),"
+          },
+          {
+            "line": 1778,
+            "text": "    }"
+          },
+          {
+            "line": 1779,
+            "text": "}"
+          }
+        ],
+        "path": "crates/gameplay/monster-ai/src/monster_summon.rs"
+      },
+      "familiar_acquisition": {
+        "file_sha256": "0d1240f5d34016b461e554dbf0b8d762de77fd4b9fe20324ccb39429d603c405",
+        "lines": [
+          {
+            "line": 666,
+            "text": "    let p = parameters(spell, \"familiar_summon\")?;"
+          },
+          {
+            "line": 667,
+            "text": "    if runtime.player_control_facts(owner, session).is_err() {"
+          },
+          {
+            "line": 668,
+            "text": "        return Ok(None);"
+          },
+          {
+            "line": 669,
+            "text": "    }"
+          },
+          {
+            "line": 670,
+            "text": "    let snapshot = match runtime.companion_snapshot(creature) {"
+          },
+          {
+            "line": 671,
+            "text": "        Ok(value) => value,"
+          },
+          {
+            "line": 672,
+            "text": "        Err("
+          },
+          {
+            "line": 673,
+            "text": "            CarrierError::StaleActorGeneration"
+          },
+          {
+            "line": 674,
+            "text": "            | CarrierError::CreatureNotActionable"
+          },
+          {
+            "line": 675,
+            "text": "            | CarrierError::NotCreature,"
+          },
+          {
+            "line": 676,
+            "text": "        ) => return Ok(None),"
+          },
+          {
+            "line": 677,
+            "text": "        Err(e) => return Err(e.into()),"
+          }
+        ],
+        "path": "crates/gameplay/spell/src/spell/companion_lifecycle.rs"
+      },
+      "familiar_defense_caller": {
+        "file_sha256": "00a7f9618f0c4c8de91d3dfdea3c64acff54975e3396236377d70a4f1b5c2b4a",
+        "lines": [
+          {
+            "line": 239,
+            "text": "        let _ = self.tick_familiar_defenses(actor, game_session_id).await;"
+          },
+          {
+            "line": 240,
+            "text": "        let _ = self.drain_native_ai_timers().await;"
+          }
+        ],
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/composed_admission/vitals.rs"
+      },
+      "familiar_defense_owner": {
+        "file_sha256": "04257129bf8bff93d84bce148575cfc8bc0d7e535c1c8e18fe21fa6a5fcfd1cb",
+        "lines": [
+          {
+            "line": 52,
+            "text": "            let companions=runtime.owned_companions(actor,session).map_err(|_|crate::durability::DurabilityError::Unavailable)?;"
+          },
+          {
+            "line": 53,
+            "text": "            for snapshot in companions {"
+          },
+          {
+            "line": 54,
+            "text": "                let Some(policy)=policies.defense(&snapshot.state.policy.definition_key,&snapshot.state.policy.definition_revision) else{continue};"
+          },
+          {
+            "line": 55,
+            "text": "                if !runtime.familiar_defense_due(snapshot.actor,policy,now,unix).unwrap_or(false){continue}"
+          },
+          {
+            "line": 56,
+            "text": "                let Some(outbox)=states.presentations.as_mut() else{continue};"
+          },
+          {
+            "line": 57,
+            "text": "                let Ok(cue)=outbox.prepare_familiar_defense_before_draw(runtime,active,policy,&snapshot) else{continue};"
+          },
+          {
+            "line": 58,
+            "text": "                let Some(prepared)=runtime.prepare_familiar_defense(snapshot.actor,policy,now,unix).map_err(|_|crate::durability::DurabilityError::Unavailable)? else{continue};"
+          },
+          {
+            "line": 59,
+            "text": "                let receipt=runtime.commit_familiar_defense(prepared).map_err(|_|crate::durability::DurabilityError::Unavailable)?;"
+          },
+          {
+            "line": 60,
+            "text": "                outbox.install_familiar_defense_preflighted(cue,&receipt);"
+          },
+          {
+            "line": 61,
+            "text": "            }"
+          },
+          {
+            "line": 62,
+            "text": "            tx.rollback().await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;"
+          }
+        ],
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/familiar_defense.rs"
+      },
+      "familiar_physical_birth": {
+        "file_sha256": "0d1240f5d34016b461e554dbf0b8d762de77fd4b9fe20324ccb39429d603c405",
+        "lines": [
+          {
+            "line": 1504,
+            "text": "        Some(runtime.prepare_companion_spawn("
+          },
+          {
+            "line": 1505,
+            "text": "            owner,"
+          },
+          {
+            "line": 1506,
+            "text": "            session,"
+          },
+          {
+            "line": 1507,
+            "text": "            &policy.definition_key,"
+          },
+          {
+            "line": 1508,
+            "text": "            position.ok_or(CompanionExecutionError::PlacementUnavailable)?,"
+          },
+          {
+            "line": 1509,
+            "text": "            Some(look),"
+          },
+          {
+            "line": 1510,
+            "text": "            Some(after.saved_expiry_unix),"
+          },
+          {
+            "line": 1511,
+            "text": "            after.lifecycle_epoch,"
+          },
+          {
+            "line": 1512,
+            "text": "            speed_delta,"
+          },
+          {
+            "line": 1513,
+            "text": "            party,"
+          },
+          {
+            "line": 1514,
+            "text": "        )?)"
+          },
+          {
+            "line": 1515,
+            "text": "    } else {"
+          },
+          {
+            "line": 1516,
+            "text": "        None"
+          }
+        ],
+        "path": "crates/gameplay/spell/src/spell/companion_lifecycle.rs"
+      },
+      "master_target_read": {
+        "file_sha256": "a6065b7e0e6bc7c3d748f6235b7f7d0fc41473b08b288678cfe3c75ac12128e7",
+        "lines": [
+          {
+            "line": 666,
+            "text": "        let previous = entry.state.target();"
+          },
+          {
+            "line": 667,
+            "text": "        match entry"
+          },
+          {
+            "line": 668,
+            "text": "            .state"
+          },
+          {
+            "line": 669,
+            "text": "            .set_target(creature, CommandRef::new(session, command), &facts)"
+          },
+          {
+            "line": 670,
+            "text": "        {"
+          },
+          {
+            "line": 671,
+            "text": "            Ok(()) => {"
+          },
+          {
+            "line": 672,
+            "text": "                entry.target_ref = Some(target_ref);"
+          },
+          {
+            "line": 673,
+            "text": "                entry.target_set_at = now;"
+          },
+          {
+            "line": 674,
+            "text": "                entry.next_ordinal = 0;"
+          },
+          {
+            "line": 675,
+            "text": "                // RANGED0-RL-08: only a target change clears the route and the refused cells;"
+          },
+          {
+            "line": 676,
+            "text": "                // reselecting the held target keeps them for their TTL."
+          },
+          {
+            "line": 677,
+            "text": "                if previous != Some(creature) {"
+          }
+        ],
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/attack.rs"
+      },
+      "master_target_store": {
+        "file_sha256": "a6065b7e0e6bc7c3d748f6235b7f7d0fc41473b08b288678cfe3c75ac12128e7",
+        "lines": [
+          {
+            "line": 249,
+            "text": "pub struct ChannelAttackStates {"
+          },
+          {
+            "line": 250,
+            "text": "    entries: Vec<ActorAttack>,"
+          },
+          {
+            "line": 251,
+            "text": "    /// The block budget of each live creature a player has hit (ATTACK-0 \u00a75), created at its"
+          },
+          {
+            "line": 252,
+            "text": "    /// first hit."
+          },
+          {
+            "line": 253,
+            "text": "    blocks: Vec<(ExactActorRef, BlockBudget)>,"
+          },
+          {
+            "line": 254,
+            "text": "    /// The Channel's unsettled creature kills (ARCH-KILL-REWARD-LOGOUT-1 \u00a71.3)."
+          },
+          {
+            "line": 255,
+            "text": "    kills: super::kill_reward::KillSettlementQueue,"
+          },
+          {
+            "line": 256,
+            "text": "    /// CHASE-1: the Channel's player chase searches in the current owner window"
+          }
+        ],
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/attack.rs"
+      },
+      "ordinary_ai_excludes_companions": {
+        "file_sha256": "a79d55808304025127a0686f420066dea72978dce636079d7cdc5541e94b8008",
+        "lines": [
+          {
+            "line": 150,
+            "text": "    pub fn admit_native_creature("
+          },
+          {
+            "line": 151,
+            "text": "        &mut self,"
+          },
+          {
+            "line": 152,
+            "text": "        runtime: &ChannelRuntimeV1,"
+          },
+          {
+            "line": 153,
+            "text": "        native: &NativeGameplayState,"
+          },
+          {
+            "line": 154,
+            "text": "        actor: ExactActorRef,"
+          },
+          {
+            "line": 155,
+            "text": "        creature: &crate::content::ProjectV2DefinitionRef,"
+          },
+          {
+            "line": 156,
+            "text": "        now: u64,"
+          },
+          {
+            "line": 157,
+            "text": "    ) -> Result<(), behaviour_profile::ProfileRefusal> {"
+          },
+          {
+            "line": 158,
+            "text": "        use crate::monster_summon::{CurrentSourceCreatureRole, current_source_creature_role};"
+          },
+          {
+            "line": 159,
+            "text": "        let role = current_source_creature_role(runtime, actor)"
+          },
+          {
+            "line": 160,
+            "text": "            .map_err(|_| behaviour_profile::ProfileRefusal::Invalid)?;"
+          },
+          {
+            "line": 161,
+            "text": "        if !matches!("
+          },
+          {
+            "line": 162,
+            "text": "            role,"
+          },
+          {
+            "line": 163,
+            "text": "            CurrentSourceCreatureRole::Ordinary"
+          },
+          {
+            "line": 164,
+            "text": "                | CurrentSourceCreatureRole::IntrinsicMonsterSummon(_)"
+          },
+          {
+            "line": 165,
+            "text": "        ) {"
+          },
+          {
+            "line": 166,
+            "text": "            return Err(behaviour_profile::ProfileRefusal::Invalid);"
+          },
+          {
+            "line": 167,
+            "text": "        }"
+          },
+          {
+            "line": 168,
+            "text": "        let profile = project_native(runtime, native, creature)?;"
+          },
+          {
+            "line": 169,
+            "text": "        if role.is_ordinary() && (!profile.targeting().hostile || !profile.targeting().can_target) {"
+          },
+          {
+            "line": 170,
+            "text": "            return Err(behaviour_profile::ProfileRefusal::Invalid);"
+          },
+          {
+            "line": 171,
+            "text": "        }"
+          },
+          {
+            "line": 172,
+            "text": "        if !runtime.matches_live_creature_identity(actor, creature.key.as_bytes()) {"
+          }
+        ],
+        "path": "crates/gameplay/monster-ai/src/ai_think/native_profile.rs"
+      },
+      "ordinary_melee_excludes_companions": {
+        "file_sha256": "c93cd50d41cb1429f1df62025781fb6144abc6c5346b0305cdfceda7bd1191c8",
+        "lines": [
+          {
+            "line": 775,
+            "text": "fn qualified_melee<'a>("
+          },
+          {
+            "line": 776,
+            "text": "    runtime: &ChannelRuntimeV1,"
+          },
+          {
+            "line": 777,
+            "text": "    content: &'a crate::content::native_gameplay::NativeGameplayState,"
+          },
+          {
+            "line": 778,
+            "text": "    actor: ExactActorRef,"
+          },
+          {
+            "line": 779,
+            "text": ") -> Option<Vec<QualifiedMelee<'a>>> {"
+          },
+          {
+            "line": 780,
+            "text": "    let snapshot = runtime.companion_snapshot(actor).ok()?;"
+          },
+          {
+            "line": 781,
+            "text": "    let role = crate::monster_summon::current_source_creature_role(runtime, actor).ok()?;"
+          },
+          {
+            "line": 782,
+            "text": "    if !matches!("
+          },
+          {
+            "line": 783,
+            "text": "        role,"
+          },
+          {
+            "line": 784,
+            "text": "        crate::monster_summon::CurrentSourceCreatureRole::Ordinary"
+          },
+          {
+            "line": 785,
+            "text": "            | crate::monster_summon::CurrentSourceCreatureRole::IntrinsicMonsterSummon(_)"
+          },
+          {
+            "line": 786,
+            "text": "    ) {"
+          },
+          {
+            "line": 787,
+            "text": "        return None;"
+          },
+          {
+            "line": 788,
+            "text": "    }"
+          },
+          {
+            "line": 789,
+            "text": "    let record = content.creature_profiles().records.iter().find(|record| {"
+          },
+          {
+            "line": 790,
+            "text": "        record.profile.target.key == snapshot.state.policy.definition_key"
+          },
+          {
+            "line": 791,
+            "text": "            && record.profile.target.revision == snapshot.state.policy.definition_revision"
+          },
+          {
+            "line": 792,
+            "text": "    })?;"
+          },
+          {
+            "line": 793,
+            "text": "    let ProjectV2AuthoringProfileData::Behavior(behavior) = &record.behavior.as_ref()?.data else {"
+          }
+        ],
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/monster_ai_cycle.rs"
+      },
+      "ordinary_target_role_guard": {
+        "file_sha256": "a6065b7e0e6bc7c3d748f6235b7f7d0fc41473b08b288678cfe3c75ac12128e7",
+        "lines": [
+          {
+            "line": 472,
+            "text": "            snapshot.state.master.is_none() && !snapshot.state.policy.is_familiar,"
+          },
+          {
+            "line": 473,
+            "text": "            snapshot.health > 0,"
+          },
+          {
+            "line": 474,
+            "text": "        ),"
+          },
+          {
+            "line": 475,
+            "text": "        Err(_) => (true, false),"
+          }
+        ],
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/attack.rs"
+      },
+      "rat_fixture_not_production": {
+        "file_sha256": "b09199955ae1928e13a1dfac8cf2c8d994642daf10804e6840efe63535eea75c",
+        "lines": [
+          {
+            "line": 1,
+            "text": "//! Explicit Game-owned test spawn; position is NOT a public Canary spawn record."
+          },
+          {
+            "line": 2,
+            "text": "//! Source-qualified Rat policy/geometry and actual scope/Item owners remain independent."
+          },
+          {
+            "line": 3,
+            "text": "use crate::content::native_gameplay::NativeGameplayState;"
+          },
+          {
+            "line": 4,
+            "text": "use crate::content::{CollisionClass, LogicalCell, QualifiedNativeEntryRoom};"
+          },
+          {
+            "line": 5,
+            "text": "use crate::durability::runtime_scope_assignment::NodeIncarnationProof;"
+          },
+          {
+            "line": 6,
+            "text": "use crate::durability::{DurabilityRoot, character_authority::ReconciledCharacterAuthority};"
+          },
+          {
+            "line": 7,
+            "text": "use crate::foundation::{ChannelRuntimeV1, CompanionSnapshot, MovementLocalPosition};"
+          },
+          {
+            "line": 8,
+            "text": "use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;"
+          },
+          {
+            "line": 9,
+            "text": ""
+          },
+          {
+            "line": 10,
+            "text": "pub(super) const POSITION: MovementLocalPosition = MovementLocalPosition {"
+          },
+          {
+            "line": 11,
+            "text": "    x: 1,"
+          },
+          {
+            "line": 12,
+            "text": "    y: 11,"
+          },
+          {
+            "line": 13,
+            "text": "    floor: -7,"
+          },
+          {
+            "line": 14,
+            "text": "};"
+          },
+          {
+            "line": 15,
+            "text": "pub(super) const DECLARATION: &str = \"oteryn:qualification.spawn/thalom-rat-r1\";"
+          },
+          {
+            "line": 16,
+            "text": ""
+          }
+        ],
+        "path": "apps/game-server/src/qualification_wild_spawn.rs"
+      },
+      "skeleton_exact_owner_birth": {
+        "file_sha256": "0d1240f5d34016b461e554dbf0b8d762de77fd4b9fe20324ccb39429d603c405",
+        "lines": [
+          {
+            "line": 1930,
+            "text": "pub fn prepare_animate_dead("
+          },
+          {
+            "line": 1931,
+            "text": "    runtime: &ChannelRuntimeV1,"
+          },
+          {
+            "line": 1932,
+            "text": "    cells: &NativeEntryMovementCells,"
+          },
+          {
+            "line": 1933,
+            "text": "    owner: ExactActorRef,"
+          },
+          {
+            "line": 1934,
+            "text": "    session: GameSessionId,"
+          },
+          {
+            "line": 1935,
+            "text": "    character_id: crate::domain::CharacterId,"
+          },
+          {
+            "line": 1936,
+            "text": "    spell: &CompiledNativeSpell,"
+          },
+          {
+            "line": 1937,
+            "text": "    corpse: &oteryn_gameplay_durability::durability::native_world_items::DurableCorpseReservation,"
+          },
+          {
+            "line": 1938,
+            "text": "    current: &AcquisitionOwnerFacts,"
+          },
+          {
+            "line": 1939,
+            "text": ") -> Result<CompanionSpawnReservation, CompanionExecutionError> {"
+          },
+          {
+            "line": 1940,
+            "text": "    let p = parameters(spell, \"acquire_summon\")?;"
+          },
+          {
+            "line": 1941,
+            "text": "    if p[\"source\"] != \"corpse_tile\" {"
+          },
+          {
+            "line": 1942,
+            "text": "        return Err(CompanionExecutionError::UnqualifiedProfile);"
+          },
+          {
+            "line": 1943,
+            "text": "    }"
+          },
+          {
+            "line": 1944,
+            "text": "    let owned = owned_ids(runtime, owner, session)?;"
+          },
+          {
+            "line": 1945,
+            "text": "    let cell = corpse"
+          },
+          {
+            "line": 1946,
+            "text": "        .cell()"
+          },
+          {
+            "line": 1947,
+            "text": "        .map_err(|_| CompanionExecutionError::InvalidMap)?;"
+          },
+          {
+            "line": 1948,
+            "text": "    let anchor = MovementLocalPosition {"
+          },
+          {
+            "line": 1949,
+            "text": "        x: cell.x,"
+          },
+          {
+            "line": 1950,
+            "text": "        y: cell.y,"
+          },
+          {
+            "line": 1951,
+            "text": "        floor: i16::try_from(cell.z).map_err(|_| CompanionExecutionError::InvalidMap)?,"
+          },
+          {
+            "line": 1952,
+            "text": "    };"
+          },
+          {
+            "line": 1953,
+            "text": "    let name = p[\"created_creature\"]"
+          },
+          {
+            "line": 1954,
+            "text": "        .as_str()"
+          },
+          {
+            "line": 1955,
+            "text": "        .ok_or(CompanionExecutionError::UnqualifiedProfile)?;"
+          },
+          {
+            "line": 1956,
+            "text": "    let policy = runtime.companion_policy(name)?;"
+          },
+          {
+            "line": 1957,
+            "text": "    let position = placement("
+          },
+          {
+            "line": 1958,
+            "text": "        runtime,"
+          },
+          {
+            "line": 1959,
+            "text": "        cells,"
+          },
+          {
+            "line": 1960,
+            "text": "        anchor,"
+          },
+          {
+            "line": 1961,
+            "text": "        p[\"spawn\"][\"extended\"]"
+          },
+          {
+            "line": 1962,
+            "text": "            .as_bool()"
+          },
+          {
+            "line": 1963,
+            "text": "            .ok_or(CompanionExecutionError::UnqualifiedProfile)?,"
+          },
+          {
+            "line": 1964,
+            "text": "    )?;"
+          },
+          {
+            "line": 1965,
+            "text": "    // A real reservation exists only for the current top-down, movable corpse with qualified"
+          },
+          {
+            "line": 1966,
+            "text": "    // materialization provenance and empty entries, all locked in this same physical transaction."
+          },
+          {
+            "line": 1967,
+            "text": "    let facts = AcquisitionFacts {"
+          },
+          {
+            "line": 1968,
+            "text": "        kind: AcquisitionKind::CorpseTile,"
+          },
+          {
+            "line": 1969,
+            "text": "        creature_name: name.into(),"
+          },
+          {
+            "line": 1970,
+            "text": "        type_found: true,"
+          },
+          {
+            "line": 1971,
+            "text": "        summonable: policy.summonable,"
+          },
+          {
+            "line": 1972,
+            "text": "        target_is_monster: false,"
+          },
+          {
+            "line": 1973,
+            "text": "        convinceable: policy.convinceable,"
+          },
+          {
+            "line": 1974,
+            "text": "        target_master_name: None,"
+          },
+          {
+            "line": 1975,
+            "text": "        tile_present: true,"
+          },
+          {
+            "line": 1976,
+            "text": "        top_down_item_present: true,"
+          },
+          {
+            "line": 1977,
+            "text": "        is_corpse: true,"
+          },
+          {
+            "line": 1978,
+            "text": "        corpse_movable: true,"
+          },
+          {
+            "line": 1979,
+            "text": "        owned_summons: owned.len(),"
+          },
+          {
+            "line": 1980,
+            "text": "        can_summon_all: current.can_summon_all,"
+          },
+          {
+            "line": 1981,
+            "text": "        can_convince_all: current.can_convince_all,"
+          },
+          {
+            "line": 1982,
+            "text": "        black_skull: current.black_skull,"
+          },
+          {
+            "line": 1983,
+            "text": "        mana: current.mana,"
+          },
+          {
+            "line": 1984,
+            "text": "        creature_mana_cost: 0,"
+          },
+          {
+            "line": 1985,
+            "text": "        has_infinite_mana: current.has_infinite_mana,"
+          },
+          {
+            "line": 1986,
+            "text": "        spawn_room: position.is_some(),"
+          },
+          {
+            "line": 1987,
+            "text": "    };"
+          },
+          {
+            "line": 1988,
+            "text": "    let plan = match spell"
+          },
+          {
+            "line": 1989,
+            "text": "        .plan("
+          },
+          {
+            "line": 1990,
+            "text": "            Facts::Companion(&CompanionFacts::Acquisition(facts)),"
+          },
+          {
+            "line": 1991,
+            "text": "            &mut |min, _| min,"
+          },
+          {
+            "line": 1992,
+            "text": "        )"
+          },
+          {
+            "line": 1993,
+            "text": "        .map_err(|e| CompanionExecutionError::Refused(e.0))?"
+          },
+          {
+            "line": 1994,
+            "text": "    {"
+          },
+          {
+            "line": 1995,
+            "text": "        Plan::Companion(plan) => match *plan {"
+          },
+          {
+            "line": 1996,
+            "text": "            oteryn_gameplay_spell_rules::native_companions::CompanionPlan::Acquisition(plan) => {"
+          },
+          {
+            "line": 1997,
+            "text": "                plan"
+          },
+          {
+            "line": 1998,
+            "text": "            }"
+          },
+          {
+            "line": 1999,
+            "text": "            _ => return Err(CompanionExecutionError::UnqualifiedProfile),"
+          },
+          {
+            "line": 2000,
+            "text": "        },"
+          },
+          {
+            "line": 2001,
+            "text": "        _ => return Err(CompanionExecutionError::UnqualifiedProfile),"
+          },
+          {
+            "line": 2002,
+            "text": "    };"
+          },
+          {
+            "line": 2003,
+            "text": "    let spawn = runtime.prepare_companion_spawn("
+          },
+          {
+            "line": 2004,
+            "text": "        owner,"
+          },
+          {
+            "line": 2005,
+            "text": "        session,"
+          },
+          {
+            "line": 2006,
+            "text": "        &policy.definition_key,"
+          },
+          {
+            "line": 2007,
+            "text": "        position.ok_or(CompanionExecutionError::PlacementUnavailable)?,"
+          },
+          {
+            "line": 2008,
+            "text": "        None,"
+          },
+          {
+            "line": 2009,
+            "text": "        None,"
+          },
+          {
+            "line": 2010,
+            "text": "        0,"
+          },
+          {
+            "line": 2011,
+            "text": "        0,"
+          },
+          {
+            "line": 2012,
+            "text": "        false,"
+          },
+          {
+            "line": 2013,
+            "text": "    )?;"
+          },
+          {
+            "line": 2014,
+            "text": "    Ok(CompanionSpawnReservation {"
+          },
+          {
+            "line": 2015,
+            "text": "        spawn,"
+          },
+          {
+            "line": 2016,
+            "text": "        character_id,"
+          },
+          {
+            "line": 2017,
+            "text": "        owner,"
+          },
+          {
+            "line": 2018,
+            "text": "        session,"
+          },
+          {
+            "line": 2019,
+            "text": "        corpse: *corpse.item_instance_id(),"
+          },
+          {
+            "line": 2020,
+            "text": "        corpse_revision: corpse.state_revision(),"
+          },
+          {
+            "line": 2021,
+            "text": "        owned,"
+          },
+          {
+            "line": 2022,
+            "text": "        current: current.clone(),"
+          },
+          {
+            "line": 2023,
+            "text": "        consume_rune_charge: plan.consume_rune_charge_on_success,"
+          },
+          {
+            "line": 2024,
+            "text": "    })"
+          },
+          {
+            "line": 2025,
+            "text": "}"
+          },
+          {
+            "line": 2026,
+            "text": ""
+          },
+          {
+            "line": 2027,
+            "text": "/// Only the common compositor's successful deadline-bounded COMMIT upgrades the Item writer's"
+          },
+          {
+            "line": 2028,
+            "text": "/// pending acquisition into this sealed proof. A source corpse cannot disappear before a real"
+          },
+          {
+            "line": 2029,
+            "text": "/// spawn reservation is recorded in the same physical transaction. Replay never reallocates."
+          }
+        ],
+        "path": "crates/gameplay/spell/src/spell/companion_lifecycle.rs"
+      }
+    },
+    "ledger": {
+      "limitation": "cited lifecycle/owner-end tests do not demonstrate companion offensive HP",
+      "path": "docs/architecture/reviews/MECHANICS-STATUS-2026-11-05.md",
+      "row": "C13",
+      "status": "DONE"
+    },
+    "other_branches_checked": [
+      {
+        "branch": "claude/happy-davinci-ijz3wy-srvpkg4",
+        "finding": "no companion/familiar offensive controller or HP producer found; matching attack.rs/shared_experience.rs lines classify target and harm",
+        "head": "5e60c197"
+      },
+      {
+        "branch": "claude/happy-davinci-ijz3wy-questpc",
+        "finding": "same read-only offensive caller search: none found; unpublished owner-PC work cannot be inferred",
+        "head": "6c09e0365110db6683f938dd08d5d584744cbf37"
+      }
+    ],
+    "remaining_offense": {
+      "familiar_attacks": 25,
+      "not_duplicate_on_either_checked_branch": true,
+      "skeleton_attacks": 2,
+      "status": "W01_RELEVANT_RUNTIME_GAP"
+    }
+  },
+  "schema": "OTERYN_SRX3_CALLBACK_REACHABILITY/v1",
+  "source_definitions_sha256": "5e72bdb573c69dd4ca96d3e77290fe074f8798b8d031ceb6e77e7f516f4afb19",
+  "unavailable_is_not_a_runtime_completion_or_stop_verdict": true,
+  "unavailable_reasons": {
+    "attack_count_differs_from_donor": {
+      "actual_native_body_count": 12,
+      "count": 24
+    },
+    "conflicting_creature_bindings": {
+      "actual_native_body_count": 33,
+      "count": 33
+    },
+    "donor_ability_has_no_effects": {
+      "actual_native_body_count": 36,
+      "count": 36
+    },
+    "donor_health_conflict": {
+      "actual_native_body_count": 295,
+      "count": 295
+    },
+    "no_unique_donor_bundle": {
+      "actual_native_body_count": 269,
+      "count": 269
+    },
+    "source_provenance_ambiguous": {
+      "actual_native_body_count": 4,
+      "count": 4
+    }
+  }
+}

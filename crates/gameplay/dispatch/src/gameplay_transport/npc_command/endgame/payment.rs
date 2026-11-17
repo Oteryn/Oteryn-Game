@@ -7,6 +7,41 @@ pub(super) async fn prepare(
     command: UseCommand,
     fence: CurrentCharacterGameplayFence,
 ) -> Result<RottenBloodAccessPayment, Box<NpcTalkOutcome>> {
+    prepare_with_domain(
+        admission,
+        command,
+        fence,
+        "oteryn:rotten-blood-access-purchase:v1",
+    )
+    .await
+}
+
+pub(in crate::gameplay_transport::npc_command) async fn prepare_reward_fee(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    command: UseCommand,
+    fence: CurrentCharacterGameplayFence,
+) -> Result<crate::durability::reward_claim_mint::QuestRewardFeePayment, Box<NpcTalkOutcome>> {
+    let payment =
+        prepare_with_domain(admission, command, fence, "oteryn:quest-reward-fee:v1").await?;
+    Ok(
+        crate::durability::reward_claim_mint::QuestRewardFeePayment {
+            command: payment.command,
+            occurrence: payment.occurrence,
+            transaction_id: payment.transaction_id,
+            event_id: payment.event_id,
+            coins: payment.coins,
+            expected_backpack: payment.expected_backpack,
+            occurred_at_unix_ms: payment.occurred_at_unix_ms,
+        },
+    )
+}
+
+async fn prepare_with_domain(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    command: UseCommand,
+    fence: CurrentCharacterGameplayFence,
+    domain: &str,
+) -> Result<RottenBloodAccessPayment, Box<NpcTalkOutcome>> {
     let rejected = || Box::new(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
     let (gold, platinum, crystal, default_backpack) = {
         let runtime = admission.runtime.lock().await;
@@ -49,7 +84,7 @@ pub(super) async fn prepare(
             .map_err(|_| rejected())?;
     let derive = |slot: u8| {
         crate::gameplay_transport::npc_trade_command::derived(
-            format!("oteryn:rotten-blood-access-purchase:v1:{slot}").as_bytes(),
+            format!("{domain}:{slot}").as_bytes(),
             command.game_session_id,
             command.command_id,
         )

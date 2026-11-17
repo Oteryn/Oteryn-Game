@@ -1,0 +1,218 @@
+{
+  "status": "QUALIFIED complete selected Hunting for Tokens native wire route",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 74.289942757,
+    "log": "/tmp/questpc7-tokens-red.log",
+    "error": "missing selected token callback replica-rewards; native Jorge already admitted"
+  },
+  "source": {
+    "path": "data-global/npc/jorge.lua",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0",
+    "lines": [
+      61,
+      115,
+      125,
+      126,
+      127,
+      128
+    ],
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/npc/jorge.lua",
+    "retained_corpus_confirmed": true,
+    "facts": "Exactly20 Silver Raid Tokens19083 for one Abacus19151; selected canonical programme repeats once."
+  },
+  "native_delivery": [
+    "Existing atomic carried-item NPC exchange and MINT owners; no new writer or SQL function.",
+    "Qualify19083/19151 with existing physical importer and canonical identity/known-fact rules.",
+    "Add retained agreeing Jorge placement(32204,32292,-6); NPC51/placements52.",
+    "Generate and register through repository tooling only."
+  ],
+  "authoring": {
+    "tests": 19,
+    "seconds": 8.633,
+    "result": "PASS",
+    "log": "/tmp/questpc7-tokens-authoring.log"
+  },
+  "profile_tests": {
+    "tests": 3,
+    "result": "PASS",
+    "log": "/tmp/questpc7-tokens-profiles.log"
+  },
+  "fixture_boundary": "Fresh quest programme. Only carried input resources are minted via the existing fenced input fixture; native NPC wire commands execute every quest stage. No raid/world-event ownership claim.",
+  "remaining_checks": [],
+  "fixture_repairs": [
+    "First fixed-source wire run stopped with Malformed at first greeting because NPC/appearance capabilities were not selected. Select normal capabilities3/6/25 exactly as retained Friends exchange wire tests; keep protocol guards and all assertions unchanged."
+  ],
+  "green": {
+    "seconds": 74.80261656,
+    "log": "/tmp/questpc7-tokens-green-capabilities.log",
+    "scope": [
+      "fresh subject programme with no quest progress seeds",
+      "native Jorge admission and native NPC wire conversation",
+      "premature completion cannot bypass exchange",
+      "19 carried tokens refused without debit, output or advancement",
+      "two carried token stacks totaling24 consumed by exactly20",
+      "one native Abacus19151 delivered; four tokens remain",
+      "repeat exchange request creates no second debit or Abacus",
+      "durable selected quest completion through native NPC wire",
+      "repeat completion retains exactly one exchange source receipt"
+    ]
+  },
+  "generator_checks": {
+    "callbacks": "PASS",
+    "placements": "PASS",
+    "profiles_registration": "PASS files41 activation=false"
+  },
+  "checks": [
+    {
+      "check": "sam-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "qengine_rewards_backpack_exchange",
+        "--",
+        "--nocapture"
+      ],
+      "seconds": 74.621,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-tokens-sam-pg.log"
+    },
+    {
+      "check": "world-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "world_callbacks::"
+      ],
+      "seconds": 11.644,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-tokens-world-units.log"
+    },
+    {
+      "check": "reward-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "reward_callbacks::"
+      ],
+      "seconds": 1.409,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-tokens-reward-units.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 94.17,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-tokens-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 196.646,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-tokens-clippy.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 159.745,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-tokens-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 48.481,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-tokens-world.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 114.869,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-tokens-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-tokens-pin-check"
+      ],
+      "seconds": 124.426,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-tokens-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 10.958,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-tokens-fmt.log"
+    }
+  ]
+}

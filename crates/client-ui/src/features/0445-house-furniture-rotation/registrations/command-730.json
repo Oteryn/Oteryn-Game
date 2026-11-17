@@ -1,0 +1,15 @@
+{
+  "mechanic": "0445-house-furniture-rotation",
+  "id": "0445-house-furniture-rotation-command-730",
+  "status": "supported",
+  "kind": "handlers",
+  "commands": [
+    730
+  ],
+  "direction": "client_to_server",
+  "capability": 445,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "No persistent furniture setting."
+  }
+}

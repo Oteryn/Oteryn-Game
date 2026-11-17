@@ -1,7 +1,9 @@
 //! A real logout command first returns a real Instance participant through the
 //! retained handoff owner, then uses the existing origin terminal release.
 use super::native_activity::NativeActivityOutcome;
-use super::{ComposedFreshAdmission, connection::AdmittedSession, logout::LogoutReply};
+use super::{
+    ComposedFreshAdmission, connection::AdmittedSession, logout::LogoutReply, operator_event,
+};
 use crate::durability::activity_handoff::ActivityReturnReason;
 use crate::foundation::RuntimeScopeRefV1;
 use oteryn_protocol_oteryn::logout::LogoutResult;
@@ -31,15 +33,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.logout_activity_intent(admitted, None).await
     }
 
+    /// Account closure has its own durable authority and no inactivity deadline.
+    /// Activity departure and the exact actor/session release checks still apply.
+    pub(super) async fn logout_activity_closure(&self, admitted: AdmittedSession) -> LogoutReply {
+        self.logout_activity_intent(admitted, None).await
+    }
+
     async fn logout_activity_intent(
         &self,
         admitted: AdmittedSession,
         command: Option<u64>,
     ) -> LogoutReply {
+        // Instance logout also owns the durable return before ordinary release.
+        // Keep its preference across that handoff and the destination logout.
+        let Ok(_foreground) = self.root.foreground_demand() else {
+            return LogoutReply::Result(LogoutResult::Busy);
+        };
         let admitted = self.activity_runtimes.current_connection(admitted);
         let scoped = match self.resolve_runtime_view(admitted).await {
             Ok(scoped) => scoped,
-            Err(()) => return LogoutReply::Unknown,
+            Err(()) => {
+                operator_event("event=logout_unknown stage=activity_view kind=authority");
+                return LogoutReply::Unknown;
+            }
         };
         let owner = scoped.as_ref().unwrap_or(self);
         if admitted
@@ -70,18 +86,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(NativeActivityOutcome::Refused(_)) => {
                 return LogoutReply::Result(LogoutResult::Busy);
             }
-            Err(()) => return LogoutReply::Unknown,
+            Err(()) => {
+                operator_event("event=logout_unknown stage=activity_return kind=unknown");
+                return LogoutReply::Unknown;
+            }
         };
         if self.publish_activity_commit(&commit).is_err() {
+            operator_event("event=logout_unknown stage=activity_publish kind=authority");
             return LogoutReply::Unknown;
         }
         let next = self.activity_runtimes.current_connection(admitted);
         if next.game_session_id == admitted.game_session_id {
+            operator_event("event=logout_unknown stage=activity_successor kind=authority");
             return LogoutReply::Unknown;
         }
         let destination = match self.resolve_runtime_view(next).await {
             Ok(destination) => destination,
-            Err(()) => return LogoutReply::Unknown,
+            Err(()) => {
+                operator_event("event=logout_unknown stage=activity_destination kind=authority");
+                return LogoutReply::Unknown;
+            }
         };
         destination
             .as_ref()

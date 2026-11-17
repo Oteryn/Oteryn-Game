@@ -1,0 +1,30 @@
+--- a/crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs
++++ b/crates/gameplay/dispatch/src/gameplay_transport/kill_reward_tests.rs
+@@ -192,6 +192,27 @@
+ }
+
+ #[test]
++fn newhaven_cached_plan_reserves_only_shortfall_and_releases_it() {
++    let queue = KillSettlementQueue::default();
++    let entry = pending(2, 50, 3, 30);
++    let death = entry.facts.death;
++    assert_eq!(queue.append(entry), AppendOutcome::Queued);
++    let in_flight = taken(queue.take(session(50), 3));
++    let initial = in_flight.loot_mints;
++    assert!(initial >= 28 && initial < 64);
++    assert!(queue.ensure_loot_mint_reservation(death, initial, 28));
++    assert_eq!(queue.counts().2, initial);
++    assert!(queue.ensure_loot_mint_reservation(death, initial, initial + 1));
++    assert_eq!(queue.counts().2, initial + 1);
++    assert!(queue.ensure_loot_mint_reservation(death, initial, initial + 1));
++    assert_eq!(queue.counts().2, initial + 1, "same plan never double reserves");
++    assert!(!queue.ensure_loot_mint_reservation(death, initial, 65));
++    assert_eq!(queue.counts().2, initial + 1);
++    in_flight.finish();
++    assert_eq!(queue.counts(), (0, 0, 0));
++}
++
++#[test]
+ fn a_death_is_queued_once() {
+     let queue = KillSettlementQueue::default();
+     assert_eq!(queue.append(pending(2, 50, 3, 0)), AppendOutcome::Queued);

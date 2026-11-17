@@ -50,6 +50,34 @@ const COMBAT_ENABLE: Gate = Gate::Open {
 
 const INVENTORY: &[Entry] = &[
     Entry {
+        gate: "spatial wire projection",
+        plan: "spatial wire projection",
+        accessor: "gate_wire_position",
+        key: "",
+        state: Gate::AllocatedOpen { task: "SRX-3" },
+        calls: &[
+            (
+                "gameplay_transport/postgres_tests/srx3_primal_death_cutoff.rs",
+                1,
+            ),
+            ("gameplay_transport/wire_position.rs", 1),
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            ("gameplay_transport/native_cue_offer.rs", 2),
+            ("gameplay_transport/native_activity.rs", 1),
+            ("gameplay_transport/soulpit/scene.rs", 2),
+            (
+                "gameplay_transport/postgres_tests/boss_activity/primal.rs",
+                1,
+            ),
+            ("gameplay_transport/postgres_tests/endgame_entry.rs", 1),
+            ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
+            (
+                "gameplay_transport/rotten_blood_callbacks/advanced/footprints.rs",
+                1,
+            ),
+        ],
+    },
+    Entry {
         gate: "attack target",
         plan: "player attack target",
         accessor: "gate_attack_target",
@@ -69,12 +97,22 @@ const INVENTORY: &[Entry] = &[
         calls: &[
             ("gameplay_transport/attack/drain.rs", 1),
             ("gameplay_transport/attack/ranged.rs", 1),
+            // CHARMS: real primary/secondary target regression uses the existing attack gate.
+            (
+                "gameplay_transport/postgres_tests/all_charms_secondary.rs",
+                2,
+            ),
             (
                 "gameplay_transport/postgres_tests/daily_reward/effects.rs",
                 1,
             ),
             ("gameplay_transport/postgres_tests/equipped_offence.rs", 2),
             ("gameplay_transport/postgres_tests/hunting_stamina.rs", 3),
+            // SRX-2/P01: charm regressions select live targets through the existing attack gate.
+            (
+                "gameplay_transport/postgres_tests/srx2_charm_consumers.rs",
+                2,
+            ),
             // TASKBOARD-P04: real party kill/capture replay fixture uses the existing attack gate.
             (
                 "gameplay_transport/postgres_tests/party_xp/bounty_talisman.rs",
@@ -105,6 +143,10 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/activity_runtime.rs", 1),
             ("gameplay_transport/native_combat_cast.rs", 2),
             ("gameplay_transport/rune_use_bridge/revision.rs", 1),
+            // SRX-3: install the same source-qualified combat room and read Soulpit terrain.
+            ("gameplay_transport/serving.rs", 1),
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            ("gameplay_transport/soulpit/owner_runtime.rs", 1),
         ],
     },
     Entry {
@@ -136,9 +178,83 @@ const INVENTORY: &[Entry] = &[
             pr: 2036,
         },
         calls: &[
-            ("gameplay_transport/monster_ai_cycle.rs", 1),
+            // Composed native callbacks retain the existing open monster gate.
+            ("gameplay_transport/primal_callbacks/normal.rs", 1),
+            ("gameplay_transport/kill_reward.rs", 1),
+            ("gameplay_transport/raid_live_world/feroxa_map.rs", 1),
+            ("gameplay_transport/primal_callbacks.rs", 3),
+            ("gameplay_transport/soul_war_cloak_blood.rs", 1),
+            ("gameplay_transport/monster_ai_cycle.rs", 5),
+            // LIVEJOIN-1: the composed source cycle wakes for the next monster AI pass
+            // only while the same live-world gate is open.
+            ("gameplay_transport/source_item_cycle.rs", 1),
+            // S10: source NPC wandering uses the same live-world movement gate.
+            ("gameplay_transport/npc_actor/current_map.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/m26_rotten_wave_production.rs",
+                1,
+            ),
+            ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 2),
+            // Primal cadence uses the actual activated Source combat seam.
+            (
+                "gameplay_transport/postgres_tests/primal_menace_native.rs",
+                1,
+            ),
             // RAIDS-1 (pkg4): a raid's live world steps its spawned monsters through the same gate.
             ("gameplay_transport/raid_live_world.rs", 1),
+            // W05d: the existing open monster gate resumes only source-reserved
+            // canonical Cake actors, and its real machine-step PG fixture.
+            ("gameplay_transport/raid_live_world/cake.rs", 1),
+            ("gameplay_transport/postgres_tests/raid_live/cake.rs", 2),
+            // W17: the physical Drome regression proves participant-only targeting.
+            (
+                "gameplay_transport/postgres_tests/reaudit_arena_lifecycle.rs",
+                1,
+            ),
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            (
+                "gameplay_transport/monster_profile_cycle/native_callbacks/death_items.rs",
+                1,
+            ),
+            ("gameplay_transport/native_activity.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/spite_step_instance_activation.rs",
+                1,
+            ),
+            (
+                "gameplay_transport/postgres_tests/srx3_greed_retention.rs",
+                1,
+            ),
+            (
+                "gameplay_transport/postgres_tests/srx3_megalomania_step.rs",
+                2,
+            ),
+            // The Outburst diagnostic requalifies its current source context before reading it.
+            (
+                "gameplay_transport/postgres_tests/srx3_native_source_cast.rs",
+                1,
+            ),
+            ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
+            ("gameplay_transport/postgres_tests/srx3_rotten_portal.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/srx3_soul_war_attacks.rs",
+                2,
+            ),
+            ("gameplay_transport/soul_war_callbacks/entry.rs", 1),
+            (
+                "gameplay_transport/soul_war_callbacks/megalomania/phases/death.rs",
+                1,
+            ),
+            (
+                "gameplay_transport/soul_war_callbacks/megalomania/phases/timer.rs",
+                1,
+            ),
+            ("gameplay_transport/soul_war_callbacks/taint_five.rs", 1),
+            ("gameplay_transport/soul_war_world.rs", 2),
+            ("gameplay_transport/soul_war_world_raid.rs", 1),
+            ("gameplay_transport/source_death.rs", 2),
+            ("gameplay_transport/source_death/heart.rs", 1),
+            ("gameplay_transport/spite_global.rs", 1),
         ],
     },
     Entry {
@@ -219,7 +335,41 @@ const INVENTORY: &[Entry] = &[
         calls: &[
             ("gameplay_transport/field_removal.rs", 1),
             ("gameplay_transport/field_step_ingress.rs", 2),
+            // Paced movement admits the native blood listener only through this field gate.
+            ("gameplay_transport/paced_movement.rs", 1),
             ("gameplay_transport/postgres_tests/field_runes.rs", 2),
+            // SRX-3: source-owned Primal Pod creation and expiry use the existing Ground gate.
+            ("gameplay_transport/primal_callbacks.rs", 2),
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            ("gameplay_transport/boss_activity/source_extra.rs", 1),
+            ("gameplay_transport/outburst_entry.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/srx3_megalomania_step.rs",
+                2,
+            ),
+            (
+                "gameplay_transport/postgres_tests/srx3_rotten_callbacks.rs",
+                1,
+            ),
+            ("gameplay_transport/primal_entry.rs", 1),
+            ("gameplay_transport/rotten_blood_entry.rs", 2),
+            ("gameplay_transport/soul_war_entry.rs", 2),
+            ("gameplay_transport/spite_step.rs", 3),
+            ("gameplay_transport/spite_step/megalomania.rs", 1),
+        ],
+    },
+    Entry {
+        gate: "ground item actions",
+        plan: "ground item actions",
+        accessor: "gate_ground_item_action",
+        key: "",
+        state: Gate::AllocatedOpen { task: "TK-W19" },
+        calls: &[
+            ("gameplay_transport/cosmetic_item_use.rs", 1),
+            // Carried-fluid dispensers retain the native ground owner proof.
+            ("gameplay_transport/item_craft/dispenser.rs", 1),
+            ("gameplay_transport/item_craft/planting.rs", 1),
+            ("gameplay_transport/novelty_ground_use.rs", 1),
         ],
     },
     // The durable custody of the map's Items; on a bundle World that is its Ground persistence.
@@ -231,7 +381,13 @@ const INVENTORY: &[Entry] = &[
         state: Gate::Closed {
             owners: &["MAP-CUTOVER-1c"],
         },
-        calls: &[("gameplay_transport/source_item_cycle.rs", 1)],
+        calls: &[
+            (
+                "gameplay_transport/postgres_tests/m26_static_instance.rs",
+                1,
+            ),
+            ("gameplay_transport/source_item_cycle.rs", 1),
+        ],
     },
     // The door overlay, step blocking, `use_object` and the chase step's and a creature push's
     // door blocking serve a bundle World from `bundle_map`.
@@ -252,7 +408,10 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/creature_push.rs", 1),
             ("gameplay_transport/paced_movement.rs", 1),
             ("gameplay_transport/paced_movement/autowalk.rs", 1),
-            ("gameplay_transport/wheel_allocation.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/spite_step_instance_activation.rs",
+                1,
+            ),
         ],
     },
 ];
@@ -292,8 +451,22 @@ enum Room {
     Combat,
 }
 
-/// `self.qualified` or `self.combat`.
+/// The exact borrowed view of `self.qualified` or `self.combat`.
 fn field_room(expr: &syn::Expr) -> Option<Room> {
+    let syn::Expr::MethodCall(view) = expr else {
+        return None;
+    };
+    if view.method != "as_deref"
+        || !view.args.is_empty()
+        || !view.attrs.is_empty()
+        || view.turbofish.is_some()
+    {
+        return None;
+    }
+    stored_field_room(&view.receiver)
+}
+
+fn stored_field_room(expr: &syn::Expr) -> Option<Room> {
     let syn::Expr::Field(field) = expr else {
         return None;
     };
@@ -348,25 +521,107 @@ fn accessor_arms(function: &syn::ImplItemFn) -> Option<Vec<(String, Room)>> {
     Some(arms)
 }
 
-/// `Self { qualified, combat }`.
+fn named_expr(expr: &syn::Expr, name: &str) -> bool {
+    matches!(expr, syn::Expr::Path(path) if path.attrs.is_empty() && path.qself.is_none() && path.path.is_ident(name))
+}
+
+fn call_args<'a>(expr: &'a syn::Expr, name: &str) -> Option<Vec<&'a syn::Expr>> {
+    let syn::Expr::Call(call) = expr else {
+        return None;
+    };
+    if !call.attrs.is_empty()
+        || !matches!(&*call.func, syn::Expr::Path(path) if path.qself.is_none() && path.attrs.is_empty() && path_name(&path.path) == name)
+    {
+        return None;
+    }
+    Some(call.args.iter().collect())
+}
+
+/// `Self { qualified: qualified.map(SharedOwner::from), combat: combat.map(SharedOwner::from) }`.
 fn sets_both_rooms(function: &syn::ImplItemFn) -> bool {
     let [syn::Stmt::Expr(syn::Expr::Struct(init), None)] = function.block.stmts.as_slice() else {
         return false;
     };
-    let fields: Vec<String> = init
-        .fields
-        .iter()
-        .filter(|field| field.colon_token.is_none() && field.attrs.is_empty())
-        .filter_map(|field| match &field.member {
-            syn::Member::Named(name) => Some(name.to_string()),
-            syn::Member::Unnamed(_) => None,
+    init.path.is_ident("Self") && init.attrs.is_empty() && init.rest.is_none()
+        && init.fields.len() == 2 && init.fields.iter().zip(["qualified", "combat"]).all(|(field,name)| {
+            let syn::Expr::MethodCall(map) = &field.expr else { return false; };
+            field.attrs.is_empty() && field.colon_token.is_some()
+                && matches!(&field.member,syn::Member::Named(member) if member == name)
+                && map.attrs.is_empty() && map.method == "map" && map.turbofish.is_none()
+                && named_expr(&map.receiver,name)
+                && matches!(map.args.iter().collect::<Vec<_>>().as_slice(), [syn::Expr::Path(path)] if path_name(&path.path) == "SharedOwner::from" && path.attrs.is_empty() && path.qself.is_none())
         })
-        .collect();
-    init.path.is_ident("Self") && init.rest.is_none() && fields == ["qualified", "combat"]
+}
+
+/// The owned constructor keeps combat present and qualification conditional on its input.
+fn sets_owned_rooms(function: &syn::ImplItemFn) -> bool {
+    let [syn::Stmt::Expr(syn::Expr::Struct(init), None)] = function.block.stmts.as_slice() else {
+        return false;
+    };
+    let fields = init.fields.iter().collect::<Vec<_>>();
+    let [qualified, combat] = fields.as_slice() else {
+        return false;
+    };
+    if !init.path.is_ident("Self")
+        || !init.attrs.is_empty()
+        || init.rest.is_some()
+        || !qualified.attrs.is_empty()
+        || !combat.attrs.is_empty()
+        || qualified.colon_token.is_none()
+        || combat.colon_token.is_none()
+        || !matches!(&qualified.member,syn::Member::Named(name) if name == "qualified")
+        || !matches!(&combat.member,syn::Member::Named(name) if name == "combat")
+    {
+        return false;
+    }
+    let syn::Expr::MethodCall(then) = &qualified.expr else {
+        return false;
+    };
+    let then_args = then.args.iter().collect::<Vec<_>>();
+    let [syn::Expr::Closure(select)] = then_args.as_slice() else {
+        return false;
+    };
+    if then.method != "then"
+        || !then.attrs.is_empty()
+        || then.turbofish.is_some()
+        || !named_expr(&then.receiver, "qualified")
+        || !select.inputs.is_empty()
+        || !select.attrs.is_empty()
+        || select.capture.is_some()
+        || select.asyncness.is_some()
+    {
+        return false;
+    }
+    let Some(owned) = call_args(&select.body, "SharedOwner::Owned") else {
+        return false;
+    };
+    let [cloned] = owned.as_slice() else {
+        return false;
+    };
+    let Some(clone_args) = call_args(cloned, "Arc::clone") else {
+        return false;
+    };
+    let [syn::Expr::Reference(reference)] = clone_args.as_slice() else {
+        return false;
+    };
+    if reference.mutability.is_some()
+        || !reference.attrs.is_empty()
+        || !named_expr(&reference.expr, "room")
+    {
+        return false;
+    }
+    let Some(some) = call_args(&combat.expr, "Some") else {
+        return false;
+    };
+    let [owned] = some.as_slice() else {
+        return false;
+    };
+    call_args(owned, "SharedOwner::Owned")
+        .is_some_and(|args| matches!(args.as_slice(),[room] if named_expr(room,"room")))
 }
 
 /// Every macro invocation and every attribute other than a doc comment or the struct's
-/// `#[derive(Clone, Copy)]`, at any depth.
+/// `#[derive(Clone)]`, at any depth.
 #[derive(Default)]
 struct Foreign(Vec<String>);
 
@@ -377,7 +632,7 @@ impl<'ast> Visit<'ast> for Foreign {
     }
 
     fn visit_attribute(&mut self, attr: &'ast syn::Attribute) {
-        if attr.path().is_ident("doc") || derives_clone_copy(attr) {
+        if attr.path().is_ident("doc") || derives_clone(attr) {
             return;
         }
         self.0
@@ -385,7 +640,7 @@ impl<'ast> Visit<'ast> for Foreign {
     }
 }
 
-fn derives_clone_copy(attr: &syn::Attribute) -> bool {
+fn derives_clone(attr: &syn::Attribute) -> bool {
     let mut derived = Vec::new();
     attr.path().is_ident("derive")
         && attr
@@ -394,7 +649,7 @@ fn derives_clone_copy(attr: &syn::Attribute) -> bool {
                 Ok(())
             })
             .is_ok()
-        && derived == ["Clone", "Copy"]
+        && derived == ["Clone"]
 }
 
 fn path_name(path: &syn::Path) -> String {
@@ -457,7 +712,14 @@ fn accessors() -> BTreeMap<String, Vec<(String, Room)>> {
                     if name == "new" {
                         assert!(
                             sets_both_rooms(function),
-                            "`SeamRooms::new` does more than `Self {{ qualified, combat }}`"
+                            "`SeamRooms::new` must only wrap each borrowed room in SharedOwner"
+                        );
+                        continue;
+                    }
+                    if name == "owned" {
+                        assert!(
+                            sets_owned_rooms(function),
+                            "`SeamRooms::owned` must preserve its conditional qualification and shared combat room"
                         );
                         continue;
                     }
@@ -610,6 +872,16 @@ fn every_gate_names_its_opener_or_owner() -> Result<(), Box<dyn std::error::Erro
                     assert_eq!(entry.key, "creature_appearance");
                     continue;
                 }
+                if task == "SRX-3" {
+                    assert_eq!(entry.accessor, "gate_wire_position");
+                    assert_eq!(entry.key, "");
+                    continue;
+                }
+                if task == "TK-W19" {
+                    assert_eq!(entry.accessor, "gate_ground_item_action");
+                    assert_eq!(entry.key, "");
+                    continue;
+                }
                 assert_eq!(task, "FIELD-RUNES-1");
                 let contract: serde_json::Value = serde_json::from_str(include_str!(
                     "../../../../../docs/contracts/protocol-oteryn/v1/registry/capabilities/0091-field-runes-v1.json"
@@ -728,7 +1000,8 @@ struct Constructions<'ast>(Vec<&'ast syn::ExprCall>);
 impl<'ast> Visit<'ast> for Constructions<'ast> {
     fn visit_expr_call(&mut self, call: &'ast syn::ExprCall) {
         if let syn::Expr::Path(path) = &*call.func
-            && path_name(&path.path).ends_with("SeamRooms::new")
+            && (path_name(&path.path).ends_with("SeamRooms::new")
+                || path_name(&path.path).ends_with("SeamRooms::owned"))
         {
             self.0.push(call);
         }
@@ -740,10 +1013,15 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 /// owners in `mod.rs`, its one production construction in `serve.rs`, the shared test
 /// constructor and explicit fixture room overrides.
 const CONSTRUCTIONS: &[(&str, usize)] = &[
+    ("gameplay_transport/postgres_tests/m25_ahau_exit.rs", 1),
+    ("gameplay_transport/postgres_tests/engenc2_nomads_use.rs", 1),
+    ("gameplay_transport/postgres_tests/engenc2_cults.rs", 1),
     // Qualified activity content inherits the origin gate, checked below.
-    ("gameplay_transport/activity_content.rs", 2),
-    // ActivityRuntimeAssets borrows the selected pair without constructing a qualified room.
-    ("gameplay_transport/activity_runtime.rs", 1),
+    ("gameplay_transport/activity_content.rs", 3),
+    // Scoped activity assets explicitly withhold qualification, checked below.
+    ("gameplay_transport/activity_runtime.rs", 2),
+    // Compatibility return type only; exact delegation is checked below.
+    ("gameplay_transport/effective_rooms.rs", 1),
     ("gameplay_transport/composed_test_owner.rs", 2),
     ("gameplay_transport/item_use/item_use_postgres_tests.rs", 1),
     (
@@ -755,7 +1033,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         1,
     ),
     ("gameplay_transport/kill_reward_postgres_e2e_tests.rs", 1),
-    ("gameplay_transport/mod.rs", 3),
+    ("gameplay_transport/mod.rs", 4),
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
     ("gameplay_transport/postgres_tests/admit_cap_2.rs", 2),
@@ -763,11 +1041,50 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/atelier/wire_paid.rs", 1),
     // Boss PG fixtures explicitly bind their activated source and Instance rooms.
     ("gameplay_transport/postgres_tests/boss_activity.rs", 3),
+    // Primal's test-only source scene binds its actual pinned qualified/combat room.
+    (
+        "gameplay_transport/postgres_tests/boss_activity/primal.rs",
+        1,
+    ),
+    // Movement fixtures bind only their actual pinned Bundle combat view.
+    ("gameplay_transport/postgres_tests/echo_warden.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/browse_field/fixture.rs",
+        2,
+    ),
+    ("gameplay_transport/postgres_tests/creature_push.rs", 1),
+    ("gameplay_transport/postgres_tests/cyclopedia.rs", 3),
+    ("gameplay_transport/postgres_tests/dawnport_trial.rs", 1),
     // Q6's condition-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/condition_potions.rs", 1),
+    // W05d's native Cake tile fixture supplies combat only, never qualification.
+    ("gameplay_transport/postgres_tests/cake_phases.rs", 1),
     ("gameplay_transport/postgres_tests/cyclopedia_tracker.rs", 1),
+    // W19 fixtures supply only combat; bundle Worlds still have no qualified room.
+    (
+        "gameplay_transport/postgres_tests/event_containers/ground.rs",
+        2,
+    ),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
+    ("gameplay_transport/postgres_tests/item_cosmetics.rs", 1),
+    ("gameplay_transport/postgres_tests/newhaven_corruptor.rs", 1),
+    // The carried-fluid fixture supplies an action room and no qualified room.
+    (
+        "gameplay_transport/postgres_tests/item_craft_carried_fluid.rs",
+        1,
+    ),
+    ("gameplay_transport/postgres_tests/item_seed_planting.rs", 1),
+    ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 2),
+    (
+        "gameplay_transport/postgres_tests/m26_static_instance.rs",
+        2,
+    ),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
+    ("gameplay_transport/postgres_tests/newhaven_corruptor.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/novelty_items/scenario.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/party_buffs.rs", 1),
     ("gameplay_transport/postgres_tests/party_xp.rs", 1),
     ("gameplay_transport/postgres_tests/player_trade.rs", 2),
@@ -777,11 +1094,39 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/prey_loot_measurement.rs",
         1,
     ),
+    // Primal's regression binds only its real activated Source room, never a Bundle substitute.
+    (
+        "gameplay_transport/postgres_tests/primal_menace_native.rs",
+        1,
+    ),
+    // The proficiency fixture binds its Bundle combat view and withholds qualification.
+    (
+        "gameplay_transport/postgres_tests/proficiency_modification.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
+    // QUESTPC4 source callback and reset fixtures bind their explicit source room.
+    (
+        "gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs",
+        2,
+    ),
     // Rotten Blood progression supplies its source combat room; qualified room stays None.
     (
         "gameplay_transport/postgres_tests/rotten_blood_progression.rs",
         1,
+    ),
+    // S10 source NPC fixtures supply combat only; qualified room remains None.
+    ("gameplay_transport/postgres_tests/s10_travel.rs", 1),
+    ("gameplay_transport/postgres_tests/s10_wandering.rs", 1),
+    // Soul War's Bundle fixture supplies combat only, never qualification.
+    ("gameplay_transport/postgres_tests/soul_war.rs", 1),
+    // I14 special-potion fixture supplies only combat; its qualified room stays None.
+    ("gameplay_transport/postgres_tests/special_potions.rs", 1),
+    // Soulpit's production owner and PG fixture both withhold qualification.
+    ("gameplay_transport/soulpit/content.rs", 2),
+    (
+        "gameplay_transport/postgres_tests/soulpit_shared_entry/native.rs",
+        2,
     ),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
     ("gameplay_transport/postgres_tests/vertical_move.rs", 2),
@@ -792,6 +1137,38 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/rune_use_bridge_postgres_tests.rs", 2),
     ("node/serve.rs", 1),
     ("qualification.rs", 1),
+    // SRX-3 fixture room bindings; production Bundle closure is asserted separately.
+    ("gameplay_transport/postgres_tests/hireling_lifecycle.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/srx3_activity_source_fixture.rs",
+        2,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_claustrophobic.rs",
+        1,
+    ),
+    // The published BundleWorld corpse fixture supplies only its original combat room.
+    (
+        "gameplay_transport/postgres_tests/srx3_poor_soul_world_corpse.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_rotten_area_think.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_rotten_callbacks.rs",
+        2,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_soul_war_world_entrance.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_soulpit_native.rs",
+        1,
+    ),
+    ("gameplay_transport/postgres_tests/srx3_spite_global.rs", 1),
 ];
 
 #[test]
@@ -819,30 +1196,48 @@ fn a_bundle_world_seam_has_no_qualified_room() {
 
 /// Activity content may replace the room, but never widen the origin seam's qualification.
 fn inherits_origin_qualification(expr: &syn::Expr) -> bool {
-    let syn::Expr::MethodCall(map) = expr else {
+    let syn::Expr::MethodCall(selection) = expr else {
         return false;
     };
-    let syn::Expr::MethodCall(gate) = &*map.receiver else {
+    if !selection.attrs.is_empty() || selection.turbofish.is_some() {
+        return false;
+    }
+    let select_origin = if selection.method == "is_some" {
+        selection.args.is_empty()
+    } else if selection.method == "map" {
+        matches!(selection.args.iter().collect::<Vec<_>>().as_slice(),
+            [syn::Expr::Closure(select)] if select.inputs.len() == 1
+                && matches!(select.inputs.first(), Some(syn::Pat::Wild(_)))
+                && matches!(&*select.body, syn::Expr::Path(path) if path.path.is_ident("room")))
+    } else {
+        false
+    };
+    let syn::Expr::MethodCall(gate) = &*selection.receiver else {
         return false;
     };
-    let syn::Expr::Field(rooms) = &*gate.receiver else {
+    if !select_origin
+        || gate.method != "gate_source_world"
+        || !gate.args.is_empty()
+        || !gate.attrs.is_empty()
+        || gate.turbofish.is_some()
+    {
         return false;
-    };
-    map.method == "map"
-        && map.attrs.is_empty()
-        && gate.method == "gate_source_world"
-        && gate.args.is_empty()
-        && gate.attrs.is_empty()
-        && rooms.attrs.is_empty()
-        && matches!(&rooms.member, syn::Member::Named(name) if name == "rooms")
-        && matches!(&*rooms.base, syn::Expr::Path(path) if path.path.is_ident("self"))
-        && matches!(
-            map.args.iter().collect::<Vec<_>>().as_slice(),
-            [syn::Expr::Closure(select)]
-                if select.inputs.len() == 1
-                    && matches!(select.inputs.first(), Some(syn::Pat::Wild(_)))
-                    && matches!(&*select.body, syn::Expr::Path(path) if path.path.is_ident("room"))
-        )
+    }
+    match &*gate.receiver {
+        syn::Expr::Field(rooms) => {
+            rooms.attrs.is_empty()
+                && matches!(&rooms.member, syn::Member::Named(name) if name == "rooms")
+                && matches!(&*rooms.base, syn::Expr::Path(path) if path.path.is_ident("self"))
+        }
+        syn::Expr::MethodCall(rooms) => {
+            rooms.attrs.is_empty()
+                && rooms.method == "rooms"
+                && rooms.args.is_empty()
+                && rooms.turbofish.is_none()
+                && matches!(&*rooms.receiver, syn::Expr::Path(path) if path.path.is_ident("self"))
+        }
+        _ => false,
+    }
 }
 
 #[test]
@@ -851,8 +1246,269 @@ fn an_activity_instance_preserves_the_origin_room_gate() {
     let mut constructions = Constructions::default();
     constructions.visit_file(&content);
     assert!(
-        matches!(constructions.0.as_slice(), [call]
-            if call.args.first().is_some_and(inherits_origin_qualification)),
+        matches!(constructions.0.as_slice(), [source, inherited]
+            if matches!(&*source.func, syn::Expr::Path(path) if path_name(&path.path).ends_with("SeamRooms::owned"))
+                && source.args.len() == 2
+                && matches!(source.args.first(), Some(syn::Expr::Call(clone))
+                    if matches!(&*clone.func, syn::Expr::Path(path)
+                        if path_name(&path.path) == "std::sync::Arc::clone")
+                        && clone.args.len() == 1
+                        && matches!(clone.args.first(), Some(syn::Expr::Reference(reference))
+                            if reference.mutability.is_none()
+                                && named_expr(&reference.expr, "owned_room")))
+                && matches!(source.args.last(), Some(syn::Expr::Lit(literal))
+                    if matches!(&literal.lit, syn::Lit::Bool(value) if !value.value))
+                && matches!(&*inherited.func, syn::Expr::Path(path) if path_name(&path.path).ends_with("SeamRooms::owned"))
+                && inherited.args.len() == 2
+                && inherited.args.first().is_some_and(|arg| named_expr(arg, "room"))
+                && inherited.args.last().is_some_and(inherits_origin_qualification)),
         "activity content must inherit the origin room gate; qualifying a template cannot open unrelated bundle gates"
     );
+}
+
+#[test]
+fn private_activity_room_constructions_withhold_qualification() {
+    // SharedOwner already owns the selected private room. The two accessors
+    // must borrow those exact fields, never construct an origin-room fallback.
+    for file in [
+        "src/gameplay_transport/mod.rs",
+        "src/gameplay_transport/activity_runtime.rs",
+    ] {
+        let source = parse_source(file);
+        let mut constructions = Constructions::default();
+        constructions.visit_file(&source);
+        assert!(
+            constructions.0.is_empty(),
+            "{file}: forwarding must not construct another seam"
+        );
+        for name in ["rooms", "movement_cells"] {
+            let functions: Vec<_> = source
+                .items
+                .iter()
+                .filter_map(|item| match item {
+                    syn::Item::Impl(item) => Some(item),
+                    _ => None,
+                })
+                .flat_map(|item| item.items.iter())
+                .filter_map(|item| match item {
+                    syn::ImplItem::Fn(function) if function.sig.ident == name => Some(function),
+                    _ => None,
+                })
+                .collect();
+            assert!(
+                matches!(functions.as_slice(), [function] if matches!(function.block.stmts.as_slice(),
+                [syn::Stmt::Expr(syn::Expr::Reference(reference), None)]
+                    if reference.mutability.is_none() && reference.attrs.is_empty()
+                        && matches!(&*reference.expr, syn::Expr::Field(field)
+                            if field.attrs.is_empty()
+                                && matches!(&field.member, syn::Member::Named(member) if member == name)
+                                && matches!(&*field.base, syn::Expr::Path(path) if path.path.is_ident("self"))))),
+                "{file}: {name} must forward only its actual owned field"
+            );
+        }
+    }
+    let source = parse_source("src/gameplay_transport/soulpit/content.rs");
+    let mut constructions = Constructions::default();
+    constructions.visit_file(&source);
+    assert!(
+        matches!(constructions.0.as_slice(), [call]
+        if matches!(&*call.func,syn::Expr::Path(path) if path_name(&path.path).ends_with("SeamRooms::owned"))
+            && call.args.len() == 2
+            && call.args.first().is_some_and(|arg| named_expr(arg,"private_room"))
+            && matches!(call.args.last(), Some(syn::Expr::Lit(value)) if matches!(&value.lit, syn::Lit::Bool(value) if !value.value))),
+        "Soulpit's exact private room may supply combat geometry but never source-room qualification"
+    );
+}
+
+#[test]
+fn inherited_qualification_recognizer_rejects_widened_room_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    for expression in [
+        "self.rooms.gate_source_world().is_some()",
+        "self.rooms().gate_source_world().is_some()",
+        "self.rooms.gate_source_world().map(|_| room)",
+        "self.rooms().gate_source_world().map(|_| room)",
+    ] {
+        assert!(inherits_origin_qualification(&syn::parse_str(expression)?));
+    }
+    for expression in [
+        "Some(room)",
+        "other.rooms().gate_source_world().map(|_| room)",
+        "self.rooms(other).gate_source_world().map(|_| room)",
+        "self.rooms().gate_attack_target().map(|_| room)",
+        "self.rooms().gate_source_world().map(|_| other)",
+        "self.rooms().gate_source_world().or(Some(room))",
+    ] {
+        assert!(!inherits_origin_qualification(&syn::parse_str(expression)?));
+    }
+    Ok(())
+}
+
+#[test]
+fn owned_room_parser_rejects_qualification_and_accessor_gate_bypasses()
+-> Result<(), Box<dyn std::error::Error>> {
+    let valid: syn::ImplItemFn = syn::parse_str(
+        "pub fn owned(room: Arc<QualifiedNativeEntryRoom>, qualified: bool) -> Self { Self { qualified: qualified.then(|| SharedOwner::Owned(Arc::clone(&room))), combat: Some(SharedOwner::Owned(room)) } }",
+    )?;
+    assert!(sets_owned_rooms(&valid));
+    for body in [
+        "Self { qualified: Some(SharedOwner::Owned(Arc::clone(&room))), combat: Some(SharedOwner::Owned(room)) }",
+        "Self { qualified: true.then(|| SharedOwner::Owned(Arc::clone(&room))), combat: Some(SharedOwner::Owned(room)) }",
+        "Self { qualified: qualified.then(|| SharedOwner::Owned(Arc::clone(&room))), combat: None }",
+    ] {
+        let function = syn::parse_str(&format!(
+            "pub fn owned(room: Arc<QualifiedNativeEntryRoom>, qualified: bool) -> Self {{ {body} }}"
+        ))?;
+        assert!(!sets_owned_rooms(&function));
+    }
+    assert!(inherits_origin_qualification(&syn::parse_str(
+        "self.rooms.gate_source_world().is_some()"
+    )?));
+    for expr in [
+        "true",
+        "self.rooms.gate_native_combat_cast().is_some()",
+        "self.rooms.gate_source_world().is_none()",
+    ] {
+        assert!(!inherits_origin_qualification(&syn::parse_str(expr)?));
+    }
+    assert_eq!(
+        field_room(&syn::parse_str("self.qualified.as_deref()")?),
+        Some(Room::Qualified)
+    );
+    assert_eq!(
+        field_room(&syn::parse_str("self.combat.as_deref()")?),
+        Some(Room::Combat)
+    );
+    assert_eq!(
+        field_room(&syn::parse_str(
+            "self.qualified.or(self.combat).as_deref()"
+        )?),
+        None
+    );
+    Ok(())
+}
+
+#[test]
+fn cake_bundle_fixture_keeps_its_qualified_room_closed() {
+    let fixture = parse_source("src/gameplay_transport/postgres_tests/cake_phases.rs");
+    let mut constructions = Constructions::default();
+    constructions.visit_file(&fixture);
+    assert!(matches!(constructions.0.as_slice(), [call]
+        if matches!(call.args.first(), Some(syn::Expr::Path(path)) if path.path.is_ident("None"))));
+}
+
+#[test]
+fn poor_soul_bundle_fixture_keeps_only_its_original_combat_room() {
+    let fixture =
+        parse_source("src/gameplay_transport/postgres_tests/srx3_poor_soul_world_corpse.rs");
+    let mut constructions = Constructions::default();
+    constructions.visit_file(&fixture);
+    assert!(matches!(constructions.0.as_slice(), [call]
+        if matches!(&*call.func, syn::Expr::Path(path)
+            if path_name(&path.path).ends_with("SeamRooms::new"))
+        && call.args.len() == 2
+        && matches!(call.args.first(), Some(syn::Expr::Path(path))
+            if path.path.is_ident("None"))
+        && matches!(call.args.iter().nth(1), Some(syn::Expr::Call(some))
+            if matches!(&*some.func, syn::Expr::Path(path) if path.path.is_ident("Some"))
+            && some.args.len() == 1
+            && matches!(some.args.first(), Some(syn::Expr::Reference(reference))
+                if reference.mutability.is_none()
+                && matches!(&*reference.expr, syn::Expr::Field(field)
+                    if matches!(&field.member, syn::Member::Named(name) if name == "room")
+                    && matches!(&*field.base, syn::Expr::Path(path)
+                        if path.path.is_ident("scene")))))));
+}
+
+#[test]
+fn qualification_guard_rejects_unconditional_or_inverted_bundle_room()
+-> Result<(), Box<dyn std::error::Error>> {
+    let correct = syn::parse_str::<syn::Expr>("bundle.is_none().then_some(&qualified_room)")?;
+    assert!(withholds_from_a_bundle(&correct));
+    for wrong in [
+        "Some(&qualified_room)",
+        "bundle.is_some().then_some(&qualified_room)",
+        "bundle.is_none().then_some(&combat_room)",
+        "bundle.is_none().then_some(&mut qualified_room)",
+    ] {
+        let candidate = syn::parse_str::<syn::Expr>(wrong)?;
+        assert!(!withholds_from_a_bundle(&candidate), "{wrong}");
+    }
+    Ok(())
+}
+
+/// An independently owned source Bundle has no qualified entry-world room.
+/// Its shared map owner may supply combat, never generic casting or House gates.
+#[test]
+fn a_source_instance_effective_room_constructs_only_none_some_combat() {
+    // Source runtimes now use the canonical shared Activity owner. Its owned
+    // room closes qualification; the separate inherited-owner path must retain
+    // exactly its origin's qualification rather than opening it unconditionally.
+    let source = parse_source("src/gameplay_transport/activity_content.rs");
+    let mut constructions = Constructions::default();
+    constructions.visit_file(&source);
+    assert_eq!(
+        constructions.0.len(),
+        2,
+        "exact source and inherited owned rooms"
+    );
+    let source = constructions.0[0];
+    assert!(matches!(&*source.func, syn::Expr::Path(path)
+        if path_name(&path.path).ends_with("SeamRooms::owned")));
+    assert_eq!(source.args.len(), 2);
+    assert!(
+        matches!(source.args.iter().nth(1), Some(syn::Expr::Lit(value))
+        if matches!(value.lit, syn::Lit::Bool(ref flag) if !flag.value))
+    );
+    assert!(matches!(source.args.first(), Some(syn::Expr::Call(clone))
+        if matches!(&*clone.func, syn::Expr::Path(path)
+            if path_name(&path.path) == "std::sync::Arc::clone")
+        && clone.args.len() == 1
+        && matches!(clone.args.first(), Some(syn::Expr::Reference(reference))
+            if reference.mutability.is_none()
+            && matches!(&*reference.expr, syn::Expr::Path(path)
+                if path.path.is_ident("owned_room")))));
+    let inherited = constructions.0[1];
+    assert!(matches!(&*inherited.func, syn::Expr::Path(path)
+        if path_name(&path.path).ends_with("SeamRooms::owned")));
+    assert_eq!(inherited.args.len(), 2);
+    assert!(
+        inherited
+            .args
+            .iter()
+            .nth(1)
+            .is_some_and(inherits_origin_qualification)
+    );
+}
+
+/// Compatibility names must not introduce a second room or movement owner.
+#[test]
+fn source_room_compatibility_accessors_delegate_to_canonical_owner()
+-> Result<(), Box<dyn std::error::Error>> {
+    let source = parse_source("src/gameplay_transport/effective_rooms.rs");
+    let [syn::Item::Impl(block)] = source.items.as_slice() else {
+        return Err("source room aliases must contain only their owner impl".into());
+    };
+    assert!(block.trait_.is_none() && block.unsafety.is_none());
+    assert!(matches!(&*block.self_ty, syn::Type::Path(path)
+        if path_name(&path.path) == "super::ComposedFreshAdmission"));
+    assert_eq!(block.items.len(), 2);
+    for (item, (alias, canonical)) in block.items.iter().zip([
+        ("effective_movement_cells", "movement_cells"),
+        ("effective_rooms", "rooms"),
+    ]) {
+        let syn::ImplItem::Fn(function) = item else {
+            return Err("source room aliases may only declare delegate functions".into());
+        };
+        assert_eq!(function.sig.ident, alias);
+        let [syn::Stmt::Expr(syn::Expr::MethodCall(call), None)] = function.block.stmts.as_slice()
+        else {
+            return Err("source room aliases must directly return the canonical owner".into());
+        };
+        assert_eq!(call.method, canonical);
+        assert!(call.args.is_empty() && call.attrs.is_empty() && call.turbofish.is_none());
+        assert!(matches!(&*call.receiver, syn::Expr::Path(path)
+            if path.path.is_ident("self")));
+    }
+    Ok(())
 }

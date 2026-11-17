@@ -28,6 +28,12 @@ use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 
 /// Registered capability `PRESENTATION_V1`: no command type, state domains 19 and 20, requires 6.
 pub const CAPABILITY_PRESENTATION_V1: u32 = 23;
+/// B24: independently negotiated private ambience; capability 23 remains unchanged.
+pub const CAPABILITY_AMBIENT_SOUND_V1: u32 = 288;
+pub const STATE_DOMAIN_AMBIENT_SOUND: u32 = 101;
+/// NX-5 item-only visual effects, independently negotiated from S17 presentation.
+pub const CAPABILITY_ITEM_EFFECTS_V1: u32 = 350;
+pub const STATE_DOMAIN_ITEM_EFFECTS: u32 = 104;
 /// The capability `PRESENTATION_V1` requires: 6 `WORLD_SPATIAL_ENTITIES`, whose D85 identities
 /// the events name (§7).
 pub const CAPABILITY_PRESENTATION_V1_REQUIRES: [u32; 1] = [
@@ -131,6 +137,8 @@ pub struct PresentationValue {
 /// The oneof of `PresentationEventV1`. Actor references carry a non-zero generation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PresentationEventKind {
+    /// Replaces the private ambient loop. Zero stops it; ids use the ambient namespace.
+    AmbientSound { cue_id: u32 },
     MagicEffect {
         position: ActorPosition,
         effect_id: u32,
@@ -248,8 +256,14 @@ fn read_fields(
     Ok(())
 }
 
-fn check_position(position: &ActorPosition) -> WireResult<()> {
-    if (0..=MAX_FLOOR).contains(&position.floor) {
+fn check_position(position: &ActorPosition, native: bool) -> WireResult<()> {
+    if (if native {
+        -MAX_FLOOR..=0
+    } else {
+        0..=MAX_FLOOR
+    })
+    .contains(&position.floor)
+    {
         Ok(())
     } else {
         malformed()
@@ -278,16 +292,23 @@ fn check_value(value: &PresentationValue) -> WireResult<()> {
     Ok(())
 }
 
-fn check_event(event: &PresentationEvent) -> WireResult<()> {
+fn check_event(event: &PresentationEvent, native: bool) -> WireResult<()> {
     check_range(event.decision_ordinal, u32::MAX)?;
     check_range(event.emission_ordinal, u32::MAX)?;
     match &event.kind {
+        PresentationEventKind::AmbientSound { cue_id } => {
+            if *cue_id <= MAX_CLIENT_ID {
+                Ok(())
+            } else {
+                malformed()
+            }
+        }
         PresentationEventKind::MagicEffect {
             position,
             effect_id,
             ..
         } => {
-            check_position(position)?;
+            check_position(position, native)?;
             check_range(*effect_id, MAX_CLIENT_ID)
         }
         PresentationEventKind::Missile {
@@ -296,8 +317,8 @@ fn check_event(event: &PresentationEvent) -> WireResult<()> {
             missile_id,
             ..
         } => {
-            check_position(from)?;
-            check_position(to)?;
+            check_position(from, native)?;
+            check_position(to, native)?;
             check_range(*missile_id, MAX_CLIENT_ID)
         }
         PresentationEventKind::SpellWords {
@@ -306,7 +327,7 @@ fn check_event(event: &PresentationEvent) -> WireResult<()> {
             spell,
         } => {
             check_actor(caster)?;
-            check_position(position)?;
+            check_position(position, native)?;
             check_range(*spell, u32::MAX)
         }
         PresentationEventKind::ValueText {
@@ -317,7 +338,7 @@ fn check_event(event: &PresentationEvent) -> WireResult<()> {
             secondary,
             ..
         } => {
-            check_position(position)?;
+            check_position(position, native)?;
             check_actor(target)?;
             attacker.as_ref().map_or(Ok(()), check_actor)?;
             check_value(primary)?;
@@ -329,7 +350,7 @@ fn check_event(event: &PresentationEvent) -> WireResult<()> {
             secondary_cue_id,
             ..
         } => {
-            check_position(position)?;
+            check_position(position, native)?;
             check_range(*cue_id, MAX_CLIENT_ID)?;
             if *secondary_cue_id > MAX_CLIENT_ID {
                 return malformed();
@@ -356,6 +377,10 @@ fn encode_value(value: &PresentationValue) -> Vec<u8> {
 fn encode_kind(kind: &PresentationEventKind) -> (u64, Vec<u8>) {
     let mut output = Vec::with_capacity(112);
     let field = match kind {
+        PresentationEventKind::AmbientSound { cue_id } => {
+            push_varint_field(&mut output, 1, u64::from(*cue_id));
+            8
+        }
         PresentationEventKind::MagicEffect {
             position,
             effect_id,
@@ -424,8 +449,8 @@ fn encode_kind(kind: &PresentationEventKind) -> (u64, Vec<u8>) {
     (field, output)
 }
 
-fn encode_event(event: &PresentationEvent) -> WireResult<Vec<u8>> {
-    check_event(event)?;
+fn encode_event(event: &PresentationEvent, native: bool) -> WireResult<Vec<u8>> {
+    check_event(event, native)?;
     let mut output = Vec::with_capacity(MAX_PRESENTATION_EVENT_BYTES);
     push_varint_field(&mut output, 1, u64::from(event.decision_ordinal));
     push_varint_field(&mut output, 2, u64::from(event.emission_ordinal));
@@ -437,6 +462,13 @@ fn encode_event(event: &PresentationEvent) -> WireResult<Vec<u8>> {
 /// Encodes the domain 19 delta (type 1): 1 to 1,024 events, strictly ascending by (decision,
 /// emission). Anything else is a server fault.
 pub fn encode_presentation_batch(events: &[PresentationEvent]) -> WireResult<Vec<u8>> {
+    encode_presentation_batch_with_basis(events, false)
+}
+
+pub(crate) fn encode_presentation_batch_with_basis(
+    events: &[PresentationEvent],
+    native: bool,
+) -> WireResult<Vec<u8>> {
     if events.is_empty() {
         return malformed();
     }
@@ -452,7 +484,7 @@ pub fn encode_presentation_batch(events: &[PresentationEvent]) -> WireResult<Vec
     let mut output = Vec::with_capacity(events.len() * 64);
     for event in events {
         let start = output.len();
-        push_message_field(&mut output, 1, &encode_event(event)?);
+        push_message_field(&mut output, 1, &encode_event(event, native)?);
         if output.len() - start > MAX_PRESENTATION_EVENT_BYTES {
             return Err(PresentationWireError::LimitExceeded);
         }
@@ -523,10 +555,10 @@ fn color(value: u32) -> Option<PresentationColor> {
     })
 }
 
-fn read_position(input: &[u8], cursor: &mut usize) -> WireResult<ActorPosition> {
+fn read_position(input: &[u8], cursor: &mut usize, native: bool) -> WireResult<ActorPosition> {
     let position = decode_position(read_bytes(input, cursor)?)
         .map_err(|_| PresentationWireError::Malformed)?;
-    check_position(&position)?;
+    check_position(&position, native)?;
     Ok(position)
 }
 
@@ -580,17 +612,18 @@ struct KindFields {
     values: [Option<PresentationValue>; 2],
 }
 
-fn decode_kind(field: u64, input: &[u8]) -> WireResult<PresentationEventKind> {
+fn decode_kind(field: u64, input: &[u8], native: bool) -> WireResult<PresentationEventKind> {
     let mut f = KindFields::default();
     read_fields(input, |number, wire, input, cursor| {
         match (field, number, wire) {
             (3, 1, 2) | (4, 1, 2) | (5, 2, 2) | (6, 2, 2) | (7, 1, 2) => {
-                set_once(&mut f.positions[0], read_position(input, cursor)?)
+                set_once(&mut f.positions[0], read_position(input, cursor, native)?)
             }
-            (4, 2, 2) => set_once(&mut f.positions[1], read_position(input, cursor)?),
+            (4, 2, 2) => set_once(&mut f.positions[1], read_position(input, cursor, native)?),
             (3, 2, 0) | (4, 3, 0) | (5, 3, 0) | (7, 2, 0) => {
                 set_once(&mut f.ids[0], read_uint32(input, cursor)?)
             }
+            (8, 1, 0) => set_once(&mut f.ids[0], read_uint32(input, cursor)?),
             (7, 4, 0) => set_once(&mut f.ids[1], read_uint32(input, cursor)?),
             (3, 3, 0) | (4, 4, 0) | (7, 3, 0) => {
                 set_once(&mut f.source, read_enum(input, cursor, source)?)
@@ -608,6 +641,7 @@ fn decode_kind(field: u64, input: &[u8]) -> WireResult<PresentationEventKind> {
     let id = f.ids[0].ok_or_else(missing);
     let source = f.source.ok_or_else(missing);
     Ok(match field {
+        8 => PresentationEventKind::AmbientSound { cue_id: id? },
         3 => PresentationEventKind::MagicEffect {
             position: position?,
             effect_id: id?,
@@ -642,12 +676,15 @@ fn decode_kind(field: u64, input: &[u8]) -> WireResult<PresentationEventKind> {
     })
 }
 
-fn decode_event(input: &[u8]) -> WireResult<PresentationEvent> {
+fn decode_event(input: &[u8], native: bool) -> WireResult<PresentationEvent> {
     let (mut decision, mut emission, mut kind) = (None, None, None);
     read_fields(input, |number, wire, input, cursor| match (number, wire) {
         (1, 0) => set_once(&mut decision, read_uint32(input, cursor)?),
         (2, 0) => set_once(&mut emission, read_uint32(input, cursor)?),
-        (3..=7, 2) => set_once(&mut kind, decode_kind(number, read_bytes(input, cursor)?)?),
+        (3..=8, 2) => set_once(
+            &mut kind,
+            decode_kind(number, read_bytes(input, cursor)?, native)?,
+        ),
         _ => malformed(),
     })?;
     let event = PresentationEvent {
@@ -655,11 +692,18 @@ fn decode_event(input: &[u8]) -> WireResult<PresentationEvent> {
         emission_ordinal: emission.unwrap_or(0),
         kind: kind.ok_or(PresentationWireError::Malformed)?,
     };
-    check_event(&event)?;
+    check_event(&event, native)?;
     Ok(event)
 }
 
 pub fn decode_presentation_batch(payload: &[u8]) -> WireResult<Vec<PresentationEvent>> {
+    decode_presentation_batch_with_basis(payload, false)
+}
+
+pub(crate) fn decode_presentation_batch_with_basis(
+    payload: &[u8],
+    native: bool,
+) -> WireResult<Vec<PresentationEvent>> {
     if payload.len() > MAX_PRESENTATION_BATCH_BYTES {
         return Err(PresentationWireError::LimitExceeded);
     }
@@ -677,7 +721,7 @@ pub fn decode_presentation_batch(payload: &[u8]) -> WireResult<Vec<PresentationE
         if events.len() == MAX_PRESENTATION_EVENTS {
             return Err(PresentationWireError::LimitExceeded);
         }
-        let event = decode_event(entry)?;
+        let event = decode_event(entry, native)?;
         if events
             .last()
             .is_some_and(|last| last.order_key() >= event.order_key())
@@ -804,6 +848,28 @@ pub fn decode_actor_cooldowns(payload: &[u8]) -> WireResult<ActorCooldowns> {
     };
     check_cooldowns(&cooldowns)?;
     Ok(cooldowns)
+}
+
+/// Item-only subset of the bounded presentation codec. No casting or audio surface is enabled.
+pub fn encode_item_effect_batch(events: &[PresentationEvent]) -> WireResult<Vec<u8>> {
+    if events
+        .iter()
+        .any(|e| !matches!(e.kind, PresentationEventKind::MagicEffect { .. }))
+    {
+        return malformed();
+    }
+    encode_presentation_batch(events)
+}
+
+pub fn decode_item_effect_batch(payload: &[u8]) -> WireResult<Vec<PresentationEvent>> {
+    let events = decode_presentation_batch(payload)?;
+    if events
+        .iter()
+        .any(|e| !matches!(e.kind, PresentationEventKind::MagicEffect { .. }))
+    {
+        return malformed();
+    }
+    Ok(events)
 }
 
 #[cfg(test)]

@@ -1,6 +1,50 @@
 use super::*;
 use oteryn_session::EntityRef;
 
+impl Scene {
+    #[cfg(test)]
+    pub(crate) fn native_name_fragment_rendered(&self, text: &str) -> bool {
+        let mut cache = self.cache.clone();
+        let expected = cache.name(text);
+        !expected.is_empty()
+            && self.names.iter().any(|(_, cells)| {
+                cells
+                    .windows(expected.len())
+                    .any(|part| part == expected.as_slice())
+            })
+    }
+    #[cfg(test)]
+    pub(crate) fn native_item_rendered_at(
+        &self,
+        at: oteryn_session::ActorPosition,
+        reference: u32,
+    ) -> bool {
+        (self.world.native_item_resolved_at(at, reference)
+            && self
+                .world
+                .tile(at.x, at.y)
+                .is_some_and(|tile| !tile.under.is_empty() || !tile.over.is_empty())
+            || self.object_draws.iter().any(|(position, item, draws)| {
+                *position == at && *item == reference && !draws.is_empty()
+            }))
+            && (at.x - self.own.x).abs() <= 8
+            && (at.y - self.own.y).abs() <= 6
+            && !self.tiles.is_empty()
+    }
+    #[cfg(test)]
+    pub(crate) fn drome_hazard_tiles(&self) -> usize {
+        self.drome_hazards.len()
+    }
+    pub(crate) fn native_own_state(&self) -> (Option<[u8; 16]>, Option<usize>) {
+        (self.own_identity, self.own_draws.as_ref().map(Vec::len))
+    }
+    pub(crate) fn native_own_rendered(&self) -> bool {
+        self.own_draws
+            .as_ref()
+            .is_some_and(|draws| !draws.is_empty())
+    }
+}
+
 fn scene() -> Result<Scene, BatchError> {
     let world = Arc::new(World::builtin()?);
     let markers = [TileCoord::new(3, -1), TileCoord::new(-2, -2)];
@@ -35,6 +79,7 @@ fn a_visible_entity_is_drawn_and_a_click_selects_it_with_its_reference() -> Resu
         kind: TargetKind::Entity,
         glyph: true,
         entity: Some(entity),
+        item: None,
     };
     let mut scene = Scene::centered_with(
         world,
@@ -188,5 +233,21 @@ fn the_start_area_draws_real_sprites_around_the_player() -> Result<(), String> {
         off_floor.sprites().len(),
         scene.world.player(StepDir::South).len()
     );
+    Ok(())
+}
+
+#[test]
+fn t057_hiding_target_frame_preserves_selection() -> Result<(), BatchError> {
+    let mut scene = scene()?;
+    let picked = scene.select_tile(TileCoord::new(0, 0))?;
+    assert!(picked.is_some());
+    let shown = scene.sprites().len();
+    scene.target_frame = false;
+    scene.retain_target(picked)?;
+    assert_eq!(scene.target(), picked);
+    assert_eq!(scene.sprites().len() + 1, shown);
+    scene.target_frame = true;
+    scene.retain_target(picked)?;
+    assert_eq!(scene.sprites().len(), shown);
     Ok(())
 }

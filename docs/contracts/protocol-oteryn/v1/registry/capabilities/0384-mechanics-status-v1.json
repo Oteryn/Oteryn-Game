@@ -1,0 +1,13 @@
+{
+  "id": 384,
+  "name": "MECHANICS_STATUS_V1",
+  "owner_decision": "CL6 owner authorization 2026-11-06",
+  "owner": "Game existing death, potion, party and Forge owners",
+  "requires": [],
+  "command_types": [
+    669
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES; filtered without native gameplay owners."
+}

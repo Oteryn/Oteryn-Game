@@ -1,0 +1,9 @@
+{
+  "mechanic": "0086-house-transfer",
+  "kind": "keybindings",
+  "id": "0086-house-transfer-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+U",
+  "entry": "input.rs::open_key"
+}

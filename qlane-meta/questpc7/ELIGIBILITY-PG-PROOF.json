@@ -1,0 +1,170 @@
+{
+  "status": "mechanism QUALIFIED and fully GREEN; subject routes remain ACTIVE",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "seconds": 74.409832322,
+    "log": "/tmp/questpc7-eligibility-red.log",
+    "assertion": "premium-required Hunter start incorrectly returned Ok with no native Premium authority"
+  },
+  "green": {
+    "log": "/tmp/questpc7-eligibility-green.log",
+    "cases": [
+      {
+        "case": "current premium; Hunter starts, completed parent cannot bypass low level",
+        "seconds": 74.878934217
+      },
+      {
+        "case": "native level1000; missing parent refuses, prior completion permits, parent revision unchanged",
+        "seconds": 75.426905577
+      },
+      {
+        "case": "missing native premium; no quest receipt/progress",
+        "seconds": 73.091103025
+      }
+    ]
+  },
+  "reuse": "Existing transaction-scoped SpellPremiumCoordinator permission/latch via the existing quest premium trait; locked progression level and read-only quest completion facts",
+  "fixture_boundary": "Native level1000 initial state uses the published experience threshold. The other-lane Make Believe completion is arranged with a fenced quest writer only as a precondition, never qualified by this test. Own Hunter/Illuminated programme stages are unseeded.",
+  "checks": [
+    {
+      "check": "sam-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "qengine_rewards_backpack_exchange",
+        "--",
+        "--nocapture"
+      ],
+      "seconds": 120.485,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-eligibility-recovered-sam-pg.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 178.635,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-eligibility-recovered-clippy.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 78.759,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-eligibility-recovered-check.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 106.057,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-eligibility-recovered-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 49.326,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-eligibility-recovered-world.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 120.956,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-eligibility-recovered-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-eligibility-pin-check"
+      ],
+      "seconds": 131.427,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-eligibility-recovered-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.558,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-eligibility-recovered-fmt.log"
+    }
+  ],
+  "authoring": {
+    "cases": 15,
+    "seconds": 7.91,
+    "result": "PASS",
+    "log": "/tmp/questpc7-eligibility-author-tests.log"
+  },
+  "ordinary_reward_regression": {
+    "test": "qengine_rewards_backpack_exchange",
+    "seconds": 76.831997325,
+    "postgres": "18.6",
+    "result": "PASS"
+  },
+  "world_digest": "842187e5493a9d04849d13d8062398f6120f250c116b0fc094c87387e611e0a3",
+  "generation_checks": [
+    "/tmp/questpc7-eligibility-registration.log",
+    "/tmp/questpc7-eligibility-generation.log"
+  ]
+}

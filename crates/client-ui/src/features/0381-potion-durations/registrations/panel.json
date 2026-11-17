@@ -1,0 +1,7 @@
+{
+  "mechanic": "0381-potion-durations",
+  "kind": "panels",
+  "id": "0381-potion-durations-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

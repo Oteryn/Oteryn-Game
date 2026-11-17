@@ -1,0 +1,13 @@
+{
+  "mechanic": "0017-attack",
+  "kind": "handlers",
+  "id": "0017-battle-metadata",
+  "status": "supported",
+  "commands": [740],
+  "direction": "client_to_server",
+  "capability": 17,
+  "entry": "protocol.rs::metadata_request",
+  "not_applicable": {
+    "settings": "Battle filter preferences are persisted by local-reference-preferences; query replies are session observations."
+  }
+}

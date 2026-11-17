@@ -76,6 +76,8 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?;
     }
     super::item_look::seed_main_backpack(&h, &[("oteryn:item.tibia.i3031", 5)]).await?;
+    let child_before = backpack_child_snapshot(&h).await?;
+    assert_eq!(child_before.len(), 1);
     // Initial custody fixture only; death and all item changes use the real runtime writers.
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
@@ -214,14 +216,26 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         "computed death loss must reach Ground"
     );
     // A lost backpack carries its child by identity, without expanding the death plan.
-    let parent: String = sqlx::query_scalar("SELECT parent_item_instance_id::text FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
-        .bind(id(71).as_slice()).fetch_one(&h.pool).await?;
+    let parent_query = if expected_lost.contains(&id(70)) {
+        "SELECT parent_item_instance_id::text FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid"
+    } else {
+        "SELECT parent_item_instance_id::text FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid"
+    };
+    let parent: String = sqlx::query_scalar(parent_query)
+        .bind(id(71).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
     assert_eq!(
         parent.replace('-', ""),
         id(70)
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>()
+    );
+    assert_eq!(
+        backpack_child_snapshot(&h).await?,
+        child_before,
+        "death preserves the child ItemInstance and exact logical placement"
     );
     if amulet {
         let lifecycle: i16 = sqlx::query_scalar("SELECT lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -259,6 +273,11 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(after, records);
+    assert_eq!(
+        backpack_child_snapshot(&h).await?,
+        child_before,
+        "death replay preserves the same child and placement provenance"
+    );
     reopened
         .consume_pending_respawn(
             &authority,
@@ -280,6 +299,11 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     drop(reopened);
     drop(seal);
     h.cleanup().await
+}
+
+async fn backpack_child_snapshot(h: &Harness) -> TestResult<Vec<(String, String)>> {
+    Ok(sqlx::query_as("SELECT to_jsonb(i)::text,e.data::text FROM game_item_instances i JOIN (SELECT item_instance_id,to_jsonb(e)-'character_id' AS data FROM game_item_container_entries e WHERE item_instance_id=encode($1,'hex')::uuid UNION ALL SELECT item_instance_id,to_jsonb(n) FROM game_item_nested_entries n WHERE item_instance_id=encode($1,'hex')::uuid) e USING(item_instance_id) ORDER BY e.data::text LIMIT 2")
+        .bind(id(71).as_slice()).fetch_all(&h.pool).await?)
 }
 
 #[test]

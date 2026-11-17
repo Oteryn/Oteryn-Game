@@ -100,7 +100,7 @@ async fn facts(
         .filter(|fact| {
             matches!(
                 fact.source_kind.as_str(),
-                "quest" | "npc" | "mount_taming" | "task_board"
+                "quest" | "npc" | "mount_taming" | "item_action" | "task_board"
             )
         })
         .map(|fact| (fact.unlock_key, fact.content_revision))
@@ -154,6 +154,7 @@ pub(super) async fn apply(
         return Ok(Some(TaskBoardRefusal::UnsupportedEntitlement));
     };
     let owner = account(tx, fence.character_id).await?;
+    crate::durability::character_appearance::lock_account_grants(tx, owner).await?;
     // The account lock precedes all earned-fact reads, so two Characters cannot pay twice.
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))")
         .bind(format!("task-board-cosmetics:{owner}"))

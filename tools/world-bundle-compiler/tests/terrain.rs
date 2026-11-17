@@ -126,7 +126,7 @@ fn every_kind() -> Vec<Value> {
         terrain_record("terrain:direct", None, Some("wall"), None, None),
         terrain_record("terrain:roof", Some("item:roof"), Some("roof"), None, None),
         terrain_record("terrain:fire", Some("item:fire"), Some("field"), None, None),
-        // A `common` record keeps its own walkable fact in the catalogue; the bundle drops it.
+        // A `common` record keeps its own independent walkable fact in the bundle.
         terrain_record(
             "terrain:mosaic",
             Some("item:mosaic"),
@@ -215,6 +215,7 @@ fn ground(walkable: bool, speed: u16) -> Terrain {
         kind: TerrainKind::Ground,
         walkable: Some(walkable),
         ground_speed: Some(speed),
+        blocks_projectile: None,
     }
 }
 
@@ -223,6 +224,7 @@ fn other(kind: TerrainKind) -> Terrain {
         kind,
         walkable: None,
         ground_speed: None,
+        blocks_projectile: None,
     }
 }
 
@@ -235,8 +237,8 @@ fn one_entry_of_each_kind_compiles_into_its_terrain_values() -> TestResult {
     let bytes = fixture_bytes()?;
     assert_eq!(bytes, fixture_bytes()?, "two builds are byte-identical");
     let read = bundle::read(&bytes)?;
-    assert_eq!(read.manifest.format, "OTERYN_WORLD_BUNDLE/v6");
-    assert_eq!(read.manifest.min_reader_version, 6);
+    assert_eq!(read.manifest.format, "OTERYN_WORLD_BUNDLE/v8");
+    assert_eq!(read.manifest.min_reader_version, 8);
     let terrain = |key: &str| {
         read.manifest
             .palette
@@ -251,8 +253,14 @@ fn one_entry_of_each_kind_compiles_into_its_terrain_values() -> TestResult {
     assert_eq!(terrain("item:pit"), Some(Some(ground(false, 0))));
     assert_eq!(terrain("item:swamp"), Some(Some(ground(false, 120))));
     assert_eq!(terrain("item:fast"), Some(Some(ground(true, 1000))));
-    // A non-ground record's own walkable and speed are not carried.
-    assert_eq!(terrain("item:edge"), Some(Some(other(TerrainKind::Border))));
+    // A non-ground record retains known walkability, without acquiring a ground speed.
+    assert_eq!(
+        terrain("item:edge"),
+        Some(Some(Terrain {
+            walkable: Some(true),
+            ..other(TerrainKind::Border)
+        }))
+    );
     assert_eq!(
         terrain("terrain:direct"),
         Some(Some(other(TerrainKind::Wall)))
@@ -261,8 +269,36 @@ fn one_entry_of_each_kind_compiles_into_its_terrain_values() -> TestResult {
     assert_eq!(terrain("item:fire"), Some(Some(other(TerrainKind::Field))));
     assert_eq!(
         terrain("item:mosaic"),
-        Some(Some(other(TerrainKind::Common)))
+        Some(Some(Terrain {
+            walkable: Some(true),
+            ..other(TerrainKind::Common)
+        }))
     );
+    Ok(())
+}
+
+#[test]
+fn soulpit_common_static_collision_retains_false_true_and_unknown() -> TestResult {
+    for walkable in [Some(false), Some(true), None] {
+        let registry = registry(vec![terrain_record(
+            "terrain:static",
+            None,
+            Some("common"),
+            walkable,
+            None,
+        )])?;
+        let bytes = compile_keys(&registry, &["terrain:static"])?;
+        let read = bundle::read(&bytes)?;
+        assert_eq!(
+            read.manifest.palette[0].terrain,
+            Some(Terrain {
+                kind: TerrainKind::Common,
+                walkable,
+                ground_speed: None,
+                blocks_projectile: None,
+            })
+        );
+    }
     Ok(())
 }
 
@@ -475,15 +511,15 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
             }),
         ),
         (
-            "border with walkable",
+            "border with non-boolean walkable",
             Box::new(move |m| {
-                m["palette"][edge]["terrain"]["walkable"] = true.into();
+                m["palette"][edge]["terrain"]["walkable"] = "true".into();
             }),
         ),
         (
-            "common with walkable",
+            "common with non-boolean walkable",
             Box::new(move |m| {
-                m["palette"][mosaic]["terrain"]["walkable"] = true.into();
+                m["palette"][mosaic]["terrain"]["walkable"] = "true".into();
             }),
         ),
         (
@@ -577,12 +613,12 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
         ..manifest.palette[grass].clone()
     };
     assert!(bundle::write(&manifest, &read.sectors, &read.spawns).is_err());
-    // The writer refuses `common` with a non-null member as well.
+    // The writer still refuses a ground speed on the common static layer.
     let mosaic = index(&bytes, "item:mosaic")?;
     manifest.palette[grass] = read.manifest.palette[grass].clone();
     manifest.palette[mosaic] = PaletteEntry {
         terrain: Some(Terrain {
-            walkable: Some(true),
+            ground_speed: Some(150),
             ..other(TerrainKind::Common)
         }),
         ..manifest.palette[mosaic].clone()
@@ -614,5 +650,43 @@ fn the_parity_report_counts_placed_entries_by_class() -> TestResult {
     assert_eq!(counts.by_kind.get("common"), Some(&1));
     assert_eq!((counts.world_object, counts.plain_item), (1, 1));
     assert_eq!((counts.unknown_kind, counts.refused), (1, 1));
+    Ok(())
+}
+
+#[test]
+fn source_projectile_known_false_true_and_unknown_are_distinct() -> TestResult {
+    let mut transparent = terrain_record("terrain:transparent", None, Some("wall"), None, None);
+    transparent["blocks_projectile"] = field(Some(Value::Bool(false)));
+    let mut opaque = terrain_record("terrain:opaque", None, Some("ground"), Some(false), Some(0));
+    opaque["blocks_projectile"] = field(Some(Value::Bool(true)));
+    let legacy = terrain_record("terrain:legacy", None, Some("wall"), None, None);
+    let sealed = registry(vec![transparent.clone(), opaque, legacy])?;
+    assert_eq!(
+        sealed
+            .terrain_of("terrain:transparent")?
+            .ok_or("missing transparent terrain")?
+            .blocks_projectile,
+        Some(false)
+    );
+    assert_eq!(
+        sealed
+            .terrain_of("terrain:opaque")?
+            .ok_or("missing opaque terrain")?
+            .blocks_projectile,
+        Some(true)
+    );
+    assert_eq!(
+        sealed
+            .terrain_of("terrain:legacy")?
+            .ok_or("missing legacy terrain")?
+            .blocks_projectile,
+        None
+    );
+    transparent["blocks_projectile"] = field(Some(Value::String("false".into())));
+    assert!(
+        registry(vec![transparent])?
+            .terrain_of("terrain:transparent")
+            .is_err()
+    );
     Ok(())
 }

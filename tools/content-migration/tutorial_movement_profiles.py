@@ -2,6 +2,8 @@
 import hashlib
 import json
 
+from native_profile_composition import encode_native_profile
+
 PATH = 'tools/content-schema/native-gameplay/movement-item-profiles.json'
 IDS = {3892, 3893, 6216, 6217, *range(6373, 6383), 6385, 19394, 37001}
 
@@ -19,7 +21,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if {row['production_definition']['production_key'] for row in document['records']} & set(keys):
         raise ValueError('MOVEMENT_ITEM_PROFILES_RECORD_SET')
     document['records'] = sorted(document['records'] + records, key=order)
-    data = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    data = encode_native_profile(document)
     generated[profile_path] = data
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(data).hexdigest()

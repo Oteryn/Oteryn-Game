@@ -21,7 +21,7 @@ import hashlib
 import json
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import fandom_hunting_snapshot as wiki
@@ -458,7 +458,7 @@ def main() -> int:
         fetched = {page["title"] for page in pages}
         print(f"FAIL not fetched: {sorted(set(titles) - fetched)}", file=sys.stderr)
         return 1
-    snapshot = build_snapshot(pages, datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+    snapshot = build_snapshot(pages, datetime.now(UTC).strftime("%Y-%m-%d"))
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_bytes(canonical(snapshot))
     print(

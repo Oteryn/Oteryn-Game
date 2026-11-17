@@ -135,10 +135,10 @@ fn a_protocol_error_in_place_of_a_command_result_is_reported() -> Result<(), Box
     block_on(assert_command_fails(Action::Step, vec![gap], |error| {
         matches!(
             error,
-            DevClientError::Session(SessionError::UnexpectedMessage {
-                expected: MessageType::CommandResult,
-                actual: MessageType::ProtocolError
-            })
+            DevClientError::Session(SessionError::ServerProtocolError {
+                code,
+                connection_trace: None,
+            }) if *code == FoundationProtocolError::CommandSequenceGap.code()
         )
     }))?
 }
@@ -318,11 +318,23 @@ async fn run_command_stall_case() -> Result<(), BoxError> {
             Ok(())
         })
         .await?;
+    let stalled = session.step(StepDirection::East).await;
+    let diagnostic = stalled
+        .as_ref()
+        .err()
+        .map(ToString::to_string)
+        .ok_or("stalled command unexpectedly succeeded")?;
+    assert!(diagnostic.contains("in command after "));
+    assert!(diagnostic.contains("last frame server_sequence=40"));
     assert!(matches!(
-        session.step(StepDirection::East).await,
-        Err(DevClientError::Session(SessionError::Timeout(
-            "CommandResult"
-        )))
+        stalled,
+        Err(DevClientError::Context {
+            phase: "command",
+            last_frame,
+            source,
+            ..
+        }) if last_frame == "server_sequence=40"
+            && matches!(*source, DevClientError::Session(SessionError::Timeout("CommandResult")))
     ));
     assert!(matches!(
         session.step(StepDirection::East).await,

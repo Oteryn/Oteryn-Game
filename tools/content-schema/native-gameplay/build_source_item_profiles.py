@@ -81,7 +81,7 @@ def profile(i,node,obj,physical,bindings,field):
   if target and str(target) not in bindings:raise ValueError('unbound temporal target')
   sem['temporal']=K({'consumption_mode':K('DURABLE_ABSOLUTE_DEADLINE'),'duration':K(duration),'stop_duration':K(a.get('stopduration','0') in ['1','true']),
    'decay_target':K({'key':bindings[str(target)]['target']['key'],'revision':bindings[str(target)]['target']['revision']}) if target else copy.deepcopy(NA)})
- typ=a.get('type'); itemtypes={'bed':'BED','door':'DOOR','magicfield':'MAGIC_FIELD','teleport':'TELEPORT','container':'CONTAINER','rune':'RUNE','key':'KEY','mailbox':'MAILBOX','trashholder':'TRASH_HOLDER','depot':'DEPOT'}
+ typ=a.get('type'); itemtypes={'bed':'BED','carpet':'CARPET','door':'DOOR','ladder':'LADDER','magicfield':'MAGIC_FIELD','teleport':'TELEPORT','container':'CONTAINER','rune':'RUNE','key':'KEY','mailbox':'MAILBOX','trashholder':'TRASH_HOLDER','depot':'DEPOT'}
  if 'field' in a:typ='magicfield'
  if container and typ is None:typ='container'
  sem['classification']=K({'item_type':K(itemtypes[typ]) if typ in itemtypes else copy.deepcopy(NA),'capabilities':copy.deepcopy(U)})
@@ -106,6 +106,7 @@ def profile(i,node,obj,physical,bindings,field):
   if scripts.get('vocation'):
    for v in ['Druid','Knight','Monk','Paladin','Sorcerer']:
     if v.lower() in scripts['vocation'].lower():vocations.append(v.upper())
+   if scripts['vocation'].strip().lower() in ('none','none;true','none;false'):vocations=['NONE']
    if not vocations:raise ValueError('unknown source vocation constraint')
   sem['equipment']=K({'patterns':K([{'pattern_id':1,'primary_slot':K(slots[slot]),
    'additional_reserved_slots':K(['SHIELD'] if a.get('slottype')=='two-handed' and slot=='hand' else []),
@@ -153,6 +154,10 @@ def build(canary,crystal,bundles,out):
  records.append({'authoring':{'item':{'family':'Item','key':'candidate:item/40450','revision':'spell-p2-r21'}},'semantics':sem,
   'attributes':{'speed_bonus':0,'blocks_movement':False,'blocks_projectile':False,'immovable_block_solid':False,'has_height':False,'field_replaceable':None,'field_condition':None,'rune_consumption':None},'admission':{k:p[k] for k in ['materializable','stack_class','legal_destinations']}})
  result=bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,ordinary,generic)
+ # The donor weight stays in the proof rows; the Global client weight wins (ITEMGLOB).
+ sys.path.insert(0,str(ROOT/'tools/content-migration'))
+ from import_cyclopedia_global import apply_profile_weights
+ apply_profile_weights(result['records'],ROOT)
  out.mkdir(parents=True,exist_ok=True);raw=(json.dumps(result,indent=2,ensure_ascii=False)+'\n').encode();(out/'item-profiles.json').write_bytes(raw)
  coins=[r for r in result['records'] if r['production_definition']['production_key'] in {f'oteryn:item.tibia.i{i}' for i in COIN_IDS}]
  for r in coins:

@@ -103,6 +103,41 @@ pub(super) async fn assert_recovery(
         item_fence_of(store.current_session_at(admitted.game_session_id).await?.0),
         admitted.item_fence
     );
+    // A quest callback already owns this lane and next needs the same
+    // character revision. Recovery must wait without holding that revision.
+    {
+        let lane = destination.spell_lane_permit().await.ok_or("held spell lane")?;
+        let barrier = std::sync::Arc::new(RecoveryCommittedTestBarrier::default());
+        let credential = token(202)?;
+        let recovering = crate::gameplay_transport::activity_recovery_admission::RECOVERY_LOCK_TEST_BARRIER.scope(
+            std::sync::Arc::clone(&barrier),
+            owner.resume_session(ResumeAttempt {
+                game_session_id: source.game_session_id,
+                recovery_material: credential.as_bytes(),
+                transport: transport(202)?,
+                last_applied_server_sequence: 0,
+                supported_capabilities: &supported,
+            }),
+        );
+        tokio::pin!(recovering);
+        assert!(crate::gameplay_transport::first(recovering.as_mut(), barrier.entered.notified()).await.is_none());
+        barrier.proceed.notify_one();
+        // Exactly one poll proceeds from the barrier to the unavailable lane.
+        std::future::poll_fn(|cx| {
+            assert!(std::future::Future::poll(recovering.as_mut(), cx).is_pending());
+            std::task::Poll::Ready(())
+        }).await;
+        let character = admitted.item_fence.ok_or("Instance fence")?.character_id;
+        let revision = destination.revision_sequencer.acquire(character);
+        tokio::pin!(revision);
+        let revision = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(std::future::Future::poll(revision.as_mut(), cx))
+        }).await;
+        assert!(revision.is_ready(),
+            "activity recovery holds the revision while waiting for the callback's spell lane");
+        drop(revision);
+        drop(lane);
+    }
     let mut resumed = resume_wire(owner, source.game_session_id, &token(203)?, 203).await?;
     assert_eq!(resumed.game_session_id, admitted.game_session_id);
     assert_eq!(resumed.runtime_actor, admitted.runtime_actor);
@@ -448,7 +483,7 @@ pub(super) async fn assert_inherited_protection(
         ),
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Execute)
     ));
-    assert!(destination.note_activity_input(resumed).await);
+    assert!(destination.note_activity_input(resumed).await.is_ok());
     let result = destination
         .return_native_activity(
             resumed,
@@ -621,4 +656,43 @@ fn bytes(out: &mut Vec<u8>, tag: u8, value: &[u8]) {
     }
     out.push(n as u8);
     out.extend_from_slice(value);
+}
+
+
+pub(super) async fn assert_security_revocation(
+    h: &Harness, owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession, lost: bool, dead: bool,
+) -> TestResult {
+    use crate::durability::platform_streams::{PageCounts, PageOutcome, SecurityRevocation, StreamPage};
+    use crate::gameplay_transport::connection::GraceExpiryResult;
+    let now: i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&h.pool).await?;
+    if lost && !dead {
+        assert_eq!(owner.lose_control(admitted,std::time::Duration::ZERO,None).await,ControlLossResult::Recorded);
+    }
+    let independent: i64=sqlx::query_scalar("SELECT (SELECT count(*) FROM game_staff_disconnects)+(SELECT count(*) FROM game_staff_bans)").fetch_one(&h.pool).await?;
+    assert_eq!(independent,0,"revocation itself must prove forced termination");
+    let account=admitted.controller.ok_or("controller")?.account_id;
+    assert_eq!(h.root.apply_platform_stream_page(None,StreamPage::SecurityRevocations(vec![SecurityRevocation {
+        revocation_id:fixture::id(245),account_id:account,native_security_generation:if lost {1}else{2},cause:if lost {3}else{1},effective_at_ms:now*1000
+    }]),Some("v1:1".into())).await.map_err(debug)?,PageOutcome::Advanced(PageCounts{applied:1,..Default::default()}));
+    assert!(h.root.security_session_revoked(admitted.game_session_id).await.map_err(debug)?);
+    assert_eq!(owner.release_staff_session(admitted).await,GraceExpiryResult::Released,"captured security revocation must finish the real activity terminal path");
+    assert_eq!(FreshAdmissionStore::from_root(h.root.clone()).current_session(admitted.game_session_id).await?.session_state(),GameSessionState::Terminal);
+    let (reason,destination_state):(i16,i16)=sqlx::query_as("SELECT r.reason,d.session_state FROM game_activity_runtime_returns r JOIN game_durability_reconnect_sessions d ON d.game_session_id=r.destination_game_session_id WHERE r.source_game_session_id=encode($1,'hex')::uuid")
+        .bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(reason,if dead {5}else if lost {11}else{10});
+    assert_eq!(destination_state,3,"forced return must also terminalize its successor");
+    let (generation,revoked):(Option<String>,bool)=sqlx::query_as("SELECT d.admission_security_generation::text,d.security_revoked FROM game_activity_runtime_returns r JOIN game_durability_reconnect_sessions d ON d.game_session_id=r.destination_game_session_id WHERE r.source_game_session_id=encode($1,'hex')::uuid")
+        .bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(generation.as_deref(),Some("1"),"forced activity successor retains the admission cut");
+    assert!(revoked,"terminal security state is inherited by the return successor");
+    let remaining:i64=sqlx::query_scalar("SELECT count(*) FROM game_boss_room_participants WHERE returned_at IS NULL").fetch_one(&h.pool).await?;
+    assert_eq!(remaining,0);
+    let next=owner.activity_runtimes.current_connection(admitted);
+    assert_ne!(next.game_session_id,admitted.game_session_id,"check the actual return successor");
+    assert!(matches!(owner.resume_session(ResumeAttempt { game_session_id:next.game_session_id,recovery_material:token(249)?.as_bytes(),transport:transport(249)?,last_applied_server_sequence:0,supported_capabilities:&[] }).await,Err(AdmissionRefusal::Rejected)));
+    assert!(!owner.staff_refresh(next).await);
+
+
+    Ok(())
 }

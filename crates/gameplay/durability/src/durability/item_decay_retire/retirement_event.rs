@@ -24,6 +24,7 @@ pub(super) fn decay_message(
     let mut message = OneItemDecayRetireV1 {
         world_reset: None,
         activity_retirement: None,
+        arena_reset: None,
         ground_container_entry: None,
         before: Some(state(admitted.quantity_before, ITEM_LIFECYCLE_LIVE)),
         after: Some(state(0, ITEM_LIFECYCLE_RETIRED)),
@@ -36,5 +37,11 @@ pub(super) fn decay_message(
         runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
     };
     world_reset_cause::bind_message(&mut message, step.cause);
+    if let Some(death_entry) = admitted.death_entry
+        && let Some(entry) = message.ground_container_entry.as_mut()
+    {
+        entry.parent_item_instance_id = death_entry.parent.to_vec();
+        entry.tree_root_item_instance_id = Some(step.corpse_item_instance_id.to_vec());
+    }
     message
 }

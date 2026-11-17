@@ -769,6 +769,11 @@ impl super::cast::PlayerSpellState {
         now: u64,
         source_training_mana: u32,
     ) -> Result<PreparedPlayerTraining, TrainingError> {
+        let source_training_mana = if self.drome_practice {
+            0
+        } else {
+            source_training_mana
+        };
         if !paid.paid_successor_of(self, anchor) || paid.training != self.training {
             return Err(TrainingError::InvalidBuild);
         }
@@ -1020,6 +1025,7 @@ impl super::cast::PlayerSpellState {
         next.mana -= mana;
         next.revision = next.revision.checked_add(1)?;
         if mana > 0
+            && !self.drome_practice
             && let Some(training) = next.training.as_mut()
         {
             if training.last_cast_micros.is_some_and(|last| now < last) {
@@ -1079,6 +1085,9 @@ impl super::cast::PlayerSpellState {
         formula: &CompiledTrainingFormula,
         rule: impl FnOnce(&mut HitTrainingCounters) -> u64,
     ) -> Result<TrainedSkill, TrainingError> {
+        if self.drome_practice {
+            return Ok(TrainedSkill::default());
+        }
         if let Some(retained) = self.training_checkpoint.as_mut() {
             let prepared = &mut retained.prepared;
             let base = prepared.after_with_post_checkpoint();

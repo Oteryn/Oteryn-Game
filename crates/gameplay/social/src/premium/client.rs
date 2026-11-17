@@ -129,36 +129,92 @@ pub struct PremiumSnapshotClient {
     endpoint: reqwest::Url,
 }
 
+/// The validated Platform origin and the mutual-TLS client of `config`: HTTPS only, TLS 1.3, only
+/// the Platform CA trusted, no proxy, no redirects, [`PULL_TIMEOUT`]. Every private
+/// `/internal/v1` read of this node shares it (the Premium snapshot and the N009/N014 streams).
+pub(crate) fn platform_http(
+    config: &PremiumClientConfig,
+) -> Result<(reqwest::Client, reqwest::Url), ClientConfigError> {
+    let origin = reqwest::Url::parse(&config.origin)
+        .ok()
+        .filter(|url| {
+            url.scheme() == "https"
+                && url.host().is_some()
+                && url.path() == "/"
+                && url.query().is_none()
+                && url.username().is_empty()
+                && url.password().is_none()
+        })
+        .ok_or(ClientConfigError::Invalid(URL_VAR))?;
+    let identity = reqwest::Identity::from_pem(&config.identity_pem)
+        .map_err(|_| ClientConfigError::Invalid(IDENTITY_VAR))?;
+    let roots = reqwest::Certificate::from_pem_bundle(&config.platform_ca_pem)
+        .ok()
+        .filter(|roots| !roots.is_empty())
+        .ok_or(ClientConfigError::Invalid(PLATFORM_CA_VAR))?;
+    let http = reqwest::Client::builder()
+        .https_only(true)
+        .min_tls_version(reqwest::tls::Version::TLS_1_3)
+        .tls_certs_only(roots)
+        .identity(identity)
+        .redirect(reqwest::redirect::Policy::none())
+        .no_proxy()
+        .timeout(PULL_TIMEOUT)
+        .build()
+        .map_err(|_| ClientConfigError::Invalid(IDENTITY_VAR))?;
+    Ok((http, origin))
+}
+
+/// One JSON `POST` to `endpoint`: only a 200 with `application/json` and a body of at most
+/// `max_bytes` returns the body, which is not yet validated.
+pub(crate) async fn post_json(
+    http: &reqwest::Client,
+    endpoint: &reqwest::Url,
+    body: Vec<u8>,
+    max_bytes: usize,
+) -> Result<Vec<u8>, PullFailure> {
+    let mut response = http
+        .post(endpoint.clone())
+        .header(reqwest::header::CONTENT_TYPE, "application/json")
+        .body(body)
+        .send()
+        .await
+        .map_err(transport)?;
+    let status = response.status().as_u16();
+    if status != 200 {
+        let retry_after = matches!(status, 429 | 503)
+            .then(|| retry_after(response.headers()))
+            .flatten();
+        return Err(PullFailure::Status {
+            status,
+            retry_after,
+        });
+    }
+    if !is_json(response.headers()) {
+        return Err(PullFailure::ContentType);
+    }
+    if response
+        .content_length()
+        .is_some_and(|length| length > max_bytes as u64)
+    {
+        return Err(PullFailure::Oversize);
+    }
+    let mut body = Vec::new();
+    while let Some(chunk) = response.chunk().await.map_err(transport)? {
+        if body.len() + chunk.len() > max_bytes {
+            return Err(PullFailure::Oversize);
+        }
+        body.extend_from_slice(&chunk);
+    }
+    Ok(body)
+}
+
 impl PremiumSnapshotClient {
     pub fn new(config: &PremiumClientConfig) -> Result<Self, ClientConfigError> {
-        let endpoint = reqwest::Url::parse(&config.origin)
-            .ok()
-            .filter(|url| {
-                url.scheme() == "https"
-                    && url.host().is_some()
-                    && url.path() == "/"
-                    && url.query().is_none()
-                    && url.username().is_empty()
-                    && url.password().is_none()
-            })
-            .and_then(|url| url.join(SNAPSHOT_PATH).ok())
-            .ok_or(ClientConfigError::Invalid(URL_VAR))?;
-        let identity = reqwest::Identity::from_pem(&config.identity_pem)
-            .map_err(|_| ClientConfigError::Invalid(IDENTITY_VAR))?;
-        let roots = reqwest::Certificate::from_pem_bundle(&config.platform_ca_pem)
-            .ok()
-            .filter(|roots| !roots.is_empty())
-            .ok_or(ClientConfigError::Invalid(PLATFORM_CA_VAR))?;
-        let http = reqwest::Client::builder()
-            .https_only(true)
-            .min_tls_version(reqwest::tls::Version::TLS_1_3)
-            .tls_certs_only(roots)
-            .identity(identity)
-            .redirect(reqwest::redirect::Policy::none())
-            .no_proxy()
-            .timeout(PULL_TIMEOUT)
-            .build()
-            .map_err(|_| ClientConfigError::Invalid(IDENTITY_VAR))?;
+        let (http, origin) = platform_http(config)?;
+        let endpoint = origin
+            .join(SNAPSHOT_PATH)
+            .map_err(|_| ClientConfigError::Invalid(URL_VAR))?;
         Ok(Self { http, endpoint })
     }
 
@@ -171,41 +227,7 @@ impl PremiumSnapshotClient {
 
     async fn exchange(&self, account_id: [u8; 16], nonce: &str) -> Result<Vec<u8>, PullFailure> {
         let body = request_body(account_id, nonce).ok_or(PullFailure::Transport)?;
-        let mut response = self
-            .http
-            .post(self.endpoint.clone())
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
-            .body(body)
-            .send()
-            .await
-            .map_err(transport)?;
-        let status = response.status().as_u16();
-        if status != 200 {
-            let retry_after = matches!(status, 429 | 503)
-                .then(|| retry_after(response.headers()))
-                .flatten();
-            return Err(PullFailure::Status {
-                status,
-                retry_after,
-            });
-        }
-        if !is_json(response.headers()) {
-            return Err(PullFailure::ContentType);
-        }
-        if response
-            .content_length()
-            .is_some_and(|length| length > MAX_SNAPSHOT_BYTES as u64)
-        {
-            return Err(PullFailure::Oversize);
-        }
-        let mut body = Vec::new();
-        while let Some(chunk) = response.chunk().await.map_err(transport)? {
-            if body.len() + chunk.len() > MAX_SNAPSHOT_BYTES {
-                return Err(PullFailure::Oversize);
-            }
-            body.extend_from_slice(&chunk);
-        }
-        Ok(body)
+        post_json(&self.http, &self.endpoint, body, MAX_SNAPSHOT_BYTES).await
     }
 }
 

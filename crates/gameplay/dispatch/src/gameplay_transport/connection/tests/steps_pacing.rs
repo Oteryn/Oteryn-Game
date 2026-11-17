@@ -52,6 +52,7 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
         assert_eq!(
             ended.continuity,
             SessionContinuity {
+                analyser_revision: 0,
                 server_message_revision: 0,
                 server_motd_sent: false,
                 gameplay_idle: ended.continuity.gameplay_idle,
@@ -60,6 +61,7 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
                 server_sequence: 4,
                 spatial_revision: 2,
                 player_trade_revision: 0, // This peer did not select PLAYER_TRADE_V1.
+                presentation_revision: 0,
                 overlay_revision: 0,
                 vitals_revision: 0,
                 achievement_notice_revision: None,
@@ -397,4 +399,827 @@ fn the_buffer_is_dropped_at_disconnect_and_a_resumed_connection_starts_empty()
         assert!(steps[1].1.duration_since(steps[0].1) < PACE);
         Ok(())
     })
+}
+
+/// The production ledger reserves an ID before pacing, unlike the transport-only fixture.
+struct RetainedPacedAuthority {
+    movement: PacedAuthority,
+    commands: crate::gameplay_transport::session_ingress::SessionCommands,
+}
+
+/// Diagonal movement is offered by a Bundle World, not the fallback production set.
+/// Keep the exact requested closure so a dropped capability cannot turn a buffered
+/// diagonal into an immediate malformed-intent rejection in this regression.
+fn retained_paced_session(capabilities: &[u32]) -> Result<AdmittedSession, Box<dyn Error>> {
+    let mut admitted = positioned()?;
+    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        capabilities,
+    )
+    .ok_or("bounded Bundle selection")?;
+    assert_eq!(
+        admitted.continuity.selected_capabilities.as_slice(),
+        capabilities
+    );
+    Ok(admitted)
+}
+
+fn assert_paced_move_frames(
+    frames: &[Vec<u8>],
+    generation: u64,
+    sequence: u64,
+    command_id: u64,
+    spatial_revision: u64,
+) -> Result<(), Box<dyn Error>> {
+    assert_eq!(
+        frames,
+        &[
+            encode_command_result(
+                generation,
+                sequence,
+                command_id,
+                CommandStatus::Accepted,
+                &[0x08, 0x01, 0x10, 0x64],
+            )?,
+            encode_state_delta(
+                generation,
+                sequence + 1,
+                STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                spatial_revision,
+                spatial_revision + 1,
+                DELTA_TYPE_WORLD_SPATIAL_V1,
+                &encode_world_spatial(&at(1)),
+            )?,
+        ]
+    );
+    Ok(())
+}
+
+impl FreshAdmissionAuthority for RetainedPacedAuthority {
+    fn session_commands(
+        &self,
+    ) -> Option<&crate::gameplay_transport::session_ingress::SessionCommands> {
+        Some(&self.commands)
+    }
+
+    async fn admit(
+        &self,
+        _: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+
+    async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+        self.movement.observe(actor).await
+    }
+
+    async fn house_scope_ack(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        // As in the House connection fixture, replace only the owner's projection.
+        // The public transport still selects and runs the actual House serve loop.
+        Ok(Some((1, vec![1])))
+    }
+
+    fn step_wait_receipts(&self) -> bool {
+        self.movement.step_wait_receipts()
+    }
+
+    async fn paced_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+    ) -> (StepOutcome, Option<std::time::Duration>) {
+        self.movement.paced_step(actor, session, direction).await
+    }
+}
+
+#[test]
+fn buffered_step_disconnect_retains_rejection_and_resumes_without_reexecuting()
+-> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            run(async {
+                use oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1;
+                tokio::time::pause();
+                for buffered_direction in [
+                    StepDirection::East,
+                    StepDirection::NorthEast,
+                    StepDirection::SouthEast,
+                    StepDirection::SouthWest,
+                    StepDirection::NorthWest,
+                ] {
+                    let authority = RetainedPacedAuthority {
+                        movement: PacedAuthority {
+                            steps: RefCell::new(Vec::new()),
+                            turn: std::time::Duration::ZERO,
+                            receipts: true,
+                        },
+                        commands: Default::default(),
+                    };
+                    let start = tokio::time::Instant::now();
+                    let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+                    let capabilities: &[u32] = if buffered_direction.is_diagonal() {
+                        &[13, CAPABILITY_DIAGONAL_MOVEMENT_V1]
+                    } else {
+                        &[13]
+                    };
+                    let (end, frames) = drive_session(
+                        &authority,
+                        retained_paced_session(capabilities)?,
+                        &[
+                            command(1, 1, step, StepDirection::East),
+                            command(1, 2, step, buffered_direction),
+                        ],
+                    )
+                    .await?;
+                    let ConnectionEnd::AdmittedThenDisconnected(mut ended) = end else {
+                        return Err(format!("unexpected end {end:?}").into());
+                    };
+                    assert!(tokio::time::Instant::now() < start + PACE);
+                    assert_eq!(authority.movement.steps.borrow().len(), 1);
+                    assert_eq!(frames.len(), baseline().len() + 2);
+                    assert_paced_move_frames(&frames[baseline().len()..], 1, 1, 1, 1)?;
+                    assert_eq!(ended.continuity.next_command_id, 3);
+                    assert_eq!(ended.continuity.server_sequence, 2);
+                    authority
+                        .commands
+                        .recover_trade_continuity(&mut ended)
+                        .ok_or("settle the discarded original step")?;
+                    assert_eq!(ended.continuity.next_command_id, 3);
+                    assert_eq!(ended.continuity.server_sequence, 3);
+                    assert!(authority.commands.resumable(&ended));
+                    authority
+                        .commands
+                        .recover_trade_continuity(&mut ended)
+                        .ok_or("repeat settled continuity")?;
+                    assert_eq!(ended.continuity.server_sequence, 3);
+
+                    ended.continuity.connection_generation = 2;
+                    let (end, frames) = drive_open(
+                        &authority,
+                        ended,
+                        &[
+                            command(2, 2, step, StepDirection::North),
+                            command(2, 3, step, StepDirection::East),
+                        ],
+                        3,
+                    )
+                    .await?;
+                    let replay = decode_wire_envelope(
+                        frames.get(baseline().len()).ok_or("retained result")?,
+                    )?;
+                    let result = oteryn_protocol_oteryn::decode_command_result(replay.payload())?;
+                    assert_eq!(replay.connection_generation(), 2);
+                    assert_eq!(replay.server_sequence(), 4);
+                    assert_eq!(result.command_id, 2);
+                    assert_eq!(result.status, CommandStatus::DuplicateReplay);
+                    assert_eq!(
+                        result.payload,
+                        encode_step_result(StepDisposition::Rejected)
+                    );
+                    assert_paced_move_frames(&frames[baseline().len() + 1..], 2, 5, 3, 2)?;
+                    assert_eq!(authority.movement.steps.borrow().len(), 2);
+                    assert!(
+                        authority
+                            .movement
+                            .steps
+                            .borrow()
+                            .iter()
+                            .all(|(direction, _)| *direction == StepDirection::East)
+                    );
+                    let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                        return Err(format!("unexpected resumed end {end:?}").into());
+                    };
+                    assert_eq!(ended.continuity.next_command_id, 4);
+                    assert_eq!(ended.continuity.server_sequence, 6);
+                    assert!(authority.commands.resumable(&ended));
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "buffered step test thread")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn house_buffered_step_eof_retains_original_rejection_across_socket_replacement()
+-> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            run(async {
+                use crate::foundation::{
+                    ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+                };
+                use oteryn_protocol_oteryn::house_transfer::{
+                    CAPABILITY_HOUSE_TRANSFER_V1, STATE_DOMAIN_HOUSE_SCOPE,
+                };
+                use oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1;
+                tokio::time::pause();
+                for buffered_direction in [
+                    StepDirection::East,
+                    StepDirection::NorthEast,
+                    StepDirection::SouthEast,
+                    StepDirection::SouthWest,
+                    StepDirection::NorthWest,
+                ] {
+                    let authority = RetainedPacedAuthority {
+                        movement: PacedAuthority {
+                            steps: RefCell::new(Vec::new()),
+                            turn: std::time::Duration::ZERO,
+                            receipts: true,
+                        },
+                        commands: Default::default(),
+                    };
+                    let capabilities: &[u32] = if buffered_direction.is_diagonal() {
+                        &[
+                            13,
+                            CAPABILITY_HOUSE_TRANSFER_V1,
+                            CAPABILITY_DIAGONAL_MOVEMENT_V1,
+                        ]
+                    } else {
+                        &[13, CAPABILITY_HOUSE_TRANSFER_V1]
+                    };
+                    let mut admitted = retained_paced_session(capabilities)?;
+                    // A House retains its Channel actor while the item fence names the
+                    // Instance. This is the public serve_admitted House routing condition.
+                    admitted.item_fence = Some(CurrentCharacterItemFence {
+                        character_id: crate::domain::CharacterId::from_bytes(CHARACTER)
+                            .map_err(|error| format!("{error:?}"))?,
+                        game_session_id: admitted.game_session_id,
+                        connection_generation: ConnectionGeneration::new(1)
+                            .map_err(|error| format!("{error:?}"))?,
+                        character_lease_generation: 1,
+                        runtime_scope: RuntimeScopeRefV1::instance(
+                            admitted.world_id,
+                            uuid_v7(0x66),
+                        )
+                        .map_err(|error| format!("{error:?}"))?,
+                        scope_ownership_generation: ScopeOwnershipGeneration::new(1)
+                            .map_err(|error| format!("{error:?}"))?,
+                    });
+                    let start = tokio::time::Instant::now();
+                    let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+                    let (end, frames) = drive_session(
+                        &authority,
+                        admitted,
+                        &[
+                            command(1, 1, step, StepDirection::East),
+                            command(1, 2, step, buffered_direction),
+                        ],
+                    )
+                    .await?;
+                    let ConnectionEnd::AdmittedThenDisconnected(mut ended) = end else {
+                        return Err(format!("unexpected House end {end:?}").into());
+                    };
+                    let chunk = decode_wire_envelope(frames.get(1).ok_or("House snapshot chunk")?)?;
+                    let (_, body) =
+                        oteryn_protocol_oteryn::decode_snapshot_chunk_framing(chunk.payload())?;
+                    let domains = oteryn_protocol_oteryn::decode_snapshot_body(body)?;
+                    assert_eq!(domains.len(), 1);
+                    assert_eq!(domains[0].domain_id, STATE_DOMAIN_HOUSE_SCOPE);
+                    assert!(tokio::time::Instant::now() < start + PACE);
+                    assert_eq!(authority.movement.steps.borrow().len(), 1);
+                    assert_eq!(frames.len(), baseline().len() + 2);
+                    assert_paced_move_frames(&frames[baseline().len()..], 1, 2, 1, 1)?;
+                    // House copies the next counter after terminal output, so EOF leaves
+                    // the old copy even though the real ledger reserved the second ID.
+                    assert_eq!(ended.continuity.next_command_id, 2);
+                    assert_eq!(ended.continuity.server_sequence, 3);
+                    assert!(!authority.commands.resumable(&ended));
+                    let mut wrong_generation = ended;
+                    wrong_generation.continuity.connection_generation = 2;
+                    assert!(
+                        authority
+                            .commands
+                            .recover_trade_continuity(&mut wrong_generation)
+                            .is_none()
+                    );
+                    authority
+                        .commands
+                        .recover_trade_continuity(&mut ended)
+                        .ok_or("settle the original discarded House step")?;
+                    assert_eq!(ended.continuity.next_command_id, 3);
+                    assert_eq!(ended.continuity.server_sequence, 4);
+                    assert!(authority.commands.resumable(&ended));
+                    authority
+                        .commands
+                        .recover_trade_continuity(&mut ended)
+                        .ok_or("repeat settled House continuity")?;
+                    assert_eq!(ended.continuity.server_sequence, 4);
+
+                    ended.continuity.connection_generation = 2;
+                    ended
+                        .item_fence
+                        .as_mut()
+                        .ok_or("retained House fence")?
+                        .connection_generation =
+                        ConnectionGeneration::new(2).map_err(|error| format!("{error:?}"))?;
+                    let (end, frames) = drive_open(
+                        &authority,
+                        ended,
+                        &[
+                            command(2, 2, step, StepDirection::North),
+                            command(2, 3, step, StepDirection::East),
+                        ],
+                        3,
+                    )
+                    .await?;
+                    let replay =
+                        decode_wire_envelope(frames.get(baseline().len()).ok_or("House replay")?)?;
+                    let result = oteryn_protocol_oteryn::decode_command_result(replay.payload())?;
+                    assert_eq!(replay.connection_generation(), 2);
+                    assert_eq!(replay.server_sequence(), 6);
+                    assert_eq!(result.command_id, 2);
+                    assert_eq!(result.status, CommandStatus::DuplicateReplay);
+                    assert_eq!(
+                        result.payload,
+                        encode_step_result(StepDisposition::Rejected)
+                    );
+                    assert_paced_move_frames(&frames[baseline().len() + 1..], 2, 7, 3, 2)?;
+                    assert_eq!(authority.movement.steps.borrow().len(), 2);
+                    assert!(
+                        authority
+                            .movement
+                            .steps
+                            .borrow()
+                            .iter()
+                            .all(|(direction, _)| *direction == StepDirection::East)
+                    );
+                    let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                        return Err(format!("unexpected resumed House end {end:?}").into());
+                    };
+                    assert_eq!(ended.continuity.next_command_id, 4);
+                    assert_eq!(ended.continuity.server_sequence, 8);
+                    assert!(authority.commands.resumable(&ended));
+                }
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "House buffered step test thread")?
+        .map_err(Into::into)
+}
+
+/// A real movement owner beneath command replay, rather than a direction-only stub.
+struct DromeDrunkMovementAuthority {
+    owner: RefCell<(
+        crate::foundation::ChannelRuntimeV1,
+        crate::gameplay_transport::actor_spell::ChannelSpellStates,
+    )>,
+    room: crate::content::QualifiedNativeEntryRoom,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now_us: Cell<u64>,
+    calls: Cell<usize>,
+}
+
+impl DromeDrunkMovementAuthority {
+    fn new() -> Result<Self, Box<dyn Error>> {
+        use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, NodeId};
+        use crate::spell::cast::{CharacterCastFacts, DromeStatus};
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+        let world = WorldId::decode(&WORLD)?;
+        let channel = ChannelId::decode(&CHANNEL)?;
+        let session = GameSessionId::decode(&SESSION)?;
+        let room = crate::content::qualify_native_entry_room(world)?;
+        let start = room.entry_start();
+        let pin = ChannelContentPin::from_activation(
+            world,
+            1,
+            room.compiled().server_digest(),
+            room.compiled().client_digest(),
+            room.frame_binding().digest(),
+            room.map_revision_digest(),
+            (start.x, start.y, start.floor),
+        );
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            NodeId::decode(&uuid_v7(7))?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            pin,
+        )?;
+        let reservation = runtime.reserve_fresh_session(session)?;
+        let actor = runtime.commit_fresh_session(reservation)?;
+        runtime.initialize_first_entry_position(actor)?;
+        runtime.set_tibiadrome(actor, true)?;
+        let mut states = crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                CharacterCastFacts {
+                    vocation: crate::spell::Vocation::Knight,
+                    level: 100,
+                    magic_level: 10,
+                    max_health: 1000,
+                    max_mana: 500,
+                    max_soul: 100,
+                },
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .ok_or("spell state")?;
+        let mut next = states
+            .get(&runtime, actor, session)
+            .ok_or("player")?
+            .clone();
+        next.drome_practice = true;
+        let next = next
+            .try_after_drome_status(DromeStatus::Drunk, 0)
+            .map_err(|e| format!("{e:?}"))?;
+        if !states.commit(&runtime, actor, session, next) {
+            return Err("status commit".into());
+        }
+        // Select a deterministic source-normal roll in North's interval (1..=5).
+        // This is an occurrence fixture; the test assertions drive actual movement.
+        let before = runtime.read_actor_position(actor)?;
+        let now_us = (1_u64..100_000)
+            .find(|now| {
+                use oteryn_simulation_determinism::{
+                    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+                };
+                use sha2::{Digest, Sha256};
+                let digest = Sha256::new()
+                    .chain_update(b"oteryn:drome-drunk-step:v1")
+                    .chain_update(actor.placement_identity())
+                    .chain_update(session.as_bytes())
+                    .chain_update(before.revision().to_be_bytes())
+                    .chain_update(now.to_be_bytes())
+                    .finalize();
+                let mut bytes = [0; 16];
+                bytes.copy_from_slice(&digest[..16]);
+                let root = GameplayDecisionRoot::from_bytes(
+                    runtime.content_pin().server_artifact_digest(),
+                );
+                let Ok(raw) = deterministic_decision_u64(
+                    &root,
+                    DecisionOccurrenceId::from_bytes(bytes),
+                    "movement.drome.drunk",
+                    0,
+                ) else {
+                    return false;
+                };
+                oteryn_gameplay_spell_rules::native_actor_states::normal_draw(
+                    1,
+                    100,
+                    &mut |low, high| crate::spell::uniform_draw(raw, low, high),
+                )
+                .is_ok_and(|roll| roll <= 5)
+            })
+            .ok_or("North occurrence")?;
+        Ok(Self {
+            owner: RefCell::new((runtime, states)),
+            room,
+            actor,
+            session,
+            now_us: Cell::new(now_us),
+            calls: Cell::new(0),
+        })
+    }
+}
+
+impl FreshAdmissionAuthority for DromeDrunkMovementAuthority {
+    async fn admit(
+        &self,
+        _: FreshAdmissionAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        Err(AdmissionRefusal::Rejected)
+    }
+    async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+        Some(at(0))
+    }
+    async fn paced_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+    ) -> (StepOutcome, Option<std::time::Duration>) {
+        use crate::movement::CardinalStep;
+        self.calls.set(self.calls.get() + 1);
+        let direction = match direction {
+            StepDirection::North => CardinalStep::North,
+            StepDirection::East => CardinalStep::East,
+            StepDirection::South => CardinalStep::South,
+            StepDirection::West => CardinalStep::West,
+            StepDirection::NorthEast => CardinalStep::NorthEast,
+            StepDirection::SouthEast => CardinalStep::SouthEast,
+            StepDirection::SouthWest => CardinalStep::SouthWest,
+            StepDirection::NorthWest => CardinalStep::NorthWest,
+        };
+        let mut owned = self.owner.borrow_mut();
+        let (runtime, states) = &mut *owned;
+        match states.step_with_non_player_field_contact(
+            runtime,
+            self.room.movement_cells(),
+            actor,
+            session,
+            self.now_us.get(),
+            direction,
+            &std::collections::BTreeSet::new(),
+            None,
+            None,
+            None,
+        ) {
+            Ok((_, duration)) => (
+                StepOutcome {
+                    disposition: StepDisposition::Moved,
+                    moved_to: Some(at(1)),
+                },
+                Some(duration),
+            ),
+            Err(_) => (
+                StepOutcome {
+                    disposition: StepDisposition::Blocked,
+                    moved_to: None,
+                },
+                None,
+            ),
+        }
+    }
+}
+
+#[test]
+fn drome_drunk_actual_movement_refusal_replay_and_exact_expiry() -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            run(async {
+                let authority = DromeDrunkMovementAuthority::new()?;
+                let mut admitted = positioned()?;
+                admitted.runtime_actor = Some(authority.actor);
+                let before = authority
+                    .owner
+                    .borrow()
+                    .0
+                    .read_actor_position(authority.actor)?;
+                let player_before = authority
+                    .owner
+                    .borrow()
+                    .1
+                    .get(
+                        &authority.owner.borrow().0,
+                        authority.actor,
+                        authority.session,
+                    )
+                    .ok_or("player")?
+                    .clone();
+                let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+                let (ended, _) = drive_session(
+                    &authority,
+                    admitted,
+                    &[
+                        command(1, 1, step, StepDirection::East),
+                        command(1, 1, step, StepDirection::East),
+                    ],
+                )
+                .await?;
+                assert!(matches!(
+                    ended,
+                    ConnectionEnd::AdmittedThenClosed(
+                        _,
+                        FoundationProtocolError::CommandOutcomeExpired
+                    )
+                ));
+                assert_eq!(
+                    authority.calls.get(),
+                    1,
+                    "replay never repeats steering or movement"
+                );
+                assert_eq!(
+                    authority
+                        .owner
+                        .borrow()
+                        .0
+                        .read_actor_position(authority.actor)?,
+                    before,
+                    "the steered North wall refuses the requested walkable East step"
+                );
+                assert_eq!(
+                    authority.owner.borrow().1.get(
+                        &authority.owner.borrow().0,
+                        authority.actor,
+                        authority.session
+                    ),
+                    Some(&player_before)
+                );
+                authority.now_us.set(10_000_000);
+                let (outcome, _) = authority
+                    .paced_step(authority.actor, authority.session, StepDirection::East)
+                    .await;
+                assert_eq!(
+                    outcome.disposition,
+                    StepDisposition::Moved,
+                    "Drunk ends exactly at 10s"
+                );
+                let after = authority
+                    .owner
+                    .borrow()
+                    .0
+                    .read_actor_position(authority.actor)?;
+                assert_eq!(after.position().x, before.position().x + 1);
+                assert_eq!(after.position().y, before.position().y);
+                assert_eq!(after.revision(), before.revision() + 1);
+                Ok(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "Drome movement test thread")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn drome_drunk_actual_movement_leaves_other_statuses_and_scopes_unchanged()
+-> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            run(async {
+                use oteryn_gameplay_domain::domain::condition::{
+                    ConditionType, ConditionValues, StatusKind,
+                };
+                use oteryn_gameplay_foundation::foundation::condition::{
+                    ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+                };
+                use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+                for mode in [
+                    "not-runtime-drome",
+                    "not-player-practice",
+                    "suppressed",
+                    "foreign-key",
+                ] {
+                    let authority = DromeDrunkMovementAuthority::new()?;
+                    let before = authority
+                        .owner
+                        .borrow()
+                        .0
+                        .read_actor_position(authority.actor)?;
+                    {
+                        let mut owned = authority.owner.borrow_mut();
+                        let (runtime, states) = &mut *owned;
+                        if mode == "not-runtime-drome" {
+                            runtime.set_tibiadrome(authority.actor, false)?;
+                        } else {
+                            let mut next = states
+                                .get(runtime, authority.actor, authority.session)
+                                .ok_or("player")?
+                                .clone();
+                            match mode {
+                                "not-player-practice" => next.drome_practice = false,
+                                "suppressed" => {
+                                    next.conditions.set_suppressed(
+                                        [ConditionType::Status(StatusKind::Drunk)]
+                                            .into_iter()
+                                            .collect(),
+                                    );
+                                }
+                                _ => {
+                                    let root = GameplayDecisionRoot::from_bytes([0; 32]);
+                                    let definition = ConditionDefinition::new(
+                                        "foreign.drunk",
+                                        1,
+                                        ConditionValues::TimedStatus {
+                                            kind: StatusKind::Drunk,
+                                            duration_ms: 20_000,
+                                        },
+                                    )
+                                    .ok_or("definition")?;
+                                    next.conditions
+                                        .apply(
+                                            &definition,
+                                            None,
+                                            ConditionSourceKind::Creature,
+                                            &[],
+                                            &ApplicationFacts {
+                                                now: 0,
+                                                base_speed: 1,
+                                                mana_shield_capacity: 0,
+                                                target_reentry_protected: false,
+                                                source_reentry_protected: false,
+                                                target_is_player: true,
+                                                decision_root: &root,
+                                                occurrence: DecisionOccurrenceId::from_bytes(
+                                                    [0; 16],
+                                                ),
+                                            },
+                                        )
+                                        .map_err(|e| format!("{e:?}"))?;
+                                }
+                            }
+                            next.advance_batch_revision()
+                                .map_err(|e| format!("{e:?}"))?;
+                            assert!(states.commit(
+                                runtime,
+                                authority.actor,
+                                authority.session,
+                                next
+                            ));
+                        }
+                    }
+                    let (outcome, _) = authority
+                        .paced_step(authority.actor, authority.session, StepDirection::East)
+                        .await;
+                    assert_eq!(outcome.disposition, StepDisposition::Moved, "{mode}");
+                    let after = authority
+                        .owner
+                        .borrow()
+                        .0
+                        .read_actor_position(authority.actor)?;
+                    assert_eq!(after.position().x, before.position().x + 1, "{mode}");
+                    assert_eq!(after.position().y, before.position().y, "{mode}");
+                }
+                Ok(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "Drome movement scope test thread")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn drome_root_and_fear_refuse_actual_movement_until_status_expiry() -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            run(async {
+                use crate::spell::cast::DromeStatus;
+                use oteryn_gameplay_domain::domain::condition::{ConditionType, StatusKind};
+                for (status, expiry) in [
+                    (DromeStatus::Fear, 2_000_000),
+                    (DromeStatus::Root, 3_000_000),
+                ] {
+                    let authority = DromeDrunkMovementAuthority::new()?;
+                    authority.now_us.set(100);
+                    {
+                        let mut owned = authority.owner.borrow_mut();
+                        let (runtime, states) = &mut *owned;
+                        let mut next = states
+                            .get(runtime, authority.actor, authority.session)
+                            .ok_or("player")?
+                            .clone();
+                        next.conditions
+                            .remove_type(ConditionType::Status(StatusKind::Drunk));
+                        let next = next
+                            .try_after_drome_status(status, 0)
+                            .map_err(|e| format!("{e:?}"))?;
+                        assert!(states.commit(runtime, authority.actor, authority.session, next));
+                    }
+                    let before = authority
+                        .owner
+                        .borrow()
+                        .0
+                        .read_actor_position(authority.actor)?;
+                    let (outcome, _) = authority
+                        .paced_step(authority.actor, authority.session, StepDirection::East)
+                        .await;
+                    assert_eq!(outcome.disposition, StepDisposition::Blocked, "{status:?}");
+                    assert_eq!(
+                        authority
+                            .owner
+                            .borrow()
+                            .0
+                            .read_actor_position(authority.actor)?,
+                        before
+                    );
+                    authority.now_us.set(expiry);
+                    let (outcome, _) = authority
+                        .paced_step(authority.actor, authority.session, StepDirection::East)
+                        .await;
+                    assert_eq!(
+                        outcome.disposition,
+                        StepDisposition::Moved,
+                        "{status:?} expires"
+                    );
+                    assert_eq!(
+                        authority
+                            .owner
+                            .borrow()
+                            .0
+                            .read_actor_position(authority.actor)?
+                            .revision(),
+                        before.revision() + 1
+                    );
+                }
+                Ok(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "Drome movement control test thread")?
+        .map_err(Into::into)
 }

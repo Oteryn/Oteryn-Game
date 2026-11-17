@@ -1,0 +1,17 @@
+{
+  "id": 493,
+  "name": "CHAT_PRIVATE_ECHO_V1",
+  "constant": "chat::line_extended::CAPABILITY_CHAT_PRIVATE_ECHO_V1",
+  "requires": [
+    7
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

@@ -29,6 +29,7 @@ fn reset_message(entry: bool) -> OneItemDecayRetireV1 {
                 parent_item_instance_id: entry.corpse_item_instance_id,
                 placement_ordinal: entry.placement_ordinal,
                 parent_ground: entry.corpse_ground,
+                tree_root_item_instance_id: None,
             });
     message
 }
@@ -54,6 +55,100 @@ fn world_reset_round_trips_both_locations_without_a_decay_deadline() {
         .unwrap();
         assert_eq!(decode_decay_retire_envelope(&wire).unwrap().1, message);
     }
+}
+
+#[test]
+fn legacy_ground_entry_retains_the_thirty_entry_corpse_capacity() {
+    assert_eq!(mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 30);
+    for ordinal in [17, 30] {
+        let mut message = reset_message(true);
+        message
+            .ground_container_entry
+            .as_mut()
+            .unwrap()
+            .placement_ordinal = ordinal;
+        for tuple in [mint::Type2EventTuple::V1, mint::Type2EventTuple::V2] {
+            let wire = encode_decay_retire_event(
+                DecayRetireEventIdentity {
+                    event_id: super::super::tests::world_reset_uuid_fixture(30),
+                    transaction_id: super::super::tests::world_reset_uuid_fixture(40),
+                    occurred_at_unix_ms: 1,
+                    server_build_id: "oteryn-game-server/test",
+                },
+                message.clone(),
+                tuple,
+            )
+            .unwrap();
+            assert_eq!(decode_decay_retire_envelope(&wire).unwrap().1, message);
+        }
+    }
+    for ordinal in [0, 31] {
+        let mut message = reset_message(true);
+        message
+            .ground_container_entry
+            .as_mut()
+            .unwrap()
+            .placement_ordinal = ordinal;
+        assert_eq!(check_decay_retire(&message), Err(AuditError::InvalidInput));
+    }
+}
+
+#[test]
+fn death_tree_entry_round_trips_actual_parent_root_and_large_ordinal() {
+    let mut message = reset_message(true);
+    let root = super::super::tests::world_reset_uuid_fixture(90).to_vec();
+    let entry = message.ground_container_entry.as_mut().unwrap();
+    entry.tree_root_item_instance_id = Some(root);
+    entry.placement_ordinal = u64::MAX;
+    for tuple in [mint::Type2EventTuple::V1, mint::Type2EventTuple::V2] {
+        let wire = encode_decay_retire_event(
+            DecayRetireEventIdentity {
+                event_id: super::super::tests::world_reset_uuid_fixture(30),
+                transaction_id: super::super::tests::world_reset_uuid_fixture(40),
+                occurred_at_unix_ms: 1,
+                server_build_id: "oteryn-game-server/test",
+            },
+            message.clone(),
+            tuple,
+        )
+        .unwrap();
+        assert_eq!(decode_decay_retire_envelope(&wire).unwrap().1, message);
+    }
+    let before = message.before.as_ref().unwrap().item_instance_id.clone();
+    message
+        .ground_container_entry
+        .as_mut()
+        .unwrap()
+        .tree_root_item_instance_id = Some(before);
+    assert_eq!(check_decay_retire(&message), Err(AuditError::InvalidInput));
+    message
+        .ground_container_entry
+        .as_mut()
+        .unwrap()
+        .tree_root_item_instance_id = Some(vec![1; 15]);
+    assert_eq!(check_decay_retire(&message), Err(AuditError::InvalidInput));
+}
+
+#[test]
+fn absent_tree_root_preserves_the_legacy_ground_entry_bytes() {
+    #[derive(Clone, PartialEq, Message)]
+    struct LegacyEntry {
+        #[prost(bytes = "vec", tag = "1")]
+        parent_item_instance_id: Vec<u8>,
+        #[prost(uint64, tag = "2")]
+        placement_ordinal: u64,
+        #[prost(message, optional, tag = "3")]
+        parent_ground: Option<OneItemGroundV1>,
+    }
+    let message = reset_message(true);
+    let entry = message.ground_container_entry.unwrap();
+    let wire = entry.encode_to_vec();
+    let legacy = LegacyEntry::decode(wire.as_slice()).unwrap();
+    assert_eq!(legacy.encode_to_vec(), wire);
+    assert_eq!(
+        OneItemGroundContainerEntryV1::decode(wire.as_slice()).unwrap(),
+        entry
+    );
 }
 
 #[test]
@@ -100,7 +195,14 @@ fn world_reset_rejects_mixed_causes_locations_and_substituted_binding() {
 
 #[test]
 fn world_reset_largest_admitted_audit_fits_the_registered_envelope() {
-    for (entry, key) in [(false, false), (true, false), (false, true), (true, true)] {
+    for (entry, key, tree) in [
+        (false, false, false),
+        (true, false, false),
+        (false, true, false),
+        (true, true, false),
+        (true, false, true),
+        (true, true, true),
+    ] {
         let mut message = reset_message(entry);
         for state in [&mut message.before, &mut message.after] {
             let definition = state.as_mut().unwrap().definition.as_mut().unwrap();
@@ -117,7 +219,13 @@ fn world_reset_largest_admitted_audit_fits_the_registered_envelope() {
         message.runtime_scope_ownership_generation = u64::MAX;
         let ground = if entry {
             let entry = message.ground_container_entry.as_mut().unwrap();
-            entry.placement_ordinal = mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX;
+            entry.placement_ordinal = if tree {
+                u64::MAX
+            } else {
+                mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX
+            };
+            entry.tree_root_item_instance_id =
+                tree.then(|| super::super::tests::world_reset_uuid_fixture(90).to_vec());
             entry.parent_ground.as_mut().unwrap()
         } else {
             message.ground.as_mut().unwrap()

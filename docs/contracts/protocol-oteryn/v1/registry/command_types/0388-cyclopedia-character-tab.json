@@ -6,5 +6,5 @@
   "payload_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-character-v1.md#character-tab-request",
   "result_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-character-v1.md#character-tab-reply",
   "max_payload_bytes": 20,
-  "max_result_payload_bytes": 16384
+  "max_result_payload_bytes": 32836
 }

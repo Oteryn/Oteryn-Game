@@ -58,7 +58,7 @@ fn facts_of(id: u32) -> EntryFacts {
         definition: MapDefinition::Terrain(nz(id)),
         terrain_kind: Some(kind),
         appearance_id: 100 + id as u16,
-        blocks_projectile: false,
+        blocks_projectile: kind == TerrainKind::Wall,
         pickupable: false,
         bound: false,
         count: 1,
@@ -167,11 +167,13 @@ fn bundle_bytes(
                 kind,
                 walkable: Some(true),
                 ground_speed: Some(ground_speed),
+                blocks_projectile: None,
             },
             _ => Terrain {
                 kind,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             },
         }),
     };
@@ -649,7 +651,7 @@ fn appearance_ids_come_from_the_definition_key() {
 // --- Move source and object revision -----------------------------------------------------------
 
 #[test]
-fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
+fn movable_leaves_and_unbound_captured_containers_carry_handles() {
     let open = tp(21, 20, -7);
     let house = tp(22, 20, -7);
     let mut fixture = Fixture::new(vec![
@@ -677,8 +679,8 @@ fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
     };
     let handle = fixture.items.table().handle(&coin).expect("coin handle");
     assert_eq!(tile.items[1].origin, MapOrigin::Handle(handle));
-    // The door, the bound chest, the furniture and the bag holding contents keep their ordinals.
-    for (index, ordinal) in [(2, 2), (3, 3), (4, 4), (5, 5)] {
+    // Bound objects and fixed empty scenery keep their ordinal targets.
+    for (index, ordinal) in [(2, 2), (3, 3), (4, 4)] {
         assert_eq!(
             tile.items[index].origin,
             MapOrigin::BaseOrdinal {
@@ -687,6 +689,17 @@ fn only_a_pickupable_unbound_base_entry_carries_a_handle() {
             }
         );
     }
+    let source = ItemKey::MapBase {
+        bundle_digest: fixture.digest(),
+        placement_key: key(open, 5),
+        reset_epoch: 1,
+    };
+    let handle = fixture
+        .items
+        .table()
+        .handle(&source)
+        .expect("captured container handle");
+    assert_eq!(tile.items[5].origin, MapOrigin::Handle(handle));
     // Contents are never on the map.
     assert_eq!(tile.items.len(), 6);
     // A house tile's coin is not movable.
@@ -1092,6 +1105,7 @@ fn entry(id: u32) -> ComposedEntry {
             ordinal: 0,
             placement_key: 0,
             movable: false,
+            openable_source: false,
         },
         facts: facts_of(id),
     }
@@ -1336,39 +1350,19 @@ fn seeded_world(
     tiles
 }
 
-/// A running digest of every update a fixture sends.
-#[derive(Default)]
-struct Golden {
-    digest: sha2::Sha256,
-    updates: usize,
-    bytes: usize,
-}
-
-impl Golden {
-    fn record(&mut self, update: &Option<MapUpdate>) {
-        use sha2::Digest;
-        let (tag, revision, payload) = match update {
-            None => (0u8, 0u64, &[][..]),
-            Some(MapUpdate::Snapshot(snapshot)) => {
-                (1, snapshot.revision, snapshot.payload.as_slice())
-            }
-            Some(MapUpdate::Delta(delta)) => (2, delta.to, delta.payload.as_slice()),
-        };
-        self.digest.update([tag]);
-        self.digest.update(revision.to_be_bytes());
-        self.digest.update((payload.len() as u64).to_be_bytes());
-        self.digest.update(payload);
-        self.updates += 1;
-        self.bytes += payload.len();
-    }
-}
+#[path = "world_map_golden.rs"]
+mod golden_recording;
+use golden_recording::Golden;
 
 /// A walk of `steps` steps from `start` over a seeded world, with seeded overlay changes in
 /// view: steps, floor changes and teleports. Returns the digest of every payload.
 fn golden_walk(seed: u64, floors: &[i8], start: TilePos, steps: usize) -> Golden {
-    let mut fixture = Fixture::new(seeded_world(seed, floors, 24..72));
+    let tiles = seeded_world(seed, floors, 24..72);
+    let (bytes, _) = bundle_bytes(tiles.clone(), 150);
+    let legacy = golden_recording::legacy_digest(&bytes);
+    let mut fixture = Fixture::new(tiles);
     let mut rng = Seeded(seed ^ 0x9e37_79b9_7f4a_7c15);
-    let mut golden = Golden::default();
+    let mut golden = Golden::new(fixture.digest(), legacy);
     let mut actor = start;
     let join = fixture.join(actor);
     golden.record(&Some(MapUpdate::Snapshot(join)));
@@ -1436,10 +1430,12 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
         golden_walk(14, &[-9, -8, -7], tp(48, 48, -8), 80),
     ];
     let mut all = sha2::Sha256::new();
+    let mut legacy = sha2::Sha256::new();
     let mut updates = 0;
     let mut bytes = 0;
     for walk in walks {
         all.update(walk.digest.finalize());
+        legacy.update(walk.legacy.finalize());
         updates += walk.updates;
         bytes += walk.bytes;
     }
@@ -1448,8 +1444,17 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect();
+    let legacy: String = legacy
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    assert_eq!((updates, bytes, legacy.as_str()), LEGACY_GOLDEN);
+    println!("LEGACY_WIRE_VERIFIED updates={updates} bytes={bytes}");
     println!("GOLDEN updates={updates} bytes={bytes} digest={digest}");
-    assert_eq!((updates, bytes, digest.as_str()), GOLDEN);
+    if std::env::var_os("OTERYN_RECORD_MAP_GOLDEN").is_none() {
+        assert_eq!((updates, bytes, digest.as_str()), GOLDEN);
+    }
 }
 
 // Re-recorded for bundle format v5 (SUBAREA-ADMIT-1): the fixture bundles' digests changed, and
@@ -1462,10 +1467,22 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
 // all 324 recorded updates with the v5/runtime-3 fixture proved that only the 32-byte
 // bundle_digest in each of the 283 payload-carrying updates changed; all other bytes,
 // update counts and payload lengths are identical.
+// QREADY1 adds captured-container source handles to these same seeded updates;
+// the retained-identity digest below independently guards their exact wire bytes.
 const GOLDEN: (usize, usize, &str) = (
     324,
-    5_431_963,
-    "de9296f14dff732c590cdf36a8bcd6ae670db88662794e9605354f36b8dcb8d4",
+    6_074_547,
+    "a7853b7f889b06e035b50f64e8e2c16b4acc1fe59b6329931cca20da6e332b56",
+);
+
+// v7 changes only bundle identity in these layerless fixtures. The recorder separately
+// reconstitutes v6 identity and must reproduce this retained wire digest byte for byte.
+// QREADY1 captured-container handles extend the seeded wire in both identity
+// views; the bound-container and read-only source-handle assertions above guard it.
+const LEGACY_GOLDEN: (usize, usize, &str) = (
+    324,
+    6_074_547,
+    "4b99dc8ea6262753cf917c8066f367d90b3de42ef5d6f85ba0b03e51f090469f",
 );
 
 // --- MAP01-VIEWPORT-US -------------------------------------------------------------------------
@@ -1973,5 +1990,111 @@ fn item_look_far_ground_stack_top_is_visible_and_out_of_view_is_typed() {
     assert_eq!(
         map_look_target(&source, at(tp(19, 20, -7)), key, &index),
         Err(ItemLookRefusal::NotVisible)
+    );
+}
+
+#[test]
+fn w19_house_map_excludes_channel_movement_and_overlay_items() {
+    let mut fixture = Fixture::new(vec![(ACTOR, vec![item(GRASS)])]);
+    fixture.facts.houses.insert(ACTOR);
+    let movement = fixture
+        .overlay
+        .add_volatile(
+            ACTOR,
+            VolatileItem {
+                id: COIN,
+                count: 1,
+                attributes: Vec::new(),
+            },
+            None,
+        )
+        .unwrap();
+    fixture.overlay.remove(ACTOR, movement).unwrap();
+    fixture.facts.movement_items.insert(
+        ACTOR,
+        vec![ComposedEntry {
+            source: EntrySource::Added(movement),
+            facts: facts_of(COIN),
+        }],
+    );
+    let ordinary = fixture.add(ACTOR, COIN);
+    fixture.join(ACTOR);
+    assert_eq!(
+        fixture
+            .client_tile(ACTOR)
+            .unwrap()
+            .items
+            .iter()
+            .filter(|item| item.definition == MapDefinition::Item(nz(COIN)))
+            .count(),
+        2,
+        "the ordinary Channel view still carries both Channel owners"
+    );
+    let source = MapViewSource {
+        overlay: &fixture.overlay,
+        facts: &fixture.facts,
+        content_generation: [7; 32],
+        reset_epoch: fixture.reset_epoch,
+    };
+    let house_item = uuid(39);
+    let entries = [HouseMapEntry {
+        position: ACTOR,
+        item: house_item,
+        ordinal: 1,
+        facts: facts_of(BAG),
+    }];
+    let mut house = SessionMapView::default();
+    let Some(MapUpdate::Snapshot(snapshot)) = house
+        .update_house(&mut fixture.items, &source, at(ACTOR), &entries)
+        .unwrap()
+    else {
+        panic!("new House map snapshot");
+    };
+    let decoded = decode_world_map_snapshot(&snapshot.payload).unwrap();
+    let actual: Vec<_> = decoded
+        .tiles
+        .iter()
+        .flat_map(|tile| &tile.items)
+        .filter_map(|item| match item.definition {
+            MapDefinition::Item(reference) => Some(reference),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(actual, vec![nz(BAG)]);
+    assert!(
+        fixture
+            .items
+            .table()
+            .handle(&ItemKey::Instance(house_item))
+            .is_some()
+    );
+    assert!(
+        fixture
+            .items
+            .table()
+            .handle(&ItemKey::MapAdded(movement.get()))
+            .is_none()
+    );
+    assert!(
+        fixture
+            .items
+            .table()
+            .handle(&ItemKey::MapAdded(ordinary))
+            .is_none()
+    );
+    let mut empty = SessionMapView::default();
+    let Some(MapUpdate::Snapshot(snapshot)) = empty
+        .update_house(&mut fixture.items, &source, at(ACTOR), &[])
+        .unwrap()
+    else {
+        panic!("empty House map snapshot");
+    };
+    assert!(
+        decode_world_map_snapshot(&snapshot.payload)
+            .unwrap()
+            .tiles
+            .iter()
+            .flat_map(|tile| &tile.items)
+            .all(|item| !matches!(item.definition, MapDefinition::Item(_)))
     );
 }

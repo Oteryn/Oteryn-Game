@@ -1,0 +1,30 @@
+{
+  "id": 103,
+  "name": "CAST_CASTER_CHAT",
+  "owner_decision": "S17-A",
+  "owner": "Game off-tick cast owner / current caster transport",
+  "capability": 291,
+  "revision": "Native caster connection server sequence; empty initial snapshot, live lines independent of viewer delay.",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "CAST_CASTER_CHAT_LINE_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/cast/cast-v1.md#Message",
+      "max_payload_bytes": 512
+    },
+    {
+      "id": 32,
+      "name": "CAST_CASTER_ROSTER_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/cast/cast-v1.md#Message",
+      "max_payload_bytes": 1024
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "CAST_CASTER_CHAT_EMPTY_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/cast/cast-v1.md#Message",
+      "max_payload_bytes": 8
+    }
+  ]
+}

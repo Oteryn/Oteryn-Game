@@ -13,6 +13,27 @@ use std::error::Error;
 
 mod live;
 
+#[cfg(test)]
+mod native_context;
+#[cfg(test)]
+mod native_depot;
+#[cfg(test)]
+mod native_floor_transition;
+#[cfg(test)]
+mod native_light;
+#[cfg(test)]
+mod native_map;
+#[cfg(test)]
+mod native_market;
+#[cfg(test)]
+mod native_minimap;
+#[cfg(test)]
+mod native_stash;
+#[cfg(test)]
+mod native_trade;
+#[cfg(test)]
+mod native_weather;
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.iter().any(|arg| arg == "--live") {

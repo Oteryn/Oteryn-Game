@@ -1,0 +1,19 @@
+{
+  "id": 448,
+  "name": "WEAPON_PROFICIENCY_STATE_V1",
+  "constant": "weapon_proficiency_state::CAPABILITY_WEAPON_PROFICIENCY_STATE_V1",
+  "requires": [
+    195
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    732
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

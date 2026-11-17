@@ -321,7 +321,8 @@ fn native_population() -> Value {
         .filter(|row| row["target"]["family"] == "Creature")
         .map(|row| serde_json::from_value(row["target"].clone()).expect("actual Creature ref"))
         .collect();
-    assert_eq!(creatures.len(), 1863, "complete canonical Creature corpus");
+    // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
+    assert_eq!(creatures.len(), 1865, "complete canonical Creature corpus");
     let overlay: Value = serde_json::from_slice(
         &std::fs::read(root.join("content/creatures/definitions/spell-native-profiles.json"))
             .expect("actual native Creature overlay"),

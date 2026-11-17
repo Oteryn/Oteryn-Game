@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "records": 100,
+  "annotations_before": 100,
+  "annotations_after": 100,
+  "all_annotations_byte_identical": true,
+  "differences": [],
+  "monk": {
+    "owner": "oteryn:quest.the_way_of_the_monk_quest",
+    "ordinal": 47,
+    "before_bytes": 1956,
+    "after_bytes": 1956,
+    "before_sha256": "f31fa160030acc45c401c115a3f0d5f92b4f199437b1a932e236ba7fa60fef46",
+    "after_sha256": "f31fa160030acc45c401c115a3f0d5f92b4f199437b1a932e236ba7fa60fef46",
+    "byte_identical": true
+  },
+  "schema": 1,
+  "check": "QUESTS5_LITERAL_NATIVE_LOWERING_BYTES",
+  "head": "5fbe99b378d51c9cb69b2a49b28edf3b63ba7de4",
+  "shard": "content/quests/definitions/quests-00200-00299.json",
+  "before_snapshot_sha256": "00ac13019818f9feed5f71cae66ccf12e815861eb8d3921319244de3ba8d2f07",
+  "bounded_review_sha256": "37b2267a05bee506c9fc15046399b20213377721786d964d2f16f6c65a041613",
+  "shard_before_sha256": "520f8dc33366c859a129560176d655787fc7e87001e0319747d2873442d636ef",
+  "shard_after_sha256": "8b2fb3b3ac167f91634b1964a96cc02a67fe5d3162754f9c6124832733241ab8",
+  "shard_byte_identical": false,
+  "checker_sha256": "d577133622a98461bf771e79821d352d709ccd683ec3dd063c9257828d26f636"
+}

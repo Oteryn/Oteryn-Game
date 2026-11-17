@@ -1,0 +1,1021 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.the_way_of_the_monk_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questlog",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrine_counter",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 4,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/first_shrine",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/second_shrine",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/third_shrine",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/fourth_shrine",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/guidance",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/tranquility",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/respect",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/legacy",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/empathy",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/harmony",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/power",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/knowledge",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/serenity",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/eternity",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3089"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/farewell",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "bye",
+        "farewell"
+      ],
+      "guards": [],
+      "reply": [
+        "May the Three-Fold Path guide your steps."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:85"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/greeting-four-shrines",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "hi",
+        "hello"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/first_shrine",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/second_shrine",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/third_shrine",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/fourth_shrine",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Congratulations, fortunate {seeker}. You are one step closer to becoming a true warrior {monk} and ready to leave this island. Let me hold you on your path."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:96"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/greeting-invitation",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "hi",
+        "hello"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "I welcome you, traveller of fate's unsearchable roads. On behalf of the {Merudri}, let this be an invitation from a humble guide along the way of enlightenment."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:93"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/greeting-seeker",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "hi",
+        "hello"
+      ],
+      "guards": [],
+      "reply": [
+        "I am glad you take your acquaintance, {seeker}. You must have a lot of questions for which I would gladly prove answers. If you are interested in joining us as a true warrior {monk}, just ask."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:99"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/information-job",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "job"
+      ],
+      "guards": [],
+      "reply": [
+        "I am a {Merudri} ambassador. Sent from the heart of the {Blue Valley} I am stationed here to {guide} seekers on our path and {pilgrimage}.",
+        "I have introduced myself as a guide: take my advice or choose a different path, you have every choice and every choice is yours. I can also provide assistance with magic {spells} for monks."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:106"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/information-legacy",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "legacy"
+      ],
+      "guards": [],
+      "reply": [
+        "We are Merudri, warrior monks. Honing serenity, preserving our legacy, defending the {Blue Valley} and beyond."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:114"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/information-blue-valley",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "blue valley"
+      ],
+      "guards": [],
+      "reply": [
+        "The Blue Valley is our ancestral home and heart of the {Merudri} culture, or what is left of it. Our ancestors from the Valley have long been separated from the true home of the {Merudri}."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:119"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/information-guide",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "guide"
+      ],
+      "guards": [],
+      "reply": [
+        "I am here to communicate the ways and customs of the {Merudri} on our path to serenity. Please let me know if you are interested in our {pilgrimage}."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:124"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/information-monk",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "monk"
+      ],
+      "guards": [],
+      "reply": [
+        "Look for the four shrines around the outpost and return to me after you have honoured the Merudri."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:129"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/information-serenity",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "serenity"
+      ],
+      "guards": [],
+      "reply": [
+        "Harmony, enlightenment and power are the keys and control is the door to true serenity."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:134"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/information-dawnport",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "dawnport"
+      ],
+      "guards": [],
+      "reply": [
+        "This place has been the starting point for many generations of heroes. Try to focus on learning the basics here and return to me once you found our {shrines} and are experienced enough to take on the {pilgrimage}."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:139"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/information-shrine",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "shrine"
+      ],
+      "guards": [],
+      "reply": [
+        "The shrines you can find here are part of the Three-Fold Path. They are the first stage of this {pilgrimage} that every {monk} must undertake."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:144"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/information-enpa",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "enpa"
+      ],
+      "guards": [],
+      "reply": [
+        "Our Enpa is guiding us, a keeper of our {legacy} and spirituality. You will meet Enpa Rudra once you take on the pilgrimage."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:149"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/information-pilgrimage",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "pilgrimage"
+      ],
+      "guards": [],
+      "reply": [
+        "The pilgrimage is the sacred Three-Fold Path every {monk} must go. Are you familiar with the {Merudri} ways of the {monks}?"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:154"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/invitation",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "invitation"
+      ],
+      "guards": [],
+      "reply": [
+        "Your path has led you to an ambassador of the Merudri. I am Manop and will do my best to explain you our {purpose}, legacy and role in it. Shall I continue?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:159"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/merudri",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "merudri"
+      ],
+      "guards": [],
+      "reply": [
+        "Your path has led you to an ambassador of the Merudri. I am Manop and will do my best to explain you our {purpose}, legacy and role in it. Shall I continue?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:159"
+      ],
+      "topics": [
+        1
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/accept-invitation",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "I am glad you take your acquaintance, {seeker}. You must have a lot of questions for which I would gladly prove answers. If you are interested in joining us as a true warrior {monk}, just ask."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "value": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questlog",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:165",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:69",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:167",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:168",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:169",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:170"
+      ],
+      "topics": [
+        2
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/seeker-ready",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "seeker"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/first_shrine",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/second_shrine",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/third_shrine",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrines/fourth_shrine",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Like an orphan, fate has put your soul gently on the doorstep of a new world. You will view this reality with different eyes.",
+        "You will change your ways to adapt as you follow the Three-Fold Path. It has guided the most powerful warriors across countless planes of existence to a higher state of consciousness.",
+        "If you accept, I will send you to our temple in the Blue Valley as a MONK."
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 4
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:178"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/seeker-0",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "seeker"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrine_counter",
+          "op": "eq",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Look for one of our shrines around the outpost and return to me after you have honoured the Merudri."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:185"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/seeker-1",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "seeker"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrine_counter",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "You have honoured one shrine, seeker. There are three more waiting for you around the outpost. Keep walking the path."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:187"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/seeker-2",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "seeker"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrine_counter",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "Two shrines honoured, seeker. You are halfway there. Do not stop now."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:189"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/seeker-3",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "seeker"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/shrine_counter",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Three shrines honoured, seeker. One remains. Find it and return to me."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:191"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/seeker-other-count",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "seeker"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:175"
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/vocation-low-level",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "level",
+          "op": "lt",
+          "value": 8
+        }
+      ],
+      "reply": [
+        "You need to reach at least level 8 before you can become a monk."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:198"
+      ],
+      "topics": [
+        4
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/ambassador_manop/vocation-change-held",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.ambassador_manop",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ambassador_manop.lua:197"
+      ],
+      "topics": [
+        4
+      ],
+      "keyword_mode": "exact"
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/enpa_deia_pema/pilgrimage-start",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.enpa_deia_pema",
+      "trigger": "say",
+      "keywords": [
+        "pilgrimage"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "op": "lt",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Every warrior monk takes the three-fold path at least once. It is difficult but necessary. You may now visit the shrines to honor the Merudri legacy."
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "value": 3
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questlog",
+          "value": 3
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:72"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/enpa_deia_pema/pilgrimage-completion-held",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.enpa_deia_pema",
+      "trigger": "say",
+      "keywords": [
+        "pilgrimage"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/guidance",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/tranquility",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/respect",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/legacy",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/empathy",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/harmony",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/power",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/knowledge",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/serenity",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/eternity",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:79"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/enpa_deia_pema/pilgrimage-completed-held",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.enpa_deia_pema",
+      "trigger": "say",
+      "keywords": [
+        "pilgrimage"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/guidance",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/tranquility",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/respect",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/legacy",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/empathy",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/harmony",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/power",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/knowledge",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/serenity",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/eternity",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:91"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/enpa_deia_pema/pilgrimage-incomplete",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.enpa_deia_pema",
+      "trigger": "say",
+      "keywords": [
+        "pilgrimage"
+      ],
+      "guards": [],
+      "reply": [
+        "Your pilgrimage is incomplete. You must visit all sacred shrines across Tibia to prove your dedication."
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:97"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/the_way_of_the_monk_quest/enpa_deia_pema/greet",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "npc": "oteryn:npc.enpa_deia_pema",
+      "trigger": "greet",
+      "keywords": [],
+      "guards": [],
+      "reply": [
+        "Harmony, friend. Allow me to welcome you in the {Blue Valley}. I offer guidance for the {pilgrimage} and can provide {healing}. Or can I help you otherwise?"
+      ],
+      "effects": [],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/enpa_deia_pema.lua:143"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/ambassador_manop.lua",
+      "sha256": "3b1bd3db14c3a19b93f6017f457388eefa75ec31ee1c8ace3f6d43c79cd70cb8",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    {
+      "path": "data-global/npc/enpa_deia_pema.lua",
+      "sha256": "d5f803179e213a87af296d1ecf8bcdbc33f5e4a299c0ece6c78242abb1c2c6a5",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

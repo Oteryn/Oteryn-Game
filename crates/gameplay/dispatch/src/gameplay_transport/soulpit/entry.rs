@@ -3,8 +3,8 @@ use super::super::{
     connection::{UseCommand, UseOutcome},
     item_view::ItemKey,
 };
-use super::{SoulpitCoreSelection, SoulpitEntryIntent, outcome};
-use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition};
+use super::{SoulpitCoreSelection, SoulpitEntryIntent, SoulpitSelection, outcome};
+use crate::foundation::ExactActorRef;
 use crate::map::view::{self, MapEntryKey};
 use oteryn_gameplay_domain::domain::soulpit::{
     self, OBELISK_ACTIVE_SOURCE_ID, OBELISK_INACTIVE_SOURCE_ID, OBELISK_POSITION,
@@ -69,7 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(None);
             };
             let Some(at) =
-                super::super::bundle_map_position(&mut runtime, self.movement_cells, actor)
+                super::super::bundle_map_position(&mut runtime, self.movement_cells(), actor)
             else {
                 return Ok(None);
             };
@@ -154,7 +154,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let current = oteryn_gameplay_domain::domain::map_position::TilePos {
                 x: u16::try_from(at.at.x).map_err(|_| ())?,
                 y: u16::try_from(at.at.y).map_err(|_| ())?,
-                floor: i8::try_from(at.at.floor).map_err(|_| ())?,
+                floor: match at.at.floor {
+                    -8 | 8 => -8,
+                    _ => return Ok(Some(outcome(UseDisposition::TooFar))),
+                },
             };
             if soulpit::entry_slot(current) != Some(0) {
                 return Ok(Some(outcome(UseDisposition::TooFar)));
@@ -222,10 +225,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Ok(Some(outcome(UseDisposition::Rejected)));
         }
-        request.selected = Some(SoulpitCoreSelection {
+        request.selected = Some(SoulpitSelection::Core(SoulpitCoreSelection {
             item_instance_id: source,
             definition: item.item.definition.clone(),
-        });
+        }));
         // The shared owner acquires its own complete admission lane and revalidates all
         // participants. Never retain this Channel lane while handing authority to it.
         drop(permit);
@@ -237,22 +240,5 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await?
             .map(Some)
             .ok_or(())
-    }
-
-    pub(in crate::gameplay_transport) async fn soulpit_exit_step(
-        &self,
-        actor: ExactActorRef,
-        session: GameSessionId,
-        at: MovementLocalPosition,
-    ) -> Result<(), ()> {
-        let exit = soulpit::ARENA_EXIT_POSITION;
-        if at.x == i32::from(exit.x)
-            && at.y == i32::from(exit.y)
-            && at.floor.checked_neg() == Some(i16::from(exit.floor))
-            && let Some(owner) = self.states.boss_activity_handoff.get()
-        {
-            owner.return_from_soulpit(self, actor, session).await?;
-        }
-        Ok(())
     }
 }

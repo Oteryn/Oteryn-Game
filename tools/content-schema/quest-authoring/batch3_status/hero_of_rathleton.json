@@ -1,0 +1,1156 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "hero_of_rathleton",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-b/implementation-status.json",
+    "sha256": "98cc334442a4a9fea839a26080688aac4e308fee5a41e2eeeba4d92d7ee9ae92"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 26,
+  "import_counts": {
+    "RĘCZNIE": 24,
+    "AUTO": 2
+  },
+  "content_counts": {
+    "npc_rules_source_only": 24,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 1,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [
+    {
+      "path": "content/dialogues/quest-rules/quest-batch3-b-hero_of_rathleton.json",
+      "sha256": "efa62bc5b06604f80e1782c223ea56cbf270333afa618144e9a523ab58ac8304",
+      "count": 24,
+      "category": "npc_rules_source_only"
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-b-hero_of_rathleton.json",
+      "sha256": "ab21834cd19b94b8cb19947520ebafb8e2480290d738803a72bcc90dd35fdd8c",
+      "count": 0,
+      "category": "world_callbacks_enabled"
+    },
+    {
+      "path": "content/quests/world-callbacks-held/batch3-b-hero_of_rathleton.json",
+      "sha256": "9b55bea562c8735df7b0df2360b7086e2dcd64eacfa5f45b488ae26a6162d174",
+      "count": 1,
+      "category": "world_callbacks_held"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "e9117d6012ebb16dd057e78ebedf23b58bedf3c0fba7f29206acc06019b824a4",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Strange Pipe: greet/access",
+        "pattern": "P09, P13",
+        "trigger": "NPC strange_pipe greet",
+        "guard": "brak quest guard",
+        "effect": "Storage.HeroRathleton.AccessDoor=1; dynamiczne madman/allies/guardian/enraged/way przenieść zdonora",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Powitania i ich granty są Left out według ANSWER pkt6; pełna źródłowa dokumentacja zachowana. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "0befbbd23982bb821560773987145d62908932db9e555fafde14ffcf5c54b2ba",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Strange Pipe1: greet/access",
+        "pattern": "P09, P13",
+        "trigger": "NPC strange_pipe1 greet",
+        "guard": "brak quest guard",
+        "effect": "Storage.HeroRathleton.AccessTeleport1=1; dynamiczne madman/allies/guardian/enraged/way przenieść zdonora",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe1.lua:59"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Powitania i ich granty są Left out według ANSWER pkt6; pełna źródłowa dokumentacja zachowana. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe1.lua:59",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "6cf40b3ef478c30eadb66de53123cf741e422ee146238226a08c5d906b6e5d67",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Strange Pipe2: greet/access",
+        "pattern": "P09, P13",
+        "trigger": "NPC strange_pipe2 greet",
+        "guard": "brak quest guard",
+        "effect": "Storage.HeroRathleton.AccessTeleport2=1; dynamiczne madman/allies/guardian/enraged/way przenieść zdonora",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe2.lua:59"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Powitania i ich granty są Left out według ANSWER pkt6; pełna źródłowa dokumentacja zachowana. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe2.lua:59",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "2015557b713e4190920d8ef77e0990d1a515b986a9b5377594ac58ca33f48d95",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Strange Pipe3: greet/access",
+        "pattern": "P09, P13",
+        "trigger": "NPC strange_pipe3 greet",
+        "guard": "brak quest guard",
+        "effect": "Storage.HeroRathleton.AccessTeleport3=1; dynamiczne madman/allies/guardian/enraged/way przenieść zdonora",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe3.lua:59"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "NPC_CAPTURE_RUNTIME_LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Pełny program danych NPC zachowany; bez nowego produkcyjnego adaptera rozmów.",
+      "left_out": "Powitania i ich granty są Left out według ANSWER pkt6; pełna źródłowa dokumentacja zachowana. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe3.lua:59",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "7c7276e45e7479ecb63c85ae18ce7dad31bee5ca17278a3dfbcf16e48a9ed61c",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Drzwi Strange Pipe",
+        "pattern": "P04",
+        "trigger": "doors(33567,31951,14),(33569,31951,14)",
+        "guard": "HeroRathleton.AccessDoor",
+        "effect": "wspólna bramka storage",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:66"
+        ],
+        "oteryn": "CZĘŚCIOWO — ogólny wykonawca; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/objects.rs:127",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "EXISTING_DOOR_DATA",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Istniejące dane zachowano bez drugiego wykonawcy.",
+      "left_out": "Istniejące dwa bindings bramki AccessDoor; greet grant nie jest aktywowany. Decyzja R-NPC-STATE: Brakuje produkcyjnego wykonania reguł NPC przez istniejący, niezmieniony adapter i writer. Zachowano pełne dane/dialogi; rozszerzenia adaptera rozmów, greetingów i zapisu stanu są Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589624211"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:66",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/strange_pipe.lua:59"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "14d0537cc080bd0147141f9f15c3165e90ef6688115e85f3cbf5a43deead7bd1",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Maszyny deep_terror",
+        "pattern": "P01, P16, P22",
+        "trigger": "Use aid24861,item21743",
+        "guard": "DeepTerrorRunning NIEZDEFINIOWANY<1",
+        "effect": "21743→21744;FirstMachines+1;po10min−1/reset;przed ósmą aktywacją komunikat; B-Q03 dla dwóch pierwszych",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "7bb65450f0e2cae9fa96c13da5470b7db7a3815991071d5f54b6c593b5c60a61",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Maszyny glooth_horror",
+        "pattern": "P01, P16, P22",
+        "trigger": "Use aid24863,item21743",
+        "guard": "DeepTerrorRunning NIEZDEFINIOWANY<1",
+        "effect": "21743→21744;SecondMachines+1;po10min−1/reset;przed ósmą aktywacją komunikat; B-Q03 dla dwóch pierwszych",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_glooth_horror.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_glooth_horror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "190a709a0f66804220cfb45d77cd50864f0d2e7cdada5d038cf774521cf070e1",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Maszyny lava",
+        "pattern": "P01, P16, P22",
+        "trigger": "Use aid24865,item21743",
+        "guard": "LavaRunning<1",
+        "effect": "21743→21744;FourthMachines+1;po10min−1/reset;przed ósmą aktywacją komunikat; B-Q03 dla dwóch pierwszych",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_lava.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_lava.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "45e1da57365ebd6f3ad5df5307bc2da2b06d935e0218c094bf64c1332a351557",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Maszyny professor_maxxen",
+        "pattern": "P01, P16, P22",
+        "trigger": "Use aid9299,item21743",
+        "guard": "MaxxenRunning<1",
+        "effect": "21743→21744;ThirdMachines+1;po10min−1/reset;przed ósmą aktywacją komunikat; B-Q03 dla dwóch pierwszych",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_professor_maxxen.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a376969a8708c98fab0594bfd9a05cbbb52b1943a8057c208ee0792115d4137f",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Deep Terror: wejście",
+        "pattern": "P06, P22",
+        "trigger": "StepIn aid24862",
+        "guard": "DeepRunning≠1;FirstMachines=8 dla startu; <8odmowa",
+        "effect": "teleport(33738,31953,14);po3minstart;po20mincleanup;failure(33724,31951,14)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:36"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "1e5d9bab81008ac231247605a6978f36c5af5add3601ad70b60a1b6193f18fbc",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Deep Terror: fale",
+        "pattern": "P27, P22",
+        "trigger": "startWaves,co40s",
+        "guard": "TentacleWave0..9",
+        "effect": "0..8:7GloothAnemone losowyrect33736..33746,31948..31957,14;wave9:4TentacleOfTheDeep;inkrement",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "5b094e64342ddb1c17945942560d75f4490d5ba68219cb112c32fcbc680e6b24",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Tentacle of the Deep: death",
+        "pattern": "P07, P16, P30",
+        "trigger": "death,po5s",
+        "guard": "kod sprawdza pierwszy spectator;DeepRunning≠2",
+        "effect": "jeśli spectator tentacle spawn kolejnej; inaczejspawnDeepTerror(33741,31953,14),DeepRunning2; B-Q05",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_tentacle.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_tentacle.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "8453dfb57d656d3357953fcf3a6e1faae70604e1f71bcabc99e171d1a2253e4f",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Glooth Horror: wejście",
+        "pattern": "P06, P22",
+        "trigger": "StepIn aid24864",
+        "guard": "GlobalStorage.AccessTeleport1 NIEZDEFINIOWANY;HorrorRunning≠1;SecondMachines8",
+        "effect": "teleport(33561,31954,15);3minstart,20mincleanup;failure(33571,31947,15); B-Q03",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:35"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "c8284c321a3007b532a8530dd2ed62f560ae3b821e57d5c82e9009e1dc06a480",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Glooth Horror: fale",
+        "pattern": "P27, P22",
+        "trigger": "startWaves,co40s",
+        "guard": "DevourerWave0..9",
+        "effect": "0..8:6RotElemental+6Devourer;rect33548..33562,31949..31962,15;wave9FeebleGloothHorror(33555,31956,15)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "b1d92df4ffb734096a3276d417162e55dcbcb3637731237b07f88d07fa2bdf0e",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Glooth Horror: rozszczepienie",
+        "pattern": "P30",
+        "trigger": "death GloothHorror",
+        "guard": "feeble→weakened→normal→strong→empowered",
+        "effect": "spawn2kolejnejformy, lecz targetMonster niezdefiniowane wpozycji; B-Q04",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_glooth_horror.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_glooth_horror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "dd9a65ef18678324f0df3c9c25713a44538931304adf035c51f0dc9d45df18ca",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Lava: wejście",
+        "pattern": "P06, P22",
+        "trigger": "StepIn aid24866",
+        "guard": "GlobalStorage.AccessTeleport2 NIEZDEFINIOWANY;LavaRunning≠1;FourthMachines≥7",
+        "effect": "startafter30s;5RagingFire;stage1;teleportfirst;minute1..7check;failure(33371,31955,15); B-Q03",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:64"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:64",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a430b260aca88f5ba410f35380dfd9ef1832b8ae8b9c241816a3a6476d2558bb",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Lava: corpse do fire",
+        "pattern": "P02, P22",
+        "trigger": "Use21815 on7813",
+        "guard": "target7813",
+        "effect": "LavaCounter+1;removeitem",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_raging_corpse.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_raging_corpse.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "8089728ea837064d182aa5b1da714d45e6642d1eda3dfa28707cc9c22ff02249",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Lava: siedem pól i próg",
+        "pattern": "P27, P30, P22",
+        "trigger": "checkCounter raz/minuta",
+        "guard": "stage1..6 wymagająCounter≥5;stage7 kończy przedsprawdzeniemCounter",
+        "effect": "7pozycji ztabeli;success+stage,resetCounter;5RagingFireafter15s;failureeject;final(33611,32055,15),achievementGo with da Lava Flow",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "1d39e86b344b0f4e0b532cd8813cd2f1dc4c6090252f4d8de1f23dc082f34f63",
+      "quest_row": 19,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Professor Maxxen: wejście",
+        "pattern": "P06, P22",
+        "trigger": "StepIn aid24868",
+        "guard": "GlobalStorage.AccessTeleport3 NIEZDEFINIOWANY;MaxxenRunning≠1;ThirdMachines8",
+        "effect": "teleport(33711,32052,15);3minstart,20mincleanup;failure(33661,32058,15); B-Q03",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:50"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:50",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "a46fcd18c01562b14f49f665edf7a90124312cfd393df0bfec11d4a1d98def29",
+      "quest_row": 20,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Professor Maxxen: fale",
+        "pattern": "P27, P30, P22",
+        "trigger": "startWaves,co40s",
+        "guard": "GloothWave0..8",
+        "effect": "0..7:4randomGloothMasher/Golem;wave8:4randomTrasher/Slasher/Golem+Professor(33711,32046,15);losowyrect wdonorze",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "b0a966840fb75e338c4e6992c183ef291ff8ba1ecc9014d4f4efb133503c7ddc",
+      "quest_row": 21,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Trzy areny: cleanup",
+        "pattern": "P25, P16, P22",
+        "trigger": "20min po uruchomieniu",
+        "guard": "spectators wobszarze",
+        "effect": "usuńmonsters;players→exit;odpowiedniRunning0",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:19",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:33"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:19",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "aaf1159ca5a691fe97631569be2578394c893a7aa37df53a3ebfa55d53f8e98c",
+      "quest_row": 22,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Boss death: portale na2min",
+        "pattern": "P07, P03, P16, P22",
+        "trigger": "death Deep Terror/Empowered Glooth Horror/Professor Maxxen",
+        "guard": "dlaEmpowered żaden z5wariantów niepozostaje",
+        "effect": "1949→22761,zmieńdest,po2minodtwórz;running0;3dokładnepozycje wdonorze",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "918d7bc451dcc1c5bd0a493d21a501880b9188458082396dbb26a721485658f7",
+      "quest_row": 23,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Fast Way: trzy skróty",
+        "pattern": "P03",
+        "trigger": "StepIn aid24869,24870,24871",
+        "guard": "Storage.HeroRathleton.FastWay NIEZDEFINIOWANY;tylkoGlobalStorage.FastWay=24867",
+        "effect": "dest(33740,31940,15)/(33534,31955,15)/(33611,32055,15);failurey+2; B-Q03",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_fast_way.lua:1",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3254"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Brak player stałej FastWay i nadawcy; globalny numer nie uprawnia do wymyślenia player tracka.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589106659"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_fast_way.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:3254"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "58f6203ce62d0a133a73dd9ee354cc77b975f6025dc6bbdfb317ed0e9e111e1d",
+      "quest_row": 24,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Exit: transfer",
+        "pattern": "P03",
+        "trigger": "StepIn aid24872",
+        "guard": "player",
+        "effect": "teleport(33623,31901,6)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — wykonawca teleportu/prostej zmiany istnieje, binding tego questa nieobecny; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:141",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Pełny callback held: Exit zachowuje AID24872 i dokładny teleport, lecz pełny scan1208 regionów nie znajduje AID24872. Bez zgadywania pola. Slurp! ma osobny jawny Left out. Decyzja R-MAP-BINDINGS: Fizyczne uruchomienie 60 callbacków pozostaje Left out: brak kwalifikowanego importu oryginalnych UID/AID do mapy. Audyt 1208 regionów: 25 wartości UID i 32 AID, razem 60 żądań callbacków, zero dopasowań. Zachowano pełne literalne dane i bezpieczną odmowę; nie dopisano zgadywanych selektorów.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590278878"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:2-15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hidden_city_of_beregar/moviments_elevator.lua:2-3",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25-35",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport_heart.lua:2-14",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/heart_of_destruction/movements_teleport.lua:2-11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:41",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_shattered_isles_quest/action_nargor_maps.lua:36",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:16"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "dc45b1b748de79bbf0d5450d4533b4177d6a6211dba994a5bd105d79c81fe320",
+      "quest_row": 25,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Exit: feedback",
+        "pattern": "P03",
+        "trigger": "StepIn aid24872",
+        "guard": "jaktransfer",
+        "effect": "player:say Slurp! i efektteleport",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:8"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Brak projekcji TALKTYPE_MONSTER_SAY. Slurp! i dokładny typ mowy zachowane w held presentation JSON; dokładny efekt wizualny wymaga kwalifikacji presentation owner. Decyzja R-CALLBACK-SCHEMA: Brakuje pól storage.read_only, failure_teleport, tekstów odmowy per guard oraz success_message/success_say. Rozszerzenia parsera są Left out. Nie wolno zastąpić odczytu storage operacją SET, pominąć teleportu odmowy ani tekstu; TALKTYPE_MONSTER_SAY wymaga odrębnej kwalifikacji prezentacji.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589971017"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_exit.lua:8",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/in_service_of_yalahar/actions_mechanism.lua:22-33",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/bigfoot_burden/movements_gnomebase_teleport.lua:78-94",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/turtles.lua:20-26"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    },
+    {
+      "id": "f03768c9be0b64a2a9be1adcd73afec7fa55a9bddbde4467c78d328a084b428d",
+      "quest_row": 26,
+      "inventory": {
+        "quest": "hero_of_rathleton",
+        "step": "Reward chest",
+        "pattern": "P05, P11",
+        "trigger": "Use unique24850",
+        "guard": "player storage24850<1;bezjawnejmissiongate",
+        "effect": "21203×5,3035×4,21897×1,9058×1,836×1;achievementThe Professors Nut;storage1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_reward.lua:1"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięty model nie wykonuje całej reguły; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "LEFT_OUT",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Przypięte źródła i decyzja o zakresie zachowane w inwentaryzacji.",
+      "left_out": "Globalne maszyny, fale, etapy, portale, cleanup i nagrody wymagają wspólnych właścicieli. Istniejące Maxxen attacks nie są kompletnym questem. Decyzja B-Q13: Brakuje wspólnego ownera czterech aren Rathleton: maszyny i stan świata, fale/etapy, wejście uczestników, portale, nagrody i cleanup. Istniejące ataki Maxxena nie wykonują całego encounteru.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589875594"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_reward.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/actions_machines_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_deep_terror.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_glooth_horror.lua:18",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_lava.lua:11",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/movements_professor_maxxen.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua:47"
+      ],
+      "evidence": {
+        "source_compiler_proof": null
+      }
+    }
+  ]
+}

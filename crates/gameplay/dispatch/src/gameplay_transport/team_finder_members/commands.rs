@@ -118,9 +118,24 @@ pub(in crate::gameplay_transport) async fn execute(
     }
     let fence = admitted.item_fence?;
     let actor = admitted.runtime_actor?;
+    let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
     let permit = owner.spell_lane_permit().await?;
+    // A background read can own the single ready holder. Retry only checkout;
+    // once a transaction starts, its unknown outcome must never be re-executed.
+    let retry = crate::gameplay_transport::AdmissionRetryBudget::for_command(owner.root);
+    let pass = retry
+        .retry_unavailable(async || {
+            owner
+                .root
+                .try_issue_semantic_pass()
+                .map_err(|_| crate::gameplay_transport::connection::AdmissionRefusal::Unavailable)
+        })
+        .await
+        .ok()?;
     let runtime = owner.runtime.lock().await;
     if !actor_is_current(&runtime, admitted) {
+        drop(runtime);
+        let _ = pass.run(|_, _| Box::pin(async { Ok(()) })).await;
         return Some((false, Vec::new()));
     }
     let reserved = intent.accepts() && runtime.assert_actor_spell_unreserved(actor).is_err();
@@ -135,13 +150,11 @@ pub(in crate::gameplay_transport) async fn execute(
     // The ordinary invitation proof borrows the current runtime, just as PartyIntent::Invite.
     // Other operations release the runtime before their database work.
     let runtime = intent.accepts().then_some(runtime);
-    let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
     let mut hash = Sha256::new();
     hash.update(b"oteryn.team-finder.wire.v1");
     hash.update(command_type.to_be_bytes());
     hash.update(payload);
     let binding = hash.finalize().into();
-    let pass = owner.root.try_issue_semantic_pass().ok()?;
     let mut context = (owner, runtime.as_deref());
     let outcome = pass.run_with_context(&mut context, move |holder, deadline, context| {
         Box::pin(async move {

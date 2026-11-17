@@ -1,0 +1,15 @@
+{
+  "mechanic": "0103-guild-war",
+  "kind": "handlers",
+  "id": "0103-guild-war-command",
+  "status": "supported",
+  "commands": [
+    119
+  ],
+  "direction": "client_to_server",
+  "capability": 103,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "This panel has no persistent client settings."
+  }
+}

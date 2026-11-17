@@ -121,7 +121,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return refused();
         }
-        let Some(room) = self.rooms.gate_field_step_ingress() else {
+        let Some(room) = self.rooms().gate_field_step_ingress() else {
             return refused();
         };
         let Ok(position) = runtime.read_actor_position(actor) else {

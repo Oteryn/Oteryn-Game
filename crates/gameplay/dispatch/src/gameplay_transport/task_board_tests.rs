@@ -57,7 +57,7 @@ fn the_board_reply_projects_every_task_and_the_stored_tracks() {
     commit.view.reroll_tokens = 256;
     // Crystal protocolgame.cpp:6210–6222 shows owned units, even above required.
     commit.view.delivery_available.insert(3039, 175);
-    let reply = projection::full(&commit).expect("complete projection");
+    let reply = projection::full(&commit, false).expect("complete projection");
     assert_eq!(
         (reply.weekly.kills.len(), reply.weekly.deliveries.len()),
         (9, 9)
@@ -117,7 +117,7 @@ fn board_wire_rejects_an_overflowed_durable_completion_snapshot() {
             .completion_summary(),
         Err(rules::TaskBoardRefusal::ArithmeticOverflow)
     );
-    assert_eq!(projection::full(&commit), None);
+    assert_eq!(projection::full(&commit, false), None);
 }
 
 #[test]
@@ -155,9 +155,39 @@ fn unavailable_content_cannot_offer_or_reenable_the_bundle_only_capability() {
 fn refused_and_replayed_commands_project_their_immutable_receipt() {
     let mut commit = committed();
     commit.refusal = Some(TaskBoardRefusal::Rule(rules::TaskBoardRefusal::Cooldown));
-    let first = projection::full(&commit).expect("refusal projection");
+    let first = projection::full(&commit, false).expect("refusal projection");
     assert_eq!(first.refusal, 5);
     commit.replayed = true;
-    assert_eq!(projection::full(&commit), Some(first));
+    assert_eq!(projection::full(&commit, false), Some(first));
     assert!(projection::legacy(&commit).expect("legacy refusal").refused);
+}
+
+#[test]
+fn finished_weekly_results_require_negotiation_and_do_not_change_balances() {
+    let mut commit = committed();
+    commit.view.data.weekly = Some(rules::WeeklyBoard {
+        period: commit.view.period - 7,
+        difficulty: 0,
+        any_required: 500,
+        any_kills: 500,
+        kills: Vec::new(),
+        deliveries: Vec::new(),
+        finished: true,
+    });
+    let original = projection::full(&commit, false).expect("original client");
+    assert!(original.weekly_results.is_none());
+    let current = projection::full(&commit, true).expect("negotiated client");
+    assert_eq!(
+        current.weekly_results,
+        Some(wire::full::WeeklyResults {
+            period: u64::try_from(commit.view.period - 7).expect("period"),
+            points: 25,
+            soulseals: 1,
+        })
+    );
+    assert_eq!(
+        (current.points, current.soulseals),
+        (original.points, original.soulseals)
+    );
+    assert!(!current.weekly.started);
 }

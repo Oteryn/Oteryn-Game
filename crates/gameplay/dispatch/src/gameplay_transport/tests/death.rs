@@ -229,6 +229,10 @@ fn a_player_death_request_binds_the_cell_the_map_revision_and_the_respawn() {
         crate::foundation::RuntimeScopeRefV1::channel(world, channel),
         [0xab; 32],
         actor_spell::PlayerDeath {
+            public_cause: crate::durability::character_death::PublicDeathCause::creature(
+                "oteryn:creature.dragon",
+                "Dragon",
+            ),
             occurrence,
             cell: MovementLocalPosition {
                 x: -2,
@@ -243,6 +247,13 @@ fn a_player_death_request_binds_the_cell_the_map_revision_and_the_respawn() {
         },
     );
     assert_eq!(request.occurrence, occurrence);
+    assert_eq!(
+        request.public_cause,
+        crate::durability::character_death::PublicDeathCause::creature(
+            "oteryn:creature.dragon",
+            "Dragon"
+        )
+    );
     assert_eq!(request.policy, progression.policy);
     assert!(request.held_blessings.is_empty());
     assert_eq!(
@@ -278,6 +289,12 @@ fn identifiers_are_fresh_uuid_v7_and_nonzero_transport() {
     let second = identifiers.game_session_id().expect("session");
     assert_ne!(first, second);
     assert_eq!(first.as_bytes()[6] >> 4, 7);
+    let source_event = identifiers.source_think_event_id().expect("source DATA");
+    let next_event = identifiers.source_think_event_id().expect("source DATA");
+    assert_ne!(source_event, next_event);
+    assert_ne!(&source_event, first.as_bytes());
+    assert_eq!(source_event[6] >> 4, 7);
+    assert_eq!(source_event[8] >> 6, 2);
     assert_ne!(identifiers.transport_ref(), identifiers.transport_ref());
     assert!(identifiers.transport_ref().is_some());
     let _ = (

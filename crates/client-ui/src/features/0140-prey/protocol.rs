@@ -79,15 +79,19 @@ pub fn request(panel: &mut PreyPanel, intent: Intent) -> Option<prey::Request> {
 fn status_text(status: u8) -> Option<&'static str> {
     match status {
         0 => None,
-        prey::STATUS_CONTENT_UNAVAILABLE => Some("This creature’s loot is unavailable for Prey."),
-        prey::STATUS_NO_CANDIDATES => {
-            Some("No complete list of unoffered creatures is available today. No gold was charged.")
+        prey::STATUS_CONTENT_UNAVAILABLE => {
+            Some(tr!("This creature’s loot is unavailable for Prey."))
         }
-        prey::STATUS_INVALID_TIER => Some("This difficulty is unavailable at your current level."),
-        prey::STATUS_NOT_OFFERED => Some("This creature has not been offered to you today."),
-        prey::STATUS_OCCUPIED => Some("This creature is already in another Prey slot."),
-        prey::STATUS_ALREADY_OWNED => Some("Prey List Expansion is already owned."),
-        _ => Some("The server refused this Prey action."),
+        prey::STATUS_NO_CANDIDATES => Some(tr!(
+            "No complete list of unoffered creatures is available today. No gold was charged."
+        )),
+        prey::STATUS_INVALID_TIER => {
+            Some(tr!("This difficulty is unavailable at your current level."))
+        }
+        prey::STATUS_NOT_OFFERED => Some(tr!("This creature has not been offered to you today.")),
+        prey::STATUS_OCCUPIED => Some(tr!("This creature is already in another Prey slot.")),
+        prey::STATUS_ALREADY_OWNED => Some(tr!("Prey List Expansion is already owned.")),
+        _ => Some(tr!("The server refused this Prey action.")),
     }
 }
 
@@ -106,11 +110,13 @@ pub fn apply_result(panel: &mut PreyPanel, response: &PreyResponse) -> bool {
         .flatten();
     panel.feedback = if accepted {
         operation.as_ref().map_or(
-            Some("The server returned an invalid Prey reply."),
+            Some(tr!("The server returned an invalid Prey reply.")),
             |reply| status_text(reply.status),
         )
     } else {
-        Some("The server refused this action; refresh the list before trying again.")
+        Some(tr!(
+            "The server refused this action; refresh the list before trying again."
+        ))
     };
     let current = match &response.current {
         Some(bytes) => prey::decode_reply(bytes).ok(),
@@ -160,8 +166,9 @@ pub fn apply_result(panel: &mut PreyPanel, response: &PreyResponse) -> bool {
             // Require a current query before enabling another action against that state.
             panel.confirmed = None;
             panel.candidate = [None; 3];
-            panel.feedback =
-                Some("Current Prey state is unavailable. Refresh before sending another action.");
+            panel.feedback = Some(tr!(
+                "Current Prey state is unavailable. Refresh before sending another action."
+            ));
         }
         false
     }

@@ -2,6 +2,7 @@ use super::*;
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn inspection_trade_item(
         &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         admitted: AdmittedSession,
         id: u64,
         counter: bool,
@@ -15,9 +16,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if index != 0 {
             return None;
         }
-        let permit = self.spell_lane_permit().await?;
-        let runtime = self.runtime.lock().await;
-        runtime.owner_fence().ok()?;
         let record = self
             .states
             .player_trades
@@ -25,10 +23,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .ok()?
             .record(admitted.game_session_id)?;
-        if record.request.is_some()
-            || record.binding != runtime.binding()
-            || record.digest != runtime.content_pin().server_artifact_digest()
-        {
+        if record.request.is_some() {
             return None;
         }
         let lives = self.trade_lives(&record)?;
@@ -39,17 +34,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return None;
         }
-        self.trade_pair(
-            &permit,
-            &runtime,
-            &lives,
-            CommandRef::new(admitted.game_session_id, CommandId::new(id).ok()?),
-        )
+        let command = CommandRef::new(admitted.game_session_id, CommandId::new(id).ok()?);
+        preflight::read_retry(self.root, async || {
+            let runtime = self.runtime.lock().await;
+            runtime.owner_fence().map_err(|_| ResultCode::Rejected)?;
+            if record.binding != runtime.binding()
+                || record.digest != runtime.content_pin().server_artifact_digest()
+            {
+                return Err(ResultCode::Stale.into());
+            }
+            self.trade_pair(permit, &runtime, &lives, command).await?;
+            drop(runtime);
+            self.trade_unchanged(&record, self.trade_fences(&lives).await?)
+                .await
+        })
         .await
         .ok()?;
-        self.trade_unchanged(&record, self.trade_fences(&lives).await.ok()?)
-            .await
-            .ok()?;
         let selected = if counter { 1 - side } else { side };
         // A partner offer is disclosed only after this side also offered an item.
         if counter && record.projections[side].is_none() {
@@ -74,12 +74,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let runtime = self.runtime.lock().await;
         runtime.owner_fence().ok()?;
         let facts = if let Some(fence) = command.item_fence
-            && matches!(fence.runtime_scope, crate::foundation::RuntimeScopeRefV1::Instance { .. })
+            && let Ok(state) = runtime.house_actor_state(actor, command.game_session_id)
         {
             // E12: this common reservation reader also precedes native House
             // USE. Read the actual House carrier; a transferred actor has no
             // Channel control facts. This does not admit a House player trade.
-            let state = runtime.house_actor_state(actor, command.game_session_id).ok()?;
             if fence.game_session_id != command.game_session_id
                 || state.scope != fence.runtime_scope
                 || state.generation != fence.scope_ownership_generation
@@ -192,7 +191,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 )
                                 .await
                                 .map_err(CheckError::from)?
-                                .map_err(result)?;
+                                .map_err(CheckError::from)?;
                             if record.offers[side].as_ref() != Some(&leaf) {
                                 return Err(ResultCode::Stale.into());
                             }
@@ -208,6 +207,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // let that fence cancel the trade with the contracted logout reason.
                     Ok(()) | Err(CheckError::Unavailable) => None,
                     Err(CheckError::Refused(reason)) => Some(reason),
+                    Err(CheckError::Caused(outcome)) => Some(outcome.code),
                 }
             };
             if let Some(reason) = reason {

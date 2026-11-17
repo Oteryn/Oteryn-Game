@@ -1,0 +1,27 @@
+{
+  "task": "SRX-3",
+  "base": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+  "test_filter": "carrier::runtime_actor_companion::tests::source_death_phase::srx3_source_death_null_action_reserves_real_begin_without_player_session",
+  "command": "source /tmp/srx3-test-env.sh && cargo test --locked -j2 -p oteryn-gameplay-entities --all-features --lib srx3_source_death_null_action_reserves_real_begin_without_player_session -- --nocapture",
+  "scope": "Canonical copied source-death BEGIN and fixed-slot reservation; no fabricated player session or reward principal. Component verification, not a complete row or PostgreSQL proof.",
+  "checks": [
+    {
+      "result": "EXPECTED_FAIL",
+      "duration_seconds": 74.67,
+      "log_sha256": "baf262c1b5b854f5ca559b28e24e632bf7e516732ca0cd293bf01007a5bdcf30"
+    },
+    {
+      "result": "PASS",
+      "duration_seconds": 74.99,
+      "log_sha256": "e11c044d6642aaa436fe3325397dfa04a4fe274d83aeaa08559e3fd9f0e01474"
+    }
+  ],
+  "controls": [
+    "actual canonical NULL death and current copied event",
+    "affected actor capacity bound",
+    "overlapping reservation refused",
+    "source profile mutation and copied ACK refused while reserved",
+    "current known release permits copied ACK",
+    "cloned released reservation refused"
+  ]
+}

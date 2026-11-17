@@ -1,0 +1,13 @@
+{
+  "id": 497,
+  "name": "SANCTION_RECORD_V1",
+  "owner_decision": "N009/N014 wu26 packet number allocation 2026-11-11; PLATFORM_SANCTION_LOYALTY_EXPORT_V1",
+  "owner": "Game read-only projection of Platform-owned sanction decisions; Platform retains sanction authority",
+  "requires": [],
+  "command_types": [
+    6240
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Command 6240 reads the admitted Character's own account-wide and Character records; see sanction-record-v1.md."
+}

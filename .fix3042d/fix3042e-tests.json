@@ -1,0 +1,93 @@
+[
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "oteryn-gameplay-world",
+      "--lib",
+      "map::"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-test-0.log"
+  },
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "oteryn-gameplay-durability",
+      "--lib",
+      "durability::reward_claim_mint::tests::"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-test-1.log"
+  },
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "oteryn-gameplay-durability",
+      "--lib",
+      "durability::item_fee_burn::atelier::tests::"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-test-2.log"
+  },
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--lib",
+      "gameplay_transport::grizzly_kills::tests::"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-test-3.log"
+  },
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--lib",
+      "gameplay_transport::npc_command::quest_dialogue::publication_tests::"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-test-4.log"
+  },
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "oteryn-gameplay-quests",
+      "--lib",
+      "quest::"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-test-5.log"
+  },
+  {
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "oteryn-game-server",
+      "--lib",
+      "quest_catalogue_boot_tests::"
+    ],
+    "exit_code": 0,
+    "log": ".fix3042d/fix3042e-test-6.log"
+  }
+]

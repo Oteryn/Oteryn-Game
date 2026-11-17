@@ -1,0 +1,7 @@
+{
+  "mechanic": "0103-guild-war",
+  "kind": "panels",
+  "id": "0103-guild-war-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

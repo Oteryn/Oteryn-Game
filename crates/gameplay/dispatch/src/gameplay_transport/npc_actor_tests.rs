@@ -91,6 +91,7 @@ fn catalogue(revision: &str, speed: i64, interval_ms: u64, radius: u16) -> NpcDa
     };
     let npc =
         |key: &str, fields: Vec<ProjectV2CandidateField>, linked: bool| ProjectV2Declaration::Npc {
+            visibility: Default::default(),
             identity: ProjectV2Identity {
                 key: key.into(),
                 revision: "definition-r1".into(),

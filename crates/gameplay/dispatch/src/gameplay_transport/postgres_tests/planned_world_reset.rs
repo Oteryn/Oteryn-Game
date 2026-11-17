@@ -126,6 +126,9 @@ fn scenario() -> TestResult {
                         .map_err(debug)?
                         .control_loss
                         .is_some()
+                        // Keep polling the lifecycle through its staff read so
+                        // the direct assertions below can use the returned holder.
+                        && harness.root.is_ready()
                     {
                         return Ok::<_, Box<dyn std::error::Error>>(());
                     }

@@ -1,0 +1,9 @@
+{
+  "mechanic": "0276-condition-status",
+  "kind": "keybindings",
+  "id": "0276-condition-status-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+SHIFT+C",
+  "entry": "input.rs::open_key"
+}

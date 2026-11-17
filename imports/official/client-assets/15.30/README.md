@@ -51,3 +51,12 @@ python tools/content-schema/item-authoring/client_appearance_census.py \
   --appearances "<PATH_TO_CLIENT>/assets/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat" \
   --membership-out imports/official/client-assets/15.30/appearance-ids.json
 ```
+
+## Sound import (C28)
+
+`tools/client-assets/import_assets.py` implements the inventory convention above
+and can produce a supplemental hash-pinned sound manifest from the original
+client sound directory and its `sounds*.dat` metadata. See
+`tools/client-assets/README.md` for the exact inputs, metadata field provenance,
+schema and runtime configuration. No original sound inputs are available in this
+checkout; no cue mapping, audio hash or sound asset has been fabricated.

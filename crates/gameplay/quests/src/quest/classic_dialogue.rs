@@ -110,6 +110,8 @@ pub(super) fn extend(
         transitions.into_values().collect(),
     )
     .map_err(|e| format!("{e:?}"))
+    .and_then(super::hero_of_bounac::extend)
+    .and_then(super::planegazer_finale::extend)
 }
 
 #[cfg(test)]
@@ -158,8 +160,12 @@ mod tests {
 
     #[test]
     fn native_start_commits_both_herb_flags_and_refuses_stale_confirmation() -> Result<(), String> {
-        let loaded =
-            loader::load_embedded_quest_state("classic-test").map_err(|e| format!("{e:?}"))?;
+        // Donor qualification only: production excludes Dawnport (QUEST-FINISH).
+        let loaded = loader::parse_quest_state(
+            include_str!("../../../../../content/quests/dawnport-starts.json"),
+            "classic-test",
+        )
+        .map_err(|e| format!("{e:?}"))?;
         let catalogue = loaded.catalogue();
         let transition = catalogue
             .transition("oteryn:quest-transition/classic/dawnport/start-the-rare-herb")
@@ -181,8 +187,11 @@ mod tests {
 
     #[test]
     fn logbook_start_checks_torn_book_and_does_not_clear_its_track() -> Result<(), String> {
-        let loaded =
-            loader::load_embedded_quest_state("classic-test").map_err(|e| format!("{e:?}"))?;
+        let loaded = loader::parse_quest_state(
+            include_str!("../../../../../content/quests/dawnport-starts.json"),
+            "classic-test",
+        )
+        .map_err(|e| format!("{e:?}"))?;
         let catalogue = loaded.catalogue();
         let transition = catalogue
             .transition("oteryn:quest-transition/classic/dawnport/start-logbook")

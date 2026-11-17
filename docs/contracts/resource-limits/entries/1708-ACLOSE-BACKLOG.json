@@ -1,0 +1,21 @@
+{
+  "id": "ACLOSE-BACKLOG",
+  "owner_contract": "OTERYN_GAME_ACCOUNT_DELETION_FINALIZATION_V1.md",
+  "resource": "Unreceipted durable closure backlog",
+  "unit": "operations",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 256,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Unavailable or oversized evidence remains pending; no truncation of proof.",
+  "client_visible": false,
+  "boundary_tests": [
+    "account_deletion_postgres_producer_replays_resolves_and_fences",
+    "account_deletion_postgres_reserves_resolution_backlog_capacity"
+  ],
+  "consumers": [
+    "crates/gameplay/durability/src/durability/character_command/account_deletion/"
+  ]
+}

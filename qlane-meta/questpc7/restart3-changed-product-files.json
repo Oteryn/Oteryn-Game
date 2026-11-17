@@ -1,0 +1,16 @@
+[
+  "content/content.lock.json",
+  "content/items/definitions/spell-native-profiles.json",
+  "content/items/index.json",
+  "content/manifest.json",
+  "content/quests/grizzly-boss-rooms.json",
+  "content/spells.manifest.json",
+  "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs",
+  "docs/agents/evidence/quest-claim-qualification.json",
+  "docs/repository/QUEST_CALLBACK_COVERAGE.json",
+  "tools/content-migration/quest_finish_newhaven_items.py",
+  "tools/content-migration/test_quest_finish_newhaven_items.py",
+  "tools/content-schema/quest-authoring/check_quest_claim_qualification.py",
+  "tools/content-schema/quest-authoring/quest_callback_coverage.py",
+  "tools/content-schema/quest-authoring/test_quest_claim_qualification.py"
+]

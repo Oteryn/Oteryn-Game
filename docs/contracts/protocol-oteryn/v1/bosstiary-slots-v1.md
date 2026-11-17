@@ -37,3 +37,29 @@ Sources: Crystal 201189f `src/server/network/protocol/protocolgame.cpp:10615-106
 `config.lua.dist:469`, `data/scripts/creaturescripts/player/login.lua:179-181`,
 `data/scripts/systems/reward_chest.lua:84-111`, `src/creatures/players/player.cpp:6567-6578`,
 `config.lua.dist:240-244`. Boosted boss credits three Bosstiary kills; ordinary boss one.
+
+## Opt-in detailed slot state
+
+Prefixing an existing request with byte `3` requests detailed display facts on the
+same command 491/capability 117. Thus `[3,0]` queries, `[3,1,slot,key...]` equips,
+and `[3,2,slot]` removes. Nested prefixes are rejected. The maximum request is
+131 bytes. The original complete request, including the prefix, is retained for
+mutation replay. Existing request encodings retain their exact legacy replies.
+
+Detailed replies retain the complete legacy prefix and append `BD1`, equipment
+base bonus `u16`, slot 1 and slot 2 effective equipment bonuses `u16` each, current
+server time `u64`, boosted-boss byte length `u8`, and UTF-8 boosted-boss key (empty
+or at most 128 bytes). Integers remain big endian. Maximum reply size is 440
+bytes. Old retained replies without this suffix remain readable.
+
+The owner derives bonuses using the existing loot settlement rule and actual
+mastery counts, with zero for empty or daily boosted assignments. The base uses
+the settlement owner's total boss-point projection; legacy slot unlock/point
+fields and all mutation/fee rules stay unchanged. These facts and current server
+time are read under the same Character transaction as the slot result.
+
+The native selector uses named canonical gallery entries that reached Prowess,
+excludes already assigned and boosted bosses, and checks the confirmed slot
+unlock and server-snapshot cooldown. A refresh confirms readiness after cooldown.
+The client displays percentages specifically for eligible equipment loot, plus
+the next removal fee, and applies assignment changes only from the real reply.

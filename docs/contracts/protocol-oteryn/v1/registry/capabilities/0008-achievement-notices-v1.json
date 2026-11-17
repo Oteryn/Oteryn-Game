@@ -6,5 +6,5 @@
   "command_types": [],
   "state_domains": [13],
   "offered": false,
-  "offer_gate": "Capability negotiation: the server selects no optional capability before the authoritative negotiation path is composed. Without it selected, domain 13 is never sent."
+  "offer_gate": "ACHIEVE4: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Without it selected, domain 13 is never sent."
 }

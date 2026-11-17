@@ -1,0 +1,5 @@
+{
+  "command": "python3 tools/content-schema/quest-authoring/quest_tree_authoring.py content --check",
+  "exit": 0,
+  "duration_seconds": 24.342
+}

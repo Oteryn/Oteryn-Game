@@ -14,6 +14,7 @@ use crate::foundation::{CommandId, CommandRef};
 use oteryn_gameplay_quests::quest::rotten_blood::{CleanseMode, RottenBloodRefusal};
 use oteryn_gameplay_quests::quest::soul_war_dialogue::{self as soul_dialogue, Reply as SoulReply};
 mod payment;
+pub(super) use payment::prepare_reward_fee;
 
 type Context = (u64, u64, String);
 

@@ -1,0 +1,72 @@
+{
+  "state": "FIVE_NATIVE_MARSH_STALKER_KILLS_PG_QUALIFIED",
+  "whole_quest": "ACTIVE",
+  "test": "questpc7_goblin_five_native_stalkers_credit_exact_deaths",
+  "postgres": "18.6",
+  "red_seconds": 64.581898601,
+  "red_error": "kill_reward_refused reason=corpse_item_inadmissible; queue.has_session assertion failed",
+  "diagnostic_red_seconds": 64.473559019,
+  "green_seconds": 267.722714383,
+  "green_marker": "QUESTPC7_GOBLIN_STALKERS POSTGRES_CASE_COMPLETED duration=267.722714383s success=true",
+  "logs": "/workspace/scratch/questpc7-stalkers-{red,red2,green2}.log",
+  "fixture_correction": {
+    "first_positive_seconds": 88.447660681,
+    "error": "CapacityExceeded",
+    "fix": "Retire each settled dead fixture actor only after both real drains and proof that corpse projection is unpinned; do not raise actor capacity or change assertions."
+  },
+  "assertions": [
+    "real NPC introduction and exact paid toolkit",
+    "wrong region and wrong species ordinary deaths add no quest credit",
+    "five source-positioned native deaths credit1each despite duplicate lethal notifications and drains",
+    "sixth kill preserves cap5",
+    "exact seven Goblin quest receipts including intro/toolkit",
+    "all other job counters and paid tools unchanged"
+  ],
+  "sources": {
+    "spawns": "content/world/spawns/spawns-10000-11999.json:1:sha256:a74b7da322bba5ebea20c772dae368d1337ec4caf9cd146f89b1bb9b8419b051",
+    "corpse_xml": "imports/canary/items-xml/items.xml:35365,35419,35424,35429:sha256:1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "loot_table_sha256": "ac5ccfd4c0b6b40e9d28293c0e599ff10e0311815bff75abe2bd5a7ef1131fde"
+  },
+  "corpse_chain": [
+    17428,
+    17439,
+    17440,
+    17441
+  ],
+  "changed_admission_facts": [
+    "oteryn:item.tibia.i17428",
+    "oteryn:item.tibia.i17461",
+    "oteryn:item.tibia.i17462",
+    "oteryn:item.tibia.i647"
+  ],
+  "preserved": "All existing source drop tables, Creature loot bindings and unrelated admission facts",
+  "mechanism": "Existing source Item importer, exact corpse/loot constructors, ordinary native kill owner and DeathObjective; no new shared engine",
+  "prey_generation": "15cases776creatures, repository simulation complete",
+  "quests_units": "308passed in21.72s",
+  "crate_units": {
+    "content": [
+      "330",
+      "0",
+      "1",
+      "432.68"
+    ],
+    "dispatch": "INTERRUPTED after 721reportedpasses and0reportedfailures under PREPUSH-2 budget; remainder pendingCI"
+  },
+  "checks": {
+    "green2": "PASS",
+    "check-final": "PASS",
+    "clippy": "PASS",
+    "fmt": "PASS",
+    "pins": "PASS",
+    "generated-checks": "PASS",
+    "quests-unit": "PASS",
+    "prey-generation": "PASS"
+  },
+  "main_exception": {
+    "main": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+    "retry_main": "98d6ae8ce5e12d60916532c72353126f534fa20a",
+    "exact_error": "CONFLICT (content): Merge conflict in crates/gameplay/quests/src/quest/world_callbacks.rs",
+    "conflicts": 68,
+    "review": "Three shared API collision blobs unchanged on47baa; existing owner15-minute abort exception and qengine2 convergence request retained."
+  }
+}

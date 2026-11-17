@@ -1,0 +1,48 @@
+{
+  "task": "SRX-3",
+  "base": "b2cfa798e3def61002d39a6da8b9de5df5aa2fd8",
+  "scope": "Component proof only: canonical source health callbacks and registered Spite expiry mutation; not a completed Soul War encounter or GlobalEvent driver.",
+  "native_data": "Native14 inputs; unchanged through these executions.",
+  "filters": [
+    "srx3_hatred_native_",
+    "carrier::soul_war_mirror_runtime::tests::spite_expiry"
+  ],
+  "proofs": [
+    "Actual native Hatred Player-owned condition damage first removed HP, then failed160 vs170 defense; NULL-origin periodic and existing direct/full-health callback controls passed. The same four cases pass after the staged canonical periodic delta fix, with consumed tick replay unchanged.",
+    "Actual native Spite World and canonical lethal HP0 source-registration/projection prerequisites passed before the old Instance/live-health guard rejected FireExpired. Both pass after the narrow expiry guard change; the same tests retain HP0 Spite healing rejection and completed-source refusal."
+  ],
+  "checks": [
+    {
+      "case": "hatred-periodic-red",
+      "passed": 3,
+      "failed": 1,
+      "duration_seconds": 74.42,
+      "log_sha256": "0f891ea63673826124ff75b982248d5dd15f851630a4b748a1200c7eb8850b1d",
+      "log_path": "/tmp/srx3-hatred-periodic-red42.log"
+    },
+    {
+      "case": "hatred-periodic-green",
+      "passed": 4,
+      "failed": 0,
+      "duration_seconds": 75.41,
+      "log_sha256": "9b12d6c20446c2f1ba47b46af2f12e1b12882466edb56e8c567a0fe4eec0411c",
+      "log_path": "/tmp/srx3-hatred-periodic-green42c.log"
+    },
+    {
+      "case": "spite-expiry-red",
+      "passed": 0,
+      "failed": 2,
+      "duration_seconds": 70.3,
+      "log_sha256": "e57b2a04413cf92155bde88c5ceab1928b25078947444c8e4363f6fa3f042694",
+      "log_path": "/tmp/srx3-spite-expiry-red42.log"
+    },
+    {
+      "case": "spite-expiry-green",
+      "passed": 2,
+      "failed": 0,
+      "duration_seconds": 75.31,
+      "log_sha256": "8f600d5ab44192c412e437d3689d00c0fee4834346b5f8f78fb2c3dd454336fa",
+      "log_path": "/tmp/srx3-spite-expiry-green42c.log"
+    }
+  ]
+}

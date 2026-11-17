@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--lib",
+    "questpc7_",
+    "--",
+    "--nocapture"
+  ],
+  "exit": 0,
+  "duration_seconds": 442.59
+}

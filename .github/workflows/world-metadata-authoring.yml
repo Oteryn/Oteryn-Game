@@ -80,6 +80,7 @@ jobs:
           set -euo pipefail
           python test_world_authoring.py
           python test_world_base.py
+          python test_quest_access_bindings.py
           python test_edron_rework.py
           python test_minimap_draft.py
           python test_world_record.py

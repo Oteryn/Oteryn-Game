@@ -101,3 +101,73 @@ impl DurabilityRoot {
             .await?
     }
 }
+
+/// One authoritative current effect; the Store and Daily Reward XP boosts are one line each.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ActivePotionDuration {
+    pub source: u8,
+    pub item_id: u32,
+    pub percent: u16,
+    pub remaining_ms: u64,
+}
+impl DurabilityRoot {
+    /// Current timers from the same semantic clock as effect consumption. Wealth Duplex
+    /// spends online microseconds; daily/store XP deadlines spend wall-clock time. The
+    /// active set is bounded by one Wealth timer, one Store line and one Daily Reward line.
+    pub async fn read_active_potion_durations(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &super::super::runtime_scope_assignment::NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        origin_channel: [u8; 16],
+    ) -> Result<Vec<ActivePotionDuration>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemUseError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            super::super::db::lock_admission_relations(&mut tx).await?;
+            let current = match fence.runtime_scope {
+                crate::foundation::RuntimeScopeRefV1::Instance { .. } => super::super::house_hireling::fence::assert_house_custody_fence(&mut tx, &node, &fence, origin_channel).await?.is_some(),
+                _ => super::super::house_hireling::fence::assert_inventory_fence(&mut tx, &node, &fence, origin_channel).await?,
+            };
+            if !current { return Ok(Err(ItemUseError::AuthorityRejected)); }
+            let rows = sqlx::query(
+                "WITH instant AS MATERIALIZED (SELECT public.game_daily_effect_now() AS at), \
+                 latest AS (SELECT e.character_id,e.started_at FROM game_character_concoction_effects e,instant \
+                   WHERE e.character_id=encode($1,'hex')::uuid AND e.concoction='wealth_duplex' \
+                     AND e.started_at<=instant.at ORDER BY e.started_at DESC LIMIT 1), \
+                 wealth AS (SELECT 1 AS source,36727 AS item_id,0::smallint AS percent, \
+                   ($3-public.game_character_online_us(latest.character_id,latest.started_at,instant.at))/1000 AS remaining_ms \
+                   FROM latest,instant) \
+                 SELECT source,item_id,percent,remaining_ms FROM wealth WHERE remaining_ms>0 LIMIT 1")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                .bind(WEALTH_DUPLEX_ONLINE_MICROS).fetch_all(&mut *tx).await?;
+            let mut active = Vec::with_capacity(rows.len());
+            for row in rows {
+                active.push(ActivePotionDuration {
+                    source: u8::try_from(row.try_get::<i32,_>("source")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    item_id: u32::try_from(row.try_get::<i32,_>("item_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    percent: u16::try_from(row.try_get::<i16,_>("percent")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    remaining_ms: u64::try_from(row.try_get::<i64,_>("remaining_ms")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                });
+            }
+            // Winter Update 2026: source 3 (Store) and 4 (Daily Reward) are separate lines.
+            let lines = super::super::hunting_xp::xp_boost_lines(&mut tx, fence.character_id.as_bytes().as_slice(), fence.runtime_scope.world_id().as_bytes().as_slice()).await?;
+            for (source, line) in [(3, lines.store), (4, lines.daily)] {
+                if let Some(line) = line {
+                    active.push(ActivePotionDuration {
+                        source,
+                        item_id: 0,
+                        percent: u16::try_from(line.percent).map_err(|_| DurabilityError::InvalidStoredState)?,
+                        remaining_ms: u64::try_from(line.remaining_ms).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    });
+                }
+            }
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(active))
+        })).await?
+    }
+}

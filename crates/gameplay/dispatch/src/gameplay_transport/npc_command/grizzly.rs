@@ -161,6 +161,15 @@ fn dialogue(state: &GrizzlyState, actor: GrizzlyActor, topic: &mut Topic, text: 
             _ => return Reply::text("Choose a task before confirming it."),
         }
     }
+    if text == "campaign" {
+        return Reply::text(
+            if state.get(quest::campaign::PHASE).copied().unwrap_or(0) == 11 {
+                "You have already collected your hunting campaign reward."
+            } else {
+                "Join the programme, complete the Crocodile and Carniphila hunts and their bosses, earn your promotion, then complete the Hydra hunt and The Many. Report each victory to me."
+            },
+        );
+    }
     if text == "join" {
         *topic = Topic::None;
         return if quest::joined(state) {
@@ -174,11 +183,15 @@ fn dialogue(state: &GrizzlyState, actor: GrizzlyActor, topic: &mut Topic, text: 
     }
     if matches!(text.as_str(), "hi" | "hello") {
         *topic = Topic::None;
-        return Reply::text(if quest::joined(state) {
-            "Welcome back! Ask me about tasks, status, promotion, bosses or special tasks."
-        } else {
-            "Would you like to join the Paw and Fur - Hunting Elite?"
-        });
+        return Reply::text(
+            if state.get(quest::campaign::PHASE).copied().unwrap_or(0) == 10 {
+                "Your hunting campaign is complete. Ask me about campaign to collect your reward."
+            } else if quest::joined(state) {
+                "Welcome back! Ask me about tasks, status, promotion, bosses or special tasks."
+            } else {
+                "Would you like to join the Paw and Fur - Hunting Elite?"
+            },
+        );
     }
     let started = quest::started_tasks(state);
     if matches!(text.as_str(), "points" | "rank") {

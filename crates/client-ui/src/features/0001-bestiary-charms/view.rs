@@ -20,11 +20,11 @@ pub struct CharmRow {
 
 impl CharmRow {
     #[must_use]
-    pub const fn effect_note(&self) -> Option<&'static str> {
+    pub fn effect_note(&self) -> Option<&'static str> {
         if self.state.effect_active {
             None
         } else {
-            Some(CHARM_EFFECT_NOT_ACTIVE_TEXT)
+            Some(crate::localization::tr(CHARM_EFFECT_NOT_ACTIVE_TEXT))
         }
     }
 }

@@ -25,7 +25,8 @@ impl DurabilityRoot {
         if request.character_id != *fence.character_id.as_bytes() {
             return Err(StoreDurabilityError::AuthorityRejected);
         }
-        let recovery = authority.record_for(self)
+        let recovery = authority
+            .record_for(self)
             .map_err(|_| StoreDurabilityError::AuthorityRejected)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| {
@@ -84,7 +85,8 @@ impl DurabilityRoot {
         if request.character_id != *fence.character_id.as_bytes() {
             return Err(StoreDurabilityError::AuthorityRejected);
         }
-        let recovery = authority.record_for(self)
+        let recovery = authority
+            .record_for(self)
             .map_err(|_| StoreDurabilityError::AuthorityRejected)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| {
@@ -135,7 +137,8 @@ impl DurabilityRoot {
         request: PurchaseRequest,
     ) -> Result<(), StoreDurabilityError> {
         request.validate()?;
-        let recovery = authority.record_for(self)
+        let recovery = authority
+            .record_for(self)
             .map_err(|_| StoreDurabilityError::AuthorityRejected)?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| {
             Box::pin(async move {
@@ -166,11 +169,26 @@ impl DurabilityRoot {
 }
 
 fn definitive_refusal(bytes: &[u8]) -> bool {
-    let Ok(value) = serde_json::from_slice::<serde_json::Value>(bytes) else { return false; };
-    value.get("order_id").is_some_and(serde_json::Value::is_null)
-        && value.get("operation_ids").and_then(serde_json::Value::as_array).is_some_and(Vec::is_empty)
-        && matches!(value.get("result").and_then(serde_json::Value::as_str),
-            Some("STALE_QUOTE" | "OFFER_UNAVAILABLE" | "PURCHASE_DISABLED" | "INSUFFICIENT_BALANCE" | "ACCOUNT_RESTRICTED"))
+    let Ok(value) = serde_json::from_slice::<serde_json::Value>(bytes) else {
+        return false;
+    };
+    value
+        .get("order_id")
+        .is_some_and(serde_json::Value::is_null)
+        && value
+            .get("operation_ids")
+            .and_then(serde_json::Value::as_array)
+            .is_some_and(Vec::is_empty)
+        && matches!(
+            value.get("result").and_then(serde_json::Value::as_str),
+            Some(
+                "STALE_QUOTE"
+                    | "OFFER_UNAVAILABLE"
+                    | "PURCHASE_DISABLED"
+                    | "INSUFFICIENT_BALANCE"
+                    | "ACCOUNT_RESTRICTED"
+            )
+        )
 }
 
 #[cfg(test)]
@@ -179,14 +197,26 @@ mod tests {
 
     #[test]
     fn prey_purchase_reservation_is_never_released_on_unknown_or_accepted_answer() {
-        for result in ["STALE_QUOTE", "OFFER_UNAVAILABLE", "PURCHASE_DISABLED", "INSUFFICIENT_BALANCE", "ACCOUNT_RESTRICTED"] {
-            assert!(definitive_refusal(serde_json::json!({"result":result,"order_id":null,"operation_ids":[]}).to_string().as_bytes()));
+        for result in [
+            "STALE_QUOTE",
+            "OFFER_UNAVAILABLE",
+            "PURCHASE_DISABLED",
+            "INSUFFICIENT_BALANCE",
+            "ACCOUNT_RESTRICTED",
+        ] {
+            assert!(definitive_refusal(
+                serde_json::json!({"result":result,"order_id":null,"operation_ids":[]})
+                    .to_string()
+                    .as_bytes()
+            ));
         }
         for value in [
             serde_json::json!({"result":"ACCEPTED","order_id":"order","operation_ids":["operation"]}),
             serde_json::json!({"result":"TIMEOUT","order_id":null,"operation_ids":[]}),
             serde_json::json!({"result":"INSUFFICIENT_BALANCE","order_id":"order","operation_ids":[]}),
-        ] { assert!(!definitive_refusal(value.to_string().as_bytes())); }
+        ] {
+            assert!(!definitive_refusal(value.to_string().as_bytes()));
+        }
         assert!(!definitive_refusal(b""));
     }
 }

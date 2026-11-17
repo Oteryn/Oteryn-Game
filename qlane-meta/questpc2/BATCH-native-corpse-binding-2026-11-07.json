@@ -1,0 +1,97 @@
+{
+  "batch_id": "native-corpse-binding-2026-11-07",
+  "base_sha": "647e33cf3d4513bb18e661ddf47f3121b627143b",
+  "branch": "claude/happy-davinci-ijz3wy-questpc2",
+  "scope": "Reusable native combat -> durable physical corpse -> exact runtime projection binding, verified on the already admitted Primal corpse39530 in an isolated room. No whole quest/source-room qualification.",
+  "entries": [
+    "Primal Ordeal Quest (inherited shared-mechanism regression)"
+  ],
+  "whole_quest_qualifications": 0,
+  "red": [
+    {
+      "scope": "native corpse drain",
+      "test_duration_seconds": 70.57,
+      "marker": "NATIVE_INSTANCE_CORPSE POSTGRES_CASE_OBSERVED creature=oteryn:creature.the_primal_menace item=oteryn:item.tibia.i39530 roots=0",
+      "postgres_version": 180006,
+      "log": "/tmp/questpc2-native-corpse-red.log"
+    },
+    {
+      "scope": "runtime projection binding",
+      "test_duration_seconds": 74.11,
+      "error": "expected one visible source corpse; found zero; old carrier returned WrongScope",
+      "postgres_version": 180006,
+      "log": "/tmp/questpc2-native-corpse-binding-red.log"
+    },
+    {
+      "scope": "same-scope carrier binding",
+      "passed": 4,
+      "failed": 1,
+      "postgres_executed": false,
+      "log": "/tmp/questpc2-corpse-projection-units-red.log"
+    }
+  ],
+  "changes": [
+    "Use the native death position and exact scope for combat corpse placement. Keep Channel placement bytes and replay identity unchanged; Instance references use the established tag3/world/instance namespace.",
+    "Remove the obsolete Instance combat refusal now that the durable root owner is implemented.",
+    "Bind committed corpse Items in both native scope kinds; retain exact actor scope/generation, genuine projection, unique Item binding and conflict/replay checks.",
+    "Require the real Primal drain to produce exactly one39530 corpse and require the visible projection Item ID to equal the actual PostgreSQL receipt. Existing private chest/value and replay assertions remain.",
+    "Replace the obsolete unconditional Instance-refusal unit expectation with same-scope success, replay, conflicting Item rejection and same-UUID foreign namespace refusal. Keep the surrounding lethal receipt, slot reuse and authority tests."
+  ],
+  "green": {
+    "postgres": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "test_duration_seconds": 72.18,
+      "log": "/tmp/questpc2-native-primal-binding-final.log"
+    },
+    "carrier_units": {
+      "passed": 5,
+      "failed": 0,
+      "ignored": 0,
+      "test_duration_seconds": 0.0,
+      "log": "/tmp/questpc2-corpse-projection-units-green.log"
+    },
+    "ground_units": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "test_duration_seconds": 0.0,
+      "log": "/tmp/questpc2-native-ground-units.log"
+    },
+    "markers": [
+      "INSTANCE_CORPSE_MINT POSTGRES_CASE_OBSERVED server_version_num=180006",
+      "INSTANCE_CORPSE_MINT POSTGRES_CASE_COMPLETED elapsed_ms=78",
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_OBSERVED oteryn:creature.the_primal_menace native_xp_receipts=1 elapsed_ms=226",
+      "NATIVE_INSTANCE_CORPSE POSTGRES_CASE_OBSERVED creature=oteryn:creature.the_primal_menace item=oteryn:item.tibia.i39530 roots=1",
+      "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.the_primal_menace elapsed_ms=258",
+      "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.the_primal_menace elapsed_ms=72007",
+      "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+      "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED"
+    ],
+    "check": {
+      "command": "cargo check --locked -p oteryn-gameplay-combat -p oteryn-gameplay-dispatch -p oteryn-gameplay-entities --all-features",
+      "exit_code": 0,
+      "duration_seconds": 68,
+      "log": "/tmp/questpc2-native-binding-check.log"
+    },
+    "clippy": {
+      "command": "cargo clippy --locked -p oteryn-gameplay-combat -p oteryn-gameplay-dispatch -p oteryn-gameplay-entities --all-targets --all-features -- -D warnings",
+      "exit_code": 0,
+      "duration_seconds": 58.19,
+      "log": "/tmp/questpc2-native-binding-clippy.log"
+    },
+    "format": "cargo fmt --all -- --check and explicit changed-module rustfmt: exit0; only assertion formatting/comments changed after semantic checks",
+    "whitespace": "git diff --check: exit0"
+  },
+  "contract_notes": "CONTRACT-NOTES.md",
+  "new_item_admissions": 0,
+  "self_review": [
+    "Complete source delta reviewed against the loaded repository checklist. No durable owner, quota, wire tag, current fence or private reward route is bypassed.",
+    "The removed carrier restriction predated the now implemented Instance MINT owner. Exact projection scope/generation and conflicting/replayed Item checks remain; new negative cases preserve namespace isolation.",
+    "Native private reward bosses still clear the physical corpse loot table. The PG case retains zero physical contents and exactly one earned private chest, with retained victory/contribution/replay checks.",
+    "No source creature/Item/map grants, migration, content pin, workflow or repository-tool changes. No full suites, credentials, subagents, PR or readiness claim."
+  ],
+  "next": "Immediately admit the missing exact Spite/Bakragore corpse definitions with repository tooling, separate declared container capacity from actual unchanged count budgets, prove native draining for both, and then compose qualified source rooms/callbacks. Continue all remaining L3 entries."
+}

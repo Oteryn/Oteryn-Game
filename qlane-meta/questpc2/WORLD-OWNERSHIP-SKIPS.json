@@ -1,0 +1,77 @@
+{
+  "basis": "Owner execution exclusion; no duplicate implementation or local qualification claimed.",
+  "entries": [
+    {
+      "canonical": "oteryn:quest.authored.chakoya_iceberg_mini_world_change",
+      "title": "Chakoya Iceberg Mini World Change",
+      "owner": "wvar",
+      "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+      "observed_status": "QUALIFIED",
+      "evidence_branch": "claude/happy-davinci-ijz3wy-wvar",
+      "sha": "5fe120419214c6256250e47c86587ad1e12f75aa",
+      "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+      "line": 40,
+      "local_qualification_claimed": false
+    },
+    {
+      "canonical": "oteryn:quest.deeplings_worldchange",
+      "title": "Deeplings World Change",
+      "owner": "worldchg",
+      "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+      "observed_status": "QUALIFIED",
+      "evidence_branch": "claude/happy-davinci-ijz3wy-worldchg",
+      "sha": "ebc53bc6e5cceb72837b9a984723c433798c6955",
+      "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+      "line": 50,
+      "local_qualification_claimed": false
+    },
+    {
+      "canonical": "oteryn:quest.authored.demon_wars_world_change",
+      "title": "Demon Wars World Change",
+      "owner": "worldchg",
+      "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+      "observed_status": "QUALIFIED",
+      "evidence_branch": "claude/happy-davinci-ijz3wy-worldchg",
+      "sha": "ebc53bc6e5cceb72837b9a984723c433798c6955",
+      "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+      "line": 51,
+      "local_qualification_claimed": false
+    },
+    {
+      "canonical": "oteryn:quest.authored.devovorga_s_essence_mini_world_change",
+      "title": "Devovorga's Essence Mini World Change",
+      "owner": "wevents",
+      "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+      "observed_status": "OWNED_OTHER_LANE",
+      "evidence_branch": "claude/happy-davinci-ijz3wy-worldchg",
+      "sha": "ebc53bc6e5cceb72837b9a984723c433798c6955",
+      "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+      "line": 52,
+      "local_qualification_claimed": false
+    },
+    {
+      "canonical": "oteryn:quest.authored.down_the_drain_mini_world_change",
+      "title": "Down the Drain Mini World Change",
+      "owner": "wvar",
+      "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+      "observed_status": "QUALIFIED",
+      "evidence_branch": "claude/happy-davinci-ijz3wy-wvar",
+      "sha": "5fe120419214c6256250e47c86587ad1e12f75aa",
+      "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+      "line": 45,
+      "local_qualification_claimed": false
+    },
+    {
+      "canonical": "oteryn:quest.authored.rise_of_devovorga",
+      "title": "Rise of Devovorga",
+      "owner": "wevents",
+      "basis": "Explicit owner instruction excludes World changes owned by -worldchg/-wvar/-wcontrib/-wevents.",
+      "observed_status": "OWNED_OTHER_LANE",
+      "evidence_branch": "claude/happy-davinci-ijz3wy-worldchg",
+      "sha": "ebc53bc6e5cceb72837b9a984723c433798c6955",
+      "path": "docs/architecture/reviews/WORLDCHG-Q.md",
+      "line": 72,
+      "local_qualification_claimed": false
+    }
+  ]
+}

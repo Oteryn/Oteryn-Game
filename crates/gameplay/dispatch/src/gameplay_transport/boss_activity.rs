@@ -21,6 +21,28 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         kind: u32,
         payload: &[u8],
     ) -> BossActivityResult {
+        self.boss_activity_action(admitted, id, kind, payload, false)
+            .await
+    }
+
+    pub(super) async fn boss_activity_start(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        payload: &[u8],
+    ) -> BossActivityResult {
+        self.boss_activity_action(admitted, id, wire::COMMAND_TYPE_BOSS_LEVER, payload, true)
+            .await
+    }
+
+    async fn boss_activity_action(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        kind: u32,
+        payload: &[u8],
+        difficulty_start: bool,
+    ) -> BossActivityResult {
         let malformed = || Some((CommandStatus::Rejected, Vec::new()));
         if id == 0
             || !admitted
@@ -36,9 +58,36 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return malformed();
         }
-        let Ok(intent) = wire::decode_boss_key(payload) else {
+        let Ok(mut intent) = wire::decode_boss_key(payload) else {
             return malformed();
         };
+        if let Some(canonical) = super::endgame_entry::canonical_boss_key(&intent.boss_key) {
+            intent.boss_key = canonical;
+        }
+        let outburst = super::outburst_entry::is_outburst(&intent.boss_key);
+        if outburst {
+            intent.boss_key = "oteryn:boss.outburst".into();
+        }
+        let primal = super::primal_entry::is_primal(&intent.boss_key);
+        if primal {
+            intent.boss_key = super::primal_entry::BOSS.into();
+        }
+        let mut soul_war = super::soul_war_entry::is_soul_war(&intent.boss_key);
+        if let Some(canonical) = soul_war {
+            intent.boss_key = canonical.into();
+        }
+        let mut rotten = super::rotten_blood_entry::is_rotten_blood(&intent.boss_key);
+        if let Some(canonical) = rotten {
+            intent.boss_key = canonical.into();
+        }
+        // A Soul War or Rotten Blood lever outside its authenticated source
+        // room keeps the generic endgame catalogue path.
+        if soul_war.is_some() && !self.soul_war_source_qualified(&intent.boss_key).await {
+            soul_war = None;
+        }
+        if rotten.is_some() && !self.rotten_blood_source_qualified(&intent.boss_key).await {
+            rotten = None;
+        }
         let (Some(actor), Some(fence), Some(_)) = (
             admitted.runtime_actor,
             admitted.item_fence,
@@ -71,7 +120,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return self.boss_activity_result(retained);
         }
-        {
+        let origin_pin = {
             let runtime = self.runtime.lock().await;
             if runtime.binding().runtime_scope() != fence.runtime_scope
                 || runtime.binding().scope_generation() != fence.scope_ownership_generation
@@ -82,39 +131,106 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             {
                 return malformed();
             }
+            ActivityContentPin {
+                coordinate_frame_digest: runtime.content_pin().frame_binding_digest(),
+                map_revision_digest: runtime.map_revision_digest(),
+                server_artifact_digest: runtime.content_pin().server_artifact_digest(),
+            }
+        };
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && outburst
+            && let Err(reason) = self
+                .prepare_outburst_catalogue(admitted, &intent.boss_key)
+                .await
+        {
+            return refusal(reason);
         }
         if kind == wire::COMMAND_TYPE_BOSS_LEVER
-            && oteryn_gameplay_encounters::bosses::endgame_entry::Encounter::from_boss_key(
-                &intent.boss_key,
-            )
-            .is_some()
+            && primal
+            && let Err(reason) = self.prepare_primal_catalogue(admitted).await
         {
-            use oteryn_gameplay_encounters::bosses::endgame_entry::EntryRefusal;
-            return match self.endgame_boss_entry(admitted, payload).await {
-                Ok(Err(reason)) => refusal(match reason {
-                    EntryRefusal::InvalidInput => ActivityRefusal::InvalidInput,
-                    EntryRefusal::Level => ActivityRefusal::Level,
-                    EntryRefusal::QuestAccess | EntryRefusal::BossChain => {
-                        ActivityRefusal::AuthorityRejected
-                    }
-                    EntryRefusal::ContentUnavailable => ActivityRefusal::ContentUnavailable,
-                }),
-                Err(CharacterProgressionError::AuthorityRejected) => {
-                    refusal(ActivityRefusal::AuthorityRejected)
+            return refusal(reason);
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && soul_war.is_some()
+            && let Err(reason) = self
+                .prepare_soul_war_catalogue(admitted, &intent.boss_key)
+                .await
+        {
+            return refusal(reason);
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && rotten.is_some()
+            && let Err(reason) = self
+                .prepare_rotten_blood_catalogue(admitted, &intent.boss_key)
+                .await
+        {
+            return refusal(reason);
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && !primal
+            && soul_war.is_none()
+            && rotten.is_none()
+            && super::endgame_entry::encounter_for_boss_key(&intent.boss_key).is_some()
+        {
+            match self.endgame_boss_entry(admitted, payload).await {
+                Ok(Err(reason)) => {
+                    return refusal(reason.into());
                 }
-                // A successful destination must pass the real scope barrier.
-                // The unqualified endgame consumer cannot publish a handoff.
-                Ok(Ok(())) | Err(_) => None,
+                Err(CharacterProgressionError::AuthorityRejected) => {
+                    return refusal(ActivityRefusal::AuthorityRejected);
+                }
+                Ok(Ok(())) => {}
+                Err(_) => return None,
             };
         }
         let owner = ActivityHandoffOwner::new(self.root.clone());
         let Some(definition) = owner
-            .read_boss_room(self.character, self.holder, fence, &intent.boss_key)
+            .read_boss_room_with_pin(
+                self.character,
+                self.holder,
+                fence,
+                &intent.boss_key,
+                origin_pin,
+            )
             .await
             .ok()?
         else {
             return refusal(ActivityRefusal::ContentUnavailable);
         };
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && !difficulty_start
+            && (oteryn_protocol_oteryn::boss_difficulty::boss_maximum(&definition.boss_key)
+                .is_some()
+                || oteryn_protocol_oteryn::boss_difficulty::boss_maximum(
+                    &definition.boss_creature_key,
+                )
+                .is_some())
+        {
+            use oteryn_protocol_oteryn::boss_difficulty as difficulty;
+            if !admitted
+                .continuity
+                .selected_capabilities
+                .contains(difficulty::CAPABILITY_BOSS_DIFFICULTY_V1)
+            {
+                return refusal(ActivityRefusal::AuthorityRejected);
+            }
+            let request = difficulty::encode_request(&difficulty::Request::OpenWithProgress {
+                boss_key: intent.boss_key,
+            })
+            .ok()?;
+            let reply = self
+                .root
+                .boss_difficulty_command(self.character, self.holder, fence, id, &request)
+                .await
+                .ok()??;
+            return Some((CommandStatus::Accepted, reply));
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && !super::endgame_room_policy::matches_source_cooldown(&definition)
+        {
+            return refusal(ActivityRefusal::ContentChanged);
+        }
         if kind != wire::COMMAND_TYPE_BOSS_LEVER {
             let Some(scope_owner) = self
                 .activity_runtimes
@@ -144,7 +260,17 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }) {
             return refusal(ActivityRefusal::AuthorityRejected);
         }
-        if let Err(reason) = self.ensure_activity_template_runtime(&definition).await {
+        let template_ready = if outburst {
+            self.ensure_outburst_definition_runtime(&definition).await
+        } else if rotten.is_some() {
+            self.ensure_rotten_blood_definition_runtime(&definition)
+                .await
+        } else if soul_war.is_some() {
+            self.ensure_soul_war_definition_runtime(&definition).await
+        } else {
+            self.ensure_activity_template_runtime(&definition).await
+        };
+        if let Err(reason) = template_ready {
             return refusal(reason);
         }
         let loaded = self.activity_runtimes.activity_owners().ok()?;
@@ -205,7 +331,24 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             let runtime = self.runtime.lock().await;
             let census = runtime.positioned_actor_census().ok()?;
+            let partition = if definition.boss_key == "oteryn:boss.bakragore" {
+                let cell = runtime.read_actor_position(actor).ok()?.position();
+                let ordinal = definition
+                    .lever_positions
+                    .iter()
+                    .position(|p| (p.x, p.y, p.floor) == (cell.x, cell.y, cell.floor));
+                let Some(ordinal) = ordinal else {
+                    return refusal(ActivityRefusal::Position);
+                };
+                Some(ordinal / 5)
+            } else {
+                None
+            };
             for (ordinal, lever_cell) in definition.lever_positions.iter().enumerate() {
+                if partition.is_some_and(|selected| ordinal / 5 != selected) {
+                    continue;
+                }
+
                 let mut occupants = census.iter().filter(|(_, position, session)| {
                     let cell = position.position();
                     session.is_some()
@@ -275,6 +418,20 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return refusal(ActivityRefusal::PartyCount);
         }
+        // Crystal 201189f boss_lever.lua:183-218 validates the entire lever
+        // roster. Endgame quest gates therefore apply to every participant.
+        if super::endgame_entry::encounter_for_boss_key(&intent.boss_key).is_some() {
+            for participant in &participants {
+                let member = self
+                    .activity_runtimes
+                    .connection(participant.source.game_session_id)?;
+                match self.endgame_boss_entry(member, payload).await {
+                    Ok(Ok(())) => {}
+                    Ok(Err(reason)) => return refusal(reason.into()),
+                    Err(_) => return refusal(ActivityRefusal::AuthorityRejected),
+                }
+            }
+        }
         let destination_content = {
             let runtime = destination.runtime.lock().await;
             ActivityContentPin {
@@ -297,7 +454,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             time_limit_ms: definition.policy.time_limit_ms,
             participants,
         };
-        self.boss_activity_result(self.enter_native_activity(request, true).await.ok()?)
+        use sha2::Digest;
+        let wire_binding = sha2::Sha256::digest(payload).into();
+        self.boss_activity_result(
+            self.enter_native_boss_activity(request, wire_binding)
+                .await
+                .ok()?,
+        )
     }
 
     fn boss_activity_result(&self, result: NativeActivityOutcome) -> BossActivityResult {
@@ -344,3 +507,6 @@ fn refusal(reason: ActivityRefusal) -> BossActivityResult {
         wire::encode_boss_activity_reply(&wire::BossActivityReply::Refused(reason)).ok()?,
     ))
 }
+
+#[path = "boss_activity/source_extra.rs"]
+mod source_extra;

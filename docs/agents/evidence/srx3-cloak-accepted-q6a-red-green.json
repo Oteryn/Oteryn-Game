@@ -1,0 +1,45 @@
+{
+  "component": "accepted authoring13.7 Q6a canonical Cloak HP-event producer",
+  "scope": "Entity canonical queue only; physical33854 MINT and native play not proved by this packet",
+  "source_rule": "explicit Player HIT override; preserve raw signed metadata and other policy predicates; HealthChange invocation required",
+  "observations": [
+    {
+      "log": "/tmp/srx3-cloak-q6-direct-red43.log",
+      "sha256": "33d8d7ea380830ff835a7c49689f58b3769806dd85bc830fdb3b7243577d51bf"
+    },
+    {
+      "log": "/tmp/srx3-cloak-q6-periodic-red43.log",
+      "sha256": "6ff54bf8c294ef9c32c8707e1b62300d4f27c63733b36ecdc093e367e7da78f9"
+    },
+    {
+      "log": "/tmp/srx3-cloak-q6-green43b.log",
+      "sha256": "3fb75272a089d67508c0b41049e6749ef0cf96465ec0c39ed0d03708d38d6e76"
+    }
+  ],
+  "red_direct": {
+    "passed": 1,
+    "failed": 1,
+    "seconds": 66.91,
+    "assertion": "actual normal Player HP-loss precondition passed; first callback queue0 vs1; actual OriginNONE reflection negative control passed"
+  },
+  "red_periodic": {
+    "passed": 0,
+    "failed": 1,
+    "seconds": 65.88,
+    "assertion": "actual consumed attributed condition tick removedHP; queue0 vs1"
+  },
+  "green": {
+    "passed": 7,
+    "failed": 0,
+    "seconds": 60.94,
+    "controls": [
+      "direct/swing/staged Player-hit callbacks+replay",
+      "actual attributed periodic tick+consumed replay",
+      "OriginNONE reflection+replay noqueue",
+      "NULL source noqueue",
+      "positive heal before full-health clamp",
+      "historical receipt after parent removal/replay",
+      "residual Player damage queues1 then fully-absorbed NULL-only heal addsHP but queue stays1; both replay once"
+    ]
+  }
+}

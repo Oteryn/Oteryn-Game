@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.tower_defence_quest",
+  "tracks": [],
+  "rules": [
+    {
+      "creature": "oteryn:creature.goblin_leader",
+      "transition": "oteryn:quest-transition/quest/u8_1/tower_defence_quest/questline/creature_event_1",
+      "room": null,
+      "define_transition": false,
+      "effects": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "from": {
+            "kind": "eq",
+            "value": 2
+          },
+          "set": 3,
+          "default": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tower_defence_quest/creaturescripts_goblin_leader_kill.lua:3-8"
+      ]
+    }
+  ],
+  "runtime_enabled": false,
+  "scope": {
+    "disposition": "left_out",
+    "question": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590527568",
+    "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "missing_functions": [
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_batch3_c.rs::capture",
+      "crates/gameplay/dispatch/src/gameplay_transport/quest_batch3_c.rs::settle"
+    ],
+    "note": "Exact inactive donor source. The coordinator excludes the parser and kill-settlement adapter from this publication, including the test-only parser. No production loader or runtime consumer is registered.",
+    "future_adapter_review": "Do not map permanent ProgressionContextMismatch to Retry: it can block the ordered kill queue. This is recorded for the separate adapter PR, not fixed in this quest batch."
+  }
+}

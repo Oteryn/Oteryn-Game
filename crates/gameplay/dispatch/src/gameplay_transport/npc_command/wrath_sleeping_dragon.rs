@@ -1,35 +1,11 @@
-//! Live NPC caller for Crystal's Sleeping Dragon dream conversation.
+//! Live Sleeping Dragon dialogue, including the recoverable atomic finale.
 use super::super::{ComposedFreshAdmission, connection::UseCommand};
 use super::*;
-use crate::foundation::CommandId;
 use oteryn_gameplay_quests::quest::wrath_sleeping_dragon as quest;
-
-#[derive(Default)]
-pub(super) struct Conversation {
-    context: Option<(u64, u64, String)>,
-    topic: u8,
-}
 
 pub(super) enum Step {
     Refused,
-    Reply {
-        context: (u64, u64, String),
-        previous_topic: u8,
-        reply: quest::Reply,
-    },
-}
-
-fn reply(intent: &NpcTalkIntent, messages: Vec<String>) -> NpcTalkOutcome {
-    NpcTalkOutcome {
-        unknown: false,
-        inventory_changed: false,
-        disposition: NpcIntentDisposition::Ok,
-        conversation: Some(NpcConversation {
-            open: Some((intent.npc_actor, NpcConversationState::Open)),
-            lines: messages,
-        }),
-        window: None,
-    }
+    Dialogue(quest_dialogue::Step),
 }
 
 fn is_source_greeting(intent: &NpcTalkIntent, ordinary: &NpcTalkOutcome) -> bool {
@@ -86,72 +62,52 @@ pub(super) fn prepare(
     if context.2 != quest::NPC {
         return None;
     }
-    let previous_topic = admission
-        .states
-        .npc_conversations
-        .sessions
-        .lock()
-        .ok()
-        .map(|sessions| {
-            sessions
-                .get(&command.game_session_id)
-                .filter(|state| state.dragon.context.as_ref() == Some(&context))
-                .map_or(0, |state| state.dragon.topic)
-        });
-    let Some(previous_topic) = previous_topic else {
-        return Some(refuse_unavailable(
-            admission, actor, command, intent, runtime, ordinary,
-        ));
-    };
-    let values = admission
+    let available = admission
         .states
         .quest_sessions
         .lock()
         .ok()
-        .and_then(|sessions| {
-            let tracks = sessions
-                .get(&command.game_session_id)?
-                .copy
-                .as_ref()?
-                .tracks();
-            Some((
-                tracks.get(quest::QUESTLINE).copied().unwrap_or(-1),
-                tracks.get(quest::POTION).copied().unwrap_or(-1),
-            ))
+        .is_some_and(|sessions| {
+            sessions
+                .get(&command.game_session_id)
+                .is_some_and(|s| s.copy.is_some())
         });
-    let Some((questline, potion)) = values else {
+    if !available {
         return Some(refuse_unavailable(
             admission, actor, command, intent, runtime, ordinary,
         ));
-    };
-    if questline == 27 && is_source_greeting(intent, ordinary) {
-        // Crystal a_sleeping_dragon.lua:49-55 changes only an actual greeting,
-        // not every unrecognised word spoken while the quest is at stage27.
-        static DREAM_GREETING: std::sync::LazyLock<Option<Vec<String>>> =
-            std::sync::LazyLock::new(|| {
-                Some(vec![
-                    oteryn_gameplay_npc::quest_greetings::get(quest::NPC)?
-                        .variants
-                        .get("dream")?
-                        .text
-                        .clone(),
-                ])
-            });
-        return Some(Step::Reply {
-            context,
-            previous_topic,
-            reply: quest::Reply {
-                topic: 0,
-                messages: DREAM_GREETING.as_ref()?.as_slice(),
-            },
-        });
     }
-    let response = quest::respond(questline, potion, previous_topic, &intent.text)?;
-    Some(Step::Reply {
-        context,
-        previous_topic,
-        reply: response,
-    })
+    quest_dialogue::prepare(
+        admission,
+        actor,
+        command,
+        intent,
+        runtime,
+        |_, topic, _, tracks| {
+            let questline = tracks.get(quest::QUESTLINE).copied().unwrap_or(-1);
+            if questline == 27 && is_source_greeting(intent, ordinary) {
+                let greeting = oteryn_gameplay_npc::quest_greetings::get(quest::NPC)?;
+                return Some(quest_dialogue::Choice {
+                    transition: None,
+                    next_topic: Some(0.into()),
+                    reply: vec![greeting.variants.get("dream")?.text.clone()],
+                });
+            }
+            let topic = u8::try_from(topic.number).ok()?;
+            let response = quest::respond(
+                questline,
+                tracks.get(quest::POTION).copied().unwrap_or(-1),
+                topic,
+                &intent.text,
+            )?;
+            Some(quest_dialogue::Choice {
+                transition: (topic == 32 && response.topic == 0).then(|| quest::COMPLETE.into()),
+                next_topic: Some(u16::from(response.topic).into()),
+                reply: response.messages.to_vec(),
+            })
+        },
+    )
+    .map(Step::Dialogue)
 }
 
 pub(super) async fn apply(
@@ -161,71 +117,10 @@ pub(super) async fn apply(
     intent: NpcTalkIntent,
     step: Step,
 ) -> NpcTalkOutcome {
-    let rejected = || NpcTalkOutcome::only(NpcIntentDisposition::Rejected);
-    let unknown = || NpcTalkOutcome {
-        unknown: true,
-        ..rejected()
-    };
-    let Step::Reply {
-        context,
-        previous_topic,
-        reply: response,
-    } = step
-    else {
-        return rejected();
-    };
-    let (Some(item_fence), Ok(_)) = (command.item_fence, CommandId::new(command.command_id)) else {
-        return rejected();
-    };
-    let _slot = admission
-        .revision_sequencer
-        .acquire(item_fence.character_id)
-        .await;
-    let Ok(Some(fence)) = admission.current_quest_fence(command.game_session_id).await else {
-        return unknown();
-    };
-    if fence.item_fence() != item_fence {
-        return rejected();
-    }
-    {
-        let runtime = admission.runtime.lock().await;
-        let Ok(states) = admission.states.spell_states.try_lock() else {
-            return rejected();
-        };
-        if states.is_dead(actor)
-            || !states.spell_idle(&runtime, actor, command.game_session_id)
-            || admission.states.npc_conversations.current_npc(
-                &admission.states.chat,
-                &runtime,
-                actor,
-                command.game_session_id,
-                &intent,
-            ) != Some(context.clone())
-            || !runtime
-                .bound_attacker_lease(actor, command.game_session_id)
-                .is_ok_and(|lease| {
-                    lease.character_id().as_bytes() == fence.character_id.as_bytes()
-                        && lease.generation() == fence.character_lease_generation
-                })
-        {
-            return rejected();
+    match step {
+        Step::Refused => NpcTalkOutcome::only(NpcIntentDisposition::Rejected),
+        Step::Dialogue(step) => {
+            quest_dialogue::apply(admission, actor, command, intent, step).await
         }
     }
-    {
-        let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
-            return rejected();
-        };
-        let state = &mut sessions.entry(command.game_session_id).or_default().dragon;
-        let current_topic = if state.context.as_ref() == Some(&context) {
-            state.topic
-        } else {
-            0
-        };
-        if current_topic != previous_topic {
-            return rejected();
-        }
-        state.context = Some(context);
-        state.topic = response.topic;
-    }
-    reply(&intent, response.messages.to_vec())
 }

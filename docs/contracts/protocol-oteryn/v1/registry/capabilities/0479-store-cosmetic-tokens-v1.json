@@ -1,0 +1,16 @@
+{
+  "id": 479,
+  "name": "STORE_COSMETIC_TOKENS_V1",
+  "owner_decision": "Owner 2026-11-09 T193; official Tibia news 8998, character-bound 1:1 Cosmetic Tokens",
+  "owner": "Game earned Cosmetic Tokens and character cosmetics; Platform retains commercial coins",
+  "requires": [
+    154
+  ],
+  "command_types": [
+    6187,
+    6188
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Offered with STORE_V1 by with_store_offer when the Platform Store client is composed"
+}

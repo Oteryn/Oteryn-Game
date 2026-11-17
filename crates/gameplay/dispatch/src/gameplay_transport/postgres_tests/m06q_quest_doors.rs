@@ -13,7 +13,7 @@ fn m06q_placed_quest_door_use_wire_requires_durable_storage() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, false, false, None).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false, false, None, None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M06Q wire panic")??;
     Ok(())
@@ -40,7 +40,7 @@ fn closing_case(item: bool, authored: bool) -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(true, item, authored, None).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(true, item, authored, None, None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M06-CLOSE wire panic")??;
     Ok(())
@@ -64,7 +64,7 @@ fn m06_player_ground_move_far_or_missing_tile_writes_nothing() -> TestResult {
 }
 
 #[test]
-fn m06_player_ground_move_authored_item_is_not_supported() -> TestResult {
+fn m06_player_ground_move_authored_item_materializes_once_and_replays() -> TestResult {
     player_ground_case(PlayerGroundCase::Authored)
 }
 
@@ -74,7 +74,7 @@ fn player_ground_case(case: PlayerGroundCase) -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(false, false, false, Some(case)).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(false, false, false, Some(case), None).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "M06 player ground move panic")??;
     Ok(())
@@ -85,9 +85,12 @@ fn scenario(
     with_item: bool,
     authored: bool,
     player_case: Option<PlayerGroundCase>,
+    vampire_door: Option<u16>,
 ) -> TestResult {
     run(async |admin| {
-        let harness = Harness::create_with_admission_seed(admin, "m06q_quest", true, false).await?;
+        let harness =
+            Harness::create_with_admission_seed(admin, "m06q_quest", vampire_door.is_none(), false)
+                .await?;
         eprintln!("START M06Q real placed-door USE wire PostgreSQL");
         let started = std::time::Instant::now();
         super::reset();
@@ -99,16 +102,26 @@ fn scenario(
             .await
             .map_err(debug)?;
         let mut deps = Dependencies::new()?;
-        let (controller, pin) =
+        let (controller, pin) = if vampire_door.is_some() {
+            super::death_ml_loss_composed::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?
+        } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(
                 deps.admitted.world_id,
                 None,
-            );
+            )
+        };
         deps.room = pin.qualified_room().clone();
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
-        let door = "oteryn:item.tibia.i5113";
+        let door = if vampire_door.is_some() {
+            "oteryn:item.tibia.i5102"
+        } else {
+            "oteryn:item.tibia.i5113"
+        };
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
         let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
             (door, reference(door).ok_or("door")?.get() - 1),
@@ -166,23 +179,36 @@ fn scenario(
             .get_mut(1)
             .ok_or("door entry")?;
         // Read the actual committed world placement, not a test-authored action id.
-        let region = oteryn_world_bundle_compiler::b3::decode_region(
+        let source_bytes = if vampire_door.is_some() {
+            include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/world/placements/region-z14-x129-y123.b3"
+            ))
+            .as_slice()
+        } else {
             include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/../../../content/world/placements/region-z14-x125-y124.b3"
-            )),
+            ))
+            .as_slice()
+        };
+        let region = oteryn_world_bundle_compiler::b3::decode_region(
+            source_bytes,
             oteryn_world_bundle::bundle::TILE_LIMITS,
             &mut oteryn_world_bundle::sector::Budget {
                 tiles: 65536,
                 entries: 1_000_000,
             },
         )?;
+        let (x, y, appearance, action) =
+            vampire_door.map_or((32246, 31861, 5113, 10089), |x| (x, 31684, 5102, 1070));
         let placed = region
             .sectors
             .iter()
             .flat_map(|(_, _, tiles)| tiles)
-            .find(|tile| tile.x == 32246 && tile.y == 31861)
-            .ok_or("placed quest door")?;
+            .find(|tile| tile.x == x && tile.y == y)
+            .ok_or("placed door")?;
+        assert_eq!(placed.house, 0);
         let palette: serde_json::Value = serde_json::from_str(include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../../content/world/placements/index.json"
@@ -191,10 +217,12 @@ fn scenario(
             .items
             .iter()
             .find(|item| {
-                palette["palette"][item.palette as usize]["source_item_id"].as_u64() == Some(5113)
+                item.depth == 0
+                    && palette["palette"][item.palette as usize]["source_item_id"].as_u64()
+                        == Some(appearance)
             })
-            .ok_or("source quest door")?;
-        assert_eq!(source.attrs.action, Some(10089));
+            .ok_or("source door")?;
+        assert_eq!(source.attrs.action, Some(action));
         entry.attrs = source.attrs.clone();
         let bytes = oteryn_world_bundle_compiler::bundle::write_with_npcs(
             &data.manifest,
@@ -233,12 +261,27 @@ fn scenario(
         let cells = map
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
+        let frame = map.frame_binding_digest(deps.admitted.world_id);
+        deps.combat_room = Some(
+            deps.room
+                .bundle_view(
+                    cells.clone(),
+                    frame,
+                    map.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: 7,
+                        y: 0,
+                        floor: 7,
+                    },
+                )
+                .ok_or("bundle combat view")?,
+        );
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             pin.activation_sequence(),
             pin.identity().server_artifact_digest(),
             pin.identity().client_artifact_digest(),
-            pin.frame_binding().digest(),
+            frame,
             map.map_revision_digest(),
             (7, 0, 7),
         );
@@ -271,7 +314,7 @@ fn scenario(
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -282,7 +325,7 @@ fn scenario(
         let fence = crate::gameplay_transport::item_fence_of(current).ok_or("fence")?;
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
-        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&harness.pool).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -308,6 +351,14 @@ fn scenario(
         let payload =
             oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
         owner.admit_quest_session(&admitted).await;
+        if vampire_door.is_some() {
+            owner.admit_progression_session(&mut admitted).await;
+            vampire_gate(&mut owner, admitted, &authority, &map, &payload).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let (next, result, _) =
             super::item_craft::exchange(&owner, admitted, 1, &payload, None).await?;
         assert_eq!(result, UseDisposition::Locked);
@@ -552,25 +603,181 @@ fn scenario(
                     }
                 }
                 PlayerGroundCase::Authored => {
+                    use crate::gameplay_transport::item_move::{ItemMoveStep, item_move};
+                    use oteryn_protocol_oteryn::item_view::{
+                        ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
+                        encode_item_move_intent_for,
+                    };
+
+                    let mut observer = SessionMapView::default();
+                    let mut items =
+                        SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+                    let Some(MapUpdate::Snapshot(snapshot)) = owner
+                        .observe_world_map(deps.actor, &mut observer, &mut items)
+                        .await
+                        .ok_or("authored source map")?
+                        .map_err(debug)?
+                    else {
+                        return Err("authored source snapshot".into());
+                    };
+                    let header = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(
+                        &snapshot.payload,
+                    )
+                    .map_err(debug)?
+                    .header;
+                    let selection = ItemMoveSelection {
+                        equip_drop: false,
+                        container_tree: false,
+                        world_interaction: true,
+                    };
+                    let payload = encode_item_move_intent_for(
+                        &ItemMoveIntent {
+                            source: items.table().handle(&item).ok_or("authored coin handle")?,
+                            destination: ItemMoveDestination::Ground(cell(6)),
+                        },
+                        selection,
+                    )
+                    .map_err(debug)?;
+                    assert!(matches!(
+                        item_move(
+                            &owner,
+                            deps.actor,
+                            command(101),
+                            &payload,
+                            selection,
+                            false,
+                            &mut items,
+                        )
+                        .await,
+                        ItemMoveStep::Result(ItemMoveOutcome::Moved, _)
+                    ));
+                    let ItemKey::MapBase { placement_key, .. } = item else {
+                        return Err("authored source identity".into());
+                    };
+                    let (minted, definition, quantity): (Vec<u8>, String, i64) = sqlx::query_as(
+                        "SELECT uuid_send(item_instance_id),definition_production_key,quantity \
+                         FROM game_map_item_mint_receipts \
+                         WHERE game_session_id=encode($1,'hex')::uuid AND command_id=101 \
+                         AND base_bundle_digest=$2 AND placement_key=$3::text::numeric \
+                         AND reset_epoch=$4::text::numeric",
+                    )
+                    .bind(next.game_session_id.as_bytes().as_slice())
+                    .bind(map.base().digest().as_slice())
+                    .bind(placement_key.to_string())
+                    .bind(owner.reset_epoch.to_string())
+                    .fetch_one(&harness.pool)
+                    .await?;
+                    let minted: [u8; 16] = minted.try_into().map_err(|_| "minted coin identity")?;
                     assert_eq!(
-                        owner
-                            .move_loop_item(
-                                deps.actor,
-                                command(101),
-                                LoopMove {
-                                    item,
-                                    count: None,
-                                    target: LoopTarget::Ground(cell(6)),
-                                }
+                        (definition.as_str(), quantity),
+                        ("oteryn:item.tibia.i3031", 1)
+                    );
+                    let ground = owner
+                        .root
+                        .read_item_loop_ground(owner.world_id, owner.channel_id)
+                        .await?;
+                    let moved = ground
+                        .iter()
+                        .find(|entry| entry.item.item_instance_id == minted)
+                        .ok_or("materialized coin custody")?;
+                    assert_eq!(moved.item.quantity, 1);
+                    assert_eq!(
+                        moved.item.ground.spatial_position,
+                        [
+                            6_i32.to_be_bytes().as_slice(),
+                            0_i32.to_be_bytes().as_slice(),
+                            (-7_i16).to_be_bytes().as_slice(),
+                        ]
+                        .concat()
+                    );
+                    let custody: i64 = sqlx::query_scalar(
+                        "SELECT (SELECT count(*) FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid) \
+                         +(SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid) \
+                         +(SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid) \
+                         +(SELECT count(*) FROM game_item_container_slots WHERE item_instance_id=encode($1,'hex')::uuid)",
+                    )
+                    .bind(minted.as_slice())
+                    .fetch_one(&harness.pool)
+                    .await?;
+                    assert_eq!(
+                        custody, 1,
+                        "the minted coin must have exactly one custody owner"
+                    );
+                    let after = player_ground_state(&harness.pool).await?;
+                    assert_eq!(before["mint_receipts"], serde_json::json!([]));
+                    assert_eq!(
+                        after["mint_receipts"]
+                            .as_array()
+                            .ok_or("MINT receipts")?
+                            .len(),
+                        1
+                    );
+                    assert_eq!(
+                        after["receipts"].as_array().ok_or("move receipts")?.len(),
+                        1
+                    );
+                    assert_eq!(
+                        after["items"].as_array().ok_or("minted items")?.len(),
+                        before["items"].as_array().ok_or("prior items")?.len() + 1,
+                    );
+                    let ground = crate::gameplay_transport::loop_move::loop_ground(
+                        &owner,
+                        map.base(),
+                        Some(index),
+                    )
+                    .await
+                    .ok_or("materialized source overlay")?;
+                    assert!(
+                        ground
+                            .overlay()
+                            .tile(crate::map::overlay::TilePos {
+                                x: 7,
+                                y: 0,
+                                floor: -7,
+                            })
+                            .is_some_and(|tile| tile.is_hidden(1)),
+                        "the authored source must stay hidden"
+                    );
+                    for (command_id, expected) in
+                        [(101, ItemMoveOutcome::Moved), (102, ItemMoveOutcome::Stale)]
+                    {
+                        if command_id == 102 {
+                            // Inventory replay does not retire a Map handle. Publish the actual
+                            // changed map before testing reuse of its removed authored source.
+                            let Some(MapUpdate::Delta(delta)) = owner
+                                .observe_world_map(deps.actor, &mut observer, &mut items)
+                                .await
+                                .ok_or("materialized source map")?
+                                .map_err(debug)?
+                            else {
+                                return Err("materialization must publish a map delta".into());
+                            };
+                            let delta = oteryn_protocol_oteryn::world_map::decode_world_map_delta(
+                                &header,
+                                &delta.payload,
                             )
-                            .await,
-                        LoopMoveResult::Refused(LoopMoveRefusal::NotSupported)
-                    );
-                    assert_eq!(
-                        player_ground_state(&harness.pool).await?,
-                        before,
-                        "authored refusal must not MINT"
-                    );
+                            .map_err(debug)?;
+                            let source = delta
+                                .tiles
+                                .iter()
+                                .find(|tile| tile.position.x == 7 && tile.position.y == 0)
+                                .ok_or("removed authored source delta")?;
+                            assert!(!source.items.iter().any(|entry| entry.appearance_id == 3031));
+                            assert!(items.table().handle(&item).is_none());
+                        }
+                        assert!(matches!(
+                            item_move(
+                                &owner, deps.actor, command(command_id), &payload,
+                                selection, false, &mut items,
+                            ).await,
+                            ItemMoveStep::Result(actual, _) if actual == expected
+                        ));
+                        assert_eq!(
+                            player_ground_state(&harness.pool).await?,
+                            after,
+                            "replay and stale-source reuse must preserve exact custody and receipts"
+                        );
+                    }
                 }
             }
             eprintln!(
@@ -867,4 +1074,178 @@ async fn player_ground_state(pool: &sqlx::PgPool) -> Result<serde_json::Value, s
         'mint_reservations',(SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text),'[]'::jsonb) FROM game_map_item_mint_reservations r),\
         'mint_receipts',(SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text),'[]'::jsonb) FROM game_map_item_mint_receipts r))")
         .fetch_one(pool).await
+}
+
+// Crystal door_level.lua:1070 and doors.lua:273: both source doors require level70.
+#[test]
+fn vampire_shield_placed_level_doors_require_seventy_over_wire() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            for x in [33190, 33195] {
+                scenario(false, false, false, None, Some(x)).map_err(|e| e.to_string())?;
+            }
+            Ok::<(), String>(())
+        })?
+        .join()
+        .map_err(|_| "Vampire Shield wire panic")??;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED vampire_shield_level_doors duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+async fn vampire_gate(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    mut admitted: crate::gameplay_transport::connection::AdmittedSession,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    map: &crate::map::boot::BundleWorld,
+    payload: &[u8],
+) -> TestResult {
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    };
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "fence")?
+        .ok_or("fence")?;
+    owner
+        .runtime
+        .lock()
+        .await
+        .bind_attacker_lease(
+            actor,
+            admitted.game_session_id,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                    .map_err(debug)?,
+                fence.character_lease_generation,
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    let formula = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .and_then(|n| n.training_formula())
+        .ok_or("formula")?;
+    use crate::durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
+    };
+    owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_build(
+            owner.root,
+            authority,
+            owner.holder,
+            fence,
+            BuildChangeRequest {
+                occurrence: BuildOccurrence::from_bytes(id(90)).map_err(debug)?,
+                cause: BuildCause::VocationChoice,
+                before: DurableBuildState::default(),
+                after: convert_vocation(formula, &DurableBuildState::default(), "monk")
+                    .map_err(debug)?,
+                pruned_stance: None,
+            },
+            formula,
+            None,
+        )
+        .await
+        .map_err(debug)?;
+    let key = crate::map::boot::tests::door_key();
+    for (command, level, expected) in [
+        (1, 69, UseDisposition::Locked),
+        (2, 70, UseDisposition::Committed),
+    ] {
+        let binding = owner
+            .progression_binding(admitted.game_session_id)
+            .ok_or("progression")?;
+        let experience = binding
+            .policy
+            .thresholds
+            .iter()
+            .find(|t| t.level == level)
+            .ok_or("threshold")?
+            .minimum_experience
+            .get();
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("fence")?;
+        let current = owner
+            .root
+            .read_character_progression(authority, fence.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("progression state")?;
+        let outcome = owner
+            .revision_sequencer
+            .acquire(fence.character_id)
+            .await
+            .commit_experience(
+                owner.root,
+                authority,
+                owner.holder,
+                fence,
+                ExperienceAwardRequest {
+                    occurrence: ExperienceRewardOccurrence::from_bytes(id(u8::try_from(level)?))
+                        .map_err(debug)?,
+                    amount: oteryn_simulation_determinism::ExactI64::new(
+                        experience - current.total_experience.get(),
+                    ),
+                    context: binding.context.clone(),
+                    policy_revision: binding.policy_revision.clone(),
+                    reward_revision: binding.reward_revision.clone(),
+                    policy: binding.policy.clone(),
+                },
+                None,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(outcome, ExperienceCommitOutcome::Committed(_)));
+        owner.states.level_refresh.mark(
+            crate::gameplay_transport::level_up_live::leveled_character(&outcome),
+        );
+        Box::pin(owner.refresh_level_up_vitals(actor, admitted.game_session_id)).await;
+        {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            assert_eq!(
+                states
+                    .get(&runtime, actor, admitted.game_session_id)
+                    .ok_or("live facts")?
+                    .character_facts()
+                    .level,
+                level
+            );
+        }
+
+        owner.clock_origin -= std::time::Duration::from_secs(1);
+        let (next, result, _) =
+            super::item_craft::exchange(owner, admitted, command, payload, None).await?;
+        assert_eq!(result, expected, "source level{level}");
+        assert_eq!(
+            map.facts().doors().revision(key),
+            if level == 69 { 0 } else { 1 }
+        );
+        admitted = next;
+    }
+    let (next, result, _) = super::item_craft::exchange(owner, admitted, 2, payload, None).await?;
+    assert_eq!(result, UseDisposition::Committed);
+    assert_eq!(map.facts().doors().revision(key), 1, "replay toggled twice");
+    owner.clock_origin -= std::time::Duration::from_secs(1);
+    let (_, result, _) = super::item_craft::exchange(owner, next, 3, payload, None).await?;
+    assert_eq!(result, UseDisposition::StaleState);
+    assert_eq!(map.facts().doors().revision(key), 1);
+    Ok(())
 }

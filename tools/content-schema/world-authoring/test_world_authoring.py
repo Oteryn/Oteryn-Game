@@ -64,6 +64,14 @@ def string(text: str) -> bytes:
     return struct.pack("<H", len(text)) + text.encode("latin-1")
 
 
+# These synthetic maps have no donor startup selectors. Keep their capture
+# explicit so production builds still require every committed row.
+QUEST_ACCESS_INPUT = {
+    "tools/content-schema/world-authoring/samples/quest-access-bindings.json": b'{"bindings": []}\n',
+    "tools/content-schema/world-authoring/samples/qready2-chest-bindings.json": b'{"bindings": []}\n',
+}
+
+
 def fixture_map(extra_houses=(), extra_areas=()) -> bytes:
     """One town, one house (id 0xFE forces escaping) with a door, two teleports.
 

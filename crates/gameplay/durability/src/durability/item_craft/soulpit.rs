@@ -24,7 +24,20 @@ use sha2::{Digest, Sha256};
 
 mod entry;
 mod stack;
-pub(crate) use entry::burn_entry_core;
+pub(crate) use entry::{burn_entry_core,EntryDebit};
+
+/// Crystal 201189f soulpit.lua:155-174 and soulpit_fight.lua:37-77.
+/// Resolve the pinned species before reserving entry; the debit rechecks custody
+/// and this same reverse-variation/name rule inside the handoff transaction.
+pub fn entry_species<'a>(
+    native: &'a oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+    definition: &crate::durability::item_mint::TypedDefinitionRef,
+) -> Option<&'a str> {
+    let source_id = native_source_id(native, definition).filter(|id| is_soul_core(*id))?;
+    let name = crate::domain::soulpit::soulpit_entry_monster_name(source_id)?;
+    source_monster(&name)?;
+    monster_record_for_name(native.creature_profiles(), &name).map(|(key, _)| key)
+}
 
 #[derive(Debug, Clone)]
 pub struct SoulCoreCraftRequest {
@@ -155,7 +168,8 @@ async fn write<C: ItemLoopContent>(
             Err(LoopError::Durability(error)) => return Err(error),
             Err(LoopError::Database(error)) => return Err(error.into()),
         };
-    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, context.content).await?;
+    let capacity =
+        read_derived_transfer_capacity_centi_oz(tx, fence.character_id, context.content).await?;
     let selected_id = selected_output(
         context.native,
         kind,
@@ -344,7 +358,16 @@ async fn write<C: ItemLoopContent>(
     } else {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES($1::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,$5::uuid)")
             .bind(&output_id).bind(world.as_bytes().as_slice()).bind(&output_definition.production_key).bind(&output_definition.revision_ref).bind(&transaction).execute(&mut ***tx).await?;
-        place_output(tx, context.permit, fence, &delivery, &output_id, &ordinal, &transaction).await?;
+        place_output(
+            tx,
+            context.permit,
+            fence,
+            &delivery,
+            &output_id,
+            &ordinal,
+            &transaction,
+        )
+        .await?;
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice())
@@ -692,9 +715,13 @@ mod tests {
             monster_record_for_name(&profiles, "rat").map(|(key, _)| key),
             Some("oteryn:creature.rat")
         );
-        // Cake Golem is a source conversion target/candidate, while entry still needs
-        // the native Creature owner. Metadata capture cannot authorize a new actor.
-        assert!(monster_record_for_name(&profiles, "Cake Golem").is_none());
+        // Crystal201189f data-global/monster/quests/a_piece_of_cake/cake_golem.lua:1:
+        // the qualified native Creature admission now owns this exact identity.
+        assert_eq!(
+            monster_record_for_name(&profiles, "Cake Golem").map(|(key, _)| key),
+            Some("oteryn:creature.cake_golem")
+        );
+        assert!(monster_record_for_name(&profiles, "Unqualified Cake Golem").is_none());
         assert_eq!(
             monster_for_core(47_691).map(|monster| monster.stars),
             Some(2)

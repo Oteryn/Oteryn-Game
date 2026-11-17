@@ -1,0 +1,78 @@
+{
+  "lane": "questpc2",
+  "branch": "claude/happy-davinci-ijz3wy-questpc2b",
+  "state": "COMPILE_GREEN_FOCUSED_TESTS_PENDING",
+  "main": "b3864f14a0035a582ef80f1da7d2a931691dd035",
+  "preserved": [
+    "main public projections",
+    "quest objective capture cache moved to slot3 after main statistics slot2",
+    "complete atomic Father eleven-track write",
+    "existing main NPC rules"
+  ],
+  "repairs": [
+    "capability371gate description names existing BUNDLE_WORLD_OFFERED_CAPABILITIES owner",
+    "exact62existing source Item keys accounted for; each checked for zero speed; original raw-source and unknown-speed assertions retained"
+  ],
+  "checks": {
+    "workspace_all_targets_keep_going": "PASS 6m03s",
+    "clippy_ten_changed_crates_all_targets_all_features": "PASS 9m55s",
+    "fmt": "PASS",
+    "prey_real_rust_simulation": "PASS 15cases776creatures",
+    "native_generated_outputs": "45exact142.349s",
+    "central_lists": "regenerated",
+    "pins": "regenerated; worlddigest unchanged6b4be39d9f386b9f86327de020750bb5077ab5f8fd1ec82e874840fa9216617a"
+  },
+  "pending_focused_cases": [
+    "the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6",
+    "equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
+    "questpc2_hero_four_pipe_greetings_grant_only_their_own_access_once",
+    "catalogue_npc_source_acceptance_is_atomic_and_replay_bound",
+    "catalogue_npc_general_xp_handin_runs_in_real_dispatch",
+    "l3_instance_endgame_rotten_blood_native_death_progresses_once",
+    "annihilator_source_route_genuine_party_entry"
+  ],
+  "full_unit_suites_pending": [
+    "oteryn-game-server",
+    "oteryn-gameplay-content",
+    "oteryn-gameplay-dispatch",
+    "oteryn-gameplay-durability",
+    "oteryn-gameplay-entities",
+    "oteryn-gameplay-foundation",
+    "oteryn-gameplay-monster-ai",
+    "oteryn-gameplay-native-admission-source",
+    "oteryn-gameplay-spell",
+    "oteryn-gameplay-world"
+  ],
+  "old_tree_partial_units": {
+    "executed": 723,
+    "planned": 2758,
+    "not_executed": 2035,
+    "real_assertion_failures": 2,
+    "whole_suite_pass": false
+  },
+  "publication_decision": "Explicit owner PREPUSH-2step3cadenceexception: publish passing generation, workspace compile and fmt; clippy also passed. Focused tests still building, no newmain PG success claimed. Continue immediately with actual binary cases.",
+  "own_migrations_unchanged": [
+    "1240_al_dee_item_exchange.sql",
+    "1241_uzgod_obsidian_knife_exchange.sql",
+    "1242_seymour_present_exchange.sql",
+    "1243_native_encounter_progression_scope.sql",
+    "1244_instance_corpse_mint.sql"
+  ],
+  "main_migrations_unchanged": [
+    "1350_public_projections_v2.sql",
+    "1351_public_guild_house.sql",
+    "1352_public_death_capture.sql",
+    "1354_public_online_statistics.sql",
+    "1355_public_daily_kills.sql",
+    "1356_public_statistics_custody_separation.sql"
+  ],
+  "log_sha256": {
+    "prey-retry": "3d64cc59d1ec988e39194d1b678ddaae79f924d9119b3b4c4bbde648cf7b0bd2",
+    "workspace-nonincremental": "7e7bf7ddcc650e747069585615b472df3e0592bbcba87719de0e0edf516dd97c",
+    "clippy-nonincremental": "55efe1d605941acbe43bf4bf73a9303152543468132e8f6fd1774c9fbaf107ec",
+    "generated-replay": "2b9ca4fd9c72c2df6b125784665436a07b097e223d7d039449cb1128b43527c5",
+    "central": "a9c9d52b8ca126daa8d5bd7513952c16bb90bac5ff74d7764a796cf3bb0060d2",
+    "pin-refresh": "c04a99aebb400cf672c5a124ab144ef74949e57980b9f938021a934d79884721",
+    "fmt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": 495,
+  "name": "CHAT_CHANNEL_PARTICIPANTS_V1",
+  "owner_decision": "WU26 chat channels as in Tibia Global; parity rule: current Tibia, then Crystal 201189f8",
+  "owner": "Game private chat channel list (capability 80, domain 12 delta 3), its durable membership and the member notices (domain 12 delta 1)",
+  "requires": [
+    80
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only, with CHAT_PRIVATE_CHANNEL_V1. The channel list delta appends repeated field 5 participants (channel_id and the 1..=17 member names of each channel the character is in), and the member joins, leaves and exclusions between two list reads go out as line kind 8 with fields 11 channel_id, 4 speaker_name and 14 notice_kind (Joined 1, Left 2, Excluded 3). Without selection no participant field or notice is sent."
+}

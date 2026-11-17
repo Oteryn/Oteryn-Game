@@ -4,7 +4,16 @@ use oteryn_session::{AppliedDelta, CommandStatus, GatedSnapshot};
 mod protocol;
 mod state;
 pub use protocol::send;
-pub use state::{QuestRefusal, QuestState};
+pub use state::{QuestRefusal, QuestState, QuestUpdate};
+#[cfg(test)]
+#[path = "tests/e2e_all.rs"]
+mod e2e_all;
+#[cfg(test)]
+#[path = "tests/e2e_w15a.rs"]
+mod e2e_w15a;
+#[cfg(test)]
+#[path = "tests/e2e_w15d.rs"]
+mod e2e_w15d;
 #[cfg(test)]
 #[path = "tests/reducer.rs"]
 mod tests;

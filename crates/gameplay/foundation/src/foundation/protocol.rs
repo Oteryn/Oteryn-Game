@@ -36,8 +36,8 @@ pub use oteryn_protocol_oteryn::{
 };
 pub use oteryn_protocol_oteryn::{
     ServerAcceptedValue, ServerResumeAcceptedValue, encode_command_protocol_error,
-    encode_liveness_probe, encode_protocol_error, encode_server_accepted,
-    encode_server_resume_accepted,
+    encode_liveness_probe, encode_protocol_error, encode_protocol_error_with_trace,
+    encode_server_accepted, encode_server_accepted_with_trace, encode_server_resume_accepted,
 };
 // `ClientBootstrapView`/`ClientResumeView`/`ClientCommandView`/`LivenessAckView` flow through
 // `WireEnvelopeView`'s methods by inference; no code in this crate names them, so they are not

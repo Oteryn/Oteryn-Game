@@ -1,0 +1,19 @@
+{
+  "id": 445,
+  "name": "HOUSE_FURNITURE_ROTATION_V1",
+  "constant": "house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1",
+  "requires": [
+    49
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    730
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

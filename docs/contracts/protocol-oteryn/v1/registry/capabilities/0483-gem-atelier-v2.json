@@ -1,0 +1,19 @@
+{
+  "id": 483,
+  "name": "GEM_ATELIER_V2",
+  "owner_decision": "WU26-09 Winter Update 2026 Gem Atelier rework (test server 15.33)",
+  "owner": "Game Wheel of Destiny owner",
+  "requires": [
+    148
+  ],
+  "command_types": [
+    6210,
+    6211,
+    6212,
+    6213,
+    6214
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Offered only by bundle Worlds through BUNDLE_WORLD_OFFERED_CAPABILITIES to clients supporting Gem Vessel slots and capability 148; every request requires a current admitted Character session and the Wheel allocation capability. Entry-room and item-view fixture profiles do not offer this capability."
+}

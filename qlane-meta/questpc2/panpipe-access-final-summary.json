@@ -1,0 +1,32 @@
+{
+  "validation_stages": 15,
+  "rust_tests_passed": 170,
+  "rust_tests_failed": 0,
+  "executed_pg_cases": 5,
+  "tests": {
+    "pg-final": 2,
+    "bag-regression": 1,
+    "naginata-regression": 1,
+    "selectors": 1,
+    "bindings": 1,
+    "world-facts": 12,
+    "content-claims": 6,
+    "npc-dialogue": 17,
+    "oriental-regression": 1,
+    "server-content": 123,
+    "server-world": 5
+  },
+  "pg_markers": [
+    "POSTGRES_CASE_COMPLETED quest reward claims oteryn:reward-claim.quest.key.id4055 elapsed_ms=32734",
+    "POSTGRES_CASE_COMPLETED Panpipe locked door to reward elapsed_ms=32777",
+    "POSTGRES_CASE_COMPLETED quest reward claims oteryn:reward-claim.kv.panpipe elapsed_ms=31762",
+    "POSTGRES_CASE_COMPLETED quest reward claims Naginata pick elapsed_ms=41305",
+    "POSTGRES_CASE_COMPLETED Oriental Trader catalogue/ariki/sale/replay elapsed_ms=46140"
+  ],
+  "focused_python_passed": 24,
+  "broader_python": {
+    "passed": 108,
+    "failed": 1,
+    "unfinished": "test_writable_item_profiles.WritableProfilesTests.test_native_round_trip_is_idempotent_and_does_not_grant_mint_authority; Item2816 already present unchanged in HEAD"
+  }
+}

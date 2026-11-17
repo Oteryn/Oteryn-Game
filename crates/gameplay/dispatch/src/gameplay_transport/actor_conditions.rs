@@ -8,6 +8,10 @@ use crate::foundation::{
 };
 use crate::monster_combat_lane::native_conditions::*;
 
+#[cfg(test)]
+#[path = "actor_charm_cleanse_tests.rs"]
+mod actor_charm_cleanse_tests;
+
 impl ChannelSpellStates {
     fn condition_player_current(
         &self,
@@ -423,9 +427,9 @@ impl std::fmt::Debug for NativeSecondaryMemo {
 impl ChannelSpellStates {
     // Keep native_composite_conditions ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn native_composite_conditions(
+    pub(in crate::gameplay_transport) fn native_composite_conditions(
         &mut self,
-        runtime: &mut ChannelRuntimeV1,
+        runtime: &ChannelRuntimeV1,
         target: ExactActorRef,
         session: GameSessionId,
         occurrence: &str,
@@ -514,6 +518,9 @@ impl ChannelSpellStates {
         let mut next = before.clone();
         let mut primary = None;
         if let Some(amount) = magnitude {
+            let amount = runtime
+                .soul_war_hatred_player_primary(source, amount)
+                .ok()?;
             let (successor, damage) = crate::spell::actor_conditions::stage_typed_hit_in_world(
                 runtime, target, &next, amount, kind, facts.now,
             )
@@ -523,7 +530,15 @@ impl ChannelSpellStates {
         }
         if next.vitals().health > 0 {
             let label = format!("creature:{}", super::hex(&source.placement_identity()));
-            next = next.stage_source_player_conditions(label, definitions, immunities, facts)?;
+            let historical = super::native_public_death_cause(runtime, source)
+                .and_then(|cause| cause.historical_source());
+            next = next.stage_source_player_conditions_with_history(
+                label,
+                definitions,
+                immunities,
+                facts,
+                historical.as_ref(),
+            )?;
         }
         let changed = next != *before;
         let revision = if changed {
@@ -536,6 +551,7 @@ impl ChannelSpellStates {
             let cell = runtime.read_actor_position(target).ok()?.position();
             self.deaths.try_reserve(1).ok()?;
             Some(PlayerDeath {
+                public_cause: super::native_public_death_cause(runtime, source),
                 occurrence: (self.mint_death)()?,
                 cell,
             })
@@ -567,6 +583,7 @@ impl ChannelSpellStates {
             (magnitude, receipt, damage_text)
         {
             let memo = NativeSourceMemo {
+                source_primary: Some((source, magnitude)),
                 actor: target,
                 session,
                 occurrence: damage_text,
@@ -1336,6 +1353,24 @@ impl ChannelSpellStates {
 mod appearance_atomic;
 
 impl crate::creature_area_heal::AreaHealStates for ChannelSpellStates {
+    fn commit_source_area_heal_and_paralysis_removal_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        content: [u8; 32],
+        heal: &[(ExactActorRef, String, u64, u64)],
+        cure: &[ExactActorRef],
+        now: u64,
+        stamp: RuntimeWorkStamp,
+    ) -> Result<
+        Vec<crate::foundation::OwnerDamageResult>,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    > {
+        let current = runtime.owner_fence()?;
+        if !current_owner(runtime, current, stamp) {
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::WrongScope);
+        }
+        runtime.commit_source_creature_heal_and_cure(content, heal, cure, now)
+    }
     fn commit_source_area_heal_and_paralysis_removal(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -1351,6 +1386,318 @@ impl crate::creature_area_heal::AreaHealStates for ChannelSpellStates {
     > {
         Self::commit_source_area_heal_and_paralysis_removal(
             self, runtime, content, heal, cure, now, fence, stamp,
+        )
+    }
+}
+
+impl ChannelSpellStates {
+    /// Void Inversion resolves before mutation, sharing the existing source MP receipt.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source identity, target/session and source occurrence remain independent"
+    )]
+    pub(in crate::gameplay_transport) fn apply_charm_mana_drain(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        catalogue: &dyn oteryn_gameplay_progression::charm_effects::CharmCatalogueRead,
+        root: &GameplayDecisionRoot,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<crate::player_lethal::PlayerManaDrainReceipt> {
+        use oteryn_gameplay_progression::charm_effects::{CharmEffectOutcome, CharmHookEvent};
+        if magnitude == 0
+            || !self.condition_player_current(runtime, target, session)
+            || self.has_pending_spell_commit(target, session)
+            || runtime.assert_actor_spell_unreserved(target).is_err()
+            || !self
+                .get(runtime, target, session)?
+                .owned_conditions()
+                .accepts_time(now.get())
+        {
+            return None;
+        }
+        let text = Self::source_occurrence_text(occurrence)?;
+        self.prune_source_memos(runtime);
+        let old = self
+            .source_mana
+            .iter()
+            .position(|memo| memo.actor == target && memo.session == session);
+        if let Some(index) = old {
+            let memo = &self.source_mana[index];
+            if memo.occurrence == occurrence {
+                return (memo.magnitude == magnitude).then_some(memo.receipt);
+            }
+        }
+        let current = self.get(runtime, target, session)?;
+        let snapshot = runtime.companion_snapshot(source).ok()?;
+        let inverted = if snapshot.state.master.is_none() && !snapshot.state.policy.is_familiar {
+            let digest = Sha256::new()
+                .chain_update(b"oteryn.charm.source.v1")
+                .chain_update(occurrence.as_bytes())
+                .finalize();
+            let mut identity = [0; 16];
+            identity.copy_from_slice(&digest[..16]);
+            super::super::attack::charm_combat::evaluate_event_category(
+                self,
+                runtime,
+                catalogue,
+                root,
+                target,
+                session,
+                &snapshot.state.policy.definition_key,
+                DecisionOccurrenceId::from_bytes(identity),
+                CharmHookEvent::IncomingManaDrain {
+                    mana_drained: u64::from(magnitude),
+                },
+                oteryn_gameplay_progression::charm_effects::CharmCategory::Minor,
+                true,
+            )
+            .iter()
+            .any(|outcome| {
+                matches!(
+                    super::super::attack::charm_combat::effect(outcome),
+                    Some(CharmEffectOutcome::InvertManaDrain { .. })
+                )
+            })
+        } else {
+            false
+        };
+        let mana_before = current.vitals().mana;
+        // Canary 47dfd51f src/game/game.cpp:9076-9095: invert before the drain-only
+        // current-MP/resistance clamp. The gain is capped only by missing capacity.
+        let (next, applied) = if inverted {
+            current.after_mana_gain(u64::from(magnitude))?
+        } else {
+            let resolved = current.after_wheel_mana_drain(magnitude, now.get())?;
+            if resolved == 0 {
+                (current.clone(), 0)
+            } else {
+                current.after_creature_mana_drain(resolved)?
+            }
+        };
+        let receipt = crate::player_lethal::PlayerManaDrainReceipt {
+            applied,
+            mana_before,
+            mana_after: next.vitals().mana,
+            vitals_revision: next.revision(),
+        };
+        if old.is_none() {
+            self.source_mana.try_reserve(1).ok()?;
+        }
+        if applied > 0 && !self.commit(runtime, target, session, next) {
+            return None;
+        }
+        let memo = NativeSourceMemo {
+            actor: target,
+            session,
+            occurrence: text,
+            magnitude,
+            kind: None,
+            source_primary: None,
+            receipt,
+        };
+        if let Some(index) = old {
+            self.source_mana[index] = memo;
+        } else {
+            self.source_mana.push(memo);
+        }
+        Some(receipt)
+    }
+}
+
+// P01: the existing player condition owner applies the charm in one state successor.
+impl ChannelSpellStates {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "exact actor/session, selected effect and deterministic hit facts remain independent"
+    )]
+    pub(in crate::gameplay_transport) fn apply_player_charm_condition(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        effect: oteryn_gameplay_progression::charm_effects::CharmEffectOutcome,
+        root: &GameplayDecisionRoot,
+        occurrence: DecisionOccurrenceId,
+        now: u64,
+    ) -> bool {
+        use oteryn_gameplay_domain::domain::condition::{ConditionValues as Values, SpeedRange};
+        use oteryn_gameplay_foundation::foundation::condition as native;
+        if !self.condition_player_current(runtime, target, session)
+            || self.has_pending_spell_commit(target, session)
+            || runtime.assert_actor_spell_unreserved(target).is_err()
+        {
+            return false;
+        }
+        let Some(before) = self.get(runtime, target, session) else {
+            return false;
+        };
+        let Ok(base_speed) = u16::try_from(before.owned_base_speed()) else {
+            return false;
+        };
+        let facts = native::ApplicationFacts {
+            now,
+            base_speed,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: root,
+            occurrence,
+        };
+        if !before.owned_conditions().accepts_time(now) {
+            return false;
+        }
+        let mut conditions = before.owned_conditions().clone();
+        conditions.expire_non_ticking(now);
+        let mut canonical_cleanse = None;
+        match effect {
+            oteryn_gameplay_progression::charm_effects::CharmEffectOutcome::Haste { duration_ms } => {
+                // Canary 47dfd51f iobestiary.cpp:143-147, condition.cpp:2537-2563.
+                let Some(definition) = native::ConditionDefinition::new(
+                    "oteryn:charm.adrenaline_burst", 1,
+                    Values::Speed { paralysis: false,
+                        range: SpeedRange { a_min: 2500, a_max: 2500, b_min: 40, b_max: 40 }, duration_ms },
+                ) else { return false; };
+                if conditions.apply(&definition, Some(format!("player:{}", super::hex(&target.placement_identity()))),
+                    native::ConditionSourceKind::SelfUse, &[], &facts).is_err() { return false; }
+            }
+            oteryn_gameplay_progression::charm_effects::CharmEffectOutcome::CleanseOneNegativeCondition => {
+                let Ok(canonical) = runtime.actor_conditions(target, Some(session)) else { return false; };
+                let native_count = canonical.cleanse_candidate_count(now);
+                let Some(count) = native_count.checked_add(conditions.cleanse_candidate_count(now)) else { return false; };
+                // One draw across both existing stores, not one proc/removal per store.
+                // Native instances precede player-state instances; each keeps sequence order.
+                let index = match count {
+                    0 => return false,
+                    1 => 0,
+                    count => {
+                        let Ok(draw) = oteryn_simulation_determinism::deterministic_decision_u64(
+                            root, occurrence, native::COND_CLEANSE_PICK, 0,
+                        ) else { return false; };
+                        let Ok(count) = u64::try_from(count) else { return false; };
+                        let Ok(index) = usize::try_from(draw % count) else { return false; };
+                        index
+                    }
+                };
+                let native_index = (index < native_count).then_some(index);
+                let Ok(receipt) = runtime.prepare_actor_condition(
+                    target, Some(session),
+                    ActorConditionTransition::CleanseSelected { facts, index: native_index },
+                    SemanticTimeMicros::from_micros(now),
+                ) else { return false; };
+                if native_index.is_some() {
+                    return runtime.commit_actor_condition(&receipt, SemanticTimeMicros::from_micros(now))
+                        .unwrap_or(false);
+                }
+                let Ok(Some(plan)) = conditions.prepare_cleanse_at_index(&facts, index - native_count) else { return false; };
+                if !conditions.commit_cleanse(plan) { return false; }
+                canonical_cleanse = Some(receipt);
+            }
+            _ => return false,
+        }
+        let Some(revision) = before.revision().checked_add(1) else {
+            return false;
+        };
+        let mut next = before.clone();
+        if next
+            .apply_batch_conditions(before.owned_conditions(), &conditions)
+            .is_err()
+        {
+            return false;
+        }
+        next.source_set_batch_revision(revision);
+        if let Some(receipt) = canonical_cleanse {
+            // The existing owner validates before this immutable callback, then publishes
+            // the condition receipt only if the player-state compare-commit succeeds.
+            return runtime
+                .commit_actor_condition_with_vitals(
+                    &receipt,
+                    SemanticTimeMicros::from_micros(now),
+                    |runtime| self.commit(runtime, target, session, next).then_some(()),
+                )
+                .is_ok_and(|result| result.is_some());
+        }
+        self.commit(runtime, target, session, next)
+    }
+}
+
+#[cfg(test)]
+impl ChannelSpellStates {
+    #[allow(clippy::too_many_arguments, clippy::expect_used)]
+    pub(crate) fn with_source_charm_test<T>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        name: &str,
+        run: impl FnOnce(&mut ChannelRuntimeV1, &mut dyn crate::player_lethal::PlayerLethalVitals) -> T,
+    ) -> T {
+        use crate::domain::charm::{BestiaryRaceKey, CharmKey, CharmStage};
+        use crate::durability::charm_state::{CharacterCharmState, CombatCharmState};
+        use oteryn_gameplay_progression::charm_effects::{
+            CharmCatalogueRead, CharmDefinition, CharmPercent,
+        };
+        struct Certain(CharmDefinition);
+        impl CharmCatalogueRead for Certain {
+            fn charm(&self, key: &str) -> Option<&CharmDefinition> {
+                (self.0.key() == key).then_some(&self.0)
+            }
+        }
+        let catalogue = crate::content::charm_source::CanonicalCharmCatalogue::embedded()
+            .expect("canonical charms");
+        let key = CharmKey::new(format!("oteryn:charm.{name}")).expect("charm key");
+        let definition = catalogue.charm(key.as_str()).expect("canonical effect");
+        let certain = Certain(
+            CharmDefinition::new(
+                key.as_str(),
+                definition.category(),
+                definition.effect().stage_value(),
+                [100, 5000, 10000]
+                    .map(|value| CharmPercent::from_hundredths(value).expect("chance")),
+                definition.effect(),
+            )
+            .expect("certain test trigger"),
+        );
+        let race = runtime
+            .companion_snapshot(source)
+            .expect("source")
+            .state
+            .policy
+            .definition_key
+            .clone();
+        let character = *runtime
+            .bound_attacker_lease(target, session)
+            .expect("player lease")
+            .character_id()
+            .as_bytes();
+        assert!(self.install_charm_state(
+            runtime,
+            target,
+            session,
+            CombatCharmState::new(
+                crate::domain::CharacterId::from_bytes(character).expect("character"),
+                CharacterCharmState {
+                    unlocks: [(key.clone(), CharmStage::new(3).expect("stage"))].into(),
+                    assignments: [(key, BestiaryRaceKey::new(race).expect("race"))].into()
+                }
+            )
+        ));
+        let mut attack = super::super::attack::ChannelAttackStates::default();
+        let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        run(
+            runtime,
+            &mut super::super::attack::charm_combat::source_vitals::CharmSourceVitals {
+                states: self,
+                attack: &mut attack,
+                catalogue: &certain,
+                root,
+            },
         )
     }
 }

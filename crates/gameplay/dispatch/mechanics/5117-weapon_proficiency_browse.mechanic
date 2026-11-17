@@ -1,0 +1,10 @@
+name=weapon_proficiency_browse
+commands=641
+transport=weapon_proficiency_browse
+composed=weapon_proficiency_browse
+authority=weapon_proficiency_browse
+[route]
+match routing::weapon_proficiency_browse::route(authority, session.actor, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

@@ -1,0 +1,1782 @@
+[
+  {
+    "canonical": "oteryn:quest.authored.20_years_a_cook_quest",
+    "title": "20 Years a Cook Quest",
+    "mechanism": "native_actor_use_stepin_bindings",
+    "status": "WAITING-ENGINE",
+    "blocker": "Cheaty/Draccoon contacts and actual source trashcan are GREEN. Remaining: selected Ratha essence programme, live rival-cook catapult relocation, Bulltaur reconnaissance and final report.",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.authored.20_years_a_cook_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/84/definition"
+    },
+    "donor_resolution": "Existing canonical NPC is oteryn:npc.the_draccoon_npc. Verified public donor dakotaotserver-glitch/dakbugs@c74bf2380718b4f659a6a19a5f42bf76e7abe63f:data-otservbr-global/npc/The Draccoon.lua SHA25632154735d97f9357cf82ed011698bf849778fa2dbb973647d65abd0092c34073:14 look1703,85\u201386 base outfits1722/1723. This partial donor does not implement Ratha/Fryclops chain; retain source scope and author selected route separately. No unrelated fighting-spirit Item5884 substitution inferred.",
+    "item_identity_resolution": {
+      "fryclops_axe": 44525,
+      "ratha_empty": 44527,
+      "ratha_full": 44528,
+      "source": "imports/tibiawiki/facts/items-stats.json:11596,11615,11634; served appearances2dfa943b names/portable flags independently match",
+      "wiki_revisions": [
+        1047591,
+        1047595,
+        1046764
+      ],
+      "weights": [
+        1800,
+        600,
+        600
+      ],
+      "scope": "Exact3canonical/native physical records and carried custody PG GREEN; custom-use, NPC contacts and whole route remain to author."
+    },
+    "physical_material_red": {
+      "proof": "cloud-cook-materials-proof.json",
+      "postgres": "18.6",
+      "state": "3/3 realPG GREEN afterRED; canonical/native physical custody slice qualified, whole quest still unfinished"
+    },
+    "physical_materials_progress": {
+      "proof": "cloud-cook-materials-proof.json",
+      "native_items": [
+        44525,
+        44527,
+        44528
+      ],
+      "whole_recipe_qualified": false
+    },
+    "collector_integration": {
+      "main": "78294c081",
+      "local_merge": "2a8d79c99",
+      "premerge_physical_pg_green": true,
+      "postmerge_tests": "pending after compiling cadence checkpoint; no whole-quest qualification",
+      "shipping_checks": "PASS workspacealltargets4m16s,fmt,regeneration,equivalence,worldmetadata,pinrefresh/check,duplicates; focusedpostmerge tests/Clippy pending cadence exception"
+    },
+    "integration_repair": {
+      "cause": "Collector integration retained 34111 native Item keys after adding three Cook definitions; compiler has 34114, shifting compact references for subsequent keys. Existing ItemKeySetTests reproduces the stale generation.",
+      "repair": "Native-only repository regeneration now refreshes Item keys before pinning the manifest. No map-reference validation relaxed.",
+      "validation": "Banshee PG18.6 2/2 PASS123.530500246s and162.660560198s; indexPython2PASS; orchestration13PASS; workspace alltargets414s/fmt/equivalence PASS. Pins/clippy finishing; full dispatch unit rerun pending under cadence exception. Cook contacts separate RED155.145328756s source NPC placement absent.",
+      "latest_main_merge": "b3864f14a clean merge; workspace237s/fmt/pins/strictClippy218s PASS; postmerge Python3+3+13PASS; actor-offset PG and full unit rerun pending under PREPUSH-2 exception"
+    },
+    "engine_request": {
+      "feature": "Fenced item-on-world-target callback must relocate one exact live creature atomically with selected quest progress and carried-tool validation (Fryclops catapult).",
+      "needed_by": "20 Years a Cook Quest",
+      "where": "gameplay-quests world_callbacks; gameplay-dispatch quest_callbacks",
+      "checked_main": "78294c081a099c96a57948573d5dbf0caf398abf",
+      "checked_qengine2": "dd35529b6",
+      "evidence": "world_callbacks.rs Callback has player teleport effects but no live-creature relocation; source bridge comment explicitly records missing creature push.",
+      "decision": "Request shared support from qengine2; finish independently testable contacts, then continue another owned quest. Do not implement a second engine or mark the whole Cook quest qualified."
+    },
+    "contact_slice": {
+      "state": "WIP; not qualified",
+      "red_pg": {
+        "server": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "seconds": 155.145328756,
+        "error": "source NPC placement absent"
+      },
+      "subsequent_red": {
+        "seconds": 155.198691592,
+        "error": "CellOccupied",
+        "cause": "Shared scenario starts player at trigger.x-1, exactly Cheaty32843; trigger now32845 so player starts32844. Fresh PG rerun pending."
+      },
+      "implemented": [
+        "Exact retained Cheaty/Draccoon positions",
+        "Premium assignment and exact once-only empty44527 custody",
+        "Gated USE of captured ominous trashcan44563; no final quest completion"
+      ],
+      "tests": "Dispatch1604 and catalogue672 tests in progress, nofailfast. Also found collectible collision negative-test failure and starter-input expected13/actual10 failure; collect all and repair together."
+    },
+    "contacts_live_target_repair": {
+      "cause": "Non-production World compilation skips provisional palette entry44563; ordinal1 is absent from the live source tile, so USE returns NothingToUse.",
+      "decision": "Admit only exact44563 as immovable common Terrain from pinned official client unmove flag, with no Item alias or portable grant. Preserve raw B3 source bytes; regenerate the palette and World pins with repository tools.",
+      "pg_red": "PostgreSQL18.6, cook_native_contacts, 200.312729627s, NothingToUse at questpc5_oramond_roots.rs:197",
+      "green": "PG18.6 PASS188.228502994s, contacts body48.784006978s; all13focused PASS including actualcompiledtarget84.013s andexactcallbackinventory5.367s. See cloud-cook-contacts-proof.json; no wholequestqualification.",
+      "main_merge": "83acbdac3 attempted twice; 69 conflicting files across overlapping reward APIs/startup converters; aborted under owner15-minute exception, no conflict markers retained. Main b3864f14a remains merged.",
+      "checkpoint_checks": "PASS workspacealltargets246s; fmt; PythonCook3,Grizzly3,mtime3,orchestrator13; equipment pin; complete content equivalence; duplicate migration stagedtree; world pinrefresh/check90bc36d6943638a13d0083c9d24d10e04e524c649db738f95ebbb6d046689151. FreshCookPG and crate-unit repairs pending under PREPUSH-2 cadence exception. StrictClippy in progress. StrictClippyPASS433s.",
+      "latest_main": "6f61ac15d fetched after focused GREEN; same shared world-reward integration conflicts remain. Owner merge-budget exception; retain compiling state until reconciliation is prepared without mutating running unit inputs."
+    },
+    "additional_engine_request": {
+      "feature": "Reconcile main3029 world-reward API with existing premium/completion/read-only callback support",
+      "needed_by": [
+        "20 Years a Cook Quest",
+        "Thais Lighthouse Quest",
+        "Serpentine Tower Quest"
+      ],
+      "where": [
+        "gameplay-dispatch quest_callbacks/execute.rs",
+        "gameplay-durability quest_world_callback",
+        "gameplay-durability reward_claim_mint/quest.rs"
+      ],
+      "decision": "Avoid authoring a competing generic reward engine. Preserve main and existing quest semantics together; prepare resolutions offline while stable crate tests execute."
+    },
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "UNFINISHED",
+    "n3_loop": {
+      "state": "WAITING-ENGINE",
+      "owner": "ENGENC / QENGINE2",
+      "feature": "Fenced item-on-world-target relocation of one exact live Creature with quest progress.",
+      "evidence": "CallbackEffectSet supports player teleport; live Creature relocation is still a separate engine request.",
+      "checked_main": "e9276ad7e",
+      "checked_engine_heads": {
+        "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+        "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+        "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
+      },
+      "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.tutorial",
+    "title": "Tutorial",
+    "mechanism": "native_actor_use_stepin_bindings",
+    "status": "WAITING-ENGINE",
+    "blocker": "Source10HP/150XP wounded actor and rope3003/torch2920 identities are resolved; author the finite route/actor and reuse native kill goals. Actual claimant-fenced loot credit is requested in ENGINE-REQUESTS.md. No excluded Dawnport quest.",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.tutorial",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/58/definition"
+    },
+    "source_resolution": {
+      "proof": "cloud-tutorial-source-resolution.json",
+      "wounded_creature": "Retained Wiki page32666@403827 gives exact10HP and150XP; no missing-fact blocker. Canonical native actor/route still to author.",
+      "chosen_items": [
+        "oteryn:item.tibia.i3003",
+        "oteryn:item.tibia.i2920"
+      ],
+      "reuse": "Existing native_kill_goals.rs and grizzly_kills/native_goals.rs; do not build a second generic kill counter.",
+      "decision": "Keep Tutorial owned and Dawnport excluded; only the selected crystal exit may lead to existing Dawnport. Retain original ambiguous source facts and record plain rope/unlit torch as conservative selected bindings."
+    },
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "engine_request_2026_11_08": {
+      "feature": "Claimant-fenced progress from actual looting of an Item issued by an exact Creature death",
+      "existing_reuse": "native_kill_goals already supplies bounded once-only kill counters;1005carried-use proof covers tool consumption, not creature-death loot ingress",
+      "where": "gameplay-dispatch quick_loot/corpse settlement and gameplay-quests callback admission",
+      "rule": "Do not substitute an inventory presence check or kill alone for the selected kill-and-loot objective. No generic engine implementation in this lane."
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "UNFINISHED",
+    "n3_loop": {
+      "state": "WAITING-ENGINE",
+      "owner": "ENGITEM / QENGINE2",
+      "feature": "Claimant-fenced credit for actual loot pickup from the exact killed Creature.",
+      "evidence": "ENGENC4ffd19f3 changes private boss-loot admission, not the quest pickup/provenance bridge. Kill alone or inventory presence is insufficient.",
+      "checked_main": "e9276ad7e",
+      "checked_engine_heads": {
+        "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+        "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+        "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
+      },
+      "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.newhaven_legion_helmet_quest",
+    "title": "Newhaven Legion Helmet Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole chosen finite programme: both source NPC contacts, connected authored training route, native hole descent, original source corpse helmet USE and actual source forcefield return, once-only personal helmet/completion. Original source holds and unselected branches are preserved.",
+    "input_canonical": "unresolved:questpc2:newhaven_legion_helmet_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/62/definition"
+    },
+    "current_item_facts": {
+      "guardian_ring_52732": "Canonical/native admission and real PostgreSQL mint proven by cloud-newhaven-items-proof.json; whole Newhaven route earns ring.",
+      "scarf_3572": "Canonical/native admission proven; whole Newhaven route earns scarf, atomically consumes Book and grants selected XP."
+    },
+    "item_admission_progress": {
+      "items": [
+        52732,
+        3572,
+        51977
+      ],
+      "postgres_red_seconds": 4.48,
+      "postgres_native_mint_seconds": 53.100254427,
+      "proof": "cloud-newhaven-items-proof.json",
+      "whole_recipe_qualified": false
+    },
+    "route_contacts_progress": {
+      "postgres_green_seconds": 91.643903393,
+      "proof": "cloud-legion-contacts-proof.json",
+      "scope": "Both source NPC contacts and once-only personal tracks; no prerequisite quests, rewards or quest completion seeded. Cave/corpse/forcefield remain active."
+    },
+    "claim_gates_progress": {
+      "postgres_red_seconds": 53.386024031,
+      "postgres_green_seconds": 54.946823409,
+      "proof": "cloud-legion-claim-gates-proof.json",
+      "whole_recipe_qualified": false
+    },
+    "world_mechanisms_progress": {
+      "proof": "cloud-legion-world-mechanisms-proof.json",
+      "postgres_sparse_green_seconds": 96.512593037,
+      "postgres_three_gate_green_seconds": 54.560888833,
+      "whole_recipe_qualified": false
+    },
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-legion-complete-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_legion_complete_both_contacts_native_descent_corpse_and_forcefield_return",
+        "result": "PASS",
+        "duration_seconds": 101.906296394,
+        "proof": "cloud-legion-complete-proof.json"
+      }
+    ],
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.newhaven_quest",
+    "title": "Newhaven Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole chosen Oteryn Newhaven recipe: level2 tutor welcome, actual school/supply STEP visits, ten native Troll deaths, actual source Book chest USE, ring/scarf hand-ins and1600questXP, once-only completion. Unselected source tutorial/vocation branches are outside the selected recipe.",
+    "input_canonical": "unresolved:questpc2:newhaven_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/78/definition"
+    },
+    "current_item_facts": {
+      "guardian_ring_52732": "Canonical/native admission and real PostgreSQL mint proven by cloud-newhaven-items-proof.json; whole Newhaven route earns ring.",
+      "scarf_3572": "Canonical/native admission proven; whole Newhaven route earns scarf, atomically consumes Book and grants selected XP."
+    },
+    "item_admission_progress": {
+      "items": [
+        52732,
+        3572,
+        51977
+      ],
+      "postgres_red_seconds": 4.48,
+      "postgres_native_mint_seconds": 53.100254427,
+      "proof": "cloud-newhaven-items-proof.json",
+      "whole_recipe_qualified": false
+    },
+    "native_reward_progress": {
+      "proof": "cloud-newhaven-rewards-proof.json",
+      "postgres_red_seconds": 52.6,
+      "postgres_green_seconds": 96.41216229,
+      "scope": "Shared level gate, item plus XP milestone, Book consumption and terminal callback; component predicates are deliberately seeded; full native route pending"
+    },
+    "native_goal_progress": {
+      "proof": "cloud-newhaven-native-goal-proof.json",
+      "postgres_green_seconds": 99.747282116,
+      "component_marker_seconds": 45.512742567,
+      "scope": "Actual native Troll death capture/replay/refusals/cap and earned ring; tour flags deliberately seeded only for this component case; whole route pending"
+    },
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-newhaven-complete-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_newhaven_complete_tutor_exploration_native_kills_and_book_route",
+        "result": "PASS",
+        "duration_seconds": 101.064478497,
+        "postgres_marker_seconds": 47.446595503,
+        "proof": "cloud-newhaven-complete-proof.json"
+      }
+    ],
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "current_head_validation": {
+      "state": "GREEN after exact native goal registration",
+      "failure": "native Troll corpse admission stale; XP settlement refused",
+      "log": "/tmp/questpc5-newhaven-goal-green-pg.log",
+      "repair": "47-line owned closure producer reuses canonical Item facts and the existing native corpse/yield validators; preserves every table, probability, quantity and unrelated fact.",
+      "rerun": "PASS full tutor/exploration/two native hunting goals/book route; follow-up333quest unitsPASS",
+      "proof": "cloud-readiness-regression-proof.json",
+      "postgres": "18.6",
+      "seconds": 107.124364574,
+      "tested_base_head": "147c388dc95d4f07eec4d46e6cede735ae3584ad",
+      "tested_changes": "Follow-up exact native-goal admission registration and its333-case unit validation."
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.nimmersatt_s_lair",
+    "title": "Nimmersatt's Lair",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole selected finite personal programme. Source-position Rascalio/Premium passage, northern20-snowball supply, twenty exact consumed inputs and final wall projection, current Premium hand-in, one44179 and durable completion. Authored permanent personal NPC/trial variant and conservative10oz collectible rule are explicit. Global raid scheduling and unselected monster encounters are outside this chosen recipe.",
+    "input_canonical": "unresolved:questpc2:nimmersatt_s_lair",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "pointer": "/records/19/definition"
+    },
+    "research_evidence": [
+      ".questpc5/l5-reference/research.json"
+    ],
+    "world_item_reward_progress": {
+      "proof": "cloud-nimmersatt-world-items-proof.json",
+      "postgres_red_seconds": 53.552287386,
+      "postgres_green_seconds": 55.312982382,
+      "whole_recipe_qualified": false
+    },
+    "counted_use_progress": {
+      "proof": "cloud-nimmersatt-counted-use-proof.json",
+      "postgres_red_seconds": 52.591790992,
+      "postgres_green_seconds": 58.014944345,
+      "whole_recipe_qualified": false,
+      "world_pin_check": "PASS3492205b964d74c721dba0c3db3e7e8ca32647aae1c41d9837c34935f965293b"
+    },
+    "npc_premium_progress": {
+      "proof": "cloud-nimmersatt-npc-premium-proof.json",
+      "postgres_initial_red_seconds": 52.895945826,
+      "postgres_intermediate_red_seconds": 93.328804111,
+      "status": "PASS_COMPONENT",
+      "whole_recipe_qualified": false,
+      "postgres_green_seconds": 93.165087303,
+      "world_pin_check": "PASS5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b"
+    },
+    "whole_route_progress": {
+      "proof": "cloud-nimmersatt-whole-proof.json",
+      "postgres_red_seconds": 97.889092733,
+      "postgres_green_seconds": 96.207274321,
+      "state": "QUALIFIED",
+      "cargo_check": "PASS104s",
+      "migration_retest_postgres_seconds": 104.657881932
+    },
+    "qualification": {
+      "test": "questpc5_nimmersatt_rascalio_premium_twenty_hits_and_once_breath",
+      "postgres_server": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "postgres_seconds": 104.657881932,
+      "proof": "cloud-nimmersatt-whole-proof.json",
+      "migration_registry_proof": "cloud-migration-registry-proof.json",
+      "quest_or_reward_seeds": false,
+      "world_digest": "5c7ca9e8fe64666f0b9654e160c30bca95e3be3408351484b26192d59d703c3b"
+    },
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "current_head_validation": {
+      "tested_head": "147c388dc95d4f07eec4d46e6cede735ae3584ad",
+      "state": "GREEN after integration repair",
+      "failure": "first exact snowball callback rejected after premium refusal",
+      "log": "/tmp/questpc5-finished-readiness-pg.log",
+      "repair": "Canonical primary transition includes the exact counter effect; lowering still extends its bounded track once.",
+      "rerun": "PASS; complete19-case run18PASS/1NewhavenFAIL; schema prerequisite remains explicit",
+      "proof": "cloud-readiness-regression-proof.json",
+      "postgres": "18.6",
+      "seconds": 95.62
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.nomads_land_quest",
+    "title": "Nomads Land Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "WAITING-ENGINE",
+    "blocker": "Book2814, case7527 and source layout are resolved. Author selected route using existing pickup/inventory/drop; mutable Ground stack predicate and readable reward text requests are recorded in ENGINE-REQUESTS.md.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:nomads_land_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "pointer": "/records/20/definition"
+    },
+    "item_identity_resolution": {
+      "book_id": 2814,
+      "case_id": 7527,
+      "book_page": 19138,
+      "book_sha256": "79a10d75049fbdf37dfd1b16f8aca32cca1989b85d8fd6f6d46d4f08d4cbb214",
+      "case_page": 9518,
+      "case_sha256": "9310ea370e4e535981b353c5e2dbea9af1a2a07999d4955ab017588fea5154bb",
+      "donor_items_sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+      "muhad_sha256": "da135cc046e9dc68900de3ed6810d42c0dc16921c07be63399a8d15d73294642",
+      "completed_parent_feature": "qengine2/188ab6f79c3d53f7dfe7893b6a342e177ccb305b",
+      "book_text_surface": "ENGINE_REQUEST",
+      "classification": "DERIVED_TIBN_SUFFIX_AND_MATCHING_DONOR_XML",
+      "book_url": "https://www.tibiawiki.com.br/wiki/The_Sacred_Casket_(Book)",
+      "case_url": "https://www.tibiawiki.com.br/wiki/Jewel_Case_(Vermelho)",
+      "quest_url": "https://www.tibiawiki.com.br/wiki/Arito%27s_Task_Quest",
+      "book_witness": "Book page TIBN1 ends2814; donor XML2814 is parchment, weight200, writeable1, maxtextlen1023.",
+      "case_witness": "Donor7527 alone matches the stolen nomads treasure description; weight170 agrees with Wiki1.70oz.",
+      "qualification": false
+    },
+    "active_phase": "source facts resolved; prepare owned recipe while text binding is supplied by qengine2",
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "UNFINISHED",
+    "n3_loop": {
+      "state": "WAITING-ENGINE",
+      "owner": "ENGITEM / QENGINE2",
+      "feature": "Literal readable reward text and fenced mutable Ground stack/order predicates.",
+      "evidence": "ItemReward exposes item/count/contents; WorldRequirement exposes only position/immovable appearance. Preserve existing pickup/drop ownership.",
+      "checked_main": "e9276ad7e",
+      "checked_engine_heads": {
+        "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+        "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+        "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
+      },
+      "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.nomads_mini_world_change",
+    "title": "Nomads Mini World Change",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole selected premium once personal route: real STEP exploration and literal USE of three source-checked authored caches; exact10Ham/50Fish and terminal FurBag+four independent item outputs; same-transaction canonical account Chest Robber and quest completion, refusal/order/once proofs. Explicit authored camp offsets and food-name bindings are documented assumptions; global random daily camps are not selected.",
+    "input_canonical": "unresolved:questpc2:nomads_mini_world_change",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "pointer": "/records/21/definition"
+    },
+    "world_change_ownership": {
+      "scope": "World-change selection, persistence and reset/occurrence mechanics are excluded from this lane by the current owner instruction. Only the L5 item-admission gap remains in this row.",
+      "owner": "world_event::changes; existing WorldReset finalization",
+      "branches": [
+        "claude/happy-davinci-ijz3wy-worldchg",
+        "claude/happy-davinci-ijz3wy-wvar",
+        "claude/happy-davinci-ijz3wy-wcontrib",
+        "claude/happy-davinci-ijz3wy-wevents"
+      ],
+      "evidence": "content/encounters/world-changes/owner-catalogue.json",
+      "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34",
+      "variant_status_elsewhere": "QUALIFIED; nomads variant recipe in wvar"
+    },
+    "independent_outputs_progress": {
+      "source_commit": "eb196696c7d2606656f07cc72bf850ecdec81e10",
+      "source_current_branch": "origin/claude/happy-davinci-ijz3wy-questpc8@4724cec37",
+      "shared_migration": "1300_questpc8_reward_backpack_outputs.sql",
+      "red_log": "/tmp/questpc5-backpack-outputs-red.log",
+      "whole_recipe_qualified": false,
+      "integration_state": "COMPILES_PG_FACTORY_RED_INVALID_STORED_STATE_51_32S",
+      "integration_red_log": "/tmp/questpc5-backpack-outputs-green.log"
+    },
+    "active_checkpoint": "QUALIFIED: actual PG18.6 RED51.052321802s -> GREEN54.444058006s; compiler source guards/materialization3 Rust units; achievement guard1 Rust unit; authoring1 Python unit; generator/fmt/check/strict clippy/pin verification all PASS. Producteed7cbc68.",
+    "backpack_output_component_proof": "cloud-backpack-outputs-proof.json",
+    "assumptions": [
+      "Selected once personal route intentionally replaces random daily camp availability, per retained recipe adaptations.",
+      "Exact old camp/chest coordinates absent; use documented source-checked Oteryn offsets and newly authored permanent native chests.",
+      "Resolve ambiguous Ham/Fish reward-name intents to admitted native Items3582/3578 at exact10/50; preserve historical ambiguity as source evidence."
+    ],
+    "qualification_proof": "cloud-nomads-mini-whole-proof.json",
+    "whole_postgres_seconds": 54.444058006,
+    "world_pin": "639485b04a204b8efe593cbf76c0af353d3ad058d390d7f13bbb863dca3ce97c",
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "current_head_validation": {
+      "tested_head": "147c388dc95d4f07eec4d46e6cede735ae3584ad",
+      "state": "GREEN after integration repair",
+      "failure": "terminal cache USE disconnects without a command result",
+      "log": "/tmp/questpc5-finished-readiness-pg.log",
+      "repair": "World reward plan records callback.completes alongside the same source callback.",
+      "rerun": "PASS; complete19-case run18PASS/1NewhavenFAIL; schema prerequisite remains explicit",
+      "proof": "cloud-readiness-regression-proof.json",
+      "postgres": "18.6",
+      "seconds": 50.087
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.noodles_is_gone_mini_world_change",
+    "title": "Noodles is Gone Mini World Change",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole selected once personal King/Noodles courtyard route: actual NPC grant, exploration STEP, exact selected collar USE on published live Noodles, actual report with1000XP/5platinum/DogSitter and completion; actor/reach/order/ingress/repeat refusals. Global escape and Dog Lady/Puppies/calendar are not selected.",
+    "input_canonical": "unresolved:questpc2:noodles_is_gone_mini_world_change",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "pointer": "/records/22/definition"
+    },
+    "world_change_ownership": {
+      "scope": "World-change selection, persistence and reset/occurrence mechanics are excluded from this lane by the current owner instruction. Only the L5 item-admission gap remains in this row.",
+      "owner": "world_event::changes; existing WorldReset finalization",
+      "branches": [
+        "claude/happy-davinci-ijz3wy-worldchg",
+        "claude/happy-davinci-ijz3wy-wvar",
+        "claude/happy-davinci-ijz3wy-wcontrib",
+        "claude/happy-davinci-ijz3wy-wevents"
+      ],
+      "evidence": "content/encounters/world-changes/owner-catalogue.json",
+      "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
+    },
+    "active_checkpoint": "QUALIFIED PG18.6 GREEN94.317145358s; native collar exact donor profile, published actor/handle checks, frozen replay; Rust3/Python11, check/strict clippy/fmt/generators/pins all PASS.",
+    "assumptions": [
+      "Use retained permanent King/Noodles courtyard NPC placements for guaranteed personal route in Thais Peninsula; do not implement global escape/Dog Lady/Puppies/calendar changes."
+    ],
+    "native_collar_source": "imports/canary/items-xml/items.xml:32492-32496 sha2561cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2; exact14156 nonstackable1.10oz native profile, no fallback.",
+    "world_pin_refresh": {
+      "inputs_digest": "64eaff1acedc88abb4e42c67274390bcb76020d397eaaa6a9f2c716c9c055710",
+      "pins": [
+        {
+          "digest": "e68caf65219557465f2102bfe55dcbf34ba037f9b483cedd9f3cb22b8c7c68b8",
+          "previous": "639485b04a204b8efe593cbf76c0af353d3ad058d390d7f13bbb863dca3ce97c",
+          "world": "oteryn"
+        }
+      ]
+    },
+    "qualification_proof": "cloud-noodles-whole-proof.json",
+    "whole_postgres_seconds": 94.317145358,
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.opticording_sphere_quest",
+    "title": "Opticording Sphere Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "WAITING-ENGINE",
+    "blocker": "Five selected physical materials passed real PostgreSQL RED/GREEN. Whole15-stage selected route, boss data and source bindings remain to author; read-only foreign Bigfoot prerequisite request is recorded.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:opticording_sphere_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "pointer": "/records/78/definition"
+    },
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "physical_material_work": {
+      "identities": [
+        19063,
+        23572,
+        23573,
+        27522,
+        33313
+      ],
+      "source_unit_tests": "4PASS9.800s; exact HEAD script and foreign-slot rejection retained",
+      "producer_registered": true,
+      "postgres": "5PASS PostgreSQL18.6 in129.216s; individual42.548\u201343.763s; no seeded quest progress",
+      "proof": "cloud-opticording-source-resolution.json",
+      "generated_checks": "49nativefiles;exactly2newprofiles,3844existingunchanged;equipment3881;centralcounts/pins/duplicatesPASS",
+      "next_tool_identities": [
+        27522,
+        33313
+      ],
+      "next_tool_postgres": "27522RED42.571715555s->GREEN42.548140818s;33313RED42.744960659s->GREEN42.833818165s"
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "prerequisite_work": "Exact torches and selected order drafted; not registered. Foreign rank prerequisite needs read-only admission alongside a local transition; preserve would create a forbidden foreign effect.",
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "UNFINISHED",
+    "n3_loop": {
+      "state": "WAITING-ENGINE",
+      "owner": "QENGINE2",
+      "feature": "Read-only Bigfoot rank>=2 prerequisite alongside a local World quest transition.",
+      "evidence": "Existing preserve is not an arbitrary foreign quest read; do not write/fabricate the Bigfoot rank.",
+      "checked_main": "e9276ad7e",
+      "checked_engine_heads": {
+        "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+        "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+        "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
+      },
+      "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.oramond_quest",
+    "title": "Oramond Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "WAITING-ENGINE",
+    "blocker": "Exact roots21291 are admitted. Author remaining daily plant/tool/pollen/probe/sewer programme; reuse existing transaction clock operations. Cycle-scoped World reward MINT is requested in ENGINE-REQUESTS.md.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:oramond_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "pointer": "/records/79/definition"
+    },
+    "engine_request": "Daily restart/completion for authored NPC/world callback routes, reusing existing storage-time guards; qengine2 a1ea4e48 checked, no authored callback clock binding.",
+    "fact_resolution": "Crystal9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14,34 SHA256d0dc431a875ab44870e1758a949fe761b8fe3cfa3b950e11dbc37a309120b8ea grants exact Item21291; chavis.lua:84 consumes five. No same-name33938 substitution.",
+    "active_batch": {
+      "scope": "Exact donor21291 physical backpack custody only; no whole-route qualification",
+      "postgres_red_log": "/tmp/questpc5-oramond-root-red.log",
+      "state": "Exact5root native backpack custody PG GREEN131.165344988s; physical slice qualified, whole daily route still unfinished.",
+      "proof": "cloud-oramond-root-proof.json"
+    },
+    "collector_integration": {
+      "main": "78294c081",
+      "local_merge": "2a8d79c99",
+      "premerge_physical_pg_green": true,
+      "postmerge_tests": "pending after compiling cadence checkpoint; no whole-quest qualification",
+      "shipping_checks": "PASS workspacealltargets4m16s,fmt,regeneration,equivalence,worldmetadata,pinrefresh/check,duplicates; focusedpostmerge tests/Clippy pending cadence exception"
+    },
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "engine_request_refinement": {
+      "reused_clock": "reward_callbacks/state_ops.rs:StateCondition::ElapsedAtLeast + StateMutation::SetNow, authoritative transaction clock already implemented",
+      "missing": "World USE ItemReward needs cycle-scoped repeatable MINT; give_world passes false at reward_claim_mint/quest.rs:469",
+      "rule": "No synthetic payment or reused old roots to bypass five new plant rewards."
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "UNFINISHED",
+    "n3_loop": {
+      "state": "WAITING-ENGINE",
+      "owner": "QENGINE2 / ENGITEM",
+      "feature": "Quest-cycle-scoped repeatable World MINT and authored World transaction-clock integration.",
+      "evidence": "QENGINE2 world_callback_transaction_clock_operations is IN_PROGRESS with post-merge validation pending; fixture-only ENGITEM clock is not delivery of the authored World API.",
+      "checked_main": "e9276ad7e",
+      "checked_engine_heads": {
+        "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+        "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+        "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
+      },
+      "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.ornamented_shield_quest",
+    "title": "Ornamented Shield Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "WAITING-ENGINE",
+    "blocker": "Remaining complete route: Full keyed access route and exact container/reward path beyond the partial-charge source claim.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "evidence": [
+      {
+        "filter": "quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal",
+        "result": "PASS",
+        "log": ".questpc5/l5-charge-baseline.log",
+        "duration_seconds": 66.57,
+        "scope": "Exact partial-charge reward USE, replay, refusal and frozen receipt plan; whole quest not certified."
+      }
+    ],
+    "input_canonical": "unresolved:questpc2:ornamented_shield_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/67/definition"
+    },
+    "engine_request": {
+      "owner": "qengine2",
+      "feature": "Source-bound selection of one nested reward leaf under its existing once-only source chest claim",
+      "where": [
+        "crates/gameplay/content/src/content/world_reward_claims/selected_leaf.rs",
+        "tools/content-schema/reward-claim-authoring/selected_native_leaf.py"
+      ],
+      "reason": "Existing native_selected_leaf_v1 accepts only plain original reward amounts, not the source bag with eight children at UID6062. The selected quest requires only shield3424 and excludes key3702/extras. No parallel MINT or copied migration will be introduced.",
+      "reported": "2026-11-07",
+      "state": "REQUESTED"
+    },
+    "source_admission_guard_repair": {
+      "proof": "cloud-container-source-guards-proof.json",
+      "state": "GREEN:71 authoring tests,2253 crate units; freshCookPG18.6 155.631002405s; workspace205s/fmt/native48/binding/matrix/equipment/worldpin/duplicate migration checks PASS.",
+      "scope": "Shared source admission only. KV6063 full-default bag is distinct from the owned quest6062 route; no whole Ornamented qualification inferred."
+    },
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "UNFINISHED",
+    "n3_loop": {
+      "state": "WAITING-ENGINE",
+      "owner": "ENGITEM / QENGINE2",
+      "feature": "Exact nested native reward leaf selection under the original once-only chest ledger.",
+      "evidence": "Need shield3424 from UID6062 source bag while retaining the source claim and excluding key3702/extras; no parallel MINT.",
+      "checked_main": "e9276ad7e",
+      "checked_engine_heads": {
+        "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+        "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+        "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
+      },
+      "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.overhunting_world_change",
+    "title": "Overhunting World Change",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "WAITING-ENGINE",
+    "blocker": "Existing wolf/trap capture and Benevola World handover are reusable. Author personal daily programme; capture/pickup attribution is requested in ENGINE-REQUESTS.md. No duplicate World counter.",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "unresolved:questpc2:overhunting_world_change",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "pointer": "/records/83/definition"
+    },
+    "research_evidence": [
+      ".questpc5/l5-reference/research.json"
+    ],
+    "world_change_ownership": {
+      "scope": "World-change selection, persistence and reset/occurrence mechanics are excluded from this lane by the current owner instruction. Only the L5 item-admission gap remains in this row.",
+      "owner": "world_event::changes; existing WorldReset finalization",
+      "branches": [
+        "claude/happy-davinci-ijz3wy-worldchg",
+        "claude/happy-davinci-ijz3wy-wvar",
+        "claude/happy-davinci-ijz3wy-wcontrib",
+        "claude/happy-davinci-ijz3wy-wevents"
+      ],
+      "evidence": "content/encounters/world-changes/owner-catalogue.json",
+      "reviewed_wvar_sha": "ee09ac3592fa0ce5b794cc3c97d542bd7f6a7e34"
+    },
+    "engine_request": "Daily restart/completion for authored NPC/world callback routes, reusing existing storage-time guards; qengine2 a1ea4e48 checked, no authored callback clock binding.",
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "engine_request_refinement": {
+      "reused": [
+        "World/movement/monster_map/special_movement.rs:57-73 already removes exact starving_wolf and creates captured wolf12369 at trap12368",
+        "Benevola handover owns existing World contribution",
+        "StateOperation elapsed-time checks and SetNow already support daily clocks"
+      ],
+      "missing": "Claimant-attributed personal quest progress from capture/pickup event; retain daily run admission",
+      "rule": "Do not rebuild traps, global World counter or Benevola source handover."
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "UNFINISHED",
+    "n3_loop": {
+      "state": "WAITING-ENGINE",
+      "owner": "ENGENC / ENGITEM / QENGINE2",
+      "feature": "Claimant-attributed real capture/pickup credit and personal daily quest clock/cycle integration.",
+      "evidence": "Reuse existing wolf trap and World contribution owner; do not add a second global counter or substitute a presence check.",
+      "checked_main": "e9276ad7e",
+      "checked_engine_heads": {
+        "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+        "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+        "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
+      },
+      "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.power_ring_quest",
+    "title": "Power Ring Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole chosen once recipe: actual6151 Ring3050 claim/cold replay and actual6152 Amulet3056, exact200-charge/30-minute active-ring defaults, no parallel gold and both once receipts.",
+    "input_canonical": "unresolved:questpc2:power_ring_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/73/definition"
+    },
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json",
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-power-ring-complete-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_power_ring_complete_source_route",
+        "result": "PASS",
+        "duration_seconds": 62.27,
+        "postgres_marker_seconds": 3.874631571,
+        "proof": "cloud-power-ring-complete-proof.json"
+      }
+    ],
+    "assumptions": [
+      "The explicit native selection repairs source chest6151 item3031/comment power ring using the selected recipe and pinned Wiki item3050; original3031x1 remains visible in native_selection.original_reward. Never grant both."
+    ],
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.present_quest",
+    "title": "Present Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc2"
+    ],
+    "qualification_scope": "Whole selected once recipe: reach actual6113 source, claim full backpack and all source contents, retain cold replay and exact water states, consume the nested Present through canonical source-placed Seymour, grant exactly one Legion Helmet and prove replay/once behavior.",
+    "input_canonical": "unresolved:questpc2:present_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/74/definition"
+    },
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json",
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-present-complete-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_present_complete_source_route",
+        "result": "PASS",
+        "duration_seconds": 98.32,
+        "postgres_marker_seconds": 4.345191309,
+        "proof": "cloud-present-complete-proof.json"
+      }
+    ],
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.targuna_quest",
+    "title": "Targuna Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "WAITING-ENGINE",
+    "blocker": "Sterling acceptance and isolated Morla map grant are qualified. Remaining: return to Sterling/chest, Lizzie/Lizard Commander, Emiliana/Herald/turnips and guarded Ram object taming; selected s2 and whole quest remain unfinished.",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "evidence": [
+      {
+        "filter": "quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal",
+        "result": "PASS",
+        "log": ".questpc5/l5-charge-baseline.log",
+        "duration_seconds": 66.57,
+        "scope": "Exact partial-charge reward USE, replay, refusal and frozen receipt plan; whole quest not certified."
+      }
+    ],
+    "input_canonical": "oteryn:quest.targuna_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/79/definition"
+    },
+    "source_resolution": "cloud-targuna-ram-source.json: ram is exact map item53439 at31926,31896,z7; turnips53073; donor mount250/client1934, canonicaloteryn:content.mount.reliable_ram. Existing objecttaming cannot atomically gate/update quest progress.",
+    "engine_request": {
+      "feature": "Quest-guarded object taming with atomic mount grant and quest-progress write",
+      "needed_by": "Targuna Quest",
+      "where": "gameplay-content mount_taming; gameplay-durability item_use/mount_taming.rs",
+      "checked_qengine2": "e6bacdda6",
+      "decision": "Reuse existing item-target taming; request only missing quest guard/atomic progress. Do not substitute a creature or drop the earned-turnips predicate."
+    },
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "physical_material_work": {
+      "identity": 53073,
+      "producer_registered": true,
+      "source_tests": "3PASS6.531s",
+      "postgres": "PostgreSQL18.6 RED41.858535248s -> GREEN43.439000089s; zero quest progress rows",
+      "proof": "cloud-targuna-material-proof.json",
+      "equipment_union": 3882,
+      "status": "QUALIFIED_PHYSICAL_CUSTODY_ONLY"
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "n2_batch": {
+      "scope": "Sterling first contact only; exact retained NPC names/positions for four existing NPCs, only Sterling placement activated",
+      "state": "QUALIFIED Sterling first-contact slice only; whole nine-stage quest UNFINISHED",
+      "first_red_pg_seconds": 43.216368381,
+      "last_red_pg_seconds": 106.820341344,
+      "last_red_point": "Separate short-lived wire connections correctly dropped NPC focus; fixed by existing wire_reward conversation helper, then GREEN.",
+      "authoring": "PASS exact CI checks+104modules1121tests, own source/placement units, content tree/equivalence, all generated native outputs/equipment/worldmetadata",
+      "remaining_tests": "Broader dispatch/content/quests2261unit cases now all PASS3466.760s; ownPG proof recorded. Whole quest remains UNFINISHED.",
+      "proof": "TARGUNA-CONTACT-PROOF.json",
+      "green_pg": {
+        "case": "questpc5_targuna_sterling_first_contact_commits_once_without_reward_or_completion",
+        "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+        "duration_seconds": 122.354090168,
+        "success": true,
+        "marker": "TARGUNA_FIRST_CONTACT_PROVEN stage=0 receipts=1 rewards=0 completes=false",
+        "log": "/tmp/questpc5-n2-contact-green-pg-conversation.log"
+      }
+    },
+    "n2_map_batch": {
+      "state": "QUALIFIED isolated Morla map reward; whole quest UNFINISHED",
+      "scope": "Isolated Morla map reward after an arranged stage0 prerequisite; no travel, return-to-Sterling, chosen s2 completion or whole-quest completion claimed.",
+      "proof": "TARGUNA-MORLA-PROOF.json",
+      "red_pg_seconds": 47.965954115,
+      "green_pg_seconds": 96.253608336,
+      "progress": "Intermediate map acquisition0->1; chosen explore s2 still requires returning to Sterling.",
+      "shipping_checks": "PASS ownPG18.6 96.253608336s, authoring105modules1122tests, tree/equivalence, all generated files/pins, workspacealltargets8m30s, clippy4m38s, fmt. Broader3-crate units pending under PREPUSH-2 cadence exception. Completed current3-crate unit run:2261/2261PASS3466.760s,zero failures."
+    },
+    "n2_map_marker_request": {
+      "owner": "qengine2",
+      "feature": "Fenced NPC personal map marker effect with quest-progress receipt",
+      "source": "Retained Sterling.lua142-155, SHA3069d6f8265d9b414aedc6c50460268d5c3e98c0a65257cc48c54750e44516a9",
+      "position": [
+        31948,
+        31924,
+        7
+      ],
+      "checked_main": "107625470",
+      "checked_actual_qengine2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+      "checked_qengine2_wip": "04255c6af7f21caa71cc56d5fa138cbf15a095ac",
+      "state": "Requested; do not build a generic engine feature in this lane or claim the return/whole quest qualified."
+    },
+    "prior_status": "UNFINISHED",
+    "n3_loop": {
+      "state": "WAITING-ENGINE",
+      "owner": "ENGNPC / ENGITEM / QENGINE2",
+      "feature": "Fenced personal NPC map marker plus quest-guarded object taming with atomic progress.",
+      "evidence": "NpcRuleEffect::MapMark is a source-rule no-op, RewardCallback has no native marker delivery, and TamingRule has no quest progress transaction. Two earlier contact boundaries are pushed, not whole-quest qualification.",
+      "checked_main": "e9276ad7e",
+      "checked_engine_heads": {
+        "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+        "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+        "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
+      },
+      "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.the_explorer_society_quest",
+    "title": "The Explorer Society Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "WAITING-ENGINE",
+    "blocker": "Selected recipe explicitly removes specimen decay and excludes legacy rune/music missions; remaining work is binding its six field-course stages and exact physical specimens.",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.the_explorer_society_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/22/definition"
+    },
+    "recipe_scope_correction": "Existing selected recipe adaptations remove specimen-decay timers. Its seven stages contain no rune/music task, so those old whole-source gaps do not block this selected programme. Donor Canary04b83b512114bfd888000d6e1433ed8ecaec7c5b actions_icicle.lua grants4837 on4872->4994; actions_botanist.lua transforms4867->4868 at3874. Preserve original source semantics; selected timerless specimen policy must be explicit, never silently change4837 decay.",
+    "engine_request": {
+      "feature": "recipe-scoped nondecaying specimen binding preserving original timed Item",
+      "source_item": 4837,
+      "source_duration_ms": 600000,
+      "checked_qengine2": "279a9cff8717636d82b7dfb37be8d0bc46ad1b7d",
+      "state": "requested; continue other own entries"
+    },
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "UNFINISHED",
+    "n3_loop": {
+      "state": "WAITING-ENGINE",
+      "owner": "ENGITEM",
+      "feature": "Recipe-scoped nondecaying specimen variant preserving the original timed Item.",
+      "evidence": "Selected course removes decay; original specimen4837 has600000ms lifetime. Do not overwrite its known temporal semantics globally.",
+      "checked_main": "e9276ad7e",
+      "checked_engine_heads": {
+        "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+        "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+        "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
+      },
+      "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.the_queen_of_the_banshees_quest",
+    "title": "The Queen of the Banshees Quest",
+    "mechanism": "native_item_identity_charges_lifetime",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole chosen free level60 once programme: six source-map seals, Queen pact, final chamber, boots3079/platinum100 through two existing source claims, escape after both claims and no repeated reward. Original source holds including charged amulet stay unchanged.",
+    "evidence": [
+      {
+        "filter": "quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal",
+        "result": "PASS",
+        "log": ".questpc5/l5-charge-baseline.log",
+        "duration_seconds": 66.57,
+        "scope": "Exact partial-charge reward USE, replay, refusal and frozen receipt plan; whole quest not certified."
+      }
+    ],
+    "input_canonical": "oteryn:quest.the_queen_of_the_banshees_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/37/definition"
+    },
+    "active_step": "Whole selected seven-seal route PG GREEN, real level59 refusal GREEN, all five focused cases pass; current-main shipping checks then qualification push.",
+    "pg_red": {
+      "server": "PostgreSQL 18.6",
+      "duration_seconds": 115.988758922,
+      "log": "/tmp/questpc5-banshees-valid-red.log",
+      "precondition": "actual stored level60 asserted; old pre-binding runtime documents",
+      "failure": "first seal stage -1 instead of 0"
+    },
+    "invalidated_pg_attempts": [
+      "Original RED and green2 positive/level59 proof used UPDATE on absent progression row. Neither is counted as qualified mechanic/level proof. Serpentine regression passed independently135.685266054s."
+    ],
+    "whole_route_batch": {
+      "state": "QUALIFIED_OWN_POSTGRES_GREEN",
+      "proof": "qlane-meta/questpc5/cloud-banshees-whole-proof.json",
+      "postgres": "18.6",
+      "green_seconds": 383.527553955,
+      "low_level_seconds": 350.277026026,
+      "local_test_prerequisite": "Owner-approved uncommitted QUESTPC8 migration1300; never shipped.",
+      "post3032_green": {
+        "cases": 2,
+        "log": "/tmp/questpc5-banshees-post3032-green.log",
+        "positive_seconds": 290.506391182,
+        "level59_seconds": 178.887973902,
+        "postgres": "18.6"
+      }
+    },
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-banshees-whole-proof.json",
+    "integration_note": "Owner-authorized uncommitted QUESTPC8 migration1300 remains a local test prerequisite; collector must compose canonical PC8 PR from main before deployment. No foreign migration is shipped.",
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.demon_helmet_quest",
+    "title": "Demon Helmet Quest",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "DONE",
+    "blocker": null,
+    "from_lanes": [
+      "questpc",
+      "questpc6"
+    ],
+    "qualification_scope": "Whole selected Demon Helmet route: prerequisite key bag, exact keyed and level100 access, both player pressure plates, four unchanged native Demons and all three once treasures. Premium geography is enforced by the existing paid-travel owner. Navigation is abbreviated; no kill events, quest flags or XP receipts are fabricated.",
+    "input_canonical": "oteryn:quest.demon_helmet_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/21/definition"
+    },
+    "pressure_mechanism_evidence": "cloud-grouped-pressure-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_grouped_pressure_source_projection",
+        "result": "PASS",
+        "duration_seconds": 115.48,
+        "scope": "Reusable grouped/player-qualified occupancy, owned remote items, native forced wall ejection and exact Devil startup selector. These are mechanisms; whole Demon/Devil acquisition routes remain active.",
+        "proof": "cloud-grouped-pressure-proof.json"
+      },
+      {
+        "filter": "questpc5_helmet_source_key_doors_use_replay_and_relog",
+        "result": "PASS",
+        "duration_seconds": 72.7,
+        "scope": "Exact helmet source keyed access and missing native locked-door admission; whole Demon/Devil routes remain active.",
+        "proof": "cloud-helmet-source-keys-proof.json"
+      },
+      {
+        "filter": "questpc5_helmet_source_expertise_boundaries_and_departure",
+        "result": "PASS",
+        "duration_seconds": 68.87,
+        "scope": "Exact source expertise gates for Demon and Devil Helmet; whole quest routes remain active.",
+        "proof": "cloud-helmet-levels-proof.json"
+      },
+      {
+        "filter": "questpc5_demon_helmet_four_source_acquisitions_and_cold_replay",
+        "result": "PASS",
+        "duration_seconds": 78.09,
+        "scope": "Exact native prerequisite bag/key and all three once rewards; whole combat route remains active.",
+        "proof": "cloud-demon-source-acquisitions-proof.json"
+      },
+      {
+        "filter": "questpc5_demon_source_four_native_kills_and_exactly_once_settlement",
+        "result": "PASS",
+        "duration_seconds": 55.62,
+        "proof": "cloud-demon-complete-proof.json",
+        "scope": "Four actual source Demons at native HP; exactly four XP settlements and linked5995 corpses. Completes the retained source acquisition/access/pressure/reward proofs."
+      },
+      {
+        "filter": "questpc5_demon_source_four_native_kills_and_exactly_once_settlement",
+        "result": "PASS",
+        "duration_seconds": 54.28,
+        "scope": "Repair canonical and native Known-fact preservation in the reusable encounter admission bridge.",
+        "proof": "cloud-encounter-known-facts-proof.json"
+      }
+    ],
+    "source_key_access_evidence": "cloud-helmet-source-keys-proof.json",
+    "source_level_access_evidence": "cloud-helmet-levels-proof.json",
+    "completion_proof": "cloud-demon-complete-proof.json",
+    "taxonomy_serialization": "Compact canonical form restored after source digest refresh; parsed values unchanged.",
+    "known_fact_preservation_followup": "Complete: PG54.28s plus full tree/Imbuement/craft replay PASS; accepted canonical/native facts retained.",
+    "dependent_fingerprint_evidence": "cloud-imbuement-fingerprint-proof.json",
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.devil_helmet_quest",
+    "title": "Devil Helmet Quest",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc",
+      "questpc6"
+    ],
+    "qualification_scope": "Whole selected source route: both exact keys, all three source treasures/cold replay, exact keyed and level30 access, player-only pressure and created435 native descent, actual3148/static2123 removal preserving387/5017, one source Dragon and three source Minotaur Guards with native combat/XP/corpses.",
+    "input_canonical": "oteryn:quest.devil_helmet_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00000-00099.json",
+      "pointer": "/records/23/definition"
+    },
+    "pressure_mechanism_evidence": "cloud-grouped-pressure-proof.json",
+    "evidence": [
+      {
+        "filter": "questpc5_grouped_pressure_source_projection",
+        "result": "PASS",
+        "duration_seconds": 115.48,
+        "scope": "Reusable grouped/player-qualified occupancy, owned remote items, native forced wall ejection and exact Devil startup selector. These are mechanisms; whole Demon/Devil acquisition routes remain active.",
+        "proof": "cloud-grouped-pressure-proof.json"
+      },
+      {
+        "filter": "questpc5_helmet_source_key_doors_use_replay_and_relog",
+        "result": "PASS",
+        "duration_seconds": 72.7,
+        "scope": "Exact helmet source keyed access and missing native locked-door admission; whole Demon/Devil routes remain active.",
+        "proof": "cloud-helmet-source-keys-proof.json"
+      },
+      {
+        "filter": "questpc5_helmet_source_expertise_boundaries_and_departure",
+        "result": "PASS",
+        "duration_seconds": 68.87,
+        "scope": "Exact source expertise gates for Demon and Devil Helmet; whole quest routes remain active.",
+        "proof": "cloud-helmet-levels-proof.json"
+      },
+      {
+        "filter": "questpc5_devil_helmet_five_source_acquisitions_and_cold_replay",
+        "result": "PASS",
+        "duration_seconds": 82.96,
+        "scope": "Five exact Devil Helmet acquisitions: keys3610/3667 and three once treasures. Whole utility/grate/combat route remains active.",
+        "proof": "cloud-devil-source-acquisitions-proof.json"
+      },
+      {
+        "filter": "questpc5_devil_projected_grate_native_use",
+        "result": "PASS",
+        "duration_seconds": 55.98,
+        "scope": "Actual second-player-held pressure-created435 native USE, exact descent, replay, reach refusal and stale identity; whole field/combat remains active.",
+        "proof": "cloud-devil-grate-proof.json"
+      },
+      {
+        "filter": "questpc5_devil_static_fire_field_destroy_payment_and_replay",
+        "result": "PASS",
+        "duration_seconds": 54.59,
+        "scope": "Actual3148/static2123 removal at source keyhole387/5017, native standing-contact disappearance, exact charge/replay/refusal and atomic map/Item audit. Whole source combat remains active.",
+        "proof": "cloud-devil-static-field-proof.json"
+      }
+    ],
+    "source_key_access_evidence": "cloud-helmet-source-keys-proof.json",
+    "source_level_access_evidence": "cloud-helmet-levels-proof.json",
+    "source_grate_use_evidence": "cloud-devil-grate-proof.json",
+    "source_static_field_work": {
+      "state": "QUALIFIED",
+      "proof": "cloud-devil-static-field-proof.json",
+      "duration_seconds": 54.59,
+      "note": "Final actualPG54.59s, fmt, cargo check durability/dispatch and strict all-target/all-feature Clippy PASS. Whole Devil combat remains active."
+    },
+    "source_static_field_evidence": "cloud-devil-static-field-proof.json",
+    "source_combat_work": {
+      "state": "QUALIFIED",
+      "proof": "cloud-devil-complete-proof.json",
+      "duration_seconds": 58.28,
+      "note": "All four native source kills/XP/corpses/replay, complete source route proofs, fmt/check/strict clippy/tree/source/pin checks PASS."
+    },
+    "whole_route_evidence": "cloud-devil-complete-proof.json",
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "current_head_validation": {
+      "tested_head": "147c388dc95d4f07eec4d46e6cede735ae3584ad",
+      "state": "GREEN after integration repair",
+      "failure": "native source encounter returns LootItemInadmissible",
+      "log": "/tmp/questpc5-finished-readiness-pg.log",
+      "repair": "47-line owned closure producer reuses canonical Item facts and the existing native corpse/yield validators; preserves every table, probability, quantity and unrelated fact.",
+      "rerun": "PASS; complete19-case run18PASS/1NewhavenFAIL; schema prerequisite remains explicit",
+      "proof": "cloud-readiness-regression-proof.json",
+      "postgres": "18.6",
+      "seconds": 70.695
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.formogar_mine_hoist",
+    "title": "Formorgar Mines Hoist Quest",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc",
+      "questpc7"
+    ],
+    "qualification_scope": "Whole chosen quest: earn both exact source instructions through native USE, retain once/cold replay, enforce both flags, all three source movements and both live lever branches.",
+    "input_canonical": "oteryn:quest.formogar_mine_hoist",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00100-00199.json",
+      "pointer": "/records/46/definition"
+    },
+    "evidence": [
+      {
+        "filter": "questpc5_l5_hoist_instruction_gates_are_read_only",
+        "result": "PASS",
+        "duration_seconds": 264.21,
+        "log": ".questpc5/l5-hoist-green.log",
+        "cases": 8,
+        "scope": "UID3059/3061: neither instruction, each missing instruction independently, and both present; exact destination and no quest writes."
+      },
+      {
+        "filter": "questpc5_hoist_complete_source_route",
+        "result": "PASS",
+        "duration_seconds": 65.01,
+        "postgres_marker_seconds": 3.814298093,
+        "proof": "cloud-hoist-complete-proof.json",
+        "scope": "Same character, actual plan+book acquisitions, cold replay, instruction refusal, all physical source movements, reversible direction USE and wrong-object negative; no travel/switch quest writes."
+      }
+    ],
+    "mechanism_evidence": [
+      "qlane-meta/questpc5/cloud-remote-teleport-proof.json",
+      "qlane-meta/questpc5/cloud-claim-progress-proof.json"
+    ],
+    "assumptions": [
+      "The construction plans teach the hoist chest instruction. This repairs the missing FormorgarMinesHoistChest writer: all three retained movement scripts read that flag, but UID6214 writes FormorgarGlacierChest. Keep the separate skeleton instruction mandatory. The owner explicitly authorized conservative rules for missing source mechanisms."
+    ],
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json",
+    "skeleton_instruction_evidence": "cloud-skeleton-instruction-proof.json",
+    "middle_floor_evidence": "cloud-hoist-middle-floor-proof.json",
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-hoist-complete-proof.json",
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.authored.last_creep_standing",
+    "title": "Last Creep Standing",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "WAITING-ENGINE",
+    "blocker": "Remaining complete route: all eight temporary native disguises, matching portal predicates and leave-trial cleanup, plus final completion/reward composition. This lane implements missing mechanisms; delivered qengine2 effects/rewards are being reused.",
+    "from_lanes": [
+      "questpc",
+      "questpc8"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.authored.last_creep_standing",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00300-00351.json",
+      "pointer": "/records/12/definition"
+    },
+    "engine_request": {
+      "owner": "qengine2",
+      "state": "REQUESTED",
+      "feature": "Observed temporary disguise predicates, matching portal admission and exit cleanup",
+      "reused_evidence": "questpc8 d078ecd29:qlane-meta/questpc8/QUEST-STATUS.json Last Creep Standing; no completed implementation to merge",
+      "where": [
+        "crates/gameplay/quests/src/quest/world_callbacks.rs"
+      ]
+    },
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "engine_requests_file": "ENGINE-REQUESTS.md",
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "UNFINISHED",
+    "n3_loop": {
+      "state": "WAITING-ENGINE",
+      "owner": "ENGNPC / QENGINE2",
+      "feature": "Observed temporary disguise, matching portal predicate, restoration on exit.",
+      "evidence": "QENGINE2 item_look_disguise_restore remains QUEUED; preserve questpc8 reusable groundwork without declaring the complete eight-disguise route playable.",
+      "checked_main": "e9276ad7e",
+      "checked_engine_heads": {
+        "QENGINE2": "925d8480ef1cb88b16154a1dbf018a57ac22152a",
+        "ENGITEM": "bbe0184821852828c3686d33d936709c9859618f",
+        "ENGENC": "4ffd19f3ad28778f0bd283c350f27b34eae92d60",
+        "ENGNPC": "e22dff5512e09cab5b9e09756b96a53731ffb6cf"
+      },
+      "decision": "Owner assigns these shared engine boundaries to engine lanes. Continue the packet loop; do not fake the missing step or mark a partial delivery DONE."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.serpentine_tower_quest",
+    "title": "Serpentine Tower Quest",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc3"
+    ],
+    "qualification_scope": "Whole selected Premium once personal trial on retained tower geometry: real STEP exploration, durable pot drop and source forcefield branches, torch/lever USE and wall traversal, authored observation completion, then one existing UID6184 White Pearl claim. Early reward/observation and Premium refusals, repeat/once and exactly four progress receipts verified. This chosen trial does not claim the historical mystery is solved; source paper text/World bytes preserved.",
+    "input_canonical": "oteryn:quest.serpentine_tower_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/0/definition"
+    },
+    "current_batch": "Whole selected Serpentine trial and shipping checks GREEN: PG18.6 scenario130.12739066s/body8.493233924s; exact source claim once, four progress receipts; source barrel admission; two authoring/one barrel/fourteen callback-gate tests. Qualification proof and repo-generated World pins ready for immediate push.",
+    "migration_registry": "Owner correction: lane ships only 1270-1276; remove foreign Father 1277, obsolete dependent repair 1278, and QUESTPC8 1300. Father and backpack-output integration require QNPCFX #3027 and QUESTPC8 from main; no local migration copies shipped.",
+    "component_proof": "qlane-meta/questpc5/cloud-main-merge-proof.json",
+    "migration_ownership_proof": "qlane-meta/questpc5/cloud-migration-ownership-proof.json",
+    "whole_route_batch": {
+      "state": "QUALIFIED",
+      "red_log": "/tmp/questpc5-serpentine-whole-red3.log",
+      "postgres_version": "18.6",
+      "red_duration_seconds": 120.085965821,
+      "red_point": "Existing chest granted one pearl before the selected trial; expected zero.",
+      "programme": "Six source-validated callbacks and one gate on the existing source claim authored. Repository generator updated the two runtime documents needed for PG validation; both authoring tests pass. Broad generation, matrix and pins deferred until push.",
+      "green_attempt_log": "/tmp/questpc5-serpentine-whole-green2.log",
+      "last_pg_failure": "After the claim gate was added, PG18.6 ran114.66067871s and reached the torch approach; blocked by barrel2523 without native physical facts. Source-backed Ground-only admission authored via existing importer in43-line helper; unit passed1.983s. Post-admission PG rerun pending; quest remains UNFINISHED.",
+      "push_rule": "Owner compiling-WIP deadline: workspace all-target check and fmt, then push without waiting for full tests.",
+      "shipping_check": "Workspace all-target check PASS3m08s; fmt, strict quests/dispatch Clippy, matrix/generator checks and repo pin refresh/check PASS. Foreign migration copies absent. Immediate qualification/pin push follows.",
+      "proof": "qlane-meta/questpc5/cloud-serpentine-whole-proof.json"
+    },
+    "component_history": {
+      "kind": "source-binding-regression",
+      "state": "MAIN_MERGE_FULL_DEPENDENT_BASELINE_PENDING",
+      "test": "questpc5_real_world_startup_selectors_reach_postgres",
+      "log": "/tmp/questpc5-serpentine-ground-pot-red.log",
+      "python_red": "/tmp/questpc5-serpentine-bindings-python-red.log",
+      "source_contract": "CONTRACT-NOTES.md#serpentine-source-binding-restoration-2026-11-07",
+      "next": "Whole source pot-conditioned route and selected finite personal trial; never a parallel pearl MINT.",
+      "duration_seconds": 103.54,
+      "postgres_version": "18.6",
+      "failure": "retained torch at33151,32861,-7 has action None; expected Some(5632)",
+      "proof": "cloud-serpentine-startup-proof.json",
+      "green_seconds": 39.422032699,
+      "failures": [
+        "STEP selectsdefaultfloor9 despite durable droppedremote3031; expectedalternatefloor11",
+        "pot3465 nativegeneration_item_facts returnsDefinitionNotFound"
+      ],
+      "main": "bbb3e06d0",
+      "dependent_crates": [
+        "oteryn-game-server",
+        "oteryn-gameplay-characters",
+        "oteryn-gameplay-combat",
+        "oteryn-gameplay-combat-rules",
+        "oteryn-gameplay-content",
+        "oteryn-gameplay-content-promotion",
+        "oteryn-gameplay-dispatch",
+        "oteryn-gameplay-durability",
+        "oteryn-gameplay-encounter-rules",
+        "oteryn-gameplay-encounters",
+        "oteryn-gameplay-entities",
+        "oteryn-gameplay-items",
+        "oteryn-gameplay-monster-ai",
+        "oteryn-gameplay-npc",
+        "oteryn-gameplay-progression",
+        "oteryn-gameplay-quests",
+        "oteryn-gameplay-social",
+        "oteryn-gameplay-spell",
+        "oteryn-gameplay-spell-rules",
+        "oteryn-gameplay-world",
+        "oteryn-world-bundle-compiler"
+      ],
+      "full_test_log": "/tmp/questpc5-main-dependent-baseline.log"
+    },
+    "qualification_proof": "qlane-meta/questpc5/cloud-serpentine-whole-proof.json",
+    "integration_note": "Post-QNPCFX regression reached original chest but Rejected when pending QUESTPC8 migration1300 was absent. Restore only owner-approved local uncommitted prerequisite for focused tests; no tracked copy; native route/premium/observation passed before chest.",
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  },
+  {
+    "canonical": "oteryn:quest.thais_lighthouse_quest",
+    "title": "Thais Lighthouse Quest",
+    "mechanism": "paired_portals_stepout_remote_predicates",
+    "status": "DONE",
+    "from_lanes": [
+      "questpc4"
+    ],
+    "qualification_scope": "Whole quest; source reward cohorts alone do not qualify the quest.",
+    "input_canonical": "oteryn:quest.thais_lighthouse_quest",
+    "canonical_location": {
+      "path": "content/quests/definitions/quests-00200-00299.json",
+      "pointer": "/records/13/definition"
+    },
+    "evidence": [
+      {
+        "filter": "questpc5_l5_thais_plate_departure_restores_stairs_without_quest_writes",
+        "result": "PASS",
+        "duration_seconds": 36.382545542,
+        "log": ".questpc5/l5-plate-hoist-pg.log",
+        "scope": "UID25010 real STEP entry/departure twice; stairs429/7767 and plate431/430 restored; quest state/receipts unchanged."
+      },
+      {
+        "filter": "qengine_thais_ and questpc5_l5_thais_plate_departure_restores_stairs_without_quest_writes",
+        "result": "PASS",
+        "duration_seconds": [
+          86.264846409,
+          105.772596175,
+          107.136902729,
+          54.78758511
+        ],
+        "scope": "Shared plate and paired portal engine only; whole quest remains active.",
+        "proof": "cloud-shared-engine-proof.json"
+      },
+      {
+        "filter": "qengine_thais_plate_step_out_restores_stairs",
+        "result": "PASS",
+        "duration_seconds": 54.73,
+        "proof": "cloud-thais-occupancy-proof.json",
+        "scope": "Shared creature occupancy/end paths and exact treasure selectors; whole route not yet qualified."
+      },
+      {
+        "filter": "questpc5_thais_complete_source_route",
+        "result": "PASS",
+        "duration_seconds": 72.05,
+        "proof": "cloud-thais-complete-proof.json",
+        "scope": "Whole selected Thais Lighthouse Quest: source ladder, two native descents, creature-held pressure plate and restoration, paired portals in both directions and removal, both exact once treasures with cold replay."
+      }
+    ],
+    "shared_engine_evidence": "cloud-shared-engine-proof.json",
+    "startup_binding_evidence": "cloud-startup-bindings-proof.json",
+    "occupancy_rule": "Pure paired source projections follow committed living current-scene presence. Dead, retired, reserved and foreign-frame actors do not hold a plate; observations are idempotent. See CONTRACT-NOTES.md.",
+    "qualified_at": "2026-11-07",
+    "qualification_evidence": "cloud-thais-complete-proof.json",
+    "latest_main_integration": {
+      "main": "3209d3d61",
+      "proof": "cloud-main3209-integration-proof.json",
+      "state": "Clean merge; workspace215s/fmt/native49/equivalence/pins/duplicates/strictClippy218sPASS;own5PGGREEN129.216s;historicalunitrun incomplete"
+    },
+    "continuation_context": {
+      "branch": "claude/happy-davinci-ijz3wy-questpc5-n2",
+      "base": "f5b584ef1",
+      "frozen_package_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "frozen_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "qualification_location": "Historical qualification remains on frozen wpkg3 input; do not reauthor or claim this code is on main yet.",
+      "base_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac"
+    },
+    "prior_status": "QUALIFIED",
+    "n3_loop": {
+      "state": "DONE",
+      "scope": "Historical pushed whole-quest qualification; NOT a new-main validation claim.",
+      "implementation_branch": "claude/happy-davinci-ijz3wy-questpc5",
+      "implementation_head": "a2564ddc7474a9a447144da0044704f8f7d40728",
+      "on_current_main": false,
+      "decision": "Do not redo finished work; consume collector integration when it reaches main."
+    }
+  }
+]

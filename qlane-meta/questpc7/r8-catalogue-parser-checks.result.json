@@ -1,0 +1,8 @@
+{
+  "negative_log_checks": {
+    "unknown_marker": "rejected",
+    "duplicate_placement": "rejected",
+    "nonpositive_duration": "rejected"
+  },
+  "synthetic_logs": "removed; never evidence"
+}

@@ -1,6 +1,8 @@
 //! Real admitted connection -> depot/stash dispatch -> fenced item owner -> PostgreSQL.
 #[path = "depot_dispatch/depot_list.rs"]
 mod depot_list;
+#[path = "depot_dispatch/mail_capacity.rs"]
+mod mail_capacity;
 #[path = "depot_dispatch/mail_cases.rs"]
 mod mail_cases;
 #[path = "depot_dispatch/retrieve_cases.rs"]
@@ -94,6 +96,19 @@ fn mail_dispatch_posts_a_carried_letter_into_a_mailbox_once() -> TestResult {
         })?
         .join()
         .map_err(|_| "mail e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn depot_search_inbox_parcel_checks_whole_tree_weight_and_exact_capacity() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(false, false, false, false, false, None, Mode::MailCapacity)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "Inbox parcel capacity e2e panicked")?
         .map_err(Into::into)
 }
 
@@ -195,6 +210,7 @@ enum Mode {
     Plain,
     List,
     Mail,
+    MailCapacity,
     Retrieve,
 }
 
@@ -225,7 +241,7 @@ fn scenario_with_premium(
     stash_premium: Option<EntitlementState>,
     mode: Mode,
 ) -> TestResult {
-    let mail = matches!(mode, Mode::Mail | Mode::List);
+    let mail = matches!(mode, Mode::Mail | Mode::MailCapacity | Mode::List);
     let retrieve = mode == Mode::Retrieve;
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
@@ -247,9 +263,7 @@ fn scenario_with_premium(
                 deps.admitted.world_id,
                 "content-1",
             )?;
-        if ground_movement || mode == Mode::List {
-            deps.room = activated_pin.qualified_room().clone();
-        }
+        deps.room = activated_pin.qualified_room().clone();
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("item index")?;
@@ -379,12 +393,28 @@ fn scenario_with_premium(
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
+        let frame = world.frame_binding_digest(deps.admitted.world_id);
+        deps.combat_room = Some(
+            activated_pin
+                .qualified_room()
+                .bundle_view(
+                    cells.clone(),
+                    frame,
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: 7,
+                        y: 0,
+                        floor: 7,
+                    },
+                )
+                .ok_or("bundle combat view")?,
+        );
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
             generation.identity().server_artifact_digest(),
             generation.identity().client_artifact_digest(),
-            activated_pin.frame_binding().digest(),
+            frame,
             world.map_revision_digest(),
             (7, 0, 7),
         );
@@ -450,7 +480,7 @@ fn scenario_with_premium(
             );
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(generation);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         let session = deps.admitted.game_session_id;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -467,7 +497,7 @@ fn scenario_with_premium(
             .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, NULL, $3, $4, $5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
-            .bind(generation.identity().client_artifact_digest().as_slice()).bind(activated_pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+            .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&harness.pool).await?;
         // Seed only the carried target, using the existing MINT/TRANSFER owners. The behavior
         // under test starts below at the real dispatch, with a map handle issued by domain 17.
         let mut carried = None;
@@ -734,7 +764,7 @@ fn scenario_with_premium(
                 letter,
                 parcel,
                 label,
-                mode == Mode::List,
+                mode,
             )
             .await?;
             drop(owner);

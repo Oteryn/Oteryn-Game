@@ -1,0 +1,33 @@
+{
+  "log": ".questpc/restart10-standalone-pg.log",
+  "log_sha256": "00d399dbe462062772c0e3e60f1f42e6b45f98ea8991499117367e1d6c190e76",
+  "command": [
+    "/home/mole/oteryn-cache/codex-bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-gameplay-dispatch",
+    "--all-features",
+    "--lib",
+    "--",
+    "standalone_claims_bear_berserk_berserker_black_knight_dead_archer",
+    "standalone_claims_dragon_corpse_tower_edron_emperor_fanfare",
+    "standalone_claims_fire_axe_fishing_frost_geomancer_ghoul",
+    "standalone_claims_goblin_inukaya_iron_helmet_katana_lion",
+    "standalone_claims_longsword_mad_mage_medusa_shield_minotaur",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "exit": 0,
+  "duration_seconds": 428.25,
+  "test_results": {
+    "standalone_claims_bear_berserk_berserker_black_knight_dead_archer": "ok",
+    "standalone_claims_dragon_corpse_tower_edron_emperor_fanfare": "ok",
+    "standalone_claims_fire_axe_fishing_frost_geomancer_ghoul": "ok",
+    "standalone_claims_goblin_inukaya_iron_helmet_katana_lion": "ok",
+    "standalone_claims_longsword_mad_mage_medusa_shield_minotaur": "ok"
+  },
+  "qualified_cohorts": 5,
+  "qualified_quests": 24
+}

@@ -6,16 +6,14 @@ use crate::foundation::runtime_actor_spell_types::{OwnerCombatChange, PlayerBatc
 use crate::foundation::{
     ApplicationFacts, ConditionDefinition, ConditionSourceKind, StagedSpellBatch,
 };
-use oteryn_gameplay_progression::condition_potions::{
-    ConditionPotion, DEFINITION_REVISION, DURATION_MS,
-};
+use oteryn_gameplay_progression::condition_potions::{DEFINITION_REVISION, PotionCondition};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
 /// Only a staged actual player-owner proof can create this application. Its fields are private
 /// so a decoded request cannot claim an effect merely by naming a potion or an achievement.
 #[derive(Debug, Clone)]
 pub struct PreparedConditionPotion {
-    potion: ConditionPotion,
+    potion: PotionCondition,
     character: crate::domain::CharacterId,
     session: crate::foundation::GameSessionId,
     lease_generation: u64,
@@ -32,9 +30,10 @@ impl PreparedConditionPotion {
         player: &impl PlayerBatchProof,
         request: &ItemUseRequest,
         content_digest: [u8; 32],
+        mana_shield_capacity: u32,
     ) -> Result<Self> {
         let batch = physical.batch();
-        let potion = ConditionPotion::from_key(&request.source_definition.production_key)
+        let potion = PotionCondition::from_key(&request.source_definition.production_key)
             .ok_or(ItemUseError::InvalidInput)?;
         let now = batch.now_us.ok_or(ItemUseError::InvalidInput)?.get();
         let [effect] = batch.effects.as_slice() else {
@@ -42,6 +41,21 @@ impl PreparedConditionPotion {
         };
         let OwnerCombatChange::PlayerConditions { expected, next } = &effect.change else {
             return Err(ItemUseError::InvalidInput);
+        };
+        let flask_matches = match (&request.flask, potion) {
+            (
+                ItemUseFlaskPlan::Stack { definition, .. }
+                | ItemUseFlaskPlan::New { definition, .. },
+                PotionCondition::Antidote,
+            ) => {
+                definition.family == "Item"
+                    && definition.production_key == "oteryn:item.tibia.i285"
+                    && definition.revision_ref == "definition-r1"
+            }
+            (ItemUseFlaskPlan::None, PotionCondition::Skill(_) | PotionCondition::MagicShield) => {
+                true
+            }
+            _ => false,
         };
         if !physical.will_apply()
             || !player.matches_batch(batch)
@@ -51,39 +65,53 @@ impl PreparedConditionPotion {
             || batch.deferred.is_some()
             || batch.command.command_id().get() != request.command_id
             || request.kind != ItemUseKind::Potion
-            || request.flask != ItemUseFlaskPlan::None
+            || !flask_matches
+            || (potion != PotionCondition::MagicShield && mana_shield_capacity != 0)
             || request.source_definition.family != "Item"
             || content_digest == [0; 32]
-            || now.checked_add(u64::from(DURATION_MS) * 1_000).is_none()
+            || now
+                .checked_add(u64::from(potion.duration_ms()) * 1_000)
+                .is_none()
         {
             return Err(ItemUseError::InvalidInput);
         }
         // Reproduce the precise non-random transition through the one existing condition engine.
         // No unrelated condition change or KeptCurrent can earn the progress increment.
-        let definition =
-            ConditionDefinition::new(potion.key(), DEFINITION_REVISION, potion.values())
-                .ok_or(ItemUseError::InvalidInput)?;
+        // Antidote also permits the donor's legal use when no poison is present.
         let root = GameplayDecisionRoot::from_bytes(content_digest);
         let mut reproduced = (**expected).clone();
-        reproduced
-            .apply(
-                &definition,
-                None,
-                ConditionSourceKind::SelfUse,
-                &[],
-                &ApplicationFacts {
-                    now,
-                    base_speed: 0,
-                    mana_shield_capacity: 0,
-                    target_reentry_protected: false,
-                    source_reentry_protected: false,
-                    target_is_player: true,
-                    decision_root: &root,
-                    occurrence: DecisionOccurrenceId::from_bytes(request.event_id),
-                },
+        if potion == PotionCondition::Antidote {
+            reproduced.dispel_key(crate::domain::condition::ConflictKey::Element(
+                crate::domain::condition::DotElement::Poison,
+            ));
+        } else {
+            let definition = ConditionDefinition::new(
+                potion.key(),
+                DEFINITION_REVISION,
+                potion.values().ok_or(ItemUseError::InvalidInput)?,
             )
-            .map_err(|_| ItemUseError::InvalidInput)?;
-        if &reproduced != next.as_ref() || expected == next {
+            .ok_or(ItemUseError::InvalidInput)?;
+            reproduced
+                .apply(
+                    &definition,
+                    None,
+                    ConditionSourceKind::SelfUse,
+                    &[],
+                    &ApplicationFacts {
+                        now,
+                        base_speed: 0,
+                        mana_shield_capacity,
+                        target_reentry_protected: false,
+                        source_reentry_protected: false,
+                        target_is_player: true,
+                        decision_root: &root,
+                        occurrence: DecisionOccurrenceId::from_bytes(request.event_id),
+                    },
+                )
+                .map_err(|_| ItemUseError::InvalidInput)?;
+        }
+        if &reproduced != next.as_ref() || (expected == next && potion != PotionCondition::Antidote)
+        {
             return Err(ItemUseError::InvalidInput);
         }
         let item_binding = request.binding();
@@ -114,7 +142,7 @@ impl PreparedConditionPotion {
             && self.lease_generation == fence.character_lease_generation
             && self.command == request.command_id
             && self.item_binding == request.binding()
-            && ConditionPotion::from_key(&request.source_definition.production_key)
+            && PotionCondition::from_key(&request.source_definition.production_key)
                 == Some(self.potion)
     }
 }
@@ -213,12 +241,13 @@ impl DurabilityRoot {
             sqlx::query("INSERT INTO game_item_condition_potion_receipts(transaction_id,condition_key,definition_revision,applied_owner_micros,expires_owner_micros,content_digest,application_binding) VALUES(encode($1,'hex')::uuid,$2,$3,$4::text::numeric,$5::text::numeric,$6,$7)")
                 .bind(request.transaction_id.as_slice()).bind(application.potion.key())
                 .bind(i64::from(DEFINITION_REVISION)).bind(application.owner_micros.to_string())
-                .bind((application.owner_micros + u64::from(DURATION_MS) * 1_000).to_string())
+                .bind((application.owner_micros + u64::from(application.potion.duration_ms()) * 1_000).to_string())
                 .bind(application.content_digest.as_slice()).bind(application.binding.as_slice())
                 .execute(&mut **tx).await?;
-            let counted = application.potion.achievement();
-            add_progress(&mut tx, fence.character_id, counted.key, counted.total,
-                item_use_achievement::SOURCE_KIND, &request.event_id).await?;
+            if let Some(counted) = application.potion.achievement() {
+                add_progress(&mut tx, fence.character_id, counted.key, counted.total,
+                    item_use_achievement::SOURCE_KIND, &request.event_id).await?;
+            }
             tx.commit(deadline).await?;
             Ok(Ok(Some(outcome)))
         })).await?

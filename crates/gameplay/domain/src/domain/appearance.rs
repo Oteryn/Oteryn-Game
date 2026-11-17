@@ -12,7 +12,7 @@ pub enum Sex {
 
 #[path = "appearance/earned_cosmetics.rs"]
 mod earned_cosmetics;
-pub use earned_cosmetics::EarnedCosmetics;
+pub use earned_cosmetics::{EarnedCosmetics, SexQualifiedEarnedCosmetics};
 
 /// Head, body, legs and feet palette indices.
 pub type Colours = [u16; 4];
@@ -58,6 +58,11 @@ pub enum EarnedCosmetic<'a> {
 /// The active content of this world.
 pub trait AppearanceContent<K> {
     fn palette_size(&self) -> u16;
+    /// Active content's authored default. Missing evidence suppresses projection only.
+    fn projection_fallback(&self, _sex: Sex) -> Option<AppearanceSelection<K>> {
+        None
+    }
+
     /// At most 4096 explicitly authored keys for bounded transaction-bound reads.
     fn earned_grant_keys(&self) -> Vec<String> {
         Vec::new()
@@ -71,6 +76,16 @@ pub trait AppearanceContent<K> {
         _target: EarnedCosmetic<'_>,
     ) -> UnlockFact {
         UnlockFact::Absent
+    }
+    /// Sex-qualified earned facts are distinct; legacy neutral grants apply to either sex.
+    fn earned_unlock_for_sex(
+        &self,
+        grant_key: &str,
+        provenance: &str,
+        target: EarnedCosmetic<'_>,
+        _sex: Sex,
+    ) -> UnlockFact {
+        self.earned_unlock(grant_key, provenance, target)
     }
     /// The outfit's addon count, or `None` when the key is not in the active content.
     fn outfit_addon_count(&self, outfit: &K) -> Option<u8>;

@@ -13,6 +13,10 @@ build = "build.rs"
 category = "protocol-oteryn"
 release-role = "production"
 
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+
 [build-dependencies]
 serde_json.workspace = true
 

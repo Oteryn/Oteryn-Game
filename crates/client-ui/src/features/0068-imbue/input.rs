@@ -10,3 +10,14 @@ pub fn open_key(events: &[NormalizedInputEvent]) -> bool {
                 && !modifiers.contains(Modifier::Super))
     })
 }
+
+/// Ctrl+Alt+Shift+I opens the independent time tracker.
+pub fn tracker_key(events: &[NormalizedInputEvent]) -> bool {
+    events.iter().any(|event| {
+        matches!(event,
+        NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false }
+        if code.get() == 12 && modifiers.contains(Modifier::Control)
+            && modifiers.contains(Modifier::Alt) && modifiers.contains(Modifier::Shift)
+            && !modifiers.contains(Modifier::Super))
+    })
+}

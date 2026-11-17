@@ -1,0 +1,15 @@
+{
+  "mechanic": "0207-house-furniture-wrap",
+  "id": "0207-house-furniture-wrap-command-402",
+  "status": "supported",
+  "kind": "handlers",
+  "commands": [
+    402
+  ],
+  "direction": "client_to_server",
+  "capability": 207,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "No persistent furniture setting."
+  }
+}

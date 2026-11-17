@@ -1565,3 +1565,98 @@ fn charm_effect_speed_definitions_match_authored_condition_bindings_and_remain_d
         assert_eq!(u64::from(duration), expected_duration);
     }
 }
+
+#[test]
+fn srx2_mana_drain_runs_numb_and_adrenaline_but_not_cleanse() {
+    let catalogue = forced_catalogue();
+    for name in ["oteryn:charm.numb", "oteryn:charm.adrenaline_burst"] {
+        let state = State::with(RACE, &[(name, 3)]);
+        let outcomes = evaluate(
+            &catalogue,
+            &state,
+            CharmHookEvent::IncomingManaDrain { mana_drained: 10 },
+            1,
+        )
+        .expect("native mana hit");
+        assert_eq!(outcomes.len(), 1, "{name}");
+    }
+    let state = State::with(RACE, &[("oteryn:charm.cleanse", 3)]);
+    assert!(
+        evaluate(
+            &catalogue,
+            &state,
+            CharmHookEvent::IncomingManaDrain { mana_drained: 10 },
+            1
+        )
+        .expect("mana hit")
+        .is_empty()
+    );
+}
+
+#[test]
+fn global_leech_projection_returns_only_passive_rate_for_the_assigned_race() {
+    let catalogue = Catalogue(catalogue_charms());
+    let state = State::with(
+        RACE,
+        &[("oteryn:charm.carnage", 3), ("oteryn:charm.voids_call", 3)],
+    );
+    let event = CharmHookEvent::LeechCalculation {
+        source: CharmHitSource::CharacterAttack,
+    };
+    let outcomes = evaluate(&catalogue, &state, event, 1).expect("projection");
+    assert_eq!(outcomes.len(), 1);
+    assert_eq!(outcomes[0].charm_key, "oteryn:charm.voids_call");
+    assert!(
+        evaluate(
+            &catalogue,
+            &state,
+            CharmHookEvent::LeechCalculation {
+                source: CharmHitSource::CharmDamage,
+            },
+            1
+        )
+        .expect("generated damage")
+        .is_empty()
+    );
+}
+
+#[test]
+fn charm_effect_incoming_minor_uses_post_parry_liveness_without_changing_draws() {
+    let catalogue = forced_catalogue();
+    let event = input(CharmHookEvent::IncomingCreatureHit { base_damage: 321 }, 1);
+    for name in ["numb", "adrenaline_burst", "cleanse"] {
+        let key = format!("oteryn:charm.{name}");
+        let state = State::with(RACE, &[("oteryn:charm.parry", 3), (&key, 3)]);
+        let major = evaluate_charm_hook_category(
+            &event,
+            &state,
+            &catalogue,
+            Some(CharmCategory::Major),
+            true,
+        )
+        .expect("major");
+        assert_eq!(major.len(), 1);
+        let minor = evaluate_charm_hook_category(
+            &event,
+            &state,
+            &catalogue,
+            Some(CharmCategory::Minor),
+            false,
+        )
+        .expect("minor");
+        assert_eq!(minor.len(), 1);
+        if name == "numb" {
+            assert_eq!(minor[0].result, CharmResult::NoLivingTarget);
+        } else {
+            let living = evaluate_charm_hook_category(
+                &event,
+                &state,
+                &catalogue,
+                Some(CharmCategory::Minor),
+                true,
+            )
+            .expect("living minor");
+            assert_eq!(minor, living);
+        }
+    }
+}

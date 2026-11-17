@@ -799,3 +799,46 @@ fn environment_tick_on_qualified_pz_tile_respects_elements_and_records_lethal_da
         }
     }
 }
+
+#[test]
+fn elite_creature_poison_tick_doubles_damage_from_historical_provenance() -> Result<(), String> {
+    let (mut runtime, mut states, actor, session) = ready(0xc1);
+    states.set_elite_bounty(&runtime, session, Some("oteryn:creature.rat"));
+    let root = GameplayDecisionRoot::from_bytes([111; 32]);
+    let facts = ApplicationFacts {
+        now: 0,
+        base_speed: 220,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes([111; 16]),
+    };
+    let history = crate::foundation::condition::ConditionHistoricalSource::Creature {
+        key: "oteryn:creature.rat".into(),
+        name: "Rat".into(),
+    };
+    let before = states.get(&runtime, actor, session).ok_or("player")?;
+    let next = before
+        .stage_source_player_conditions_with_history(
+            "creature:test.fixture".into(),
+            &[poison(10)],
+            &[],
+            &facts,
+            Some(&history),
+        )
+        .ok_or("source condition")?;
+    assert!(states.commit(&runtime, actor, session, next));
+    let receipt = pass(
+        &mut states,
+        &mut runtime,
+        actor,
+        session,
+        1_000_000,
+        TickFacts::default(),
+    )
+    .ok_or("poison tick owner")?;
+    assert_eq!(receipt.damage, 20);
+    Ok(())
+}

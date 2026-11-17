@@ -1,0 +1,7 @@
+name=weapon_proficiency_catalogue
+commands=660
+[route]
+match routing::weapon_proficiency_catalogue::route(authority, session.actor, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

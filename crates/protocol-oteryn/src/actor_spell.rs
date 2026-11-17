@@ -24,10 +24,14 @@ pub const COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT: u32 = 3;
 pub const STATE_DOMAIN_ACTOR_VITALS: u32 = 3;
 pub const DELTA_TYPE_ACTOR_VITALS_V1: u32 = 1;
 pub const SNAPSHOT_TYPE_ACTOR_VITALS_V1: u32 = 1;
+/// WU26-14 `SPELL_AIM_MODE_V1`: with it selected, the cast intent may carry field 5 `aim_mode`.
+/// Without it, field 5 fails closed as any unknown field does.
+pub const CAPABILITY_SPELL_AIM_MODE_V1: u32 = 480;
 
 /// SPELL-D7 bound. The canonical worst case is 28 bytes: `spell` (1 tag + 5-byte uint32 varint = 6),
 /// `target` (1 + 1 = 2), `target_position` (1 tag + 1 length + x 6 + y 6 + int16 floor 4 = 18) and
-/// `aim_at_target` (1 + 1 = 2).
+/// `aim_at_target` (1 + 1 = 2). WU26-14 `aim_mode` (1 + 1 = 2) excludes `aim_at_target`, so with
+/// it the worst case stays 28 bytes.
 pub const MAX_SPELL_CAST_INTENT_BYTES: usize = 32;
 /// A single small enum field (1 tag + 1 value byte = 2), with the same slack as
 /// `MAX_STEP_RESULT_BYTES` in `world_spatial.rs`.
@@ -88,6 +92,67 @@ pub struct SpellCastIntent {
     pub spell: NonZeroU32,
     pub target: SpellTarget,
     pub aim_at_target: bool,
+}
+
+/// WU26-14 `SpellAimMode`: the target option of the action button or hotkey that casts a wave or
+/// beam spell (Winter Update 2026 test server).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpellAimMode {
+    /// `SPELL_AIM_MODE_FACING = 1`, the default: the character's facing. Sent with `NONE`.
+    Facing = 1,
+    /// `SPELL_AIM_MODE_CURSOR = 2`: towards `target_position`, the tile under the cursor, without
+    /// turning the character. Sent with `POSITION`.
+    Cursor = 2,
+    /// `SPELL_AIM_MODE_TARGET = 3`: towards the held attack target, or the facing without one.
+    /// Sent with `NONE`.
+    Target = 3,
+}
+
+/// `WorldActorSpellCastIntentV1` from a session holding `SPELL_AIM_MODE_V1`. A present `aim_mode`
+/// supersedes `aim_at_target`, which must then be false; FACING and TARGET go with the `NONE`
+/// intent and CURSOR with `POSITION`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AimedSpellCastIntent {
+    pub intent: SpellCastIntent,
+    pub aim_mode: Option<SpellAimMode>,
+}
+
+impl AimedSpellCastIntent {
+    fn check(&self) -> Result<(), ActorSpellError> {
+        let consistent = match self.aim_mode {
+            None => true,
+            Some(mode) => {
+                !self.intent.aim_at_target
+                    && matches!(
+                        (mode, self.intent.target),
+                        (
+                            SpellAimMode::Facing | SpellAimMode::Target,
+                            SpellTarget::None
+                        ) | (SpellAimMode::Cursor, SpellTarget::Position(_))
+                    )
+            }
+        };
+        if consistent {
+            Ok(())
+        } else {
+            Err(ActorSpellError::Malformed)
+        }
+    }
+
+    /// The intent the cast owners resolve: TARGET is `aim_at_target` with `NONE` and CURSOR is
+    /// `aim_at_target` with `POSITION`, so the old flag reads as TARGET and an intent without
+    /// `aim_mode` resolves exactly as before.
+    pub fn resolved(&self) -> SpellCastIntent {
+        let aim_at_target = match self.aim_mode {
+            None => self.intent.aim_at_target,
+            Some(SpellAimMode::Facing) => false,
+            Some(SpellAimMode::Cursor | SpellAimMode::Target) => true,
+        };
+        SpellCastIntent {
+            aim_at_target,
+            ..self.intent
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -287,11 +352,54 @@ pub fn encode_spell_cast_intent(intent: &SpellCastIntent) -> Vec<u8> {
 }
 
 pub fn decode_spell_cast_intent(payload: &[u8]) -> Result<SpellCastIntent, ActorSpellError> {
+    decode_intent_fields(payload, false).map(|aimed| aimed.intent)
+}
+
+/// WU26-14: the intent of a session holding `SPELL_AIM_MODE_V1`, with field 5 `aim_mode` emitted
+/// after `aim_at_target` and only when present. An inconsistent combination is refused.
+pub fn encode_aimed_spell_cast_intent(
+    aimed: &AimedSpellCastIntent,
+) -> Result<Vec<u8>, ActorSpellError> {
+    aimed.check()?;
+    let mut output = encode_spell_cast_intent(&aimed.intent);
+    if let Some(mode) = aimed.aim_mode {
+        push_varint_field(&mut output, 5, mode as u64);
+    }
+    Ok(output)
+}
+
+/// WU26-14: decodes the intent of a session holding `SPELL_AIM_MODE_V1`. An explicit zero
+/// `aim_mode` is the proto3 default and reads as absent; an unknown value, `aim_at_target` with
+/// a present `aim_mode`, or a mode with the wrong target intent fails closed.
+pub fn decode_aimed_spell_cast_intent(
+    payload: &[u8],
+) -> Result<AimedSpellCastIntent, ActorSpellError> {
+    decode_intent_fields(payload, true)
+}
+
+/// The command type 3 decoder of the session's negotiated profile, resolved for the cast owners
+/// ([`AimedSpellCastIntent::resolved`]).
+pub fn decode_spell_cast_intent_selected(
+    selected: &[u32],
+    payload: &[u8],
+) -> Result<SpellCastIntent, ActorSpellError> {
+    if selected.contains(&CAPABILITY_SPELL_AIM_MODE_V1) {
+        decode_aimed_spell_cast_intent(payload).map(|aimed| aimed.resolved())
+    } else {
+        decode_spell_cast_intent(payload)
+    }
+}
+
+fn decode_intent_fields(
+    payload: &[u8],
+    aim_mode_selected: bool,
+) -> Result<AimedSpellCastIntent, ActorSpellError> {
     if payload.len() > MAX_SPELL_CAST_INTENT_BYTES {
         return Err(ActorSpellError::LimitExceeded);
     }
     let mut cursor = 0;
     let (mut spell, mut target, mut position, mut aim) = (None, None, None, None);
+    let mut aim_mode = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         match key {
@@ -311,6 +419,10 @@ pub fn decode_spell_cast_intent(payload: &[u8]) -> Result<SpellCastIntent, Actor
                 let value = read_bool(payload, &mut cursor)?;
                 set_once(&mut aim, value)?;
             }
+            0x28 if aim_mode_selected => {
+                let value = read_varint(payload, &mut cursor)?;
+                set_once(&mut aim_mode, value)?;
+            }
             _ => return Err(ActorSpellError::Malformed),
         }
     }
@@ -325,11 +437,23 @@ pub fn decode_spell_cast_intent(payload: &[u8]) -> Result<SpellCastIntent, Actor
         (Some(3), Some(position)) => SpellTarget::Position(position),
         _ => return Err(ActorSpellError::Malformed),
     };
-    Ok(SpellCastIntent {
-        spell,
-        target,
-        aim_at_target: aim.unwrap_or(false),
-    })
+    let aim_mode = match aim_mode {
+        None | Some(0) => None,
+        Some(1) => Some(SpellAimMode::Facing),
+        Some(2) => Some(SpellAimMode::Cursor),
+        Some(3) => Some(SpellAimMode::Target),
+        Some(_) => return Err(ActorSpellError::Malformed),
+    };
+    let aimed = AimedSpellCastIntent {
+        intent: SpellCastIntent {
+            spell,
+            target,
+            aim_at_target: aim.unwrap_or(false),
+        },
+        aim_mode,
+    };
+    aimed.check()?;
+    Ok(aimed)
 }
 
 pub fn encode_spell_cast_result(disposition: SpellCastDisposition) -> Vec<u8> {
@@ -728,6 +852,150 @@ mod tests {
         }
         assert_eq!(
             decode_spell_cast_intent(&[0; MAX_SPELL_CAST_INTENT_BYTES + 1]),
+            Err(ActorSpellError::LimitExceeded)
+        );
+    }
+
+    fn aimed(
+        index: u32,
+        target: SpellTarget,
+        aim_mode: Option<SpellAimMode>,
+    ) -> AimedSpellCastIntent {
+        AimedSpellCastIntent {
+            intent: intent(index, target, false),
+            aim_mode,
+        }
+    }
+
+    #[test]
+    fn aimed_spell_cast_intent_round_trips_and_old_encoding_still_decodes() {
+        // Hand-computed bytes; field 5 `aim_mode` is 28 <mode>.
+        let fixtures = [
+            (
+                aimed(1, SpellTarget::None, Some(SpellAimMode::Facing)),
+                vec![0x08, 0x01, 0x10, 0x01, 0x28, 0x01],
+                intent(1, SpellTarget::None, false),
+            ),
+            (
+                aimed(7, SpellTarget::None, Some(SpellAimMode::Target)),
+                vec![0x08, 0x07, 0x10, 0x01, 0x28, 0x03],
+                intent(7, SpellTarget::None, true),
+            ),
+            (
+                aimed(5, position(100, -1, 7), Some(SpellAimMode::Cursor)),
+                vec![
+                    0x08, 0x05, 0x10, 0x03, 0x1a, 0x07, 0x08, 0xc8, 0x01, 0x10, 0x01, 0x18, 0x0e,
+                    0x28, 0x02,
+                ],
+                intent(5, position(100, -1, 7), true),
+            ),
+        ];
+        let selected = [CAPABILITY_SPELL_AIM_MODE_V1];
+        for (value, bytes, resolved) in fixtures {
+            assert_eq!(encode_aimed_spell_cast_intent(&value), Ok(bytes.clone()));
+            assert_eq!(decode_aimed_spell_cast_intent(&bytes), Ok(value));
+            assert_eq!(value.resolved(), resolved);
+            assert_eq!(
+                decode_spell_cast_intent_selected(&selected, &bytes),
+                Ok(resolved)
+            );
+            // Without the capability field 5 is an unknown field.
+            assert_eq!(
+                decode_spell_cast_intent_selected(&[], &bytes),
+                Err(ActorSpellError::Malformed)
+            );
+            assert_eq!(
+                decode_spell_cast_intent(&bytes),
+                Err(ActorSpellError::Malformed)
+            );
+        }
+        // Every old encoding decodes unchanged, with no aim mode, on both profiles.
+        for (value, bytes) in intent_fixtures() {
+            let old = AimedSpellCastIntent {
+                intent: value,
+                aim_mode: None,
+            };
+            assert_eq!(decode_aimed_spell_cast_intent(&bytes), Ok(old));
+            assert_eq!(old.resolved(), value);
+            assert_eq!(encode_aimed_spell_cast_intent(&old), Ok(bytes.clone()));
+            for profile in [&selected[..], &[]] {
+                assert_eq!(
+                    decode_spell_cast_intent_selected(profile, &bytes),
+                    Ok(value)
+                );
+            }
+        }
+        // An explicit zero is the proto3 default: no aim mode.
+        assert_eq!(
+            decode_aimed_spell_cast_intent(&[0x08, 0x01, 0x10, 0x01, 0x28, 0x00]),
+            Ok(aimed(1, SpellTarget::None, None))
+        );
+        // The aimed worst case stays at 28 bytes, inside the SPELL-D7 bound.
+        let worst = encode_aimed_spell_cast_intent(&aimed(
+            u32::MAX,
+            position(i32::MIN, i32::MIN, i16::MIN),
+            Some(SpellAimMode::Cursor),
+        ))
+        .expect("aimed worst case");
+        assert_eq!(worst.len(), 28);
+        assert!(SCHEMA.contains("SpellAimMode aim_mode = 5;"));
+    }
+
+    #[test]
+    fn aimed_spell_cast_intent_refuses_inconsistent_options() {
+        let malformed: &[(&str, &[u8])] = &[
+            ("mode unknown", &[0x08, 0x01, 0x10, 0x01, 0x28, 0x04]),
+            (
+                "mode repeated",
+                &[0x08, 0x01, 0x10, 0x01, 0x28, 0x01, 0x28, 0x01],
+            ),
+            (
+                "mode with aim_at_target",
+                &[0x08, 0x01, 0x10, 0x01, 0x20, 0x01, 0x28, 0x03],
+            ),
+            (
+                "FACING with POSITION",
+                &[0x08, 0x01, 0x10, 0x03, 0x1a, 0x00, 0x28, 0x01],
+            ),
+            ("CURSOR with NONE", &[0x08, 0x01, 0x10, 0x01, 0x28, 0x02]),
+            (
+                "CURSOR with ATTACK_TARGET",
+                &[0x08, 0x01, 0x10, 0x02, 0x28, 0x02],
+            ),
+            (
+                "TARGET with ATTACK_TARGET",
+                &[0x08, 0x01, 0x10, 0x02, 0x28, 0x03],
+            ),
+            (
+                "TARGET with POSITION",
+                &[0x08, 0x01, 0x10, 0x03, 0x1a, 0x00, 0x28, 0x03],
+            ),
+            ("unknown field 6", &[0x08, 0x01, 0x10, 0x01, 0x30, 0x01]),
+        ];
+        for (case, bytes) in malformed {
+            assert_eq!(
+                decode_aimed_spell_cast_intent(bytes),
+                Err(ActorSpellError::Malformed),
+                "{case}"
+            );
+        }
+        for value in [
+            AimedSpellCastIntent {
+                intent: intent(1, SpellTarget::None, true),
+                aim_mode: Some(SpellAimMode::Target),
+            },
+            aimed(1, SpellTarget::AttackTarget, Some(SpellAimMode::Target)),
+            aimed(1, SpellTarget::None, Some(SpellAimMode::Cursor)),
+            aimed(1, position(1, 1, 7), Some(SpellAimMode::Facing)),
+        ] {
+            assert_eq!(
+                encode_aimed_spell_cast_intent(&value),
+                Err(ActorSpellError::Malformed),
+                "{value:?}"
+            );
+        }
+        assert_eq!(
+            decode_aimed_spell_cast_intent(&[0; MAX_SPELL_CAST_INTENT_BYTES + 1]),
             Err(ActorSpellError::LimitExceeded)
         );
     }

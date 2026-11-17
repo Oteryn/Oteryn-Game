@@ -1,0 +1,22 @@
+{
+  "id": "PUBPROJ-ONLINE-SESSIONS-REQUEST-BYTES",
+  "owner_contract": "OTERYN_GAME_STATISTICS_PROJECTIONS_V2.md",
+  "resource": "pubproj online sessions request bytes",
+  "unit": "bytes",
+  "hard_maximum": 2048,
+  "configurable_range": {
+    "minimum": 2048,
+    "maximum": 2048
+  },
+  "failure_category": "UNAVAILABLE",
+  "allocation_impact": "Complete replacement snapshots are refused on overflow; no truncation. Source retention is bounded per pass and runs independently of publication flags.",
+  "client_visible": false,
+  "boundary_tests": [
+    "crates/gameplay/native-admission-source/src/public_projections/v2/online_sessions.rs:online_interval_wire_matches_generated_open_closed_and_withdrawn_goldens"
+  ],
+  "consumers": [
+    "crates/gameplay/native-admission-source/src/public_projections/v2/online_sessions.rs",
+    "crates/gameplay/durability/src/durability/public_projections/v2.rs"
+  ],
+  "notes": "Owner2026-11-07 PUBPROJ. Ordinals continue the allocation from base maximum10018: next10019 plus lane offset50. No numeric client protocol identifier."
+}

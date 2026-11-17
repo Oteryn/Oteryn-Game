@@ -54,6 +54,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .find(|entry| entry.item.item_instance_id == id)?
                 .item
                 .definition;
+            let tibia_id = definition
+                .production_key
+                .strip_prefix("oteryn:item.tibia.i")?
+                .parse()
+                .ok()?;
+            if oteryn_gameplay_items::remaining_consumables::is_dispenser(tibia_id) {
+                return None;
+            }
             facts(native, definition)?.0.full.charges()?;
         }
         let intent = TimedItemIntent {

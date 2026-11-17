@@ -1,0 +1,7 @@
+{
+  "mechanic": "0285-store-purchase-history",
+  "status": "supported",
+  "kind": "panels",
+  "id": "0285-store-purchase-history-panel",
+  "entry": "view.rs::panel_text"
+}

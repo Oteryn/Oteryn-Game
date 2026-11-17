@@ -94,7 +94,8 @@ fn proficiency_kill_credit_full_points_window_replay_and_checkpoint_decision() {
 
 #[test]
 fn daily_proficiency_bonus_credits_exact_chance_and_never_replays() {
-    for (streak, chance) in [(0, 0), (1, 1), (7, 7), (14, 8), (21, 9), (28, 10), (60, 10)] {
+    // Winter Update 2026 (WU26-07): one point per streak day, capped at 7%.
+    for (streak, chance) in [(0, 0), (1, 1), (7, 7), (14, 7), (21, 7), (28, 7), (60, 7)] {
         let mut doubled = 0;
         for roll in 0..100 {
             let points = daily_proficiency_points(Some(100), streak, roll);

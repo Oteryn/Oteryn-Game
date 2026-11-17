@@ -98,35 +98,131 @@ fn tile_position(position: MovementLocalPosition) -> Option<TilePos> {
     })
 }
 
-struct TileEntries {
-    protection_zone: bool,
-    entries: Vec<(u64, EntryFacts)>,
+// Crystal 9f5a72c6 data-global/scripts/quests/devil_helmet/movements_sewer.lua:
+// 1,5-23,27-45. A player entering uid25030 creates sewer435 if absent;
+// leaving removes one sewer. Use the committed movement turn, not quest flags.
+fn quest_sewer_step(
+    map: &BundleMap,
+    origin: Option<&TileEntries>,
+    destination: &[(u64, EntryFacts)],
+) -> bool {
+    use crate::map::view::{EntrySource, compose_tile};
+    let position = TilePos {
+        x: 32482,
+        y: 32170,
+        floor: -14,
+    };
+    if map.facts.house_tile(position) {
+        return false;
+    }
+    let is_plate = |entries: &[(u64, EntryFacts)]| {
+        entries.iter().any(|(key, _)| {
+            map.facts
+                .quest_callback_matches(*key, Some(25030), None, None)
+        })
+    };
+    let sewer = || {
+        compose_tile(&map.overlay, &map.facts, position).map(|tile| {
+            tile.and_then(|tile| {
+                tile.entries
+                    .into_iter()
+                    .find(|entry| entry.facts.appearance_id == 435)
+            })
+        })
+    };
+    let mut changed = false;
+    // Source StepOut precedes StepIn, including travel between registered tiles.
+    if origin.is_some_and(|tile| is_plate(&tile.entries))
+        && let Ok(Some(entry)) = sewer()
+    {
+        changed |= match entry.source {
+            EntrySource::Base { placement_key, .. } => map.facts.apply_quest_callback(
+                placement_key,
+                map.facts.object_revision(placement_key),
+                entry.facts,
+                &[placement_key],
+                &[],
+                false,
+                None,
+            ),
+            EntrySource::Added(id) => map.facts.remove_movement_item(position, id.get(), 435),
+            EntrySource::Ground(_) | EntrySource::House(_) => false,
+        };
+    }
+    if is_plate(destination)
+        && matches!(sewer(), Ok(None))
+        && map
+            .overlay
+            .base()
+            .tile(position.x, position.y, position.floor)
+            .is_some()
+    {
+        changed |= map.facts.create_movement_item(position, 435, 0, || true);
+    }
+    changed
 }
 
-fn tile_entries(map: &BundleMap, position: MovementLocalPosition) -> Option<TileEntries> {
+pub(in crate::gameplay_transport) struct TileEntries {
+    pub(in crate::gameplay_transport) protection_zone: bool,
+    pub(in crate::gameplay_transport) entries: Vec<(u64, EntryFacts)>,
+}
+
+pub(in crate::gameplay_transport) fn tile_entries(
+    map: &BundleMap,
+    position: MovementLocalPosition,
+) -> Option<TileEntries> {
     let pos = tile_position(position)?;
-    let tile = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
-    let mut ordinal = 0_u8;
+    let protection_zone = map.zone_flags(pos)?.1;
     let mut appearances = Vec::new();
-    for (&id, &depth) in tile.ids().iter().zip(tile.depths()) {
-        if depth != 0 {
-            continue;
-        }
-        if let Some(entry) = map.facts.base_entry(pos, ordinal, id) {
-            let key = placement_key(pos, ordinal)?;
-            if !map.facts.base_hidden(key) {
-                appearances.push((key, entry));
+    if let Some(tile) = map.facts.phase_tile(pos).ok()? {
+        // Timed World maps replace the whole stack, including ordinals which
+        // never existed in the immutable bundle. Read the same phase as rendering.
+        for entry in tile.entries {
+            if let crate::map::view::EntrySource::Base { placement_key, .. } = entry.source {
+                appearances.push((placement_key, entry.facts));
             }
         }
-        ordinal = ordinal.checked_add(1)?;
+    } else {
+        let tile = map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
+        let mut ordinal = 0_u8;
+        for (&id, &depth) in tile.ids().iter().zip(tile.depths()) {
+            if depth != 0 {
+                continue;
+            }
+            if let Some(entry) = map.facts.base_entry(pos, ordinal, id) {
+                let key = placement_key(pos, ordinal)?;
+                if !map.facts.base_hidden(key) {
+                    appearances.push((key, entry));
+                }
+            }
+            ordinal = ordinal.checked_add(1)?;
+        }
     }
+    appearances.extend(
+        map.facts
+            .movement_items(pos)
+            .into_iter()
+            .filter_map(|entry| match entry.source {
+                crate::map::view::EntrySource::Added(id) if id.get() >> 62 == 2 => {
+                    Some((id.get(), entry.facts))
+                }
+                _ => None,
+            }),
+    );
     Some(TileEntries {
-        protection_zone: tile.protection_zone(),
+        protection_zone,
         entries: appearances,
     })
 }
 
-fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
+pub(super) fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
+    if key >> 62 == 2 {
+        return map.facts.compare_transform_movement_item(
+            key,
+            map.facts.object_revision(key),
+            appearance,
+        );
+    }
     let Some(replacement) = map.facts.quest_callback_replacement(key, appearance) else {
         return false;
     };
@@ -137,6 +233,7 @@ fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
         &[],
         &[],
         false,
+        None,
     )
 }
 
@@ -352,7 +449,8 @@ impl ChannelSpellStates {
                         speaker: actor,
                         position,
                         talk_type,
-                        text,
+                        text: text.to_owned(),
+                        captured_name: None,
                     });
                 changed |= map.facts.emit_movement_effect(position, effect);
             }
@@ -378,6 +476,29 @@ impl ChannelSpellStates {
             .iter()
             .any(|(_, entry)| SWIMMING_GROUND_IDS.contains(&entry.appearance_id));
         let mut next = current.clone();
+        // Crystal movements_crate.lua's final source cell removes CONDITION_OUTFIT
+        // unconditionally, revealing the selected base without changing other families.
+        if let Some(rules) = oteryn_gameplay_quests::quest::item_disguises::rules()
+            && let Some(rule) = rules.iter().find(|rule| {
+                rule.restore.is_some_and(|restore| {
+                    i32::from(restore.x) == destination.x
+                        && i32::from(restore.y) == destination.y
+                        && -i16::from(restore.floor) == destination.floor
+                })
+            })
+            && next.conditions.remove_type(ConditionType::Outfit)
+            && let Some(position) = tile_position(destination)
+        {
+            changed |= map
+                .facts
+                .emit_movement_speech(crate::map::facts::MovementSpeech {
+                    speaker: actor,
+                    position,
+                    talk_type: rule.speech_type,
+                    text: rule.restore_text.to_owned(),
+                    captured_name: None,
+                });
+        }
         let from_bath = origin_entries.as_ref().is_some_and(|tile| {
             tile.entries
                 .iter()
@@ -469,6 +590,7 @@ impl ChannelSpellStates {
                 return false;
             }
         }
+        changed |= quest_sewer_step(map, origin_entries.as_ref(), &ids);
         // Crystal bath_tub.lua:25-33 StepOut precedes StepIn, including adjacent tubs.
         if let Some(tile) = &origin_entries {
             for (key, entry) in &tile.entries {
@@ -653,10 +775,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             }
             let east = position.x.checked_add(1).map(|x| TilePos { x, ..position });
             let east_enterable = east.is_some_and(|east| {
-                self.movement_cells
+                self.movement_cells()
                     .index()
                     .lookup(
-                        self.movement_cells.scope(),
+                        self.movement_cells().scope(),
                         crate::content::LogicalCell {
                             x: i32::from(east.x),
                             y: i32::from(east.y),
@@ -791,9 +913,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                     command_id: u64::from_be_bytes(id).max(1),
                     item_fence: fence,
                 };
-                let result =
-                    loop_move::relocate_door_item(self, permit, actor, command, item, position, to)
-                        .await;
+                let result = loop_move::relocate_source_item(
+                    self, permit, actor, command, item, position, to,
+                )
+                .await;
                 if result != crate::gameplay_transport::item_move::LoopMoveResult::Committed {
                     return;
                 }
@@ -1003,8 +1126,12 @@ mod tests {
             let speech = map.facts.movement_speech_since(0);
             assert_eq!(speech.len(), 1);
             assert_eq!(
-                (speech[0].1.speaker, speech[0].1.text, speech[0].1.talk_type),
-                (actor, "Faaart!", 36)
+                (
+                    speech[0].1.speaker,
+                    speech[0].1.text.clone(),
+                    speech[0].1.talk_type
+                ),
+                (actor, "Faaart!".to_owned(), 36)
             );
             assert_eq!(
                 map.facts

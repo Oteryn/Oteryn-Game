@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PolicyView",
+  "type": "object",
+  "properties": {
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PolicyOperation"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "operations"
+  ],
+  "$defs": {
+    "PolicyOperation": {
+      "type": "object",
+      "properties": {
+        "allowed_permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "min_risk_class": {
+          "$ref": "#/$defs/RiskClass"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "worlds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "operation",
+        "min_risk_class",
+        "allowed_permissions",
+        "worlds"
+      ]
+    },
+    "RiskClass": {
+      "type": "string",
+      "enum": [
+        "R0",
+        "R1",
+        "R2",
+        "R3",
+        "R4"
+      ]
+    }
+  }
+}

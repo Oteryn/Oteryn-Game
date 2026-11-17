@@ -1,4 +1,6 @@
 //! INSPECT-1: bounded native inspection, independent of the reference opcodes.
+pub mod catalogue;
+
 use crate::charm_wire::{
     CyclopediaWireError, push_message_field, push_varint_field, read_bytes, read_uint32,
     read_varint, set_once,
@@ -32,6 +34,12 @@ pub enum Request {
         index: u8,
     },
     Catalogue(u32),
+    CatalogueQuery(catalogue::Query),
+    CataloguePage(catalogue::PageQuery),
+    CatalogueSources {
+        definition: u32,
+        after: u32,
+    },
     /// 1 ask, 2 grant, 3 revoke, 4 allow all, 5 disable allow all, 6 poll requests.
     Permission {
         action: u8,
@@ -55,6 +63,7 @@ pub struct Reply {
     pub status: u8,
     pub items: Vec<InspectedItem>,
     pub requests: Vec<EntityRef>,
+    pub catalogue: Option<catalogue::Page>,
 }
 impl Reply {
     pub fn refused(status: u8) -> Self {
@@ -62,6 +71,7 @@ impl Reply {
             status,
             items: Vec::new(),
             requests: Vec::new(),
+            catalogue: None,
         }
     }
 }
@@ -121,6 +131,15 @@ pub fn encode_request(request: Request) -> Result<Vec<u8>> {
         }
         Request::Catalogue(reference) if reference != 0 => {
             push_varint_field(&mut out, 4, u64::from(reference))
+        }
+        Request::CatalogueQuery(query) => {
+            push_message_field(&mut out, 6, &catalogue::encode(query)?)
+        }
+        Request::CatalogueSources { definition, after } if definition != 0 => {
+            push_message_field(&mut out, 7, &catalogue::encode_sources(definition, after));
+        }
+        Request::CataloguePage(query) => {
+            push_message_field(&mut out, 8, &catalogue::encode_query(query))
         }
         Request::Permission { action, target } => {
             if !(1..=6).contains(&action) || target.is_some() != (action <= 3) {
@@ -183,6 +202,19 @@ pub fn decode_request(input: &[u8]) -> Result<Request> {
                 }
                 Request::Catalogue(n)
             }
+            50 => {
+                let body = read_bytes(input, cursor)?;
+                if matches!(body.first(), Some(1 | 2)) {
+                    Request::CatalogueQuery(catalogue::decode(body)?)
+                } else {
+                    Request::CataloguePage(catalogue::decode_query(body)?)
+                }
+            }
+            58 => {
+                let (definition, after) = catalogue::decode_sources(read_bytes(input, cursor)?)?;
+                Request::CatalogueSources { definition, after }
+            }
+            66 => Request::CataloguePage(catalogue::decode_query(read_bytes(input, cursor)?)?),
             42 => {
                 let mut action = None;
                 let mut target = None;
@@ -233,6 +265,20 @@ pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>> {
     if reply.items.len() > MAX_ITEMS {
         return Err(WireError::LimitExceeded);
     }
+    if reply.catalogue.is_some()
+        && (reply.status != 1
+            || !reply.requests.is_empty()
+            || reply
+                .items
+                .iter()
+                .any(|item| item.slot != 0 || item.count != 1 || item.tier != 0)
+            || reply
+                .items
+                .windows(2)
+                .any(|pair| pair[0].definition_ref >= pair[1].definition_ref))
+    {
+        return bad();
+    }
     let mut out = Vec::new();
     push_varint_field(&mut out, 1, u64::from(reply.status));
     for item in &reply.items {
@@ -280,6 +326,9 @@ pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>> {
             .map_err(|_| WireError::Malformed)?,
         );
     }
+    if let Some(page) = &reply.catalogue {
+        push_message_field(&mut out, 4, &catalogue::encode_page(page)?);
+    }
     bounded(&out, MAX_RESULT_BYTES)?;
     Ok(out)
 }
@@ -288,6 +337,7 @@ pub fn decode_reply(input: &[u8]) -> Result<Reply> {
     let mut status = None;
     let mut items = Vec::new();
     let mut requests = Vec::new();
+    let mut catalogue = None;
     fields(input, |key, input, cursor| {
         match key {
             8 => set_once(
@@ -339,6 +389,10 @@ pub fn decode_reply(input: &[u8]) -> Result<Reply> {
                     attributes,
                 });
             }
+            34 => set_once(
+                &mut catalogue,
+                catalogue::decode_page(read_bytes(input, cursor)?)?,
+            )?,
             26 => {
                 if requests.len() == MAX_PERMISSION_PEERS {
                     return Err(WireError::LimitExceeded);
@@ -361,6 +415,7 @@ pub fn decode_reply(input: &[u8]) -> Result<Reply> {
         status: status.ok_or(WireError::Malformed)?,
         items,
         requests,
+        catalogue,
     };
     encode_reply(&reply)?;
     Ok(reply)
@@ -395,6 +450,7 @@ mod tests {
         let reply = Reply {
             status: 1,
             requests: Vec::new(),
+            catalogue: None,
             items: vec![InspectedItem {
                 slot: 0,
                 definition_ref: 1,
@@ -460,6 +516,7 @@ mod tests {
         let reply = Reply {
             status: 1,
             requests: Vec::new(),
+            catalogue: None,
             items: vec![InspectedItem {
                 slot: 0,
                 definition_ref: 1,
@@ -504,3 +561,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "inspection/catalogue_tests.rs"]
+mod catalogue_tests;

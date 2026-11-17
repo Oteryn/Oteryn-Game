@@ -1,0 +1,32 @@
+[
+  {
+    "name": "quest_completion_import",
+    "command": [
+      "python3",
+      "tools/content-schema/quest-authoring/quest_completion_import.py",
+      "--check"
+    ],
+    "exit_code": 0,
+    "seconds": 7.996956058000251
+  },
+  {
+    "name": "quest_native_binding_preflight",
+    "command": [
+      "python3",
+      "tools/content-schema/quest-authoring/quest_native_binding_preflight.py",
+      "--check"
+    ],
+    "exit_code": 0,
+    "seconds": 0.6207068300000174
+  },
+  {
+    "name": "quest_reward_only_binding_candidates",
+    "command": [
+      "python3",
+      "tools/content-schema/quest-authoring/quest_reward_only_binding_candidates.py",
+      "--check"
+    ],
+    "exit_code": 1,
+    "seconds": 0.643462398000338
+  }
+]

@@ -91,7 +91,7 @@ fn scenario() -> TestResult {
         let runtime = make_runtime()?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
         let current =
@@ -206,7 +206,7 @@ fn scenario() -> TestResult {
         drop(owner);
         deps.runtime = tokio::sync::Mutex::new(make_runtime()?);
         let mut owner = deps.owner(&h, &authority);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.active_generation = Some(generation);
         std::sync::Arc::get_mut(&mut owner.states)
             .expect("W02: isolated fixture state")
@@ -307,10 +307,48 @@ fn scenario() -> TestResult {
         assert_eq!(tomorrow.creature, "other creature");
         assert_eq!(tomorrow.boss, "other boss");
         drop(permit);
+        // Multiple epochs can occur within a day: the older choice must remain excluded
+        // even though it is no longer the immediately previous epoch.
+        for (epoch, age, expected_creature, expected_boss) in [
+            (2_u64, "29 days 23 hours", "fresh creature", "fresh boss"),
+            (3, "30 days 1 hour", choice.creature.as_str(), choice.boss.as_str()),
+        ] {
+            sqlx::query("UPDATE game_world_daily_boosts SET selected_at=clock_timestamp()-$1::text::interval WHERE world_id=encode($2,'hex')::uuid AND reset_epoch=0")
+                .bind(age).bind(id(42).as_slice()).execute(&h.pool).await?;
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) SELECT world_id,$2::text::numeric,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,clock_timestamp(),reset_month FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+                .bind(id(42).as_slice()).bind(epoch.to_string()).execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_world_reset_active SET reset_epoch=$2::text::numeric WHERE world_id=encode($1,'hex')::uuid")
+                .bind(id(42).as_slice()).bind(epoch.to_string()).execute(&mut *tx).await?;
+            tx.commit().await?;
+            let permit = owner.spell_lane_permit().await.ok_or("history permit")?;
+            let mut next = binding();
+            next.epoch = epoch;
+            if epoch == 2 {
+                // Exhaustion must not silently reintroduce a recently boosted candidate.
+                for pools in [
+                    (vec![choice.creature.clone()], vec!["fresh boss".into()]),
+                    (vec!["fresh creature".into()], vec![choice.boss.clone()]),
+                ] {
+                    let mut exhausted = binding();
+                    exhausted.epoch = epoch;
+                    assert!(h.root.prepare_daily_boost(&authority, &h.node, &permit, exhausted, pools).await.is_err());
+                }
+            }
+            let pools = (
+                vec![choice.creature.clone(), tomorrow.creature.clone(), "fresh creature".into()],
+                vec![choice.boss.clone(), tomorrow.boss.clone(), "fresh boss".into()],
+            );
+            let selected = h.root.prepare_daily_boost(&authority, &h.node, &permit, next, pools).await.map_err(debug)?;
+            assert_eq!(selected.creature, expected_creature, "30-day creature exclusion at epoch {epoch}");
+            assert_eq!(selected.boss, expected_boss, "30-day boss exclusion at epoch {epoch}");
+            eprintln!("POSTGRES_HISTORY SV08 epoch={epoch} age={age} verified");
+        }
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_daily_boosts")
             .fetch_one(&h.pool)
             .await?;
-        assert_eq!(count, 2);
+        assert_eq!(count, 4);
         drop(owner);
         drop(authority);
         drop(seal);

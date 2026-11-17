@@ -1,0 +1,110 @@
+{
+  "test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready2_claims.rs",
+  "cases": [
+    {
+      "wiki_title": "Heaven Blossom Quest",
+      "claim_key": "oteryn:reward-claim.kv.heavenblossom",
+      "test": "qready2_heaven_blossom_quest_1"
+    },
+    {
+      "wiki_title": "Iron Hammer Quest",
+      "claim_key": "oteryn:reward-claim.kv.ironhamer",
+      "test": "qready2_iron_hammer_quest_1"
+    },
+    {
+      "wiki_title": "Iron Ore Quest",
+      "claim_key": "oteryn:reward-claim.kv.ironore",
+      "test": "qready2_iron_ore_quest_1"
+    },
+    {
+      "wiki_title": "Isle of the Mists Quest",
+      "claim_key": "oteryn:reward-claim.kv.isleofthemists",
+      "test": "qready2_isle_of_the_mists_quest_1"
+    },
+    {
+      "wiki_title": "Lone Medusa Quest",
+      "claim_key": "oteryn:reward-claim.quest.u8_5.lone_medusa",
+      "test": "qready2_lone_medusa_quest_1"
+    },
+    {
+      "wiki_title": "Minotaur Leather Quest",
+      "claim_key": "oteryn:reward-claim.kv.minotaurleatherquest",
+      "test": "qready2_minotaur_leather_quest_1"
+    },
+    {
+      "wiki_title": "Mintwallin Cyclops Quest",
+      "claim_key": "oteryn:reward-claim.kv.mintwallincyclops",
+      "test": "qready2_mintwallin_cyclops_quest_1"
+    },
+    {
+      "wiki_title": "Naginata Quest",
+      "claim_key": "oteryn:reward-claim.kv.naginata",
+      "test": "qready2_naginata_quest_1"
+    },
+    {
+      "wiki_title": "Nightmare Teddy Quest",
+      "claim_key": "oteryn:reward-claim.kv.nightmare_teddy_quest",
+      "test": "qready2_nightmare_teddy_quest_1"
+    },
+    {
+      "wiki_title": "Noble Armor Quest",
+      "claim_key": "oteryn:reward-claim.kv.noblearmor1",
+      "test": "qready2_noble_armor_quest_1"
+    },
+    {
+      "wiki_title": "Noble Armor Quest",
+      "claim_key": "oteryn:reward-claim.kv.noblearmor2",
+      "test": "qready2_noble_armor_quest_2"
+    },
+    {
+      "wiki_title": "Orc Fortress Quest",
+      "claim_key": "oteryn:reward-claim.kv.orcfortress1",
+      "test": "qready2_orc_fortress_quest_1"
+    },
+    {
+      "wiki_title": "Orc Fortress Quest",
+      "claim_key": "oteryn:reward-claim.kv.orcfortress2",
+      "test": "qready2_orc_fortress_quest_2"
+    },
+    {
+      "wiki_title": "Orc Fortress Quest",
+      "claim_key": "oteryn:reward-claim.kv.orcfortress3",
+      "test": "qready2_orc_fortress_quest_3"
+    },
+    {
+      "wiki_title": "Plate Armor Quest",
+      "claim_key": "oteryn:reward-claim.kv.platearmor",
+      "test": "qready2_plate_armor_quest_1"
+    },
+    {
+      "wiki_title": "Six Rubies Quest",
+      "claim_key": "oteryn:reward-claim.kv.sixrubies",
+      "test": "qready2_six_rubies_quest_1"
+    },
+    {
+      "wiki_title": "Spike Sword Quest",
+      "claim_key": "oteryn:reward-claim.kv.spikesword",
+      "test": "qready2_spike_sword_quest_1"
+    },
+    {
+      "wiki_title": "Studded Legs Quest",
+      "claim_key": "oteryn:reward-claim.kv.honeyflower",
+      "test": "qready2_studded_legs_quest_1"
+    },
+    {
+      "wiki_title": "Studded Shield Quest",
+      "claim_key": "oteryn:reward-claim.kv.bananafree",
+      "test": "qready2_studded_shield_quest_1"
+    },
+    {
+      "wiki_title": "Studded Shield Quest",
+      "claim_key": "oteryn:reward-claim.kv.bananapremium",
+      "test": "qready2_studded_shield_quest_2"
+    },
+    {
+      "wiki_title": "Throwing Star Quest",
+      "claim_key": "oteryn:reward-claim.kv.throwingstar",
+      "test": "qready2_throwing_star_quest_1"
+    }
+  ]
+}

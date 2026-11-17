@@ -1,0 +1,61 @@
+{
+  "actor_position": {
+    "x": 33262,
+    "y": 32365,
+    "floor": -7
+  },
+  "source_tile_ids": [
+    231,
+    1703
+  ],
+  "producer": "tools/content-schema/native-gameplay/build_source_world.py::policies",
+  "appearance_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+  "xml_sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+  "records": [
+    {
+      "server_item_id": 231,
+      "ground": true,
+      "ground_speed": 160,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "natural tiles"
+        }
+      ],
+      "magic_field": false
+    },
+    {
+      "server_item_id": 1703,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "natural tiles"
+        }
+      ],
+      "magic_field": false
+    }
+  ],
+  "xml_1703_matching_range": "<item fromid=\"1703\" toid=\"1715\" name=\"sand\">\n\t\t<attribute key=\"primarytype\" value=\"natural tiles\" />\n\t</item>\n\t"
+}

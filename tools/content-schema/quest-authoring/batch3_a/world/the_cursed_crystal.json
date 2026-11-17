@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-29",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31973,
+          "y": 32905,
+          "floor": -11
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31971,
+        "y": 32904,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:29",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-31",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 31973,
+          "y": 32905,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 31975,
+        "y": 32911,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:31",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-33",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32009,
+          "y": 32928,
+          "floor": -9
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32009,
+        "y": 32929,
+        "floor": -10
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:33",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/batch3/the_cursed_crystal/crystal-stairs-35",
+      "quest": "oteryn:quest.tibia_tales",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32009,
+          "y": 32928,
+          "floor": -10
+        },
+        "unique": null,
+        "action": 25018,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32009,
+        "y": 32929,
+        "floor": -9
+      },
+      "storage": [],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:35",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_cursed_crystal/movements_StepIn_CursedCrystal.lua:25"
+      ]
+    }
+  ]
+}

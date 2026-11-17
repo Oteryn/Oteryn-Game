@@ -208,6 +208,72 @@ pub struct ProductionProficiencyCatalogue {
 }
 
 impl ProductionProficiencyCatalogue {
+    pub(super) fn catalogue_page(
+        &self,
+        index: &oteryn_gameplay_content::content::item_ref::ItemDefinitionIndex,
+        tracks: Option<&WeaponProficiencyDispatch>,
+        offset: u32,
+    ) -> Option<oteryn_protocol_oteryn::weapon_proficiency::ProficiencyCataloguePage> {
+        use oteryn_protocol_oteryn::weapon_proficiency::{
+            PROFICIENCY_CATALOGUE_PAGE_SIZE, ProficiencyCatalogueEntry, ProficiencyCatalogueLevel,
+            ProficiencyCataloguePage,
+        };
+        let total = u32::try_from(self.data.bindings().len()).ok()?;
+        if offset > total {
+            return None;
+        }
+        let mut entries = Vec::new();
+        for (key, binding) in self
+            .data
+            .bindings()
+            .iter()
+            .skip(usize::try_from(offset).ok()?)
+            .take(PROFICIENCY_CATALOGUE_PAGE_SIZE)
+        {
+            let resolved = self.resolved(key)?;
+            let definition = self.data.definitions().get(&binding.profile_binding.key)?;
+            let track = tracks.and_then(|tracks| tracks.track(key));
+            let levels = definition
+                .levels
+                .iter()
+                .enumerate()
+                .map(|(level, data)| {
+                    Some(ProficiencyCatalogueLevel {
+                        selected: track
+                            .and_then(|track| track.selections.get(level))
+                            .copied()
+                            .flatten(),
+                        perks: data
+                            .perks
+                            .iter()
+                            .map(|perk| {
+                                serde_json::to_value(perk)
+                                    .ok()
+                                    .map(|value| proficiency_perk_description(&value))
+                            })
+                            .collect::<Option<Vec<_>>>()?,
+                    })
+                })
+                .collect::<Option<Vec<_>>>()?;
+            entries.push(ProficiencyCatalogueEntry {
+                definition: index
+                    .revision(key)
+                    .and_then(|revision| index.definition_ref("Item", key, revision))
+                    .map_or(0, |reference| reference.get()),
+                weapon: key.clone(),
+                name: definition.name.clone(),
+                experience: track.map_or(0, |track| track.progress),
+                thresholds: *resolved.shape.track_shape().class().thresholds(),
+                levels,
+            });
+        }
+        Some(ProficiencyCataloguePage {
+            offset,
+            total,
+            entries,
+        })
+    }
+
     /// Bind the immutable promoted catalogue to the admission's selected progression content.
     pub(super) fn for_content(&self, content_revision: &str) -> Arc<Self> {
         Arc::new(Self {
@@ -215,6 +281,9 @@ impl ProductionProficiencyCatalogue {
             digest: self.digest,
             content_revision: content_revision.to_owned(),
         })
+    }
+    pub(super) fn weapon_keys(&self) -> impl Iterator<Item = &str> {
+        self.data.bindings().keys().map(String::as_str)
     }
     pub(super) fn empty_track(&self, item_key: &str) -> Option<LiveProficiencyTrack> {
         let shape = self.resolved(item_key)?.shape;
@@ -396,6 +465,43 @@ impl ProductionProficiencyCatalogue {
             }
         }
         Some(effects)
+    }
+}
+
+/// Preserve every promoted perk parameter in readable text, including exact ratios.
+fn proficiency_perk_description(value: &serde_json::Value) -> String {
+    match value {
+        serde_json::Value::Object(fields) => {
+            if let (Some(numerator), Some(denominator)) =
+                (fields.get("numerator"), fields.get("denominator"))
+            {
+                return format!("{numerator}/{denominator}");
+            }
+            let kind = fields
+                .get("kind")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("")
+                .replace('_', " ");
+            let details = fields
+                .iter()
+                .filter(|(key, _)| key.as_str() != "kind")
+                .map(|(key, value)| {
+                    format!(
+                        "{}: {}",
+                        key.replace('_', " "),
+                        proficiency_perk_description(value)
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            if kind.is_empty() {
+                details
+            } else {
+                format!("{kind} ({details})")
+            }
+        }
+        serde_json::Value::String(text) => text.replace('_', " "),
+        other => other.to_string(),
     }
 }
 

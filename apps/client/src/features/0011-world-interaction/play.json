@@ -1,6 +1,1 @@
-{
-  "concerns": [
-    "input"
-  ],
-  "events": {}
-}
+{"concerns":["state","protocol","input","view"],"events":{}}

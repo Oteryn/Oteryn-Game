@@ -1,0 +1,181 @@
+{
+  "priority": "reported number of quests unblocked; equal counts retain request order",
+  "quests_remain_owned_by_requesting_lanes": true,
+  "features": [
+    {
+      "feature": "authored_trigger_and_delivery_bindings",
+      "quests_reported": 68,
+      "state": "QUALIFIED",
+      "api": "quest::authored_bindings::Bindings::attach; catalogue-scoped callback resolution",
+      "remaining": [],
+      "world_delivery_qualification": {
+        "state": "QUALIFIED",
+        "source_sha": "aa85b250027fa68c88c391f6cda490f0764dbf02",
+        "proof": "PG-WORLD-DELIVERY-2026-11-08.json",
+        "api": [
+          "Trigger::MapUse",
+          "Bindings::attach",
+          "world_callbacks::CallbackEffects::item_reward",
+          "RevisionSlot::commit_world_callback_with_items",
+          "DurabilityRoot::commit_character_world_callback_with_items"
+        ]
+      },
+      "native_admission_qualification": {
+        "state": "QUALIFIED",
+        "source_sha": "c7f9d9ba79ec4a53c4b874af54affe6898780c5a",
+        "proof": "PG-NATIVE-ADMISSION-2026-11-08.json"
+      }
+    },
+    {
+      "feature": "definition_ready_reward_claim_use",
+      "quests_reported": 42,
+      "state": "QUALIFIED",
+      "remaining": [],
+      "reuse": "main c77d436d8 QREADY1+2: all11missing native admissions; retain existing generic resolver",
+      "focused_state": "GREEN5cases187.179s; source/native coverage59claims60placements54Items",
+      "proof": "PG-READY-CLAIMS-2026-11-08.json",
+      "units": "1612PASS3145.423s",
+      "scope": "shared resolver/native admission capability; no whole quest ownership or qualification changed"
+    },
+    {
+      "feature": "ground_item_mint_and_ground_use_with",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc3",
+      "quest": "The Beginning Quest",
+      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24"
+    },
+    {
+      "feature": "world_callback_transaction_clock_operations",
+      "quests_reported": 1,
+      "state": "IN_PROGRESS",
+      "requesting_lane": "questpc3",
+      "quest": "Threatened Dreams Quest",
+      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24",
+      "reuse": "Existing reward_callbacks::StateOperation evaluator and authoritative PostgreSQL transaction clock; no new migration",
+      "red": {
+        "postgres": "18.6",
+        "cases_seconds": [
+          58.197645125,
+          71.403533167
+        ],
+        "error": "unknown field state_operations"
+      },
+      "source": {
+        "request_sha": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75",
+        "path": "data-global/scripts/quests/threatened_dreams_quest/event_raven_herb_bush.lua:46-53",
+        "corpus_sha": "9f5a72c6",
+        "blob_sha": "84bb7ea71ddbd0457f714c31952a6822724276a1",
+        "literal_cooldown_seconds": 1800000
+      },
+      "peer_audit": [
+        "npcfix 50e5d9a89a756113243e3cb8261b480be1ec84f3",
+        "questpc3b dc9e763c856503bfd897e50238b99002f5791005",
+        "questpc3 09c26dcee; qworld/qnpcfx/wpkg already merged on main"
+      ],
+      "scope": "Shared engine fixture only; requesting lane retains whole quest ownership",
+      "proof": "PG-WORLD-CLOCK-2026-11-08.json",
+      "focused_state": "GREEN2 realPG cases130.001s",
+      "api": [
+        "world_callbacks::Callback::state_operations",
+        "reward_callbacks::StateOperation",
+        "StateCondition::ElapsedAtLeast",
+        "StateMutation::SetNow",
+        "QuestEffectKind::SetNowWithBinding"
+      ],
+      "publication_state": "compiling WIP under owner PREPUSH-2 cadence exception; prior actualPG2green, post-merge runtime validation pending",
+      "post_merge_pending": [
+        "oteryn-gameplay-durability unit suite",
+        "oteryn-gameplay-dispatch unit suite",
+        "two clock PostgreSQL cases after encounter merge"
+      ],
+      "post_merge_main": "1076254706e4ddc05a6d0a1aba0c1777af2038ac",
+      "quests_units": "327PASS46.308s,0skipped"
+    },
+    {
+      "feature": "conditional_world_reward_achievement",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc3",
+      "quest": "The First Dragon Quest",
+      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24"
+    },
+    {
+      "feature": "annual_npc_dialogue_calendar_gate",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc3",
+      "quest": "The First Dragon Quest",
+      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24"
+    },
+    {
+      "feature": "live_creature_item_use_transform_and_credit",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc3",
+      "quest": "The Tainted Souls Quest",
+      "evidence": "d98761117ec6e9bf7e164e489e1b1dfd5ad82a75:qlane-meta/questpc3/ENGINE-REQUESTS.md:8-24"
+    },
+    {
+      "feature": "step_in_boss_cooldown_and_cleanup",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc3",
+      "quest": "The First Dragon Quest",
+      "request": "StepIn admission via existing occupancy, named-boss cooldown and timed cleanup owners",
+      "evidence": "561ce33ce:qlane-meta/questpc3/ENGINE-REQUESTS.md",
+      "ownership": "Engine capability only; source quest remains in requesting lane"
+    },
+    {
+      "feature": "carried_use_live_player_quest_predicate",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc8",
+      "quest": "The Colours of Magic",
+      "request": "Fenced current other-player quest predicate with selected-instance carried replacement/reward",
+      "evidence": "2b8157325:qlane-meta/questpc8/ENGINE-REQUESTS.md",
+      "ownership": "Engine capability only; source quest remains in requesting lane"
+    },
+    {
+      "feature": "item_look_disguise_restore",
+      "quests_reported": 1,
+      "state": "QUEUED",
+      "requesting_lane": "questpc8",
+      "quest": "Wrath of the Emperor Quest",
+      "request": "Source lookTypeEx item disguise through existing appearance condition and restoration owner",
+      "evidence": "2b8157325:qlane-meta/questpc8/ENGINE-REQUESTS.md",
+      "ownership": "Engine capability only; source quest remains in requesting lane"
+    }
+  ],
+  "qualified_slices": [
+    {
+      "feature": "carried_quest_exchanges_and_authored_npc_delivery",
+      "state": "QUALIFIED",
+      "code_sha": "cca7c5790df42b7afd2aeabadaa399a250c74858",
+      "real_dispatch_pg_seconds": 136.845,
+      "api": [
+        "RewardCallback.carried_exchange",
+        "authored_bindings::Bindings::parse",
+        "authored_bindings::Bindings::attach",
+        "reward_callbacks::load_for"
+      ],
+      "scope": "Engine capability only; no whole quest qualification",
+      "postgres_version": "18.6 (Debian 18.6-1.pgdg13+2)"
+    },
+    {
+      "feature": "authored_native_kill_counters",
+      "state": "QUALIFIED",
+      "code_sha": "df01fc4e8bd2dff2e2857a43bcb52d32f2cbc3ed",
+      "api": "authored_bindings::{Trigger::Kill, KillCounter, Bindings::attach}; native_kills::{counter_for,active_for,tracks_creature_for}; QuestStateCatalogue::completes_after",
+      "pg_passed": 2,
+      "pg_seconds": 242.436,
+      "retained_legacy_pg_seconds": 134.14,
+      "threshold_effect_reuse": "questpc3 262618b3cd9fce9de09ee83064de6f31e95aa8e7",
+      "burst_guard_reuse": "existing main 6738c1da7ad5cf35110145fe33dfa9ea377ab0d7 writer.rs:709-710",
+      "whole_quest_qualification_changed": false,
+      "post_main_pg_refresh": "PASS3 real-dispatch PostgreSQL cases322.908s",
+      "tested_source_sha": "c218a9ddccd7b4eadb35782b1ea646a20cc2337f",
+      "merged_main_sha": "b3864f14a0035a582ef80f1da7d2a931691dd035"
+    }
+  ]
+}

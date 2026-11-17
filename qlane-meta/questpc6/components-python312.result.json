@@ -1,0 +1,5 @@
+{
+  "command": "/usr/bin/python3 tools/content-schema/quest-authoring/quest_component_authoring.py",
+  "exit": 0,
+  "duration_seconds": 24.079
+}

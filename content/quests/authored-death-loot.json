@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "rules": [
+    {
+      "objective": "oteryn:quest-death/authored-anniversary-cyclops",
+      "item_source_id": 24415,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes."
+      ]
+    },
+    {
+      "objective": "oteryn:quest-death/authored-anniversary-wolf",
+      "item_source_id": 24415,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes."
+      ]
+    },
+    {
+      "objective": "oteryn:quest-death/authored-anniversary-troll",
+      "item_source_id": 24415,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes."
+      ]
+    },
+    {
+      "objective": "oteryn:quest-death/authored-anniversary-bear",
+      "item_source_id": 24415,
+      "sources": [
+        "oteryn-authored:chosen-recipe:tibia-anniversary:quest-r1",
+        "https://tibia.fandom.com/index.php?curid=87456&oldid=752614",
+        "Conservative chosen seasonal programme: one old rag per captured named native animal death while collecting;30ownedrags, five native Pinata Dragons, one festive backpack. Source-event randomness is replaced by deterministic bounded progress; no ordinary loot table changes."
+      ]
+    }
+  ]
+}

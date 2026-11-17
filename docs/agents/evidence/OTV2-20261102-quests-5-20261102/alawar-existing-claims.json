@@ -1,0 +1,581 @@
+[
+  {
+    "path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json",
+    "pointer": "/records/49/definition",
+    "sha256": "5722342313abce162d289b56a67f8e015e5ec808a69b6a5617751fc18384566f",
+    "definition": {
+      "claim": {
+        "per": "character",
+        "repeat": {
+          "kind": "once"
+        }
+      },
+      "data_holds": [],
+      "definition_profile": "authored_variant_v1",
+      "identity": {
+        "key": "oteryn:reward-claim.quest.key.id4502",
+        "revision": "reward-claim-r1"
+      },
+      "native_admission": "WAITING_IMPLEMENTATION",
+      "native_contents": {
+        "placements": [
+          {
+            "capacity": 8,
+            "completion": {
+              "key": "Storage.Quest.Key.ID4502",
+              "kind": "storage"
+            },
+            "contents": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2970",
+                  "revision": "definition-r1"
+                },
+                "key_number": 4502
+              },
+              {
+                "count": 23,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3147",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 4,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3298",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3384",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "line": 435,
+            "root": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "unique_id": 5008
+          }
+        ],
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "schema": "OTERYN_NATIVE_CONTAINER_REWARD/v1",
+        "source_sha256": "b073d546930a60adf511677f932e6e0d37df3a230313dc85c4b9253742325757"
+      },
+      "placements": [
+        {
+          "appearance_tibia_id": 2472,
+          "reward": {
+            "container": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2970",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 23,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3031",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3147",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 4,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3298",
+                  "revision": "definition-r1"
+                }
+              },
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3384",
+                  "revision": "definition-r1"
+                }
+              }
+            ],
+            "key_binding": "canary:door-key/4502"
+          },
+          "source_binding": {
+            "legacy_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 5008
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 5008
+              }
+            ],
+            "project_position": {
+              "x": 32201,
+              "y": 31571,
+              "z": 10
+            }
+          }
+        }
+      ],
+      "provenance": {
+        "pilot_key": "canary:reward-claim/quest/key/id4502",
+        "pilot_revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/alawar_s_vault_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "readiness": "waiting_implementation",
+      "source_variant": {
+        "achievement_grants": [],
+        "authoring_dispositions": [
+          {
+            "closed_contract_refs": [
+              "BAGS-0: containers with contents",
+              "Reward chest §5.1; contents field child after close-out"
+            ],
+            "data_format": "COVERED",
+            "data_status": "WAITING_DATA",
+            "feature": "container",
+            "reasons": [
+              "CONTENTS_FIELD_AUTHORING_CHILD_AFTER_CLOSEOUT"
+            ],
+            "ruling_id": 5933264015
+          },
+          {
+            "closed_contract_refs": [
+              "Quest authoring format §3/§3.1 reward.key_binding",
+              "DUR-03 §39.3"
+            ],
+            "data_format": "COVERED",
+            "data_status": "AUTHORED",
+            "feature": "key_binding",
+            "reasons": [],
+            "ruling_id": 5933264015
+          }
+        ],
+        "charge_dispositions": [],
+        "item_bindings": [
+          {
+            "argument": {
+              "kind": "COUNT_OR_SUBTYPE_RETAINED",
+              "raw_count_argument": 1,
+              "source_charges": null,
+              "source_quantity": null
+            },
+            "canonical_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2970",
+              "revision": "definition-r1"
+            },
+            "placement_index": 0,
+            "reward_field": "items",
+            "reward_index": 0,
+            "source_item": {
+              "family": "Item",
+              "key": "canary:item/2970",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            }
+          },
+          {
+            "argument": {
+              "kind": "COUNT_OR_SUBTYPE_RETAINED",
+              "raw_count_argument": 23,
+              "source_charges": null,
+              "source_quantity": null
+            },
+            "canonical_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3031",
+              "revision": "definition-r1"
+            },
+            "placement_index": 0,
+            "reward_field": "items",
+            "reward_index": 1,
+            "source_item": {
+              "family": "Item",
+              "key": "canary:item/3031",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            }
+          },
+          {
+            "argument": {
+              "kind": "COUNT_OR_SUBTYPE_RETAINED",
+              "raw_count_argument": 1,
+              "source_charges": null,
+              "source_quantity": null
+            },
+            "canonical_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3147",
+              "revision": "definition-r1"
+            },
+            "placement_index": 0,
+            "reward_field": "items",
+            "reward_index": 2,
+            "source_item": {
+              "family": "Item",
+              "key": "canary:item/3147",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            }
+          },
+          {
+            "argument": {
+              "kind": "COUNT_OR_SUBTYPE_RETAINED",
+              "raw_count_argument": 4,
+              "source_charges": null,
+              "source_quantity": null
+            },
+            "canonical_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3298",
+              "revision": "definition-r1"
+            },
+            "placement_index": 0,
+            "reward_field": "items",
+            "reward_index": 3,
+            "source_item": {
+              "family": "Item",
+              "key": "canary:item/3298",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            }
+          },
+          {
+            "argument": {
+              "kind": "COUNT_OR_SUBTYPE_RETAINED",
+              "raw_count_argument": 1,
+              "source_charges": null,
+              "source_quantity": null
+            },
+            "canonical_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3384",
+              "revision": "definition-r1"
+            },
+            "placement_index": 0,
+            "reward_field": "items",
+            "reward_index": 4,
+            "source_item": {
+              "family": "Item",
+              "key": "canary:item/3384",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            }
+          },
+          {
+            "argument": null,
+            "canonical_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2853",
+              "revision": "definition-r1"
+            },
+            "placement_index": 0,
+            "reward_field": "container",
+            "reward_index": null,
+            "source_item": {
+              "family": "Item",
+              "key": "canary:item/2853",
+              "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+            }
+          }
+        ],
+        "native_lowering": {
+          "pending_implementation": [
+            "CONTAINER_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED",
+            "KEY_REWARD_NATIVE_LOWERING_NOT_IMPLEMENTED"
+          ],
+          "status": "WAITING_IMPLEMENTATION"
+        },
+        "placement_bindings": [
+          {
+            "manifest_entries": [
+              {
+                "destination": "canary:reward-claim/quest/key/id4502",
+                "position": [
+                  32201,
+                  31571,
+                  10
+                ],
+                "resolution": "present in both servers and identical",
+                "sources": [
+                  {
+                    "source": "canary",
+                    "source_lines": [
+                      153
+                    ],
+                    "uid": 5008
+                  },
+                  {
+                    "source": "crystalserver",
+                    "source_lines": [
+                      435
+                    ],
+                    "uid": 5008
+                  }
+                ],
+                "status": "mapped"
+              }
+            ],
+            "placement_index": 0
+          }
+        ],
+        "source_claim": {
+          "claim": {
+            "per": "character",
+            "repeat": {
+              "kind": "once"
+            }
+          },
+          "identity": {
+            "key": "canary:reward-claim/quest/key/id4502",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "label": null,
+          "placements": [
+            {
+              "appearance": {
+                "family": "Item",
+                "key": "canary:item/2472",
+                "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+              },
+              "position": {
+                "x": 32201,
+                "y": 31571,
+                "z": 10
+              },
+              "reward": {
+                "container": {
+                  "family": "Item",
+                  "key": "canary:item/2853",
+                  "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                },
+                "items": [
+                  {
+                    "count": 1,
+                    "item": {
+                      "family": "Item",
+                      "key": "canary:item/2970",
+                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                    }
+                  },
+                  {
+                    "count": 23,
+                    "item": {
+                      "family": "Item",
+                      "key": "canary:item/3031",
+                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                    }
+                  },
+                  {
+                    "count": 1,
+                    "item": {
+                      "family": "Item",
+                      "key": "canary:item/3147",
+                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                    }
+                  },
+                  {
+                    "count": 4,
+                    "item": {
+                      "family": "Item",
+                      "key": "canary:item/3298",
+                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                    }
+                  },
+                  {
+                    "count": 1,
+                    "item": {
+                      "family": "Item",
+                      "key": "canary:item/3384",
+                      "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+                    }
+                  }
+                ],
+                "key_binding": "canary:door-key/4502"
+              }
+            }
+          ],
+          "progress_write": {
+            "expression": "Storage.Quest.Key.ID4502",
+            "marker": "quest/key/id4502",
+            "source": {
+              "line": 143,
+              "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+            },
+            "value": 1
+          },
+          "quest": {
+            "family": "Quest",
+            "key": "canary:quest/alawar_s_vault_quest",
+            "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+          },
+          "quest_candidate_from_section": null,
+          "quest_link_basis": "curated",
+          "section": "Black knight quest key 5010"
+        },
+        "source_data": {
+          "missing": [],
+          "status": "COMPLETE"
+        }
+      }
+    }
+  },
+  {
+    "path": "content/interactions/reward_claims/reward-claims-00000-00099.json",
+    "pointer": "/records/6/definition",
+    "sha256": "c3715aafa62b623bb7da153d106f0551bb6d1cc73b3f8d5cebfee61685087be8",
+    "definition": {
+      "claim": {
+        "per": "character",
+        "repeat": {
+          "kind": "once"
+        }
+      },
+      "identity": {
+        "key": "oteryn:reward-claim.kv.alawars_vault1",
+        "revision": "reward-claim-r1"
+      },
+      "placements": [
+        {
+          "appearance_tibia_id": 2472,
+          "reward": {
+            "items": [
+              {
+                "count": 3,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3026",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "source_binding": {
+            "legacy_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6045
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6045
+              }
+            ],
+            "project_position": {
+              "x": 32105,
+              "y": 31567,
+              "z": 9
+            }
+          }
+        }
+      ],
+      "provenance": {
+        "pilot_key": "canary:reward-claim/kv/alawars_vault1",
+        "pilot_revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/alawar_s_vault_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "readiness": "ready"
+    }
+  },
+  {
+    "path": "content/interactions/reward_claims/reward-claims-00000-00099.json",
+    "pointer": "/records/7/definition",
+    "sha256": "c3715aafa62b623bb7da153d106f0551bb6d1cc73b3f8d5cebfee61685087be8",
+    "definition": {
+      "claim": {
+        "per": "character",
+        "repeat": {
+          "kind": "once"
+        }
+      },
+      "identity": {
+        "key": "oteryn:reward-claim.kv.alawars_vault2",
+        "revision": "reward-claim-r1"
+      },
+      "placements": [
+        {
+          "appearance_tibia_id": 2472,
+          "reward": {
+            "items": [
+              {
+                "count": 1,
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i3301",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          },
+          "source_binding": {
+            "legacy_unique_ids": [
+              {
+                "server": "canary",
+                "unique_id": 6046
+              },
+              {
+                "server": "crystalserver",
+                "unique_id": 6046
+              }
+            ],
+            "project_position": {
+              "x": 32109,
+              "y": 31567,
+              "z": 9
+            }
+          }
+        }
+      ],
+      "provenance": {
+        "pilot_key": "canary:reward-claim/kv/alawars_vault2",
+        "pilot_revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/alawar_s_vault_quest",
+        "revision": "canary-04b83b51+crystalserver-9f5a72c6"
+      },
+      "readiness": "ready"
+    }
+  }
+]

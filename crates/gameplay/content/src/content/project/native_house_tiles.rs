@@ -75,6 +75,17 @@ impl QualifiedHouseTiles {
         self.houses.as_ref().is_some_and(Vec::is_empty)
     }
 
+    /// Bundle coordinates never borrow the entry map's House catalogue.
+    /// Only a complete, scope-matching bundle read can prove absence; actual
+    /// markers and unavailable evidence remain closed to the no-Houses reset seam.
+    pub(super) fn from_bundle(
+        scope: EngineeringStaticCellScope,
+        index: &crate::content::native_cell_lookup::BundleCollisionIndex,
+    ) -> Self {
+        let houses = (index.house_tiles_present(&scope) == Ok(false)).then(Vec::new);
+        Self { scope, houses }
+    }
+
     pub(super) fn from_source_world(
         world: &super::native_spell_world::QualifiedNativeSpellWorld,
     ) -> Self {
@@ -193,6 +204,39 @@ impl QualifiedHouseTiles {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+    #[test]
+    fn bundle_port_without_house_evidence_never_qualifies_absence() {
+        use crate::content::native_cell_lookup::{BundleCollisionIndex, BundleCollisionLookup};
+        use crate::content::static_cell_engine::StaticCellEngineError;
+        #[derive(Debug)]
+        struct MissingEvidence;
+        impl BundleCollisionLookup for MissingEvidence {
+            fn lookup(
+                &self,
+                _: &EngineeringStaticCellScope,
+                _: LogicalCell,
+            ) -> Result<crate::content::CollisionClass, StaticCellEngineError> {
+                Err(StaticCellEngineError::Unqualified)
+            }
+            fn same_index(&self, _: &dyn BundleCollisionLookup) -> bool {
+                false
+            }
+        }
+        let world = oteryn_protocol_oteryn::WorldId::decode(&[
+            0x01, 0x9a, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
+        ])
+        .unwrap();
+        let room = super::super::qualify_native_entry_room(world).unwrap();
+        let scope = room.movement_cells().scope().clone();
+        let index = BundleCollisionIndex(std::sync::Arc::new(MissingEvidence));
+        let houses = QualifiedHouseTiles::from_bundle(scope.clone(), &index);
+        assert!(!houses.is_known_empty());
+        assert_eq!(
+            houses.house_at(&scope, LogicalCell { x: 10, y: 10, z: 7 }),
+            Err("House placement metadata unavailable")
+        );
+    }
+
     #[test]
     fn reciprocal_parts_resolve_to_one_reservation_head() {
         let head = LogicalCell {

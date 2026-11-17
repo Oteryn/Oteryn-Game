@@ -434,6 +434,15 @@ impl CombatDeathFixture {
         Self::new_with_health(world_id, channel_id, scope_generation, Self::HEALTH)
     }
 
+    /// Test support for the real carrier lethal commit in either native scope.
+    /// The death key is still issued only by `project_death`, never from caller bytes.
+    pub fn new_for_scope(
+        runtime_scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+    ) -> Result<Self, CarrierError> {
+        Self::build_for_scope(runtime_scope, scope_generation, Self::HEALTH, 1)
+    }
+
     /// Test-only source-health variant; default fixture and all production paths stay intact.
     pub fn new_with_health(
         world_id: WorldId,
@@ -471,21 +480,71 @@ impl CombatDeathFixture {
         health: i64,
         capacity: usize,
     ) -> Result<Self, CarrierError> {
+        Self::build_for_scope(
+            RuntimeScopeRefV1::channel(world_id, channel_id),
+            scope_generation,
+            health,
+            capacity,
+        )
+    }
+
+    /// Death projection at the caller's explicit fixture cell; production paths are unchanged.
+    pub fn new_for_scope_at(
+        runtime_scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+        at: MovementLocalPosition,
+    ) -> Result<Self, CarrierError> {
+        Self::build_at(
+            runtime_scope,
+            scope_generation,
+            Self::HEALTH,
+            1,
+            LocalPosition {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            },
+        )
+    }
+
+    fn build_for_scope(
+        runtime_scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+        health: i64,
+        capacity: usize,
+    ) -> Result<Self, CarrierError> {
+        Self::build_at(
+            runtime_scope,
+            scope_generation,
+            health,
+            capacity,
+            Self::POSITION,
+        )
+    }
+
+    fn build_at(
+        runtime_scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+        health: i64,
+        capacity: usize,
+        position: LocalPosition,
+    ) -> Result<Self, CarrierError> {
+        let position_scope = positions::PositionScope::new(runtime_scope)?;
         let mut owner =
             NamespaceContinuityGuard::from_pre_production_grant(PreProductionContinuityGrant {
-                runtime_scope: RuntimeScopeRefV1::channel(world_id, channel_id),
+                runtime_scope,
                 scope_generation,
             });
         let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut owner, capacity)?;
         let actor = carrier.admit_creature(&owner, ActorState(1), Self::TARGET, health)?;
         let context = PreProductionPositionContext {
-            scope: positions::PositionScope::channel(world_id, channel_id),
+            scope: position_scope,
             scope_generation,
             coordinate_frame_marker: 41,
             map_revision_marker: 42,
             content_generation_marker: 43,
         };
-        carrier.initialize_position(&owner, actor, context, Self::POSITION)?;
+        carrier.initialize_position(&owner, actor, context, position)?;
         Ok(Self {
             owner,
             carrier,
@@ -809,9 +868,13 @@ impl crate::carrier::CombatDeathFixture {
         ),
         CarrierError,
     > {
+        let projection = self.project_death_projection()?;
+        Ok((projection.occurrence().death_key()?, projection.position()))
+    }
+
+    pub fn project_death_projection(&mut self) -> Result<RuntimeCorpseProjection, CarrierError> {
         let actor = self.actor();
         let mut combat = self.borrow_combat_death();
-        let projection = project_fixed_one_creature_death(&mut combat, actor)?;
-        Ok((projection.occurrence().death_key()?, projection.position()))
+        project_fixed_one_creature_death(&mut combat, actor).cloned()
     }
 }

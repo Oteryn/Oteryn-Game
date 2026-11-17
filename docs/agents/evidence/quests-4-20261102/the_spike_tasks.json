@@ -1,0 +1,1346 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "the_spike_tasks",
+    "frozen_stage1": {
+      "total": 23,
+      "auto": 17,
+      "manual": 6
+    },
+    "authored_callback_definitions": 17,
+    "runtime_catalogue_callback_definitions": 17,
+    "runtime_exclusions": [],
+    "npc_source_files": 3,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "17 dokładnych teleportów z zachowaniem źródłowych warunków.",
+    "left_out_summary": "Brak AID4227–4243; premium4226 i geomantic56421 wymagają kwalifikacji. Osobny katalog spike_tasks nie rozszerza tej partii."
+  },
+  "steps": [
+    {
+      "cluster": "root",
+      "cluster_row": 85,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A085",
+        "original_index": 85,
+        "quest": "the_spike_tasks",
+        "step": "Portal4226",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4226",
+          "pattern": "P03",
+          "trigger": "StepInAID4226",
+          "condition": "Premium tylko4226; level80 w config NIE jest odczytywane przez funkcję",
+          "effect": "Teleport32243,32598,8",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:2"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER_MAP_NOT_QUALIFIED",
+        "reason": "Premium dotyczy wyłącznie AID4226; pole level80 z config nie jest odczytywane i nie staje się nowym guardem. AID4226 nie był zakresem pełnego probe4227..4243, więc jego nieobecność nie jest stwierdzona. Brakuje kwalifikacji source premium branch.",
+        "missing_function": "Read-only Premium owner predicate połączony z source success/refusal teleport i tekstem przez zamknięty callback caller, plus rzeczywisty native binding4226.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:2"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 86,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A086",
+        "original_index": 86,
+        "quest": "the_spike_tasks",
+        "step": "Portal4227",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4227",
+          "pattern": "P03",
+          "trigger": "StepInAID4227",
+          "condition": "Tylko gracz; brak gate poziomu",
+          "effect": "Teleport32624,31855,11",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:3"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:3"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4227",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 87,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A087",
+        "original_index": 87,
+        "quest": "the_spike_tasks",
+        "step": "Portal4228",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4228",
+          "pattern": "P03",
+          "trigger": "StepInAID4228",
+          "condition": "Premium tylko4226; level80 w config NIE jest odczytywane przez funkcję",
+          "effect": "Teleport32228,32596,8",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:4"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:4"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4228",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 88,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A088",
+        "original_index": 88,
+        "quest": "the_spike_tasks",
+        "step": "Portal4229",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4229",
+          "pattern": "P03",
+          "trigger": "StepInAID4229",
+          "condition": "Tylko gracz; brak gate poziomu",
+          "effect": "Teleport32237,32605,8",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:5"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:5"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4229",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 89,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A089",
+        "original_index": 89,
+        "quest": "the_spike_tasks",
+        "step": "Portal4230",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4230",
+          "pattern": "P03",
+          "trigger": "StepInAID4230",
+          "condition": "Premium tylko4226; level80 w config NIE jest odczytywane przez funkcję",
+          "effect": "Teleport32243,32619,9",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:6"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:6"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4230",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 90,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A090",
+        "original_index": 90,
+        "quest": "the_spike_tasks",
+        "step": "Portal4231",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4231",
+          "pattern": "P03",
+          "trigger": "StepInAID4231",
+          "condition": "Tylko gracz; brak gate poziomu",
+          "effect": "Teleport32237,32605,9",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:7"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:7"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4231",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 91,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A091",
+        "original_index": 91,
+        "quest": "the_spike_tasks",
+        "step": "Portal4232",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4232",
+          "pattern": "P03",
+          "trigger": "StepInAID4232",
+          "condition": "Premium tylko4226; level80 w config NIE jest odczytywane przez funkcję",
+          "effect": "Teleport32240,32620,10",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:8"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:8"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4232",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 92,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A092",
+        "original_index": 92,
+        "quest": "the_spike_tasks",
+        "step": "Portal4233",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4233",
+          "pattern": "P03",
+          "trigger": "StepInAID4233",
+          "condition": "Tylko gracz; brak gate poziomu",
+          "effect": "Teleport32237,32605,10",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:9"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:9"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4233",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 93,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A093",
+        "original_index": 93,
+        "quest": "the_spike_tasks",
+        "step": "Portal4234",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4234",
+          "pattern": "P03",
+          "trigger": "StepInAID4234",
+          "condition": "Premium tylko4226; level80 w config NIE jest odczytywane przez funkcję",
+          "effect": "Teleport32227,32598,11",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:10"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:10"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4234",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 94,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A094",
+        "original_index": 94,
+        "quest": "the_spike_tasks",
+        "step": "Portal4235",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4235",
+          "pattern": "P03",
+          "trigger": "StepInAID4235",
+          "condition": "Tylko gracz; brak gate poziomu",
+          "effect": "Teleport32237,32605,11",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:11"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:11"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4235",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 95,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A095",
+        "original_index": 95,
+        "quest": "the_spike_tasks",
+        "step": "Portal4236",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4236",
+          "pattern": "P03",
+          "trigger": "StepInAID4236",
+          "condition": "Premium tylko4226; level80 w config NIE jest odczytywane przez funkcję",
+          "effect": "Teleport32238,32622,12",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:12"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:12"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4236",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 96,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A096",
+        "original_index": 96,
+        "quest": "the_spike_tasks",
+        "step": "Portal4237",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4237",
+          "pattern": "P03",
+          "trigger": "StepInAID4237",
+          "condition": "Tylko gracz; brak gate poziomu",
+          "effect": "Teleport32237,32605,12",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:13"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:13"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4237",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 97,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A097",
+        "original_index": 97,
+        "quest": "the_spike_tasks",
+        "step": "Portal4238",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4238",
+          "pattern": "P03",
+          "trigger": "StepInAID4238",
+          "condition": "Premium tylko4226; level80 w config NIE jest odczytywane przez funkcję",
+          "effect": "Teleport32244,32619,13",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:14"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:14"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4238",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 98,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A098",
+        "original_index": 98,
+        "quest": "the_spike_tasks",
+        "step": "Portal4239",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4239",
+          "pattern": "P03",
+          "trigger": "StepInAID4239",
+          "condition": "Tylko gracz; brak gate poziomu",
+          "effect": "Teleport32237,32605,13",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:15"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:15"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4239",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 99,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A099",
+        "original_index": 99,
+        "quest": "the_spike_tasks",
+        "step": "Portal4240",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4240",
+          "pattern": "P03",
+          "trigger": "StepInAID4240",
+          "condition": "Premium tylko4226; level80 w config NIE jest odczytywane przez funkcję",
+          "effect": "Teleport32244,32588,14",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:16"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:16"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4240",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 100,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A100",
+        "original_index": 100,
+        "quest": "the_spike_tasks",
+        "step": "Portal4241",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4241",
+          "pattern": "P03",
+          "trigger": "StepInAID4241",
+          "condition": "Tylko gracz; brak gate poziomu",
+          "effect": "Teleport32237,32605,14",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:17"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:17"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4241",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 101,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A101",
+        "original_index": 101,
+        "quest": "the_spike_tasks",
+        "step": "Portal4242",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4242",
+          "pattern": "P03",
+          "trigger": "StepInAID4242",
+          "condition": "Premium tylko4226; level80 w config NIE jest odczytywane przez funkcję",
+          "effect": "Teleport32224,32606,15",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:18"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:18"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4242",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 102,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+      ],
+      "disposition": {
+        "row_id": "R8A102",
+        "original_index": 102,
+        "quest": "the_spike_tasks",
+        "step": "Portal4243",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Portal4243",
+          "pattern": "P03",
+          "trigger": "StepInAID4243",
+          "condition": "Tylko gracz; brak gate poziomu",
+          "effect": "Teleport32237,32605,15",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:19"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "AUTO"
+        },
+        "status": "CALLBACK_DATA_MAP_BINDING_MISSING",
+        "reason": "Dokładny player-only teleport jest zachowany. Pełny native probe nie znalazł odpowiadającego AID4227..4243; żaden level gate nie jest dodany z nieczytanego pola config.",
+        "missing_function": "Source-backed native selector odpowiedniego AID, potem zwykły ingress; bez inventowania nowej pozycji, WorldId lub gate poziomu.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:19"
+        ],
+        "evidence": [
+          "map-qualification.json",
+          "callbacks-the_spike_tasks.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false,
+        "callback": {
+          "key": "oteryn:quest-callback/spike-portal-4243",
+          "present_in_current_data": true,
+          "native_selector_and_tile_present": false,
+          "qualification_evidence": "map-qualification.json",
+          "compiled_ingress_result": "PARENT_OWNED_SEPARATE_VALIDATION_NOT_CLAIMED_BY_THIS_REPORT"
+        }
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 103,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A103",
+        "original_index": 103,
+        "quest": "the_spike_tasks",
+        "step": "Odmowa premium",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Odmowa premium",
+          "pattern": "P03",
+          "trigger": "StepInAID4226",
+          "condition": "!isPremium",
+          "effect": "Teleport32624,31855,11 + tekst/effect",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:35"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER_MAP_NOT_QUALIFIED",
+        "reason": "Premium dotyczy wyłącznie AID4226; pole level80 z config nie jest odczytywane i nie staje się nowym guardem. AID4226 nie był zakresem pełnego probe4227..4243, więc jego nieobecność nie jest stwierdzona. Brakuje kwalifikacji source premium branch.",
+        "missing_function": "Read-only Premium owner predicate połączony z source success/refusal teleport i tekstem przez zamknięty callback caller, plus rzeczywisty native binding4226.",
+        "question_ids": [
+          "the_spike_tasks-native-selectors",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316624",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          2,
+          5,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_spike_teleport.lua:35"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 104,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589131113",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A104",
+        "original_index": 104,
+        "quest": "the_spike_tasks",
+        "step": "Geomantic: wybór aktywnych zadań",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Geomantic: wybór aktywnych zadań",
+          "pattern": "P03",
+          "trigger": "StepInAID56421",
+          "condition": "Nest_Main nie należy{-1,8};Charge_Main==1",
+          "effect": "Gdy żadne:powrót fromPosition",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_geomantic_charges.lua:13"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER_MAP_NOT_QUALIFIED",
+        "reason": "Source Nest/Charge branches są kompletne: aktywny Nest sprawdza outfit przed zapisem Charge1→2. Nie wolno wyciąć samego SET Charge2 ani pominąć120000ms disguise. AID56421 nie był kwalifikowany tym probe, więc nie deklarujemy jego braku.",
+        "missing_function": "Jeden zamknięty geomantic caller łączący read-only Quest/Condition/look checks, source odmowę/fromPosition, outfit307 na120000ms oraz warunkowy Charge2 z tekstem; source map admission56421 osobno.",
+        "question_ids": [
+          "spike-directory-scope",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589131113",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_geomantic_charges.lua:13"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 105,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589131113",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A105",
+        "original_index": 105,
+        "quest": "the_spike_tasks",
+        "step": "Geomantic: nest disguise",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Geomantic: nest disguise",
+          "pattern": "P20",
+          "trigger": "StepInAID56421",
+          "condition": "Nest aktywne; brak CONDITION_OUTFIT i lookType!=307",
+          "effect": "Outfit307 na120000ms;gdy przebrany:odmowa PRZED charge update",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_geomantic_charges.lua:26"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER_MAP_NOT_QUALIFIED",
+        "reason": "Source Nest/Charge branches są kompletne: aktywny Nest sprawdza outfit przed zapisem Charge1→2. Nie wolno wyciąć samego SET Charge2 ani pominąć120000ms disguise. AID56421 nie był kwalifikowany tym probe, więc nie deklarujemy jego braku.",
+        "missing_function": "Jeden zamknięty geomantic caller łączący read-only Quest/Condition/look checks, source odmowę/fromPosition, outfit307 na120000ms oraz warunkowy Charge2 z tekstem; source map admission56421 osobno.",
+        "question_ids": [
+          "spike-directory-scope",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589131113",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_geomantic_charges.lua:26"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 106,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589131113",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "row_id": "R8A106",
+        "original_index": 106,
+        "quest": "the_spike_tasks",
+        "step": "Geomantic: naładowanie",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Geomantic: naładowanie",
+          "pattern": "P03",
+          "trigger": "StepInAID56421",
+          "condition": "Charge_Main==1;jeśliNestaktywny najpierwgateprzebrania",
+          "effect": "Charge_Main=2;effect12;tekst",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_geomantic_charges.lua:35"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_SHARED_ADAPTER_MAP_NOT_QUALIFIED",
+        "reason": "Source Nest/Charge branches są kompletne: aktywny Nest sprawdza outfit przed zapisem Charge1→2. Nie wolno wyciąć samego SET Charge2 ani pominąć120000ms disguise. AID56421 nie był kwalifikowany tym probe, więc nie deklarujemy jego braku.",
+        "missing_function": "Jeden zamknięty geomantic caller łączący read-only Quest/Condition/look checks, source odmowę/fromPosition, outfit307 na120000ms oraz warunkowy Charge2 z tekstem; source map admission56421 osobno.",
+        "question_ids": [
+          "spike-directory-scope",
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589131113",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          5,
+          6,
+          7
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_spike_tasks/movements_geomantic_charges.lua:35"
+        ],
+        "evidence": [],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    },
+    {
+      "cluster": "root",
+      "cluster_row": 107,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589131113"
+      ],
+      "disposition": {
+        "row_id": "R8A107",
+        "original_index": 107,
+        "quest": "the_spike_tasks",
+        "step": "Powiązani NPC i druga ścieżka katalogowa",
+        "original_row": {
+          "quest": "the_spike_tasks",
+          "step": "Powiązani NPC i druga ścieżka katalogowa",
+          "pattern": "P09/P10/P11",
+          "trigger": "Gnombold/Gnomilly/Gnomargery;Storage.SpikeTaskQuest",
+          "condition": "Te same tracks współdzielone z odrębnym katalogiem spike_tasks",
+          "effect": "QUESTION o ownership; nie dublować tasków i ich kill hooks",
+          "donor": [
+            "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:1"
+          ],
+          "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+          "import_mode": "RĘCZNIE"
+        },
+        "status": "LEFT_OUT_OUT_OF_SCOPE",
+        "reason": "Źródła trzech NPC i ich pozycje istnieją, ale szerszy katalog spike_tasks z pętlą tasków/kill hooks pozostaje odrębnym zakresem. ANSWER6 wymaga obecnej własności i zakazuje drugiego handlera tych tracks.",
+        "missing_function": "Odrębne uzgodnienie zakresu właściciela spike_tasks; obecna partia zachowuje tylko dwa przydzielone pliki i ich dokładne dependencies.",
+        "question_ids": [
+          "spike-directory-scope"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589131113"
+        ],
+        "answer_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "first_answer_clauses": [
+          6
+        ],
+        "source_refs": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gnomilly.lua:1"
+        ],
+        "evidence": [
+          "npc-placement-qualification.json"
+        ],
+        "source_facts": {},
+        "complete_runtime_step_claim": false
+      }
+    }
+  ]
+}

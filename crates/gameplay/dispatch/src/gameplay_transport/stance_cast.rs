@@ -13,6 +13,11 @@ use crate::spell::stance_execution::PreparedStance;
 use crate::spell::{Execution, OperationalCastFacts, SpellDefinition};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 
+#[cfg(test)]
+tokio::task_local! {
+    static STANCE_READBACK_PAUSE: std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>;
+}
+
 fn stance_spell(spell: &SpellDefinition) -> bool {
     matches!(&spell.execution, Execution::NativeProfile(profile)
         if profile.spell()["execution"]["native_behavior"]["key"] == "stance_toggle")
@@ -43,6 +48,23 @@ fn pending(
         .cloned()
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[cfg(test)]
+    pub(in crate::gameplay_transport) async fn cast_stance_with_readback_pause(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: SpellCastIntent,
+        pause: std::sync::Arc<(tokio::sync::Notify, tokio::sync::Notify)>,
+    ) -> SpellCastOutcome {
+        STANCE_READBACK_PAUSE
+            .scope(
+                pause,
+                self.cast_actor_spell(actor, session, command_id, intent),
+            )
+            .await
+    }
+
     pub(in crate::gameplay_transport) async fn reconcile_pending_stance_for_control_loss(
         &self,
         actor: ExactActorRef,
@@ -273,6 +295,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
             Err(_) => return Some(SpellCastOutcome::rejected()),
         };
+        #[cfg(test)]
+        if let Ok(pause) = STANCE_READBACK_PAUSE.try_with(std::sync::Arc::clone) {
+            pause.0.notify_one();
+            pause.1.notified().await;
+        }
         Some(
             self.finish_stance(&prepared, &receipt, spell, actor, session, command_id)
                 .await,
@@ -294,9 +321,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return SpellCastOutcome::rejected();
         };
         // A receipt from an old connection, lease or owner is historical only.
+        // Unrelated Character writes may advance the shared revision while the
+        // original stance is awaiting readback. Its exact projection below,
+        // rather than the global revision, proves that no later stance replaced it.
         let mut original = prepared.fence;
-        original.expected_character_revision = receipt.committed_character_revision();
-        if current != original {
+        original.expected_character_revision = current.expected_character_revision;
+        if current != original
+            || current.expected_character_revision < receipt.committed_character_revision()
+        {
             return SpellCastOutcome::rejected();
         }
         let Ok(loaded) = self

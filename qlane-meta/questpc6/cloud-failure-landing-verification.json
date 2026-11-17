@@ -1,0 +1,57 @@
+{
+  "mechanism": "Authored recovery destination for refused STEP callbacks",
+  "source": {
+    "byte_count": 708,
+    "cache_path": "blobs/8d9e413024dc127b7b26513127b033ec19bfe615",
+    "file_id": "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/draconia/movement-escape.lua",
+    "git_blob_sha1": "8d9e413024dc127b7b26513127b033ec19bfe615",
+    "path": "data-global/scripts/quests/draconia/movement-escape.lua",
+    "read_method": "NORMAL_HTTPS_GITHUB_CODELOAD_GITBLOB_VERIFIED",
+    "repository": "zimbadev/crystalserver",
+    "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+    "sha256": "53f3313e99fb541c3e016b5ac09a2e372c0ad8a382786ccd79db6bb40a700312",
+    "source": "crystalserver"
+  },
+  "source_lines": "10-13 (missing offering recovery); 17-25 (conditional reset and successful exit)",
+  "url": "https://github.com/zimbadev/crystalserver/blob/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/draconia/movement-escape.lua#L10-L13",
+  "implementation": "Optional failure_teleport, restricted to returning STEP callbacks. Uses the existing movement teleport proof, scope/session/PZ/collision checks, committed movement effects and ingress replay. No quest receipt is earned on refusal.",
+  "conservative_rule": "If the authored recovery landing cannot be proved, no recovery teleport is committed; no quest/item state is changed.",
+  "red": {
+    "cases": 2,
+    "failed": 2,
+    "execution_seconds": 44.92,
+    "proof": "Both cases reached PostgreSQL-backed framed STEP and failed actor-position assertions: actual origin (32817,31598,9), expected authored recovery (32818,31599,9) or retained entered tile (32818,31598,9).",
+    "log": "/tmp/questpc6-failure-red.log"
+  },
+  "green": {
+    "cases": 2,
+    "passed": 2,
+    "execution_seconds": 45.82,
+    "postgres_version": "18.6",
+    "markers": [
+      {
+        "name": "conditional-failure-landing",
+        "duration_seconds": 45.796480808
+      },
+      {
+        "name": "conditional-failure-blocked",
+        "duration_seconds": 45.822009908
+      }
+    ],
+    "log": "/tmp/questpc6-failure-green.log"
+  },
+  "regression": {
+    "filter": "quest_world_callbacks_real_step_checks_storage_and_teleports",
+    "passed": 1,
+    "execution_seconds": 46.44
+  },
+  "checks": {
+    "quest_callback_units": "9 passed, 1.17 seconds",
+    "authoring_units": "21 passed, 0.468 seconds",
+    "cargo_check": "PASS, quests+dispatch all targets, 37.71 seconds",
+    "cargo_fmt": "PASS, quests+dispatch",
+    "clippy": "PASS, quests+dispatch all targets/all features, -D warnings; 50.78 seconds"
+  },
+  "qualification": "Shared mechanism only; Draconia needs its atomic exchange and conditional reset composed before whole-quest qualification.",
+  "review": "Read every own source/test hunk against CODEX-CHECKLIST. No item/persistence/session-fence/protocol change; no weakened tests. Omitted field preserves existing serialized callbacks and recovery origin. No generated content input changed."
+}

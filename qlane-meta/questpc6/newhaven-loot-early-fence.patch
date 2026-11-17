@@ -1,0 +1,31 @@
+--- a/crates/gameplay/durability/src/durability/item_mint.rs
++++ b/crates/gameplay/durability/src/durability/item_mint.rs
+@@ -955,10 +955,10 @@
+                 || claim.death.scope_ownership_generation() != death.scope_ownership_generation
+                 || claim.death.actor_local_id() != death.actor_local_id
+                 || claim.death.actor_local_generation() != death.actor_local_generation
+-                || claim.items().iter().any(|id| !frozen_children.iter().any(|(child, placement)|
++                || claim.items().iter().any(|id| frozen_children.iter().filter(|(child, placement)|
+                     placement.corpse_item_instance_id == candidate.item_instance_id
+                     && child.request.item.production_key == format!("oteryn:item.tibia.i{id}")
+-                    && child.request.quantity == 1))
++                    && child.request.quantity == 1).count() != 1)
+             { return Err(ItemMintError::InvalidInput); }
+         }
+         let frozen = FrozenMint::of(candidate);
+@@ -1009,6 +1009,15 @@
+                         return Ok(Ok(outcomes));
+                     }
+
++                    // Historical receipts above remain replayable. A fresh tutorial
++                    // batch locks and qualifies its Character before any item row.
++                    if let Some(claim) = &tutorial_corruptor
++                        && super::character_progression::assert_gameplay_fence(
++                            &mut tx, &claim.fence, &node,
++                        ).await?.is_err()
++                    {
++                        return Ok(Err(ItemMintError::AuthorityRejected));
++                    }
+                     let Some(row) = load_reservation(&mut tx, &frozen.request.cause).await? else {
+                         return Ok(Err(ItemMintError::ConflictingCandidate));
+                     };

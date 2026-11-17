@@ -4,7 +4,7 @@
   "owner_decision": "W02 owner allocation, PR #2769 ANSWER 6543120139, 2026-10-31",
   "owner": "Activity runtime and session handoff",
   "capability": 117,
-  "revision": "One source-session StateSnapshot barrier per committed handoff, before sequence-one full destination snapshots.",
+  "revision": "One source-session StateSnapshot barrier per committed handoff, before target-sequence-zero full destination snapshots. Live Soulpit barriers require command710 acknowledgement/result at destination sequence1 before gameplay.",
   "delta_types": [],
   "snapshot_types": [
     {

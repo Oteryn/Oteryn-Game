@@ -118,6 +118,7 @@ pub fn offered_for_scope(
 /// [`offered_for_scope`] with the weather binding given: without a bound source the set has no
 /// capability 26, so a boot that requires 26 fails closed (`Unoffered(26)`) instead of
 /// publishing readiness for sessions that can never receive it.
+/// Likewise, capability 286 requires native gameplay to bind creature display names.
 pub fn offered_for_scope_with(
     bundle: bool,
     active: Option<&crate::content::ActiveGeneration>,
@@ -132,11 +133,69 @@ pub fn offered_for_scope_with(
     } else {
         super::item_ref_admission::offered_capabilities(active)
     };
-    if weather_bound {
+    let base = if weather_bound {
         base
     } else {
         without_weather(base)
+    };
+    if active
+        .and_then(crate::content::ActiveGeneration::native_gameplay)
+        .is_some()
+    {
+        base
+    } else {
+        without_entity_names(base)
     }
+}
+
+/// Bind the SAME observation-only native map presentation offer used by fresh
+/// negotiation. The BOOT caller supplies its actual post-Bundle room and pin;
+/// cached descriptor slices retain no source or runtime authority.
+pub fn with_native_map_presentation_offer(
+    base: &'static [OfferedCapability],
+    active: Option<&crate::content::ActiveGeneration>,
+    room: Option<&crate::content::QualifiedNativeEntryRoom>,
+    pin: &crate::foundation::ChannelContentPin,
+) -> &'static [OfferedCapability] {
+    if !matches!((active,room),(Some(active),Some(room))
+        if super::native_cue_offer::source_available(active,room,pin))
+    {
+        return base;
+    }
+    type Set = &'static [OfferedCapability];
+    static CACHE: std::sync::Mutex<Vec<(Set, Set)>> = std::sync::Mutex::new(Vec::new());
+    let mut cache = CACHE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some((_, set)) = cache.iter().find(|(key, _)| *key == base) {
+        return set;
+    }
+    let set: Set = Box::leak(super::native_cue_offer::offered(base, true).into_boxed_slice());
+    cache.push((base, set));
+    set
+}
+
+/// `base` without capability 286 as a `'static` slice, built once per distinct base set.
+fn without_entity_names(base: &'static [OfferedCapability]) -> &'static [OfferedCapability] {
+    type Cached = (&'static [OfferedCapability], &'static [OfferedCapability]);
+    static CACHE: std::sync::Mutex<Vec<Cached>> = std::sync::Mutex::new(Vec::new());
+    let mut cache = CACHE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some((_, set)) = cache.iter().find(|(key, _)| *key == base) {
+        return set;
+    }
+    let set: &'static [OfferedCapability] = Box::leak(
+        base.iter()
+            .copied()
+            .filter(|row| {
+                row.id != oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2
+            })
+            .collect::<Vec<_>>()
+            .into_boxed_slice(),
+    );
+    cache.push((base, set));
+    set
 }
 
 /// `base` without capability 26 as a `'static` slice, built once per distinct base set.

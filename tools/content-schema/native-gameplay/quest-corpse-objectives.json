@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "objectives": [
+    "oteryn:quest-death/authored-venore-coryms",
+    "oteryn:quest-death/authored-winterlight-queen"
+  ],
+  "sources": [
+    "content/creatures/definitions/spell-native-profiles.json#oteryn:creature.little_corym_charlatan",
+    "https://tibia.fandom.com/wiki/Little_Corym_Charlatan",
+    "imports/canary/items-xml/items.xml#17449-17450"
+  ],
+  "capacity_projections": [
+    {
+      "item": "oteryn:item.tibia.i30272",
+      "source_capacity": 40,
+      "native_capacity": 30,
+      "sources": [
+        "imports/canary/items-xml/items.xml#30272",
+        "crates/gameplay/domain/src/domain/loot_data.rs#CORPSE_CONTAINER_ENTRIES_MAX",
+        "OTERYN_AUTHORED_APPROXIMATION: retain the existing native30-entry corpse ceiling; source40 and canonical Item facts stay unchanged."
+      ]
+    }
+  ]
+}

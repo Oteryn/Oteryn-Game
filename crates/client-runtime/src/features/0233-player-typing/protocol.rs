@@ -1,8 +1,15 @@
 use oteryn_session::{CommandStatus, Session, SessionError, SessionStream, player_typing};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlayerTypingOrigin {
+    Manual,
+    Composer,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PlayerTypingCommand {
     pub typing: bool,
+    pub origin: PlayerTypingOrigin,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

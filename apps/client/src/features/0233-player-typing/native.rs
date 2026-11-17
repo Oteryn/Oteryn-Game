@@ -32,6 +32,9 @@ fn wide(text: &str) -> Vec<u16> {
         .collect()
 }
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut m = lock(&link.mailbox);
         if m.player_typing.open {
@@ -55,7 +58,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Player typing").as_ptr(),
+            wide(tr!("Player typing")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -77,8 +80,8 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
-        control(hwnd, "BUTTON", "Typing on", ON, [10, 10, 130, 30]);
-        control(hwnd, "BUTTON", "Typing off", OFF, [150, 10, 130, 30]);
+        control(hwnd, "BUTTON", tr!("Typing on"), ON, [10, 10, 130, 30]);
+        control(hwnd, "BUTTON", tr!("Typing off"), OFF, [150, 10, 130, 30]);
         let state = control(hwnd, "EDIT", "", 103, [10, 50, 580, 250]);
         let mut held = String::new();
         let mut message: MSG = std::mem::zeroed();

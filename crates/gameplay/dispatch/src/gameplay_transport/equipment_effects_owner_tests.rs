@@ -9,14 +9,22 @@ use std::path::Path;
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 
 fn input() -> Result<NativeGameplayInput, Box<dyn Error>> {
-    let mut input = NativeGameplayInput::from_manifest(
-        &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json"),
-    )?;
-    // These fixtures exercise the production item profiles in the accepted entry room.
-    // Compiling the unrelated source-world carrier in every ability case adds contention
-    // to the concurrent PostgreSQL owners without exercising another equipment path.
-    input.source_world = None;
-    Ok(input)
+    // The pinned manifest is read once per test process; every caller gets its own copy,
+    // which `fixture_input` may then change without affecting any other case.
+    static INPUT: std::sync::LazyLock<Result<NativeGameplayInput, String>> =
+        std::sync::LazyLock::new(|| -> Result<NativeGameplayInput, String> {
+            let mut input = NativeGameplayInput::from_manifest(
+                &Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../../content/spells.manifest.json"),
+            )
+            .map_err(|error| format!("{error:?}"))?;
+            // These fixtures exercise the production item profiles in the accepted entry room.
+            // Compiling the unrelated source-world carrier in every ability case adds contention
+            // to the concurrent PostgreSQL owners without exercising another equipment path.
+            input.source_world = None;
+            Ok(input)
+        });
+    Ok(INPUT.clone()?)
 }
 
 fn native(input: &NativeGameplayInput) -> Result<NativeGameplayState, Box<dyn Error>> {
@@ -314,5 +322,160 @@ fn wheel_ascetic_mantra_uses_positive_items_in_the_six_source_slots() -> TestRes
         Some(0),
         "only a positive item's Mantra contributes"
     );
+    Ok(())
+}
+
+#[test]
+fn t174_equipped_elemental_conversion_reaches_attack_projection() -> TestResult {
+    use crate::content::ProjectV2RangedElement as E;
+    use crate::durability::imbuement::EquippedImbuement;
+    let content = native(&input()?)?;
+    let equipment = snapshot(&content, "oteryn:item.tibia.i3264", 5);
+    for (category, element) in [
+        (20, E::Fire),
+        (21, E::Earth),
+        (22, E::Ice),
+        (23, E::Energy),
+        (24, E::Death),
+    ] {
+        for (tier, percent) in [(1, 10), (2, 25), (3, 50)] {
+            let mut installed = EquippedImbuement {
+                item: [2; 16],
+                slot: 0,
+                category,
+                tier,
+                remaining_ms: 1,
+                occurrence: [3; 16],
+            };
+            let offence =
+                equipped_offence_inner(&equipment, &content, std::slice::from_ref(&installed))
+                    .ok_or("offence")?;
+            assert_eq!(offence.elemental_conversion, Some((element, percent)));
+            assert_eq!(
+                offence.convert_physical(100, 0, E::Physical),
+                Some((100 - i64::from(percent), i64::from(percent), element))
+            );
+            installed.remaining_ms = 0;
+            assert_eq!(
+                equipped_offence_inner(&equipment, &content, &[installed])
+                    .ok_or("expired")?
+                    .elemental_conversion,
+                None
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn t174_equipped_vibrancy_reaches_condition_projection() -> TestResult {
+    use crate::durability::imbuement::EquippedImbuement;
+    let content = native(&input()?)?;
+    let equipment = snapshot(&content, "oteryn:item.tibia.i3079", 4);
+    for category in [12, 25] {
+        for (tier, percent) in [(1, 15), (2, 25), (3, 50)] {
+            let mut installed = EquippedImbuement {
+                item: [2; 16],
+                slot: 0,
+                category,
+                tier,
+                remaining_ms: 1,
+                occurrence: [3; 16],
+            };
+            let offence =
+                equipped_offence_inner(&equipment, &content, std::slice::from_ref(&installed))
+                    .ok_or("offence")?;
+            assert_eq!(offence.paralysis_deflection_percent, percent);
+            use oteryn_gameplay_domain::domain::condition::{ConditionValues, SpeedRange};
+            use oteryn_gameplay_foundation::foundation::condition::{
+                ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionStore,
+            };
+            use oteryn_simulation_determinism::{
+                DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+            };
+            let definition = ConditionDefinition::new(
+                "t174.paralysis",
+                1,
+                ConditionValues::Speed {
+                    paralysis: true,
+                    duration_ms: 10_000,
+                    range: SpeedRange {
+                        a_min: 0,
+                        b_min: 40,
+                        a_max: 0,
+                        b_max: 40,
+                    },
+                },
+            )
+            .ok_or("definition")?;
+            let mut outcomes = [false; 2];
+            for seed in 0..64 {
+                let root = GameplayDecisionRoot::from_bytes([seed; 32]);
+                let occurrence = DecisionOccurrenceId::from_bytes([4; 16]);
+                let facts = ApplicationFacts {
+                    now: 0,
+                    base_speed: 200,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: true,
+                    decision_root: &root,
+                    occurrence,
+                };
+                let mut store = ConditionStore::<String>::new();
+                let removed = crate::spell::source_player_conditions::deflect_equipped_paralysis(
+                    &mut store,
+                    &definition,
+                    offence.paralysis_deflection_percent,
+                    false,
+                    &facts,
+                )
+                .map_err(debug)?;
+                let roll = deterministic_decision_u64(
+                    &root,
+                    occurrence,
+                    "oteryn.imbuement.vibrancy.v1",
+                    0,
+                )? % 100
+                    + 1;
+                assert_eq!(removed, roll <= u64::from(percent));
+                outcomes[usize::from(removed)] = true;
+                if !removed {
+                    store
+                        .apply(
+                            &definition,
+                            Some("creature".into()),
+                            ConditionSourceKind::Creature,
+                            &[],
+                            &facts,
+                        )
+                        .map_err(debug)?;
+                    assert_eq!(store.instances().len(), 1);
+                    assert!(
+                        crate::spell::source_player_conditions::deflect_equipped_paralysis(
+                            &mut store,
+                            &definition,
+                            offence.paralysis_deflection_percent,
+                            true,
+                            &facts
+                        )
+                        .map_err(debug)?
+                    );
+                    assert!(
+                        store.instances().is_empty(),
+                        "repeated PvP paralysis is removed and deflected"
+                    );
+                }
+            }
+            assert_eq!(outcomes, [true, true]);
+            installed.remaining_ms = 0;
+            assert_eq!(
+                equipped_offence_inner(&equipment, &content, &[installed])
+                    .ok_or("expired")?
+                    .paralysis_deflection_percent,
+                0
+            );
+        }
+    }
     Ok(())
 }

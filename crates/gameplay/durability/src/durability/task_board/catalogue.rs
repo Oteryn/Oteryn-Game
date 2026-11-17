@@ -59,7 +59,10 @@ impl TryFrom<&NativeGameplayState> for TaskBoardCatalogue {
             DELIVERY_ITEMS, SHOP_OFFERS, TaskBoardShopKind,
         };
         let creatures = creatures(native);
-        if creatures.is_empty() {
+        if creatures.is_empty()
+            || creatures.len()
+                > oteryn_gameplay_quests::quest::task_board::full::elite::MAX_RARITY_CREATURES
+        {
             return Err("Task Board creature catalogue unavailable");
         }
         let index = native

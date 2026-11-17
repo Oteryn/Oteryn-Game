@@ -1,0 +1,25 @@
+{
+  "batch_id": "group-source-key-2026-11-07",
+  "base_sha": "5c45cf2b77387f7673dc7d16bd430cab0212df52",
+  "scope": "Correct the standalone source authoring key to the mandatory oteryn: namespace. Active callback/runtime and default regeneration changes remain uncommitted.",
+  "whole_quest_qualifications": 0,
+  "changes": [
+    "Emit oteryn:quest-callback/annihilator/group-entry.",
+    "Migrate only the exact pinned prototype output; reject a changed legacy callback instead of discarding it.",
+    "Assert the key namespace in the existing authoring source test."
+  ],
+  "validation": {
+    "python_cases_passed": 3,
+    "log": "/tmp/questpc2-group-authoring-canonical-key.log",
+    "rust_interop_unit_passed": 1,
+    "rust_interop_log": "/tmp/questpc2-group-contract-unit.log",
+    "postgres_applicable": false,
+    "reason": "No database/runtime or active callback data in this authoring-key correction."
+  },
+  "active_runtime_evidence": {
+    "red": "PG18.6,2.61s missing callback, then2.72s prototype key refused by native callback contract.",
+    "composed": "PG18.6,37.81s exercised missing member,99-level refusal, occupied room, spawn-capacity rollback, exact4 destinations/6 spawns and command replay; final attempted reused participant response differed. No GREEN claimed.",
+    "next": "Use the still-outside bystander to prove shared used-lever rejection across Characters; all original membership/rollback/spawn/replay assertions retained. Matcher uses original bound placement; no matcher relaxation made.",
+    "infrastructure": "Linker exhausted32GB overlay repeatedly. Reclaimed249 inactive incremental caches, preserving current dispatch cache, compiled libraries/test outputs, source and PG. Overlay now12GB free. No broad Cargo clean, flags/profile changes or disabled incremental."
+  }
+}

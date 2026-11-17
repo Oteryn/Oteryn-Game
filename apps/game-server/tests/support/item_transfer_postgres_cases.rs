@@ -374,6 +374,21 @@ fn refusals_write_nothing() -> TestResult {
         )?;
         assert_eq!(harness.footprint().await?, before);
 
+        // A legal non-container stack is a normal equip refusal, not corrupt state.
+        refused(
+            harness
+                .transfer(
+                    &authority,
+                    fence()?,
+                    to_slot(command(10)?, coin, facts(COIN, STACKABLE)),
+                )
+                .await,
+            ItemTransferRefusal::NotContainerSlotEquippable,
+        )?;
+        assert_eq!(harness.footprint().await?, before);
+        assert!(harness.on_ground(coin).await?);
+        assert_eq!(harness.item_state(coin).await?, (10, 1));
+
         harness
             .committed(&authority, to_slot(command(2)?, backpack, backpack_facts()))
             .await?;
@@ -2597,6 +2612,7 @@ fn derived_capacity_follows_real_level_award_and_death_receipts() -> TestResult 
                 &harness.node,
                 capacity_gameplay_fence(after_gain.character_revision.get())?,
                 CharacterDeathRequest {
+                    public_cause: None,
                     pvp_contributors: Vec::new(),
                     occurrence,
                     context: death_policy.context,

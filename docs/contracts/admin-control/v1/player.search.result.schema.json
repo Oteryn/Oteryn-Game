@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PlayerPage",
+  "type": "object",
+  "properties": {
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "players": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PlayerSummary"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "players"
+  ],
+  "$defs": {
+    "PlayerSummary": {
+      "type": "object",
+      "properties": {
+        "character_id": {
+          "type": "string"
+        },
+        "level": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "name": {
+          "type": "string"
+        },
+        "online": {
+          "type": "boolean"
+        },
+        "world_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "character_id",
+        "name",
+        "world_id",
+        "level",
+        "online"
+      ]
+    }
+  }
+}

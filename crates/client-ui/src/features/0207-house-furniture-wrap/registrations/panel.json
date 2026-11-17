@@ -1,0 +1,7 @@
+{
+  "mechanic": "0207-house-furniture-wrap",
+  "id": "0207-house-furniture-wrap-panel",
+  "status": "supported",
+  "kind": "panels",
+  "entry": "view.rs::panel_text"
+}

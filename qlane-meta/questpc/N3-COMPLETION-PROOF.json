@@ -1,0 +1,64 @@
+{
+  "classification": "PROVEN",
+  "runtime_path": "retained native World chest USE -> reward_claim_mint -> existing claim obligation -> quest_state completion",
+  "main_base": "e9276ad7e",
+  "postgres_server": "QUESTPC_N3_POSTGRES_SERVER version=18.6 (Debian 18.6-1.pgdg13+2) server_version_num=180006",
+  "full_pinned_test_run": {
+    "command": "cargo test -p oteryn-gameplay-dispatch --lib --all-features qready1_ -- --nocapture --test-threads=2",
+    "passed": 17,
+    "failed": 0,
+    "ignored": 0,
+    "seconds": 730.43,
+    "log_sha256": "43f5229298314f542b87749d1e29941e7320ecfdd4f64839cda3c8e833087a53"
+  },
+  "test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready1_reward_claims.rs",
+  "test_sha256": "bdace6be38771f43e9f4136f6bdb7d934dcfdebb784a93873e1b67738ae3859e",
+  "owned_completion_cases": [
+    {
+      "wiki_title": "Adorned UH Rune Quest",
+      "claim_key": "oteryn:reward-claim.kv.adoreduh",
+      "test": "qready1_adorned_uh_rune_quest_exact_reward_once",
+      "marker": "qready1_adorned_uh_rune_quest",
+      "duration_seconds": 53.775189195,
+      "claim_sha256": "1cf44426831bb4d6fe5a66bd4cf3f83714ecb9c9517e76e2ba9ece689c055612"
+    },
+    {
+      "wiki_title": "Barbarian Axe Quest",
+      "claim_key": "oteryn:reward-claim.kv.barbarianaxe1",
+      "test": "qready1_barbarian_axe_quest_exact_reward_once",
+      "marker": "qready1_barbarian_axe_quest",
+      "duration_seconds": 107.646100636,
+      "claim_sha256": "04c6692cc40324c3681bbb756b5a725f4a47e7345b2aeb93bb2b881e20fdb036"
+    },
+    {
+      "wiki_title": "Battle Axe Quest",
+      "claim_key": "oteryn:reward-claim.kv.battleaxe",
+      "test": "qready1_battle_axe_quest_exact_reward_once",
+      "marker": "qready1_battle_axe_quest",
+      "duration_seconds": 53.825489353,
+      "claim_sha256": "acf101e7a5b4af6cf302199c18e009d3d4f29946874ab83ef7bfb10dcb850211"
+    },
+    {
+      "wiki_title": "Blood Herb Quest",
+      "claim_key": "oteryn:reward-claim.kv.bloodherb",
+      "test": "qready1_blood_herb_quest_exact_reward_once",
+      "marker": "qready1_blood_herb_quest",
+      "duration_seconds": 53.587419874,
+      "claim_sha256": "a49771c67335a953726480d67064a7d3b6433179fcd3ca74f300300192d023ea"
+    },
+    {
+      "wiki_title": "Captain Iglues Treasure Quest",
+      "claim_key": "oteryn:reward-claim.kv.captain_iglues",
+      "test": "qready1_captain_iglues_treasure_quest_exact_reward_once",
+      "marker": "qready1_captain_iglues_treasure_quest",
+      "duration_seconds": 53.49399973,
+      "claim_sha256": "6e1734553823a69c63ba4ce7d23f4620201d8b417c38962dbfbd12554b66c1eb"
+    }
+  ],
+  "assertions": [
+    "all original native selector, exact item/count, fresh once refusal and literal replay assertions retained",
+    "each owned completion has exactly one completed quest-state row and one completes=true receipt after both original and replay sequences",
+    "fixture uses the production embedded catalogue and normal quest-session admission"
+  ],
+  "world_pin": "b79b1d74fa63d9b986edcf0688a8070de1ffa5b2c3b0f8a61268fbe4bcd55b6e"
+}

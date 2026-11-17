@@ -18,6 +18,29 @@
 //! (immediate line admission, deferred line and receipt proofs) decide the same facts again.
 //! A refusal writes nothing; an unknown outcome is answered by [`DurabilityRoot::read_item_loop_move_receipt`].
 
+mod dreamer_ring;
+pub use dreamer_ring::DreamerRingTarget;
+mod altar_arrival;
+pub use altar_arrival::{AltarFieldRead, AltarArrivalReceipt, AltarArrivalTarget, PendingAltarBoss, PendingAltarRealization};
+
+mod elemental_arrival;
+pub use elemental_arrival::{ElementalArrivalProbe, ElementalArrivalTarget};
+mod elemental_recovery;
+pub use elemental_recovery::ElementalSummonProjection;
+mod elemental_summons;
+pub use elemental_summons::{
+    ElementalSummonClaim, ElementalSummonClock, ElementalSummonIntent, ElementalSummonScope,
+};
+
+mod floor_assembly;
+pub(in crate::durability) mod floor_transform;
+pub use floor_assembly::FloorAssemblyTarget;
+
+mod house;
+mod seed_drop;
+mod subtree;
+pub use seed_drop::{SeedDropProbe, SeedDropTarget};
+
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_equipment::{EquipmentError, assert_current_equipment_in_transaction};
 use super::ground_cell_limit::{
@@ -43,6 +66,7 @@ use oteryn_gameplay_items::item_capacity::{
 };
 use serde::Serialize;
 use serde_json::json;
+use sha2::Digest;
 use sqlx::{Postgres, Row, Transaction};
 
 /// BAGS-1: the deepest admitted placement (the main backpack's direct entries are depth 1).
@@ -146,6 +170,8 @@ pub struct LoopMoveReceipt {
     /// 1 move, 2 merge, 3 split, 4 drop, 5 pickup.
     pub operation: i16,
     pub replayed: bool,
+    /// Fresh committed floor consequence only; historical replay has no presentation.
+    pub floor_effect: Option<u16>,
 }
 
 /// An observed container: its item, parent (`None` for the main backpack or a Ground root)
@@ -162,6 +188,13 @@ pub struct LoopContainer {
 /// One live loop drop or map-MINT Ground item with its persisted append ordinal, for the overlay.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoopGroundItem {
+    /// A committed creature-death corpse uses native cell and content-pin axes.
+    pub native_corpse: bool,
+    /// Authenticated costless native callback MINT, including explicit Lua timers.
+    /// This is representation DATA; no custody or pickup authority is granted.
+    pub source_native_ground: bool,
+    /// Original source corpses use runtime coordinates independently of spell fields.
+    pub source_plain_corpse: bool,
     /// Spell fields use the runtime floor axis; the map projection converts it once.
     pub field_collision: Option<(bool, bool)>,
     pub stack_ordinal: u64,
@@ -171,8 +204,24 @@ pub struct LoopGroundItem {
 /// The admitted Content generation the move is decided against: the facts of every touched
 /// definition and their unit weights, bound to the active Content digest.
 pub trait ItemLoopContent: ItemWeightLookup {
+    /// The same admitted generation used for source outfit grants; absent is fail-closed.
+    fn npc_outfit_content(&self) -> Option<&crate::content::native_gameplay::NativeGameplayState> {
+        None
+    }
     fn loop_content_digest(&self) -> [u8; 32];
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts>;
+    /// Only Ground-to-Ground relocation may admit a movable, non-portable profile.
+    fn loop_ground_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
+        self.loop_facts(definition)
+    }
+    /// Called only after the durable native corpse source proof and Ground-only
+    /// destination gate. It grants no inventory or trade admission.
+    fn loop_native_corpse_facts(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Option<ItemDefinitionFacts> {
+        self.loop_facts(definition)
+    }
     fn loop_definition(&self, _reference: u32) -> Option<TypedDefinitionRef> {
         None
     }
@@ -335,6 +384,7 @@ async fn committed_loop_move(
             event_id: uuid_text(row.try_get("event_id")?)?,
             operation: row.try_get("operation")?,
             replayed: true,
+            floor_effect: None,
         })));
     }
     let equipment: bool = sqlx::query_scalar(
@@ -427,6 +477,13 @@ async fn load_nested_entries(
     tx: &mut Transaction<'_, Postgres>,
     parent: [u8; 16],
 ) -> LoopResult<Vec<BackpackEntry>> {
+    load_nested_entries_with_limit(tx, parent, GAMEITEM01_CONTAINER_ENTRIES_MAX).await
+}
+async fn load_nested_entries_with_limit(
+    tx: &mut Transaction<'_, Postgres>,
+    parent: [u8; 16],
+    limit: u32,
+) -> LoopResult<Vec<BackpackEntry>> {
     let rows = sqlx::query(
         "SELECT n.item_instance_id::text, n.placement_ordinal::text, i.definition_family, \
                 i.definition_production_key, i.definition_revision_ref, i.quantity \
@@ -436,10 +493,10 @@ async fn load_nested_entries(
           ORDER BY n.placement_ordinal DESC LIMIT $2",
     )
     .bind(parent.as_slice())
-    .bind(i64::from(GAMEITEM01_CONTAINER_ENTRIES_MAX) + 1)
+    .bind(i64::from(limit) + 1)
     .fetch_all(&mut **tx)
     .await?;
-    if rows.len() > GAMEITEM01_CONTAINER_ENTRIES_MAX as usize {
+    if rows.len() > limit as usize {
         return Err(DurabilityError::InvalidStoredState.into());
     }
     rows.iter()
@@ -638,6 +695,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     tx: &mut Transaction<'_, Postgres>,
     content: &C,
     plan: LoopPlan<'_>,
+    house: Option<&house::HouseLoopContext>,
 ) -> LoopResult<PlannedDestination> {
     let LoopPlan {
         character,
@@ -676,9 +734,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             rest: count,
         });
     }
-    let Some(slot) = load_slot(tx, character).await? else {
-        return refuse(LoopMoveRefusal::NoBackpack);
-    };
+    let slot = load_slot(tx, character).await?;
 
     let target = match destination {
         LoopDestination::Ground(ground) => {
@@ -693,9 +749,27 @@ async fn plan_loop_destination<C: ItemLoopContent>(
                 native_room_placement_context: ground.placement_context.clone(),
             })
         }
-        LoopDestination::MainBackpack => main_target(tx, content, &slot).await?,
-        LoopDestination::Container(parent) if *parent == slot.item_instance_id => {
-            main_target(tx, content, &slot).await?
+        LoopDestination::MainBackpack => {
+            main_target(
+                tx,
+                content,
+                slot.as_ref()
+                    .ok_or(LoopError::Refused(LoopMoveRefusal::NoBackpack))?,
+            )
+            .await?
+        }
+        LoopDestination::Container(parent)
+            if slot
+                .as_ref()
+                .is_some_and(|slot| *parent == slot.item_instance_id) =>
+        {
+            main_target(
+                tx,
+                content,
+                slot.as_ref()
+                    .ok_or(LoopError::Refused(LoopMoveRefusal::NoBackpack))?,
+            )
+            .await?
         }
         LoopDestination::Container(parent) => {
             let parent = *parent;
@@ -704,7 +778,15 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             }
             let parent_depth = match loop_owner(tx, parent).await? {
                 Some((owner, depth)) if owner == *character.as_bytes() && depth >= 0 => depth,
-                _ => return refuse(LoopMoveRefusal::Stale),
+                _ => match house {
+                    Some(context) => {
+                        house::path(tx, context, parent)
+                            .await?
+                            .ok_or(LoopError::Refused(LoopMoveRefusal::Stale))?
+                            .depth
+                    }
+                    None => return refuse(LoopMoveRefusal::Stale),
+                },
             };
             let Some((parent_definition, _, _)) = lock_live_item(tx, parent, world).await? else {
                 return refuse(LoopMoveRefusal::Stale);
@@ -745,18 +827,37 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             {
                 return refuse(LoopMoveRefusal::NotSupported);
             }
+            let house_limit = if let Some(context) = house {
+                if house::path(tx, context, parent).await?.is_some() {
+                    Some(context.capacity_limit())
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+            if house_limit.is_some_and(|limit| capacity > limit) {
+                return refuse(LoopMoveRefusal::NotSupported);
+            }
+            let limit = house_limit.unwrap_or(GAMEITEM01_CONTAINER_ENTRIES_MAX);
             Target::Container {
                 kind: KIND_NESTED,
                 parent,
                 parent_depth,
-                capacity: capacity.min(GAMEITEM01_CONTAINER_ENTRIES_MAX),
+                capacity: capacity.min(limit),
                 entries: if pouch {
                     quick_loot::pouch_receiver(tx, parent, definition).await?
                 } else {
-                    load_nested_entries(tx, parent).await?
+                    load_nested_entries_with_limit(tx, parent, limit).await?
                 },
             }
         }
+    };
+
+    let house_target = if let (Some(context), Target::Container { parent, .. }) = (house, &target) {
+        house::path(tx, context, *parent).await?.is_some()
+    } else {
+        false
     };
 
     // BAGS-1 ceilings and the destination's room.
@@ -778,13 +879,14 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     let split_in_place = partial
         && match &target {
             Target::Container { parent, .. } => match source {
-                SourceKind::Main => *parent == slot.item_instance_id,
-                SourceKind::Nested { parent: from } => from == *parent,
-                SourceKind::Ground
-                | SourceKind::Depot
-                | SourceKind::Corpse
-                | SourceKind::Inbox
-                | SourceKind::CustodyNested { .. } => false,
+                SourceKind::Main => slot
+                    .as_ref()
+                    .is_some_and(|slot| *parent == slot.item_instance_id),
+                SourceKind::Nested { parent: from }
+                | SourceKind::CustodyNested { parent: from } => from == *parent,
+                SourceKind::Ground | SourceKind::Depot | SourceKind::Corpse | SourceKind::Inbox => {
+                    false
+                }
             },
             Target::Ground(_) | Target::Depot { .. } => false,
         };
@@ -824,13 +926,14 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     {
         let already_here = !partial
             && match source {
-                SourceKind::Main => *parent == slot.item_instance_id,
-                SourceKind::Nested { parent: from } => from == *parent,
-                SourceKind::Ground
-                | SourceKind::Depot
-                | SourceKind::Corpse
-                | SourceKind::Inbox
-                | SourceKind::CustodyNested { .. } => false,
+                SourceKind::Main => slot
+                    .as_ref()
+                    .is_some_and(|slot| *parent == slot.item_instance_id),
+                SourceKind::Nested { parent: from }
+                | SourceKind::CustodyNested { parent: from } => from == *parent,
+                SourceKind::Ground | SourceKind::Depot | SourceKind::Corpse | SourceKind::Inbox => {
+                    false
+                }
             };
         let occupied = entries.len() - usize::from(already_here);
         if placed && *capacity != 0 && occupied + 1 > *capacity as usize {
@@ -854,7 +957,7 @@ async fn plan_loop_destination<C: ItemLoopContent>(
         } else {
             0
         };
-        if added > 0 && *capacity != 0 {
+        if added > 0 && *capacity != 0 && !house_target {
             let tree: i64 =
                 sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
                     .bind(character.as_bytes().as_slice())
@@ -866,28 +969,45 @@ async fn plan_loop_destination<C: ItemLoopContent>(
         }
     }
 
-    // B3-3: a pickup brings the whole stack into the Character.
-    if matches!(
-        source,
-        SourceKind::Ground
-            | SourceKind::Depot
-            | SourceKind::Corpse
-            | SourceKind::Inbox
-            | SourceKind::CustodyNested { .. }
-    ) {
+    // B3-3: every external pickup brings its root and all descendants into the Character.
+    if !house_target
+        && matches!(
+            source,
+            SourceKind::Ground
+                | SourceKind::Depot
+                | SourceKind::Corpse
+                | SourceKind::Inbox
+                | SourceKind::CustodyNested { .. }
+        )
+    {
         let unit = match content.weight_of(definition) {
             Ok(unit) => unit,
             Err(ItemWeightRefused::Unknown) => return refuse(LoopMoveRefusal::WeightUnknown),
             Err(ItemWeightRefused::DefinitionMismatch) => return refuse(LoopMoveRefusal::Rejected),
         };
+        let subtree_weight = if height > 0 {
+            let item = item.ok_or(DurabilityError::InvalidStoredState)?;
+            Some(subtree::weight(tx, content, item, world).await?)
+        } else {
+            None
+        };
         let carried = carried_weight(tx, character, world, content).await?;
         let capacity = read_derived_transfer_capacity_centi_oz(tx, character, content).await?;
+        if subtree_weight.is_some_and(|incoming| {
+            carried
+                .checked_add(incoming)
+                .is_none_or(|total| total > capacity)
+        }) {
+            return refuse(LoopMoveRefusal::Overweight);
+        }
         let incoming_item = InventoryItem {
             // A preflight has no durable identity yet. The pure weight planner needs only
             // one unique incoming root; this sentinel is never stored or used as a source.
             item_instance_id: item.unwrap_or([0; 16]),
             definition: definition.clone(),
-            quantity,
+            // Whole trees keep their complete weight above; a legitimate leaf split
+            // contributes only the requested units, not the source's remainder.
+            quantity: count,
         };
         let incoming = [IncomingWeight {
             item: &incoming_item,
@@ -926,6 +1046,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     depot: Option<DepotMove>,
     quick: Option<quick_loot::MoveContext>,
     search: Option<i16>,
+    house: Option<&house::HouseLoopContext>,
 ) -> LoopResult<LoopMoveReceipt> {
     let character = fence.character_id;
     let scope = fence.runtime_scope;
@@ -940,10 +1061,22 @@ async fn apply_loop_move<C: ItemLoopContent>(
         RuntimeScopeRefV1::Instance { .. } => {
             assert_recovery_fence(tx, record).await?;
             super::db::lock_admission_relations(tx).await?;
-            if !super::item_transfer::assert_activity_item_content(tx, node, fence, command, digest)
-                .await?
-            {
-                return refuse(LoopMoveRefusal::Rejected);
+            match house {
+                Some(context) if context.fence() == *fence && digest != [0; 32] => {
+                    if !house::current(tx, node, context).await? {
+                        return refuse(LoopMoveRefusal::Rejected);
+                    }
+                }
+                Some(_) => return refuse(LoopMoveRefusal::Rejected),
+                None => {
+                    if !super::item_transfer::assert_activity_item_content(
+                        tx, node, fence, command, digest,
+                    )
+                    .await?
+                    {
+                        return refuse(LoopMoveRefusal::Rejected);
+                    }
+                }
             }
         }
     }
@@ -958,10 +1091,13 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 d.character_id::text AS depot_character, d.town_id, d.box_number, \
                 x.character_id::text AS inbox_character, \
                 n.parent_item_instance_id::text AS nested_parent, \
-                g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.spatial_position AS ground_cell, g.map_revision AS ground_map, g.content_revision AS ground_content, g.native_room_placement_context AS ground_context, \
+                g.channel_id::text AS ground_channel, g.instance_id::text AS ground_instance, g.scope_kind AS ground_scope_kind, g.runtime_scope_ownership_generation::text AS ground_generation, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, g.spatial_position AS ground_cell, g.map_revision AS ground_map, g.content_revision AS ground_content, g.native_room_placement_context AS ground_context, \
+                EXISTS(SELECT 1 FROM game_item_mint_receipts cm WHERE cm.item_instance_id=i.item_instance_id AND cm.loot_purpose_key='CORPSE_MATERIALIZATION') AS native_corpse, \
+                game_elemental_corpse_ground_source(i.item_instance_id) AS altar_corpse_source, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) AS loop_drop, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
-                OR game_item_loop_map_mint_source(i.item_instance_id) AS loop_pickup \
+                OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) AS loop_pickup, \
+                game_item_loop_native_corpse_source(i.item_instance_id) AS native_corpse \
            FROM game_item_instances i \
            LEFT JOIN game_item_container_entries e ON e.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_character_depot_locations d ON d.item_instance_id = i.item_instance_id \
@@ -1023,7 +1159,16 @@ async fn apply_loop_move<C: ItemLoopContent>(
             Some((owner, depth)) if owner == *character.as_bytes() && depth >= 1 => {
                 SourceKind::Nested { parent }
             }
-            _ => return refuse(LoopMoveRefusal::Stale),
+            _ => {
+                if let Some(context) = house {
+                    if house::path(tx, context, request.item).await?.is_none() {
+                        return refuse(LoopMoveRefusal::Stale);
+                    }
+                    SourceKind::CustodyNested { parent }
+                } else {
+                    return refuse(LoopMoveRefusal::Stale);
+                }
+            }
         }
     } else if has_ground {
         if ground_kind != Some(scope_kind)
@@ -1032,19 +1177,45 @@ async fn apply_loop_move<C: ItemLoopContent>(
         {
             return refuse(LoopMoveRefusal::Stale);
         }
-        if !row.try_get::<bool, _>("loop_pickup")? {
+        let native_corpse = row.try_get::<bool, _>("native_corpse")?;
+        if native_corpse && !matches!(request.destination, LoopDestination::Ground(_)) {
             return refuse(LoopMoveRefusal::NotSupported);
+        }
+        if !row.try_get::<bool, _>("loop_pickup")? && !native_corpse && !row.try_get::<bool, _>("altar_corpse_source")? {
+            return refuse(LoopMoveRefusal::NotSupported);
+        }
+        let source_plain_corpse: bool = row.try_get("source_plain_corpse")?;
+        if source_plain_corpse
+            && row.try_get::<String, _>("ground_generation")?
+                != fence.scope_ownership_generation.get().to_string()
+        {
+            return refuse(LoopMoveRefusal::Stale);
         }
         // Map-MINT's exact source proof binds its context to the bundle digest (0130),
         // whereas the destination loop drop uses the actor's frame. A loop drop keeps
         // its frame context; both sources must keep their map and Content pins.
-        if let LoopDestination::Ground(to) = &request.destination
-            && (row.try_get::<String, _>("ground_map")? != to.map_revision
+        if let LoopDestination::Ground(to) = &request.destination {
+            let source_map: String = row.try_get("ground_map")?;
+            let loop_drop: bool = row.try_get("loop_drop")?;
+            // A corpse MINT binds the native pin's revision-string digest.
+            // Its first loop drop binds the underlying bundle revision instead.
+            let native_map = (native_corpse && !loop_drop) || source_plain_corpse
+
+                && source_map
+                    == format!(
+                        "sha256:{}",
+                        sha2::Sha256::digest(to.map_revision.as_bytes())
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>()
+                    );
+            if (source_map != to.map_revision && !native_map)
                 || row.try_get::<String, _>("ground_content")? != to.content_revision
-                || (row.try_get::<bool, _>("loop_drop")?
-                    && row.try_get::<Vec<u8>, _>("ground_context")? != to.placement_context))
-        {
-            return refuse(LoopMoveRefusal::Stale);
+                || ((loop_drop || native_corpse || source_plain_corpse)
+                    && row.try_get::<Vec<u8>, _>("ground_context")? != to.placement_context)
+            {
+                return refuse(LoopMoveRefusal::Stale);
+            }
         }
         SourceKind::Ground
     } else {
@@ -1057,7 +1228,14 @@ async fn apply_loop_move<C: ItemLoopContent>(
     {
         return refuse(LoopMoveRefusal::Stale);
     }
-    let Some(facts) = content.loop_facts(&definition) else {
+    let facts = if row.try_get::<bool, _>("native_corpse")? { content.loop_native_corpse_facts(&definition) } else if source == SourceKind::Ground
+        && matches!(request.destination, LoopDestination::Ground(_))
+    {
+        content.loop_ground_facts(&definition)
+    } else {
+        content.loop_facts(&definition)
+    };
+    let Some(facts) = facts else {
         return refuse(LoopMoveRefusal::NotSupported);
     };
     if facts.definition != definition {
@@ -1096,6 +1274,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 size,
                 destination: &request.destination,
             },
+            house,
         )
         .await?
     };
@@ -1160,7 +1339,10 @@ async fn apply_loop_move<C: ItemLoopContent>(
             .bind(channel.map(|id| id.to_vec())).bind(scope_kind).bind(instance.map(|id| id.to_vec()))
             .fetch_one(&mut **tx)
             .await?;
-            if dropped + i64::from(source != SourceKind::Ground || !row.try_get::<bool, _>("loop_drop")?) > ITEM_LOOP_CHANNEL_DROPS_MAX {
+            if dropped
+                + i64::from(source != SourceKind::Ground || !row.try_get::<bool, _>("loop_drop")?)
+                > ITEM_LOOP_CHANNEL_DROPS_MAX
+            {
                 return refuse(LoopMoveRefusal::Blocked);
             }
             ground.corpse_ref = [ITEM_LOOP_DROP_REF_PREFIX, transaction_id.as_slice()].concat();
@@ -1288,6 +1470,9 @@ async fn apply_loop_move<C: ItemLoopContent>(
     .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
     .execute(&mut **tx)
     .await?;
+    if let Some(context) = house {
+        house::prepare(tx, node, context, transaction_id, content, request).await?;
+    }
     for (index, line) in lines.iter().enumerate() {
         sqlx::query(
             "INSERT INTO game_item_loop_move_lines (transaction_id, line_ordinal, item_instance_id, \
@@ -1458,6 +1643,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
         event_id,
         operation,
         replayed: false,
+        floor_effect: None,
     })
 }
 
@@ -1479,6 +1665,20 @@ async fn main_target<C: ItemLoopContent>(
         capacity: capacity.min(GAMEITEM01_CONTAINER_ENTRIES_MAX),
         entries: load_entries(tx, slot.item_instance_id).await?,
     })
+}
+
+/// Share map-source admission with the MINT owner before reserving an origin.
+/// Current generation facts must still match the complete requested definition facts.
+pub fn plan_map_item_loop_mint(
+    mint: &super::map_item_mint::MapItemMintRequest,
+    current_facts: Option<&ItemDefinitionFacts>,
+) -> std::result::Result<(), LoopMoveRefusal> {
+    if current_facts != Some(&mint.item)
+        || super::map_item_mint::plan_map_item_mint_request(mint, false).is_err()
+    {
+        return Err(LoopMoveRefusal::NotSupported);
+    }
+    Ok(())
 }
 
 impl DurabilityRoot {
@@ -1515,11 +1715,13 @@ impl DurabilityRoot {
                         )
                         .await?;
                         let world = fence.runtime_scope.world_id();
-                        if mint.item.container_capacity.is_some()
-                            || content.loop_facts(&mint.item.definition).as_ref()
-                                != Some(&mint.item)
-                        {
-                            return refuse(LoopMoveRefusal::NotSupported);
+                        let facts = if matches!(destination, LoopDestination::Ground(_)) {
+                            content.loop_ground_facts(&mint.item.definition)
+                        } else {
+                            content.loop_facts(&mint.item.definition)
+                        };
+                        if let Err(reason) = plan_map_item_loop_mint(mint, facts.as_ref()) {
+                            return refuse(reason);
                         }
                         plan_loop_destination(
                             &mut tx,
@@ -1538,6 +1740,7 @@ impl DurabilityRoot {
                                 size: 1,
                                 destination,
                             },
+                            None,
                         )
                         .await?;
                         Ok(())
@@ -1569,7 +1772,7 @@ impl DurabilityRoot {
     ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
     {
         self.commit_loop_with_depot(
-            permit, recovery, node, fence, command, content, request, None,
+            permit, recovery, node, fence, command, content, request, None, None,
         )
         .await
     }
@@ -1585,9 +1788,12 @@ impl DurabilityRoot {
         content: &C,
         request: LoopMoveRequest,
         depot: Option<DepotMove>,
+        house: Option<house::HouseLoopContext>,
     ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
     {
-        permit.check_scope(fence.runtime_scope)?;
+        if house.is_none() {
+            permit.check_scope(fence.runtime_scope)?;
+        }
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -1601,11 +1807,25 @@ impl DurabilityRoot {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     let attempt: LoopResult<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>> =
                         async {
-                            let intent = match depot {
+                            let intent = if let Some(context) = house.as_ref() {
+                                assert_recovery_fence(&mut tx,&record).await?;
+                                if context.fence()!=fence || !house::current(&mut tx,&node,context).await? {
+                                    return Ok(Err(LoopMoveRefusal::Rejected));
+                                }
+                                {
+                                    let mut intent=json!({"character": fence.character_id.as_bytes(),"request":request,"house":context.house().house_key()});
+                                    // Absent means legacy20; v2 binds25 without changing old receipt bytes.
+                                    if context.capacity_limit()>GAMEITEM01_CONTAINER_ENTRIES_MAX {
+                                        intent["capacity_limit"]=json!(context.capacity_limit());
+                                    }
+                                    serde_json::to_vec(&intent)
+                                }
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?
+                            } else { match depot {
                                 Some(access) => serde_json::to_vec(&json!({"character": fence.character_id.as_bytes(), "request": request, "depot": access}))
                                     .map_err(|_| DurabilityError::InvalidStoredState)?,
                                 None => intent_bytes(fence.character_id, &request)?,
-                            };
+                            }};
                             lock_loop_command(&mut tx, command).await?;
                             if let Some(replay) =
                                 committed_loop_move(&mut tx, command, fence.character_id, &intent)
@@ -1615,7 +1835,7 @@ impl DurabilityRoot {
                             }
                             apply_loop_move(
                                 &mut tx, permit, &record, &node, &fence, command, content,
-                                &request, &intent, depot, None, None,
+                                &request, &intent, depot, None, None, house.as_ref(),
                             )
                             .await
                             .map(Ok)
@@ -1629,6 +1849,43 @@ impl DurabilityRoot {
                         // Dropping the transaction rolls it back: a refusal writes nothing.
                         Ok(Err(refusal)) => Ok(Err(refusal)),
                         Err(error) => loop_error(error).map(Err),
+                    }
+                })
+            })
+            .await
+    }
+
+    /// Resolve an uncertain ordinary or elemental-arrival move against its exact request.
+    /// The command lock waits out an in-flight writer before absence is returned. This
+    /// historical read needs the current recovery seal, but no live item or old session
+    /// authority: a successful arrival has already retired its input corpse.
+    pub async fn reconcile_item_loop_move(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        command: CommandRef,
+        request: LoopMoveRequest,
+    ) -> Result<Option<Result<LoopMoveReceipt, LoopMoveRefusal>>, DurabilityError> {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &record).await?;
+                    let read: LoopResult<_> = async {
+                        let intent = intent_bytes(character_id, &request)?;
+                        lock_loop_command(&mut tx, command).await?;
+                        committed_loop_move(&mut tx, command, character_id, &intent).await
+                    }
+                    .await;
+                    match read {
+                        Ok(replay) => {
+                            super::db::commit_semantic_transaction(tx, deadline).await?;
+                            Ok(replay)
+                        }
+                        Err(error) => loop_error(error).map(|refusal| Some(Err(refusal))),
                     }
                 })
             })
@@ -1879,7 +2136,7 @@ impl DurabilityRoot {
                         AND (g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) \
                             = ($5,$6,$7,$8) \
                         AND (game_item_loop_drop_ref(g.corpse_ref) \
-                             OR game_item_loop_map_mint_source(i.item_instance_id)) \
+                             OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id)) \
                       FOR SHARE OF i, target",
                 )
                 .bind(root.as_slice()).bind(world.as_bytes().as_slice())
@@ -1927,7 +2184,9 @@ impl DurabilityRoot {
             .await
     }
 
-    /// Complete Ground read of one exact runtime namespace. Private Instance
+    /// Complete Ground read of one exact runtime namespace.
+    /// M49 also projects source-minted permanent Energy fields (Item2126);
+    /// their native definition has no expiry or decay schedule. Private Instance
     /// rows cannot enter the origin Channel's overlay or pickup catalogue.
     pub async fn read_item_loop_ground_for_scope(
         &self,
@@ -1939,6 +2198,9 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    // MINT provenance remains historical after a fresh owner's
+                    // fenced Ground drag updates the location's generation.
+                    // Current mutation authority is checked by the move owner.
                     let rows = sqlx::query(
                         "SELECT i.item_instance_id::text, i.world_id::text, g.channel_id::text, g.scope_kind, g.instance_id::text, \
                                 i.definition_family, i.definition_production_key, \
@@ -1946,50 +2208,59 @@ impl DurabilityRoot {
                                 i.minted_transaction_id::text, \
                                 g.runtime_scope_ownership_generation::text, g.spatial_position, \
                                 g.corpse_ref, g.map_revision, g.content_revision, \
-                                g.native_room_placement_context, g.stack_ordinal, \
-                                CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
-                                CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
+                                g.native_room_placement_context, g.stack_ordinal, cr.item_instance_id IS NOT NULL AS native_corpse, (sa.transaction_id IS NOT NULL) AS source_native_ground, game_item_plain_corpse_source(i.item_instance_id) AS source_plain_corpse, \
+                                CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
+                                CASE WHEN ef.transaction_id IS NOT NULL THEN false WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref)) THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
                            FROM game_item_ground_locations g \
                            JOIN game_item_instances i USING (item_instance_id, world_id) \
+                           LEFT JOIN game_item_mint_receipts cr ON cr.item_instance_id=i.item_instance_id AND cr.transaction_id=i.minted_transaction_id \
+                             AND cr.loot_purpose_key='CORPSE_MATERIALIZATION' AND cr.draw_ordinal=0 AND cr.materialized_at IS NOT NULL \
+                             AND cr.death_world_id=g.world_id AND cr.death_channel_id IS NOT DISTINCT FROM g.channel_id AND cr.death_instance_id IS NOT DISTINCT FROM g.instance_id \
+                             AND EXISTS(SELECT 1 FROM game_item_audit_outbox ca WHERE ca.event_id=cr.event_id AND ca.transaction_id=cr.transaction_id AND ca.item_instance_id=cr.item_instance_id AND ca.envelope_sha256=cr.envelope_sha256 AND ca.occurred_at=cr.occurred_at) \
+                             AND EXISTS(SELECT 1 FROM game_item_mint_reservations cv WHERE cv.transaction_id=cr.transaction_id AND cv.item_instance_id=cr.item_instance_id AND cv.event_id=cr.event_id AND cv.intent_binding=cr.intent_binding AND sha256(cv.envelope)=cr.envelope_sha256) \
+                           LEFT JOIN game_elemental_energy_field_receipts ef ON ef.item_instance_id=i.item_instance_id AND game_elemental_energy_field_source(i.item_instance_id) \
                            LEFT JOIN game_spell_item_lines fl ON fl.item_instance_id=i.item_instance_id AND fl.transaction_id=i.minted_transaction_id AND fl.operation_kind=1 \
+                           LEFT JOIN game_spell_item_receipts sr ON sr.transaction_id=fl.transaction_id AND sr.cause_kind IN(1,2,3,4) \
+                            AND sr.world_id=g.world_id AND sr.runtime_scope_kind=g.scope_kind AND sr.ownership_generation=g.runtime_scope_ownership_generation \
+                            AND sr.channel_id IS NOT DISTINCT FROM g.channel_id AND sr.instance_id IS NOT DISTINCT FROM g.instance_id \
+                            AND fl.world_id=g.world_id AND fl.runtime_scope_kind=g.scope_kind \
+                            AND fl.channel_id IS NOT DISTINCT FROM g.channel_id AND fl.instance_id IS NOT DISTINCT FROM g.instance_id \
+                            AND fl.created_xact_id=sr.created_xact_id AND sr.binding=sha256(sr.intent) \
+                           LEFT JOIN game_spell_item_audit_outbox sa ON sa.transaction_id=sr.transaction_id \
+                            AND sa.event_id=sr.event_id AND sa.envelope=sr.intent AND sa.envelope_sha256=sr.binding AND sa.created_xact_id=sr.created_xact_id \
                            LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
                           WHERE g.world_id = encode($1,'hex')::uuid \
                             AND g.scope_kind=$4 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND i.lifecycle = 1 \
-                            AND (game_item_loop_drop_ref(g.corpse_ref) \
-                                 OR game_item_loop_map_mint_source(i.item_instance_id) \
-                                 OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL))) \
+                            AND (ef.transaction_id IS NOT NULL OR cr.item_instance_id IS NOT NULL OR game_item_loop_drop_ref(g.corpse_ref) \
+                                 OR game_item_loop_map_mint_source(i.item_instance_id) OR game_item_action_ground_source(i.item_instance_id) OR game_item_map_harvest_source(i.item_instance_id) OR game_item_plain_corpse_source(i.item_instance_id) \
+                                 OR sa.transaction_id IS NOT NULL \
+                                 OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL OR (fl.definition_production_key='oteryn:item.tibia.i2126' AND (fl.definition_family,fl.definition_production_key,fl.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref))))) \
                           ORDER BY g.stack_ordinal, i.item_instance_id \
                           LIMIT $3",
                     )
                     .bind(world.as_bytes().as_slice())
                     .bind(channel.map(|id| id.to_vec()))
-                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + 1)
+                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX + 1)
                     .bind(scope_kind).bind(instance.map(|id| id.to_vec()))
-                    .fetch_all(&mut *tx)
-                    .await?;
-                    // Keep the bounded Ground read fail-closed, including pending map pickups.
-                    // A MINT uses the same positive Ground INSERT ordinal as a loop drop;
-                    // never substitute the base placement ordinal or invent a missing one.
-                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX)
-                        .map_err(|_| DurabilityError::InvalidStoredState)?;
-                    if rows.len() > bound {
-                        return Err(DurabilityError::InvalidStoredState);
-                    }
-                    let invalid = |_| DurabilityError::InvalidStoredState;
-                    let mut items = Vec::with_capacity(rows.len());
-                    for row in &rows {
+                    // Decode before collecting: retaining every raw PgRow also retains its
+                    // WP3 wire and column-offset reservations until the root budget is full.
+                    .map(|row| -> Result<LoopGroundItem, DurabilityError> {
+                        let invalid = |_| DurabilityError::InvalidStoredState;
                         let stack_ordinal = row
                             .try_get::<Option<i64>, _>("stack_ordinal")?
                             .and_then(|ordinal| u64::try_from(ordinal).ok())
                             .ok_or(DurabilityError::InvalidStoredState)?;
-                        items.push(LoopGroundItem {
+                        Ok(LoopGroundItem {
+                            native_corpse: row.try_get("native_corpse")?,
+                            source_native_ground: row.try_get("source_native_ground")?,
+                            source_plain_corpse: row.try_get("source_plain_corpse")?,
                             field_collision:row.try_get::<Option<bool>,_>("field_blocks_movement")?.zip(row.try_get("field_blocks_projectile")?),
                             stack_ordinal,
                             item: GroundItemInstance {
                                 item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
                                 world_id: WorldId::decode(&uuid_text(row.try_get("world_id")?)?)
                                     .map_err(invalid)?,
-                                runtime_scope: decode_ground_scope(row)?,
+                                runtime_scope: decode_ground_scope(&row)?,
                                 definition: TypedDefinitionRef {
                                     family: row.try_get("definition_family")?,
                                     production_key: row.try_get("definition_production_key")?,
@@ -2013,8 +2284,19 @@ impl DurabilityRoot {
                                     row.try_get("minted_transaction_id")?,
                                 )?,
                             },
-                        });
+                        })
+                    })
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    // Keep the bounded Ground read fail-closed, including pending map pickups.
+                    // A MINT uses the same positive Ground INSERT ordinal as a loop drop;
+                    // never substitute the base placement ordinal or invent a missing one.
+                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + super::item_mint::COMBAT01_CORPSES_PER_SCOPE_MAX)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if rows.len() > bound {
+                        return Err(DurabilityError::InvalidStoredState);
                     }
+                    let items = rows.into_iter().collect::<Result<Vec<_>, _>>()?;
                     super::db::commit_semantic_transaction(tx, deadline).await?;
                     Ok(items)
                 })

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0384-mechanics-status",
+  "kind": "panels",
+  "id": "0384-mechanics-status-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

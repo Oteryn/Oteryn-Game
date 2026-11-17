@@ -1,0 +1,7 @@
+{
+  "mechanic": "0495-chat-channel-participants",
+  "kind": "panels",
+  "id": "0495-chat-channel-participants-panel",
+  "status": "supported",
+  "entry": "protocol.rs::participants_text"
+}

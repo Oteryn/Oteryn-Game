@@ -1,0 +1,9 @@
+{
+  "mechanic": "0087-pvp-expert",
+  "kind": "keybindings",
+  "id": "0087-pvp-expert-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+E",
+  "entry": "input.rs::open_key"
+}

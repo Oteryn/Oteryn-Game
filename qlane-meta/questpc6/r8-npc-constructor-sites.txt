@@ -1,0 +1,20 @@
+crates/gameplay/quests/src/quest/task_board_tests.rs:25:fn catalogue() -> QuestStateCatalogue {
+crates/gameplay/dispatch/src/gameplay_transport/quest_log_tests.rs:91:fn state_catalogue() -> QuestStateCatalogue {
+crates/gameplay/quests/src/quest/log/tests.rs:64:fn state(revision: &str) -> QuestStateCatalogue {
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:584:    assert_eq!(active.npc_legacy.len(), 6);
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:600:        if let Some((hash, defaults)) = active.npc_legacy.get(quest) {
+crates/gameplay/quests/src/quest/npc_rules/tests.rs:650:    assert_eq!(loaded.catalogue().npc_legacy.len(), 6);
+crates/gameplay/quests/src/quest/loader.rs:82:    pub fn catalogue(&self) -> &QuestStateCatalogue {
+crates/gameplay/quests/src/quest/loader.rs:234:    let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);
+crates/gameplay/quests/src/quest/loader.rs:253:    lowered.catalogue.npc_legacy = npc_legacy;
+crates/gameplay/quests/src/quest/mod.rs:274:pub struct QuestStateCatalogue {
+crates/gameplay/quests/src/quest/mod.rs:280:    npc_legacy: BTreeMap<String, ([u8; 32], BTreeMap<String, i64>)>,
+crates/gameplay/quests/src/quest/mod.rs:283:impl QuestStateCatalogue {
+crates/gameplay/quests/src/quest/mod.rs:383:            npc_legacy: BTreeMap::new(),
+crates/gameplay/quests/src/quest/mod.rs:409:        extended.npc_legacy.clone_from(&self.npc_legacy);
+crates/gameplay/quests/src/quest/mod.rs:611:    fn catalogue(transitions: Vec<QuestTransition>) -> QuestStateCatalogue {
+crates/gameplay/quests/src/quest/predicate.rs:164:    fn catalogue() -> QuestStateCatalogue {
+crates/gameplay/quests/src/quest/npc_rules.rs:385:                                .npc_legacy
+crates/gameplay/quests/src/quest/npc_rules.rs:485:    let mut legacy = catalogue.npc_legacy.clone();
+crates/gameplay/quests/src/quest/npc_rules.rs:577:    active.npc_legacy = legacy;
+crates/gameplay/quests/src/quest/npc_rules.rs:589:        .npc_legacy

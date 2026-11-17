@@ -1,0 +1,7 @@
+{
+  "mechanic": "0290-cast-control",
+  "kind": "panels",
+  "id": "0290-cast-control-panel",
+  "status": "supported",
+  "entry": "mod.rs::panel_text"
+}

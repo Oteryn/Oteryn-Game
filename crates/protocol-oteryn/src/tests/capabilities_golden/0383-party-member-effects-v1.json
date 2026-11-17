@@ -1,0 +1,17 @@
+{
+  "id": 383,
+  "name": "PARTY_MEMBER_EFFECTS_V1",
+  "constant": "party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1",
+  "requires": [
+    42
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

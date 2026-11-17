@@ -1,13 +1,14 @@
 use super::*;
 #[test]
 fn player_death_planner_preserves_container_and_burns_only_necklace() {
-    assert!(matches!(plan(false, 9, 1, 1), Ok((1, 1))));
-    assert!(matches!(plan(true, 7, 1, 0), Ok((0, 2))));
+    assert!(matches!(plan(false, 9, 1, true), Ok((1, 1))));
+    assert!(matches!(plan(false, 0, 1, true), Ok((1, 1))));
+    assert!(matches!(plan(true, 7, 1, false), Ok((0, 2))));
     for args in [
-        (true, 2, 1, 0),
-        (true, 7, 2, 0),
-        (false, 9, 1, 2),
-        (false, 0, 101, 0),
+        (true, 2, 1, false),
+        (true, 7, 2, false),
+        (true, 7, 1, true),
+        (false, 0, 101, false),
     ] {
         assert!(plan(args.0, args.1, args.2, args.3).is_err());
     }

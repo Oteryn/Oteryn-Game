@@ -1,0 +1,6 @@
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:551:fn quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal() -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:562:fn quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_replay_and_refusal()
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs:574:fn quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal() -> TestResult {
+tools/content-schema/quest-authoring/quest_callback_coverage.py:180:    ('quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal', (
+tools/content-schema/quest-authoring/quest_callback_coverage.py:197:    ('quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_replay_and_refusal', (
+tools/content-schema/quest-authoring/quest_callback_coverage.py:216:    ('quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal', (

@@ -1,0 +1,274 @@
+[
+  {
+    "name": "gaz_haragoth_heal.lua",
+    "path": "data-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua",
+    "sha": "e0d446bb3bcbd237fd297b8305f4fdfe49677ccf",
+    "size": 1056,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/e0d446bb3bcbd237fd297b8305f4fdfe49677ccf",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/e0d446bb3bcbd237fd297b8305f4fdfe49677ccf",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua"
+    }
+  },
+  {
+    "name": "hirintror_heal.lua",
+    "path": "data-global/scripts/creaturescripts/monster/hirintror_heal.lua",
+    "sha": "3daadea9c7a490612031b0d75d4be2f060ae854f",
+    "size": 730,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/hirintror_heal.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/hirintror_heal.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/3daadea9c7a490612031b0d75d4be2f060ae854f",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/hirintror_heal.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/hirintror_heal.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/3daadea9c7a490612031b0d75d4be2f060ae854f",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/hirintror_heal.lua"
+    }
+  },
+  {
+    "name": "invulnerable.lua",
+    "path": "data-global/scripts/creaturescripts/monster/invulnerable.lua",
+    "sha": "070b46054a6c4357e79722afa33e002952edda20",
+    "size": 512,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/invulnerable.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/invulnerable.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/070b46054a6c4357e79722afa33e002952edda20",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/invulnerable.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/invulnerable.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/070b46054a6c4357e79722afa33e002952edda20",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/invulnerable.lua"
+    }
+  },
+  {
+    "name": "minion_gaz_haragoth_vortex.lua",
+    "path": "data-global/scripts/creaturescripts/monster/minion_gaz_haragoth_vortex.lua",
+    "sha": "54af9be638fc02699949eec2cad2d4cebb3dba6f",
+    "size": 651,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/minion_gaz_haragoth_vortex.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/minion_gaz_haragoth_vortex.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/54af9be638fc02699949eec2cad2d4cebb3dba6f",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/minion_gaz_haragoth_vortex.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/minion_gaz_haragoth_vortex.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/54af9be638fc02699949eec2cad2d4cebb3dba6f",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/minion_gaz_haragoth_vortex.lua"
+    }
+  },
+  {
+    "name": "mirror_image_transform.lua",
+    "path": "data-global/scripts/creaturescripts/monster/mirror_image_transform.lua",
+    "sha": "43014ae797edfa6553971a2c084b0af8735deec0",
+    "size": 779,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/mirror_image_transform.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/mirror_image_transform.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/43014ae797edfa6553971a2c084b0af8735deec0",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/mirror_image_transform.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/mirror_image_transform.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/43014ae797edfa6553971a2c084b0af8735deec0",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/mirror_image_transform.lua"
+    }
+  },
+  {
+    "name": "necromantic_minion.lua",
+    "path": "data-global/scripts/creaturescripts/monster/necromantic_minion.lua",
+    "sha": "15d5176e24af74e7c47391dc46bebce132e4b654",
+    "size": 491,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/necromantic_minion.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/necromantic_minion.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/15d5176e24af74e7c47391dc46bebce132e4b654",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/necromantic_minion.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/necromantic_minion.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/15d5176e24af74e7c47391dc46bebce132e4b654",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/necromantic_minion.lua"
+    }
+  },
+  {
+    "name": "northern_pike.lua",
+    "path": "data-global/scripts/creaturescripts/monster/northern_pike.lua",
+    "sha": "fb01a93b6725e1003b0c03bf8f0eb5f8b8143f3a",
+    "size": 324,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/northern_pike.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/northern_pike.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fb01a93b6725e1003b0c03bf8f0eb5f8b8143f3a",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/northern_pike.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/northern_pike.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/fb01a93b6725e1003b0c03bf8f0eb5f8b8143f3a",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/northern_pike.lua"
+    }
+  },
+  {
+    "name": "omrafir_explode.lua",
+    "path": "data-global/scripts/creaturescripts/monster/omrafir_explode.lua",
+    "sha": "645a06216a4c2af897169cb259daa5da517844f6",
+    "size": 1715,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/omrafir_explode.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/omrafir_explode.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/645a06216a4c2af897169cb259daa5da517844f6",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/omrafir_explode.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/omrafir_explode.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/645a06216a4c2af897169cb259daa5da517844f6",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/omrafir_explode.lua"
+    }
+  },
+  {
+    "name": "shared_life.lua",
+    "path": "data-global/scripts/creaturescripts/monster/shared_life.lua",
+    "sha": "25750789c9d997ca1e7b9315ddc4cade6d0b0eab",
+    "size": 1070,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/shared_life.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/shared_life.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/25750789c9d997ca1e7b9315ddc4cade6d0b0eab",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/shared_life.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/shared_life.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/25750789c9d997ca1e7b9315ddc4cade6d0b0eab",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/shared_life.lua"
+    }
+  },
+  {
+    "name": "shlorg_teleport.lua",
+    "path": "data-global/scripts/creaturescripts/monster/shlorg_teleport.lua",
+    "sha": "72683357aa8c5dd8e9c6a3879880126e45354540",
+    "size": 615,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/shlorg_teleport.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/shlorg_teleport.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/72683357aa8c5dd8e9c6a3879880126e45354540",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/shlorg_teleport.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/shlorg_teleport.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/72683357aa8c5dd8e9c6a3879880126e45354540",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/shlorg_teleport.lua"
+    }
+  },
+  {
+    "name": "superior_minion.lua",
+    "path": "data-global/scripts/creaturescripts/monster/superior_minion.lua",
+    "sha": "cd2c773c2c74c2c9361536eae9338e227aae76f6",
+    "size": 482,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/superior_minion.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/superior_minion.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/cd2c773c2c74c2c9361536eae9338e227aae76f6",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/superior_minion.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/superior_minion.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/cd2c773c2c74c2c9361536eae9338e227aae76f6",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/superior_minion.lua"
+    }
+  },
+  {
+    "name": "the_pale_count_kill.lua",
+    "path": "data-global/scripts/creaturescripts/monster/the_pale_count_kill.lua",
+    "sha": "0fa9bf8651576480e02aaebcd900f6b0e1ad1c23",
+    "size": 431,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/the_pale_count_kill.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/the_pale_count_kill.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/0fa9bf8651576480e02aaebcd900f6b0e1ad1c23",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/the_pale_count_kill.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/the_pale_count_kill.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/0fa9bf8651576480e02aaebcd900f6b0e1ad1c23",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/the_pale_count_kill.lua"
+    }
+  },
+  {
+    "name": "the_welter_egg.lua",
+    "path": "data-global/scripts/creaturescripts/monster/the_welter_egg.lua",
+    "sha": "d2e5ff9e47cfe59941b094be3760878d59c62962",
+    "size": 475,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/the_welter_egg.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/the_welter_egg.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/d2e5ff9e47cfe59941b094be3760878d59c62962",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/the_welter_egg.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/the_welter_egg.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/d2e5ff9e47cfe59941b094be3760878d59c62962",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/the_welter_egg.lua"
+    }
+  },
+  {
+    "name": "urmahlullu_change.lua",
+    "path": "data-global/scripts/creaturescripts/monster/urmahlullu_change.lua",
+    "sha": "3df9cbfa229e29e30b06710ce11a98e9d1bfc7e5",
+    "size": 2595,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/urmahlullu_change.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/urmahlullu_change.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/3df9cbfa229e29e30b06710ce11a98e9d1bfc7e5",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/urmahlullu_change.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/urmahlullu_change.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/3df9cbfa229e29e30b06710ce11a98e9d1bfc7e5",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/urmahlullu_change.lua"
+    }
+  },
+  {
+    "name": "vampire_bride_death.lua",
+    "path": "data-global/scripts/creaturescripts/monster/vampire_bride_death.lua",
+    "sha": "00ba1477cd6e6126abaf71d4dc50ea58f647fd62",
+    "size": 1799,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/vampire_bride_death.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/vampire_bride_death.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/00ba1477cd6e6126abaf71d4dc50ea58f647fd62",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/vampire_bride_death.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/vampire_bride_death.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/00ba1477cd6e6126abaf71d4dc50ea58f647fd62",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/vampire_bride_death.lua"
+    }
+  },
+  {
+    "name": "white_pale_heal.lua",
+    "path": "data-global/scripts/creaturescripts/monster/white_pale_heal.lua",
+    "sha": "68ccd47b0972986882c08ad0b5b3338cb6007363",
+    "size": 730,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/white_pale_heal.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/white_pale_heal.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/68ccd47b0972986882c08ad0b5b3338cb6007363",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/white_pale_heal.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/white_pale_heal.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/68ccd47b0972986882c08ad0b5b3338cb6007363",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/white_pale_heal.lua"
+    }
+  },
+  {
+    "name": "zavarash_hide.lua",
+    "path": "data-global/scripts/creaturescripts/monster/zavarash_hide.lua",
+    "sha": "d3bc367e819991eb6fb03e38f29a826b06fc1328",
+    "size": 1210,
+    "url": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/zavarash_hide.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+    "html_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/zavarash_hide.lua",
+    "git_url": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/d3bc367e819991eb6fb03e38f29a826b06fc1328",
+    "download_url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/zavarash_hide.lua",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/zimbadev/crystalserver/contents/data-global/scripts/creaturescripts/monster/zavarash_hide.lua?ref=201189f871d23597b82caf88fd611454a2ddefb8",
+      "git": "https://api.github.com/repos/zimbadev/crystalserver/git/blobs/d3bc367e819991eb6fb03e38f29a826b06fc1328",
+      "html": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/creaturescripts/monster/zavarash_hide.lua"
+    }
+  }
+]

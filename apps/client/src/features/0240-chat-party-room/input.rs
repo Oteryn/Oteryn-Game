@@ -13,7 +13,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::ChatPublic(intent)).is_err()
         {
             mailbox.chat_party_room.pending = false;
-            mailbox.chat_party_room.feedback = Some("The session has ended".into());
+            mailbox.chat_party_room.feedback = Some(tr!("The session has ended").into());
         }
     }
 
@@ -22,9 +22,10 @@ impl PlayLink {
             return false;
         }
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).chat_party_room.open = true;
         }
         true

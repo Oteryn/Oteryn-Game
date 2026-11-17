@@ -1,14 +1,9 @@
 //! DAILYFX sinks borrow the claim transaction and its Character -> Account lock order.
 //! Wildcards belong to PREY (Account + World); boost grants remain immutable DAILY lines.
 use super::DurabilityError;
-use super::character_inbox::{
-    RewardClaimInboxError, RewardClaimInboxMintCandidate, RewardClaimInboxMintOutput,
-    RewardClaimInboxMintRequest, RewardClaimInboxPlan,
-};
 use super::daily_reward_claim::DailyRewardClaimRequest;
-use super::item_mint::TypedDefinitionRef;
 use super::item_mint_audit::Type2Transaction;
-use super::item_transfer::{CurrentCharacterItemFence, ItemDefinitionFacts, ItemStackClass};
+use super::item_transfer::CurrentCharacterItemFence;
 use sqlx::{Postgres, Row, Transaction};
 
 pub(super) async fn grant(
@@ -23,6 +18,14 @@ pub(super) async fn grant(
     let claim = request.transaction_id.as_slice();
     let reward = oteryn_gameplay_progression::daily_reward::reward_for_day(day, premium)
         .ok_or(DurabilityError::InvalidStoredState)?;
+    let temple = super::daily_reward_picked_items::mint(
+        tx,
+        fence,
+        request,
+        day,
+        reward.temple_teleport_scrolls,
+    )
+    .await?;
     let mut line: i16 = 0;
     for (kind, quantity) in [
         ("BOUNTY_REROLL", reward.bounty_reroll_tokens),
@@ -33,80 +36,24 @@ pub(super) async fn grant(
             continue;
         }
         let item = if kind == "TEMPLE_SCROLL" {
-            // Crystal 201189f: data-global/scripts/actions/other/temple_scroll.lua:18
-            // binds the temple teleport scroll to item 25718.
-            let item: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
-                .fetch_one(&mut ***tx)
-                .await?;
-            let item_id = super::item_mint::uuid_text(&item)?;
-            let crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } =
-                fence.runtime_scope
-            else {
-                return Err(DurabilityError::InvalidStoredState);
-            };
-            let (content_revision, ruleset_revision): (String, String) = sqlx::query_as(
-                "SELECT content_revision,ruleset_revision FROM public.game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-            ).bind(character).fetch_one(&mut ***tx).await?;
-            let revision =
-                oteryn_gameplay_content::content::daily_reward::DailyRewardContent::catalogue()
-                    .ok_or(DurabilityError::InvalidStoredState)?
-                    .revision
-                    .clone();
-            RewardClaimInboxMintCandidate::mint_atomic_in_transaction(
-                tx,
-                fence,
-                RewardClaimInboxPlan {
-                    command: request.command,
-                    character_id: fence.character_id,
-                    world_id: world,
-                    channel_id,
-                    transaction_id: request.transaction_id,
-                    source_binding: request.request_binding,
-                    item_instance_ids: vec![item_id],
-                },
-                RewardClaimInboxMintRequest {
-                    claim: TypedDefinitionRef {
-                        family: "DailyReward".into(),
-                        production_key: format!("oteryn:daily_reward.day{day}"),
-                        revision_ref: revision,
-                    },
-                    content_revision,
-                    ruleset_revision,
-                    sim_revision: "daily-reward-v2".into(),
-                    outputs: vec![RewardClaimInboxMintOutput {
-                        source_line: u32::try_from(line)
-                            .map_err(|_| DurabilityError::InvalidStoredState)?,
-                        item: ItemDefinitionFacts {
-                            weight: None,
-                            definition: TypedDefinitionRef {
-                                family: "Item".into(),
-                                production_key: "oteryn:item.tibia.i25718".into(),
-                                revision_ref: "definition-r1".into(),
-                            },
-                            stack: ItemStackClass::NonStackable,
-                            container_capacity: None,
-                            container_slot_equip_pattern: false,
-                        },
-                        quantity: u32::from(quantity),
-                        key_number: None,
-                    }],
-                },
-            )
-            .await
-            .map_err(|error| match error {
-                RewardClaimInboxError::Unavailable(error) => error,
-                _ => DurabilityError::InvalidStoredState,
-            })?;
-            sqlx::query("INSERT INTO public.game_item_bindings(item_instance_id,world_id,character_id,cause) VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'DAILY_REWARD')")
-                .bind(&item).bind(world.as_bytes().as_slice()).bind(character).execute(&mut ***tx).await?;
-            Some(item)
+            temple.clone()
         } else {
             grant_balance(tx, fence, request, kind, quantity).await?;
             None
         };
         sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,definition,quantity,status,delivering_transaction_id,item_instance_id) VALUES(encode($1,'hex')::uuid,$2,$3,CASE WHEN $3='TEMPLE_SCROLL' THEN 'oteryn:item.tibia.i25718' END,$4,'DELIVERED',encode($1,'hex')::uuid,$5::uuid)")
-            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity)).bind(item)
+            .bind(claim).bind(line).bind(kind).bind(i32::from(quantity)).bind(item.as_deref())
             .execute(&mut ***tx).await?;
+        // WU26-06: the delivered scroll vanishes seven days later through the existing Item
+        // deadline owner (docs/contracts/TEMPLE_TELEPORT_SCROLL_V1.md; migration 2762).
+        if let Some(item) = &item {
+            super::item_use::temple_scroll::schedule_delivered_scroll(
+                tx,
+                item,
+                &request.transaction_id,
+            )
+            .await?;
+        }
         line += 1;
     }
     if reward.prey_wildcards > 0 {
@@ -132,10 +79,12 @@ pub(super) async fn grant(
     }
     if reward.xp_boost_percent > 0 {
         let minutes = i32::from(reward.xp_boost_minutes);
-        // Crystal 201189f: data/modules/scripts/daily_reward/daily_reward.lua:518-527
-        // appends the daily duration to the Store timer instead of replacing it.
-        sqlx::query("WITH instant AS (SELECT public.game_daily_effect_now() AS at), endpoint AS (SELECT greatest(instant.at,coalesce((SELECT max(expires_at) FROM public.game_character_store_xp_boosts WHERE character_id=encode($5,'hex')::uuid AND world_id=encode($6,'hex')::uuid),instant.at),coalesce((SELECT max(effect_expires_at) FROM public.game_character_daily_reward_claims c JOIN public.game_character_daily_reward_lines l ON l.claim_id=c.transaction_id WHERE c.character_id=encode($5,'hex')::uuid AND c.world_id=encode($6,'hex')::uuid AND l.kind='XP_BOOST'),instant.at)) AS at FROM instant) INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) SELECT encode($1,'hex')::uuid,$3,'XP_BOOST',$2,'DELIVERED',encode($1,'hex')::uuid,at,at+make_interval(mins=>$2),$4 FROM endpoint")
-            .bind(claim).bind(minutes).bind(line).bind(i16::from(reward.xp_boost_percent)).bind(character).bind(world.as_bytes().as_slice()).execute(&mut ***tx).await?;
+        // Winter Update 2026 (thread 565): the daily boost starts now as its own line. It
+        // adds to a Store boost instead of extending it, and replaces the remainder of an
+        // earlier daily boost (readers count only the newest claim's line; lines stay
+        // immutable). Replaces Crystal 201189f daily_reward.lua:518-527 timer appending.
+        sqlx::query("WITH instant AS (SELECT public.game_daily_effect_now() AS at) INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id,effect_started_at,effect_expires_at,xp_boost_percent) SELECT encode($1,'hex')::uuid,$3,'XP_BOOST',$2,'DELIVERED',encode($1,'hex')::uuid,at,at+make_interval(mins=>$2),$4 FROM instant")
+            .bind(claim).bind(minutes).bind(line).bind(i16::from(reward.xp_boost_percent)).execute(&mut ***tx).await?;
     }
     Ok(())
 }
@@ -168,13 +117,41 @@ async fn grant_balance(
         Some(row) => (row.try_get("balance")?, Some(row.try_get("last_claim_id")?)),
         None => (0, None),
     };
+    let credited = if kind == "BOUNTY_REROLL" {
+        capped_reroll_credit(before, quantity)
+    } else {
+        i64::from(quantity)
+    };
     let after = before
-        .checked_add(i64::from(quantity))
+        .checked_add(credited)
         .ok_or(DurabilityError::InvalidStoredState)?;
     sqlx::query(sqlx::AssertSqlSafe(format!("INSERT INTO public.{entries_table}(claim_id,character_id,world_id,previous_claim_id,amount,balance_before,balance_after) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::uuid,$5,$6,$7)")))
         .bind(request.transaction_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice())
-        .bind(last).bind(i16::from(quantity)).bind(before).bind(after).execute(&mut **tx).await?;
+        .bind(last).bind(i16::try_from(credited).map_err(|_| DurabilityError::InvalidStoredState)?).bind(before).bind(after).execute(&mut **tx).await?;
     sqlx::query(sqlx::AssertSqlSafe(format!("INSERT INTO public.{balance_table}(character_id,world_id,balance,last_claim_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid) ON CONFLICT(character_id,world_id) DO UPDATE SET balance=EXCLUDED.balance,last_claim_id=EXCLUDED.last_claim_id")))
         .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(after).bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
     Ok(())
+}
+
+/// Winter Update 2026: at most 10 stored Bounty Reroll Tokens. A daily credit adds
+/// `min(requested, 10 - balance)`; a balance already above 10 is kept and gets 0.
+fn capped_reroll_credit(before: i64, requested: u8) -> i64 {
+    let cap = i64::try_from(oteryn_gameplay_quests::quest::task_board::full::MAX_REROLL_TOKENS)
+        .unwrap_or(i64::MAX);
+    i64::from(requested).min(cap.saturating_sub(before).max(0))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::capped_reroll_credit;
+
+    #[test]
+    fn bounty_reroll_tokens_never_exceed_ten_on_daily_claim() {
+        for (before, requested, credited) in
+            [(0, 1, 1), (9, 1, 1), (9, 3, 1), (10, 1, 0), (25, 1, 0)]
+        {
+            assert_eq!(capped_reroll_credit(before, requested), credited);
+            assert!(before + credited <= before.max(10));
+        }
+    }
 }

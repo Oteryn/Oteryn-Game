@@ -8,15 +8,15 @@ pub struct Intent {
 }
 pub fn request(panel: &mut DailyBoostPanel, intent: Intent) -> Option<FeatureCommand> {
     if !panel.selected {
-        panel.feedback = Some("Feature unavailable in this session");
+        panel.feedback = Some(tr!("Feature unavailable in this session"));
         return None;
     }
     if panel.pending {
-        panel.feedback = Some("Waiting for the server");
+        panel.feedback = Some(tr!("Waiting for the server"));
         return None;
     }
     if intent.command != COMMAND_TYPE_DAILY_BOOST_QUERY || !intent.payload.is_empty() {
-        panel.feedback = Some("Unsupported feature action");
+        panel.feedback = Some(tr!("Unsupported feature action"));
         return None;
     }
     panel.pending = true;
@@ -56,10 +56,10 @@ pub fn apply_result(p: &mut DailyBoostPanel, r: &GatedCommandResult) {
         p.feedback = if p.boost.is_some() {
             None
         } else {
-            Some("The server returned an invalid boost status")
+            Some(tr!("The server returned an invalid boost status"))
         }
     } else {
-        p.feedback = Some("The server refused the action")
+        p.feedback = Some(tr!("The server refused the action"))
     }
 }
 #[cfg(test)]
@@ -81,7 +81,7 @@ mod tests {
             },
         )
         .unwrap();
-        assert_eq!(c.payload, []);
+        assert!(c.payload.is_empty());
         let mut wire = 9u64.to_be_bytes().to_vec();
         wire.extend([3, b'r', b'a', b't', 4, b'b', b'o', b's', b's']);
         apply_result(

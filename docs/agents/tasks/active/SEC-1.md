@@ -157,6 +157,7 @@ Structure rules (binding acceptance criteria):
 - [ ] **Admission hookup**: evaluate client release/trust in fresh admission and V2 recovery (`crates/gameplay/admission-evidence/src/lib.rs`, admission path in `apps/game-server/src/node/serve.rs`, ADMIT-CAP-1 merged #2187) and capability negotiation in `capabilities.rs`; refuse or flag untrusted builds with a typed error code.
 - [ ] **Protocol**: client-integrity capability and challenge/response or attestation messages in `crates/protocol-oteryn/src/` (new module, registry entries); client side in `apps/client`.
 - [ ] **Detection**: SEC-CHAL / SEC-TELEM / SEC-DETECT children (movement/step integrity in `gameplay_transport/actor_movement.rs` and `input_gate.rs`, telemetry per DATA-PRIVACY-01), GM-1 staff audit linkage; mode starts REPORT_ONLY.
+- [x] **SEC-DETECT-1 (#2054, CP allocated 2026-11-05)**: REPORT_ONLY cadence, shared use/cast exhaust and reach refusal bursts; fixed per-connection timestamp arrays, anonymous coalesced audit, at most one line per second including teardown. No command outcome or sanction changes.
 - [ ] **Config**: node config switches (`apps/game-server/src/node/config.rs`) for report-only vs enforce, trust root provisioning, operator docs.
 - [ ] **Tests**: keep the 17 unit tests; add durable trust-store restart tests; **end-to-end through the real session handshake/`connection.rs` dispatch**: valid build admitted, revoked/unsigned/wrong-role build refused or reported, clock step backward handled; no player-visible regression in report-only mode.
 
@@ -164,3 +165,11 @@ Structure rules (binding acceptance criteria):
 - ADMIT-CAP-1: MERGED (#2187).
 - SEC-TRUST-1 and SEC-REL-1 owners not allocated (D1326); RELEASE-MANIFEST-3; DATA-PRIVACY-01. Each child needs CP allocation before code starts.
 - GM-1: re-implementation pending (draft #2181 closing; card `docs/agents/tasks/GM-1.md`).
+
+### SEC-DETECT-1 evidence (2026-11-05)
+
+- Base `origin/main` `9418ffb8`. #2561 refusal observations feed three sliding
+  detectors (8 refusals/s per category); bursts coalesce, close never bypasses the rate cap.
+- `cargo test -p oteryn-gameplay-dispatch --lib sec1`: red 6/2, green 8/0
+  (cadence burst, bounded flood state < 4096 B over 100,000 refusals, paced play silent).
+- Outcomes unchanged (eight TOO_EARLY payloads intact). No SQL/persistence, so no PG.

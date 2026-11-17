@@ -22,7 +22,7 @@ impl PreviousReturn {
     }
 }
 
-fn binding(r: &ActivityReturnRequest) -> [u8; 32] {
+fn binding(r: &ActivityReturnRequest, movement: Option<&ActivityNativeStepExit>) -> [u8; 32] {
     let mut hash = Sha256::new();
     hash_field(&mut hash, b"native-activity-return-v1");
     hash_field(&mut hash, &r.handoff_id);
@@ -46,10 +46,12 @@ fn binding(r: &ActivityReturnRequest) -> [u8; 32] {
         hash_field(&mut hash, &occurrence);
     }
     match r.reason {
-        ActivityReturnReason::Abandoned { transport } => {
+        ActivityReturnReason::Abandoned { transport }
+        | ActivityReturnReason::StaffKick { transport } => {
             hash_field(&mut hash, &transport.to_bytes())
         }
-        ActivityReturnReason::CapabilityMismatch { epoch } => {
+        ActivityReturnReason::CapabilityMismatch { epoch }
+        | ActivityReturnReason::StaffKickLost { epoch } => {
             hash_field(&mut hash, &epoch.get().to_be_bytes())
         }
         _ => {}
@@ -57,6 +59,9 @@ fn binding(r: &ActivityReturnRequest) -> [u8; 32] {
     hash_field(&mut hash, &[u8::from(r.command_id.is_some())]);
     if r.command_id.is_none() {
         hash_field(&mut hash, &r.return_id);
+    }
+    if let Some(movement) = movement {
+        movement.bind(&mut hash);
     }
     hash.finalize().into()
 }
@@ -67,7 +72,12 @@ pub(super) async fn return_in_transaction(
     node: &NodeIncarnationProof,
     r: &ActivityReturnRequest,
     recovering: bool,
+    terminal_trigger: Option<ActivityReturnReason>,
+    movement: Option<&ActivityNativeStepExit>,
 ) -> Result<ActivityReturnOutcome> {
+    // Match Soulpit progress's advisory-before-Character lock order. This
+    // bounded lookup grants nothing; the return receipt below remains authority.
+    let soulpit = super::super::soulpit::lock_shared_return(tx, &r.handoff_id).await?;
     let character = foundation_character(r.source)?;
     let row = sqlx::query("SELECT uuid_send(p.origin_channel_id) AS origin, p.account_id::text, g.content_revision,g.ownership_generation::text AS generation, \
         e.deadline,e.holder_node_id::text AS original_node,e.holder_registration_revision::text AS original_registration, \
@@ -116,7 +126,16 @@ pub(super) async fn return_in_transaction(
         effective.command_id = None;
     }
     let r = &effective;
-    let request_binding = binding(r);
+    let request_binding = if let Some(trigger) = terminal_trigger {
+        let mut terminal = r.clone();
+        terminal.reason = trigger;
+        let mut hash = Sha256::new();
+        hash_field(&mut hash, &binding(r, movement));
+        hash_field(&mut hash, &binding(&terminal, movement));
+        hash.finalize().into()
+    } else {
+        binding(r, movement)
+    };
     if let Some(PreviousReturn {
         request_binding: old_binding,
         command_id: command,
@@ -188,12 +207,38 @@ pub(super) async fn return_in_transaction(
             ));
         }
     }
-    let now = now_ms(tx).await?;
+    let now = quest_activity_now_ms(tx, root).await?;
+    // The staff-kick proof reads reconnect sessions against the database clock, not the quest test clock.
+    let wall_now = now_ms(tx).await?;
+    let forced_death = if let Some(trigger) = terminal_trigger {
+        if !matches!(r.reason, ActivityReturnReason::Death { .. }) || r.command_id.is_some() {
+            return Ok(ActivityReturnOutcome::Refused(ActivityRefusal::AuthorityRejected));
+        }
+        let proven = match trigger {
+        ActivityReturnReason::StaffKick { transport } => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.game_session_id=encode($1,'hex')::uuid AND s.session_state=2 AND s.current_transport_ref=$2 AND (EXISTS(SELECT 1 FROM game_staff_disconnects d WHERE d.game_session_id=s.game_session_id) OR EXISTS(SELECT 1 FROM game_staff_bans b WHERE b.account_id=s.account_id AND b.lifted_at_ms IS NULL AND b.starts_at_ms<=$3 AND b.ends_at_ms>$3) OR game_security_session_revoked(s.game_session_id)))")
+            .bind(r.source.game_session_id.as_bytes().as_slice()).bind(transport.to_bytes().as_slice()).bind(wall_now).fetch_one(&mut **tx).await?,
+        ActivityReturnReason::StaffKickLost { epoch } => {
+            let held:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.game_session_id=encode($1,'hex')::uuid AND s.session_state=1 AND s.current_transport_ref IS NULL AND s.control_loss_epoch=$2::text::numeric AND (EXISTS(SELECT 1 FROM game_staff_disconnects d WHERE d.game_session_id=s.game_session_id) OR game_security_session_revoked(s.game_session_id)))")
+                .bind(r.source.game_session_id.as_bytes().as_slice()).bind(epoch.get().to_string()).fetch_one(&mut **tx).await?;
+            held && super::super::fresh_admission::has_owning_loss_receipt(tx,r.source.game_session_id.as_bytes().as_slice(),epoch.get()).await?
+        },
+            _ => false,
+        };
+        if !proven { return Ok(ActivityReturnOutcome::Refused(ActivityRefusal::AuthorityRejected)); }
+        true
+    } else { false };
     let due = match r.reason {
         ActivityReturnReason::Exit | ActivityReturnReason::OwnerLost | ActivityReturnReason::Death { .. } => true,
         ActivityReturnReason::Abandoned { transport } => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions \
             WHERE game_session_id=encode($1,'hex')::uuid AND session_state=2 AND current_transport_ref=$2)")
             .bind(r.source.game_session_id.as_bytes().as_slice()).bind(transport.to_bytes().as_slice()).fetch_one(&mut **tx).await?,
+        ActivityReturnReason::StaffKick { transport } => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.game_session_id=encode($1,'hex')::uuid AND s.session_state=2 AND s.current_transport_ref=$2 AND (EXISTS(SELECT 1 FROM game_staff_disconnects d WHERE d.game_session_id=s.game_session_id) OR EXISTS(SELECT 1 FROM game_staff_bans b WHERE b.account_id=s.account_id AND b.lifted_at_ms IS NULL AND b.starts_at_ms<=$3 AND b.ends_at_ms>$3) OR game_security_session_revoked(s.game_session_id)))")
+            .bind(r.source.game_session_id.as_bytes().as_slice()).bind(transport.to_bytes().as_slice()).bind(now).fetch_one(&mut **tx).await?,
+        ActivityReturnReason::StaffKickLost { epoch } => {
+            let held:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.game_session_id=encode($1,'hex')::uuid AND s.session_state=1 AND s.current_transport_ref IS NULL AND s.control_loss_epoch=$2::text::numeric AND (EXISTS(SELECT 1 FROM game_staff_disconnects d WHERE d.game_session_id=s.game_session_id) OR game_security_session_revoked(s.game_session_id)))")
+                .bind(r.source.game_session_id.as_bytes().as_slice()).bind(epoch.get().to_string()).fetch_one(&mut **tx).await?;
+            held && super::super::fresh_admission::has_owning_loss_receipt(tx,r.source.game_session_id.as_bytes().as_slice(),epoch.get()).await?
+        },
         ActivityReturnReason::CapabilityMismatch { epoch } => {
             let held: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions \
                 WHERE game_session_id=encode($1,'hex')::uuid AND session_state=1 AND current_transport_ref IS NULL \
@@ -219,8 +264,10 @@ pub(super) async fn return_in_transaction(
                 .bind(r.handoff_id.as_slice()).fetch_optional(&mut **tx).await?;
             now >= row.try_get::<i64,_>("deadline")? && !matches!(boss_state, Some(2 | 4))
         },
-        ActivityReturnReason::Defeated => sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid AND state=2 AND exit_deadline <= $2)")
-            .bind(r.handoff_id.as_slice()).bind(now).fetch_one(&mut **tx).await?,
+        ActivityReturnReason::Defeated => sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_boss_room_activities WHERE admission=encode($1,'hex')::uuid AND state=2 AND exit_deadline <= $2) OR EXISTS(SELECT 1 FROM game_soulpit_encounters f JOIN game_activity_handoff_groups g USING(handoff_id) WHERE f.handoff_id=encode($1,'hex')::uuid AND g.activity_key=$3 AND f.terminal)")
+            .bind(r.handoff_id.as_slice()).bind(now).bind(super::super::soulpit::SOULPIT_ACTIVITY_KEY).fetch_one(&mut **tx).await?,
+        ActivityReturnReason::SoulpitTerminal => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_soulpit_encounters WHERE handoff_id=encode($1,'hex')::uuid AND terminal)")
+            .bind(r.handoff_id.as_slice()).fetch_one(&mut **tx).await?,
     };
     if !due {
         return Ok(ActivityReturnOutcome::Refused(ActivityRefusal::NotDue));
@@ -313,6 +360,7 @@ pub(super) async fn return_in_transaction(
         tx,
         root,
         super::entry::SuccessorSession {
+            terminal_security_return: forced_death || matches!(r.reason, ActivityReturnReason::StaffKick { .. } | ActivityReturnReason::StaffKickLost { .. }),
             source: r.source,
             destination: r.destination_game_session_id,
             decision: r.return_id,
@@ -321,11 +369,10 @@ pub(super) async fn return_in_transaction(
             origin: None,
             transport: r.destination_transport,
         },
-        now,
     )
     .await?;
-    sqlx::query("INSERT INTO game_activity_runtime_returns(return_id,handoff_id,character_id,source_game_session_id,source_connection_generation,source_lease_generation,command_id,request_binding,destination_game_session_id,destination_ownership_generation,returned_at,reason,destination_transport_ref,death_occurrence_id,return_x,return_y,return_floor,return_coordinate_frame_digest,return_map_revision_digest,return_server_artifact_digest,release_transport_ref,release_loss_epoch) \
-        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,$8,encode($9,'hex')::uuid,$10::text::numeric,$11,$12,$13,encode($14,'hex')::uuid,$15,$16,$17,$18,$19,$20,$21,$22::text::numeric)")
+    sqlx::query("INSERT INTO game_activity_runtime_returns(return_id,handoff_id,character_id,source_game_session_id,source_connection_generation,source_lease_generation,command_id,request_binding,destination_game_session_id,destination_ownership_generation,returned_at,reason,destination_transport_ref,death_occurrence_id,return_x,return_y,return_floor,return_coordinate_frame_digest,return_map_revision_digest,return_server_artifact_digest,release_transport_ref,release_loss_epoch,native_step_exit) \
+        VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,$8,encode($9,'hex')::uuid,$10::text::numeric,$11,$12,$13,encode($14,'hex')::uuid,$15,$16,$17,$18,$19,$20,$21,$22::text::numeric,$23)")
         .bind(r.return_id.as_slice()).bind(r.handoff_id.as_slice()).bind(r.source.character_id.as_bytes().as_slice()).bind(r.source.game_session_id.as_bytes().as_slice())
         .bind(r.source.connection_generation.get().to_string()).bind(r.source.character_lease_generation.to_string()).bind(r.command_id.map(|id|id.to_string())).bind(request_binding.as_slice())
         .bind(r.destination_game_session_id.as_bytes().as_slice()).bind(r.destination_generation.get().to_string()).bind(now).bind(r.reason.stored())
@@ -333,9 +380,13 @@ pub(super) async fn return_in_transaction(
         .bind(match r.reason { ActivityReturnReason::Death { occurrence } => Some(occurrence.to_vec()), _ => None })
         .bind(exit.cell.x).bind(exit.cell.y).bind(exit.cell.floor).bind(exit.coordinate_frame_digest.as_slice())
         .bind(exit.map_revision_digest.as_slice()).bind(exit.server_artifact_digest.as_slice())
-        .bind(match r.reason { ActivityReturnReason::Abandoned { transport } => Some(transport.to_bytes().to_vec()), _ => None })
-        .bind(match r.reason { ActivityReturnReason::CapabilityMismatch { epoch } => Some(epoch.get().to_string()), _ => None })
+        .bind(match r.reason { ActivityReturnReason::Abandoned { transport } | ActivityReturnReason::StaffKick { transport } => Some(transport.to_bytes().to_vec()), _ => None })
+        .bind(match r.reason { ActivityReturnReason::CapabilityMismatch { epoch } | ActivityReturnReason::StaffKickLost { epoch } => Some(epoch.get().to_string()), _ => None })
+        .bind(movement.map(|proof|proof.proof().clone()))
         .execute(&mut **tx).await?;
+    if soulpit {
+        super::super::soulpit::shared_returning(tx, r, recovering).await?;
+    }
     sqlx::query("UPDATE game_boss_room_participants SET returned_at=$3 WHERE admission=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND returned_at IS NULL")
         .bind(r.handoff_id.as_slice()).bind(r.source.character_id.as_bytes().as_slice()).bind(now).execute(&mut **tx).await?;
     if r.reason == ActivityReturnReason::Timeout {

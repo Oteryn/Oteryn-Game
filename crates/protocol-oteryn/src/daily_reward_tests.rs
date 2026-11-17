@@ -26,6 +26,9 @@ fn daily_reward_registry_uses_only_cp_allocated_ids() -> Result<(), Box<dyn std:
             &[
                 COMMAND_TYPE_DAILY_REWARD_CLAIM,
                 COMMAND_TYPE_DAILY_REWARD_QUERY,
+                details::COMMAND_TYPE,
+                returner::QUERY,
+                returner::CLAIM,
             ][..],
             &[][..],
             MAX_DAILY_REWARD_CLAIM_BYTES,
@@ -53,6 +56,10 @@ fn daily_reward_registry_uses_only_cp_allocated_ids() -> Result<(), Box<dyn std:
                 && *registered_domains == domains
         ));
     }
+    let details = only("command_types", details::COMMAND_TYPE)?;
+    assert_eq!(details["capability"], CAPABILITY_DAILY_REWARD_V2);
+    assert_eq!(details["max_payload_bytes"], 0);
+    assert_eq!(details["max_result_payload_bytes"], details::MAX_BYTES);
     let domain = only("state_domains", STATE_DOMAIN_DAILY_REWARD)?;
     assert_eq!(domain["capability"], CAPABILITY_DAILY_REWARD_V1);
     for kind in ["delta_types", "snapshot_types"] {
@@ -63,6 +70,30 @@ fn daily_reward_registry_uses_only_cp_allocated_ids() -> Result<(), Box<dyn std:
         assert_eq!(
             domain[kind][0]["payload_schema"],
             "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardWallV1"
+        );
+    }
+    Ok(())
+}
+
+/// WU26-05: Winter Update 2026 retired the item picker. Its commands left capability 182
+/// and the registry; their numbers stay unused.
+#[test]
+fn daily_picker_commands_left_the_registry() -> Result<(), Box<dyn std::error::Error>> {
+    let registry: serde_json::Value =
+        serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)?;
+    let commands = registry["command_types"]
+        .as_array()
+        .ok_or("registry array")?;
+    for retired in [picker::QUERY, picker::CLAIM] {
+        assert!(
+            commands.iter().all(|entry| entry["id"] != retired),
+            "command {retired} is no longer registered"
+        );
+        assert!(
+            crate::capability_tables::GATED
+                .iter()
+                .all(|(_, owned, _)| !owned.contains(&retired)),
+            "no capability owns command {retired}"
         );
     }
     Ok(())

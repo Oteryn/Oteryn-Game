@@ -220,6 +220,7 @@ fn dispatch_scenario() -> TestResult {
             };
             fence.expected_character_revision = receipt.committed_character_revision;
         }
+        super::reaudit_title_predicates::seed_mastery(&h).await?;
         let (status, payload) = exchange(&owner, &mut admitted, 3, 113, &[2, 1]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(payload, [2, 1]);
@@ -402,7 +403,7 @@ fn character_titles_refresh_grants_and_revokes_from_native_facts() -> TestResult
         let now = 1_800_000_000_000;
         let granted = h
             .root
-            .refresh_character_titles(&authority, &h.node, fence, now, None)
+            .refresh_character_titles(&authority, &h.node, fence, now, None, None)
             .await
             .map_err(debug)?;
         // The fixture's creation receipt is more than ten years before `now` (Aeternal).
@@ -423,7 +424,7 @@ fn character_titles_refresh_grants_and_revokes_from_native_facts() -> TestResult
         assert_eq!(selected, None, "the revoked selection is cleared");
         assert!(
             h.root
-                .refresh_character_titles(&authority, &h.node, fence, now, None)
+                .refresh_character_titles(&authority, &h.node, fence, now, None, None)
                 .await
                 .map_err(debug)?
                 .is_empty(),
@@ -434,7 +435,7 @@ fn character_titles_refresh_grants_and_revokes_from_native_facts() -> TestResult
             crate::foundation::ConnectionGeneration::new(2).map_err(debug)?;
         assert!(
             h.root
-                .refresh_character_titles(&authority, &h.node, stale, now, None)
+                .refresh_character_titles(&authority, &h.node, stale, now, None, None)
                 .await
                 .is_err()
         );

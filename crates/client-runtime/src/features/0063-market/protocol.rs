@@ -1,6 +1,7 @@
 //! Market command execution through the admitted session.
 pub use oteryn_session::CommandStatus;
 pub use oteryn_session::market;
+pub use oteryn_session::market_details;
 use oteryn_session::{Session, SessionError, SessionStream};
 
 #[derive(Debug, Clone, PartialEq, Eq)]

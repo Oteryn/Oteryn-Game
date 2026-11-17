@@ -259,8 +259,9 @@ needed only once 2b releases the guards before S.
   branch when the batch committed, and the `Applied` branch, which commits again, when it did not
   (`native_combat_cast.rs`, `world_item_cast.rs`, `parameter_cast.rs`; the familiar cast's
   `commit_familiar_spell` or `reconcile_familiar_spell` by `allow_new_mutation`).
-  `commit_semantic_transaction` (`db.rs`) returns `CommitOutcomeUnknown` without sending `COMMIT`
-  when the deadline has already elapsed, so an unknown outcome is often a rollback.
+  `commit_semantic_transaction` (`db.rs`) returns `RootPassDeadlineExceeded` without sending
+  `COMMIT` when the deadline has already elapsed. `CommitOutcomeUnknown` is reserved for a
+  `COMMIT` that was sent but did not complete within the remaining deadline.
 - **The fence covers every committing writer.** The writers that reach
   `commit_spell_owner_transaction` on `main` are:
   - the native cast (`native_combat_cast.rs`);

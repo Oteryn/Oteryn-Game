@@ -54,6 +54,8 @@ pub(in crate::gameplay_transport) fn project(
             }
             EntrySource::Added(id) => (false, ItemKey::MapAdded(id.get())),
             EntrySource::Ground(id) => (false, ItemKey::Instance(id)),
+            // Named-House custody is projected by its own current owner, never a Channel browse.
+            EntrySource::House(_) => return None,
         };
         if unique {
             continue;
@@ -66,6 +68,7 @@ pub(in crate::gameplay_transport) fn project(
         let item_facts = definition_facts(&policy.record().semantics);
         candidates.push((
             ViewItem {
+                appearance_id: entry.facts.appearance_id,
                 key,
                 item_definition_ref: reference,
                 count: NonZeroU32::new(entry.facts.count)?,

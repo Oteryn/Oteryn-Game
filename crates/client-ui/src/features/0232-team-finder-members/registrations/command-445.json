@@ -1,0 +1,15 @@
+{
+  "mechanic": "0232-team-finder-members",
+  "kind": "handlers",
+  "id": "0232-team-finder-members-command-445",
+  "status": "supported",
+  "commands": [
+    445
+  ],
+  "direction": "client_to_server",
+  "capability": 232,
+  "entry": "protocol.rs::member",
+  "not_applicable": {
+    "settings": "State is owned by the server; no local settings."
+  }
+}

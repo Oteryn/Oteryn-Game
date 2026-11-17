@@ -1,7 +1,8 @@
 # Activity scope projection (domain 99)
 
 Authority: PR2769 answers 6543120139 and 6543189919. Capability 117 selects this
-domain; capability 117 selects this new state domain; no new command or capability identifier is introduced.
+domain. Soulpit uses command710 for the acknowledged live barrier described in
+[ACTIVITY_SCOPE/v1](activity-scope-v1.md#acknowledgement); no new capability is introduced.
 The strict binary payload is defined by `crates/protocol-oteryn/src/activity_scope.rs`.
 
 The payload identifies one committed handoff: its UUID, source and destination
@@ -22,7 +23,9 @@ command's real result if this participant issued that command. Other participant
 receive no fabricated command result. On complete snapshot commit, a client still
 on `source_session` switches to `session` and its advertised generation and
 selection, then consumes the destination's full initial snapshot. Buffered source
-input is discarded at this barrier. An interrupted write loses the already
+input is quarantined at the Soulpit barrier until command710 acknowledges the
+validated destination; its command1 result precedes gameplay command2. Other
+activity barriers retain their existing behavior. An interrupted write loses the already
 committed destination's actual control, not the terminal source session.
 
 ## Initial snapshot and requested recovery

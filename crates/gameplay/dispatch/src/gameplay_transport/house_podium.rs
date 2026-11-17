@@ -31,18 +31,36 @@ pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<Offere
 /// One decoded command of capability 150.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Request {
+    Preview(wire::preview::Request),
     Query([u8; 16]),
     Set(wire::SetRequest),
+    /// Command 175 from a session that selected capability 489.
+    FlaggedSet(wire::SetRequest, wire::DisplayFlags),
     Projection([u8; 16]),
 }
 
 impl Request {
     pub fn decode(command_type: u32, payload: &[u8]) -> Option<Self> {
         match command_type {
+            wire::preview::COMMAND_PREVIEW => {
+                wire::preview::Request::decode(payload).map(Self::Preview)
+            }
             wire::COMMAND_QUERY => wire::decode_item(payload).map(Self::Query),
             wire::COMMAND_SET => wire::SetRequest::decode(payload).map(Self::Set),
             wire::COMMAND_PROJECTION => wire::decode_item(payload).map(Self::Projection),
             _ => None,
+        }
+    }
+
+    /// [`Self::decode`] for a session that selected capability 489 when `flagged`: command
+    /// 175 then requires the three visibility flags.
+    pub fn decode_selected(command_type: u32, payload: &[u8], flagged: bool) -> Option<Self> {
+        if command_type != wire::COMMAND_SET || !flagged {
+            return Self::decode(command_type, payload);
+        }
+        match wire::SetRequest::decode_selected(true, payload)? {
+            (set, Some(flags)) => Some(Self::FlaggedSet(set, flags)),
+            (_, None) => None,
         }
     }
 }
@@ -99,6 +117,16 @@ impl AppearanceContent<String> for PodiumContentView {
         target: EarnedCosmetic<'_>,
     ) -> UnlockFact {
         self.cosmetics.earned_unlock(grant_key, provenance, target)
+    }
+    fn earned_unlock_for_sex(
+        &self,
+        grant_key: &str,
+        provenance: &str,
+        target: EarnedCosmetic<'_>,
+        sex: Sex,
+    ) -> UnlockFact {
+        self.cosmetics
+            .earned_unlock_for_sex(grant_key, provenance, target, sex)
     }
     fn outfit_addon_count(&self, outfit: &String) -> Option<u8> {
         self.cosmetics.outfit_addon_count(outfit)
@@ -161,6 +189,46 @@ pub(super) async fn execute(
     }
     let fence = admitted.item_fence?;
     let actor = admitted.runtime_actor?;
+    if let Request::Preview(query) = &request {
+        let runtime = owner.runtime.lock().await;
+        if !super::battle_instinct_status::actor_is_current(&runtime, admitted) {
+            return None;
+        }
+        drop(runtime);
+        let gameplay = owner.active_generation?.native_gameplay()?;
+        let artwork = match query.display_kind {
+            1 => gameplay.cosmetics().and_then(|cosmetics| {
+                Some(wire::preview::Artwork {
+                    object: false,
+                    direction: query.direction,
+                    looks: [
+                        cosmetics.look_type(&query.key, Sex::Male)?,
+                        cosmetics.look_type(&query.key, Sex::Female)?,
+                    ],
+                })
+            }),
+            2 => gameplay
+                .cosmetics()
+                .and_then(|cosmetics| cosmetics.mount_metadata(&query.key))
+                .map(|(look, _, _)| wire::preview::Artwork {
+                    object: false,
+                    direction: query.direction,
+                    looks: [look; 2],
+                }),
+            3 => gameplay
+                .policies()
+                .policies()
+                .iter()
+                .find(|policy| policy.definition_key == query.key)
+                .map(|policy| wire::preview::Artwork {
+                    object: policy.object_look_type.is_some(),
+                    direction: query.direction,
+                    looks: [policy.object_look_type.unwrap_or(policy.outfit_look_type); 2],
+                }),
+            _ => None,
+        };
+        return wire::preview::Artwork::encode(artwork.filter(|value| !value.looks.contains(&0)));
+    }
     let house = {
         let runtime = owner.runtime.lock().await;
         runtime
@@ -169,35 +237,54 @@ pub(super) async fn execute(
             .house
     };
     let house = HouseId::new(admitted.world_id, &house)?;
-    let item = match request {
-        Request::Query(item) | Request::Projection(item) => item,
-        Request::Set(set) => {
-            let gameplay = owner.active_generation?.native_gameplay()?;
-            let content = PodiumContentView {
-                cosmetics: gameplay.cosmetics()?.clone(),
-                rewards: gameplay.reward_table().clone(),
-            };
-            let request = HousePodiumSet {
-                item_instance_id: set.item,
-                expected_revision: set.expected_revision,
-                display_kind: set.display_kind,
-                display_key: set.key,
-                direction: set.direction,
-            };
-            let result = owner
-                .root
-                .set_house_podium(owner.holder, fence, house, request, content)
-                .await
-                .ok()?;
-            return Some(
-                match result {
-                    Ok(revision) => wire::SetResult::Accepted { revision },
-                    Err(error) => wire::SetResult::Refused(refusal(error)),
-                }
-                .encode(),
-            );
+    let flagged = admitted
+        .continuity
+        .selected_capabilities
+        .contains(wire::CAPABILITY_HOUSE_PODIUM_FLAGS_V1);
+    let (set, flags) = match request {
+        Request::Preview(_) => return None,
+        Request::Set(set) => (set, None),
+        Request::FlaggedSet(set, flags) if flagged => (set, Some(flags)),
+        Request::FlaggedSet(..) => return None,
+        Request::Query(item) | Request::Projection(item) => {
+            return project(owner, fence, house, item, flagged).await;
         }
     };
+    let gameplay = owner.active_generation?.native_gameplay()?;
+    let content = PodiumContentView {
+        cosmetics: gameplay.cosmetics()?.clone(),
+        rewards: gameplay.reward_table().clone(),
+    };
+    let request = HousePodiumSet {
+        item_instance_id: set.item,
+        expected_revision: set.expected_revision,
+        display_kind: set.display_kind,
+        display_key: set.key,
+        direction: set.direction,
+    };
+    let result = owner
+        .root
+        .set_house_podium_flagged(owner.holder, fence, house, request, flags, content)
+        .await
+        .ok()?;
+    Some(
+        match result {
+            Ok(revision) => wire::SetResult::Accepted { revision },
+            Err(error) => wire::SetResult::Refused(refusal(error)),
+        }
+        .encode(),
+    )
+}
+
+/// The committed display of `item` (commands 174 and 176); with capability 489 selected a
+/// shown display carries its visibility flags.
+async fn project(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    house: HouseId,
+    item: [u8; 16],
+    flagged: bool,
+) -> Option<Vec<u8>> {
     let displays = owner
         .root
         .load_house_podiums(owner.holder, fence, house)
@@ -207,12 +294,21 @@ pub(super) async fn execute(
     let projection = displays
         .into_iter()
         .find(|display| display.item_instance_id == item)
-        .map(|display| wire::Projection {
-            podium_kind: display.podium_kind,
-            display_kind: display.display_kind,
-            direction: display.direction,
-            revision: display.revision,
-            key: display.display_key,
+        .map(|display| {
+            (
+                wire::Projection {
+                    podium_kind: display.podium_kind,
+                    display_kind: display.display_kind,
+                    direction: display.direction,
+                    revision: display.revision,
+                    key: display.display_key,
+                },
+                display.flags,
+            )
         });
-    wire::Projection::encode(projection.as_ref())
+    if flagged {
+        wire::Projection::encode_flagged(projection.as_ref().map(|(view, flags)| (view, *flags)))
+    } else {
+        wire::Projection::encode(projection.as_ref().map(|(view, _)| view))
+    }
 }

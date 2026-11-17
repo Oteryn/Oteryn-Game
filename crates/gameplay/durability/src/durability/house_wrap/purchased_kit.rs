@@ -13,10 +13,14 @@ pub(crate) async fn record_purchased_kit(
     source_row: usize,
     target: &TypedDefinitionRef,
 ) -> Result<(), DurabilityError> {
-    let source=wrapped_buy(source_row).ok_or(DurabilityError::InvalidStoredState)?;
-    if target.family!="Item" || target.production_key!=format!("oteryn:item.tibia.i{}",source.item_id)
-        || target.revision_ref!="definition-r1" {return Err(DurabilityError::InvalidStoredState)}
-    let row=i32::try_from(source_row).map_err(|_|DurabilityError::InvalidStoredState)?;
+    let source = wrapped_buy(source_row).ok_or(DurabilityError::InvalidStoredState)?;
+    if target.family != "Item"
+        || target.production_key != format!("oteryn:item.tibia.i{}", source.item_id)
+        || target.revision_ref != "definition-r1"
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let row = i32::try_from(source_row).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_house_furniture_kit_origins(item_instance_id,mint_transaction_id,source_row,target_key,target_revision) \
         VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5)")
         .bind(item.as_slice()).bind(transaction.as_slice()).bind(row)
@@ -25,19 +29,22 @@ pub(crate) async fn record_purchased_kit(
 }
 
 impl DurabilityRoot {
-    /// Read immutable origin metadata for content-pin validation. The existing wrap writer
+    /// Read current unwrap metadata for content-pin validation. The existing wrap writer
     /// still rechecks current custody, House authority, ACL and this target under its locks.
     pub async fn house_furniture_kit_target(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         item: [u8; 16],
     ) -> Result<Option<TypedDefinitionRef>, DurabilityError> {
-        let recovery=authority.record_for(self).map_err(|_|DurabilityError::InvalidStoredState)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
-            let target:Option<(String,String)>=sqlx::query_as("SELECT target_key,target_revision \
-                FROM game_house_furniture_kit_origins WHERE item_instance_id=encode($1,'hex')::uuid")
+            // Crystal src/game/game.cpp:4897-4913 overwrites unWrapId with the
+            // current form on every wrap, even after rotation or a player trade.
+            let target:Option<(String,String)>=sqlx::query_as("WITH latest AS (SELECT before_item,after_key FROM game_house_furniture_wrap_evidence WHERE item_instance_id=encode($1,'hex')::uuid AND action=1 ORDER BY (before_item->>'state_revision')::numeric DESC LIMIT 1), candidates AS (SELECT prior.before_item->>'definition_production_key' AS target_key,prior.before_item->>'definition_revision_ref' AS target_revision,0 AS priority FROM latest prior JOIN game_item_instances i ON i.item_instance_id=encode($1,'hex')::uuid AND i.definition_production_key=prior.after_key WHERE i.lifecycle=1 AND i.quantity=1 AND i.definition_family='Item' UNION ALL SELECT target_key,target_revision,1 FROM game_house_furniture_kit_origins WHERE item_instance_id=encode($1,'hex')::uuid) SELECT target_key,target_revision FROM candidates ORDER BY priority LIMIT 1")
                 .bind(item.as_slice()).fetch_optional(&mut *tx).await?;
             commit_semantic_transaction(tx,deadline).await?;
             Ok(target.map(|(production_key,revision_ref)| TypedDefinitionRef {family:"Item".into(),production_key,revision_ref}))

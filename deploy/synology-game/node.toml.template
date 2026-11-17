@@ -1,5 +1,13 @@
 # Mode 0600, owned by the runner user. Replace every <PLACEHOLDER>; no secrets inline.
 # The deploy workflow rewrites authorization_file on every deploy.
+# Local ANL custody, independent of Platform availability. The service user owns this directory.
+[audit_collector]
+enabled = true
+directory = "<BASE>/node/audit"
+batch_size = 32
+interval_ms = 1000
+rotation_bytes = 16777216
+rotation_count = 4
 [listener]
 address = "<LISTEN_ADDRESS>:<GAME_PORT>"
 entry_deadline_ms = 20000
@@ -61,17 +69,36 @@ client_certificate_file = "<BASE>/node/secrets/projection.crt"
 client_key_file = "<BASE>/node/secrets/projection.key"
 source_authority = "<PROJECTION_SOURCE_AUTHORITY>"
 epoch_fence_file = "<BASE>/projection/epoch-fence"
-# Character Authority command consumer (contract oteryn-game-character-authority-commands-v1). Off:
-# the consumer runs only when this table is present, so it stays commented until the §14 step 4
-# enablement (Oteryn/Oteryn-Platform docs/operations/CHARACTER_AUTHORITY_COMMANDS_ENABLEMENT.md):
-# Platform first enables the commands for this certificate's subject, then this table is uncommented
-# and the node restarted. The certificate is its own identity (CN=<CHARACTER_COMMANDS_IDENTITY>),
-# distinct from the evidence, runtime-status and projection ones above; the files are 0600, owner the
-# runner user. source_authority must equal Platform CHARACTER_AUTHORITY_COMMAND_SOURCE_AUTHORITY.
-# [platform.character_commands]
-# client_certificate_file = "<BASE>/node/secrets/character-commands.crt"
-# client_key_file = "<BASE>/node/secrets/character-commands.key"
-# source_authority = "oteryn:character-authority:primary"
+# Character command receipts keep this dedicated identity. Owner instruction
+# for GPROD-BAZAAR enables the producer; provision both purposes on Platform.
+[platform.character_commands]
+client_certificate_file = "<BASE>/node/secrets/character-commands.crt"
+client_key_file = "<BASE>/node/secrets/character-commands.key"
+source_authority = "oteryn:character-authority:primary"
+[platform.bazaar]
+# Dedicated Bazaar certificate/key, never the Character receipt/evidence pair.
+# Explicit false pauses new decisions while retained custody/receipts reconcile.
+enabled = true
+client_certificate_file = "<BASE>/node/secrets/bazaar.crt"
+client_key_file = "<BASE>/node/secrets/bazaar.key"
+source_authority = "oteryn:game:primary"
+# PUBPROJ owner 2026-11-07: install the purpose-separated identity before enabling.
+# Reuses the Platform endpoint and trust roots; never shares the LCFA epoch fence.
+[platform.public_projections]
+enabled = false
+character_online_sessions_enabled = false
+world_daily_kills_enabled = false
+source_authority = "oteryn:game:primary"
+client_certificate_file = "<BASE>/node/secrets/public-projections.crt"
+client_key_file = "<BASE>/node/secrets/public-projections.key"
+epoch_fence_file = "<BASE>/public-projections/epoch-fence"
+# T94 owner 2026-11-06: enabled by default, with a dedicated mTLS identity.
+[platform.world_event_outcomes]
+enabled = true
+source_authority = "oteryn:game:primary"
+client_certificate_file = "<BASE>/node/secrets/t94-client.crt"
+client_key_file = "<BASE>/node/secrets/t94-client.key"
+epoch_fence_file = "<BASE>/t94/epoch-fence"
 [launch]
 authorization_file = "<BASE>/state/launch-initial.json"
 s2_authorization_file = "<BASE>/state/s2-fresh-store.json"

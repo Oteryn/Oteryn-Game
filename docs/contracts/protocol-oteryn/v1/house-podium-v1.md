@@ -44,3 +44,24 @@ tenacity), display kind, direction, revision (`u64`, big endian), key length and
 
 An unknown command payload ends the connection; a missing House session or an unavailable
 store ends the command without a reply.
+
+## Visibility flags (capability 489)
+
+Capability 489 `HOUSE_PODIUM_FLAGS_V1` requires 150. It follows Crystal's
+podium flags `PODIUM_SHOW_PLATFORM`, `PODIUM_SHOW_OUTFIT` and
+`PODIUM_SHOW_MOUNT`. When a session selected it:
+
+- command 175 is the V1 request followed by `show_platform:u8, show_outfit:u8,
+  show_mount:u8`, each exactly 0 or 1; a request without them is rejected;
+- the replies to commands 174 and 176 for a shown display are the V1 projection
+  followed by the same three bytes; an empty podium stays `0`.
+
+The flags are stored with the direction in the display variant (no new
+storage). A set from a session without 489 keeps the display's stored flags;
+a podium's first display set without flags takes Crystal's new-podium default,
+platform shown and outfit and mount hidden. A display stored before capability
+489 has no flags and reads as all three shown. Flags are presentation only:
+they grant no ownership and do not change the content or ownership checks.
+Sessions without 489 send and receive byte-identical V1 payloads. The command
+175 registry bound is 190 bytes: a V1 request is at most 187 bytes and the
+flags add 3.

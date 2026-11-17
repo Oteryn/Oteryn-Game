@@ -1,0 +1,15 @@
+{
+  "reference_scope": "OTS_HYPOTHESIS_ONLY",
+  "repository": "https://github.com/zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "path": "data-global/monster/quests/rotten_blood_quest/mushroom.lua",
+  "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/rotten_blood_quest/mushroom.lua",
+  "sha256": "450850113ccaef42caf0e86d517b25769fd1e81271e6924901e459042843e9a4",
+  "checked_facts": [
+    {
+      "lines": "38-55",
+      "fact": "Source Mushroom is attackable and hostile, with targetDistance 1; no passive-creature exception is needed for its normal native AI registration."
+    }
+  ],
+  "remaining": "Native fuse/explosion consumption is still required before qualifying the complete source room."
+}

@@ -76,6 +76,45 @@ fn intent(npc_actor: EntityRef, text: &str) -> NpcTalkIntent {
 }
 
 #[test]
+fn native_focus_without_literal_greeting_is_wire_encodable() {
+    let (runtime, actor, session, npc) = fixture(2);
+    let conversations = NpcConversations::default();
+    let chat = ChatRuntime::default();
+    chat.admit(session, "Aela", at(BASE));
+    chat.set_npc_service(session);
+    chat.install_npc_talk(Arc::new(NpcTalkBook::default().with(
+        "oteryn:npc.alice",
+        NpcTalkEntry::new("Alice", Some("Ask me about a task.")).with_source_greeting(""),
+    )));
+    let greeting = conversations.talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "hi"),
+        at(BASE),
+    );
+    assert_eq!(greeting.disposition, NpcIntentDisposition::Ok);
+    let focus = greeting.conversation.expect("focus is still opened");
+    assert_eq!(focus.open, Some((npc, NpcConversationState::Open)));
+    oteryn_protocol_oteryn::npc_service::encode_npc_conversation(&focus)
+        .expect("a focus-only native greeting must be valid on the real wire");
+    assert!(focus.lines.is_empty(), "no source greeting is invented");
+    let next = conversations.talk(
+        &chat,
+        &runtime,
+        actor,
+        session,
+        &intent(npc, "job"),
+        at(BASE + 1),
+    );
+    assert_eq!(next.disposition, NpcIntentDisposition::Ok);
+    let answer = next.conversation.expect("conversation remains usable");
+    assert_eq!(answer.lines, ["Ask me about a task."]);
+    oteryn_protocol_oteryn::npc_service::encode_npc_conversation(&answer).expect("normal reply");
+}
+
+#[test]
 fn a_conversation_opens_answers_and_closes() {
     let (runtime, actor, session, npc) = fixture(2);
     let conversations = NpcConversations::default();
@@ -658,6 +697,7 @@ fn a_trade_intent_names_the_projected_offer_of_the_server_catalogue() {
     assert_eq!(
         offer,
         NpcTradeOffer {
+            sub_type: None,
             npc_key: "oteryn:npc.alice".to_owned(),
             catalogue_revision: revision,
             offer_index: 1,
@@ -731,13 +771,13 @@ fn a_mismatched_trade_intent_is_stale_and_re_projects_the_window() {
 }
 
 #[test]
-fn a_charged_fluid_or_foreign_currency_offer_is_rejected() {
+fn subtype_is_preserved_for_the_item_owner_and_foreign_currency_is_rejected() {
     use ProjectV2ServiceOfferDirection::SellToPlayer;
     let mut fluid = offer(SWORD, "definition-r1", SellToPlayer, 500, None);
     fluid.sub_type = Some(1);
     let mut foreign = offer(SWORD, "definition-r1", SellToPlayer, 500, None);
     foreign.currency = Some(foreign.item.clone());
-    for odd in [fluid, foreign] {
+    for (odd, subtype) in [(fluid, Some(1)), (foreign, None)] {
         let (runtime, actor, session, npc, chat, conversations) = trading(vec![odd]);
         let revision = chat.npc_talk().expect("book").catalogue_revision();
         let intent = NpcTradeIntent {
@@ -747,12 +787,21 @@ fn a_charged_fluid_or_foreign_currency_offer_is_rejected() {
             expected_unit_price: 500,
             ..trade(npc, revision)
         };
-        let Err(refusal) =
-            conversations.trade_in(&chat, &runtime, actor, session, &intent, Some(&items()))
-        else {
-            panic!("refused");
-        };
-        assert_eq!(refusal.disposition, NpcIntentDisposition::Rejected);
+        let resolved =
+            conversations.trade_in(&chat, &runtime, actor, session, &intent, Some(&items()));
+        if let Some(subtype) = subtype {
+            let Ok(selected) = resolved else {
+                panic!("subtype must reach native Item policy validation");
+            };
+            assert_eq!(selected.sub_type, Some(subtype));
+            assert_eq!(selected.quantity, 1);
+            assert_eq!(selected.item_key, SWORD);
+        } else {
+            let Err(refusal) = resolved else {
+                panic!("foreign currency must remain refused");
+            };
+            assert_eq!(refusal.disposition, NpcIntentDisposition::Rejected);
+        }
     }
 }
 

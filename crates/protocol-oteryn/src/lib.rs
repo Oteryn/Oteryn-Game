@@ -13,17 +13,24 @@
 // Keep sorted by module name; insert in order, never append.
 pub mod account_achievements;
 pub mod achievement_notices;
+pub mod action_bar_cooldowns;
 pub mod activity_scope;
 pub mod actor_condition_snapshot_candidate;
 pub mod actor_spell;
+pub mod actor_spell_catalog;
 pub mod actor_spell_item_v2;
 pub mod actor_spell_v2;
+pub mod admission_queue;
 pub mod analyser;
+pub mod analyser_catalogue;
+pub mod analyser_party;
 pub mod animus_mastery;
 pub mod appearance;
 pub mod arena;
 pub mod atelier;
 pub mod attack;
+pub mod battle_instinct_status;
+pub mod battle_metadata;
 pub mod bed;
 pub mod bestiary;
 pub mod boss_difficulty;
@@ -31,7 +38,9 @@ pub mod boss_encounter;
 pub mod boss_rewards;
 pub mod bosstiary_slots;
 pub mod browse_field;
+pub mod bulletin;
 pub mod capability_tables;
+pub mod cast;
 pub mod channel_list;
 pub mod character_info;
 pub mod charm;
@@ -39,7 +48,11 @@ pub mod charm_progression;
 mod charm_wire;
 pub mod chat;
 pub mod coin_conversion;
+pub mod coin_market;
+pub mod coin_transfer;
 pub mod command_replay;
+pub mod condition_status;
+pub mod connection_trace;
 pub mod container_sort;
 pub mod container_tree;
 mod contract_registries;
@@ -52,25 +65,33 @@ pub mod cyclopedia_tracker;
 pub mod daily_boost;
 pub mod daily_reward;
 pub mod damage_element;
+pub mod death_protection;
 #[cfg(test)]
 mod decoder_fuzz_support;
 pub mod depot;
 pub mod depot_search;
+pub mod entity_names;
 pub mod exiva;
 pub mod fishing;
+pub mod forge_preview;
+pub mod gem_presentation;
 pub mod guild;
 pub mod guild_bank;
 pub mod guild_war;
 pub mod hazard;
 pub mod highscores;
+pub mod highscores_loyalty;
 pub mod hireling;
 pub mod hotkey_equip;
 pub mod house;
 pub mod house_move_out;
 pub mod house_podium;
+pub mod house_rotation;
+pub mod house_sale;
 pub mod house_transfer;
 pub mod house_wrap;
 pub mod imbuement;
+pub mod imbuement_details;
 pub mod inspection;
 pub mod item_forge;
 pub mod item_look;
@@ -80,13 +101,20 @@ pub mod loop_training;
 pub mod loyalty_skills;
 pub mod mail;
 pub mod market;
+pub mod market_details;
+pub mod mechanics_status;
+pub mod native_map_cues;
 pub mod npc_service;
 pub mod npc_shop;
 pub mod party;
+pub mod party_effects;
 pub mod party_skull;
+pub mod personal_map_marks;
 pub mod player_report;
 pub mod player_trade;
 pub mod player_typing;
+pub mod potion_durations;
+pub mod premium_overview;
 pub mod presentation;
 pub mod prey;
 pub mod pvp_expert;
@@ -96,12 +124,20 @@ pub mod raid_schedule;
 pub mod recovery;
 pub mod refusal_detail;
 mod registered_capabilities;
+pub mod rest_status;
+pub mod sanction_record;
+pub mod server_modal;
 pub mod server_save_countdown;
+pub mod skill_display;
+pub mod skill_progress;
 pub mod spectate;
 pub mod spell_presentation_candidate;
+pub mod spellbook_details;
 pub mod staff;
+pub mod staff_tools;
 pub mod stash;
 pub mod store;
+pub mod support_intake;
 pub mod target_move;
 pub mod task_board;
 pub mod team_finder;
@@ -114,7 +150,9 @@ pub mod tutorial_notices;
 pub mod vip;
 pub mod vip_presence;
 pub mod weapon_proficiency;
+pub mod weapon_proficiency_state;
 pub mod wheel;
+pub mod wheel_presentation;
 pub mod world_clock;
 pub mod world_event;
 pub mod world_interaction;
@@ -157,6 +195,10 @@ pub enum FoundationProtocolError {
     /// key the catalogue lacks): an internal integrity fault. The client learns only that its
     /// account data needs support; the diagnostic stays in the operator event.
     AccountDataIntegrity = 1050,
+    /// The server admitted or resumed the session but could not prepare or send its join; it
+    /// writes this once at the admitted generation, then closes. The client may retry on a new
+    /// connection (FND-04C §4.1).
+    SessionJoinUnavailable = 1051,
     /// HIGHSCORES0 §6 (HS-WIRE-1): the query names a category this server does not offer.
     NotSupported = 1200,
     /// HIGHSCORES0 §6 (HS-WIRE-1): the echoed snapshot token is no longer retained; the client
@@ -212,6 +254,7 @@ impl FoundationProtocolError {
             | Self::FrameTooLarge
             | Self::MalformedEnvelope
             | Self::StaleConnectionGeneration
+            | Self::SessionJoinUnavailable
             | Self::AdmissionGrantMalformed
             | Self::AdmissionGrantAuthenticationFailed
             | Self::AdmissionGrantBindingMismatch
@@ -276,6 +319,7 @@ impl Display for FoundationProtocolError {
             Self::BootstrapLimitExceeded => "bootstrap payload exceeds hard limit",
             Self::InvalidCapabilitySet => "invalid capability set",
             Self::AccountDataIntegrity => "account data needs support",
+            Self::SessionJoinUnavailable => "session join is temporarily unavailable",
             Self::NotSupported => "query is not supported",
             Self::SnapshotExpired => "snapshot is no longer retained",
             Self::AdmissionGrantMalformed => "admission grant is malformed",
@@ -492,7 +536,7 @@ pub const MAX_BOOTSTRAP_PAYLOAD_BYTES: usize = 65_536;
 pub const MAX_ADMISSION_MATERIAL_BYTES: usize = 16_384;
 pub const MAX_RECONNECT_MATERIAL_BYTES: usize = 16_384;
 pub const MAX_CLIENT_BUILD_ID_BYTES: usize = 128;
-pub const MAX_CAPABILITY_COUNT: usize = 128;
+pub const MAX_CAPABILITY_COUNT: usize = 256;
 pub const MAX_ORDINARY_REPEATED_ENTRIES: usize = 4_096;
 pub const MAX_COMMAND_EXPECTED_REVISIONS: usize = 64;
 pub const MAX_COMMAND_PAYLOAD_BYTES: usize = 65_536;
@@ -647,7 +691,7 @@ struct BootstrapIngressView<'a> {
     last_applied_sequence: u64,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ClientBootstrapView<'a> {
     pub protocol_major: u32,
     pub transport_profile: u32,
@@ -656,6 +700,21 @@ pub struct ClientBootstrapView<'a> {
     pub admission_material: &'a [u8],
     pub client_build_id: &'a str,
     pub supported_capabilities: &'a [u32],
+}
+
+impl std::fmt::Debug for ClientBootstrapView<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ClientBootstrapView")
+            .field("protocol_major", &self.protocol_major)
+            .field("transport_profile", &self.transport_profile)
+            .field("schema_revision", &self.schema_revision)
+            .field("character_id", &self.character_id)
+            .field("admission_material", &"[REDACTED]")
+            .field("client_build_id", &self.client_build_id)
+            .field("supported_capabilities", &self.supported_capabilities)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -707,13 +766,26 @@ pub struct ServerResumeAcceptedValue<'a> {
 /// `protocol_major`/`transport_profile` are not fields here: `encode_client_bootstrap` always
 /// sends this crate's own pinned `PROTOCOL_MAJOR_V1`/`TRANSPORT_PROFILE_TCP_TLS13_V1`, so a
 /// caller cannot send anything else.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct ClientBootstrapValue<'a> {
     pub schema_revision: u32,
     pub character_id: CharacterId,
     pub admission_material: &'a [u8],
     pub client_build_id: &'a str,
     pub supported_capabilities: &'a [u32],
+}
+
+impl std::fmt::Debug for ClientBootstrapValue<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ClientBootstrapValue")
+            .field("schema_revision", &self.schema_revision)
+            .field("character_id", &self.character_id)
+            .field("admission_material", &"[REDACTED]")
+            .field("client_build_id", &self.client_build_id)
+            .field("supported_capabilities", &self.supported_capabilities)
+            .finish()
+    }
 }
 
 /// Encodes one framed-message-ready `ClientBootstrap` envelope (FND-02 §9): the wire format
@@ -812,6 +884,20 @@ fn validate_capability_closure(selected: &[u32]) -> Result<(), FoundationProtoco
 pub fn encode_server_accepted(
     value: &ServerAcceptedValue<'_>,
 ) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_server_accepted_inner(value, None)
+}
+
+pub fn encode_server_accepted_with_trace(
+    value: &ServerAcceptedValue<'_>,
+    connection_trace: &[u8; 16],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_server_accepted_inner(value, Some(connection_trace))
+}
+
+fn encode_server_accepted_inner(
+    value: &ServerAcceptedValue<'_>,
+    connection_trace: Option<&[u8; 16]>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
     validate_acceptance_value(
         value.connection_generation,
         value.next_command_id,
@@ -831,6 +917,12 @@ pub fn encode_server_accepted(
     for &capability in value.selected_capabilities {
         push_scalar(&mut payload, 10, u64::from(capability));
     }
+    encode_connection_trace(
+        &mut payload,
+        11,
+        value.selected_capabilities,
+        connection_trace,
+    )?;
     let mut output = vec![8, 2];
     push_bytes(&mut output, 4, &payload);
     Ok(output)
@@ -839,6 +931,21 @@ pub fn encode_server_accepted(
 #[allow(dead_code)]
 pub fn encode_server_resume_accepted(
     value: &ServerResumeAcceptedValue<'_>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_server_resume_accepted_inner(value, None)
+}
+
+#[allow(dead_code)]
+pub fn encode_server_resume_accepted_with_trace(
+    value: &ServerResumeAcceptedValue<'_>,
+    connection_trace: &[u8; 16],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_server_resume_accepted_inner(value, Some(connection_trace))
+}
+
+fn encode_server_resume_accepted_inner(
+    value: &ServerResumeAcceptedValue<'_>,
+    connection_trace: Option<&[u8; 16]>,
 ) -> Result<Vec<u8>, FoundationProtocolError> {
     validate_acceptance_value(
         value.connection_generation,
@@ -855,6 +962,12 @@ pub fn encode_server_resume_accepted(
     for &capability in value.selected_capabilities {
         push_scalar(&mut payload, 6, u64::from(capability));
     }
+    encode_connection_trace(
+        &mut payload,
+        7,
+        value.selected_capabilities,
+        connection_trace,
+    )?;
     let mut output = vec![8, 4];
     push_bytes(&mut output, 4, &payload);
     Ok(output)
@@ -1024,6 +1137,24 @@ pub fn encode_single_chunk_snapshot(
     target_server_sequence: u64,
     domains: &[DomainSnapshot<'_>],
 ) -> Result<[Vec<u8>; 3], FoundationProtocolError> {
+    encode_snapshot(
+        connection_generation,
+        snapshot_id,
+        target_server_sequence,
+        domains,
+    )?
+    .try_into()
+    .map_err(|_| FoundationProtocolError::PayloadLimitExceeded)
+}
+
+/// A bounded snapshot transfer (FND-02 §16), sharing the admission producer with replacement
+/// map views that can span multiple chunks. The body is encoded once and split at byte offsets.
+pub fn encode_snapshot(
+    connection_generation: u64,
+    snapshot_id: u64,
+    target_server_sequence: u64,
+    domains: &[DomainSnapshot<'_>],
+) -> Result<Vec<Vec<u8>>, FoundationProtocolError> {
     if connection_generation == 0 || snapshot_id == 0 || domains.is_empty() {
         return Err(FoundationProtocolError::MalformedEnvelope);
     }
@@ -1041,36 +1172,58 @@ pub fn encode_single_chunk_snapshot(
         {
             return Err(FoundationProtocolError::MalformedEnvelope);
         }
+        if domain.payload.len() as u64 > MAX_SNAPSHOT_ASSEMBLED_BYTES {
+            return Err(FoundationProtocolError::PayloadLimitExceeded);
+        }
         let mut entry = Vec::with_capacity(domain.payload.len() + 24);
         push_scalar(&mut entry, 1, u64::from(domain.domain_id));
         push_scalar(&mut entry, 2, domain.revision);
         push_scalar(&mut entry, 3, u64::from(domain.snapshot_type));
         push_bytes(&mut entry, 4, domain.payload);
         push_bytes(&mut body, 1, &entry);
+        if body.len() as u64 > MAX_SNAPSHOT_ASSEMBLED_BYTES {
+            return Err(FoundationProtocolError::PayloadLimitExceeded);
+        }
     }
-    if body.len() > MAX_SNAPSHOT_CHUNK_BYTES {
+    let chunk_count = body.len().div_ceil(MAX_SNAPSHOT_CHUNK_BYTES);
+    if chunk_count > MAX_SNAPSHOT_CHUNKS as usize {
         return Err(FoundationProtocolError::PayloadLimitExceeded);
     }
     let mut begin = Vec::new();
     push_scalar(&mut begin, 1, snapshot_id);
-    push_scalar(&mut begin, 2, 1);
+    push_scalar(&mut begin, 2, chunk_count as u64);
     push_scalar(&mut begin, 3, body.len() as u64);
     push_scalar(&mut begin, 4, target_server_sequence);
-    let mut chunk = Vec::with_capacity(body.len() + 16);
-    push_scalar(&mut chunk, 1, snapshot_id);
-    push_bytes(&mut chunk, 3, &body);
-    let mut commit = Vec::new();
-    push_scalar(&mut commit, 1, snapshot_id);
-    Ok([
-        server_frame(MessageType::SnapshotBegin, connection_generation, 0, &begin),
-        server_frame(MessageType::SnapshotChunk, connection_generation, 0, &chunk),
-        server_frame(
-            MessageType::SnapshotCommit,
+    let mut frames = Vec::with_capacity(chunk_count + 2);
+    frames.push(server_frame(
+        MessageType::SnapshotBegin,
+        connection_generation,
+        0,
+        &begin,
+    ));
+    for (index, data) in body.chunks(MAX_SNAPSHOT_CHUNK_BYTES).enumerate() {
+        let mut chunk = Vec::with_capacity(data.len() + 24);
+        push_scalar(&mut chunk, 1, snapshot_id);
+        if index != 0 {
+            push_scalar(&mut chunk, 2, index as u64);
+        }
+        push_bytes(&mut chunk, 3, data);
+        frames.push(server_frame(
+            MessageType::SnapshotChunk,
             connection_generation,
             0,
-            &commit,
-        ),
-    ])
+            &chunk,
+        ));
+    }
+    let mut commit = Vec::new();
+    push_scalar(&mut commit, 1, snapshot_id);
+    frames.push(server_frame(
+        MessageType::SnapshotCommit,
+        connection_generation,
+        0,
+        &commit,
+    ));
+    Ok(frames)
 }
 
 pub fn encode_protocol_error(
@@ -1078,6 +1231,15 @@ pub fn encode_protocol_error(
     generation: u64,
 ) -> Result<Vec<u8>, FoundationProtocolError> {
     encode_command_protocol_error(error, generation, 0, 0)
+}
+
+/// Encodes a capability-gated `ProtocolError` carrying its diagnostic connection trace.
+pub fn encode_protocol_error_with_trace(
+    error: FoundationProtocolError,
+    generation: u64,
+    connection_trace: &[u8; 16],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_command_protocol_error_inner(error, generation, 0, 0, Some(connection_trace))
 }
 
 /// `ProtocolError` with its optional command correlation (zero means not applicable): the
@@ -1088,11 +1250,33 @@ pub fn encode_command_protocol_error(
     related_command_id: u64,
     expected_command_id: u64,
 ) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_command_protocol_error_inner(
+        error,
+        generation,
+        related_command_id,
+        expected_command_id,
+        None,
+    )
+}
+
+fn encode_command_protocol_error_inner(
+    error: FoundationProtocolError,
+    generation: u64,
+    related_command_id: u64,
+    expected_command_id: u64,
+    connection_trace: Option<&[u8; 16]>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
     let mut payload = Vec::new();
     push_scalar(&mut payload, 1, u64::from(error.code()));
     push_scalar(&mut payload, 2, u64::from(error.disposition() as u32));
     push_scalar(&mut payload, 3, related_command_id);
     push_scalar(&mut payload, 4, expected_command_id);
+    if let Some(trace) = connection_trace {
+        if !connection_trace::valid(trace) {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        push_bytes(&mut payload, 6, trace);
+    }
     let mut output = vec![8, 14];
     push_scalar(&mut output, 2, generation);
     push_bytes(&mut output, 4, &payload);
@@ -1117,6 +1301,24 @@ pub fn encode_client_command(
     connection_generation: u64,
     value: &ClientCommandValue<'_>,
 ) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_client_command_with_session(connection_generation, value, None)
+}
+
+/// Binds a command to the current GameSession across same-socket activity barriers.
+pub fn encode_client_command_for_session(
+    connection_generation: u64,
+    value: &ClientCommandValue<'_>,
+    game_session_id: &[u8; 16],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    decode_uuid_v7(game_session_id)?;
+    encode_client_command_with_session(connection_generation, value, Some(game_session_id))
+}
+
+fn encode_client_command_with_session(
+    connection_generation: u64,
+    value: &ClientCommandValue<'_>,
+    game_session_id: Option<&[u8; 16]>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
     if connection_generation == 0 || value.command_id == 0 || value.command_type == 0 {
         return Err(FoundationProtocolError::MalformedEnvelope);
     }
@@ -1127,6 +1329,9 @@ pub fn encode_client_command(
     push_scalar(&mut body, 1, value.command_id);
     push_scalar(&mut body, 2, u64::from(value.command_type));
     push_bytes(&mut body, 4, value.payload);
+    if let Some(session) = game_session_id {
+        push_bytes(&mut body, 16, session);
+    }
     let mut output = Vec::with_capacity(body.len() + 16);
     push_scalar(&mut output, 1, MessageType::ClientCommand as u64);
     push_scalar(&mut output, 2, connection_generation);
@@ -1184,6 +1389,7 @@ pub struct ProtocolErrorView {
     pub related_command_id: u64,
     pub expected_command_id: u64,
     pub expected_server_sequence: u64,
+    pub connection_trace: Option<[u8; 16]>,
 }
 
 /// Decodes one `ProtocolError` message payload. A zero or absent `error_code`, or an absent or
@@ -1191,6 +1397,7 @@ pub struct ProtocolErrorView {
 pub fn decode_protocol_error(payload: &[u8]) -> Result<ProtocolErrorView, FoundationProtocolError> {
     let mut cursor = 0usize;
     let mut fields = [None; 5];
+    let mut connection_trace = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -1199,6 +1406,7 @@ pub fn decode_protocol_error(payload: &[u8]) -> Result<ProtocolErrorView, Founda
             1..=5 => {
                 read_singular_varint(payload, &mut cursor, wire, &mut fields[field as usize - 1])?
             }
+            6 => read_connection_trace(payload, &mut cursor, wire, &mut connection_trace)?,
             _ => skip_field(payload, &mut cursor, wire)?,
         }
     }
@@ -1225,6 +1433,7 @@ pub fn decode_protocol_error(payload: &[u8]) -> Result<ProtocolErrorView, Founda
         related_command_id: related.unwrap_or(0),
         expected_command_id: expected_command.unwrap_or(0),
         expected_server_sequence: expected_sequence.unwrap_or(0),
+        connection_trace,
     })
 }
 
@@ -1359,6 +1568,48 @@ pub struct ServerAcceptedFields {
     pub next_command_id: u64,
     pub schema_revision: u32,
     pub selected_capabilities: Vec<u32>,
+    pub connection_trace: Option<[u8; 16]>,
+}
+
+fn encode_connection_trace(
+    payload: &mut Vec<u8>,
+    field: u32,
+    selected_capabilities: &[u32],
+    trace: Option<&[u8; 16]>,
+) -> Result<(), FoundationProtocolError> {
+    if let Some(trace) = trace {
+        if !selected_capabilities.contains(&connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
+            || !connection_trace::valid(trace)
+        {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        push_bytes(payload, field, trace);
+    }
+    Ok(())
+}
+
+fn read_connection_trace(
+    payload: &[u8],
+    cursor: &mut usize,
+    wire: u8,
+    trace: &mut Option<[u8; 16]>,
+) -> Result<(), FoundationProtocolError> {
+    if wire != 2 || trace.is_some() {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let bytes = bounded_length_delimited(
+        payload,
+        cursor,
+        16,
+        FoundationProtocolError::MalformedEnvelope,
+    )?;
+    if !connection_trace::valid(bytes) {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let mut value = [0; 16];
+    value.copy_from_slice(bytes);
+    *trace = Some(value);
+    Ok(())
 }
 
 /// Decodes one `ServerAccepted` message payload — a `WireEnvelopeView::payload()` whose
@@ -1376,6 +1627,7 @@ pub fn decode_server_accepted(
     let (mut generation, mut sequence, mut next_command_id) = (None, None, None);
     let mut schema_revision = None;
     let mut capabilities = Vec::new();
+    let mut connection_trace = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -1430,8 +1682,14 @@ pub fn decode_server_accepted(
                     );
                 }
             }
+            11 => read_connection_trace(payload, &mut cursor, wire, &mut connection_trace)?,
             _ => skip_field(payload, &mut cursor, wire)?,
         }
+    }
+    if connection_trace.is_some()
+        && !capabilities.contains(&connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
+    {
+        return Err(FoundationProtocolError::MalformedEnvelope);
     }
     Ok(ServerAcceptedFields {
         game_session_id: session.ok_or(FoundationProtocolError::InvalidWireIdentifier)?,
@@ -1445,6 +1703,7 @@ pub fn decode_server_accepted(
         )
         .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
         selected_capabilities: capabilities,
+        connection_trace,
     })
 }
 
@@ -1693,6 +1952,7 @@ impl<'a> WireEnvelopeView<'a> {
         {
             return Err(FoundationProtocolError::StaleConnectionGeneration);
         }
+        self.client_command_session_id()?;
         let input = self.payload;
         let mut cursor = 0usize;
         let (mut command_id, mut command_type, mut payload) = (None, None, None);
@@ -1726,6 +1986,36 @@ impl<'a> WireEnvelopeView<'a> {
             }),
             _ => Err(FoundationProtocolError::MalformedEnvelope),
         }
+    }
+
+    /// Optional current GameSession binding (ClientCommand field16).
+    pub fn client_command_session_id(&self) -> Result<Option<&'a [u8]>, FoundationProtocolError> {
+        if self.message_type != MessageType::ClientCommand {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        let mut cursor = 0;
+        let mut session = None;
+        while cursor < self.payload.len() {
+            let key = read_varint(self.payload, &mut cursor)?;
+            let field = decode_field_number(key)?;
+            let wire = (key & 7) as u8;
+            if field == 16 {
+                read_singular_bytes(
+                    self.payload,
+                    &mut cursor,
+                    wire,
+                    &mut session,
+                    16,
+                    FoundationProtocolError::MalformedEnvelope,
+                )?;
+            } else {
+                skip_field(self.payload, &mut cursor, wire)?;
+            }
+        }
+        if let Some(id) = session {
+            decode_uuid_v7(id).map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
+        }
+        Ok(session)
     }
 
     pub fn client_bootstrap(&self) -> Result<ClientBootstrapView<'_>, FoundationProtocolError> {
@@ -2305,6 +2595,7 @@ fn validate_server_acceptance_ingress(
         transport_field,
         schema_field,
         capabilities_field,
+        trace_field,
     ) = match message_type {
         MessageType::ServerAccepted => (
             SERVER_ACCEPTED_IDENTITY_FIELDS,
@@ -2315,6 +2606,7 @@ fn validate_server_acceptance_ingress(
             Some(8u32),
             9u32,
             10u32,
+            11u32,
         ),
         MessageType::ServerResumeAccepted => (
             SERVER_RESUME_ACCEPTED_IDENTITY_FIELDS,
@@ -2325,6 +2617,7 @@ fn validate_server_acceptance_ingress(
             None,
             5u32,
             6u32,
+            7u32,
         ),
         _ => return Ok(()),
     };
@@ -2339,6 +2632,7 @@ fn validate_server_acceptance_ingress(
     let mut capability_count = 0usize;
     let mut previous_capability = None;
     let mut selected_capabilities = Vec::new();
+    let mut connection_trace = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -2379,6 +2673,8 @@ fn validate_server_acceptance_ingress(
                 &mut previous_capability,
                 &mut selected_capabilities,
             )?;
+        } else if field == trace_field {
+            read_connection_trace(payload, &mut cursor, wire, &mut connection_trace)?;
         } else {
             skip_field(payload, &mut cursor, wire)?;
         }
@@ -2404,7 +2700,13 @@ fn validate_server_acceptance_ingress(
     {
         return Err(FoundationProtocolError::TransportProfileMismatch);
     }
-    validate_capability_closure(&selected_capabilities)
+    validate_capability_closure(&selected_capabilities)?;
+    if connection_trace.is_some()
+        && !selected_capabilities.contains(&connection_trace::CAPABILITY_CONNECTION_TRACE_V1)
+    {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    Ok(())
 }
 
 fn validate_command_result_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {

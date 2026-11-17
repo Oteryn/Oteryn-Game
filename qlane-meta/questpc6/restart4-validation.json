@@ -1,0 +1,117 @@
+{
+  "task_id": "questpc",
+  "status": "PARTIAL: reward sources qualified; complete story/outfit/World paths remain unqualified",
+  "changed_product_files": [
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs",
+    "docs/agents/evidence/quest-claim-qualification.json",
+    "docs/repository/QUEST_CALLBACK_COVERAGE.json",
+    "tools/content-schema/quest-authoring/check_quest_claim_qualification.py",
+    "tools/content-schema/quest-authoring/quest_callback_coverage.py",
+    "tools/content-schema/quest-authoring/test_quest_claim_qualification.py"
+  ],
+  "checks": {
+    "initial-check": {
+      "command": "CARGO_BUILD_JOBS=4 /home/mole/oteryn-cache/codex-bin/cargo check --locked --offline -p oteryn-gameplay-dispatch",
+      "exit": 0,
+      "log": ".questpc/restart4-initial-check.log",
+      "scope": "initial restart compilation before source edits"
+    },
+    "coverage-check": {
+      "command": "python3 tools/content-schema/quest-authoring/quest_callback_coverage.py --canary .questpc/sources/canary --crystal .questpc/sources/crystal --check",
+      "exit": 0,
+      "duration_seconds": 0.278
+    },
+    "ledger-check": {
+      "command": "python3 tools/content-schema/quest-authoring/check_quest_claim_qualification.py --check",
+      "exit": 0,
+      "duration_seconds": 0.031
+    },
+    "qualification-units": {
+      "command": "python3 -m unittest discover -s tools/content-schema/quest-authoring -p test_quest_claim_qualification.py",
+      "exit": 0,
+      "duration_seconds": 0.144
+    },
+    "governance": {
+      "command": "python3 tools/agents/validate_governance.py",
+      "exit": 0,
+      "duration_seconds": 0.152
+    },
+    "governance-units": {
+      "command": "python3 -m unittest discover -s tools/agents/tests",
+      "exit": 0,
+      "duration_seconds": 0.472
+    },
+    "fmt-check": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo fmt --all -- --check",
+      "exit": 0,
+      "duration_seconds": 7.642
+    },
+    "mounted-fmt-check": {
+      "command": "rustup run 1.99.1 rustfmt --edition 2024 --check --config skip_children=true crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs",
+      "exit": 0,
+      "duration_seconds": 0.019
+    },
+    "clippy": {
+      "command": "/home/mole/oteryn-cache/codex-bin/cargo clippy --locked --offline -p oteryn-gameplay-dispatch --all-targets --all-features --quiet -- -D warnings",
+      "exit": 0,
+      "duration_seconds": 16.65
+    }
+  },
+  "final_pg": {
+    "log": ".questpc/restart4-story-reward-pg-4.log",
+    "log_sha256": "ae48c218c20103084aedab2919693a23045d2b633bdc39654751bf9d6f546879",
+    "command": [
+      "/home/mole/oteryn-cache/codex-bin/cargo",
+      "test",
+      "--locked",
+      "--offline",
+      "-p",
+      "oteryn-gameplay-dispatch",
+      "--all-features",
+      "--lib",
+      "--",
+      "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal",
+      "quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_replay_and_refusal",
+      "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal",
+      "--test-threads=1",
+      "--nocapture"
+    ],
+    "exit": 0,
+    "duration_seconds": 388.003,
+    "test_results": {
+      "quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal": "ok",
+      "quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_replay_and_refusal": "ok",
+      "quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal": "ok"
+    },
+    "qualified_cohorts": 3,
+    "qualified_quests": 14
+  },
+  "proof": ".questpc/restart4-story-reward-pg-4.qualified.json",
+  "new_source_claims_qualified": 44,
+  "reward_sets": 14,
+  "final_test_claims": 46,
+  "final_test_placements": 55,
+  "canonical_a_m_inventory": {
+    "dispatch_pg_qualified": 150,
+    "not_playable": 2
+  },
+  "global_inventory": {
+    "dispatch_pg_qualified": 172,
+    "not_playable": 2,
+    "supported_unqualified": 162
+  },
+  "source_sha256": {
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs": "0cf535b83d977d800b473a01da64e10aa00ca1a8c30b7c4a8629dfae98909f69",
+    "docs/agents/evidence/quest-claim-qualification.json": "887a4df848751b8bbc8e1ffa994c1de2e49b787cc7699ed51255172bafbe733d",
+    "docs/repository/QUEST_CALLBACK_COVERAGE.json": "a79a16f57ee52ee8927d79fe2768e9899717ecf56284de84912de8c96cecdd55",
+    "tools/content-schema/quest-authoring/check_quest_claim_qualification.py": "48feb713a1726fca1efb174b975e91bbfd5cc73e4b20d10bd3651b229efb2fec",
+    "tools/content-schema/quest-authoring/quest_callback_coverage.py": "ce80cac7828b1dba4d9e1df36f969c3f1f7658e3556838330407c7062dc5a71e",
+    "tools/content-schema/quest-authoring/test_quest_claim_qualification.py": "7c25e523490b3c4338aec1beb4546517ca2f3beea81923d5101534129a6e9885"
+  },
+  "unfinished": [
+    "Inherited aggregate NPC case catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic: command2603 hi to JeanPierre, Rejected!=Ok at classic_quests.rs168; authoritative calendar composition absent. Prior exact failed output retained; original test and guards unchanged; not rerun by this reward-only delta.",
+    "Remaining complete NPC item/XP/outfit/story and real World access/admission paths; source claims do not certify these. See restart2-phase-b-c-blockers.md.",
+    "QENGINE-owned shared movement/encounter/reset features and their quest composition; not implemented here.",
+    "Coordinator staging/World-pin refresh, live migration allocation, independent exact-candidate review, CI and integration of the inherited authoring tree. No Git/index/publication mutation authorized or performed."
+  ]
+}

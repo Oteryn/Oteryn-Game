@@ -1,0 +1,13 @@
+{
+  "id": 278,
+  "name": "BATTLE_INSTINCT_STATUS_V1",
+  "owner_decision": "GAP-SV7 C11",
+  "owner": "Game Character Wheel and physical Channel census",
+  "requires": [],
+  "command_types": [
+    494
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only, filtered out without active native gameplay. A selected session may query only its own actor current Battle Instinct state."
+}

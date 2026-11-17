@@ -713,3 +713,37 @@ fn forge_crystal_slot_rules_and_tier_one_convergence_transfer() -> Result<(), Fo
     );
     Ok(())
 }
+
+#[test]
+fn forge_preview_matches_validated_cost_chance_target_and_refuses_invalid_pair()
+-> Result<(), ForgeRuleError> {
+    let item = definition("forge:preview");
+    let mut request = request(
+        &item,
+        4,
+        1,
+        ForgeOperation::Fusion {
+            boost: true,
+            protect: true,
+        },
+    )?;
+    let quote = ForgeQuote::try_from(request)?;
+    assert_eq!(
+        quote.preview(),
+        (
+            ForgeCost {
+                gold: 20_000_000,
+                dust: 100,
+                cores: 2
+            },
+            65,
+            2
+        )
+    );
+    request.source.instance = request.target.instance;
+    assert_eq!(
+        ForgeQuote::try_from(request),
+        Err(ForgeRuleError::SameInstance)
+    );
+    Ok(())
+}

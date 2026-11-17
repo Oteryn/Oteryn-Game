@@ -2,6 +2,12 @@
 import copy
 import hashlib
 import json
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools/content-schema/native-gameplay'))
+from build_spell_item_identities import historical_binding_bytes
+
+from native_profile_composition import encode_native_profile
 
 PATH = "tools/content-schema/native-gameplay/hireling-item-profiles.json"
 REVISION = "201189f871d23597b82caf88fd611454a2ddefb8"
@@ -31,6 +37,7 @@ MERGED_MAIN_NATIVE_WEIGHTS = {
     "oteryn:item.tibia.i10454": (115, 114, 27704),
     "oteryn:item.tibia.i18924": (510, 509, 38605),
     "oteryn:item.tibia.i27598": (230, 229, 52453),
+    "oteryn:item.tibia.i32228": (20, 250, 60653),
 }
 
 # ANSWER Q15A (PR2783 comment6549542080): this one virtual Hireling
@@ -116,6 +123,12 @@ def merge_record(existing, source):
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     overlay = json.loads((root / PATH).read_bytes())
     records = overlay["records"]
+    # The captured donor weights stay as proof; outside the decided pairs above,
+    # the captured Global client weight wins (ITEMGLOB).
+    from import_cyclopedia_global import apply_profile_weights
+    decided = SHARED_NATIVE_WEIGHTS.keys() | MERGED_MAIN_NATIVE_WEIGHTS.keys()
+    apply_profile_weights([row for row in records
+                           if row["production_definition"]["production_key"] not in decided], root)
     keys = [row["production_definition"]["production_key"] for row in records]
     expected = {f"oteryn:item.tibia.i{number}" for number in overlay["required_ids"]}
     catalogue = overlay["catalogue"]
@@ -125,7 +138,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or catalogue["trade_rows"] != 1675 or catalogue["trader_items"] != 1409
             or catalogue["packages"] != 23 or catalogue["package_ingredients"] != 69
             or hashlib.sha256((root / CATALOGUE).read_bytes()).hexdigest() != catalogue["sha256"]
-            or hashlib.sha256((root / "imports/crystalserver/bindings/items.json").read_bytes()).hexdigest()
+            or hashlib.sha256(historical_binding_bytes((root / "imports/crystalserver/bindings/items.json").read_bytes(),
+                                                    overlay["binding_table_sha256"])).hexdigest()
                 != overlay["binding_table_sha256"]):
         raise ValueError("HIRELING_NATIVE_ITEM_PROFILE_SET_OR_PIN")
     for key, (_, _, line) in (SHARED_NATIVE_WEIGHTS | MERGED_MAIN_NATIVE_WEIGHTS).items():
@@ -176,7 +190,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if key in taxonomy:
             existing[key]["authoring"]["taxonomy"] = copy.deepcopy(taxonomy[key])
     document["records"] = sorted(existing.values(), key=order)
-    raw = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
+    raw = encode_native_profile(document)
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])
     manifest["item_profiles"]["sha256"] = hashlib.sha256(raw).hexdigest()

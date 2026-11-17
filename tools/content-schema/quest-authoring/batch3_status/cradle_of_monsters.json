@@ -1,0 +1,709 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "cradle_of_monsters",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "group-c/status-after-answer.json",
+    "sha256": "af185f5bc16307ef92f85e3f9d76c1a71d11c543fc2bcdb3fddc55c0537000c7"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 18,
+  "import_counts": {
+    "RĘCZNIE": 16,
+    "AUTO": 2
+  },
+  "content_counts": {
+    "npc_rules_source_only": 0,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 2,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/cradle_of_monsters.json",
+      "sha256": "2c02973cbce192c21293ea888019715ce01d6c04b69edce19021b21a159ca1e0",
+      "count": 2,
+      "category": "world_callbacks_held"
+    }
+  ],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "639b15d4251c089188ebb109c230cd3d394b0d05c6ed30c50a55ce494b060d44",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Drzwi Lower Ingol (8 pozycji)",
+        "pattern": "P04",
+        "trigger": "pozycje (33796,32561/32573,8..12), dokładna lista źródła",
+        "guard": "storage47903; itemId=false w tabeli",
+        "effect": "wspólna bramka dostępu; brak questowego writera znalezionego w NPC",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:900"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Missing source access grant/writer; keep source gate locked rather than invent an Ingol questline.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589112150"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:900"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "e820691010a67fd9d54266ca72e4a3cd794d4eb7fdd2f5d5435d60122b159b9c",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Drzwi The Monster",
+        "pattern": "P04",
+        "trigger": "(33791,32576,12)",
+        "guard": "storage47904",
+        "effect": "bramka wejścia; nadanie dostępu NIEZNANE",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:913"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Missing source access grant/writer; keep source gate locked rather than invent an Ingol questline.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589112150"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:913"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "f7971edf6714a3b1acaab8baad618b45a4f1dd3444320397095562afffbf6b5c",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Drzwi Mutated Abomination",
+        "pattern": "P04",
+        "trigger": "(33782,32576,12)",
+        "guard": "storage47905",
+        "effect": "bramka wejścia; nadanie dostępu NIEZNANE",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:919"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Missing source access grant/writer; keep source gate locked rather than invent an Ingol questline.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589112150"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/door_quest.lua:919"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "7115e00af2dc0a7cf7fca2e16814e203c941b5985aaf167214513da9f83e8afb",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Wejście do sali dźwigni",
+        "pattern": "P03",
+        "trigger": "StepIn (33792,32581,12)",
+        "guard": "gracz",
+        "effect": "teleport (33806,32584,12)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_monster.lua:26"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "source_held_map_ground",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Complete source callback is retained in held-world/cradle_of_monsters.json with runtime_enabled:false; excluded from the aggregate and production-binding test claims.",
+      "left_out": "Missing canonical ground qualification: selectors use provisional40236/40230; destinations use provisional40198/40196. Compiler skips these keys outside production and refuses them in production (compile.rs:951-958). With no retained Terrain ground, WorldBase.walkable remains false (map/mod.rs:522-541). Source portal34111 also lacks a nonblocking native profile. No map/Item owner expansion or substituted ground is added. Decyzja C-CRADLE-GROUND: Oba SimpleTeleport pozostają held: brak kwalifikacji gruntu 40236/40230/40198/40196 oraz jego bindingu w bundle. WorldObject 34111 nie jest gruntem; CallbackTeleport::check wymaga Ground::Walkable. Bez zmiany mapy, itemów ani syntetycznego PG jako dowodu bindingu. Decyzja C-PRIMAL-COLLISION: Cztery przejścia Primal pozostają held: brak kwalifikowanego profilu kolizji statycznych itemów 34111, 6383 i 3919 przez boot_bundle_items->BundleFacts::palette; bez profilu domyślnie blokują ruch. Bez nowych profili, zmian mapy lub obejścia odmowy teleportu. Aktywny pozostaje wyłącznie kandydat (33558,32754,14)->(33714,32799,14).",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590915899",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590916295"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_monster.lua:26",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_monster.lua:26-28",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:2-7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:30-33"
+      ],
+      "evidence": {
+        "related_questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590916295"
+        ]
+      }
+    },
+    {
+      "id": "b2aa513f2b63e7112ed5afd49670b0b816b9ff4f9422da0bb526aa7dc63abfb0",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Wyjście z sali dźwigni",
+        "pattern": "P03",
+        "trigger": "StepIn (33804,32584,12)",
+        "guard": "gracz",
+        "effect": "teleport (33792,32579,12)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_monster.lua:28"
+        ],
+        "oteryn": "CZĘŚCIOWO — prymityw Use/StepIn, nie komplet questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "source_held_map_ground",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Complete source callback is retained in held-world/cradle_of_monsters.json with runtime_enabled:false; excluded from the aggregate and production-binding test claims.",
+      "left_out": "Missing canonical ground qualification: selectors use provisional40236/40230; destinations use provisional40198/40196. Compiler skips these keys outside production and refuses them in production (compile.rs:951-958). With no retained Terrain ground, WorldBase.walkable remains false (map/mod.rs:522-541). Source portal34111 also lacks a nonblocking native profile. No map/Item owner expansion or substituted ground is added. Decyzja C-CRADLE-GROUND: Oba SimpleTeleport pozostają held: brak kwalifikacji gruntu 40236/40230/40198/40196 oraz jego bindingu w bundle. WorldObject 34111 nie jest gruntem; CallbackTeleport::check wymaga Ground::Walkable. Bez zmiany mapy, itemów ani syntetycznego PG jako dowodu bindingu. Decyzja C-PRIMAL-COLLISION: Cztery przejścia Primal pozostają held: brak kwalifikowanego profilu kolizji statycznych itemów 34111, 6383 i 3919 przez boot_bundle_items->BundleFacts::palette; bez profilu domyślnie blokują ruch. Bez nowych profili, zmian mapy lub obejścia odmowy teleportu. Aktywny pozostaje wyłącznie kandydat (33558,32754,14)->(33714,32799,14).",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590915899",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590916295"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_monster.lua:28",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_monster.lua:26-28",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:2-7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/movements/teleport/gnomprona.lua:30-33"
+      ],
+      "evidence": {
+        "related_questions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590916295"
+        ]
+      }
+    },
+    {
+      "id": "eda5201cc0fe69f58f5ffb5c337baf7b8d668b37b44ff783acccdbb96e7328e6",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Przyjęcie do The Monster",
+        "pattern": "P06",
+        "trigger": "dźwignia (33813,32584,12); pięć pozycji 33812..33808,32584,12",
+        "guard": "level>=250; occupancy/cooldown BossLever; domyślnie minPlayers=1",
+        "effect": "encounter The Monster; drużyna -> (33831,32591,12); exit (33810,32587,12)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_monster.lua:1"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/bosses_levers/the_monster.lua:1",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "6b1b5ca54a577d302ba25ab995bf1364d56464c436c63a3003e99d37eb37769f",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Reset pokoju",
+        "pattern": "P25",
+        "trigger": "Encounter.onReset",
+        "guard": "dowolny reset",
+        "effect": "usuń potwory; usuń wszystkie kraty2184 z (33844,32591,12)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:25"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:25",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "eeb02d9ec047e93b9151206afaf63b6c071a49d0bf9e40e0fbdf251143308da2",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Początkowe kraty i obsada",
+        "pattern": "P27/P30",
+        "trigger": "start encounter, timeToSpawnMonsters=10ms",
+        "guard": "stages encounter",
+        "effect": "krata2184; Doctor Marrow (33838,32591,12) invulnerable; The Monster (33845,32591,12) tarcza20; cztery Antenna",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:31"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:31",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "1bcebaf98c436958beaf2d0338cea2e7ad3b24e254886ae62fd99a1373942bae",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Cztery Antenna",
+        "pattern": "P07/P27",
+        "trigger": "AntennaDeath",
+        "guard": "countMonsters(antenna)-1 == 0",
+        "effect": "następny etap; Doctor Marrow przestaje być invulnerable",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:120"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:120",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "44884b16be85de8b9373b66fdae11a4c0908c86c331a5c170ff208e647b6ee2d",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Próg Doctor Marrow",
+        "pattern": "P30",
+        "trigger": "DoctorMarrowHealth",
+        "guard": "HP-primary-secondary <= 50% maxHP",
+        "effect": "ustaw pełne HP, usuń doktora, przejdź do następnego etapu",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:102"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:102",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "6c6a95e5796402264861c0e0f65cd9ee8b6cb8715bb8862d9cd8d98e306aea0f",
+      "quest_row": 11,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Uwolnienie The Monster",
+        "pattern": "P01/P27",
+        "trigger": "następny etap po doktorze",
+        "guard": "encounter stage",
+        "effect": "usuń kraty2184 w (33844,32591,12)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:87"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:87",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "8270c012953f02908d5e9796259f5f567a80f595fcacae83b381e685f6f76ec3",
+      "quest_row": 12,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Odtwarzanie pojemników",
+        "pattern": "P15/P16",
+        "trigger": "GlobalEvent co10000ms; 10 pozycji z tabeli",
+        "guard": "pole bez stworzenia",
+        "effect": "usuń corpse39949; spawn Alchemist Container z callbackiem śmierci",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:149"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:149",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "73977ebbbeb98f1bd4c35e2b0e997fc993705c46ac2476c5fd016923db0e7fe3",
+      "quest_row": 13,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Kwas po zabiciu pojemnika",
+        "pattern": "P07/P02",
+        "trigger": "AlchemistContainerDeath",
+        "guard": "pierwszy walkable sąsiad N,E,S,W",
+        "effect": "utwórz puddle42075 i decay",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:132"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:132",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "297cf706540ade7f6c3d76c2d0b568414a458b75846cb8971d56eaa2da35119c",
+      "quest_row": 14,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Pochłanianie obrażeń tarczą",
+        "pattern": "P30",
+        "trigger": "MonsterHealth",
+        "guard": "shields z ikony the-monster, PurpleShield",
+        "effect": "oba damage *= 1 - 0.05*shields; przy20 obrażenia0",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:207"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:207",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "b8d46a0641a79551a6727b7f9074a2f3c68399949c6e876c459c3251419d097c",
+      "quest_row": 15,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Kwas usuwa tarczę",
+        "pattern": "P24/P30",
+        "trigger": "StepIn item42075",
+        "guard": "creature name dokładnie The Monster",
+        "effect": "usuń kałużę; shields>0 -> shields-1; przy0 usuń ikonę",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:219"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:219",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "a5fde0016320ce8006a6a3129be8319bf3039e431449044006f9e625364e46c3",
+      "quest_row": 16,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Koniec The Monster",
+        "pattern": "P07/P25",
+        "trigger": "MonsterDeath",
+        "guard": "śmierć w encounter",
+        "effect": "encounter.nextStage; reset usuwa potwory i kraty",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:215"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:215",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "dd5ded3ef108ce3924b2bd285ffffee700743f89cd78f9b5cec9686fc300e310",
+      "quest_row": 17,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Eksplozja Doctor Marrow",
+        "pattern": "P16/P30",
+        "trigger": "spell doctor marrow explosion, monster attack",
+        "guard": "wybrany target; area CIRCLE6X6",
+        "effect": "przez4s co100ms paralyze500ms; damage3500..7000 /2^distance; crit10%=x1.5; ostrzeżenie po2s",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/doctor_marrow_explosion.lua:43"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Requires atomic group admission plus encounter actor phases, spawn/despawn, projected damage modification, shield/acid tile mutation, and cleanup. New shared carriers were checkpointed outside repo per ANSWER5. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/spells/monster/doctor_marrow_explosion.lua:43",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "fd21bbe80d9a9d42b9377aea566c349f86f0861c726c629048c4839288ebed3f",
+      "quest_row": 18,
+      "inventory": {
+        "quest": "cradle_of_monsters",
+        "step": "Pusty heartbeat",
+        "pattern": "P15",
+        "trigger": "GlobalEvent self.the-monster.crystals.onThink co4000ms",
+        "guard": "brak",
+        "effect": "callback jedynie return true; nie przypisywać mu nieistniejącej mechaniki",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:94"
+        ],
+        "oteryn": "NIE — konkretny wykonawca questa; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "source_noop",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "Source contains no corresponding implemented behavior; no invented callback or reward is added.",
+      "left_out": "Empty heartbeat (Cradle) or absence of Gnominer reward branch (Primal).",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589112150"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua:94"
+      ],
+      "evidence": {}
+    }
+  ]
+}

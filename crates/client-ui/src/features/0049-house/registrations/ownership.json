@@ -1,0 +1,12 @@
+{
+  "mechanic": "0049-house",
+  "kind": "handlers",
+  "id": "0049-house-ownership",
+  "status": "supported",
+  "commands": [
+    6129
+  ],
+  "direction": "client_to_server",
+  "capability": 49,
+  "entry": "protocol.rs::ownership_request"
+}

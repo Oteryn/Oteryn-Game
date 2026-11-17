@@ -2,18 +2,32 @@
   {
     "mechanic": "0132-inspection",
     "kind": "handlers",
-    "id": "0132-inspection-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0132-inspection-commands",
+    "status": "supported",
     "commands": [
       153
     ],
+    "direction": "client_to_server",
+    "capability": 132,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "State is owned by the server; no local settings."
     }
+  },
+  {
+    "mechanic": "0132-inspection",
+    "status": "supported",
+    "kind": "keybindings",
+    "id": "0132-inspection-open",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+I",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0132-inspection",
+    "status": "supported",
+    "kind": "panels",
+    "id": "0132-inspection-panel",
+    "entry": "view.rs::panel_text"
   }
 ]

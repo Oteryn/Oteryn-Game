@@ -1,0 +1,48 @@
+{
+  "basis": "HEAD 1fa04bbb vs uncommitted worktree; these are implementation inventories, not complete playable quests",
+  "reward_claims": {
+    "before": {
+      "dispatch_pg_qualified": 11,
+      "not_playable": 28,
+      "supported_unqualified": 297
+    },
+    "after": {
+      "dispatch_pg_qualified": 11,
+      "not_playable": 16,
+      "supported_unqualified": 309
+    }
+  },
+  "native_container_recipes": {
+    "before": 67,
+    "after": 73
+  },
+  "plain_ready_claims": {
+    "before": 220,
+    "after": 228
+  },
+  "components": {
+    "before": {
+      "components": 248,
+      "quests": 352,
+      "quests_with_accepted_components": 1,
+      "quests_with_candidates": 32,
+      "verdicts": {
+        "ACCEPTED_SOURCE_ASSOCIATION_PARTIAL_SEMANTICS": 2,
+        "DIRECTORY_CANDIDATE_ONLY": 201,
+        "UNLINKED_SOURCE_COMPONENT": 45
+      }
+    },
+    "after": {
+      "components": 248,
+      "quests": 352,
+      "quests_with_accepted_components": 1,
+      "quests_with_candidates": 32,
+      "verdicts": {
+        "ACCEPTED_SOURCE_ASSOCIATION_PARTIAL_SEMANTICS": 2,
+        "DIRECTORY_CANDIDATE_ONLY": 201,
+        "UNLINKED_SOURCE_COMPONENT": 45
+      }
+    }
+  },
+  "changed_files": 89
+}

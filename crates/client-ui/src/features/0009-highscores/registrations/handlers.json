@@ -1,17 +1,15 @@
 {
   "mechanic": "0009-highscores",
   "kind": "handlers",
-  "id": "0009-highscores-unsupported",
-  "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "id": "0009-highscores-query",
+  "status": "supported",
   "commands": [
     14
   ],
+  "direction": "client_to_server",
+  "capability": 9,
+  "entry": "protocol.rs::request",
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "settings": "Server-owned World rankings have no local settings."
   }
 }

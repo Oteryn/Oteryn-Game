@@ -24,7 +24,7 @@ mod combat;
 #[path = "grizzly_boss/vacancy.rs"]
 mod vacancy;
 #[path = "grizzly_boss/world.rs"]
-mod world;
+pub(super) mod world;
 
 #[test]
 fn grizzly_boss_portal_wire_occupied_spawn_expiry_and_relog_return() -> TestResult {
@@ -32,7 +32,7 @@ fn grizzly_boss_portal_wire_occupied_spawn_expiry_and_relog_return() -> TestResu
 }
 
 #[test]
-fn grizzly_boss_portal_wire_unqualified_room_preserves_assignment() -> TestResult {
+fn grizzly_boss_portal_wire_debris_qualified_hide_room_consumes_assignment() -> TestResult {
     postgres_case(2, false)
 }
 
@@ -95,6 +95,21 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
+        deps.combat_room = Some(
+            activated
+                .qualified_room()
+                .bundle_view(
+                    cells.clone(),
+                    activated.frame_binding().digest(),
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: origin.x,
+                        y: origin.y,
+                        floor: origin.floor,
+                    },
+                )
+                .ok_or("qualified Grizzly bundle room")?,
+        );
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -129,7 +144,7 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
         deps.runtime = tokio::sync::Mutex::new(runtime);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(generation);
-        owner.movement_cells = &cells;
+        owner.movement_cells = (&cells).into();
         owner.quest_catalogue = Some(Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
@@ -193,12 +208,11 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
             .await;
         assert_eq!(value(&owner, boss.storage).await?, 1);
         if boss_id == 2 {
-            // Hide's source room lacks the required complete map bounds (Q2=B).
-            east(&owner, &mut admitted, 1).await?;
-            assert_position(&owner, deps.actor, origin).await?;
-            assert_eq!(value(&owner, boss.storage).await?, 1);
-            assert_eq!(visits(&h).await?, 0);
-            assert!(monsters(&owner).await?.is_empty());
+            // W15c's nonblocking debris profiles connect Hide's source player and
+            // boss positions in a bounded 90-tile room (grizzly-boss-rooms.json).
+            // Occupancy still refuses entry; a free room uses the exact source
+            // landing and spawn positions and consumes the assignment once.
+            qualified(&owner, &mut admitted, &h, &deps, boss, origin, false).await?;
         } else {
             qualified(
                 &owner,
@@ -293,7 +307,7 @@ fn scenario(boss_id: u8, unknown_expiry: bool, vacancy: Option<vacancy::Case>) -
                 .map_err(debug)?;
             let mut owner = deps.owner(&h, &authority);
             owner.active_generation = Some(generation);
-            owner.movement_cells = &cells;
+            owner.movement_cells = (&cells).into();
             owner.quest_catalogue = Some(Arc::new(
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?

@@ -1,0 +1,9 @@
+{
+  "mechanic": "0057-cyclopedia-map",
+  "kind": "keybindings",
+  "id": "0057-cyclopedia-map-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+D",
+  "entry": "input.rs::open_key"
+}

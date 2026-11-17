@@ -61,7 +61,7 @@ fn admit_cap_2_bundle_zone_flags_follow_the_pinned_source_loader_priority() {
 #[test]
 fn admit_cap_2_unqualified_bundle_zone_facts_stay_unknown() {
     let unknown =
-        QualifiedSpellTile::from_bundle(None, Vec::new(), flags(false, false, false, false), None);
+        QualifiedSpellTile::from_bundle(None, Vec::new(), flags(false, false, false, false, [true; 3]), None);
     assert_eq!(unknown.no_pvp_zone(), None);
     assert_eq!(unknown.pvp_zone(), None);
     assert_eq!(unknown.source_step(), None);

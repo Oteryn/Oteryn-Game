@@ -1,4 +1,10 @@
 //! Common payment and effect preparation for the actual cast owners.
+//! Qualified casters carry effective magic from OwnedCastFacts, which binds the raw build
+//! before applying loyalty, conditions, Wheel and proficiency. Actor checks below retain
+//! current actor facts and vitals without comparing that result to a condition-only projection.
+
+#[cfg(test)]
+mod qualified_magic_tests;
 
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
 use oteryn_simulation_determinism::SemanticTimeMicros;
@@ -532,7 +538,6 @@ fn prepare_native_owner_cast_impl(
     let caster = qualified_caster.unwrap_or(&baseline);
     if caster.vocation != state.facts.vocation
         || caster.level != state.facts.level
-        || caster.magic_level != state.owned_effective_magic_level(now.get())?
         || caster.mana != state.mana
         || caster.max_mana != state.facts.max_mana
         || caster.soul != state.soul
@@ -691,7 +696,6 @@ fn prepare_native_callback_owner_cast_core(
     let caster = qualified_caster;
     if caster.vocation != state.facts.vocation
         || caster.level != state.facts.level
-        || caster.magic_level != state.owned_effective_magic_level(now.get())?
         || caster.mana != state.mana
         || caster.max_mana != state.facts.max_mana
         || caster.soul != state.soul
@@ -804,7 +808,6 @@ pub fn prepare_conjure_owner_cast_with_caster(
     let caster = qualified_caster;
     if caster.vocation != state.facts.vocation
         || caster.level != state.facts.level
-        || caster.magic_level != state.owned_effective_magic_level(now.get())?
         || caster.mana != state.mana
         || caster.max_mana != state.facts.max_mana
         || caster.soul != state.soul
@@ -936,7 +939,6 @@ pub fn prepare_named_player_failure_owner_cast_with_caster(
         || state.training_checkpoint.is_some()
         || caster.vocation != state.facts.vocation
         || caster.level != state.facts.level
-        || caster.magic_level != state.owned_effective_magic_level(now.get())?
         || caster.mana != state.mana
         || caster.max_mana != state.facts.max_mana
         || caster.soul != state.soul

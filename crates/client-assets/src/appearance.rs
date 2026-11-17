@@ -23,6 +23,10 @@ struct AppearancesMsg {
     object: Vec<AppearanceMsg>,
     #[prost(message, repeated, tag = "2")]
     outfit: Vec<AppearanceMsg>,
+    #[prost(message, repeated, tag = "3")]
+    effect: Vec<AppearanceMsg>,
+    #[prost(message, repeated, tag = "4")]
+    missile: Vec<AppearanceMsg>,
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -64,7 +68,12 @@ struct AnimationMsg {
 }
 
 #[derive(Clone, PartialEq, Message)]
-struct PhaseMsg {}
+struct PhaseMsg {
+    #[prost(uint32, optional, tag = "1")]
+    duration_min: Option<u32>,
+    #[prost(uint32, optional, tag = "2")]
+    duration_max: Option<u32>,
+}
 
 #[derive(Clone, PartialEq, Message)]
 struct FlagsMsg {
@@ -116,7 +125,7 @@ struct HeightMsg {
     elevation: Option<u32>,
 }
 
-/// Frame group 0 of one object appearance. Animation phases are kept; only phase 0 is drawn.
+/// Frame group 0 of an appearance. Visual effects resolve all animation phases.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Appearance {
     pub id: u32,
@@ -125,6 +134,8 @@ pub struct Appearance {
     pub pattern_depth: u32,
     pub layers: u32,
     pub phases: u32,
+    /// Validated mean duration per phase, milliseconds.
+    pub phase_ms: Vec<u32>,
     /// Sprite ids ordered `[phase][depth][height][width][layer]`; 0 is an empty cell.
     pub sprite_ids: Vec<u32>,
     pub displacement_x: u32,
@@ -211,115 +222,11 @@ pub struct ResolvedEntry {
 pub struct AppearanceIndex {
     objects: HashMap<u32, Appearance>,
     outfits: HashMap<u32, Appearance>,
+    effects: HashMap<u32, Appearance>,
+    missiles: HashMap<u32, Appearance>,
 }
 
-impl AppearanceIndex {
-    /// Loads the `appearances` file the catalogue names, verified against its manifest entry.
-    pub fn load(store: &AssetStore, catalog: &Catalog) -> Result<Self, AssetError> {
-        let file = catalog.appearances_file();
-        let bytes = store.read_verified(file, MAX_APPEARANCES_BYTES)?;
-        let message =
-            AppearancesMsg::decode(bytes.as_slice()).map_err(|error| AssetError::Malformed {
-                file: file.to_owned(),
-                reason: error.to_string(),
-            })?;
-        let convert_all = |entries: Vec<AppearanceMsg>| {
-            let mut converted = HashMap::with_capacity(entries.len());
-            for entry in entries {
-                let Some(id) = entry.id.filter(|id| (1..=MAX_APPEARANCE_ID).contains(id)) else {
-                    return Err(AssetError::Malformed {
-                        file: file.to_owned(),
-                        reason: "object without a valid id".into(),
-                    });
-                };
-                if let Some(appearance) = convert(id, entry) {
-                    converted.insert(id, appearance);
-                }
-            }
-            Ok(converted)
-        };
-        Ok(Self {
-            objects: convert_all(message.object)?,
-            outfits: convert_all(message.outfit)?,
-        })
-    }
-
-    #[must_use]
-    pub fn len(&self) -> usize {
-        self.objects.len()
-    }
-
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.objects.is_empty()
-    }
-
-    #[must_use]
-    pub fn max_id(&self) -> Option<u32> {
-        self.objects.keys().copied().max()
-    }
-
-    #[must_use]
-    pub fn get(&self, id: u32) -> Option<&Appearance> {
-        self.objects.get(&id)
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &Appearance> {
-        self.objects.values()
-    }
-
-    /// Frame group 0 (standing) of an outfit (look type).
-    #[must_use]
-    pub fn outfit(&self, look_type: u32) -> Option<&Appearance> {
-        self.outfits.get(&look_type)
-    }
-
-    /// The cells of an outfit's base layer, standing, facing `direction` (0 north, 1 east,
-    /// 2 south, 3 west), without addons or mount. The colour-mask layer is not drawn.
-    pub fn resolve_outfit(
-        &self,
-        sheets: &SpriteSheets,
-        look_type: u32,
-        direction: u32,
-    ) -> Result<ResolvedEntry, AssetError> {
-        let appearance = self
-            .outfits
-            .get(&look_type)
-            .ok_or(AssetError::UnknownAppearance { id: look_type })?;
-        let pattern_x = direction % appearance.pattern_width;
-        entry(appearance, sheets, (pattern_x, 0, 0), 0..1)
-    }
-
-    /// The cells to draw for one entry, chosen as the Tibia client does. `floor` is the native
-    /// floor `-15..=0`; the depth pattern is selected from `z = -floor`, never from a negative
-    /// index.
-    pub fn resolve(
-        &self,
-        sheets: &SpriteSheets,
-        appearance_id: u32,
-        placement: Placement,
-    ) -> Result<ResolvedEntry, AssetError> {
-        if !(1..=MAX_APPEARANCE_ID).contains(&appearance_id) {
-            return Err(AssetError::InvalidAppearanceId { id: appearance_id });
-        }
-        if !(-15..=0).contains(&placement.floor) {
-            return Err(AssetError::InvalidFloor {
-                floor: placement.floor,
-            });
-        }
-        let appearance = self
-            .objects
-            .get(&appearance_id)
-            .ok_or(AssetError::UnknownAppearance { id: appearance_id })?;
-        let (pattern_x, pattern_y, pattern_z) = pattern(appearance, placement);
-        entry(
-            appearance,
-            sheets,
-            (pattern_x, pattern_y, pattern_z),
-            0..appearance.layers,
-        )
-    }
-}
+include!("appearance_methods_1.rs");
 
 /// The `(x, y, z)` pattern of `appearance` at `placement`, chosen as the Tibia client does. The
 /// depth pattern is selected from `z = -floor`, never from a negative index.
@@ -369,63 +276,26 @@ fn pattern(appearance: &Appearance, placement: Placement) -> (u32, u32, u32) {
     (pattern_x, pattern_y, z % appearance.pattern_depth)
 }
 
-/// The cells of one pattern of `appearance`, phase 0, over `layers`.
-fn entry(
-    appearance: &Appearance,
-    sheets: &SpriteSheets,
-    (pattern_x, pattern_y, pattern_z): (u32, u32, u32),
-    layers: std::ops::Range<u32>,
-) -> Result<ResolvedEntry, AssetError> {
-    let mut cells = Vec::new();
-    for layer in layers {
-        let index = ((pattern_z * appearance.pattern_height + pattern_y)
-            * appearance.pattern_width
-            + pattern_x)
-            * appearance.layers
-            + layer;
-        // Phase 0 is the first block, so the index needs no phase term.
-        let sprite_id = appearance
-            .sprite_ids
-            .get(index as usize)
-            .copied()
-            .ok_or(AssetError::UnknownSprite { sprite_id: 0 })?;
-        if sprite_id == 0 {
-            continue;
-        }
-        let (cells_x, cells_y) = sheets.layout(sprite_id)?.cells();
-        for cell_y in 0..cells_y {
-            for cell_x in 0..cells_x {
-                cells.push(DrawCell {
-                    sprite_id,
-                    cell_x,
-                    cell_y,
-                    offset_x: (cell_x as i32 + 1 - cells_x as i32) * CELL_PX as i32
-                        - appearance.displacement_x as i32,
-                    offset_y: (cell_y as i32 + 1 - cells_y as i32) * CELL_PX as i32
-                        - appearance.displacement_y as i32,
-                });
-            }
-        }
-    }
-    if cells.len() > MAX_ENTRY_CELLS {
-        return Err(AssetError::TooManyCells { cells: cells.len() });
-    }
-    Ok(ResolvedEntry {
-        cells,
-        elevation: appearance.elevation,
-        ground: appearance.ground,
-        ground_border: appearance.ground_border,
-        on_bottom: appearance.on_bottom,
-        on_top: appearance.on_top,
-    })
-}
+include!("appearance_entry.rs");
 
 fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
     let info = object.frame_group.into_iter().next()?.sprite_info?;
     let flags = object.flags.unwrap_or_default();
-    let phases = info
-        .animation
-        .map_or(1, |animation| animation.sprite_phase.len().max(1) as u32);
+    let phase_ms: Vec<u32> = info.animation.map_or_else(Vec::new, |animation| {
+        animation
+            .sprite_phase
+            .into_iter()
+            .map(|phase| {
+                let low = phase.duration_min.unwrap_or(100);
+                let high = phase.duration_max.unwrap_or(low).max(low);
+                (low / 2 + high / 2).clamp(1, 10_000)
+            })
+            .collect()
+    });
+    if phase_ms.len() > 256 {
+        return None;
+    }
+    let phases = phase_ms.len().max(1) as u32;
     let (width, height, depth, layers) = (
         info.pattern_width.unwrap_or(1).max(1),
         info.pattern_height.unwrap_or(1).max(1),
@@ -451,6 +321,7 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         pattern_depth: depth,
         layers,
         phases,
+        phase_ms,
         sprite_ids: info.sprite_id,
         displacement_x,
         displacement_y,
@@ -470,91 +341,8 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+include!("appearance_tests_1.rs");
 
-    fn shifted(x: u32, y: u32) -> AppearanceMsg {
-        AppearanceMsg {
-            id: Some(1),
-            frame_group: vec![FrameGroupMsg {
-                sprite_info: Some(SpriteInfoMsg {
-                    sprite_id: vec![1],
-                    ..SpriteInfoMsg::default()
-                }),
-            }],
-            flags: Some(FlagsMsg {
-                shift: Some(ShiftMsg {
-                    x: Some(x),
-                    y: Some(y),
-                }),
-                ..FlagsMsg::default()
-            }),
-        }
-    }
+include!("visual_tests.rs");
 
-    #[test]
-    fn an_oversized_displacement_makes_the_entry_unusable() {
-        let kept = convert(1, shifted(8, MAX_DISPLACEMENT_PX));
-        assert_eq!(
-            kept.map(|kept| (kept.displacement_x, kept.displacement_y)),
-            Some((8, MAX_DISPLACEMENT_PX))
-        );
-        assert!(convert(1, shifted(u32::MAX, 0)).is_none());
-        assert!(convert(1, shifted(0, MAX_DISPLACEMENT_PX + 1)).is_none());
-    }
-
-    fn with_flags(width: u32, flags: FlagsMsg) -> Option<Appearance> {
-        let message = AppearanceMsg {
-            id: Some(1),
-            frame_group: vec![FrameGroupMsg {
-                sprite_info: Some(SpriteInfoMsg {
-                    pattern_width: Some(width),
-                    sprite_id: vec![1; width as usize],
-                    ..SpriteInfoMsg::default()
-                }),
-            }],
-            flags: Some(flags),
-        };
-        convert(1, message)
-    }
-
-    #[test]
-    fn a_hangable_entry_follows_the_hook_of_its_tile() {
-        let hook = |direction| FlagsMsg {
-            hook: Some(HookMsg {
-                direction: Some(direction),
-            }),
-            ..FlagsMsg::default()
-        };
-        let hooks: Vec<_> = [hook(1), hook(2), hook(7)]
-            .into_iter()
-            .map(|flags| with_flags(1, flags).map(|wall| wall.hook))
-            .collect();
-        assert_eq!(
-            hooks,
-            [Some(Hook::South), Some(Hook::East), Some(Hook::None)]
-        );
-
-        let hanging = FlagsMsg {
-            hang: Some(true),
-            ..FlagsMsg::default()
-        };
-        let on = |width, hook, x| {
-            with_flags(width, hanging.clone()).map(|item| {
-                pattern(
-                    &item,
-                    Placement {
-                        hook,
-                        ..Placement::at(x, 5, -7)
-                    },
-                )
-            })
-        };
-        assert_eq!(on(3, Hook::None, 1), Some((0, 0, 0)));
-        assert_eq!(on(3, Hook::South, 1), Some((1, 0, 0)));
-        assert_eq!(on(3, Hook::East, 1), Some((2, 0, 0)));
-        assert_eq!(on(2, Hook::East, 1), Some((0, 0, 0)));
-        assert_eq!(on(1, Hook::South, 0), Some((0, 0, 0)));
-    }
-}
+include!("visual.rs");

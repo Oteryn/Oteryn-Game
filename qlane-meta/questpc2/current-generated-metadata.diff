@@ -1,0 +1,445 @@
+diff --git a/content/content.lock.json b/content/content.lock.json
+index 0f519a2a1..f6a7dec9c 100644
+--- a/content/content.lock.json
++++ b/content/content.lock.json
+@@ -234,7 +234,7 @@
+         {
+           "creates_canonical_identities": false,
+           "path": "content/items/definitions/spell-native-profiles.json",
+-          "record_count": 3566,
++          "record_count": 3578,
+           "representation": "native_profile_overlay",
+           "runtime_activation": false,
+           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
+@@ -242,7 +242,7 @@
+             "kind": "rust_serde",
+             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
+           },
+-          "sha256": "eae491325d6900ae48cb9731e68f27999a8d9657a732bd433ca0c26e668d8dc1"
++          "sha256": "03fd7650235f8731e6e28af237bd89c87b0eed122fd526fce66f52619433b895"
+         },
+         {
+           "creates_canonical_identities": false,
+diff --git a/content/encounters/raids/catalogue.json b/content/encounters/raids/catalogue.json
+index 38c68e6a2..cc4e9877f 100644
+--- a/content/encounters/raids/catalogue.json
++++ b/content/encounters/raids/catalogue.json
+@@ -1323,7 +1323,7 @@
+               "regions": [
+                 {
+                   "path": "content/world/placements/region-z11-x129-y124.b3",
+-                  "sha256": "2e8ca03b436d5bb7f75ea01f209b646d369d4ff1cd0e0bf67a0dc45ef0ff49ce"
++                  "sha256": "e5b54834c3dcf7be2a50f6619f6375937b3c38d5aaaec5042424c6df066cf2a5"
+                 },
+                 {
+                   "path": "content/world/placements/region-z11-x129-y125.b3",
+@@ -12233,7 +12233,7 @@
+                     "regions": [
+                       {
+                         "path": "content/world/placements/region-z07-x130-y125.b3",
+-                        "sha256": "2798be76221d6dc00695258d46d1eb375a64e804a7a84265014e2af0c679b05d"
++                        "sha256": "b38f79f4746cef4bc7baa456f22db6ce83570211d0b626d43315b7b88787b9de"
+                       }
+                     ],
+                     "to": {
+@@ -14120,7 +14120,7 @@
+                     "regions": [
+                       {
+                         "path": "content/world/placements/region-z11-x129-y124.b3",
+-                        "sha256": "2e8ca03b436d5bb7f75ea01f209b646d369d4ff1cd0e0bf67a0dc45ef0ff49ce"
++                        "sha256": "e5b54834c3dcf7be2a50f6619f6375937b3c38d5aaaec5042424c6df066cf2a5"
+                       }
+                     ],
+                     "to": {
+@@ -19433,7 +19433,7 @@
+                     "regions": [
+                       {
+                         "path": "content/world/placements/region-z07-x130-y125.b3",
+-                        "sha256": "2798be76221d6dc00695258d46d1eb375a64e804a7a84265014e2af0c679b05d"
++                        "sha256": "b38f79f4746cef4bc7baa456f22db6ce83570211d0b626d43315b7b88787b9de"
+                       }
+                     ],
+                     "to": {
+@@ -26913,7 +26913,7 @@
+                     "regions": [
+                       {
+                         "path": "content/world/placements/region-z08-x128-y126.b3",
+-                        "sha256": "e29d8f1ed7412c6fa2cc18775519bf5b0c668b644808ae966646b895cb351a48"
++                        "sha256": "6c2270332869c256c7c6fbc3d3295e43342b2252afdf1af7e1f02b7f44483179"
+                       }
+                     ],
+                     "to": {
+@@ -26960,7 +26960,7 @@
+                     "regions": [
+                       {
+                         "path": "content/world/placements/region-z08-x128-y126.b3",
+-                        "sha256": "e29d8f1ed7412c6fa2cc18775519bf5b0c668b644808ae966646b895cb351a48"
++                        "sha256": "6c2270332869c256c7c6fbc3d3295e43342b2252afdf1af7e1f02b7f44483179"
+                       }
+                     ],
+                     "to": {
+@@ -34895,7 +34895,7 @@
+                     "regions": [
+                       {
+                         "path": "content/world/placements/region-z10-x126-y125.b3",
+-                        "sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda"
++                        "sha256": "4a76ad0ba09fa8b7ecc0b1d3c794ed99f77a5423e79e83789c56c4d443446c8f"
+                       }
+                     ],
+                     "to": {
+@@ -34942,7 +34942,7 @@
+                     "regions": [
+                       {
+                         "path": "content/world/placements/region-z10-x126-y125.b3",
+-                        "sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda"
++                        "sha256": "4a76ad0ba09fa8b7ecc0b1d3c794ed99f77a5423e79e83789c56c4d443446c8f"
+                       }
+                     ],
+                     "to": {
+@@ -34989,7 +34989,7 @@
+                     "regions": [
+                       {
+                         "path": "content/world/placements/region-z10-x126-y125.b3",
+-                        "sha256": "cd6f083af1456d58b3868ee59f08bed31d5b0a05474669712ad966200d2f1fda"
++                        "sha256": "4a76ad0ba09fa8b7ecc0b1d3c794ed99f77a5423e79e83789c56c4d443446c8f"
+                       }
+                     ],
+                     "to": {
+@@ -35096,7 +35096,7 @@
+                     "regions": [
+                       {
+                         "path": "content/world/placements/region-z12-x126-y125.b3",
+-                        "sha256": "b804a50853f29a23247161ffd69503448bd912e46dc3b30fa641ffbf300d53c2"
++                        "sha256": "620da51fd36cc225af401d30a7eb2d2e24da60a7d8d9d91aad4e1e7b7d2921f7"
+                       }
+                     ],
+                     "to": {
+@@ -38195,7 +38195,7 @@
+                     "regions": [
+                       {
+                         "path": "content/world/placements/region-z09-x129-y125.b3",
+-                        "sha256": "20c173ef95a7c45b2fd030fc5c5eb1b20f925d445687ebd3ee484befb45baa73"
++                        "sha256": "c1fcb7d5e080ccec3f7b90b7cac20fd12ef72db083ac86a3dbc823b9b092f2c3"
+                       }
+                     ],
+                     "to": {
+@@ -39414,7 +39414,7 @@
+                       },
+                       {
+                         "path": "content/world/placements/region-z07-x127-y125.b3",
+-                        "sha256": "6ca7aa92d56ae6175c091bc8476817e5d8cadfa9ca4bc10af5dc2a8905b6b047"
++                        "sha256": "99ab577135066ff40ac960eed12f0438013e3acbcee5beaa9c38ccf6458f9b04"
+                       },
+                       {
+                         "path": "content/world/placements/region-z07-x128-y124.b3",
+diff --git a/content/encounters/raids/index.json b/content/encounters/raids/index.json
+index eab94e3de..ba843ee5c 100644
+--- a/content/encounters/raids/index.json
++++ b/content/encounters/raids/index.json
+@@ -1,7 +1,7 @@
+ {
+   "active_count": 135,
+   "apply_plan_sha256": "968ac099fa52114bcb2c80754d19128d811a8e028a8fdeceba238df4c0b53093",
+-  "catalogue_sha256": "cc4346529768b8143c54af6e88ec7aba12f5c1b0fb980908e9f26de535cdd548",
++  "catalogue_sha256": "2a3465589e0a1e4a32e9a04b9ea7aa007037e14c69887ab66620cf4fa1fa5e1c",
+   "evidence_record_count": 122,
+   "evidence_shards": [
+     "content/encounters/raids/evidence-00000-00121.json"
+diff --git a/content/items/index.json b/content/items/index.json
+index eb7626eef..349244b90 100644
+--- a/content/items/index.json
++++ b/content/items/index.json
+@@ -1 +1 @@
+-{"attached_authoring_entries":700,"attached_editor_entries":165,"attached_source_bindings":476,"family":"Item","legacy_source":{"coordinate_frame":"global-target-2026-09-27","git_blob_sha":"45d4938e30c6b19bd9e29e6b9f2aa387596524bd","path":"content/world/definitions/reference.json","schema":"OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1","world_id":"0123456789ab70cd8ef0123456789abc"},"record_count":34111,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/items/definitions/items-00000-00499.json","content/items/definitions/items-00500-00999.json","content/items/definitions/items-01000-01499.json","content/items/definitions/items-01500-01999.json","content/items/definitions/items-02000-02499.json","content/items/definitions/items-02500-02999.json","content/items/definitions/items-03000-03499.json","content/items/definitions/items-03500-03999.json","content/items/definitions/items-04000-04499.json","content/items/definitions/items-04500-04999.json","content/items/definitions/items-05000-05499.json","content/items/definitions/items-05500-05999.json","content/items/definitions/items-06000-06499.json","content/items/definitions/items-06500-06999.json","content/items/definitions/items-07000-07499.json","content/items/definitions/items-07500-07999.json","content/items/definitions/items-08000-08499.json","content/items/definitions/items-08500-08999.json","content/items/definitions/items-09000-09499.json","content/items/definitions/items-09500-09999.json","content/items/definitions/items-10000-10499.json","content/items/definitions/items-10500-10999.json","content/items/definitions/items-11000-11499.json","content/items/definitions/items-11500-11999.json","content/items/definitions/items-12000-12499.json","content/items/definitions/items-12500-12999.json","content/items/definitions/items-13000-13499.json","content/items/definitions/items-13500-13999.json","content/items/definitions/items-14000-14499.json","content/items/definitions/items-14500-14999.json","content/items/definitions/items-15000-15499.json","content/items/definitions/items-15500-15999.json","content/items/definitions/items-16000-16499.json","content/items/definitions/items-16500-16999.json","content/items/definitions/items-17000-17499.json","content/items/definitions/items-17500-17999.json","content/items/definitions/items-18000-18499.json","content/items/definitions/items-18500-18999.json","content/items/definitions/items-19000-19499.json","content/items/definitions/items-19500-19999.json","content/items/definitions/items-20000-20499.json","content/items/definitions/items-20500-20999.json","content/items/definitions/items-21000-21499.json","content/items/definitions/items-21500-21999.json","content/items/definitions/items-22000-22499.json","content/items/definitions/items-22500-22999.json","content/items/definitions/items-23000-23499.json","content/items/definitions/items-23500-23999.json","content/items/definitions/items-24000-24499.json","content/items/definitions/items-24500-24999.json","content/items/definitions/items-25000-25499.json","content/items/definitions/items-25500-25999.json","content/items/definitions/items-26000-26499.json","content/items/definitions/items-26500-26999.json","content/items/definitions/items-27000-27499.json","content/items/definitions/items-27500-27999.json","content/items/definitions/items-28000-28499.json","content/items/definitions/items-28500-28999.json","content/items/definitions/items-29000-29499.json","content/items/definitions/items-29500-29999.json","content/items/definitions/items-30000-30499.json","content/items/definitions/items-30500-30999.json","content/items/definitions/items-31000-31499.json","content/items/definitions/items-31500-31999.json","content/items/definitions/items-32000-32499.json","content/items/definitions/items-32500-32999.json","content/items/definitions/items-33000-33499.json","content/items/definitions/items-33500-33999.json","content/items/definitions/items-34000-34110.json"],"spell_imports":[{"creates_canonical_identities":false,"path":"content/items/definitions/spell-native-profiles.json","record_count":3566,"representation":"native_profile_overlay","runtime_activation":false,"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","schema_contract":{"kind":"rust_serde","path":"apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"},"sha256":"eae491325d6900ae48cb9731e68f27999a8d9657a732bd433ca0c26e668d8dc1"},{"creates_canonical_identities":false,"path":"content/items/definitions/starting-loadout-profiles.json","record_count":8,"representation":"native_profile_overlay","runtime_activation":false,"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","schema_contract":{"kind":"rust_serde","path":"apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"},"sha256":"20e098e915d0ff3e648cef2623a2d31ecbc21d824727a5557731d80c1abe98c9"}]}
++{"attached_authoring_entries":700,"attached_editor_entries":165,"attached_source_bindings":476,"family":"Item","legacy_source":{"coordinate_frame":"global-target-2026-09-27","git_blob_sha":"45d4938e30c6b19bd9e29e6b9f2aa387596524bd","path":"content/world/definitions/reference.json","schema":"OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1","world_id":"0123456789ab70cd8ef0123456789abc"},"record_count":34111,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/items/definitions/items-00000-00499.json","content/items/definitions/items-00500-00999.json","content/items/definitions/items-01000-01499.json","content/items/definitions/items-01500-01999.json","content/items/definitions/items-02000-02499.json","content/items/definitions/items-02500-02999.json","content/items/definitions/items-03000-03499.json","content/items/definitions/items-03500-03999.json","content/items/definitions/items-04000-04499.json","content/items/definitions/items-04500-04999.json","content/items/definitions/items-05000-05499.json","content/items/definitions/items-05500-05999.json","content/items/definitions/items-06000-06499.json","content/items/definitions/items-06500-06999.json","content/items/definitions/items-07000-07499.json","content/items/definitions/items-07500-07999.json","content/items/definitions/items-08000-08499.json","content/items/definitions/items-08500-08999.json","content/items/definitions/items-09000-09499.json","content/items/definitions/items-09500-09999.json","content/items/definitions/items-10000-10499.json","content/items/definitions/items-10500-10999.json","content/items/definitions/items-11000-11499.json","content/items/definitions/items-11500-11999.json","content/items/definitions/items-12000-12499.json","content/items/definitions/items-12500-12999.json","content/items/definitions/items-13000-13499.json","content/items/definitions/items-13500-13999.json","content/items/definitions/items-14000-14499.json","content/items/definitions/items-14500-14999.json","content/items/definitions/items-15000-15499.json","content/items/definitions/items-15500-15999.json","content/items/definitions/items-16000-16499.json","content/items/definitions/items-16500-16999.json","content/items/definitions/items-17000-17499.json","content/items/definitions/items-17500-17999.json","content/items/definitions/items-18000-18499.json","content/items/definitions/items-18500-18999.json","content/items/definitions/items-19000-19499.json","content/items/definitions/items-19500-19999.json","content/items/definitions/items-20000-20499.json","content/items/definitions/items-20500-20999.json","content/items/definitions/items-21000-21499.json","content/items/definitions/items-21500-21999.json","content/items/definitions/items-22000-22499.json","content/items/definitions/items-22500-22999.json","content/items/definitions/items-23000-23499.json","content/items/definitions/items-23500-23999.json","content/items/definitions/items-24000-24499.json","content/items/definitions/items-24500-24999.json","content/items/definitions/items-25000-25499.json","content/items/definitions/items-25500-25999.json","content/items/definitions/items-26000-26499.json","content/items/definitions/items-26500-26999.json","content/items/definitions/items-27000-27499.json","content/items/definitions/items-27500-27999.json","content/items/definitions/items-28000-28499.json","content/items/definitions/items-28500-28999.json","content/items/definitions/items-29000-29499.json","content/items/definitions/items-29500-29999.json","content/items/definitions/items-30000-30499.json","content/items/definitions/items-30500-30999.json","content/items/definitions/items-31000-31499.json","content/items/definitions/items-31500-31999.json","content/items/definitions/items-32000-32499.json","content/items/definitions/items-32500-32999.json","content/items/definitions/items-33000-33499.json","content/items/definitions/items-33500-33999.json","content/items/definitions/items-34000-34110.json"],"spell_imports":[{"creates_canonical_identities":false,"path":"content/items/definitions/spell-native-profiles.json","record_count":3578,"representation":"native_profile_overlay","runtime_activation":false,"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","schema_contract":{"kind":"rust_serde","path":"apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"},"sha256":"03fd7650235f8731e6e28af237bd89c87b0eed122fd526fce66f52619433b895"},{"creates_canonical_identities":false,"path":"content/items/definitions/starting-loadout-profiles.json","record_count":8,"representation":"native_profile_overlay","runtime_activation":false,"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","schema_contract":{"kind":"rust_serde","path":"apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"},"sha256":"20e098e915d0ff3e648cef2623a2d31ecbc21d824727a5557731d80c1abe98c9"}]}
+diff --git a/content/manifest.json b/content/manifest.json
+index 2d4058f8f..d8f44952d 100644
+--- a/content/manifest.json
++++ b/content/manifest.json
+@@ -995,7 +995,7 @@
+         {
+           "creates_canonical_identities": false,
+           "path": "content/items/definitions/spell-native-profiles.json",
+-          "record_count": 3566,
++          "record_count": 3578,
+           "representation": "native_profile_overlay",
+           "runtime_activation": false,
+           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
+@@ -1003,7 +1003,7 @@
+             "kind": "rust_serde",
+             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
+           },
+-          "sha256": "eae491325d6900ae48cb9731e68f27999a8d9657a732bd433ca0c26e668d8dc1"
++          "sha256": "03fd7650235f8731e6e28af237bd89c87b0eed122fd526fce66f52619433b895"
+         },
+         {
+           "creates_canonical_identities": false,
+diff --git a/content/spells.manifest.json b/content/spells.manifest.json
+index 13c2d4a03..e7fc3d330 100644
+--- a/content/spells.manifest.json
++++ b/content/spells.manifest.json
+@@ -1 +1 @@
+-{"build_training":{"content_revision":"s3b-content-1","magnitude_policy":"baseline_test","path":"abilities/definitions/spell-build-training.json","sha256":"ed23a81ec9247c5808de8161e18e7bc366a7bb8709839c2256aba1c649f4d1c1"},"catalog":{"path":"abilities/definitions/player-spells.json","sha256":"f6372601a2fa1af0d6ca549d49b898d69eb3bee71d05df0dc335b3dd78b6aae5"},"creature_profiles":{"path":"creatures/definitions/spell-native-profiles.json","sha256":"06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5"},"familiar_config":{"path":"creatures/definitions/spell-familiar-config.json","sha256":"fe7e1f4f333588eaaf612bee734bb0d2da43ae9722207cca4bfcfeb394cbe76e"},"familiar_defenses":{"path":"creatures/definitions/spell-familiar-defenses.json","sha256":"07cd3a597f1b46877be8a1458607d2e2af2ae53bfc8202695603ea26f1e3a120"},"item_keys":{"path":"../tools/content-schema/native-gameplay/item-keys.json","sha256":"bef9cb68d90c3a12fa163d9ec00aa4b7112b5be989feaf160b2de9d5ef97567d"},"item_profiles":{"path":"items/definitions/spell-native-profiles.json","sha256":"eae491325d6900ae48cb9731e68f27999a8d9657a732bd433ca0c26e668d8dc1"},"loot_tables":{"path":"../tools/content-schema/native-gameplay/loot-tables.json","sha256":"468610a825955a1a229dee2d0594bbd8518ffe9deabb621deeb4872b3627a0b2"},"native_map_profile":"accepted-entry-r1","presentation_profiles":{"path":"presentations/definitions/spell-native-profiles.json","sha256":"b94a936eeac887eeeb807bf81ba5ae1bbd482d665404c247319421464c5bcea8"},"progression":{"path":"../rulesets/character/experience/native-section.json","sha256":"e63564bb383042405cadcad687cc7aa491c07359a55b7d944a8f82860f6c8e41"},"schema":"OTERYN_NATIVE_GAMEPLAY_MANIFEST/v5","source_selection":{"path":"abilities/definitions/player-spell-selection.json","sha256":"486f541f0a8c011b63fc46f27647c4db1dcaab29c2680b471b1b14f79ee3ca4f"},"source_world":{"path":"../imports/spells/r25/source-world.json","sha256":"44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5"},"spell_appearances":{"path":"presentations/bindings/spell-appearances.json","sha256":"f423284c3a8e771c4c1888d8aa3985ade150855632300d19c7c77cf2915d56d4"},"starting_loadout_item_profiles":{"path":"items/definitions/starting-loadout-profiles.json","sha256":"20e098e915d0ff3e648cef2623a2d31ecbc21d824727a5557731d80c1abe98c9"},"wheel_profile":{"path":"../rulesets/progression/wheel-of-destiny/spell-profile.json","sha256":"6daabc530ae7fc296358a4810706844e2b709a1f38d458bd63bb4a49f6a47beb"}}
++{"build_training":{"content_revision":"s3b-content-1","magnitude_policy":"baseline_test","path":"abilities/definitions/spell-build-training.json","sha256":"ed23a81ec9247c5808de8161e18e7bc366a7bb8709839c2256aba1c649f4d1c1"},"catalog":{"path":"abilities/definitions/player-spells.json","sha256":"f6372601a2fa1af0d6ca549d49b898d69eb3bee71d05df0dc335b3dd78b6aae5"},"creature_profiles":{"path":"creatures/definitions/spell-native-profiles.json","sha256":"06b0bee295bf0d09d5b3c87827d66cc276771bc79a3c0a05cf8cfebf4c1282a5"},"familiar_config":{"path":"creatures/definitions/spell-familiar-config.json","sha256":"fe7e1f4f333588eaaf612bee734bb0d2da43ae9722207cca4bfcfeb394cbe76e"},"familiar_defenses":{"path":"creatures/definitions/spell-familiar-defenses.json","sha256":"07cd3a597f1b46877be8a1458607d2e2af2ae53bfc8202695603ea26f1e3a120"},"item_keys":{"path":"../tools/content-schema/native-gameplay/item-keys.json","sha256":"bef9cb68d90c3a12fa163d9ec00aa4b7112b5be989feaf160b2de9d5ef97567d"},"item_profiles":{"path":"items/definitions/spell-native-profiles.json","sha256":"03fd7650235f8731e6e28af237bd89c87b0eed122fd526fce66f52619433b895"},"loot_tables":{"path":"../tools/content-schema/native-gameplay/loot-tables.json","sha256":"468610a825955a1a229dee2d0594bbd8518ffe9deabb621deeb4872b3627a0b2"},"native_map_profile":"accepted-entry-r1","presentation_profiles":{"path":"presentations/definitions/spell-native-profiles.json","sha256":"b94a936eeac887eeeb807bf81ba5ae1bbd482d665404c247319421464c5bcea8"},"progression":{"path":"../rulesets/character/experience/native-section.json","sha256":"e63564bb383042405cadcad687cc7aa491c07359a55b7d944a8f82860f6c8e41"},"schema":"OTERYN_NATIVE_GAMEPLAY_MANIFEST/v5","source_selection":{"path":"abilities/definitions/player-spell-selection.json","sha256":"486f541f0a8c011b63fc46f27647c4db1dcaab29c2680b471b1b14f79ee3ca4f"},"source_world":{"path":"../imports/spells/r25/source-world.json","sha256":"44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5"},"spell_appearances":{"path":"presentations/bindings/spell-appearances.json","sha256":"f423284c3a8e771c4c1888d8aa3985ade150855632300d19c7c77cf2915d56d4"},"starting_loadout_item_profiles":{"path":"items/definitions/starting-loadout-profiles.json","sha256":"20e098e915d0ff3e648cef2623a2d31ecbc21d824727a5557731d80c1abe98c9"},"wheel_profile":{"path":"../rulesets/progression/wheel-of-destiny/spell-profile.json","sha256":"6daabc530ae7fc296358a4810706844e2b709a1f38d458bd63bb4a49f6a47beb"}}
+diff --git a/content/world/pins/oteryn.json b/content/world/pins/oteryn.json
+index acca86d0b..a8d1029fb 100644
+--- a/content/world/pins/oteryn.json
++++ b/content/world/pins/oteryn.json
+@@ -1,6 +1,6 @@
+ {
+   "schema": "OTERYN_WORLD_PIN/v2",
+-  "digest": "3af394d0f4e68a8485d4655e3109ceaf867320c5ca053290a29e8d297faf7afd",
++  "digest": "eaf464f35b521b0dac01b07afe055100a1a173b93e57d5e57a13912ff3e0e2d9",
+   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
+   "world_schema_version": "reference-schema-v1",
+   "content_revision": "e06-market-crystal-parity-20261031-r1",
+diff --git a/deploy/synology-game/preprod-topology.toml b/deploy/synology-game/preprod-topology.toml
+index d0cbc640b..61012e705 100644
+--- a/deploy/synology-game/preprod-topology.toml
++++ b/deploy/synology-game/preprod-topology.toml
+@@ -43,7 +43,7 @@ route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
+ runtime_observation_revision = "obs.1"
+ ruleset_revision = "game.<GAME_COMMIT_12HEX>"
+ content_revision = "game.<GAME_COMMIT_12HEX>"
+-map_revision = "3af394d0f4e68a8485d4655e3109ceaf867320c5ca053290a29e8d297faf7afd"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
++map_revision = "eaf464f35b521b0dac01b07afe055100a1a173b93e57d5e57a13912ff3e0e2d9"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
+ world_policy_revision = "wp.1"
+ offer_revision = "offer.1"
+
+@@ -55,7 +55,7 @@ offer_revision = "offer.1"
+ # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
+ enabled = true
+ path = "<BASE>/world/world.otbundle"
+-digest = "3af394d0f4e68a8485d4655e3109ceaf867320c5ca053290a29e8d297faf7afd"
++digest = "eaf464f35b521b0dac01b07afe055100a1a173b93e57d5e57a13912ff3e0e2d9"
+ project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
+ world_schema_version = "reference-schema-v1"
+ content_revision = "e06-market-crystal-parity-20261031-r1"
+diff --git a/docs/repository/QUEST_CALLBACK_COVERAGE.json b/docs/repository/QUEST_CALLBACK_COVERAGE.json
+index 5a8ca8c45..32ff061a3 100644
+--- a/docs/repository/QUEST_CALLBACK_COVERAGE.json
++++ b/docs/repository/QUEST_CALLBACK_COVERAGE.json
+@@ -1,8 +1,8 @@
+ {
+   "counts": {
+-    "dispatch_pg_qualified": 11,
++    "dispatch_pg_qualified": 28,
+     "not_playable": 28,
+-    "supported_unqualified": 297
++    "supported_unqualified": 280
+   },
+   "qualification": "Only dispatch_pg_qualified has a real source-placement PostgreSQL USE test. That status certifies reward granting, not every later Item consumer. Other supported shapes need per-World binding, Item admission and qualification. No deployed World or full-quest completion is certified.",
+   "quests": [
+@@ -4813,8 +4813,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_naginata_use_once_and_replay",
++          "status": "dispatch_pg_qualified"
+         }
+       ],
+       "quest": "canary:quest/naginata_quest"
+@@ -4879,8 +4879,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_nightmare_teddy_use_once_and_replay",
++          "status": "dispatch_pg_qualified"
+         }
+       ],
+       "quest": "canary:quest/nightmare_teddy_quest"
+@@ -4912,8 +4912,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_noble_armor_use_once_and_replay",
++          "status": "dispatch_pg_qualified"
+         },
+         {
+           "claim": "oteryn:reward-claim.kv.noblearmor2",
+@@ -4940,8 +4940,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_noble_armor_crown_helmet_use_once_and_replay",
++          "status": "dispatch_pg_qualified"
+         }
+       ],
+       "quest": "canary:quest/noble_armor_quest"
+@@ -4973,8 +4973,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_one_orc_fortress_all_rewards_and_level_gate",
++          "status": "dispatch_pg_qualified"
+         },
+         {
+           "claim": "oteryn:reward-claim.kv.orcfortress2",
+@@ -5001,8 +5001,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_one_orc_fortress_all_rewards_and_level_gate",
++          "status": "dispatch_pg_qualified"
+         },
+         {
+           "claim": "oteryn:reward-claim.kv.orcfortress3",
+@@ -5029,8 +5029,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_one_orc_fortress_all_rewards_and_level_gate",
++          "status": "dispatch_pg_qualified"
+         }
+       ],
+       "quest": "canary:quest/orc_fortress_quest"
+@@ -5062,8 +5062,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_one_orc_shaman_bag_exact_contents",
++          "status": "dispatch_pg_qualified"
+         }
+       ],
+       "quest": "canary:quest/orc_shaman_quest"
+@@ -5189,8 +5189,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_one_panpipe_bag_exact_contents",
++          "status": "dispatch_pg_qualified"
+         },
+         {
+           "claim": "oteryn:reward-claim.quest.key.id4055",
+@@ -5217,8 +5217,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_panpipe_key_4055_once_and_replay",
++          "status": "dispatch_pg_qualified"
+         }
+       ],
+       "quest": "canary:quest/panpipe_quest"
+@@ -5250,8 +5250,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_two_parchment_room_key_bag",
++          "status": "dispatch_pg_qualified"
+         }
+       ],
+       "quest": "canary:quest/parchment_room_quest"
+@@ -5283,8 +5283,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_one_plate_armor_coffin_once_and_replay",
++          "status": "dispatch_pg_qualified"
+         }
+       ],
+       "quest": "canary:quest/plate_armor_quest"
+@@ -5303,21 +5303,23 @@
+               "sources": [
+                 {
+                   "citation": "canary:data-otservbr-global/startup/tables/chest.lua:790",
+-                  "reward_matches_current_source": true,
++                  "reward_matches_current_source": false,
+                   "server": "canary",
+                   "unique_id": 6068
+                 },
+                 {
++                  "accepted_override": "Target Wiki2026-11-06 and both donor comments: two quantity1 daggers; retain numeric donor one in source_variant",
+                   "citation": "crystal:data-global/startup/tables/chest.lua:1089",
+-                  "reward_matches_current_source": true,
++                  "reward_matches_current_source": false,
+                   "server": "crystalserver",
+                   "unique_id": 6068
+                 }
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_two_poison_daggers_two_instances_once_and_replay",
++          "status": "dispatch_pg_qualified",
++          "target_correction": "Target Wiki2026-11-06 and both donor comments specify two daggers. The native recipe mints two distinct quantity1 instances; source_variant preserves the donor numeric recipe of one."
+         }
+       ],
+       "quest": "canary:quest/poison_daggers_quest"
+@@ -5349,8 +5351,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_two_power_bolts_book_and_ammunition",
++          "status": "dispatch_pg_qualified"
+         },
+         {
+           "claim": "oteryn:reward-claim.kv.powerbolt2",
+@@ -5378,7 +5380,7 @@
+             }
+           ],
+           "qualification_limit": "Reward-grant support includes durable authored book text; ordinary carried-book READ/TextWindow transport is not implemented. LOOK and distance-reading admission are not changed. Text retains the established source author's outer-LF normalization.",
+-          "reason": "quest_container_chests_leaf_text_is_frozen_and_replayed",
++          "reason": "quest_reward_claims_batch_two_power_bolts_book_and_ammunition",
+           "status": "dispatch_pg_qualified"
+         }
+       ],
+@@ -5505,8 +5507,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
++          "status": "dispatch_pg_qualified"
+         },
+         {
+           "claim": "oteryn:reward-claim.kv.purpletome2",
+@@ -5533,8 +5535,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
++          "status": "dispatch_pg_qualified"
+         },
+         {
+           "claim": "oteryn:reward-claim.kv.purpletome3",
+@@ -5561,8 +5563,8 @@
+               ]
+             }
+           ],
+-          "reason": "requires exact World binding and native Item admission",
+-          "status": "supported_unqualified"
++          "reason": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
++          "status": "dispatch_pg_qualified"
+         }
+       ],
+       "quest": "canary:quest/purple_tome_quest"

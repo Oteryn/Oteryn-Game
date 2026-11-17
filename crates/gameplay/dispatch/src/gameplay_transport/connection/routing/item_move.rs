@@ -54,7 +54,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         None,
                     ));
                 }
-                let step = item_move::item_move(
+                let step = item_move::item_move_with_house_capacity(
                     authority,
                     actor,
                     UseCommand {
@@ -67,6 +67,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     selected_capabilities.contains(
                         oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_STACK_COUNT_V1,
                     ),
+                    selected_capabilities.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2),
                     view,
                 )
                 .await;

@@ -1,0 +1,21 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+
+// S-SPELLBOOK. Own actor only. Snapshot and delta replace the entire catalog.
+// At most 1024 entries, strictly increasing cast_index, at most 262144 bytes.
+message ActorSpellCatalogV1 {
+  repeated ActorSpellCatalogEntryV1 entries = 1;
+}
+message ActorSpellCatalogEntryV1 {
+  uint32 cast_index = 1; // SPELL-D1: 1..2^28-1; inactive aliases excluded.
+  string name = 2; // Nonempty UTF-8, at most 128 bytes.
+  string words = 3; // UTF-8, at most 128 bytes; empty only for rune use.
+  uint32 level = 4;
+  uint32 mana = 5;
+  bool mana_percent = 6; // If true, mana is 0..100 percent of maximum.
+  uint32 soul = 7;
+  bool learned = 8; // Existing durable known-spell membership.
+  bool available = 9; // Eligibility, not target/equipment/pool/cooldown readiness.
+  repeated uint32 cooldown_groups = 10 [packed = false]; // Sorted unique S9 ordinals 1..16.
+  optional uint32 rune_item = 11; // Positive native rune item identity, absent for instant.
+}

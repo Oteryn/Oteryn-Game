@@ -1,0 +1,13 @@
+{
+  "id": 276,
+  "name": "CONDITION_STATUS_V1",
+  "owner_decision": "GAP-SV7 C08",
+  "owner": "Game own actor condition projection",
+  "requires": [],
+  "command_types": [
+    492
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only, while native gameplay is available; reads own current actor through its session-fenced condition owners."
+}

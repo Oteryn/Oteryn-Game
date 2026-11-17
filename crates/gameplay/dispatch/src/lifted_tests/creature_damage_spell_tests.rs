@@ -167,6 +167,25 @@ fn setup() -> (
 ) {
     setup_named("1st_mate_ratticus", 1)
 }
+
+#[test]
+fn w05d_undefined_source_spell_retains_its_native_element() {
+    let (records, mut profiles) = native();
+    for profile in &mut profiles {
+        if let Data::Effect(effect) = &mut profile.data {
+            effect.damage_type = "undefined".into();
+        }
+    }
+    let creature = Ref {
+        family: ProjectV2Family::Creature,
+        key: "oteryn:creature.1st_mate_ratticus".into(),
+        revision: "definition-r1".into(),
+    };
+    let source = SpellSource::from_native(&creature, 1, &records, &profiles, [1; 32])
+        .expect("Undefined is an actual source damage family");
+    assert_eq!(source.element(), Some("undefined"));
+}
+
 fn setup_named(
     name: &str,
     index: usize,
@@ -208,7 +227,11 @@ fn setup_named_at(
         .expect("qualified fixture");
     let (records, profiles) = if matches!(
         name,
-        "radiant_acolyte" | "radiant_paragon" | "radiant_templar" | "phosphorus_final"
+        "radiant_acolyte"
+            | "radiant_paragon"
+            | "radiant_templar"
+            | "phosphorus_final"
+            | "cake_golem"
     ) {
         let document: crate::content::native_gameplay::CreatureProfilesDocument =
             serde_json::from_slice(include_bytes!(concat!(
@@ -1735,7 +1758,9 @@ fn summer_phosphorus_curse_current_owner_preserves_all_delayed_ticks_and_replay(
     ];
     // PHOSPHORUS_NATIVE_REGENERATION_ACCOUNTING: source_take_due advances the
     // same always-on regeneration owner before applying the curse. This hungry
-    // Druid gains one HP per four credited owner seconds. The early call above
+    // Druid credits one health tick per four owner seconds; each tick is the
+    // REGEN-PCT-4 Druid share (8 bp of 100_000 max health = 80 HP), above the
+    // Global floor of half a point. The early call above
     // credits one second at 3_999_999us; the 4_000_000us call is too early for the
     // next second. Later two-second observations each credit one owner second,
     // so the five health credits occur at these exact times (no catch-up burst).
@@ -1757,7 +1782,7 @@ fn summer_phosphorus_curse_current_owner_preserves_all_delayed_ticks_and_replay(
         assert_eq!(tick.damage, amount, "source tick {index}");
         total += amount;
         if regeneration_due_us.contains(&now) {
-            regenerated += 1;
+            regenerated += 80;
         }
         assert_eq!(
             vitals
@@ -1881,7 +1906,13 @@ fn summer_current_holy_target_lethal_hit_retains_the_existing_death_receipt() {
 
 fn qualify_current_spell_replay(name: &str, index: usize) {
     let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
-    let execute = if source.area.is_some() {
+    let execute = if source.element() == Some("undefined") {
+        // The production profile cycle uses execute_current for ordinary
+        // source-bound casts (monster_profile_cycle/physical_spell.rs:257-262).
+        // The narrower target-only elemental helper deliberately excludes
+        // Undefined and must retain that contract for its existing callers.
+        DamageSpellOwner::execute_current
+    } else if source.area.is_some() {
         DamageSpellOwner::execute_current_elemental_area
     } else {
         DamageSpellOwner::execute_current_target_damage
@@ -1952,6 +1983,48 @@ fn qualify_current_spell_replay(name: &str, index: usize) {
         ),
         Err(AttackError::StaleOwner)
     );
+}
+
+#[test]
+fn w05d_native_cake_poisoned_cake_uses_undefined_hp_and_current_owner_replay() {
+    // Crystal cake_golem.lua:79 omits the type: monsters.hpp:244 defaults
+    // Undefined. Its poison appearance does not convert the HP family to Earth.
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named("cake_golem", 1);
+    assert_eq!(source.element(), Some("undefined"));
+    assert_eq!((source.minimum, source.maximum, source.range), (0, 40, 7));
+    assert!(!source.armor);
+    let before = crate::gameplay_transport::actor_spell::observe_vitals(
+        &runtime,
+        &vitals,
+        proposal.target,
+        world.facts.attack.session,
+    )
+    .expect("current player before restricted qualification");
+    let stamp = runtime.issue_owner_work().expect("actual owner stamp");
+    assert_eq!(
+        DamageSpellOwner::default().execute_current_target_damage(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        ),
+        Err(AttackError::UnsupportedShape),
+        "restricted elemental-only API retains its Undefined refusal"
+    );
+    assert_eq!(
+        crate::gameplay_transport::actor_spell::observe_vitals(
+            &runtime,
+            &vitals,
+            proposal.target,
+            world.facts.attack.session,
+        )
+        .expect("current player after restricted qualification"),
+        before
+    );
+    qualify_current_spell_replay("cake_golem", 1);
 }
 
 #[test]
@@ -4494,6 +4567,10 @@ fn monster_current_chain_retired_owner_cannot_consume_pending_step() {
         .expect("pending current cast");
     runtime.retire_owner_cycle();
     assert_eq!(
+        chain.next_due_time_current(&runtime),
+        Err(AttackError::StaleOwner)
+    );
+    assert_eq!(
         chain.run_due_current(
             &mut runtime,
             stamp,
@@ -4512,6 +4589,254 @@ fn monster_current_chain_retired_owner_cannot_consume_pending_step() {
             .expect("pending source retained")
             .len(),
         1
+    );
+}
+
+#[test]
+fn monster_windup_cutoff_retains_original_due_and_uses_actual_condition_time() {
+    use crate::foundation::owner_timer::VirtualOwnerClock;
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) = windup_setup();
+    let stamp = runtime.issue_owner_work().expect("actual windup admission");
+    let session = world.facts.attack.session;
+    let mut owner = DamageSpellOwner::default();
+    owner
+        .execute_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("native fear schedules its real windup");
+    let original = owner.pending_windups().remove(0);
+    let before = vitals
+        .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+        .expect("current Player before the due callback")
+        .clone();
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(10_000_000));
+    let due_stamp = runtime.issue_owner_work().expect("actual due work");
+    let mut reads = 0;
+    assert!(
+        owner
+            .run_windup_due_current_through_with(
+                &mut runtime,
+                due_stamp,
+                &mut vitals,
+                &clock,
+                SemanticTimeMicros::from_micros(3_999_999),
+                |_, _, _, _| {
+                    reads += 1;
+                    Some(Box::new(world.clone()) as Box<dyn SpellWorldReader>)
+                },
+            )
+            .expect("later original deadline stays queued")
+            .is_empty()
+    );
+    assert_eq!(reads, 0);
+    let retained = owner.pending_windups().remove(0);
+    assert_eq!(retained.0.fingerprint, original.0.fingerprint);
+    assert_eq!(retained.1, original.1);
+    assert_eq!(retained.2, original.2);
+    assert_eq!(retained.3, original.3);
+    assert_eq!(
+        owner.next_windup_due_time_current(&runtime),
+        Ok(Some(SemanticTimeMicros::from_micros(4_000_000)))
+    );
+    assert_eq!(
+        vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("cutoff did not change Player"),
+        &before
+    );
+    let fired = owner
+        .run_windup_due_current_through_with(
+            &mut runtime,
+            due_stamp,
+            &mut vitals,
+            &clock,
+            SemanticTimeMicros::from_micros(4_000_000),
+            |actual_source, actual_proposal, actual_session, actual_stamp| {
+                reads += 1;
+                assert_eq!(actual_source.fingerprint, original.0.fingerprint);
+                assert_eq!(actual_proposal, &original.1);
+                assert_eq!(actual_session, original.2);
+                assert_eq!(actual_stamp, due_stamp);
+                Some(Box::new(world.clone()) as Box<dyn SpellWorldReader>)
+            },
+        )
+        .expect("selected original deadline executes now");
+    assert_eq!(reads, 1);
+    assert_eq!(fired.len(), 1);
+    assert!(
+        fired[0].1.as_ref().expect("fear callback").targets[0]
+            .1
+            .as_ref()
+            .expect("real condition receipt")
+            .condition_only_applied
+    );
+    assert!(!vitals.native_condition_movement_allowed(
+        &runtime,
+        proposal.target,
+        session,
+        oteryn_simulation_determinism::SemanticTimeMicros::from_micros(12_999_999),
+    ));
+    assert!(vitals.native_condition_movement_allowed(
+        &runtime,
+        proposal.target,
+        session,
+        oteryn_simulation_determinism::SemanticTimeMicros::from_micros(13_000_000),
+    ));
+    assert!(owner.pending_windups().is_empty());
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        owner.next_windup_due_time_current(&runtime),
+        Err(AttackError::StaleOwner)
+    );
+}
+
+#[test]
+fn monster_chain_cutoff_keeps_next_recipient_and_observes_current_condition_time() {
+    use crate::creature_chain_attack::{ChainMapFacts, ChainOwner};
+    use crate::foundation::owner_timer::VirtualOwnerClock;
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+        setup_named("bony_sea_devil", 5);
+    let (second, session) = chain_second(&mut runtime, &mut vitals, &mut world);
+    let mut map = CurrentChainMap { missing: false };
+    let stamp = runtime.issue_owner_work().expect("actual chain admission");
+    let mut chain = ChainOwner::new_current(&runtime).expect("current chain owner");
+    let token = chain
+        .schedule_current(
+            &runtime,
+            stamp,
+            &source,
+            &proposal,
+            &mut world,
+            &mut map,
+            SemanticTimeMicros::from_micros(0),
+        )
+        .expect("native chain freezes actual recipients");
+    let damage = DamageSpellOwner::default();
+    let first_clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
+    let first = chain
+        .run_due_current_through_with(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &damage,
+            &first_clock,
+            SemanticTimeMicros::from_micros(0),
+            |_, _, _, _, _| {
+                Some((
+                    Box::new(world.clone()) as Box<dyn SpellWorldReader>,
+                    Box::new(CurrentChainMap { missing: false }) as Box<dyn ChainMapFacts>,
+                ))
+            },
+        )
+        .expect("first original step");
+    assert_eq!(first.len(), 1);
+    assert!(first[0].2.is_ok());
+    let original = chain.pending_sources().expect("frozen next step").remove(0);
+    assert_eq!(original.due.get(), 50_000);
+    assert_eq!(
+        (original.proposal.target, original.session),
+        (second, session)
+    );
+
+    // The real current Player now owns a condition from after the original
+    // deadline. A fake cutoff clock would reject its HP owner as time-travelling;
+    // an invisible secondary chain recipient remains source-permitted.
+    let due_stamp = runtime.issue_owner_work().expect("current secondary work");
+    install_recipient_invisibility(&runtime, &mut vitals, second, session, due_stamp);
+    world.invisible.insert(second.placement_identity());
+    let before = vitals
+        .read_owned_player_state_test_snapshot(&runtime, second, session)
+        .expect("current secondary Player")
+        .clone();
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(2_000_000));
+    let mut reads = 0;
+    assert!(
+        chain
+            .run_due_current_through_with(
+                &mut runtime,
+                due_stamp,
+                &mut vitals,
+                &damage,
+                &clock,
+                SemanticTimeMicros::from_micros(49_999),
+                |_, _, _, _, _| {
+                    reads += 1;
+                    None
+                },
+            )
+            .expect("secondary deadline remains beyond cutoff")
+            .is_empty()
+    );
+    assert_eq!(reads, 0);
+    let retained = chain
+        .pending_sources()
+        .expect("same pending step")
+        .remove(0);
+    assert_eq!(retained.source.fingerprint, original.source.fingerprint);
+    assert_eq!(retained.proposal, original.proposal);
+    assert_eq!(retained.session, original.session);
+    assert_eq!(retained.from, original.from);
+    assert_eq!(retained.due, original.due);
+    assert_eq!(
+        chain.next_due_time_current(&runtime),
+        Ok(Some(original.due))
+    );
+    assert_eq!(
+        vitals
+            .read_owned_player_state_test_snapshot(&runtime, second, session)
+            .expect("unselected step kept HP"),
+        &before
+    );
+    let fired = chain
+        .run_due_current_through_with(
+            &mut runtime,
+            due_stamp,
+            &mut vitals,
+            &damage,
+            &clock,
+            original.due,
+            |actual_source, actual_proposal, actual_session, actual_from, actual_stamp| {
+                reads += 1;
+                assert_eq!(actual_source.fingerprint, original.source.fingerprint);
+                assert_eq!(actual_proposal, &original.proposal);
+                assert_eq!(actual_session, original.session);
+                assert_eq!(actual_from, original.from);
+                assert_eq!(actual_stamp, due_stamp);
+                Some((
+                    Box::new(world.clone()) as Box<dyn SpellWorldReader>,
+                    Box::new(CurrentChainMap { missing: false }) as Box<dyn ChainMapFacts>,
+                ))
+            },
+        )
+        .expect("selected step uses current observation time");
+    assert_eq!(reads, 1);
+    assert_eq!(fired.len(), 1);
+    assert_eq!((fired[0].0, fired[0].1), (token, 1));
+    assert!(
+        fired[0].2.as_ref().expect("actual secondary hit").targets[0]
+            .1
+            .as_ref()
+            .expect("canonical HP receipt")
+            .damage
+            .expect("damage")
+            .applied
+            > 0
+    );
+    assert!(
+        chain
+            .pending_sources()
+            .expect("completed source cast")
+            .is_empty()
+    );
+    assert_eq!(
+        chain.receipts(token).expect("one receipt per step").len(),
+        2
     );
 }
 
@@ -4689,4 +5014,96 @@ fn monster_chain_factory_receives_frozen_origin_and_exact_step_under_supplied_wo
             .is_empty()
     );
     assert_eq!(called, 2);
+}
+
+#[test]
+fn srx2_charm_native_glyph_resolver_inverts_empty_mana_and_replays() {
+    let (mut runtime, mut states, source, proposal, mut world, fence, stamp) =
+        setup_named("an_astral_glyph", 3);
+    qualify_hazard_monster(
+        &mut runtime,
+        proposal.issuer,
+        "oteryn:creature.an_astral_glyph",
+    );
+    let session = world.facts.attack.session;
+    runtime
+        .bind_attacker_lease(
+            proposal.target,
+            session,
+            crate::foundation::CharacterLease::new(
+                crate::foundation::CharacterId::decode(&test_uuid(0x72)).expect("character"),
+                1,
+            )
+            .expect("lease"),
+        )
+        .expect("bind actual charm principal");
+    states
+        .apply_attack_mana_drain(
+            &mut runtime,
+            proposal.target,
+            session,
+            90,
+            "srx2:glyph-empty",
+            SemanticTimeMicros::from_micros(0),
+        )
+        .expect("empty native MP");
+    let mut owner = DamageSpellOwner::default();
+    let hit = states
+        .with_source_charm_test(
+            &mut runtime,
+            proposal.issuer,
+            proposal.target,
+            session,
+            "void_inversion",
+            |runtime, vitals| {
+                owner.execute(
+                    runtime,
+                    &fence,
+                    stamp,
+                    vitals,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(2_000_000),
+                )
+            },
+        )
+        .expect("native glyph resolver");
+    let mana = hit.targets[0]
+        .1
+        .as_ref()
+        .expect("target")
+        .mana
+        .expect("MP receipt");
+    assert_eq!((mana.mana_before, mana.mana_after), (0, 90));
+    let replay = states
+        .with_source_charm_test(
+            &mut runtime,
+            proposal.issuer,
+            proposal.target,
+            session,
+            "void_inversion",
+            |runtime, vitals| {
+                owner.execute(
+                    runtime,
+                    &fence,
+                    stamp,
+                    vitals,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(9_000_000),
+                )
+            },
+        )
+        .expect("native glyph replay");
+    assert_eq!(replay, hit);
+    let (_, vitals) = crate::gameplay_transport::actor_spell::observe_vitals(
+        &runtime,
+        &states,
+        proposal.target,
+        session,
+    )
+    .expect("native client vitals");
+    assert_eq!((vitals.health, vitals.mana), (185, 90));
 }

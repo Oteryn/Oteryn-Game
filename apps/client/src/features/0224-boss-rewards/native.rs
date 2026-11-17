@@ -42,6 +42,9 @@ fn wide(text: &str) -> Vec<u16> {
         .collect()
 }
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut m = lock(&link.mailbox);
         if m.boss_rewards.open {
@@ -65,7 +68,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Boss rewards").as_ptr(),
+            wide(tr!("Boss rewards")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -90,7 +93,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         control(
             hwnd,
             "STATIC",
-            "Death id (32 hex digits)",
+            tr!("Death id (32 hex digits)"),
             110,
             [10, 10, 190, 24],
             0,
@@ -103,7 +106,14 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [205, 10, 400, 24],
             WS_BORDER | WS_TABSTOP,
         );
-        control(hwnd, "STATIC", "Reward ordinal", 111, [10, 45, 120, 24], 0);
+        control(
+            hwnd,
+            "STATIC",
+            tr!("Reward ordinal"),
+            111,
+            [10, 45, 120, 24],
+            0,
+        );
         let ordinal = control(
             hwnd,
             "EDIT",
@@ -113,10 +123,10 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             ES_NUMBER as u32 | WS_BORDER | WS_TABSTOP,
         );
         for (i, (label, id)) in [
-            ("Browse", BROWSE),
-            ("Take item", TAKE),
-            ("Collect group", GROUP),
-            ("Collect all", ALL),
+            (tr!("Browse"), BROWSE),
+            (tr!("Take item"), TAKE),
+            (tr!("Collect group"), GROUP),
+            (tr!("Collect all"), ALL),
         ]
         .iter()
         .enumerate()

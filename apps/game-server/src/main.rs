@@ -2,6 +2,12 @@ use oteryn_game_server::{GAMEPLAY_UNAVAILABLE_REASON, bootstrap_smoke};
 use std::ffi::OsStr;
 use std::process::ExitCode;
 
+// tokio-console needs tokio's task instrumentation, which only `--cfg tokio_unstable` compiles.
+#[cfg(all(feature = "diagnostics", not(tokio_unstable)))]
+compile_error!(
+    "feature `diagnostics` needs RUSTFLAGS=\"--cfg tokio_unstable\"; build with tools/diagnostics/console-build.sh"
+);
+
 fn main() -> ExitCode {
     use oteryn_game_server::node::serve::{LogKind, begin_process};
     let process = "oteryn-game-server";
@@ -80,6 +86,17 @@ fn serve(arguments: &[std::ffi::OsString]) -> ExitCode {
     // large in a debug build and overflowed the 8 MiB main thread at admission. Box the future
     // and poll it on a dedicated thread, and run the workers, with an explicit stack.
     const NODE_STACK_BYTES: usize = 64 << 20;
+    // tokio-console diagnostics build only: the console layer alone, so the node's own log
+    // output is unchanged. Nothing else installs a tracing subscriber, so `try_init` succeeds.
+    #[cfg(feature = "diagnostics")]
+    {
+        use tracing_subscriber::layer::SubscriberExt as _;
+        use tracing_subscriber::util::SubscriberInitExt as _;
+        let console = console_subscriber::ConsoleLayer::builder()
+            .with_default_env()
+            .spawn();
+        let _ = tracing_subscriber::registry().with(console).try_init();
+    }
     let runtime = match tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_stack_size(NODE_STACK_BYTES)
@@ -90,10 +107,8 @@ fn serve(arguments: &[std::ffi::OsString]) -> ExitCode {
     };
     let path = std::path::PathBuf::from(path);
     let npc_data = npc_data.map(|(project, digest)| (project.to_path_buf(), digest.to_owned()));
-    let served = std::thread::Builder::new()
-        .name("game-node".into())
-        .stack_size(NODE_STACK_BYTES)
-        .spawn(move || {
+    let served =
+        oteryn_task_supervisor::spawn_thread_supervised("game-node", NODE_STACK_BYTES, move || {
             runtime.block_on(Box::pin(
                 oteryn_game_server::node::serve::run_with_npc_data_project(
                     &path,

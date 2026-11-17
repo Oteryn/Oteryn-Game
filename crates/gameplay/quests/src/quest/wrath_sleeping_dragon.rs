@@ -1,5 +1,5 @@
 //! Crystal's finite text adventure. The NPC adapter owns the ephemeral topic;
-//! final completion and its achievement remain deferred together.
+//! final completion and its achievement commit together through the Quest writer.
 //! zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:
 //! data-global/npc/a_sleeping_dragon.lua:67-198.
 
@@ -107,13 +107,6 @@ pub fn respond(questline: i64, potion: i64, topic: u8, message: &str) -> Option<
         .steps
         .iter()
         .find(|step| step.topic == topic && step.keyword == lowered)?;
-    if topic == 32 {
-        // Crystal a_sleeping_dragon.lua:185-198 awards Wayfarer together with
-        // QuestLine=28 and Mission09=2. Its shared writer hook is out of scope:
-        // https://github.com/Oteryn/Oteryn-Game/pull/2844#issuecomment-6589902675
-        // Keep the source reply in the capture, without claiming completion.
-        return None;
-    }
     Some(Reply {
         topic: step.next_topic,
         messages: &step.messages,
@@ -132,12 +125,55 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
             return Err(format!("Sleeping Dragon source track {key}"));
         }
     }
-    Ok(catalogue)
+    use super::{QuestComparison, QuestEffect, QuestEffectKind, QuestTransition};
+    let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
+    transitions.push(QuestTransition {
+        world_change: None,
+        key: COMPLETE.into(),
+        quest: QUEST.into(),
+        effects: [
+            (QUESTLINE, QuestComparison::Eq(27), 28),
+            (MISSION, QuestComparison::Any, 2),
+            (POTION, QuestComparison::Eq(1), 1),
+        ]
+        .into_iter()
+        .map(|(track, from, value)| QuestEffect {
+            track: track.into(),
+            from,
+            effect: QuestEffectKind::Set(value),
+        })
+        .collect(),
+        // The dream ends Mission09, not the whole Wrath storyline.
+        completes: false,
+        experience: None,
+    });
+    QuestStateCatalogue::new(
+        catalogue.content_revision,
+        catalogue.tracks.into_values().collect(),
+        transitions,
+    )
+    .map_err(|e| format!("{e:?}"))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nx6_finale_has_reply_and_atomic_transition() -> Result<(), String> {
+        let reply = respond(27, 1, 32, "use mirror").ok_or("final reply")?;
+        assert_eq!(reply.topic, 0);
+        assert_eq!(reply.messages.len(), 7);
+        let data =
+            super::super::loader::load_embedded_quest_state("nx6").map_err(|e| format!("{e:?}"))?;
+        let transition = data
+            .catalogue()
+            .transition(COMPLETE)
+            .ok_or("final transition")?;
+        assert_eq!(transition.effects.len(), 3);
+        assert!(!transition.completes, "Wrath continues after the dream");
+        Ok(())
+    }
 
     #[test]
     fn opening_requires_source_case_stage_and_used_potion() {
@@ -169,39 +205,56 @@ mod tests {
     }
 
     #[test]
-    fn sleeping_dragon_final_is_deferred_with_no_success_or_transition() -> Result<(), String> {
-        // ANSWER6589902675: the source completion includes Wayfarer and needs
-        // a new shared writer hook. All completion effects stay Left out together.
+    fn sleeping_dragon_final_requires_locked_source_prerequisites() -> Result<(), String> {
+        use super::super::{QuestRefusal, loader};
+        let data =
+            loader::load_embedded_quest_state("wrath-final-test").map_err(|e| format!("{e:?}"))?;
+        let catalogue = data.catalogue();
+        let finale = catalogue.transition(COMPLETE).ok_or("finale")?;
+        let mut tracks = std::collections::BTreeMap::from([
+            (QUESTLINE.into(), 27),
+            (MISSION.into(), 1),
+            (POTION.into(), 1),
+        ]);
+        let changes = catalogue
+            .evaluate(finale, &tracks, 0)
+            .map_err(|e| format!("{e:?}"))?;
         assert!(
-            respond(27, 1, 32, "use mirror").is_none(),
-            "no success text or state-only completion without the achievement owner"
+            changes
+                .iter()
+                .any(|c| c.track == QUESTLINE && c.after == 28)
         );
-        let data = super::super::loader::parse_quest_state(
-            include_str!("../../../../../content/quests/missions/quest-state.json"),
-            "wrath-final-test",
-        )
-        .map_err(|e| format!("{e:?}"))?;
-        let catalogue = extend(data.catalogue().clone())?;
-        assert!(catalogue.transition(COMPLETE).is_none());
+        assert!(changes.iter().any(|c| c.track == MISSION && c.after == 2));
+        tracks.insert(POTION.into(), 0);
+        assert_eq!(
+            catalogue.evaluate(finale, &tracks, 0),
+            Err(QuestRefusal::StageMismatch)
+        );
+        tracks.insert(POTION.into(), 1);
+        tracks.insert(QUESTLINE.into(), 28);
+        assert_eq!(
+            catalogue.evaluate(finale, &tracks, 0),
+            Err(QuestRefusal::StageMismatch)
+        );
         Ok(())
     }
 
     #[test]
-    fn first_31_source_steps_stop_before_the_deferred_atomic_finale() -> Result<(), String> {
+    fn all_source_steps_end_in_the_atomic_finale() -> Result<(), String> {
         let data = dialogue().ok_or("dialogue")?;
         let mut topic = respond(27, 1, 0, &data.entry_keyword).ok_or("entry")?.topic;
-        for step in data.steps.iter().take(31) {
+        for step in data.steps.iter() {
             let reply = respond(27, 1, topic, &step.keyword).ok_or("step")?;
             assert_eq!(reply.messages, step.messages);
             topic = reply.topic;
         }
-        assert_eq!(topic, 32);
+        assert_eq!(topic, 0);
         assert_eq!(
             data.steps.last().map(|step| step.keyword.as_str()),
             Some("use mirror")
         );
         assert!(respond(27, 1, topic, "use mirror").is_none());
-        assert_eq!(respond(27, 1, topic, "help").ok_or("final help")?.topic, 32);
+        assert!(respond(27, 1, topic, "help").is_none());
         assert!(respond(28, 1, 32, "use mirror").is_none());
         Ok(())
     }

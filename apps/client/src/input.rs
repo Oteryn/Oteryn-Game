@@ -13,6 +13,17 @@ pub use oteryn_client_ui::world_interaction::{
 use oteryn_renderer::TileCoord;
 use oteryn_session::EntityRef;
 
+/// Ctrl+Shift+S opens the store only with those exact modifiers.
+pub(crate) fn store_key(events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+    use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
+    let chord = Modifiers::one(Modifier::Control).with(Modifier::Shift);
+    events.iter().any(|event| {
+        matches!(event, NormalizedInputEvent::Key {
+            code, state: ButtonState::Pressed, modifiers, repeat: false
+        } if code.get() == 22 && *modifiers == chord)
+    })
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TargetKind {
     Object,
@@ -27,6 +38,7 @@ pub struct Targetable {
     pub glyph: bool,
     /// The server entity drawn there, when it is one a click may attack.
     pub entity: Option<EntityRef>,
+    pub item: Option<crate::play::GroundItem>,
 }
 /// Selects an entity before an object; the last candidate of a kind wins, matching draw order.
 #[must_use]
@@ -181,18 +193,21 @@ mod tests {
                 kind: TargetKind::Object,
                 glyph: false,
                 entity: None,
+                item: None,
             },
             Targetable {
                 tile: t(1, 1),
                 kind: TargetKind::Entity,
                 glyph: false,
                 entity: None,
+                item: None,
             },
             Targetable {
                 tile: t(2, 2),
                 kind: TargetKind::Object,
                 glyph: false,
                 entity: None,
+                item: None,
             },
         ];
         assert_eq!(
@@ -228,7 +243,15 @@ mod tests {
     fn primary_click_becomes_a_gameplay_action_at_the_pointer() -> Result<(), InputError> {
         let mut actions = MouseActions::new()?;
         let clicks = actions.route(&[moved(100, 60)?, primary(ButtonState::Pressed)]);
-        assert_eq!(clicks, vec![ClickAction { x: 100.0, y: 60.0 }]);
+        assert_eq!(
+            clicks,
+            vec![ClickAction {
+                x: 100.0,
+                y: 60.0,
+                secondary: false,
+                toggle_attack: false
+            }]
+        );
         assert!(actions.route(&[primary(ButtonState::Released)]).is_empty());
         Ok(())
     }
@@ -274,7 +297,12 @@ mod tests {
         actions.route(&[primary(ButtonState::Released), moved(30, 40)?]);
         assert_eq!(
             actions.route(&[primary(ButtonState::Pressed)]),
-            vec![ClickAction { x: 30.0, y: 40.0 }]
+            vec![ClickAction {
+                x: 30.0,
+                y: 40.0,
+                secondary: false,
+                toggle_attack: false
+            }]
         );
         actions.route(&[
             primary(ButtonState::Released),
@@ -318,19 +346,19 @@ mod tests {
             repeat: false,
         };
         assert_eq!(
-            arrow_step(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)]),
+            arrow_step(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)], false),
             Some(StepDir::West)
         );
         assert_eq!(
-            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)]),
+            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)], false),
             Some(StepDir::North)
         );
         assert_eq!(
-            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Released)]),
+            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Released)], false),
             None
         );
         assert_eq!(
-            arrow_step(&[key(KeyCode::KEY_W, ButtonState::Pressed)]),
+            arrow_step(&[key(KeyCode::KEY_W, ButtonState::Pressed)], false),
             None
         );
     }

@@ -91,6 +91,7 @@ impl DurabilityRoot {
             }
         }
         drop(keys);
+        let requirements = crate::durability::world_event::changes::raid_requirements()?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -123,6 +124,10 @@ impl DurabilityRoot {
             }
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:raid-world:' || encode($1,'hex'),0))")
                 .bind(request.world.as_bytes().as_slice()).execute(&mut *tx).await?;
+            // Crystal data-global/scripts/lib/a_piece_of_cake_config.lua:388-405 phase gate is preceded
+            // by the current durable event phase/timer settlement under this
+            // same fenced world lock; no detached worker advances the event.
+            crate::durability::cake_event::settle_current_world(&mut tx, request.world, request.reset_epoch).await?;
             // Retire previous-epoch firings before checking a new admitted epoch.
             // Their channel effects become LOST cleanup on the normal runner path.
             sqlx::query("UPDATE game_world_raid_firings SET state=3 WHERE world_id=encode($1,'hex')::uuid AND reset_epoch<>$2::text::numeric AND state=1")
@@ -132,15 +137,23 @@ impl DurabilityRoot {
             crate::durability::raid_runner::reconcile_deadlines(&mut tx, request.world, request.now_ms).await?;
             let last_end: i64 = sqlx::query_scalar("SELECT last_end_at_ms FROM game_world_raid_scheduler_clocks WHERE world_id=encode($1,'hex')::uuid FOR UPDATE")
                 .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-            let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
-                .bind(request.world.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            let mut legacy_running: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_raid_firings f WHERE f.world_id=encode($1,'hex')::uuid AND f.state=1 AND f.raid_key<>$2 AND NOT EXISTS(SELECT 1 FROM game_world_raid_schedule_sources s WHERE s.world_id=f.world_id AND s.raid_key=f.raid_key AND s.source_kind<>1))")
+                .bind(request.world.as_bytes().as_slice()).bind(super::FEROXA_KEY).fetch_one(&mut *tx).await?;
+            let world_changes = if request.candidates.iter().any(|candidate| requirements.contains_key(candidate.key.as_str())) {
+                crate::durability::world_event::changes::load(&mut tx, request.world, request.reset_epoch).await?
+            } else { None };
             let mut fired = Vec::new();
             let mut retry_activity = false;
             for candidate in request.candidates {
+                if let Some(required) = requirements.get(candidate.key.as_str())
+                    && !world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)) {
+                    continue;
+                }
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }
                     else if candidate.calendar_window.is_some() { 3 } else { 1 };
-                if (source_kind == 1 && legacy_running)
-                    || (source_kind != 1 && !candidate.eligible)
+                let legacy = source_kind == 1 && candidate.key.as_str() != super::FEROXA_KEY;
+                if (legacy && legacy_running)
+                    || (!legacy && !candidate.eligible)
                 { continue; }
                 super::lock(&mut tx, &recovery, request.world, &candidate.key).await
                     .map_err(|_| DurabilityError::Unavailable)?;
@@ -169,7 +182,33 @@ impl DurabilityRoot {
                     before = reset.after().clone();
                 }
                 if before.retired { continue; }
-                let action = if let Some(lua_candidate) = &candidate.lua {
+                // The retained XML supplies physical waves; Grimvale's source
+                // state owns occurrence selection independently of XML odds.
+                let feroxa_definition = (candidate.key.as_str() == super::FEROXA_KEY).then(|| {
+                    let mut definition = candidate.definition.clone();
+                    definition.policy = RaidPolicy::SourceScheduled;
+                    definition
+                });
+                let definition = feroxa_definition.as_ref().unwrap_or(&candidate.definition);
+                let action = if feroxa_definition.is_some() {
+                    if request.now_ms < before.next_check_at_ms { continue; }
+                    // The runner advances source Active under firing -> occurrence
+                    // locks. Match that order before selected() locks the occurrence;
+                    // write_transition() also updates this existing firing below.
+                    if let Some(firing) = &before.latest_firing {
+                        sqlx::query("SELECT 1 FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid FOR UPDATE")
+                            .bind(firing.firing_id.as_slice()).execute(&mut *tx).await?;
+                    }
+                    let prior = before.latest_firing.as_ref()
+                        .filter(|firing| firing.reset_epoch == request.reset_epoch)
+                        .map(|firing| firing.fired_at_ms);
+                    let selected = super::feroxa::selected(&mut tx, request.world,
+                        request.reset_epoch, before.check_ordinal, request.now_ms, prior).await?;
+                    RaidAction::ResolvedCheck {
+                        now_ms: request.now_ms, selected,
+                        firing_id: candidate.firing_id, bundle_digest: request.bundle_digest,
+                    }
+                } else if let Some(lua_candidate) = &candidate.lua {
                     let running = before.latest_firing.as_ref()
                         .is_some_and(|firing| firing.state == FiringState::Running);
                     let selected = match lua::selected(&mut tx, request.world, &candidate.key,
@@ -187,11 +226,24 @@ impl DurabilityRoot {
                     }
                 } else if let Some(window) = &candidate.calendar_window {
                     let clock = calendar::clock(&mut tx, request.world, request.now_ms).await?;
-                    let in_window = window.window.contains(clock.month, clock.month_day)
+                    // Startup-activated repeating cycles belong to the committed reset date,
+                    // so a delayed reset cannot start the next month's source early.
+                    let (month,day) = if window.repeat { (clock.epoch_month,clock.epoch_month_day) } else { (clock.month,clock.month_day) };
+                    let in_window = window.window.contains(month,day)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     let interval_due = before.last_fired_at_ms.is_none_or(|last|
                         request.now_ms.saturating_sub(last) >= i64::from(window.interval_ms));
-                    let persistent_fired = candidate.definition.despawn_after_ms.is_none()
+                    // Crystal globalevents_cake_raids.lua:9-29 registers 24
+                    // absolute daily slots: save06:00 + offset4, hourly modulo1440.
+                    // Its config:388-405 requires stage1 at the actual firing.
+                    let interval_due = if candidate.key.as_str() == "oteryn:raid.piece_of_cake" {
+                        let phase = crate::durability::raid_runner::cake::phase_one_in_transaction(
+                            &mut tx, request.world, request.reset_epoch).await?;
+                        clock.minute_of_day % 60 == 4
+                            && before.last_fired_at_ms.is_none_or(|last| last < clock.minute_started_at_ms)
+                            && phase.is_some_and(|progress| progress.phase_one_active())
+                    } else { interval_due };
+                    let persistent_fired = !window.repeat && candidate.definition.despawn_after_ms.is_none()
                         && before.latest_firing.as_ref().is_some_and(|f| f.reset_epoch == request.reset_epoch);
                     RaidAction::ResolvedCheck {
                         now_ms: request.now_ms, selected: in_window && interval_due && !persistent_fired,
@@ -200,13 +252,13 @@ impl DurabilityRoot {
                 } else {
                     let margin_end = last_end.checked_add(i64::from(candidate.global_margin_ms))
                         .ok_or(DurabilityError::InvalidStoredState)?;
-                    if request.now_ms < margin_end { continue; }
+                    if legacy && request.now_ms < margin_end { continue; }
                     RaidAction::Check {
                         now_ms: request.now_ms, eligible: candidate.eligible, calendar: candidate.calendar,
                         firing_id: candidate.firing_id, bundle_digest: request.bundle_digest,
                     }
                 };
-                let planned = before.plan(request.world, &candidate.key, &candidate.definition, action)
+                let planned = before.plan(request.world, &candidate.key, definition, action)
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
                 if planned.after() == planned.before() { continue; }
                 storage::write_transition(&mut tx, request.world, &candidate.key, &planned).await
@@ -216,7 +268,7 @@ impl DurabilityRoot {
                         .bind(candidate.firing_id.as_slice()).bind(request.world.as_bytes().as_slice())
                         .execute(&mut *tx).await?;
                     if targets.rows_affected() == 0 { return Err(DurabilityError::InvalidStoredState); }
-                    if source_kind == 1 { legacy_running = true; }
+                    if legacy { legacy_running = true; }
                     fired.push((candidate.firing_id, candidate.key));
                 }
             }

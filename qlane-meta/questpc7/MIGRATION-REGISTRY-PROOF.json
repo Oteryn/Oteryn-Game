@@ -1,0 +1,210 @@
+{
+  "renames": {
+    "0969_quest_finish": "1200_quest_finish",
+    "1000_corruptor_lifecycle": "1201_corruptor_lifecycle",
+    "1001_questpc_npc_revision": "1202_questpc_npc_revision",
+    "1002_questpc_viola": "1203_questpc_viola",
+    "1003_questpc_viola_book": "1204_questpc_viola_book",
+    "1004_fathers_burden_items": "1205_fathers_burden_items",
+    "1096_npc_quest_item_exchange": "1280_npc_quest_item_exchange",
+    "1097_fathers_burden_xp_proof_name": "1281_fathers_burden_xp_proof_name",
+    "1098_quest_reward_callbacks": "0999_quest_reward_callbacks",
+    "1099_quest_reward_payments": "1000_quest_reward_payments",
+    "1100_quest_repeatable_exchanges": "1282_quest_repeatable_exchanges",
+    "1101_quest_world_item_rewards": "1283_quest_world_item_rewards",
+    "1102_quest_backpack_outputs": "1284_quest_backpack_outputs"
+  },
+  "sha256": {
+    "1280_quest_native_reward_initialization.sql": "19cbc47c9b675b8527658d001d94fb66e3c494b4f4519de4d6b69a37cf15ada4",
+    "1281_quest_corruptor_lifecycle.sql": "01bea81b0c68c863301828f9e190bbf7235426c0ea2d1da55f47ebc3eb285907",
+    "1282_quest_native_npc_revision.sql": "557e97c2d6530e7cb9104d2cdaffbc3fd2b17a68446fd1575419117f5429be41",
+    "1283_quest_viola_rewards.sql": "2fcccdb63dc6bc5da0b285392b090204caa1d670d51243cad3c67b39f4563b28",
+    "1283_quest_viola_rewards.sql": "53b825590b3894684d38333b98e7b8e419c8a9d749e9e325d45a2c1575a43ab1",
+    "1282_quest_native_npc_revision.sql": "8c5da07a907b1325c5fe10d0263ecb26d62e198f968fd1a1f5d8b9faad84ed0d",
+    "1284_npc_quest_item_exchange.sql": "fa9b6a3cfb00153ae27c6550325065c314f03aac13273208699135aaa3d3e85f",
+    "1285_fathers_burden_xp_proof_name.sql": "52422802ea454ea000ced8f7ade39ef6ddcca2e6e1b9888556c19dff6ae0c7c6",
+    "0999_quest_reward_callbacks.sql": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294",
+    "1000_quest_reward_payments.sql": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311",
+    "1286_quest_repeatable_exchanges.sql": "57620785d6f43b096918adb1b44b900479a8eb4075c28a66c41d60be32dff667",
+    "1287_quest_world_item_rewards.sql": "261a092a4e15e92d563368d5afb0b95ce4f75870a4061a195615be2e968db926",
+    "1288_quest_backpack_outputs.sql": "ffc7094ae396ef1ca0ec4d9186b907500813ab5c690279e3b3574f0060a65e5f"
+  },
+  "qengine_source": "9c581fd104aa9c6cbdd8404618e65bc112b73f88",
+  "qengine_exact_bytes": {
+    "0999_quest_reward_callbacks.sql": "971451326e9473f01ab8587c18040f69d39740b6af944f62ac6b3df04ae9f294",
+    "1000_quest_reward_payments.sql": "a041c1f4ad97c8642a81d0a06d2e834b10ae54a55bed7d93b98ec1141dbd9311"
+  },
+  "validation": "PASS",
+  "duplicate_check": {
+    "script": ".claude/skills/oteryn-dev/scripts/dup-migrations.sh",
+    "target": "HEAD after renumbering checkpoint; no duplicate migration numbers",
+    "result": "PASS; no duplicate migration numbers"
+  },
+  "checkpoint": {
+    "compilation": "PASS; dispatch test binary compiled",
+    "postgres": [
+      {
+        "case": "Friends and Traders",
+        "version": "18.6",
+        "seconds": 79.821667304,
+        "result": "PASS; migration1282 checksum matched"
+      },
+      {
+        "case": "Grave Danger",
+        "version": "18.6",
+        "seconds": 56.906081085,
+        "result": "PASS"
+      }
+    ],
+    "pending": [],
+    "red_point": "No migration failure; all requested registry gates passed."
+  },
+  "checks": [
+    {
+      "check": "grave-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_grave_whole_native_journey_and_reward",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 57.167,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-grave-pg.log"
+    },
+    {
+      "check": "father-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "fathers_burden_eight_handins_cape_experience_and_replay",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "seconds": 79.364,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-father-pg.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 81.378,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-check.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 176.928,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-clippy.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 116.809,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "cargo",
+        "run",
+        "--locked",
+        "-p",
+        "oteryn-world-bundle-compiler",
+        "--",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-migrations-pin-check"
+      ],
+      "seconds": 125.417,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 10.862,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-migrations-fmt.log"
+    }
+  ],
+  "postgres": [
+    {
+      "case": "Friends and Traders",
+      "version": "18.6",
+      "seconds": 79.821667304,
+      "checksum_migration": 1282
+    },
+    {
+      "case": "Grave Danger",
+      "version": "18.6",
+      "seconds": 56.906081085
+    },
+    {
+      "case": "Father\u2019s Burden",
+      "seconds": 79.053734315,
+      "scope": "Original eight hand-ins, one atomic eleven-track state write, cape, XP and replay."
+    }
+  ],
+  "final_migration_files": [
+    "0999_quest_reward_callbacks.sql",
+    "1000_quest_reward_payments.sql",
+    "1280_quest_native_reward_initialization.sql",
+    "1281_quest_corruptor_lifecycle.sql",
+    "1282_quest_native_npc_revision.sql",
+    "1283_quest_viola_rewards.sql",
+    "1283_quest_viola_rewards.sql",
+    "1282_quest_native_npc_revision.sql",
+    "1284_npc_quest_item_exchange.sql",
+    "1285_fathers_burden_xp_proof_name.sql",
+    "1286_quest_repeatable_exchanges.sql",
+    "1287_quest_world_item_rewards.sql",
+    "1288_quest_backpack_outputs.sql"
+  ]
+}

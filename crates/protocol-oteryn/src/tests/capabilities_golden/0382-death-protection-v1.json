@@ -1,0 +1,17 @@
+{
+  "id": 382,
+  "name": "DEATH_PROTECTION_V1",
+  "constant": "death_protection::CAPABILITY_DEATH_PROTECTION_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    664
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

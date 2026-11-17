@@ -191,13 +191,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .clone()
             .find(|e| e.item.item_instance_id == tool)
             .ok_or(UseDisposition::StaleState)?;
+        if pick.item.definition.production_key != PICK {
+            return Err(UseDisposition::NothingToUse);
+        }
         let stone = entries
             .clone()
             .find(|e| e.item.item_instance_id == target)
             .ok_or(UseDisposition::StaleState)?;
-        if pick.item.definition.production_key != PICK {
-            return Err(UseDisposition::NothingToUse);
-        }
         // Occurrence is the target instance and remaining quantity, rather than the
         // client-chosen command id: changing a command cannot reroll a refused attempt.
         let mut occurrence = [0; 16];

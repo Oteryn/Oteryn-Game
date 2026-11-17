@@ -1,0 +1,16 @@
+{
+  "mechanic": "0200-team-finder-leader",
+  "kind": "handlers",
+  "id": "0200-team-finder-leader-command-391",
+  "status": "supported",
+  "commands": [
+    391
+  ],
+  "direction": "client_to_server",
+  "capability": 200,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "State is owned by the server; no local settings.",
+    "input": "Leader editor controls are in the combined Team Finder window."
+  }
+}

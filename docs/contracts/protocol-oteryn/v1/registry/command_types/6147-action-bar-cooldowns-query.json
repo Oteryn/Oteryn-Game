@@ -1,0 +1,10 @@
+{
+  "id": 6147,
+  "name": "ACTION_BAR_COOLDOWNS_QUERY",
+  "owner_decision": "cg-abar T168, owner allocation 2026-11-09",
+  "capability": 463,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/action-bar-cooldowns-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/action-bar-cooldowns-v1.md#reply",
+  "max_payload_bytes": 13,
+  "max_result_payload_bytes": 37
+}

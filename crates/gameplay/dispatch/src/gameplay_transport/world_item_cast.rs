@@ -216,7 +216,8 @@ fn resolve_item(
     if !item_rules::grant_allowed(item_properties(&item)) {
         return Err(SpellCastDisposition::NotAvailable);
     }
-    Ok(item)
+    crate::durability::native_world_items::qualify_source_item_chain(content, item)
+        .map_err(|_| SpellCastDisposition::NotAvailable)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -784,7 +785,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(content) = active.native_gameplay() else {
             return rejected();
         };
-        if self.rooms.gate_world_item_cast().is_none() {
+        if self.rooms().gate_world_item_cast().is_none() {
             return rejected();
         }
         let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
@@ -930,7 +931,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
-            let room=owner.rooms.gate_world_item_cast().ok_or(DurabilityError::Unavailable)?;
+            let room=owner.rooms().gate_world_item_cast().ok_or(DurabilityError::Unavailable)?;
             let spell=owner.spells.indexed(intent.spell).ok_or(DurabilityError::Unavailable)?;
             let item_fence=CurrentCharacterItemFence{character_id:fence.character_id,game_session_id:session,
                 connection_generation:fence.connection_generation,character_lease_generation:fence.character_lease_generation,
@@ -1079,6 +1080,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             attempt.training.install_into(&mut attempt.paid);
             attempt.player.install_rebind_training(attempt.paid);
             let receipt=install_owner_batch(&mut runtime,&mut states,attempt.physical,Some(attempt.player),checked);
+            if receipt.applied { states.analyser.supplies(attempt.actor, attempt.session, &attempt.request.operations); }
             if receipt.applied && let Some(presentations)=states.presentations.as_mut(){
                 presentations.install_preflighted(attempt.presentation,&receipt);
             }

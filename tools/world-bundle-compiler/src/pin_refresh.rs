@@ -8,6 +8,7 @@ use std::path::Path;
 
 use oteryn_world_bundle_compiler::Error;
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 
 use super::{
     PIN_SCHEMA, PINS, Pin, build_twice, derive_identity, hex, identity_text, inputs_digest, read,
@@ -58,7 +59,8 @@ pub(super) fn run(root: &Path) -> Result<Value, Error> {
         }
         reports.push(json!({"world": slug, "digest": pin.digest, "previous": old.digest}));
     }
-    Ok(json!({"inputs_digest": tree, "pins": reports}))
+    let client_placements = refresh_client_placements(root)?;
+    Ok(json!({"inputs_digest": tree, "pins": reports, "client_placements": client_placements}))
 }
 
 /// Points the manifest's `[world_bundle]` table and `[readiness] map_revision` at the new pin.
@@ -72,6 +74,20 @@ fn refresh_manifest(path: &Path, old: &Pin, new: &Pin) -> Result<(), Error> {
             table = line.trim().to_owned();
         }
         let mut line = line.replace(&old.digest, &new.digest);
+        // A merge can retain the manifest and pin from different parents. Bind
+        // the named fields even when neither still contains the old pin digest.
+        if (table == "[readiness]" && line.starts_with("map_revision = "))
+            || (table == "[world_bundle]" && line.starts_with("digest = "))
+        {
+            let (prefix, value) = line
+                .split_once('"')
+                .ok_or_else(|| Error::Format("preproduction digest field is not quoted".into()))?;
+            let (_, suffix) = value.split_once('"').ok_or_else(|| {
+                Error::Format("preproduction digest field is not terminated".into())
+            })?;
+            line = format!("{prefix}\"{}\"{suffix}", new.digest);
+        }
+
         if table == "[world_bundle]" {
             for (key, value) in [
                 ("project_format_version", &new.project_format_version),
@@ -88,6 +104,72 @@ fn refresh_manifest(path: &Path, old: &Pin, new: &Pin) -> Result<(), Error> {
     write(path, &out)
 }
 
+/// The client reads the same immutable placement index as the World compiler.
+/// Keep its source pin in the normal pin-refresh transaction after map edits.
+fn refresh_client_placements(root: &Path) -> Result<Option<String>, Error> {
+    let path = root.join("crates/client-assets/src/world.rs");
+    // Small standalone World authoring fixtures need not contain a client crate.
+    if !path.is_file() {
+        return Ok(None);
+    }
+    let index = String::from_utf8(read(&root.join("content/world/placements/index.json"))?)
+        .map_err(|_| Error::Format("client placement index is not UTF-8".into()))?;
+    // Match client-assets::text_sha256 on both LF and CRLF checkouts.
+    let digest = hex(&Sha256::digest(index.replace("\r\n", "\n").as_bytes()));
+    let text = String::from_utf8(read(&path)?)
+        .map_err(|_| Error::Format("client World pin is not UTF-8".into()))?;
+    let updated = client_placement_pin_text(&text, &digest)?;
+    if updated != text {
+        write(&path, &updated)?;
+    }
+    Ok(Some(digest))
+}
+
+fn client_placement_pin_text(text: &str, digest: &str) -> Result<String, Error> {
+    const MARKER: &str = "pub const PLACEMENT_INDEX_SHA256: &str =";
+    let fail = || Error::Format("expected one 64-hex client placement index pin".into());
+    let mut matches = text.match_indices(MARKER);
+    let (start, _) = matches.next().ok_or_else(fail)?;
+    if matches.next().is_some() {
+        return Err(fail());
+    }
+    let tail = start + MARKER.len();
+    let begin = tail + text[tail..].find('"').ok_or_else(fail)? + 1;
+    let end = begin + text[begin..].find('"').ok_or_else(fail)?;
+    if end - begin != 64 || !text[begin..end].bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(fail());
+    }
+    let mut output = text.to_owned();
+    output.replace_range(begin..end, digest);
+    Ok(output)
+}
+
 fn write(path: &Path, text: &str) -> Result<(), Error> {
     fs::write(path, text).map_err(|e| Error::Format(format!("{}: {e}", path.display())))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn client_pin_refresh_preserves_other_pins_and_refuses_ambiguous_sources() -> Result<(), Error>
+    {
+        let source = format!(
+            "pub const OTHER: &str = \"{}\";\npub const PLACEMENT_INDEX_SHA256: &str =\n    \"{}\";\n",
+            "1".repeat(64),
+            "2".repeat(64)
+        );
+        let updated = client_placement_pin_text(&source, &"3".repeat(64))?;
+        assert_eq!(updated, source.replace(&"2".repeat(64), &"3".repeat(64)));
+        assert!(client_placement_pin_text(&format!("{source}{source}"), &"3".repeat(64)).is_err());
+        assert!(
+            client_placement_pin_text(
+                "pub const PLACEMENT_INDEX_SHA256: &str = \"bad\";",
+                &"3".repeat(64)
+            )
+            .is_err()
+        );
+        Ok(())
+    }
 }

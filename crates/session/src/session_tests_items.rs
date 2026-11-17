@@ -4,14 +4,256 @@
 const ITEM_SELECTED: &[u32] = &[4, 6];
 
 #[test]
+fn stash_market_and_tracker_pushes_keep_the_session_usable() -> Result<(), BoxError> {
+    const SUPPORTED: &[u32] = &[4, 6, 37, 62, 63, 197];
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| block_on(async {
+        let stash = stash::encode_stash_reply(&stash::StashReply {
+            outcome: stash::StashOutcome::Opened, stowed_quantity: 0,
+            transaction: None, page: 0, has_more: false, rows: vec![],
+        }).map_err(|e| format!("{e:?}"))?;
+        let market = market::encode_reply(&market::MarketReply {
+            action: 0, code: 11, offer: [0; 16], rows: vec![],
+        }).map_err(|e| format!("{e:?}"))?;
+        let bestiary = cyclopedia_tracker::TrackerSnapshot { boss: false, entries: vec![] };
+        let bosstiary = cyclopedia_tracker::TrackerSnapshot { boss: true, entries: vec![] };
+        let trackers = cyclopedia_tracker::encode_domain_snapshot(&bestiary, &bosstiary).ok_or("trackers")?;
+        let tracker = cyclopedia_tracker::encode_snapshot(&bestiary).ok_or("tracker")?;
+        for (domain, base, payload, initial) in [
+            (27, 0, stash, None),
+            (28, 1, market.clone(), Some(market)),
+            (98, 1, tracker, Some(trackers.clone())),
+        ] {
+            for selected in [true, false] {
+                let capabilities: &'static [u32] = if selected { &[4, 6, 37, 62, 63, 197] } else { &[4, 6, 37] };
+                let mut raw = vec![inventory_domain(0, &CharacterInventory::default())?, container_domain(0, &OpenContainer::default())?];
+                if selected && let Some(initial) = &initial { raw.push((domain, base, 1, initial.clone())); }
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let pushed = payload.clone();
+                let peer = tokio::spawn(async move {
+                    join_peer_with(&mut server, SUPPORTED, capabilities, &[],
+                        item_snapshot(vec![])?, &raw).await?;
+                    read_frame(&mut server).await?;
+                    write_frame(&mut server, &encode_state_delta(1, 41, domain, base, base + 1, 1, &pushed)?).await?;
+                    write_frame(&mut server, &encode_command_result(1, 42, 7, CommandStatus::Accepted,
+                        &encode_step_result(StepDisposition::Blocked))?).await?;
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(SUPPORTED)?).await?;
+                let outcome = session.step(StepDirection::North).await;
+                peer.await??;
+                if !selected {
+                    assert!(matches!(outcome, Err(SessionError::UnselectedDomain { domain_id }) if domain_id == domain));
+                    continue;
+                }
+                assert_eq!(outcome?.disposition, StepDisposition::Blocked);
+                let events = session.take_events();
+                assert_eq!(events.len(), 1);
+                assert_eq!(events[0].domain_id(), domain);
+                let stored = session.gated_snapshot(domain).cloned().ok_or("pushed state not stored")?;
+                assert_eq!(stored.revision, base + 1);
+                assert_eq!(stored.payload, if domain == 98 { trackers.clone() } else { payload.clone() });
+                for (old, new, kind, bytes) in [
+                    (base, base + 1, 1, payload.as_slice()),
+                    (base + 1, base + 2, 2, payload.as_slice()),
+                    (base + 1, base + 2, 1, &[255][..]),
+                ] {
+                    let frame = encode_state_delta(1, 43, domain, old, new, kind, bytes)?;
+                    assert!(session.apply_state_delta(43, decode_wire_envelope(&frame)?.payload()).is_err());
+                    assert_eq!(session.gated_snapshot(domain), Some(&stored));
+                }
+            }
+        }
+        Ok::<(), BoxError>(())
+    }).map_err(|e| e.to_string()))?.join().map_err(|_| "pushed domains test panicked")?.map_err(BoxError::from)?
+}
+
+#[test]
 fn hotkey_equip_session_decodes_selected_equipment_snapshot_and_delta() -> Result<(), BoxError> {
     hotkey_equip_session_selection(&[4, 6, 12, 14, 179])
+}
+
+#[test]
+fn hotkey_equip_refusal_detail_does_not_poison_the_session() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                const SUPPORTED: &[u32] = &[4, 6, 12, 14, 66, 179];
+                for detailed in [true, false] {
+                    let selected: &[u32] = if detailed {
+                        SUPPORTED
+                    } else {
+                        &[4, 6, 12, 14, 179]
+                    };
+                    let (client, mut server) = tokio::io::duplex(64 * 1024);
+                    let peer = tokio::spawn(async move {
+                        join_peer_with(
+                            &mut server,
+                            SUPPORTED,
+                            selected,
+                            &[],
+                            item_snapshot(vec![])?,
+                            &[
+                                inventory_domain(1, &CharacterInventory::default())?,
+                                (14, 1, 1, vec![]),
+                            ],
+                        )
+                        .await?;
+                        for (sequence, outcome) in [
+                            (41, ItemMoveOutcome::NoRoom),
+                            (42, ItemMoveOutcome::Rejected),
+                        ] {
+                            let frame = read_frame(&mut server).await?;
+                            let envelope = decode_wire_envelope(&frame)?;
+                            let command = envelope.client_command(1)?;
+                            assert_eq!(
+                                command.command_type,
+                                hotkey_equip::COMMAND_TYPE_HOTKEY_EQUIP
+                            );
+                            let mut payload = item_view::encode_item_move_result(outcome)
+                                .map_err(|e| format!("{e:?}"))?;
+                            if sequence == 41 {
+                                refusal_detail::append_refusal_detail(
+                                    &mut payload,
+                                    selected,
+                                    Some(refusal_detail::RefusalDetail::NotEnoughRoom),
+                                );
+                            }
+                            write_frame(
+                                &mut server,
+                                &encode_command_result(
+                                    1,
+                                    sequence,
+                                    command.command_id,
+                                    CommandStatus::Accepted,
+                                    &payload,
+                                )?,
+                            )
+                            .await?;
+                        }
+                        Ok::<(), BoxError>(())
+                    });
+                    let mut session = Session::admit(client, admission_with(SUPPORTED)?).await?;
+                    let first = session
+                        .equip_item_definition(std::num::NonZeroU32::MIN)
+                        .await?;
+                    assert_eq!(first.outcome, ItemMoveOutcome::NoRoom);
+                    assert_eq!(
+                        session.last_refusal_detail(),
+                        detailed.then_some(refusal_detail::RefusalDetail::NotEnoughRoom)
+                    );
+                    let second = session
+                        .equip_item_definition(std::num::NonZeroU32::MIN)
+                        .await?;
+                    assert_eq!(second.outcome, ItemMoveOutcome::Rejected);
+                    assert_eq!(session.last_refusal_detail(), None);
+                    peer.await??;
+                }
+                Ok::<(), BoxError>(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "hotkey refusal test panicked")?
+        .map_err(BoxError::from)?
 }
 
 #[test]
 fn hotkey_equip_carried_session_reuses_equipment_snapshot_delta_and_reply() -> Result<(), BoxError>
 {
     hotkey_equip_session_selection(&[4, 6, 12, 14, 179, 180])
+}
+
+#[test]
+fn accepted_item_move_rejections_do_not_poison_either_client_route() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                const SELECTED: &[u32] = &[4, 6, 12, 14, 61, 66];
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer_with(
+                        &mut server,
+                        SELECTED,
+                        SELECTED,
+                        &[],
+                        item_snapshot(vec![])?,
+                        &[
+                            inventory_domain(1, &CharacterInventory::default())?,
+                            (14, 1, 1, vec![]),
+                        ],
+                    )
+                    .await?;
+                    for sequence in [41, 42, 43] {
+                        let frame = read_frame(&mut server).await?;
+                        let envelope = decode_wire_envelope(&frame)?;
+                        let command = envelope.client_command(1)?;
+                        assert_eq!(command.command_type, COMMAND_TYPE_ITEM_MOVE_INTENT);
+                        let mut payload =
+                            item_view::encode_item_move_result(ItemMoveOutcome::Rejected)
+                                .map_err(|e| format!("{e:?}"))?;
+                        refusal_detail::append_refusal_detail(
+                            &mut payload,
+                            SELECTED,
+                            Some(refusal_detail::RefusalDetail::NotPossible),
+                        );
+                        write_frame(
+                            &mut server,
+                            &encode_command_result(
+                                1,
+                                sequence,
+                                command.command_id,
+                                CommandStatus::Accepted,
+                                &payload,
+                            )?,
+                        )
+                        .await?;
+                    }
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(SELECTED)?).await?;
+                let intent = ItemMoveIntent {
+                    source: handle(2),
+                    destination: ItemMoveDestination::MainBackpack,
+                };
+                assert_eq!(
+                    session.move_item(&intent).await?.outcome,
+                    ItemMoveOutcome::Rejected
+                );
+                let counted = session
+                    .move_item_counted(item_movement::MoveRequest {
+                        source: intent.source,
+                        destination: intent.destination,
+                        count: Some(1),
+                    })
+                    .await?;
+                assert_eq!(counted.outcome, ItemMoveOutcome::Rejected);
+                assert_eq!(
+                    counted.detail,
+                    Some(refusal_detail::RefusalDetail::NotPossible)
+                );
+                assert_eq!(
+                    session.move_item(&intent).await?.outcome,
+                    ItemMoveOutcome::Rejected
+                );
+                peer.await??;
+                Ok::<(), BoxError>(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "item move rejection test panicked")?
+        .map_err(BoxError::from)?
+}
+
+#[test]
+fn hotkey_equip_tiered_session_uses_selected_codec() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| hotkey_equip_session_selection(&[4, 6, 12, 14, 179, 180, 485]))?
+        .join()
+        .map_err(|_| "tiered equip session test thread panicked")?
 }
 
 fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxError> {
@@ -32,18 +274,31 @@ fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxErr
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                selected,
+                CLIENT_SUPPORTED_CAPABILITIES,
                 selected,
                 &[],
                 item_snapshot(vec![])?,
-                &[(9, 1, 1, payload)],
+                &[(9, 1, 1, payload), (14, 1, 1, vec![])],
             )
             .await?;
             let command = read_frame(&mut server).await?;
             let envelope = decode_wire_envelope(&command)?;
             let command = envelope.client_command(1)?;
             assert_eq!(command.command_type, 348);
-            assert_eq!(command.payload, &[0, 0, 0, 1]);
+            if selected.contains(&485) {
+                assert_eq!(command.payload, &[0, 0, 0, 1, 0]);
+                assert_eq!(
+                    hotkey_equip::TieredRequest::decode_selected(true, command.payload),
+                    Some(hotkey_equip::TieredRequest {
+                        request: hotkey_equip::Request {
+                            definition: std::num::NonZeroU32::MIN,
+                        },
+                        upgrade_tier: Some(0),
+                    })
+                );
+            } else {
+                assert_eq!(command.payload, &[0, 0, 0, 1]);
+            }
             write_frame(&mut server, &encode_state_delta(1, 41, 9, 1, 2, 1, &delta)?).await?;
             write_frame(
                 &mut server,
@@ -61,7 +316,7 @@ fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxErr
             Ok::<(), BoxError>(())
         });
         let mut admission = item_admission()?;
-        admission.supported_capabilities = selected;
+        admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
         let mut session = Session::admit(client, admission).await?;
         assert_eq!(session.inventory(), Some(&inventory));
         let result = session
@@ -81,6 +336,7 @@ fn handle(value: u64) -> ItemHandle {
 
 fn entry(handle_value: u64, definition: u32, count: u32) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: handle(handle_value),
         item_definition_ref: std::num::NonZeroU32::new(definition)
             .unwrap_or(std::num::NonZeroU32::MIN),
@@ -247,10 +503,12 @@ fn item_peer(
 fn the_advertised_set_carries_capability_4_with_its_requirement() {
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&item_view::CAPABILITY_ITEM_VIEW_MOVE_V1));
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_WORLD_SPATIAL_ENTITIES));
-    // CL25J: hotkey equip, forge and browse field now use the existing equipment
-    // decoder and gated container-tree route, so their prerequisites are advertised.
+    // Equipment and typed container-tree prerequisites remain advertised.
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&12));
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&14));
+    assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(
+        &oteryn_protocol_oteryn::connection_trace::CAPABILITY_CONNECTION_TRACE_V1
+    ));
 }
 
 #[test]
@@ -716,3 +974,6 @@ fn a_pushed_item_delta_with_a_wrong_revision_or_a_duplicate_handle_fails_closed(
         Ok(())
     })?
 }
+
+#[path = "tests/item_appearance.rs"]
+mod item_appearance;

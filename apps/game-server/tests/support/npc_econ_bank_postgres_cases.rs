@@ -352,6 +352,8 @@ fn trade_request(n: u8, total: u64) -> TestResult<durability::npc_trade::NpcTrad
     use crate::durability::npc_trade::*;
     let i = identity(n);
     Ok(NpcTradeRequest {
+        fluid_subtype: None,
+        full_charges: None,
         cause: NpcTradeCause {
             npc_key: "oteryn:npc.sam".into(),
             catalogue_revision: 1,

@@ -48,6 +48,65 @@ fn choose<'a>(
     unused
 }
 
+/// Capability 485: drop same-definition entries whose stored tier differs. `tiers` holds
+/// the locked `game_item_tiers` rows of the candidates; an absent row is tier 0.
+fn retain_tier(
+    entries: &mut Vec<&BackpackEntry>,
+    definition: &super::super::item_mint::TypedDefinitionRef,
+    tiers: &std::collections::BTreeMap<[u8; 16], u8>,
+    wanted: Option<u8>,
+) {
+    let Some(wanted) = wanted else {
+        return;
+    };
+    entries.retain(|entry| {
+        entry.item.definition != *definition
+            || tiers
+                .get(&entry.item.item_instance_id)
+                .copied()
+                .unwrap_or(0)
+                == wanted
+    });
+}
+
+/// Lock and read the stored classification tier of every same-definition candidate.
+async fn candidate_tiers(
+    tx: &mut Transaction<'_, Postgres>,
+    entries: &[&BackpackEntry],
+    definition: &super::super::item_mint::TypedDefinitionRef,
+    wanted: Option<u8>,
+) -> Result<std::collections::BTreeMap<[u8; 16], u8>> {
+    let mut tiers = std::collections::BTreeMap::new();
+    if wanted.is_none() {
+        return Ok(tiers);
+    }
+    let ids: Vec<String> = entries
+        .iter()
+        .filter(|entry| entry.item.definition == *definition)
+        .map(|entry| {
+            entry
+                .item
+                .item_instance_id
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect()
+        })
+        .collect();
+    if ids.is_empty() {
+        return Ok(tiers);
+    }
+    let rows = sqlx::query("SELECT item_instance_id::text,tier FROM game_item_tiers WHERE item_instance_id IN (SELECT value::uuid FROM jsonb_array_elements_text($1::jsonb)) ORDER BY item_instance_id FOR UPDATE")
+        .bind(sqlx::types::Json(ids)).fetch_all(&mut **tx).await?;
+    for row in rows {
+        let tier = u8::try_from(row.try_get::<i16, _>("tier")?)
+            .ok()
+            .filter(|tier| *tier <= crate::domain::forge::ItemTier::MAX)
+            .ok_or(rejected("equipment stored item tier"))?;
+        tiers.insert(uuid(row.try_get("item_instance_id")?)?, tier);
+    }
+    Ok(tiers)
+}
+
 pub(super) async fn resolve(
     tx: &mut Transaction<'_, Postgres>,
     authority: &EquipmentAuthority,
@@ -55,13 +114,15 @@ pub(super) async fn resolve(
     content: &impl EquipmentMoveContent,
     definition: &super::super::item_mint::TypedDefinitionRef,
     slot: u8,
+    upgrade_tier: Option<u8>,
 ) -> Result<EquipmentIntent> {
-    // Owner D1 overrides Crystal's spare-first check before D2 selection.
-    if let Some(worn) = snapshot
-        .items
-        .iter()
-        .find(|item| item.slot == slot && item.definition == *definition)
-    {
+    // Owner D1 overrides Crystal's spare-first check before D2 selection. With capability 485
+    // only a worn copy of the requested tier toggles off; another tier is replaced instead.
+    if let Some(worn) = snapshot.items.iter().find(|item| {
+        item.slot == slot
+            && item.definition == *definition
+            && upgrade_tier.is_none_or(|tier| item.tier == tier)
+    }) {
         return Ok(EquipmentIntent::Move {
             item: worn.item_instance_id,
             from_slot: Some(slot),
@@ -82,6 +143,8 @@ pub(super) async fn resolve(
         return Err(rejected("equipment requires actual backpack"));
     }
     let mut ordered = search_order(&inventory);
+    let carried_tiers = candidate_tiers(tx, &ordered, definition, upgrade_tier).await?;
+    retain_tier(&mut ordered, definition, &carried_tiers, upgrade_tier);
     // Crystal game.cpp:3743-3751 searches the carried tree first, then the Store Inbox loot
     // pouch. The pouch is an unlimited managed container, so its entries are ordered only to
     // make selection and started-copy preference deterministic.
@@ -112,7 +175,10 @@ pub(super) async fn resolve(
             })
         })
         .collect::<Result<_>>()?;
-    ordered.extend(pouch_entries.iter());
+    let mut pouch: Vec<&BackpackEntry> = pouch_entries.iter().collect();
+    let pouch_tiers = candidate_tiers(tx, &pouch, definition, upgrade_tier).await?;
+    retain_tier(&mut pouch, definition, &pouch_tiers, upgrade_tier);
+    ordered.extend(pouch);
     let mut started = BTreeSet::new();
     if let Some(full) = content.full_timed_values(definition) {
         let ids: Vec<_> = ordered
@@ -442,6 +508,42 @@ mod tests {
                 .map(|e| e.item.item_instance_id[0])
                 .collect::<Vec<_>>(),
             [2, 5, 7, 6, 3, 4]
+        );
+    }
+    #[test]
+    fn upgrade_tier_keeps_only_the_exact_tier_and_absent_rows_are_tier_zero() {
+        let other = BackpackEntry {
+            placement_ordinal: 9,
+            item: InventoryItem {
+                item_instance_id: [9; 16],
+                definition: super::super::super::item_mint::TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: "test.shield".into(),
+                    revision_ref: "r1".into(),
+                },
+                quantity: 1,
+            },
+        };
+        let entries = [entry(1, 3), entry(2, 2), entry(3, 1)];
+        let tiers = std::collections::BTreeMap::from([([2; 16], 4), ([3; 16], 0)]);
+        let ids = |wanted| {
+            let mut kept: Vec<&BackpackEntry> = entries.iter().chain([&other]).collect();
+            retain_tier(&mut kept, &definition(), &tiers, wanted);
+            kept.iter()
+                .map(|entry| entry.item.item_instance_id[0])
+                .collect::<Vec<_>>()
+        };
+        // Without capability 485 every copy stays a candidate.
+        assert_eq!(ids(None), [1, 2, 3, 9]);
+        // No row and an explicit zero row are both unforged; other definitions are untouched.
+        assert_eq!(ids(Some(0)), [1, 3, 9]);
+        assert_eq!(ids(Some(4)), [2, 9]);
+        assert_eq!(ids(Some(10)), [9]);
+        let mut kept: Vec<&BackpackEntry> = entries.iter().collect();
+        retain_tier(&mut kept, &definition(), &tiers, Some(4));
+        assert_eq!(
+            choose(kept, &definition(), &BTreeSet::from([[1; 16]])),
+            Some([2; 16])
         );
     }
     #[test]

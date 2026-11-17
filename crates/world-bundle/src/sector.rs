@@ -5,6 +5,7 @@
 //! changes only what the palette index and the teleport floor byte mean (format document §5).
 
 use crate::Error;
+use serde::{Deserialize, Serialize};
 
 pub const SECTOR_SIZE: u16 = 32;
 const SECTOR_TILES: usize = 32 * 32;
@@ -21,7 +22,8 @@ const DEPOT_BIT: u64 = 1 << 9;
 const KNOWN_MASK: u64 = (1 << 10) - 1;
 
 /// Item attributes in mask-bit order. Presence is exact: a present zero stays present.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Attrs {
     pub count: Option<u8>,
     pub action: Option<u16>,
@@ -35,7 +37,21 @@ pub struct Attrs {
     pub depot: Option<u16>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+impl Attrs {
+    /// Legacy B3 Item sources use zero for an implicit single object. This is an
+    /// explicit materialization adapter; the shared codec still preserves zero,
+    /// and runtime eligibility continues to reject a typed zero quantity.
+    #[must_use]
+    pub fn with_legacy_default_item_count(mut self) -> Self {
+        if self.count == Some(0) {
+            self.count = None;
+        }
+        self
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Item {
     pub palette: u32,
     /// 0 for a top-level entry; container contents follow their container one level deeper.
@@ -43,7 +59,8 @@ pub struct Item {
     pub attrs: Attrs,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Tile {
     pub x: u16,
     pub y: u16,

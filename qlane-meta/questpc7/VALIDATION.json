@@ -1,0 +1,115 @@
+{
+  "task_id": "questpc7",
+  "head": "28e4313e177c035c28c3c6c61a4577cb5f8058e0",
+  "lifecycle": "AUTHORING",
+  "frozen_sha": null,
+  "publication": "not authorized; no Git/index mutations",
+  "quest_count": 33,
+  "whole_quests_qualified": 0,
+  "whole_quests_blocked": 33,
+  "owner_exclusions": 8,
+  "shared_engine_dependencies": 25,
+  "source_reward_claims_qualified": 20,
+  "newly_qualified_source_claims": 5,
+  "scope": "source reward delivery/replay/refusal only; full quest completion remains BLOCKED",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "positive_pg_markers": 20,
+    "names": [
+      "questpc7_formorgar_books_use_replay_and_refusal",
+      "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+      "questpc7_story_rewards_use_replay_and_refusal"
+    ]
+  },
+  "checks": {
+    "lane-rewards-pg": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_",
+        "--",
+        "--nocapture"
+      ],
+      "exit": 0,
+      "duration_seconds": 442.59
+    },
+    "lane-giant-pg-final": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "questpc7_giant_smithhammer_rewards_use_replay_and_refusal",
+        "--",
+        "--nocapture"
+      ],
+      "exit": 0,
+      "duration_seconds": 222.61
+    },
+    "lane-clippy-repaired": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "-p",
+        "oteryn-gameplay-durability",
+        "--all-targets",
+        "--all-features",
+        "--quiet",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "duration_seconds": 161.564
+    },
+    "lane-fmt-repaired": {
+      "command": [
+        "/home/mole/oteryn-cache/codex-bin/cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "duration_seconds": 10.216
+    },
+    "lane-mounted-fmt-repaired": {
+      "command": [
+        "rustup",
+        "run",
+        "1.99.1",
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "--config",
+        "skip_children=true",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/questpc7_reward_slices.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/npc_command/catalogue.rs",
+        "crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs"
+      ],
+      "exit": 0,
+      "duration_seconds": 0.077
+    }
+  },
+  "validation_notes": [
+    "The 17-claim run predates adding the independent Giant Smithhammer test; the two older test bodies and production reward harness are unchanged.",
+    "The final Clippy-only repairs remove an unused macro import and annotate an existing forwarding signature; they change no runtime behavior.",
+    "Unchanged vendor Tokio/sqlx warnings remain visible; dispatch and durability targeted all-target/all-feature -D warnings command exits zero.",
+    "No broad PostgreSQL suite, external review, dependency download, credential access or external write was performed."
+  ]
+}

@@ -19,6 +19,7 @@ Strict protobuf subset: exactly one of the following fields, no duplicate or unk
 | 3 | uint32 | Trade leaf index shifted left one, with counter-offer flag in bit zero |
 | 4 | uint32 | Nonzero active-generation item definition index (catalogue details) |
 | 5 | bytes | Permission action submessage: field 1 uint32 action, field 2 bytes extended LOOK player target |
+| 6 | bytes | Bounded public catalogue query (O077 extension below) |
 
 Maximum 128 bytes. A handle must still resolve in the session table and in current owner
 facts after the durable metadata read. Ground uses current native map visibility, not
@@ -104,3 +105,83 @@ privacy defect or consumer interoperability evidence can justify a versioned rep
 Client UI, persistent client preferences, future trade-container support and combat effect
 rules are deliberately not selected here. Independent byte-level golden cases accompany
 round-trip/malformed/limit tests; shared client/server codecs are not the sole wire oracle.
+
+## O077 public catalogue extension
+
+Request field 6 is a length-delimited catalogue query, still within the existing
+128-byte request budget. Its first byte chooses a strict bounded layout:
+
+- `1, after:u32le, category:u8, search:utf8[0..64]`: public Item templates in
+  ascending active-generation definition-reference order. Category zero means
+  all; positive categories index the current sorted taxonomy list (at most 64).
+  Name matching is case-insensitive and literal.
+- `2, reference:u32le, after:u16le`: base creature drop sources of one public
+  Item template. The reference is nonzero and the exclusive canonical race
+  cursor is at most 1024.
+
+Both use the existing inspection reply. Browse pages contain at most ten public
+unit-template summaries (name and category); field 4 fetches complete Item attributes. Their first item carries `Catalogue categories` (pipe-separated
+sorted taxonomy names) and, when more matches exist, `Catalogue next` (the last
+returned definition reference). Empty pages have no continuation. Drop pages
+contain the selected template, up to six qualified source creature names in
+`Drop sources`, and optional `Catalogue drop next`. These control attributes
+are consumed by the catalogue UI; `Category` and `Drop sources` remain visible.
+The existing item, attribute, text and total reply budgets are unchanged.
+
+The current session, actor lease and content pin are checked before projection.
+Only active, materializable Item templates and admitted native loot rows are
+published. This extension neither reads private player inventories nor grants
+custody, inspection permission, discovery or market authority. Market links use
+the existing read-only Market browse command with the same definition reference.
+
+## Public catalogue paging (T078)
+
+Command 153 additionally accepts singular field 8, a catalogue query submessage:
+field 1 uint32 `after` (zero starts the catalogue), field 2 UTF-8 name search
+(at most 48 bytes), field 3 UTF-8 category (at most 32 bytes). Empty filters are
+valid; NUL, unknown fields, missing fields and duplicate singular fields are refused.
+Search is a case-insensitive name substring; category matches a published category,
+weapon type or body position. It uses the same selected capability and session rate
+budget as inspection. The request never addresses an item instance or another player.
+
+A successful catalogue reply has optional field 4 containing page metadata: optional
+field 1 uint32 `next` (nonzero last scanned definition), and repeated field 2 category
+names (at most 64 distinct nonempty strings of at most 32 bytes). Only catalogue replies
+include this metadata. Catalogue items are strictly ascending public definition refs,
+slot zero, quantity one, tier zero, without instance attributes. The existing ten-item
+and 65,536-byte reply limits remain unchanged.
+
+Each query scans at most 256 definitions of the admitted content pin, including entries
+without public presentation metadata. An empty page with a continuation cursor is valid;
+it does not mean the catalogue ended. A missing cursor ends the scan. Clients preserve
+the last confirmed page on rejection, reset pagination when filters change, and do not
+interpret an old single-template response as a catalogue page. Continuation refs are
+session-local content indices and are never persisted as durable identities.
+
+### Item acquisition sources
+
+Singular request field 7 is a source-query submessage: field 1 uint32 is the nonzero
+public item definition ref, and field 2 uint32 is the last scanned creature row (zero
+starts the scan). Both fields are required and singular. This is a separate cursor
+space from item catalogue paging. It shares capability 132, command 153, the content
+pin check, and the existing inspection rate budget.
+
+A successful source reply contains one public template (slot zero, quantity one,
+tier zero) with the requested definition ref and name. Its label/value pairs are
+`Dropped by` and the public creature name, at most ten matching creatures per page.
+The existing field 4 page metadata carries a creature continuation cursor and no
+category names. At most 256 pinned creature profiles are scanned per query. The source
+list follows admitted loot tables, including nested entries, the current item revision,
+and nonzero probabilities; unknown or unadmitted loot facts are omitted. An empty
+source page is not a claim that an item is unobtainable. No private inventory, instance,
+quest, account or player inspection data is part of the source response.
+
+Clients correlate the one returned item with the requested definition and retain the
+confirmed item page independently of the creature cursor. Market sources use the
+existing read-only capability-63 Browse operation with the same definition ref; source
+navigation must never create, accept or cancel a market offer.
+
+The paged protobuf query uses field 8 to coexist with the field-6 compact query.
+For compatibility, legacy field-6 protobuf pages are still decoded: compact
+queries begin with opcode 1 or 2; protobuf pages begin with their required field-1
+tag (8). Multiple request alternatives remain rejected.

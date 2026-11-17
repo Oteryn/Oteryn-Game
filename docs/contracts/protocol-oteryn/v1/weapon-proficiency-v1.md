@@ -90,3 +90,48 @@ and the pending offer's three entry indexes (`255 255 255` = no offer). At most 
   occurrence, so a retry draws the same entries and a restart reseeds nothing.
 - The occurrence derives from the CommandId, actor and GameSession; a replay never charges or
   draws again.
+
+## Browse request
+
+CL7 command 641 uses existing capability 195. Four big-endian bytes give a zero-based
+catalogue offset. This read does not checkpoint, spend, or change progression rules.
+The immutable active generation supplies the complete admitted weapon catalogue, sorted
+by production key. An offset beyond its length is rejected. Each page has at most 20 rows.
+Refresh starts at zero; Previous and Next navigate the list. XP is the current session
+track (including uncheckpointed kills); a weapon without a track has zero XP.
+
+## Browse reply
+
+Big-endian u32 offset, u32 total, u8 row count, then each row: nonzero u32
+active-generation item definition reference, u8 UTF-8 display-name byte length (1–128), name,
+u32 XP, u8 attained level (0–9), u8 perk level count (0–7), and selected perk bytes
+(255 means unselected). Reject malformed/trailing bytes and mismatched requested offsets.
+The attained-level bound includes the existing two mastery levels above seven perk levels
+(PROFICIENCY-0; `ProficiencyTrackShape::mastery_level`). No client formula supplies experience. The list is refreshed explicitly; it is not a
+subscription. Generation identity is inherited from the admitted session, like item views.
+
+Donor evidence (OTS_HYPOTHESIS_ONLY): Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446,
+`src/server/network/protocol/protocolgame.cpp:12328-12357`; Crystal
+201189f871d23597b82caf88fd611454a2ddefb8, same path `:11724-11751`, send weapon
+identity, XP and selected perks. Accepted Oteryn transport difference: the native
+server catalogue is paged rather than supplied by proprietary client static data.
+This adds a read projection and changes no gameplay rule. Wiki cross-check: wiki-pending.
+
+## Catalogue
+
+NX-8 command `660` on capability `195` reads the current actor's full promoted
+weapon catalogue, including weapons with no progress. The request is one big
+endian `u32` offset into the immutable, bytewise item-key ordered bindings.
+The native panel requests page zero when opened and has next/previous and refresh
+controls. No durable state changes occur.
+
+The bounded reply (at most 65536 bytes) contains offset and total (`u32`), entry
+count (`u8`, at most 8), then entries: definition reference (`u32`; zero means
+absent from the selected Item generation), weapon key and display name (length-prefixed UTF-8 each),
+live experience (`u32`, zero for a new track), nine cumulative level thresholds
+(`u32`), level count (`u8`, 1..7), then each level's selected perk (`u8`, 255 for
+none), perk count (`u8`, 1..3) and complete source-ordered perk descriptions.
+Strings have `u16` byte lengths, at most 512 bytes. All integers are big endian;
+trailing bytes, malformed selections and oversized pages are rejected.
+Experience comes from the session track owner, including earned progress not yet
+checkpointed; it is never inferred from history receipts.

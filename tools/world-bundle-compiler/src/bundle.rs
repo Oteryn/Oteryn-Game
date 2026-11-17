@@ -1,7 +1,7 @@
 //! The compiler-facing bundle API; format writing is shared with native fixtures.
 
 pub use oteryn_world_bundle::bundle::*;
-pub use oteryn_world_bundle::writer::{write, write_with_npcs};
+pub use oteryn_world_bundle::writer::{write, write_with_layers, write_with_npcs};
 
 /// The `compiler_version` this build writes: the crate version and the zstd library version,
 /// because both decide the output bytes (format document §6).

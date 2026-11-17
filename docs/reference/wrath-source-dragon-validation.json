@@ -1,0 +1,166 @@
+{
+  "state": "NATIVE_POSTGRES_GREEN",
+  "main": "3209d3d61d87451339ca09095e00aa43617bb83f",
+  "red": {
+    "postgres_seconds": 35.339,
+    "marker": "WRATH_SOURCE_DRAGON_PLACEMENT_RED: source NPC is absent from native placement index",
+    "log": "/tmp/questpc8b-source-dragon-red.log"
+  },
+  "checks": {
+    "workspace": {
+      "exit": 0,
+      "seconds": 169.1567180770071
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.548268789003487
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.30204303900245577
+    },
+    "clippy": {
+      "exit": 0,
+      "seconds": 173.5890627369954
+    },
+    "pg": {
+      "exit": 0,
+      "seconds": 411.57810618399526
+    }
+  },
+  "regeneration": {
+    "placement-check": {
+      "exit": 0,
+      "seconds": 0.326648361995467
+    },
+    "proof": {
+      "exit": 0,
+      "seconds": 0.4124688680021791
+    },
+    "tree": {
+      "exit": 0,
+      "seconds": 36.91715431799821
+    },
+    "claims": {
+      "exit": 0,
+      "seconds": 3.4299296620010864
+    },
+    "bindings": {
+      "exit": 0,
+      "seconds": 15.024022264013183
+    },
+    "completion": {
+      "exit": 0,
+      "seconds": 5.190988300993922
+    },
+    "matrix": {
+      "exit": 0,
+      "seconds": 0.5659857970022131
+    },
+    "native": {
+      "exit": 0,
+      "seconds": 330.0119419870025
+    },
+    "audit": {
+      "exit": 0,
+      "seconds": 0.022683388990117237
+    },
+    "pins": {
+      "exit": 0,
+      "seconds": 115.2149846629909
+    },
+    "dups": {
+      "exit": 0,
+      "seconds": 0.30642421799711883
+    },
+    "chosen": {
+      "exit": 0,
+      "seconds": 0.2973525309935212
+    },
+    "fmt": {
+      "exit": 0,
+      "seconds": 11.539472527001635
+    }
+  },
+  "placement_tests": {
+    "passed": 14,
+    "conversion_seconds": 0.369,
+    "overrides_and_authored": "Both2-case groups PASS"
+  },
+  "existing_quest_unit_proof": "main-c77-validation.json:355PASS41.48s; quest code and callback data unchanged in this placement-only slice",
+  "source": {
+    "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/world/world-npc.xml",
+    "sha256": "db07b021856008bce61efe816e8a8eea00a01cb9750f1be5e750093758d1c029",
+    "center": [
+      33243,
+      31213,
+      10
+    ],
+    "offset": [
+      -1,
+      0
+    ],
+    "npc_cell": [
+      33242,
+      31213,
+      10
+    ],
+    "old_wiki_hypothesis": [
+      33243,
+      31219,
+      10
+    ],
+    "facing": "Explicit NPC engine defaultNORTH; not recovered from XML"
+  },
+  "native_approach": [
+    33242,
+    31214,
+    10
+  ],
+  "placement_preservation": {
+    "old_records": 81,
+    "new_records": 82,
+    "old_npcs": 71,
+    "new_npcs": 72,
+    "all_previous_records_identical": true
+  },
+  "review": "Independent source position/provenance/fixture review: no findings",
+  "scope": "Actual source-map Sleeping Dragon placement; existing NX6 dialogue/finale/receipt regression uses generated record and real source B3 cells. No new quest reward or rule.",
+  "own_migrations": "1300-1308 unchanged; no new migration",
+  "qengine_audit": {
+    "head": "3babb30bdc8852dccad97435a25a027b64dc5e6b",
+    "carried_use_live_player_quest_predicate": "QUEUED",
+    "item_look_disguise_restore": "QUEUED"
+  },
+  "pending": [
+    "remaining dispatch full unit coverage: CI scope; not claimed complete"
+  ],
+  "whole_quests": {
+    "qualified": 21,
+    "total": 23
+  },
+  "green": {
+    "cases": [
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::questpc8_wrath_hunt::questpc8_wrath_imperial_hunt_native_exact_quotas_and_replay",
+        "seconds": 99.99
+      },
+      {
+        "test": "gameplay_transport::monk_save::postgres_tests::nx6_wayfarer::nx6_wayfarer_real_npc_atomic_finale_replay_and_fences",
+        "seconds": 100.022
+      }
+    ],
+    "markers": [
+      "POSTGRES_CASE_STARTED authored-wrath-hunt after PostgreSQL fixture initialization",
+      "POSTGRES_CASE_STARTED questpc8_wrath_imperial_hunt after PostgreSQL fixture initialization",
+      "POSTGRES_WRATH_IMPERIAL_NATIVE_EXACT_FOUR_SIX_COLD_REPLAY_PASS",
+      "POSTGRES_CASE_FINISHED questpc8_wrath_imperial_hunt duration=99.934752012s result=Ok(())",
+      "POSTGRES_CASE_STARTED questpc8_wrath_source_dragon after PostgreSQL fixture initialization",
+      "POSTGRES_CASE_STARTED questpc8_wrath_dream_report",
+      "POSTGRES_WRATH_DREAM_RECEIPT_STAGE_REPLAY_AND_COLD_REFUSAL_PASS",
+      "NX6_POSTGRES_CASE_COMPLETED elapsed=33.84739357s"
+    ],
+    "summary": "Summary [ 100.026s] 2 tests run: 2 passed (2 slow), 3011 skipped",
+    "product_head": "2fe922d793ad1303e901902b3b2c3514c2a1a863"
+  }
+}

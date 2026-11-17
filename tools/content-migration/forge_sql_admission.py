@@ -109,8 +109,17 @@ $$;
 {END}"""
 
 
-def checked_projection():
-    text = MIGRATION.read_text()
+def current_migration():
+    # Policy refreshes are forward migrations; published admissions stay immutable.
+    candidates = [path for path in MIGRATION.parent.glob('*_forge_profile_admission.sql')
+                  if path.name[:4].isdigit() and BEGIN in path.read_text()]
+    return max(candidates, key=lambda path: int(path.name.split('_', 1)[0]), default=MIGRATION)
+
+
+def checked_projection(migration=None):
+    migration = current_migration() if migration is None else migration
+    text = (migration.read_text() if migration.is_file() else
+            '-- Forward-only Forge admission for newly source-qualified quest Items.\n' + BEGIN + END)
     start = text.index(BEGIN)
     end = text.index(END, start) + len(END)
     return text, text[:start] + generated() + text[end:]
@@ -126,10 +135,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--write', action='store_true')
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--migration', type=Path)
     args = parser.parse_args()
     if args.write:
-        _, expected = checked_projection()
-        MIGRATION.write_text(expected)
+        migration = (ROOT / args.migration if args.migration is not None else current_migration())
+        _, expected = checked_projection(migration)
+        migration.write_text(expected)
     else:
         check()
 

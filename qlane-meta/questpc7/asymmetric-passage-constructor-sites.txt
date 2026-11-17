@@ -1,0 +1,8 @@
+crates/gameplay/dispatch/src/gameplay_transport/quest_callbacks/execute.rs:123:            if passage_definition.require_state && map.facts.base_hidden(*passage) != close {
+crates/gameplay/quests/src/quest/world_callbacks.rs:40:pub struct Passage {
+crates/gameplay/quests/src/quest/world_callbacks.rs:111:    pub passages: Vec<Passage>,
+crates/gameplay/quests/src/quest/world_callbacks.rs:256:                    || (p.require_state
+crates/gameplay/quests/src/quest/world_callbacks.rs:358:        assert!(callback.passages[0].require_state);
+crates/gameplay/quests/src/quest/world_callbacks.rs:382:        assert!(!parsed[0].passages[0].require_state);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_paid_travel.rs:1106:type Passage = (&'static str, &'static str, i64, (i32, i32, i16));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_paid_travel.rs:1107:const S10T_PASSAGES: &[Passage] = &[

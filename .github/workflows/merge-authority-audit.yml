@@ -26,9 +26,9 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "c6558bc7fd91eb63d05bfe1c4dd298ea48f212ee"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "8ca7b7e0c78d5f5c8a49cc80feb8e327d2ff7326"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
-      EXPECTED_MERGE_GATE_BLOB: "352171b01bf9f7fbb6041eac171dda72a8746991"
+      EXPECTED_MERGE_GATE_BLOB: "a7f50911399a9dd61d9b619b3b16bd3edf294711"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -131,23 +131,89 @@ jobs:
               raise SystemExit('audit accepts only pull requests targeting main')
 
           changed_files = pull.get('changed_files')
-          if not isinstance(changed_files, int) or changed_files < 0 or changed_files > 3000:
-              raise SystemExit('invalid or over-cap changed-files count')
+          if not isinstance(changed_files, int) or changed_files < 0:
+              raise SystemExit('invalid changed-files count')
 
-          changed = []
-          page = 1
-          while True:
-              batch = api(f'/pulls/{number}/files?per_page=100&page={page}')
-              for item in batch:
-                  changed.append(item.get('filename', ''))
-                  previous = item.get('previous_filename')
-                  if isinstance(previous, str) and previous:
-                      changed.append(previous)
-              if len(batch) < 100:
-                  break
-              page += 1
-          if len([path for path in changed if path]) < changed_files:
-              raise SystemExit('changed-files enumeration is incomplete')
+          control_plane_roots = ('.github/repository-policy.json', '.github/workflows', 'tools/repository')
+
+          def control_plane_entries(commit_sha: str) -> dict:
+              # Every blob below the control-plane roots, keyed by path, from complete trees.
+              commit = api(f'/git/commits/{commit_sha}')
+              root_sha = commit.get('tree', {}).get('sha', '')
+              if re.fullmatch(r'[0-9a-f]{40}', root_sha) is None:
+                  raise SystemExit(f'commit {commit_sha} has invalid root tree')
+              found = {}
+              for root in control_plane_roots:
+                  tree_sha = root_sha
+                  segments = root.split('/')
+                  entry = None
+                  for index, segment in enumerate(segments):
+                      tree = api(f'/git/trees/{tree_sha}')
+                      entries = tree.get('tree')
+                      if not isinstance(entries, list) or tree.get('truncated'):
+                          raise SystemExit(f'unable to read complete tree for {root}')
+                      matches = [item for item in entries if item.get('path') == segment]
+                      if len(matches) > 1:
+                          raise SystemExit(f'path {root} is ambiguous at segment {segment}')
+                      entry = matches[0] if matches else None
+                      if entry is None or index == len(segments) - 1:
+                          break
+                      if entry.get('type') != 'tree':
+                          found[root] = ('non-tree-parent', entry.get('mode'), entry.get('sha'))
+                          entry = None
+                          break
+                      tree_sha = entry.get('sha', '')
+                  if entry is None:
+                      continue
+                  if entry.get('type') != 'tree':
+                      found[root] = (entry.get('type'), entry.get('mode'), entry.get('sha'))
+                      continue
+                  subtree = api(f"/git/trees/{entry.get('sha', '')}?recursive=1")
+                  items = subtree.get('tree')
+                  if not isinstance(items, list) or subtree.get('truncated'):
+                      raise SystemExit(f'unable to read complete recursive tree for {root}')
+                  for item in items:
+                      if item.get('type') != 'tree':
+                          found[f"{root}/{item.get('path', '')}"] = (
+                              item.get('type'),
+                              item.get('mode'),
+                              item.get('sha'),
+                          )
+              return found
+
+          if changed_files > 3000:
+              # The pull request files listing stops at 3000 entries. Above that cap the
+              # control-plane paths are enumerated from complete merge-base and head trees;
+              # every check below then applies to them unchanged.
+              compare = api(f'/compare/main...{expected_head}')
+              merge_base = compare.get('merge_base_commit', {}).get('sha', '').lower()
+              if re.fullmatch(r'[0-9a-f]{40}', merge_base) is None:
+                  raise SystemExit('unable to resolve the over-cap candidate merge base')
+              base_entries = control_plane_entries(merge_base)
+              head_entries = control_plane_entries(expected_head)
+              changed = sorted(
+                  path
+                  for path in set(base_entries) | set(head_entries)
+                  if base_entries.get(path) != head_entries.get(path)
+              )
+              live = api(f'/pulls/{number}')
+              if live.get('head', {}).get('sha', '').lower() != expected_head:
+                  raise SystemExit('pull request head moved during the over-cap enumeration')
+          else:
+              changed = []
+              page = 1
+              while True:
+                  batch = api(f'/pulls/{number}/files?per_page=100&page={page}')
+                  for item in batch:
+                      changed.append(item.get('filename', ''))
+                      previous = item.get('previous_filename')
+                      if isinstance(previous, str) and previous:
+                          changed.append(previous)
+                  if len(batch) < 100:
+                      break
+                  page += 1
+              if len([path for path in changed if path]) < changed_files:
+                  raise SystemExit('changed-files enumeration is incomplete')
 
           touches_control_plane = any(
               path == '.github/repository-policy.json'
@@ -228,8 +294,8 @@ jobs:
               '              test "$(git hash-object -- "$path")" = "$(git rev-parse "$HEAD_SHA:$path")"\n',
               '              verify_registered_target_binding "$name" "$path"\n',
               '              archived_targets+=(--test "$name")\n',
-              '          cargo +1.99.1 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"\n',
-              '          cargo +1.99.1 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
+              '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"\n',
+              '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
               '          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \\\n'
               '            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \\\n'
               '            --no-fail-fast "${filters[@]}"\n',
@@ -241,7 +307,7 @@ jobs:
               '          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs\n',
               '          run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs\n',
               '    name: Merge Queue / World bundle\n',
-              '        run: cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"\n',
+              '        run: cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"\n',
               f'          WORLD_BUNDLE_REQUIRED: {world_bundle_required_expression}\n',
               f'          WORLD_BUNDLE: {world_bundle_result_expression}\n',
               '          if [[ "${WORLD_BUNDLE_REQUIRED:-}" == "false" ]]; then\n',
@@ -252,8 +318,8 @@ jobs:
               '          $client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"\n',
               '          if (-not (Test-Path -LiteralPath $client -PathType Leaf)) {\n',
               '          & $client --smoke\n',
-              '          cargo +1.99.1 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc\n',
-              '        run: cargo +1.99.1 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n',
+              '          cargo +1.100.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc\n',
+              '        run: cargo +1.100.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n',
               f'          DURABILITY_POSTGRES: {durability_result_expression}\n',
               '            test "$result" = success\n',
           )

@@ -12,12 +12,14 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 BINDINGS = ROOT / "imports/crystalserver/bindings/items.json"
-BINDINGS_SHA = "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
+BINDINGS_SHA = "6e2952b3017d8f5e5ab952216387075238bd37e7f1aba5bdc501cdcf43b90b66"
+PRE_CAKE_BINDINGS_SHA = "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a"
 CRYSTAL_PIN = "ff7ede593c69d4c658b382c97443e8155926924a"
 CANARY_PIN = "99902524e052f37574194466c2949c576e4ab269"
 XML_PATH = "data/items/items.xml"
@@ -31,9 +33,47 @@ XML_SHA = {
 }
 
 
+
+def historical_binding_bytes(data: bytes, expected_sha: str) -> bytes:
+    """Prove an immutable predecessor after the one owner-approved additive Item.
+
+    Old capture packets retain their original whole-table digest. Every old
+    binding must remain byte-identical; only the exact approved48227 row may
+    be removed to reproduce that digest. No substitution or arbitrary suffix.
+    """
+    if hashlib.sha256(data).hexdigest() == expected_sha:
+        return data
+    from event_item_identity import CRYSTAL, DECISION, evidence
+    packet = json.loads((ROOT / 'tools/content-schema/native-gameplay/cake-bridge-identity.json').read_bytes())
+    approved = {'source_key': 'oteryn:source.crystalserver', 'source_revision': CRYSTAL,
+                'identity_namespace': 'ots/item_server_id', 'external_id': '48227',
+                'target': {'family': 'Item', 'key': 'oteryn:item.tibia.i48227', 'revision': 'definition-r1'},
+                'disposition': 'EXACT'}
+    document = json.loads(data)
+    rows = [r for r in document['bindings'] if r['external_id'] == '48227']
+    if (packet.get('decision') != DECISION or packet.get('sources') != evidence()['sources']
+            or packet.get('binding') != approved or rows != [approved]):
+        raise ValueError('Item binding table digest mismatch')
+    document['bindings'] = [r for r in document['bindings'] if r['external_id'] != '48227']
+    predecessor = (json.dumps(document, sort_keys=True, separators=(',', ':'), ensure_ascii=False) + '\n').encode()
+    if hashlib.sha256(predecessor).hexdigest() != expected_sha:
+        raise ValueError('Item binding table digest mismatch')
+    return predecessor
+
+
 def binding_index(data: bytes, expected_sha: str = BINDINGS_SHA) -> dict:
-    if hashlib.sha256(data).hexdigest() != expected_sha:
-        raise ValueError("Item binding table digest mismatch")
+    # Re-authenticate every supplied pin, even when identical validated bytes
+    # already belong to the current qualification scope.
+    historical_binding_bytes(data, expected_sha)
+    engine = sys.modules.get("qualification_inputs")
+    scoped = getattr(engine, "qualified_input_view", None)
+    if scoped is not None:
+        return scoped(('bindings', expected_sha), data, lambda: _binding_index(data, expected_sha))
+    return _binding_index(data, expected_sha)
+
+
+def _binding_index(data: bytes, expected_sha: str) -> dict:
+    historical_binding_bytes(data, expected_sha)
     document = json.loads(data)
     if set(document) != {"schema", "family", "bindings"} or document["schema"] != "OTERYN_SOURCE_IDENTITY_BINDINGS/v1" or document["family"] != "Item":
         raise ValueError("Invalid Item binding document")
@@ -50,7 +90,7 @@ def binding_index(data: bytes, expected_sha: str = BINDINGS_SHA) -> dict:
                 or target != {"family": "Item", "key": f"oteryn:item.tibia.i{external}", "revision": "definition-r1"}
                 or external in index or target["key"] in targets):
             raise ValueError("Invalid or ambiguous exact Item binding")
-        index[external] = copy.deepcopy(row)
+        index[external] = row
         targets.add(target["key"])
     if not index:
         raise ValueError("Empty Item binding table")
@@ -100,7 +140,8 @@ def bind_profiles(document: dict, bindings: dict, source_ids: set[int], candidat
     if document.get("schema") != "OTERYN_NATIVE_ITEM_PROFILES/v1" or not isinstance(document.get("records"), list):
         raise ValueError("Invalid native Item profile document")
     result = copy.deepcopy(document)
-    bindings = copy.deepcopy(bindings)
+    # Selected bindings are copied into the returned records below. A source
+    # index stays borrowed unless this call explicitly inserts a candidate.
     independent_ids = set()
     admitted_bindings = {}
     if independent_crystal_source is not None:
@@ -109,6 +150,7 @@ def bind_profiles(document: dict, bindings: dict, source_ids: set[int], candidat
         # identity: the exact previously admitted row must still match.
         admitted_bindings = binding_index(BINDINGS.read_bytes())
     if candidate is not None:
+        bindings = dict(bindings)
         from canary_generic_item_identity import PACKET
         if candidate != json.loads(PACKET.read_bytes()):
             raise ValueError("Unqualified generic Item candidate packet")

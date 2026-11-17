@@ -1,0 +1,1 @@
+{"result":"ok","entries":[{"entry_id":"019a65f0-0000-7000-8000-000000000003","operation_id":"019a65f0-0000-7000-8000-000000000003","kind":"transfer","coin_class":"transferable","counterparty_account_id":"019a65f0-0000-7000-8000-000000000002","available_delta":"-10","reserved_delta":"0","occurred_at":"2026-11-09T00:00:00Z"}],"next_cursor":"019a65f0-0000-7000-8000-000000000003"}

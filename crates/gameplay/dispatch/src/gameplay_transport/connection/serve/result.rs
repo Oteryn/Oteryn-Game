@@ -22,6 +22,15 @@ pub(super) fn encode(
 ) -> Result<Vec<u8>, ServeEnd> {
     session.integrity.observe(dispatch);
     let (status, result_payload) = match dispatch {
+        Dispatch::ServerModal(
+            crate::gameplay_transport::server_modal::ServerModalOutcome::Reply(payload)
+            | crate::gameplay_transport::server_modal::ServerModalOutcome::LoggedOut(payload),
+        ) => (CommandStatus::Accepted, payload.clone()),
+        Dispatch::ServerModal(
+            crate::gameplay_transport::server_modal::ServerModalOutcome::Unavailable,
+        ) => {
+            return Err(ServeEnd::Disconnected);
+        }
         Dispatch::Vip(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
         Dispatch::Vip(None) => {
             return Err(ServeEnd::Disconnected);

@@ -1,0 +1,20 @@
+{
+  "id": 330,
+  "name": "STAFF_TOOLS_V1",
+  "constant": "staff_tools::CAPABILITY_STAFF_TOOLS_V1",
+  "requires": [
+    51
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    560,
+    561
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

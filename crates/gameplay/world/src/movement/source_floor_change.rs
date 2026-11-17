@@ -47,7 +47,14 @@ impl SourceStepProof<'_> {
         self.destination
     }
     pub fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
+        qualify_origin(
+            runtime,
+            self.cells,
+            self.actor,
+            self.session,
+            self.expected,
+            self.direction,
+        )?;
         let observed = if let Some(tiles) = &self.current_tiles {
             destination_with_lookup(self.expected.position(), self.direction, |p| {
                 current_tile(tiles, p)
@@ -68,12 +75,7 @@ impl SourceStepProof<'_> {
         MovementLocalPosition,
         MovementFacing,
     ) {
-        let facing = match self.direction {
-            CardinalStep::North => MovementFacing::North,
-            CardinalStep::East => MovementFacing::East,
-            CardinalStep::South => MovementFacing::South,
-            CardinalStep::West => MovementFacing::West,
-        };
+        let facing = self.direction.facing();
         (self.actor, self.expected, self.destination, facing)
     }
 }
@@ -113,7 +115,7 @@ pub fn prepare_source_step<'a>(
     expected: MovementPositionSnapshot,
     direction: CardinalStep,
 ) -> Result<SourceStepProof<'a>, MovementError> {
-    qualify_origin(runtime, cells, actor, session, expected)?;
+    qualify_origin(runtime, cells, actor, session, expected, direction)?;
     let destination = destination(cells, expected.position(), direction)?;
     Ok(SourceStepProof {
         cells,
@@ -132,6 +134,7 @@ fn qualify_origin(
     actor: ExactActorRef,
     session: GameSessionId,
     expected: MovementPositionSnapshot,
+    direction: CardinalStep,
 ) -> Result<(), MovementError> {
     if !is_source_profile(cells)
         || runtime.actor_spell_reserved(actor)
@@ -142,9 +145,7 @@ fn qualify_origin(
             .read_actor_position(actor)
             .map_err(MovementError::Actor)?
             != expected
-        || !runtime
-            .player_control_facts(actor, session)
-            .is_ok_and(|c| c.control_loss.is_none())
+        || !runtime.player_step_allowed(actor, session, direction.delta())
     {
         return Err(MovementError::NotQualified);
     }
@@ -181,7 +182,10 @@ fn tile(
             z: i32::from(p.floor),
         },
     ) {
-        Ok(t) => Ok(Some(t)),
+        Ok(std::borrow::Cow::Borrowed(t)) => Ok(Some(t)),
+        // This port proves immutable SOURCE stairs. Bundle phase tiles use the
+        // bundle floor owner and cannot supply SOURCE height/stair evidence.
+        Ok(std::borrow::Cow::Owned(_)) => Err(MovementError::NotQualified),
         Err(SpellTileLookupError::Absent) => Ok(None),
         Err(SpellTileLookupError::Unknown) => Err(MovementError::NotQualified),
         Err(SpellTileLookupError::ScopeMismatch) => Err(MovementError::ScopeMismatch),
@@ -258,16 +262,12 @@ fn destination_with_lookup<'a>(
     direction: CardinalStep,
     mut lookup: impl FnMut(MovementLocalPosition) -> Result<Option<TileView<'a>>, MovementError>,
 ) -> Result<MovementLocalPosition, MovementError> {
-    let (dx, dy) = match direction {
-        CardinalStep::North => (0, -1),
-        CardinalStep::East => (1, 0),
-        CardinalStep::South => (0, 1),
-        CardinalStep::West => (-1, 0),
-    };
+    let (dx, dy) = direction.delta();
     let mut next = shifted(origin, dx, dy, 0)?;
-    // game.cpp2048..2079 uses source z8/7 boundaries and height3.
+    // Canary 99902524 game.cpp2045..2079 excludes diagonals from implicit
+    // height-three stairs; explicit tile floor changes below still apply.
     let origin_tile = lookup(origin)?.ok_or(MovementError::Blocked)?;
-    if origin.floor != -8 && has_height(&origin_tile)? {
+    if !direction.is_diagonal() && origin.floor != -8 && has_height(&origin_tile)? {
         let above = lookup(shifted(origin, 0, 0, 1)?)?;
         if above.is_none_or(|t| !t.ground_present() && !t.solid)
             && let Some(upper) = lookup(shifted(next, 0, 0, 1)?)?
@@ -278,7 +278,7 @@ fn destination_with_lookup<'a>(
             next = shifted(next, 0, 0, 1)?;
         }
     }
-    if origin.floor != -7 && origin.floor == next.floor {
+    if !direction.is_diagonal() && origin.floor != -7 && origin.floor == next.floor {
         let here = lookup(next)?;
         if here.is_none_or(|t| !t.ground_present() && !t.solid)
             && let Some(lower) = lookup(shifted(next, 0, 0, -1)?)?
@@ -521,15 +521,7 @@ mod tests {
             let after = runtime.commit_source_step(proof).unwrap();
             assert_eq!(after.revision(), before.revision() + 1);
             floors.insert(after.position().floor);
-            assert_eq!(
-                after.facing(),
-                Some(match dir {
-                    CardinalStep::North => MovementFacing::North,
-                    CardinalStep::East => MovementFacing::East,
-                    CardinalStep::South => MovementFacing::South,
-                    CardinalStep::West => MovementFacing::West,
-                })
-            );
+            assert_eq!(after.facing(), Some(dir.facing()));
         }
         assert_eq!(runtime.read_actor_position(actor).unwrap().position(), goal);
         assert_eq!(floors, std::collections::BTreeSet::from([-7, -6, -5]));
@@ -709,6 +701,81 @@ mod tests {
     }
 
     #[test]
+    fn m40_diagonals_skip_implicit_stairs_but_follow_explicit_floor_changes() {
+        let (_runtime, room, _actor, _session) = owner();
+        let p = |x, y, floor| MovementLocalPosition { x, y, floor };
+        let cells = room.movement_cells();
+        let clear = tile(cells, p(0, 4, -5)).unwrap().unwrap();
+        let down = tile(cells, p(0, 5, -5)).unwrap().unwrap();
+        assert!(changes(clear).unwrap().is_empty());
+        assert_eq!(changes(down).unwrap(), &[SourceFloorChange::Down]);
+        let view = |tile, height_count| TileView {
+            tile,
+            solid: false,
+            height_count,
+        };
+        // Isolated query graphs exercise the source algorithm, not live proofs.
+        for direction in [
+            CardinalStep::North,
+            CardinalStep::East,
+            CardinalStep::South,
+            CardinalStep::West,
+            CardinalStep::NorthEast,
+            CardinalStep::SouthEast,
+            CardinalStep::SouthWest,
+            CardinalStep::NorthWest,
+        ] {
+            let (x, y) = direction.delta();
+            let entered = p(x, y, -5);
+            let upper = p(x, y, -4);
+            let lower = p(x, y, -6);
+            let graph = std::collections::BTreeMap::from([
+                ((0, 0, -5), view(clear, 3)),
+                ((x, y, -5), view(clear, 0)),
+                ((x, y, -4), view(clear, 0)),
+            ]);
+            assert_eq!(
+                destination_with_lookup(p(0, 0, -5), direction, |p| {
+                    Ok(graph.get(&(p.x, p.y, p.floor)).copied())
+                }),
+                Ok(if direction.is_diagonal() {
+                    entered
+                } else {
+                    upper
+                }),
+                "implicit climb {direction:?}"
+            );
+            let graph = std::collections::BTreeMap::from([
+                ((0, 0, -5), view(clear, 0)),
+                ((x, y, -6), view(clear, 3)),
+            ]);
+            assert_eq!(
+                destination_with_lookup(p(0, 0, -5), direction, |p| {
+                    Ok(graph.get(&(p.x, p.y, p.floor)).copied())
+                }),
+                if direction.is_diagonal() {
+                    Err(MovementError::Blocked)
+                } else {
+                    Ok(lower)
+                },
+                "implicit descent {direction:?}"
+            );
+            let graph = std::collections::BTreeMap::from([
+                ((0, 0, -5), view(clear, 0)),
+                ((x, y, -5), view(down, 0)),
+                ((x, y, -6), view(clear, 0)),
+            ]);
+            assert_eq!(
+                destination_with_lookup(p(0, 0, -5), direction, |p| {
+                    Ok(graph.get(&(p.x, p.y, p.floor)).copied())
+                }),
+                Ok(lower),
+                "explicit floor change {direction:?}"
+            );
+        }
+    }
+
+    #[test]
     fn absent_floor_followups_never_make_a_solid_flagged_stair_a_landing() {
         let (_runtime, room, _actor, _session) = owner();
         let p = |x, y, floor| MovementLocalPosition { x, y, floor };
@@ -804,6 +871,122 @@ mod tests {
             .is_err()
         );
     }
+
+    #[test]
+    fn scripted_scene_group_revalidates_census_and_rolls_back_projection_failure() {
+        use crate::map::floor::{SceneEvacuation, prepare_source_scene};
+        let (mut runtime, room, actor, session) = owner();
+        let safe = |p: MovementLocalPosition| {
+            tile(room.movement_cells(), p)
+                .ok()
+                .flatten()
+                .is_some_and(|t| !t.flags().protection_zone && !t.flags().floor_change)
+        };
+        let directions = [
+            CardinalStep::North,
+            CardinalStep::East,
+            CardinalStep::South,
+            CardinalStep::West,
+        ];
+        let start = runtime.read_actor_position(actor).unwrap().position();
+        let key = |p: MovementLocalPosition| (p.x, p.y, p.floor);
+        let mut seen = std::collections::BTreeSet::from([key(start)]);
+        let mut queue = std::collections::VecDeque::from([(start, Vec::new())]);
+        let mut path = None;
+        while let Some((at, steps)) = queue.pop_front() {
+            if safe(at)
+                && directions.iter().any(|&d| {
+                    destination(room.movement_cells(), at, d)
+                        .is_ok_and(|to| to.floor == at.floor && safe(to))
+                })
+            {
+                path = Some(steps);
+                break;
+            }
+            for direction in directions {
+                if let Ok(to) = destination(room.movement_cells(), at, direction)
+                    && seen.insert(key(to))
+                {
+                    let mut next = steps.clone();
+                    next.push(direction);
+                    queue.push_back((to, next));
+                }
+            }
+        }
+        for direction in path.expect("actual source stairs reach an unprotected street") {
+            let expected = runtime.read_actor_position(actor).unwrap();
+            let proof = prepare_source_step(
+                &runtime,
+                room.movement_cells(),
+                actor,
+                session,
+                expected,
+                direction,
+            )
+            .unwrap();
+            runtime.commit_source_step(proof).unwrap();
+        }
+        let before = runtime.read_actor_position(actor).unwrap();
+        let from = before.position();
+        let to = [
+            CardinalStep::North,
+            CardinalStep::East,
+            CardinalStep::South,
+            CardinalStep::West,
+        ]
+        .into_iter()
+        .filter_map(|dir| destination(room.movement_cells(), from, dir).ok())
+        .find(|to| to.floor == from.floor && safe(*to))
+        .expect("native walkable neighbour");
+        let source = SceneEvacuation {
+            from,
+            players_to: to,
+            creatures_to: to,
+            all: true,
+        };
+        let closed = std::collections::BTreeSet::new();
+        let stale =
+            prepare_source_scene(&runtime, room.movement_cells(), vec![source], &closed).unwrap();
+        let creature = runtime.admit_pinned_test_creature(from).unwrap();
+        assert!(
+            runtime
+                .commit_source_scene_relocations(stale, || panic!("stale census must not publish"))
+                .is_err()
+        );
+        assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
+        let creature_before = runtime.read_actor_position(creature).unwrap();
+        let ambiguous = SceneEvacuation {
+            all: false,
+            ..source
+        };
+        assert!(
+            prepare_source_scene(&runtime, room.movement_cells(), vec![ambiguous], &closed)
+                .is_err()
+        );
+        let proof =
+            prepare_source_scene(&runtime, room.movement_cells(), vec![source], &closed).unwrap();
+        assert_eq!(proof.moves().len(), 2);
+        assert!(
+            runtime
+                .commit_source_scene_relocations(proof, || false)
+                .is_err()
+        );
+        assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
+        assert_eq!(
+            runtime.read_actor_position(creature).unwrap(),
+            creature_before
+        );
+        let proof =
+            prepare_source_scene(&runtime, room.movement_cells(), vec![source], &closed).unwrap();
+        let moved = runtime
+            .commit_source_scene_relocations(proof, || true)
+            .unwrap();
+        assert_eq!(moved.len(), 2);
+        assert!(moved.iter().all(|snapshot| snapshot.position() == to));
+        let empty =
+            prepare_source_scene(&runtime, room.movement_cells(), vec![source], &closed).unwrap();
+        assert!(empty.moves().is_empty());
+    }
 }
 
 /// Prepared reads retain no mutation authority. Binding below rechecks the
@@ -828,7 +1011,14 @@ impl PreparedCurrentSourceStep<'_> {
             .and_then(|(tile, _, _)| tile.as_ref())
     }
     pub fn validate_current(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        qualify_origin(runtime, self.cells, self.actor, self.session, self.expected)?;
+        qualify_origin(
+            runtime,
+            self.cells,
+            self.actor,
+            self.session,
+            self.expected,
+            self.direction,
+        )?;
         if destination_with_lookup(self.expected.position(), self.direction, |p| {
             current_tile(&self.tiles, p)
         })? != self.destination
@@ -860,7 +1050,7 @@ pub async fn collect_current_source_step<'room>(
     direction: CardinalStep,
 ) -> Result<PreparedCurrentSourceStep<'room>, MovementError> {
     let cells = room.movement_cells();
-    qualify_origin(runtime, cells, actor, session, expected)?;
+    qualify_origin(runtime, cells, actor, session, expected, direction)?;
     let mut tiles = std::collections::BTreeMap::new();
     for _ in 0..128 {
         let requested = std::cell::Cell::new(None);
@@ -894,19 +1084,20 @@ pub async fn collect_current_source_step<'room>(
             room, runtime, position,
         )
         .map_err(|_| MovementError::NotQualified)?;
-        let read =
-            crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(
-                tx,
-                permit,
-                root,
-                recovery,
-                node,
-                fence,
-                runtime.content_pin().server_artifact_digest(),
-                &target,
-            )
-            .await
-            .map_err(|_| MovementError::NotQualified)?;
+        let read = crate::durability::spell_item_transaction::read_player_step_tile_in_transaction(
+            tx,
+            permit,
+            root,
+            recovery,
+            node,
+            fence,
+            runtime.content_pin().server_artifact_digest(),
+            &target,
+            runtime,
+            actor,
+        )
+        .await
+        .map_err(|_| MovementError::NotQualified)?;
         let logical = LogicalCell {
             x: position.x,
             y: position.y,

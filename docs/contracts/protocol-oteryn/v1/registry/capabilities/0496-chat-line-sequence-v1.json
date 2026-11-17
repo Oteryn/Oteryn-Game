@@ -1,0 +1,13 @@
+{
+  "id": 496,
+  "name": "CHAT_LINE_SEQUENCE_V1",
+  "owner_decision": "WU26 chat channels as in Tibia Global; parity rule: current Tibia, then Crystal 201189f8",
+  "owner": "Game chat egress (domain 12 delta 1) and its per-session chat revision",
+  "requires": [
+    7
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only, with CHAT_V1. Every chat line delta appends field 13 line_sequence, a varint that strictly increases per session (the domain 12 revision of the delta). Without selection the line bytes are unchanged."
+}

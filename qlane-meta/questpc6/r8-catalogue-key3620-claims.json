@@ -1,0 +1,29 @@
+{
+  "oteryn:reward-claim.quest.key.id3620": {
+    "quest": "unlinked",
+    "placements": [
+      {
+        "position": {
+          "x": 32411,
+          "y": 32155,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:163",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5009
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:445",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5009
+          }
+        ]
+      }
+    ],
+    "lane_decision": "Mintwallin Prison Key, fresh TibiaWiki Key 3620; M owned; stale donor section label ignored"
+  }
+}

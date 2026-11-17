@@ -1,0 +1,48 @@
+[
+  {
+    "mechanic": "0290-cast-control",
+    "kind": "handlers",
+    "id": "0290-cast-control-moderate",
+    "status": "supported",
+    "commands": [
+      505
+    ],
+    "direction": "client_to_server",
+    "capability": 290,
+    "entry": "mod.rs::moderate"
+  },
+  {
+    "mechanic": "0290-cast-control",
+    "kind": "keybindings",
+    "id": "0290-cast-control-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+SHIFT+S",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0290-cast-control",
+    "kind": "panels",
+    "id": "0290-cast-control-panel",
+    "status": "supported",
+    "entry": "mod.rs::panel_text"
+  },
+  {
+    "mechanic": "0290-cast-control",
+    "kind": "handlers",
+    "id": "0290-cast-control-start-stop",
+    "status": "supported",
+    "commands": [
+      502
+    ],
+    "direction": "client_to_server",
+    "capability": 290,
+    "entry": "mod.rs::command",
+    "not_applicable": {
+      "state": "State and reducer are in mod.rs.",
+      "protocol": "Strict Message codec and reducer are in mod.rs.",
+      "view": "Native form consumes Panel::text in mod.rs.",
+      "settings": "Account persistence belongs to Platform; native form edits session settings."
+    }
+  }
+]

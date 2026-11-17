@@ -1,0 +1,83 @@
+{
+  "vectors": [
+    {
+      "name": "escrow_intent",
+      "wire": "{\"contract_version\":2,\"command\":\"EscrowBazaarItem\",\"variant\":\"PLATFORM_BAZAAR\",\"issuer_authority\":\"OTERYN_PLATFORM_BAZAAR_AUTHORITY\",\"issuer_decision_id\":\"0192a000-0000-7000-8000-0000000000a1\",\"source_revision\":\"18\",\"operation_id\":\"0192a000-0000-7000-8000-000000000002\",\"listing_id\":\"0192a000-0000-7000-8000-000000000020\",\"seller_account_id\":\"0192a000-0000-7000-8000-000000000011\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"seller_character_id\":\"0192a000-0000-7000-8000-000000000021\",\"item_instance_id\":\"0192a000-0000-7000-8000-000000000022\",\"expected_state_revision\":\"7\",\"quantity\":1,\"transferability_revision\":\"4\",\"issued_at_source\":\"1790000000\",\"expires_at_source\":\"1790000300\",\"audience\":\"OTERYN_GAME_BAZAAR_AUTHORITY\"}",
+      "sha256": "ba0ca94c2cc9bd37ac222f21333807e6f057529a54d730049ad7e1a30d0283bc",
+      "expect": "COMMITTED after authoritative checks"
+    },
+    {
+      "name": "escrow_receipt",
+      "wire": "{\"contract_version\":2,\"operation\":\"PublishCharacterCommandReceiptV1\",\"source_authority\":\"oteryn:character-authority:primary\",\"command\":\"EscrowBazaarItem\",\"operation_id\":\"0192a000-0000-7000-8000-000000000002\",\"outcome\":\"COMMITTED\",\"result_code\":\"CHAR_CMD_OK\",\"result_data\":{\"escrow_id\":\"0192a000-0000-7000-8000-000000000023\",\"escrow_revision\":\"1\",\"seller_character_id\":\"0192a000-0000-7000-8000-000000000021\",\"item\":{\"item_instance_id\":\"0192a000-0000-7000-8000-000000000022\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"definition\":{\"family\":\"item\",\"production_key\":\"fixture-sword\",\"revision_ref\":\"v1\"},\"state_revision\":\"8\",\"quantity\":1,\"attributes_hash\":\"fd8184df56101f486d8766c87c216edddf9c25c4f29ba4c48eb48219dc137c19\",\"attributes\":[{\"key\":\"tier\",\"value\":\"2\"}]}},\"recovery_generation\":\"3\",\"decided_at\":\"1790000002\"}",
+      "sha256": "5699ea4e045065a96e356f226df67a32fb5a19342af25678d80e35531ea080fc",
+      "expect": "store once; digest is prerequisite for delivery"
+    },
+    {
+      "name": "delivery_intent",
+      "wire": "{\"contract_version\":2,\"command\":\"DeliverBazaarItem\",\"variant\":\"PLATFORM_BAZAAR\",\"issuer_authority\":\"OTERYN_PLATFORM_BAZAAR_AUTHORITY\",\"issuer_decision_id\":\"0192a000-0000-7000-8000-0000000000a1\",\"source_revision\":\"20\",\"operation_id\":\"0192a000-0000-7000-8000-000000000004\",\"listing_id\":\"0192a000-0000-7000-8000-000000000020\",\"seller_account_id\":\"0192a000-0000-7000-8000-000000000011\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"escrow_id\":\"0192a000-0000-7000-8000-000000000023\",\"expected_escrow_revision\":\"1\",\"buyer_account_id\":\"0192a000-0000-7000-8000-000000000013\",\"buyer_character_id\":\"0192a000-0000-7000-8000-000000000014\",\"escrow_receipt_digest\":\"5699ea4e045065a96e356f226df67a32fb5a19342af25678d80e35531ea080fc\",\"sale_id\":\"0192a000-0000-7000-8000-000000000024\",\"funding\":{\"currency\":\"COINS\",\"reservation_id\":\"0192a000-0000-7000-8000-000000000025\",\"hold_revision\":null,\"gross_amount\":\"10000\"},\"issued_at_source\":\"1790000000\",\"expires_at_source\":\"1790000300\",\"audience\":\"OTERYN_GAME_BAZAAR_AUTHORITY\"}",
+      "sha256": "fe6c71321ffb287d275e7f73f1a8c4c3df7ab0b9ba0665aa67b3d7c0c72281a6",
+      "expect": "COMMITTED only with fenced local Wallet reservation"
+    },
+    {
+      "name": "delivery_receipt",
+      "wire": "{\"contract_version\":2,\"operation\":\"PublishCharacterCommandReceiptV1\",\"source_authority\":\"oteryn:character-authority:primary\",\"command\":\"DeliverBazaarItem\",\"operation_id\":\"0192a000-0000-7000-8000-000000000004\",\"outcome\":\"COMMITTED\",\"result_code\":\"CHAR_CMD_OK\",\"result_data\":{\"escrow_id\":\"0192a000-0000-7000-8000-000000000023\",\"escrow_revision\":\"2\",\"destination_account_id\":\"0192a000-0000-7000-8000-000000000013\",\"destination_character_id\":\"0192a000-0000-7000-8000-000000000014\",\"delivery_id\":\"0192a000-0000-7000-8000-000000000026\",\"item\":{\"item_instance_id\":\"0192a000-0000-7000-8000-000000000022\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"definition\":{\"family\":\"item\",\"production_key\":\"fixture-sword\",\"revision_ref\":\"v1\"},\"state_revision\":\"9\",\"quantity\":1,\"attributes_hash\":\"fd8184df56101f486d8766c87c216edddf9c25c4f29ba4c48eb48219dc137c19\",\"attributes\":[{\"key\":\"tier\",\"value\":\"2\"}]}},\"recovery_generation\":\"3\",\"decided_at\":\"1790000002\"}",
+      "sha256": "0cf049d8272efc9a898d4be478cdaf7726793b34abb55bbac327db2a745234cd",
+      "expect": "delivered true only with current matching status and receipt"
+    },
+    {
+      "name": "delivered_status",
+      "wire": "{\"contract_version\":2,\"operation\":\"PublishBazaarListingStatusV1\",\"source_authority\":\"oteryn:game:primary\",\"listing_id\":\"0192a000-0000-7000-8000-000000000020\",\"seller_account_id\":\"0192a000-0000-7000-8000-000000000011\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"projection_epoch\":\"3\",\"projection_revision\":\"2\",\"source_observed_at\":\"1790000002\",\"asset_kind\":\"ITEM\",\"asset_id\":\"0192a000-0000-7000-8000-000000000022\",\"state\":\"DELIVERED\",\"custody_id\":\"0192a000-0000-7000-8000-000000000023\",\"custody_revision\":\"2\",\"snapshot_hash\":null,\"last_operation_id\":\"0192a000-0000-7000-8000-000000000004\",\"reason_code\":null}",
+      "sha256": "e956e6bb039b96873dbaa544c06e77a050aec0afc3caffe4e2d619664183000f",
+      "expect": "status alone never pays"
+    },
+    {
+      "name": "changed_retry",
+      "wire": "{\"contract_version\":2,\"command\":\"EscrowBazaarItem\",\"variant\":\"PLATFORM_BAZAAR\",\"issuer_authority\":\"OTERYN_PLATFORM_BAZAAR_AUTHORITY\",\"issuer_decision_id\":\"0192a000-0000-7000-8000-0000000000a1\",\"source_revision\":\"18\",\"operation_id\":\"0192a000-0000-7000-8000-000000000002\",\"listing_id\":\"0192a000-0000-7000-8000-000000000020\",\"seller_account_id\":\"0192a000-0000-7000-8000-000000000011\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"seller_character_id\":\"0192a000-0000-7000-8000-000000000021\",\"item_instance_id\":\"0192a000-0000-7000-8000-000000000022\",\"expected_state_revision\":\"7\",\"quantity\":2,\"transferability_revision\":\"4\",\"issued_at_source\":\"1790000000\",\"expires_at_source\":\"1790000300\",\"audience\":\"OTERYN_GAME_BAZAAR_AUTHORITY\"}",
+      "sha256": "d605560cdfe9eb4c5776ffc77d570d91729690a4842d7f51144903cd65048c05",
+      "expect": "retain escrow_receipt; alarm; no second receipt"
+    },
+    {
+      "name": "stale_fence_rejection",
+      "wire": "{\"contract_version\":2,\"operation\":\"PublishCharacterCommandReceiptV1\",\"source_authority\":\"oteryn:character-authority:primary\",\"command\":\"DeliverBazaarItem\",\"operation_id\":\"0192a000-0000-7000-8000-000000000005\",\"outcome\":\"REJECTED\",\"result_code\":\"CHAR_CMD_BAZAAR_STALE_REVISION\",\"result_data\":null,\"recovery_generation\":\"3\",\"decided_at\":\"1790000002\"}",
+      "sha256": "b70f414678e7bf4308eba32c60aad40870b7046664b38429f300b3b37e7ed60e",
+      "expect": "REJECTED; no movement"
+    },
+    {
+      "name": "locked_character_snapshot",
+      "wire": "{\"snapshot\":{\"contract_version\":1,\"issuer_authority\":\"OTERYN_GAME_BAZAAR_AUTHORITY\",\"audience\":\"OTERYN_PLATFORM_BAZAAR_AUTHORITY\",\"source_authority\":\"oteryn:game:primary\",\"listing_id\":\"0192a000-0000-7000-8000-000000000030\",\"seller_account_id\":\"0192a000-0000-7000-8000-000000000011\",\"character_id\":\"0192a000-0000-7000-8000-000000000031\",\"world_id\":\"0192a000-0000-7000-8000-000000000012\",\"lock_id\":\"0192a000-0000-7000-8000-000000000032\",\"lock_revision\":\"1\",\"character_revision\":\"7\",\"eligibility_revision\":\"4\",\"projection_epoch\":\"3\",\"captured_at\":\"1790000002\",\"name\":\"Aldric\",\"vocation\":4,\"level\":\"100\",\"experience\":\"1000000\",\"created_at\":null,\"health\":\"500\",\"health_max\":\"500\",\"mana\":\"200\",\"mana_max\":\"200\",\"capacity_centi_oz\":\"10000\",\"speed\":\"220\",\"blessings\":[],\"skills\":[{\"key\":\"distance\",\"level\":\"75\",\"progress_bps\":5000}],\"world_transfer_eligible\":null,\"appearance\":null,\"items\":null,\"store_grants\":null,\"outfits\":null,\"mounts\":null,\"achievements\":null,\"quests\":null},\"snapshot_hash\":\"26d9a91adcd5a5b430194f1c876ca7d6e5d7e308a3e6cf0eed5f9926123c38c2\",\"alg\":\"Ed25519\",\"kid\":\"fixture-example-1\",\"signature\":\"hNOaX-8--zY8dW-lC1geGshkvtFOvNgKd3XbSCxEOnmIQprN_v66f9j4UdEQ5ORvVJ5PBZs_v-21nt_SpgjsBA\"}",
+      "sha256": "7a2f2aed04d3d4fe70634c88e0b4185fab00d7c0062a0812a798d423f7b0386f",
+      "expect": "verify provisioned synthetic public key, signature/hash and exact current lock bindings; never use fixture key in deployment",
+      "fixture_public_key_hex": "e8c30390441a54642382f15a784087a42dc75f85f775fdfc9e2a25b0f08a9806"
+    },
+    {
+      "name": "character_settlement_intent",
+      "wire": "{\"contract_version\":1,\"command\":\"TransferCharacterOwnership\",\"variant\":\"PLATFORM_BAZAAR_TRANSFER\",\"issuer_authority\":\"OTERYN_PLATFORM_CHARACTER_AUTHORITY\",\"issuer_decision_id\":\"0192a000-0000-7000-8000-0000000000b1\",\"source_revision\":\"19\",\"operation_id\":\"0192a000-0000-7000-8000-000000000003\",\"character_id\":\"0192a000-0000-7000-8000-000000000031\",\"expected_from_account_id\":\"0192a000-0000-7000-8000-000000000040\",\"to_account_id\":\"0192a000-0000-7000-8000-000000000013\",\"purpose\":\"BAZAAR_SETTLEMENT\",\"issued_at_source\":\"1790000000\",\"expires_at_source\":\"1790000300\",\"audience\":\"OTERYN_GAME_CHARACTER_AUTHORITY\"}",
+      "sha256": "35f2142b5f024f10c466561337f26fc150fa90579be006cffcf7fb43cdfa8116",
+      "expect": "existing CC v1 route; execute only with exact Game lock binding"
+    },
+    {
+      "name": "character_settlement_receipt",
+      "wire": "{\"contract_version\":1,\"operation\":\"PublishCharacterCommandReceiptV1\",\"source_authority\":\"oteryn:character-authority:primary\",\"command\":\"TransferCharacterOwnership\",\"operation_id\":\"0192a000-0000-7000-8000-000000000003\",\"outcome\":\"COMMITTED\",\"result_code\":\"CHAR_CMD_OK\",\"character_id\":\"0192a000-0000-7000-8000-000000000031\",\"from_account_id\":\"0192a000-0000-7000-8000-000000000040\",\"to_account_id\":\"0192a000-0000-7000-8000-000000000013\",\"character_revision\":\"9\",\"projection_epoch\":\"3\",\"from_projection_revision\":\"44\",\"to_projection_revision\":\"12\",\"recovery_generation\":\"3\",\"decided_at\":\"1790000002\"}",
+      "sha256": "8384cfb7ad7a5a598ee9385c2f423cdf0442b91b4194b32775e7d9b1293c7b2b",
+      "expect": "unchanged CC v1 outcome; exact duplicate is already-applied; no alternate receipt endpoint"
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "restart_after_transfer_commit",
+      "expect": "replay exact existing CC v1 receipt, never second ownership transfer"
+    },
+    {
+      "name": "return_races_delivery",
+      "expect": "one escrow revision winner; reject losing fresh operation"
+    },
+    {
+      "name": "watermark_gap",
+      "expect": "full subject snapshot and prerequisite receipt before adapter use"
+    },
+    {
+      "name": "future_watermark",
+      "expect": "400; complete_through after observed_at never advances freshness"
+    }
+  ]
+}

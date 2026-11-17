@@ -1,0 +1,16 @@
+{
+  "mechanic": "0450-server-modal",
+  "kind": "handlers",
+  "id": "0450-server-modal-hireling-store",
+  "status": "supported",
+  "entry": "protocol.rs::hireling_store",
+  "direction": "client_to_server",
+  "capability": 450,
+  "commands": [
+    6196
+  ],
+  "not_applicable": {
+    "settings": "The server owns the transient Hireling choices.",
+    "input": "The confirmed Store purchase opens the server-owned Hireling selector."
+  }
+}

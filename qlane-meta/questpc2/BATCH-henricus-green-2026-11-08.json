@@ -1,0 +1,131 @@
+{
+  "merge_head": "47baa7bb872498ba9c5b30cf070c330f85cefba8",
+  "checkpoint_head": "ccb004b0c6dbfc514c6f46f669e7d0f698a597c5",
+  "binary": "/workspace/oteryn-env/target/debug/deps/oteryn_gameplay_dispatch-f89a081bc5464778",
+  "binary_sha256": "f4bb3be6500050a8f311c3e195a232be12f42273aa4fdc66fd140d087f6360eb",
+  "postgres_version": "180006",
+  "cases": [
+    {
+      "name": "gameplay_transport::capabilities::tests::selection_tests::the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6",
+      "pg": false,
+      "postgres_version": null,
+      "seconds": 0.028407,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-henricus-green-case-the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6.log",
+      "log_sha256": "8b954ce844a3c8d1ead010c955a89453230e2e7554b43aa04c096cc617301101",
+      "retained_markers": []
+    },
+    {
+      "name": "gameplay_transport::equipment_move::equipment_effects_owner::tests::ability_tests::equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes",
+      "pg": false,
+      "postgres_version": null,
+      "seconds": 61.981656,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-henricus-green-case-equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes.log",
+      "log_sha256": "02afb714b36f2f98eb04b337285433763e678a529f91f38f56de6a5dc584c4cf",
+      "retained_markers": []
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::questpc2_henricus::questpc2_henricus_recruitment_and_first_mission_are_topic_fenced_and_atomic",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 89.768422,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-henricus-green-case-questpc2_henricus_recruitment_and_first_mission_are_topic_fenced_and_atomic.log",
+      "log_sha256": "bb72f27bb3ffa1c00e356b64e632f8b213c07317c5fdcfd95a8cc2cb475571ae",
+      "retained_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::questpc2_henricus::questpc2_henricus_recruitment_and_first_mission_are_topic_fenced_and_atomic ... QUESTPC2_HENRICUS_POSTGRES_SERVER_VERSION=180006",
+        "POSTGRES_CASE_COMPLETED questpc2-henricus-start duration=89.718263567s success=true"
+      ]
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::questpc2_oldrak::questpc2_oldrak_source_confirmation_decline_and_finish_are_durable",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 68.481945,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-henricus-green-case-questpc2_oldrak_source_confirmation_decline_and_finish_are_durable.log",
+      "log_sha256": "5f87c6a395a64021ad75481378443ec231ccf4ea9ee263375988dd70917a1acb",
+      "retained_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::questpc2_oldrak::questpc2_oldrak_source_confirmation_decline_and_finish_are_durable ... QUESTPC2_OLDRAK_POSTGRES_SERVER_VERSION=180006",
+        "QUESTPC2_OLDRAK_POSTGRES_COMPLETED duration=68.437020586s success=true"
+      ]
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::annihilator_route::annihilator_source_route_native_combat_clearance",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 91.741754,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-henricus-green-case-annihilator_source_route_native_combat_clearance.log",
+      "log_sha256": "ea884c770bda003c2ccb2290ab88c64cc3bcb097a7d08ce3021611e290721474",
+      "retained_markers": [
+        "test gameplay_transport::monk_save::postgres_tests::annihilator_route::annihilator_source_route_native_combat_clearance ... ANNIHILATOR_ROUTE POSTGRES_CASE_OBSERVED server_version_num=180006",
+        "ANNIHILATOR_ROUTE POSTGRES_CASE_COMPLETED members=4 creatures=6 elapsed_ms=90592"
+      ]
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::boss_activity::l3_instance_endgame_rotten_blood_native_death_progresses_once",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 61.451878,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-henricus-green-case-l3_instance_endgame_rotten_blood_native_death_progresses_once.log",
+      "log_sha256": "5e4692a74d39036e03562440a2c02f43f40218647e8d998a2b97fbe617ffb019",
+      "retained_markers": [
+        "L3_INSTANCE_ENDGAME POSTGRES_CASE_COMPLETED oteryn:creature.bakragore elapsed_ms=360",
+        "L3_ENDGAME_QUEST_ENTRY POSTGRES_CASE_COMPLETED oteryn:creature.bakragore elapsed_ms=61265",
+        "BOSS_ACTIVITY_NATIVE_ENTRY POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_SCOPE_BARRIER POSTGRES_CASE_COMPLETED",
+        "BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED"
+      ]
+    },
+    {
+      "name": "gameplay_transport::monk_save::postgres_tests::soulpit_shared_entry::native::soulpit_production_owner_spawns_native_wave_and_timeout_returns_without_mastery_postgres",
+      "pg": true,
+      "postgres_version": "180006",
+      "seconds": 33.111613,
+      "exit_code": 0,
+      "passed": true,
+      "log": "/tmp/questpc2b-henricus-green-case-soulpit_production_owner_spawns_native_wave_and_timeout_returns_without_mastery_postgres.log",
+      "log_sha256": "7484d7189d699f8c6748af328c47f877b4dcc866dda51ad80be25e5fbdca9333",
+      "retained_markers": []
+    }
+  ],
+  "total_seconds": 215.776216,
+  "all_passed": true,
+  "batch": "henricus-recruitment-and-first-mission",
+  "red": {
+    "seconds": 65.812208608,
+    "postgres_version": 180006,
+    "error": "missing source recruitment offer: []",
+    "log_sha256": "7a945af617346d7dd3281d6006719e3f3f0e0b8073094553cc9594a2c9a826fe"
+  },
+  "quest_units": {
+    "passed": 318,
+    "failed": 0,
+    "ignored": 0,
+    "seconds": 49.65
+  },
+  "authorer_tests": {
+    "passed": 2,
+    "seconds": 1.473
+  },
+  "workspace": "PASS8m06s including queued wait",
+  "clippy": "PASS quests/dispatch alltargets/allfeatures -Dwarnings,11m25s including queue wait",
+  "qualification_boundary": "Henricus recruitment, decline/reset, first mission atomic flags and unearned-report refusal; no guard acquisition or full Inquisition qualification. Oldrak/combat/Rotten/Soulpit regressions included.",
+  "owned_artifacts": {
+    "content/dialogues/quest-rules-supplemental/questpc2-henricus.json": "44698c51060da35aed635e1a8dfeabcccda93b76c1b35992be9acdae77b62a20",
+    "crates/gameplay/quests/src/quest/npc_rules/questpc2_henricus_source.rs": "4d195c2099426e84ef56dca0f8e9390c359d4656af72298a879ae5317bb4199c",
+    "crates/gameplay/quests/src/quest/npc_rules/questpc2_henricus_source_tests.rs": "ea2b42c27e47507513865fd42ed2c8c9fcbb0738631b17a0b9a1bded305d2e84",
+    "tools/content-schema/quest-authoring/questpc2_henricus_rules.py": "edc24cab10a3d02b3c3e1cf6cd17999cbf1c50ded4d627551c039dfb75044089"
+  },
+  "generation": "PASS final authorer, central lists, equipment3820, audit/binding/completion/coverage/ledger283, pins and fmt",
+  "duplicate_migrations": "PASS"
+}

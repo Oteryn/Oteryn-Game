@@ -1,0 +1,10 @@
+{
+  "mechanic": "0080-chat-private-channel",
+  "kind": "panels",
+  "id": "0080-chat-private-channel-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text",
+  "not_applicable": {
+    "settings": "Private channel membership is server-owned."
+  }
+}

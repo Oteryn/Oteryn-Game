@@ -181,11 +181,12 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             return Err(DurabilityError::Unavailable);
         }
         let room = self
-            .rooms
+            .rooms()
             .gate_periodic_damage()
             .ok_or(DurabilityError::Unavailable)?;
         let objects = self.door.lock().await;
         let mut qualified = false;
+        let mut public_cause = None;
         let mut receipts = Vec::new();
         let mut locks = Vec::new();
         let cycle = Sha256::new()
@@ -547,6 +548,11 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             ));
             locks.push((actor, session, false));
             if next.vitals().health == 0 {
+                public_cause = Some(
+                    crate::durability::character_death::PublicDeathCause::Player {
+                        character_id: historical.source_character,
+                    },
+                );
                 break;
             }
         }
@@ -566,6 +572,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| DurabilityError::Unavailable)?;
         let death = if next.vitals().health == 0 {
             Some(PlayerDeath {
+                public_cause,
                 occurrence: (states.mint_death)().ok_or(DurabilityError::Unavailable)?,
                 cell: position,
             })

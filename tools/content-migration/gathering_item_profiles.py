@@ -1,6 +1,8 @@
 """Admit exactly the Crystal operands reached by the FIXM09 gathering dispatcher."""
 import hashlib
 import json
+
+from native_profile_composition import encode_native_profile
 from pathlib import Path
 import sys
 
@@ -78,8 +80,28 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     if {row['production_definition']['production_key'] for row in document['records']} & set(keys):
         raise ValueError('GATHERING_ITEM_PROFILE_DUPLICATE')
     document['records'] = sorted(document['records'] + records, key=order)
-    data = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    data = encode_native_profile(document)
     generated[profile_path] = data
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(data).hexdigest()
     generated[manifest_path] = canonical(manifest)
+
+
+def refresh_qualified_proof(root=ROOT):
+    """Repin only the proof's input digests after a canonical shard change.
+
+    mechanical_rod_policy still requires the qualified 920 weight and the exact
+    wiki observation, so a changed selected fact refuses instead of repinning.
+    """
+    path = root / PATH
+    overlay = json.loads(path.read_bytes())
+    _, _, proof = mechanical_rod_policy(root)
+    old, = overlay['qualified_overrides']
+    if {k: v for k, v in old.items() if k != 'inputs'} != {k: v for k, v in proof.items() if k != 'inputs'}:
+        raise ValueError('GATHERING_MECHANICAL_PROOF_CHANGED')
+    overlay['qualified_overrides'] = [proof]
+    path.write_text(json.dumps(overlay, indent=2, ensure_ascii=False) + '\n')
+
+
+if __name__ == '__main__':
+    refresh_qualified_proof()

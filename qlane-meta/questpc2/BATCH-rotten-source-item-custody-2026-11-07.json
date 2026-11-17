@@ -1,0 +1,59 @@
+{
+  "batch": "six Rotten Blood Item custody admissions",
+  "state": "FOCUSED_GREEN_UNIT_RUN_PENDING",
+  "canonical_admissions": 6,
+  "new_native_profiles": 4,
+  "existing_native_physical_records_preserved": 2,
+  "source_ids": [
+    43501,
+    43502,
+    43503,
+    43504,
+    43899,
+    43900
+  ],
+  "no_use_effects_added": true,
+  "new_qualified_quests": 0,
+  "pg": {
+    "version_num": 180006,
+    "red_seconds": 35.586,
+    "red_error": "oteryn:item.tibia.i43501: real mint/custody refused: DefinitionNotFound",
+    "green_cases": 3,
+    "green_runtime_seconds": 133.133,
+    "new_item_case_seconds": 59.452,
+    "new_item_marker": "distinct=6 quantity=6",
+    "new_item_completion_seconds": 59.405815035
+  },
+  "source_regression": {
+    "red_subcases": 6,
+    "green_seconds": 0.591,
+    "preserved_nonselected_canonical": 34105,
+    "preserved_nonselected_native": 3687,
+    "canonical_outside_sha256": "b83fd262a10f1578d0d7bdcfed726eba76f24dbf1fd9ff28086741a89b105046",
+    "native_outside_sha256": "27e185646aaa583954bf0248661b43ff1b402b255e1ea06933eb611381456ffe"
+  },
+  "unit_run": {
+    "selected": 1914,
+    "packages": [
+      "oteryn-gameplay-content",
+      "oteryn-gameplay-dispatch"
+    ],
+    "state": "RUNNING no failures observed",
+    "filter": "not test(postgres) & not test(::db_tests::)",
+    "log": "/tmp/questpc2-rotten-source-items-unit-tests.log",
+    "passed_at_snapshot": 598
+  },
+  "workspace_check": "PASS6m32s including build-lock wait",
+  "fmt": "PASS",
+  "generation": "canonical+native provider pipeline completed; registered authoring tools reapplied (Raid family lock count restored); central binding evidence, matrix, audit goldens refreshed",
+  "main_merge_prior_batch": {
+    "main": "47db34f09",
+    "durability_units": "698/698PASS314.521s",
+    "own_pg": "2/2PASS67.798s"
+  },
+  "clippy": "PASS5m29s -D warnings",
+  "item_mount_equivalence": "PASS34111Items/252Mounts after registered authoring stages",
+  "pin_refresh": "PASS on resource-recovered retry",
+  "duplicate_migrations": "PASS",
+  "publication_authority": "PREPUSH-2 cadence exception: focused mechanic/PG/check/fmt/generation green;1914-crate-unit selection continues with no failures observed."
+}

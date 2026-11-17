@@ -42,6 +42,14 @@ impl PlayerSpellState {
         Ok(changed)
     }
 
+    /// Knowledge supplied by the fenced durable Character owner, never by client intent.
+    pub fn install_learned_spells(&mut self, learned: BTreeSet<String>) {
+        self.learned = learned;
+    }
+    pub fn learned_spells(&self) -> &BTreeSet<String> {
+        &self.learned
+    }
+
     pub fn source_cooldown_deadlines(&self) -> Vec<(String, u64)> {
         self.cooldowns.canonical_deadlines()
     }
@@ -304,6 +312,15 @@ impl PlayerSpellState {
     /// creates it, before its first command and before any vitals snapshot is sent. It is the
     /// actor's initial state, so the `ACTOR_VITALS` revision is unchanged. A health that would be
     /// zero changes nothing: a saved actor is alive, and the actor keeps its maxima.
+    /// Manual combat.md:280: restore pre-entry pools under a new published vitals revision.
+    pub fn after_drome_exit(&self, health: u32, mana: u32) -> Option<Self> {
+        let mut next = self.clone();
+        next.restore_saved_vitals(health, mana);
+        next.drome_practice = false;
+        next.clear_drome_statuses();
+        next.revision = next.revision.checked_add(1)?;
+        Some(next)
+    }
     pub fn restore_saved_vitals(&mut self, health: u32, mana: u32) {
         let health = health.min(self.facts.max_health);
         if health == 0 {
@@ -449,8 +466,7 @@ impl PlayerSpellState {
             mana: self.mana,
             max_mana: self.facts.max_mana,
             soul: self.soul,
-            // §4: V1 serves no spell with `learning_required`.
-            learned: BTreeSet::new(),
+            learned: self.learned.clone(),
             // No V1 spell reads skills or equipment; they have no owner here yet.
             attack_skill: 0,
             attack_value: 0,

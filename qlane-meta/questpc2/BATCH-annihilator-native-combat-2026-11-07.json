@@ -1,0 +1,93 @@
+{
+  "batch_id": "annihilator-native-combat-2026-11-07",
+  "base_sha": "2886fa864c46bd9917c487a005acad14df8c43c2",
+  "scope": "Three reusable source data admissions and continuous real-map native combat; partial whole-quest evidence.",
+  "changes": [
+    "Complete28 missing native SHIELD hand kinds from35 agreeing existing Shield taxonomies, exact bindings and pinned XML; preserve numeric/combat/admission facts including dwarven shield defense34.",
+    "Extend existing generic encounter corpse admission with source5995->4097->4098->4099; capacities15/24/24 and lifetimes10/300/300/60 seconds, existing WorldObject movement/corpse identity and Game custody policy.",
+    "Qualify canonical custody for11 exact source loot Items whose physical facts already exist. Pinned client/XML/bindings own stack/container; physical, weapon, charges, use and all other groups remain unchanged. World-tree tooling retains this admission.",
+    "Refresh source-overlay inputs through Git-bound proof: unrelated selected definitions must remain identical; explicit portable custody qualification compares exact unchanged accepted profile core facts. Source/physical/charge/combat changes and duplicate selected identities refuse.",
+    "Use four genuine Fresh authorities, actual D88 level2000 within its existing finite policy, real Knight builds, normal first-entry equipment and physically carried health potions consumed by real item USE. Retain both full-health source actors before AI moves them; actual player attacks/monster thinks, lethal occurrences, durable corpse/loot drains and exact real eastward tile crossings clear the corridor. No engine combat, reward or movement guard changed."
+  ],
+  "sources": {
+    "xml": {
+      "path": "imports/canary/items-xml/items.xml",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b"
+    },
+    "client_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "bindings_sha256": "1d19709c28a649d8a9f32bf53e5bf43ad847d7901d6c6254833f456154d2de5a",
+    "loot_items": [
+      3060,
+      3063,
+      3284,
+      3306,
+      3364,
+      3366,
+      3414,
+      5954,
+      7368,
+      7382,
+      7393
+    ],
+    "exact_lines": "CONTRACT-NOTES.md; hand-weapon-kind-facts.json"
+  },
+  "red": [
+    {
+      "log": "/tmp/questpc2-shield-runtime-pg.log",
+      "server_version": 180006,
+      "duration_seconds": 88.75,
+      "failure": "Real lethal hit refused corpse_item_inadmissible."
+    },
+    {
+      "log": "/tmp/questpc2-demon-native-metadata-disk-pg.log",
+      "server_version": 180006,
+      "duration_seconds": 90.53,
+      "failure": "Corpse admission passes; real lethal hit refused loot_item_inadmissible."
+    },
+    {
+      "log": "/tmp/questpc2-demon-loot-same-fixture-pg.log",
+      "server_version": 180006,
+      "duration_seconds": 102.96,
+      "failure": "First native corpse/loot drain and movement committed; second coordinate lookup failed after native AI moved the source actor. Fixed by retaining exact source actor identities before combat."
+    }
+  ],
+  "green": {
+    "postgres_log": "/tmp/questpc2-moving-ai-native-pg.log",
+    "server_version": 180006,
+    "postgres_cases": 1,
+    "duration_seconds": 97.37,
+    "build_seconds": 130,
+    "marker": "ANNIHILATOR_COMBAT native_corridor_kills=2 source_ai_thinks=active; ANNIHILATOR_ROUTE POSTGRES_CASE_COMPLETED members=4 creatures=6 elapsed_ms=97085",
+    "check_log": "/tmp/questpc2-moving-ai-final-check.log",
+    "check_seconds": 3.52,
+    "clippy_log": "/tmp/questpc2-moving-ai-final-clippy.log",
+    "clippy_seconds": 19.13,
+    "clippy_scope": "dispatch all targets/all features -D warnings",
+    "fmt_log": "/tmp/questpc2-moving-ai-final-fmt.log",
+    "fmt_scope": "cargo fmt --check plus explicit rustfmt check of build-mounted combat module",
+    "python_cases": 19,
+    "python_logs": [
+      "/tmp/questpc2-demon-shield-python.log",
+      "/tmp/questpc2-demon-loot-python-final.log",
+      "/tmp/questpc2-demon-grizzly-python-final.log",
+      "/tmp/questpc2-demon-overlay-python-final.log"
+    ],
+    "registration_log": "/tmp/questpc2-demon-loot-registration.log",
+    "registration_files": 42,
+    "prey_simulation_log": "/tmp/questpc2-demon-loot-prey-qualified.log",
+    "prey_cases": 15,
+    "prey_creatures": 776,
+    "pin_log": "/tmp/questpc2-demon-loot-pin-check-alone.log",
+    "world_digest": "a0846ee7757ee5301aa17dbbda2dbf5aaaacc9bf6e80c73ed027d7b2d7edc20c",
+    "world_bytes": 31101122,
+    "governance_log": "/tmp/questpc2-moving-ai-final-governance.log",
+    "skipped_postgres_results_accepted": false
+  },
+  "derived_effect": "Ordinary Demon loot becomes settleable; existing model excludes admitted tables with >7 entries, so derived tier4 available/unsettleable counts154->153. Combat model rates, source odds and runtime budgets unchanged.",
+  "self_review": "Reviewed changed fixture, helpers, all new source/refresh tooling, preservation/conflict tests and semantic generated diffs. No significant finding remains. Source Item identities unchanged; native profile differences are only28 hand weapon-kind completions.",
+  "independent_review": "Not run: AUTHORING branch publication only; no PR, full-lane freeze or readiness claim.",
+  "resource_recovery": "Compiler/check OOM and ENOSPC attempts are not passes. Retained byte-verified current caches, moved READY metadata to disk for successful native compilation, pruned only unlocked superseded READY/failed working state, retired metadata only after new READY completed. No broad clean, build-setting change or binary/reference-data commit. Heavy pin verification rerun alone succeeded.",
+  "whole_quest_qualifications": 0,
+  "next": "Continue same route through actual source reward-room door, physical shared-claim chest selection/replay, actual exit and claimed-door/sealed re-entry; preserve incoming Desert party rite and continue all35 owned entries."
+}

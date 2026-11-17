@@ -1,0 +1,5 @@
+{
+  "command": "python3 -m unittest test_quest_finish_newhaven_items.NewhavenItemTests.test_guaranteed_gear_has_complete_plain_equipment_requirements",
+  "exit": 1,
+  "duration_seconds": 0.044
+}

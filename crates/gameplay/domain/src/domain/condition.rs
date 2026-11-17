@@ -77,7 +77,7 @@ pub enum ConflictKey {
     /// Crystal INTENSEHEX is an independent attribute condition, not an Avatar replacement.
     IntenseHex,
     SpellSkills(u8),
-    SpellRegeneration(u8),
+    SpellRegeneration(u32),
     Invisible,
     Outfit,
     Gate(ConditionGate),
@@ -104,7 +104,7 @@ pub enum ConditionType {
     /// Crystal INTENSEHEX is an independent attribute condition, not an Avatar replacement.
     IntenseHex,
     SpellSkills(u8),
-    SpellRegeneration(u8),
+    SpellRegeneration(u32),
     Invisible,
     Outfit,
     Gate(ConditionGate),
@@ -268,7 +268,7 @@ pub enum ConditionValues {
     },
     SpellRegeneration {
         duration_ms: u32,
-        sub_id: u8,
+        sub_id: u32,
         health_gain: u32,
         health_interval_ms: u32,
         mana_gain: u32,

@@ -25,3 +25,10 @@ pub fn tracking_query(panel: &super::QuestPanel) -> Option<super::QuestLogQuery>
         quest_indexes: indexes,
     })
 }
+
+/// Ctrl+Alt+Shift+Q opens the independent quest tracker.
+pub fn tracker_key(events: &[NormalizedInputEvent]) -> bool {
+    events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false }
+        if code.get() == 20 && modifiers.contains(Modifier::Control) && modifiers.contains(Modifier::Alt)
+            && modifiers.contains(Modifier::Shift) && !modifiers.contains(Modifier::Super)))
+}

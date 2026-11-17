@@ -1,0 +1,193 @@
+{
+  "status": "QUALIFIED selected Fiend Slayer and Hand of the Inquisition routes; shared native ownership/item bindings fully GREEN",
+  "postgres": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "red": {
+    "log": "/tmp/questpc7-outfit-items-red-counter-fixed.log",
+    "seconds": 73.227148735,
+    "assertion": "Second Fiend Slayer token incorrectly returned Ok before the first token was consumed/earned; expected Rejected."
+  },
+  "authoring": {
+    "tests": 16,
+    "result": "PASS",
+    "seconds": 7.958,
+    "log": "/tmp/questpc7-outfit-items-authoring.log"
+  },
+  "fixture_boundary": "Only completed parent quests are arranged through the fenced quest writer. Subject programmes, token MINT, consumption and appearance grants start fresh. Native initial level250 uses the active published XP threshold; Current Premium uses the existing coordinator fixture.",
+  "fixture_repair": "Initial77.735s run failed with Unavailable(Database(Database(None))). New fixture reused command IDs because the shared direct NPC helper does not advance session continuity. Assigning a fresh ID to every NPC operation produces the genuine73.227s ownership RED. Temporary SQLSTATE diagnostic was cancelled and removed; no raw database payload or diagnostic change is retained. Final native NPC owner calls use an independent counter; real item/appearance wire continuity is untouched. Existing inventory capabilities are selected, and USE sends the actual next command without a reserved gap. Final fixture keeps native NPC-owner command IDs separate from actual wire continuity; item USE and appearance use the real stream with existing inventory capabilities and no artificial command gap. No product safety guard or test assertion was weakened.",
+  "implementation": [
+    "fresh semantic cosmetic prerequisites under Character/account locks",
+    "explicit consumptive grant compatibility for selected admitted look pairs",
+    "Formal Dress explicit non-store quest promotion supported by retained Lord Retro grant",
+    "reuse six already materializable accessory items; preserve canonical physical facts",
+    "source placements/greetings for existing The Forgemaster and Henricus",
+    "personal once-only token callbacks using existing native MINT and item USE owners"
+  ],
+  "green_log": "/tmp/questpc7-outfit-items-green-contiguous.log",
+  "remaining_checks": [],
+  "green": {
+    "log": "/tmp/questpc7-outfit-items-green-contiguous.log",
+    "cases": {
+      "questpc7-outfits-inquisition": 78.216713065,
+      "questpc7-outfits-fiend": 78.262979488
+    },
+    "scope": [
+      "fresh subject programmes; only prerequisites arranged with fenced fixture writes",
+      "native published level250 and Current Premium",
+      "initial missing-parent refusal",
+      "exact once-only personal NPC token outputs",
+      "premature second-token refusal before first item consumption",
+      "actual first item consumption and semantic addon grant",
+      "premature completion refusal before second item consumption",
+      "actual second item consumption and full-outfit achievement",
+      "durable subject completion; prerequisite completed revision unchanged",
+      "ordinary native appearance observation with both addons and real selection command"
+    ]
+  },
+  "checks": [
+    {
+      "check": "sam-pg",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--lib",
+        "qengine_rewards_backpack_exchange",
+        "--",
+        "--nocapture"
+      ],
+      "seconds": 74.97,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-outfit-items-recovered-sam-pg.log"
+    },
+    {
+      "check": "reward-units",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "--lib",
+        "reward_callbacks::"
+      ],
+      "seconds": 10.221,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-outfit-items-recovered-reward-units.log"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "seconds": 196.239,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-outfit-items-recovered-clippy.log"
+    },
+    {
+      "check": "check",
+      "command": [
+        "cargo",
+        "check",
+        "--locked",
+        "-p",
+        "oteryn-gameplay-quests",
+        "-p",
+        "oteryn-gameplay-durability",
+        "-p",
+        "oteryn-gameplay-dispatch"
+      ],
+      "seconds": 95.817,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-outfit-items-recovered-check.log"
+    },
+    {
+      "check": "content",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "integration_rest",
+        "content_"
+      ],
+      "seconds": 157.107,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-outfit-items-recovered-content.log"
+    },
+    {
+      "check": "world",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "oteryn-game-server",
+        "--test",
+        "content_world_project_repository"
+      ],
+      "seconds": 48.349,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-outfit-items-recovered-world.log"
+    },
+    {
+      "check": "pin-refresh",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-refresh",
+        "."
+      ],
+      "seconds": 113.873,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-outfit-items-recovered-pin-refresh.log"
+    },
+    {
+      "check": "pin-check",
+      "command": [
+        "oteryn-world-bundle-compiler",
+        "pin-check",
+        ".",
+        "/tmp/questpc7-outfit-items-pin-check"
+      ],
+      "seconds": 126.014,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-outfit-items-recovered-pin-check.log"
+    },
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "seconds": 11.083,
+      "exit_code": 0,
+      "log": "/tmp/questpc7-outfit-items-recovered-fmt.log"
+    }
+  ],
+  "world_and_deployment_pin": "701b383eb42783d4b9110695b481e88e3eeaa142168ac4f8a841343b586dae6c",
+  "peer_refresh": {
+    "qengine2": "de9bb8bace9236656fabf1517161bb26d5a7a158",
+    "questpc8": "7eeee8fb152806de66af062831f94c2183c915ee",
+    "questl2": "fcb7ac5576a8a42fb081745c83c219dce8206201",
+    "scope": "No additional ACTIVE canonical qualified on these refreshed peer ledgers. New qengine2 actor-condition helpers remain available for reuse; no world eligibility implementation was present."
+  }
+}

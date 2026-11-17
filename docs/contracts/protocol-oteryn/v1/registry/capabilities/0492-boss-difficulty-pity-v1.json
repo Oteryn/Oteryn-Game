@@ -1,0 +1,13 @@
+{
+  "id": 492,
+  "name": "BOSS_DIFFICULTY_PITY_V1",
+  "owner_decision": "WU26 T188/T197 Moonsilver first-drop pity; owner decision 2026-11-11 (step +10% of base per victory without a drop, cap 3x base, first drop ends the tracker; no official figures published)",
+  "owner": "Admitted character, boss reward settlement and the session-fenced boss difficulty owner",
+  "requires": [
+    225
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only, with BOSS_DIFFICULTY_V1. A command 431 progress window (action 4) of a Boss Difficulty System boss appends field 11 kills_without_drop, 12 bonus_permille (0..=2000, permille of base) and 13 tracker_active. Without selection, and for every other reply, payloads are unchanged. The personal reward roll applies the bonus to Moonsilver equipment entries whether or not a session selects it."
+}

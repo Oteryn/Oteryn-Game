@@ -1,6 +1,6 @@
 //! W05d events scheduler: rate events active between a start and an end instant.
 //!
-//! Donor: zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8 (an OTS hypothesis
+//! Donor: zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a (an OTS hypothesis
 //! source), `data/XML/events.xml` read by `src/game/scheduling/events_scheduler.cpp`.
 //! - Window: `startdate`/`enddate` are `MM/DD/YYYY` (`events_scheduler.cpp:29-33`); `hour`
 //!   sets both times, `starthour` defaults to `00:00` and `endhour` to `23:59:59` (`:336-338`);
@@ -51,39 +51,43 @@ impl Default for EventRates {
 #[serde(deny_unknown_fields)]
 struct SourceSchedule {
     events: Vec<SourceEvent>,
-    /// Annual gameplay-event windows are consumed by their individual owners; the rate
-    /// scheduler still validates their committed calendar shape when loading this shared file.
+    /// Annual gameplay windows share the reset owner's calendar with their producers.
     #[serde(default, rename = "seasonal")]
-    _seasonal: Vec<SourceSeasonalEvent>,
+    seasonal: Vec<SourceSeasonalEvent>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SourceSeasonalEvent {
-    #[serde(rename = "event")]
-    _event: String,
-    #[serde(rename = "source")]
-    _source: String,
-    #[serde(rename = "windows")]
-    _windows: Vec<SourceSeasonalWindow>,
+    event: String,
+    source: String,
+    windows: Vec<SourceSeasonalWindow>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SourceSeasonalWindow {
-    #[serde(rename = "start")]
-    _start: SourceMonthDay,
-    #[serde(rename = "end_exclusive")]
-    _end_exclusive: SourceMonthDay,
+    start: SourceMonthDay,
+    end_exclusive: SourceMonthDay,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SourceMonthDay {
-    #[serde(rename = "month")]
-    _month: u8,
-    #[serde(rename = "day")]
-    _day: u8,
+    month: u8,
+    day: u8,
+}
+
+impl SourceMonthDay {
+    fn valid(self) -> bool {
+        let maximum = match self.month {
+            1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+            4 | 6 | 9 | 11 => 30,
+            2 => 29,
+            _ => return false,
+        };
+        (1..=maximum).contains(&self.day)
+    }
 }
 
 /// One `events.xml` `<event>` with its `<ingame>` rates (absent attributes stay 100).
@@ -127,12 +131,14 @@ pub enum ScheduleError {
     DateTime(String),
     /// The event ends before it starts.
     EndBeforeStart(String),
+    InvalidSeasonalWindow(String),
 }
 
 /// A validated event schedule.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Schedule {
     events: Vec<ScheduledEvent>,
+    seasonal: Vec<SourceSeasonalEvent>,
 }
 
 impl Schedule {
@@ -174,10 +180,60 @@ impl Schedule {
                 },
             });
         }
-        Ok(Self { events })
+        let mut names = std::collections::BTreeSet::new();
+        for event in &source.seasonal {
+            if event.event.is_empty()
+                || event.event.len() > 64
+                || !event
+                    .event
+                    .bytes()
+                    .all(|byte| byte.is_ascii_lowercase() || byte == b'_')
+                || event.source.is_empty()
+                || !names.insert(event.event.as_str())
+                || event.windows.is_empty()
+                || event.windows.len() > 8
+                || event.windows.iter().any(|window| {
+                    !window.start.valid()
+                        || !window.end_exclusive.valid()
+                        || window.start == window.end_exclusive
+                })
+            {
+                return Err(ScheduleError::InvalidSeasonalWindow(event.event.clone()));
+            }
+        }
+        Ok(Self {
+            events,
+            seasonal: source.seasonal,
+        })
+    }
+
+    /// Active annual events on the reset owner's server-save date. Half-open
+    /// bounds are committed content: Crystal a_piece_of_cake_config.lua:121-124,
+    /// 547-553; the accepted Halloween/Cake source windows remain in schedule.json.
+    /// Christmas availability follows its separately cited source date there.
+    pub fn seasonal_at(&self, month: u8, day: u8) -> Vec<&str> {
+        let date = SourceMonthDay { month, day };
+        if !date.valid() {
+            return Vec::new();
+        }
+        self.seasonal
+            .iter()
+            .filter(|event| {
+                event.windows.iter().any(|window| {
+                    if window.start < window.end_exclusive {
+                        window.start <= date && date < window.end_exclusive
+                    } else {
+                        window.start <= date || date < window.end_exclusive
+                    }
+                })
+            })
+            .map(|event| event.event.as_str())
+            .collect()
     }
 
     /// The compounded rates at a UTC instant; both window edges are inclusive.
+    /// SV10: Crystal ff7ede59 `src/game/scheduling/events_scheduler.hpp:67-110` multiplies
+    /// overlapping percentages; two 200% schedules therefore yield 400%, not 300%.
     pub fn rates_at(&self, unix_seconds: i64) -> EventRates {
         let compound = |schedule: u32, rate: u32| {
             u32::try_from(u64::from(schedule) * u64::from(rate) / u64::from(NEUTRAL_RATE))
@@ -321,6 +377,36 @@ pub mod test_clock {
 #[allow(clippy::expect_used, reason = "test fixtures")]
 mod tests {
     use super::*;
+
+    #[test]
+    fn w05d_annual_calendar_retains_holiday_sources_for_production() -> Result<(), ScheduleError> {
+        let schedule = Schedule::parse(SCHEDULE)?;
+        assert!(format!("{schedule:?}").contains("halloween"));
+        assert!(format!("{schedule:?}").contains("piece_of_cake"));
+        Ok(())
+    }
+
+    #[test]
+    fn w05d_annual_windows_are_half_open_and_wrap_across_years() -> Result<(), ScheduleError> {
+        let schedule = Schedule::parse(SCHEDULE)?;
+        assert!(schedule.seasonal_at(10, 30).is_empty());
+        assert_eq!(schedule.seasonal_at(10, 31), ["halloween"]);
+        assert_eq!(schedule.seasonal_at(11, 2), ["halloween"]);
+        assert!(schedule.seasonal_at(11, 3).is_empty());
+        assert_eq!(schedule.seasonal_at(2, 21), ["piece_of_cake"]);
+        assert!(schedule.seasonal_at(2, 27).is_empty());
+        assert_eq!(schedule.seasonal_at(12, 12), ["christmas"]);
+        assert!(schedule.seasonal_at(12, 31).is_empty());
+        let wrapped = Schedule::parse(
+            r#"{"events":[],"seasonal":[{"event":"test","source":"fixture","windows":[{"start":{"month":12,"day":31},"end_exclusive":{"month":1,"day":2}}]}]}"#,
+        )?;
+        assert_eq!(wrapped.seasonal_at(12, 31), ["test"]);
+        assert_eq!(wrapped.seasonal_at(1, 1), ["test"]);
+        assert!(wrapped.seasonal_at(1, 2).is_empty());
+        assert!(wrapped.seasonal_at(2, 30).is_empty());
+        assert!(Schedule::parse(r#"{"events":[],"seasonal":[{"event":"invalid","source":"fixture","windows":[{"start":{"month":2,"day":30},"end_exclusive":{"month":3,"day":2}}]}]}"#).is_err());
+        Ok(())
+    }
 
     /// 2030-01-01T00:00:00Z and 2030-01-02T23:59:59Z.
     const START: i64 = 1_893_456_000;

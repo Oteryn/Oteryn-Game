@@ -1,0 +1,38 @@
+{
+  "id": "callback-native-capture-2026-11-07",
+  "lifecycle": "AUTHORING",
+  "whole_quest_qualified": false,
+  "scope": "Generic committed callback publication before native lethal capture; earned source Dragon wire combat.",
+  "source_parent": "c83f29ba5",
+  "red": {
+    "server_version_num": 180006,
+    "seconds": 89.39,
+    "log": "/tmp/questpc2-elvenbane-chase-pg.log",
+    "point": "Source route/chase-driven lethal succeeds; Dragon counter absent and own phase2 instead of3."
+  },
+  "green": {
+    "server_version_num": 180006,
+    "seconds": 88.91,
+    "log": "/tmp/questpc2-elvenbane-immediate-callback-pg.log",
+    "earned": [
+      "source basement",
+      "poison route",
+      "Dragon floor",
+      "actual native Dragon lethal reward occurrence",
+      "exact-origin Dragon1",
+      "recipe phase3"
+    ]
+  },
+  "checks": {
+    "cargo_check_seconds": 19.24,
+    "all_targets_all_features_clippy_deny_warnings_seconds": 58.11,
+    "final_guarded_two_pg": "PASS",
+    "final_pg_seconds": 189.21,
+    "final_pg_cases": 2,
+    "final_pg_log": "/tmp/questpc2-callback-copy-final-two-pg.log",
+    "cargo_fmt": "PASS",
+    "duplicate_migrations": "HEAD PASS",
+    "content_pins": "unchanged; no content/generator inputs modified"
+  },
+  "next": "Five actual upper source defenders, four source treasure claims with two filled containers, exit and journal."
+}

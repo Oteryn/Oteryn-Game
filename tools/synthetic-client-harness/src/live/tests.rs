@@ -344,6 +344,7 @@ fn position(x: i32, y: i32) -> ActorPosition {
 
 fn actor_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        display_name: None,
         kind,
         entity: EntityRef {
             identity: if kind == EntityKind::Player && marker == 0 {
@@ -364,6 +365,7 @@ fn actor_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatial
 
 fn object_entity(kind: EntityKind, marker: u8, at: ActorPosition) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        display_name: None,
         kind,
         entity: EntityRef {
             identity: [marker; 16],
@@ -1496,6 +1498,7 @@ fn handle(value: u64) -> ItemHandle {
 
 fn entry(handle_value: u64, definition: u32, count: u32) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: handle(handle_value),
         item_definition_ref: std::num::NonZeroU32::new(definition)
             .unwrap_or(std::num::NonZeroU32::MIN),
@@ -2032,3 +2035,6 @@ fn live_controller_opens_a_corpse_and_loots_one_entry_through_both_deltas() -> R
             Ok::<(), BoxError>(())
         })
 }
+
+#[path = "../native_typing.rs"]
+mod native_typing;

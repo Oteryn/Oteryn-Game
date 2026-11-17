@@ -27,19 +27,19 @@ const SWORD_ITEM: &str = "oteryn:item.tibia.i28552";
 const CHARM_EXPANSION: &str = "store:charm-expansion";
 
 #[derive(Default)]
-struct Ledger {
-    balance: u64,
-    world: String,
-    purchases: usize,
-    debits: Vec<u64>,
-    intents: BTreeMap<String, serde_json::Value>,
-    receipts: usize,
-    malformed: bool,
-    answers: BTreeMap<String, (String, serde_json::Value)>,
+pub(super) struct Ledger {
+    pub(super) balance: u64,
+    pub(super) world: String,
+    pub(super) purchases: usize,
+    pub(super) debits: Vec<u64>,
+    pub(super) intents: BTreeMap<String, serde_json::Value>,
+    pub(super) receipts: usize,
+    pub(super) malformed: bool,
+    pub(super) answers: BTreeMap<String, (String, serde_json::Value)>,
 }
 
 /// The Platform side of the existing Store port: balance, debit, order and delivery intent.
-struct FakePlatform(Arc<SyncMutex<Ledger>>);
+pub(super) struct FakePlatform(pub(super) Arc<SyncMutex<Ledger>>);
 
 impl StoreTransport for FakePlatform {
     fn exchange<'a>(
@@ -109,7 +109,7 @@ pub(super) fn platform(world: &[u8; 16]) -> crate::gameplay_transport::store::St
     )))
 }
 
-fn uuid(bytes: &[u8; 16]) -> String {
+pub(super) fn uuid(bytes: &[u8; 16]) -> String {
     let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
     format!(
         "{}-{}-{}-{}-{}",
@@ -133,7 +133,7 @@ fn store_real_dispatch_pages_purchases_mints_once_and_replays() -> TestResult {
 }
 
 /// One connection carrying `commands` from the session's next command id.
-async fn serve(
+pub(super) async fn serve(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     commands: &[(u32, Vec<u8>)],
@@ -193,7 +193,7 @@ fn page_request() -> TestResult<(u32, Vec<u8>)> {
     ))
 }
 
-fn purchase_request(seed: u8, offer: &str, price: u64) -> TestResult<(u32, Vec<u8>)> {
+pub(super) fn purchase_request(seed: u8, offer: &str, price: u64) -> TestResult<(u32, Vec<u8>)> {
     let request = wire::StorePurchaseRequest {
         purchase_request_id: id(seed),
         offer_key: offer.into(),
@@ -207,7 +207,7 @@ fn purchase_request(seed: u8, offer: &str, price: u64) -> TestResult<(u32, Vec<u
     ))
 }
 
-async fn purchase(
+pub(super) async fn purchase(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     command: (u32, Vec<u8>),
@@ -414,12 +414,61 @@ fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
             assert_eq!((ledger.purchases, ledger.balance, ledger.receipts), (1, 35, 1));
         }
 
+        // T130: full browse crosses the real route and ranks the durable accepted purchase.
+        let browse = wire::browse::Query {
+            category: "featured".into(),
+            search: "".into(),
+            sort: 0,
+            cursor: String::new(),
+        };
+        let rows = serve(
+            &owner,
+            &mut admitted,
+            &[(wire::browse::COMMAND_TYPE, browse.encode().map_err(debug)?)],
+        )
+        .await?;
+        assert_eq!(rows[0].0, CommandStatus::Accepted, "{rows:?}");
+        let browser = wire::browse::Page::decode(&rows[0].1).map_err(debug)?;
+        assert_eq!(browser.total, 35);
+        assert!(!browser.transferable_known);
+        assert!(
+            browser
+                .categories
+                .iter()
+                .any(|c| c.key == "consumables.exercise-weapons")
+        );
+        assert_eq!(browser.products[0].offer.offer_key, SWORD);
+        assert_eq!(browser.products[0].offer.price, 25);
+        assert_eq!(browser.products[0].revision, page.catalog_revision);
+        assert_eq!(browser.products[0].artwork.kind, 1);
+        assert!(
+            browser.products[0]
+                .artwork
+                .looks
+                .iter()
+                .all(|look| *look > 0)
+        );
+        assert_eq!(swords(&harness).await?, 1);
+        assert_eq!(ledger.lock().expect("ledger").purchases, 1);
         // A retry of the same request id replays the saved answer: no second debit or mint.
         let replay = purchase(&owner, &mut admitted, purchase_request(62, SWORD, 25)?).await?;
         assert_eq!(replay, accepted);
         assert_eq!(swords(&harness).await?, 1);
         assert_eq!(count(&harness, "SELECT count(*) FROM store_delivery_receipts").await?, 1);
         assert_eq!(ledger.lock().expect("ledger").purchases, 1);
+
+        let ranks = owner
+            .root
+            .store_popularity(vec![SWORD.into()])
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            ranks.get(SWORD),
+            Some(&1),
+            "replay must not inflate popularity"
+        );
+        let permissions:(bool,bool)=sqlx::query_as("SELECT has_table_privilege('oteryn_game_runtime','game_store_offer_popularity','SELECT'),has_table_privilege('oteryn_game_runtime','game_store_offer_popularity','UPDATE,INSERT,DELETE')").fetch_one(&harness.pool).await?;
+        assert_eq!(permissions, (true, false));
 
         // The same request id bound to another offer is refused before Platform.
         let values = serve(

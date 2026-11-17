@@ -5,5 +5,8 @@ mod state;
 mod view;
 pub use input::open_key;
 pub use protocol::{Intent, apply_result, apply_snapshot, request};
-pub use state::CyclopediaTrackerPanel;
-pub use view::panel_text;
+pub use state::{CyclopediaTrackerPanel, TrackerSort};
+pub use view::{bestiary_rows, panel_text, tracker_rows, tracker_selection};
+
+#[cfg(test)]
+mod tests;

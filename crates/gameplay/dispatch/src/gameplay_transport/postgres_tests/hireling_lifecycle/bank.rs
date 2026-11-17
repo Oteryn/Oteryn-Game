@@ -182,7 +182,8 @@ async fn enqueue_pending(h: &Harness, owner: &ComposedFreshAdmission<'_, '_, '_>
         crate::gameplay_transport::npc_command::bank_coin_definitions(owner,&runtime)
             .ok_or("actual pinned coin definitions")?;
     let backpack = owner.root.read_character_backpack(owner.character,fence.character_id)
-        .await.map_err(debug)?.ok_or("current backpack")?;
+        .await.map_err(|error| format!("pending native Bank backpack read: {error:?}"))?
+        .ok_or("current backpack")?;
     let native = owner.active_generation.and_then(crate::content::ActiveGeneration::native_gameplay)
         .ok_or("actual native content")?;
     let backpack = crate::gameplay_transport::item_ref_admission::generation_item_facts(

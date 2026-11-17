@@ -1,0 +1,660 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "the_djinn_war_quest",
+    "elements": 23,
+    "auto": 0,
+    "manual": 23,
+    "statuses": {
+      "LEFT_OUT": 20,
+      "DATA_PREPARED_RUNTIME_LEFT_OUT": 3
+    },
+    "new_callbacks": 0,
+    "prepared_npc": {
+      "rules": 8,
+      "reply_paragraphs": 18,
+      "conversations": 3
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Fontanna: lampka",
+      "pattern": "P02/P05",
+      "trigger": "Use aid12105",
+      "condition": "Efreet.Mission02=1",
+      "effect": "Game.createItem3233 nafromPosition;Mission02=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_djinn_war_quest/action_water_fountain.lua:3-14",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło tworzy item na pozycji lub wymienia lampy z progresją. ANSWER4 zakazuje grounddrop przy braku miejsca, a pierwszego ANSWER pkt5 nie pozwala rozszerzyć placement/receipt; potrzebna pełna kwalifikacja obu stanów, nie częściowy mint.",
+      "missing_owner_function": "Item/quest receipt / source ground placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 2,
+      "step": "Wymiana lampy Efreet",
+      "pattern": "P02/P05",
+      "trigger": "Use uid2285",
+      "condition": "Efreet.Mission03=1;3231",
+      "effect": "zabierz3231;daj3243;Mission03=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:2",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło tworzy item na pozycji lub wymienia lampy z progresją. ANSWER4 zakazuje grounddrop przy braku miejsca, a pierwszego ANSWER pkt5 nie pozwala rozszerzyć placement/receipt; potrzebna pełna kwalifikacja obu stanów, nie częściowy mint.",
+      "missing_owner_function": "Item/quest receipt / source ground placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 3,
+      "step": "Wymiana lampy Marid",
+      "pattern": "P02/P05",
+      "trigger": "Use uid3024",
+      "condition": "Marid.Mission03=1;3231",
+      "effect": "zabierz3231;daj3243;Mission03=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:28",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło tworzy item na pozycji lub wymienia lampy z progresją. ANSWER4 zakazuje grounddrop przy braku miejsca, a pierwszego ANSWER pkt5 nie pozwala rozszerzyć placement/receipt; potrzebna pełna kwalifikacja obu stanów, nie częściowy mint.",
+      "missing_owner_function": "Item/quest receipt / source ground placement",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 4,
+      "step": "melchior: Powitanie dżinów",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "melchior: word of greeting",
+      "condition": "Greeting≠0",
+      "effect": "Factions1;Greeting1;poznanieDJANNI’HAH",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/melchior.lua:68",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałęzie startu/dostępu i powitania odczytują wspólną/opposite faction przestrzeń; Marid i Efreet to dwa istniejące canonical quest owners. Closed DATA zabrania cross-quest effects/guards, pierwszego ANSWER pkt6 nie pozwala omijać obcych torów. Nie nadano fikcyjnej flagi dostępu ani drugiego przebiegu.",
+      "missing_owner_function": "Faction access / opposite-owner greeting dependency",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 5,
+      "step": "ubaid: Wejście Efreet",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "ubaid: djanni’hah;passage/here→no→yes→yes",
+      "condition": "Marid.Start≠1;Greeting≠-1;MaridDoor≠1",
+      "effect": "EfreetDoor1;Greeting0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ubaid.lua:115",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałęzie startu/dostępu i powitania odczytują wspólną/opposite faction przestrzeń; Marid i Efreet to dwa istniejące canonical quest owners. Closed DATA zabrania cross-quest effects/guards, pierwszego ANSWER pkt6 nie pozwala omijać obcych torów. Nie nadano fikcyjnej flagi dostępu ani drugiego przebiegu.",
+      "missing_owner_function": "Faction access / opposite-owner greeting dependency",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 6,
+      "step": "umar: Wejście Marid",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "umar: djanni’hah;passage→yes→yes",
+      "condition": "Efreet.Start≠1;Greeting≠-1;EfreetDoor≠1",
+      "effect": "MaridDoor1;Greeting0",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/umar.lua:120",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałęzie startu/dostępu i powitania odczytują wspólną/opposite faction przestrzeń; Marid i Efreet to dwa istniejące canonical quest owners. Closed DATA zabrania cross-quest effects/guards, pierwszego ANSWER pkt6 nie pozwala omijać obcych torów. Nie nadano fikcyjnej flagi dostępu ani drugiego przebiegu.",
+      "missing_owner_function": "Faction access / opposite-owner greeting dependency",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 7,
+      "step": "baa_leal: Efreet: start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "baa_leal: mission→yes",
+      "condition": "Efreet.M01<1;topic1",
+      "effect": "Efreet.Start1;M01=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/baa_leal.lua:111",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałęzie startu/dostępu i powitania odczytują wspólną/opposite faction przestrzeń; Marid i Efreet to dwa istniejące canonical quest owners. Closed DATA zabrania cross-quest effects/guards, pierwszego ANSWER pkt6 nie pozwala omijać obcych torów. Nie nadano fikcyjnej flagi dostępu ani drugiego przebiegu.",
+      "missing_owner_function": "Faction access / opposite-owner greeting dependency",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 8,
+      "step": "partos: Efreet: zapasy",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "partos: supplies",
+      "condition": "Efreet.M01=1",
+      "effect": "M01=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/partos.lua:61",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_djinn_war_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_djinn_war_efreet.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 9,
+      "step": "baa_leal: Efreet: raport",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "baa_leal: mission→yes→partos",
+      "condition": "Efreet.M01=2;topic3",
+      "effect": "daj600gold;M01=3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/baa_leal.lua:135",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło zabiera/daje gold lub przedmiot i aktualizuje etap/dostęp; nie dzielimy rozliczenia między właścicieli, a rozszerzenie0831/0832 jest wykluczone przez pierwszego ANSWER pkt5. Source pełne prompty nie oznaczają gotowej wymiany.",
+      "missing_owner_function": "NPC atomic material/reward/access exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 10,
+      "step": "shauna: Efreet: alternatywne domknięcie",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "shauna: job→waterpipe→prisoner",
+      "condition": "Efreet.M01=2;topics1→2",
+      "effect": "Efreet.M01=3;bez600gold",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/shauna.lua:61",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_djinn_war_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_djinn_war_efreet.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 11,
+      "step": "alesar: Efreet: ser",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "alesar: mission→yes",
+      "condition": "Efreet.M01=3;M02<1;topic1",
+      "effect": "M02=1;DoorToMaridTerritory1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/alesar.lua:148",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałęzie startu/dostępu i powitania odczytują wspólną/opposite faction przestrzeń; Marid i Efreet to dwa istniejące canonical quest owners. Closed DATA zabrania cross-quest effects/guards, pierwszego ANSWER pkt6 nie pozwala omijać obcych torów. Nie nadano fikcyjnej flagi dostępu ani drugiego przebiegu.",
+      "missing_owner_function": "Faction access / opposite-owner greeting dependency",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 12,
+      "step": "alesar: Efreet: oddanie sera",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "alesar: mission→yes",
+      "condition": "M02=2;topic2;3233",
+      "effect": "zabierz3233;M02=3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/alesar.lua:166",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło zabiera/daje gold lub przedmiot i aktualizuje etap/dostęp; nie dzielimy rozliczenia między właścicieli, a rozszerzenie0831/0832 jest wykluczone przez pierwszego ANSWER pkt5. Source pełne prompty nie oznaczają gotowej wymiany.",
+      "missing_owner_function": "NPC atomic material/reward/access exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 13,
+      "step": "malor: Efreet: lampa start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "malor: mission→yes",
+      "condition": "Efreet.M02=3;M03<1lub1;topic1",
+      "effect": "M03=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:121",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałęzie startu/dostępu i powitania odczytują wspólną/opposite faction przestrzeń; Marid i Efreet to dwa istniejące canonical quest owners. Closed DATA zabrania cross-quest effects/guards, pierwszego ANSWER pkt6 nie pozwala omijać obcych torów. Nie nadano fikcyjnej flagi dostępu ani drugiego przebiegu.",
+      "missing_owner_function": "Faction access / opposite-owner greeting dependency",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 14,
+      "step": "malor: Efreet: lampa finał",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "malor: mission→yes",
+      "condition": "Efreet.M03=2;topic2",
+      "effect": "M03=3;DoorToMaridTerritory1;EfreetAlly",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/malor.lua:135",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Finale łączy misję, drzwi oraz EfreetAlly/MaridAlly. Kwalifikacja obu ownerów i achievementu nie jest częścią closed SET adaptera; pozostaje cała gałąź zgodnie pierwszego ANSWER pkt5–6, bez samej flagi ukończenia.",
+      "missing_owner_function": "Faction completion / achievement/access owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 15,
+      "step": "bo_ques: Marid: książka start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "bo_ques: recipe/mission→yes",
+      "condition": "Marid.M01<1;topic1;MaridDoor1;bezEfreet.Start",
+      "effect": "Marid.Start1;M01=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bo_ques.lua:131",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałęzie startu/dostępu i powitania odczytują wspólną/opposite faction przestrzeń; Marid i Efreet to dwa istniejące canonical quest owners. Closed DATA zabrania cross-quest effects/guards, pierwszego ANSWER pkt6 nie pozwala omijać obcych torów. Nie nadano fikcyjnej flagi dostępu ani drugiego przebiegu.",
+      "missing_owner_function": "Faction access / opposite-owner greeting dependency",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 16,
+      "step": "bo_ques: Marid: książka oddanie",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "bo_ques: cookbook→yes",
+      "condition": "Marid.M01=1;topic2;3234",
+      "effect": "zabierz3234;M01=2;daj3029×3",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bo_ques.lua:143",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło zabiera/daje gold lub przedmiot i aktualizuje etap/dostęp; nie dzielimy rozliczenia między właścicieli, a rozszerzenie0831/0832 jest wykluczone przez pierwszego ANSWER pkt5. Source pełne prompty nie oznaczają gotowej wymiany.",
+      "missing_owner_function": "NPC atomic material/reward/access exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 17,
+      "step": "fa_hradin: Marid: szpieg start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "fa_hradin: mission/spyreport",
+      "condition": "Marid.M01=2;M02<1",
+      "effect": "M02=1;DoorToEfreetTerritory1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/fa_hradin.lua:87",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałęzie startu/dostępu i powitania odczytują wspólną/opposite faction przestrzeń; Marid i Efreet to dwa istniejące canonical quest owners. Closed DATA zabrania cross-quest effects/guards, pierwszego ANSWER pkt6 nie pozwala omijać obcych torów. Nie nadano fikcyjnej flagi dostępu ani drugiego przebiegu.",
+      "missing_owner_function": "Faction access / opposite-owner greeting dependency",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 18,
+      "step": "rata_mari: Marid: rozmowa szpiega",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "rata_mari: spyreport",
+      "condition": "Marid.M02≠-1;RataMari<1",
+      "effect": "RataMari1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:64",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "DATA_PREPARED_RUNTIME_LEFT_OUT",
+      "implementation": [
+        "content/dialogues/quest-batches/quests-5/the_djinn_war_quest.json"
+      ],
+      "reason": "Pełne wspierane wypowiedzi/guardy/SET przygotowano jako DATA. Brakuje istniejącego opt-in NpcTalkBook oraz prepare/apply/resume routingu dla tych keywordów; nowe wspólne adaptery są zabronione przez drugi ANSWER pkt1. Kandydat Rust jest wyłącznie lokalnym handoff, bez aktywacji w tej partii. Źródłowe dane i wykonawca przygotowane; root kwalifikuje i uruchamia Rust/PG.",
+      "missing_owner_function": "DATA NPC",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589549529",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": [
+        "the_djinn_war_marid.npc.json",
+        "npc-adapter-v2.patch"
+      ]
+    },
+    {
+      "row": 19,
+      "step": "rata_mari: Marid: raport za ser",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "rata_mari: spyreport→yes",
+      "condition": "RataMari1;topic1;3607",
+      "effect": "zabierz3607;RataMari2;daj3232",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/rata_mari.lua:81",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło zabiera/daje gold lub przedmiot i aktualizuje etap/dostęp; nie dzielimy rozliczenia między właścicieli, a rozszerzenie0831/0832 jest wykluczone przez pierwszego ANSWER pkt5. Source pełne prompty nie oznaczają gotowej wymiany.",
+      "missing_owner_function": "NPC atomic material/reward/access exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 20,
+      "step": "fa_hradin: Marid: oddanie raportu",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "fa_hradin: mission/spyreport→yes",
+      "condition": "Marid.M02=1;topic1;RataMari2;3232",
+      "effect": "zabierz3232;M02=2",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/fa_hradin.lua:110",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło zabiera/daje gold lub przedmiot i aktualizuje etap/dostęp; nie dzielimy rozliczenia między właścicieli, a rozszerzenie0831/0832 jest wykluczone przez pierwszego ANSWER pkt5. Source pełne prompty nie oznaczają gotowej wymiany.",
+      "missing_owner_function": "NPC atomic material/reward/access exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 21,
+      "step": "gabel: Marid: lampa start",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "gabel: mission→yes",
+      "condition": "Marid.M02=2;M03<1lub1;topic1",
+      "effect": "M03=1",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:112",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Gałęzie startu/dostępu i powitania odczytują wspólną/opposite faction przestrzeń; Marid i Efreet to dwa istniejące canonical quest owners. Closed DATA zabrania cross-quest effects/guards, pierwszego ANSWER pkt6 nie pozwala omijać obcych torów. Nie nadano fikcyjnej flagi dostępu ani drugiego przebiegu.",
+      "missing_owner_function": "Faction access / opposite-owner greeting dependency",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 22,
+      "step": "gabel: Marid: lampa finał",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "gabel: mission→yes",
+      "condition": "Marid.M03=2;topic2",
+      "effect": "M03=3;DoorToEfreetTerritory1;MaridAlly",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gabel.lua:127",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Finale łączy misję, drzwi oraz EfreetAlly/MaridAlly. Kwalifikacja obu ownerów i achievementu nie jest częścią closed SET adaptera; pozostaje cała gałąź zgodnie pierwszego ANSWER pkt5–6, bez samej flagi ukończenia.",
+      "missing_owner_function": "Faction completion / achievement/access owner",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    },
+    {
+      "row": 23,
+      "step": "the_orc_king: Lampa od króla",
+      "pattern": "P09/P10/P11/P13",
+      "trigger": "the_orc_king: lamp→malor",
+      "condition": "dowolnaFaction.M03=1;ReceivedLamp≠1;topic1",
+      "effect": "daj3231;ReceivedLamp1;DoorToLamp1 właściwejfrakcji",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_orc_king.lua:74",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Źródło zabiera/daje gold lub przedmiot i aktualizuje etap/dostęp; nie dzielimy rozliczenia między właścicieli, a rozszerzenie0831/0832 jest wykluczone przez pierwszego ANSWER pkt5. Source pełne prompty nie oznaczają gotowej wymiany.",
+      "missing_owner_function": "NPC atomic material/reward/access exchange",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589852331",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "earlier_answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589528748",
+      "source_implementation": []
+    }
+  ]
+}

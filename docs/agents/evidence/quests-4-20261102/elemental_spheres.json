@@ -1,0 +1,2432 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "elemental_spheres",
+    "frozen_stage1": {
+      "total": 38,
+      "auto": 1,
+      "manual": 37
+    },
+    "authored_callback_definitions": 1,
+    "runtime_catalogue_callback_definitions": 1,
+    "runtime_exclusions": [],
+    "npc_source_files": 1,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "Źródłowy callback wyjścia i pełny dialog NPC.",
+    "left_out_summary": "UID9029 nieobecny; wejścia grupowe, elementy i fazy bossów potrzebują wspólnego wykonawcy."
+  },
+  "steps": [
+    {
+      "cluster": "cults",
+      "cluster_row": 193,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "stage1_row": 193,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Arkulius: rozpoczęcie",
+          "patterns": [
+            "P09"
+          ],
+          "trigger": "mission/quest→yes",
+          "guard": "level≥80;QuestLine<1;topic1",
+          "effect": "QuestLine=1;4 warianty profesji;Monk brak w źródle",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:104",
+          "source_path": "data-global/npc/arkulius.lua",
+          "line": 104,
+          "oteryn": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/arkulius.lua#L104",
+        "status": "LEFT_OUT",
+        "reason_code": "NPC_SOURCE_ONLY",
+        "reason": "Pełne źródłowe teksty, guardy i skutki zachowane jako source-only. Brakuje stanowego quest-specific caller/mountu wspólnego NPC adaptera. Reguła ANSWER6589897950, potwierdzona jawną opcją A w ANSWER6590298958 do QUESTION6590007979, odkłada rejestrację routera, stan SessionNpc i prepare/apply/resume do osobnego PR właściciela NPC. Nie jest to brak danych dialogu.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": true,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:104"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Pełne źródłowe teksty, guardy i skutki zachowane jako source-only. Brakuje stanowego quest-specific caller/mountu wspólnego NPC adaptera. Reguła ANSWER6589897950, potwierdzona jawną opcją A w ANSWER6590298958 do QUESTION6590007979, odkłada rejestrację routera, stan SessionNpc i prepare/apply/resume do osobnego PR właściciela NPC. Nie jest to brak danych dialogu.",
+            "missing_function": "Stanowy caller rozmowy Command7 z topic/keyword guardami i jednym fenced zapisem skutków. Krok: Arkulius: rozpoczęcie; trigger: mission/quest→yes; guard: level≥80;QuestLine<1;topic1; skutki: QuestLine=1;4 warianty profesji;Monk brak w źródle.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Stanowy caller rozmowy Command7 z topic/keyword guardami i jednym fenced zapisem skutków. Krok: Arkulius: rozpoczęcie; trigger: mission/quest→yes; guard: level≥80;QuestLine<1;topic1; skutki: QuestLine=1;4 warianty profesji;Monk brak w źródle.",
+        "source_semantic_closure": "FULL_NPC_SOURCE_PRESERVED_RUNTIME_NOT_MOUNTED",
+        "npc_scope_status": "ANSWER_A_CONFIRMED_SHARED_OWNER_LEFT_OUT"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 194,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "stage1_row": 194,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Arkulius: potwierdzenie rzadkiego żywiołu",
+          "patterns": [
+            "P09"
+          ],
+          "trigger": "mission/quest",
+          "guard": "QuestLine=1;Sorcerer946/Druid947/Paladin942/Knight948 w plecaku",
+          "effect": "QuestLine=2;nie konsumuje",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:143",
+          "source_path": "data-global/npc/arkulius.lua",
+          "line": 143,
+          "oteryn": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/arkulius.lua#L143",
+        "status": "LEFT_OUT",
+        "reason_code": "NPC_SOURCE_ONLY",
+        "reason": "Pełne źródłowe teksty, guardy i skutki zachowane jako source-only. Brakuje stanowego quest-specific caller/mountu wspólnego NPC adaptera. Reguła ANSWER6589897950, potwierdzona jawną opcją A w ANSWER6590298958 do QUESTION6590007979, odkłada rejestrację routera, stan SessionNpc i prepare/apply/resume do osobnego PR właściciela NPC. Nie jest to brak danych dialogu.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": true,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:143"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Pełne źródłowe teksty, guardy i skutki zachowane jako source-only. Brakuje stanowego quest-specific caller/mountu wspólnego NPC adaptera. Reguła ANSWER6589897950, potwierdzona jawną opcją A w ANSWER6590298958 do QUESTION6590007979, odkłada rejestrację routera, stan SessionNpc i prepare/apply/resume do osobnego PR właściciela NPC. Nie jest to brak danych dialogu.",
+            "missing_function": "Stanowy caller rozmowy Command7 z topic/keyword guardami i jednym fenced zapisem skutków. Krok: Arkulius: potwierdzenie rzadkiego żywiołu; trigger: mission/quest; guard: QuestLine=1;Sorcerer946/Druid947/Paladin942/Knight948 w plecaku; skutki: QuestLine=2;nie konsumuje.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Stanowy caller rozmowy Command7 z topic/keyword guardami i jednym fenced zapisem skutków. Krok: Arkulius: potwierdzenie rzadkiego żywiołu; trigger: mission/quest; guard: QuestLine=1;Sorcerer946/Druid947/Paladin942/Knight948 w plecaku; skutki: QuestLine=2;nie konsumuje.",
+        "source_semantic_closure": "FULL_NPC_SOURCE_PRESERVED_RUNTIME_NOT_MOUNTED",
+        "npc_scope_status": "ANSWER_A_CONFIRMED_SHARED_OWNER_LEFT_OUT"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 195,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "stage1_row": 195,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Arkulius: zakończenie",
+          "patterns": [
+            "P09",
+            "P10",
+            "P11"
+          ],
+          "trigger": "mission/quest",
+          "guard": "QuestLine=2;removeItem954,1",
+          "effect": "QuestLine=3;Sorcerer8039/Druid8041/Paladin8025/Knight8055",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:161",
+          "source_path": "data-global/npc/arkulius.lua",
+          "line": 161,
+          "oteryn": "CZĘŚCIOWO — adaptery Grizzly/Endgame/Monk, brak ogólnego wykonawcy tego dialogu; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/npc_command.rs:703",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/arkulius.lua#L161",
+        "status": "LEFT_OUT",
+        "reason_code": "NPC_SOURCE_ONLY",
+        "reason": "Pełne źródłowe teksty, guardy i skutki zachowane jako source-only. Brakuje stanowego quest-specific caller/mountu wspólnego NPC adaptera. Reguła ANSWER6589897950, potwierdzona jawną opcją A w ANSWER6590298958 do QUESTION6590007979, odkłada rejestrację routera, stan SessionNpc i prepare/apply/resume do osobnego PR właściciela NPC. Nie jest to brak danych dialogu.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": true,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:161"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Pełne źródłowe teksty, guardy i skutki zachowane jako source-only. Brakuje stanowego quest-specific caller/mountu wspólnego NPC adaptera. Reguła ANSWER6589897950, potwierdzona jawną opcją A w ANSWER6590298958 do QUESTION6590007979, odkłada rejestrację routera, stan SessionNpc i prepare/apply/resume do osobnego PR właściciela NPC. Nie jest to brak danych dialogu.",
+            "missing_function": "Stanowy caller rozmowy Command7 z topic/keyword guardami i jednym fenced zapisem skutków. Krok: Arkulius: zakończenie; trigger: mission/quest; guard: QuestLine=2;removeItem954,1; skutki: QuestLine=3;Sorcerer8039/Druid8041/Paladin8025/Knight8055.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Stanowy caller rozmowy Command7 z topic/keyword guardami i jednym fenced zapisem skutków. Krok: Arkulius: zakończenie; trigger: mission/quest; guard: QuestLine=2;removeItem954,1; skutki: QuestLine=3;Sorcerer8039/Druid8041/Paladin8025/Knight8055.",
+        "source_semantic_closure": "FULL_NPC_SOURCE_PRESERVED_RUNTIME_NOT_MOUNTED",
+        "npc_scope_status": "ANSWER_A_CONFIRMED_SHARED_OWNER_LEFT_OUT"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 196,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 196,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Ładowanie gemami:Paladin",
+          "patterns": [
+            "P02"
+          ],
+          "trigger": "Use675 na33268/33269,31830,10",
+          "guard": "QuestLine>0;zgodna vocation;target nie846/847",
+          "effect": "MachineGemCount=max(1,old+1);gemstack-1",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6",
+          "source_path": "data-global/scripts/actions/other/enchanting.lua",
+          "line": 6,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/other/enchanting.lua#L6",
+        "status": "LEFT_OUT",
+        "reason_code": "VOCATION_GEM_CHARGING_NOT_QUALIFIED",
+        "reason": "Źródłowe ładowanie wymaga zgodnej profesji, questline, target guardu i licznika MachineGemCount. Nie zakwalifikowano tego wspólnego enchanting callbacku dla questa.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowe ładowanie wymaga zgodnej profesji, questline, target guardu i licznika MachineGemCount. Nie zakwalifikowano tego wspólnego enchanting callbacku dla questa.",
+            "missing_function": "Source enchanting z profesją, target guardem, postępem i dokładnym MachineGemCount. Krok: Ładowanie gemami:Paladin; trigger: Use675 na33268/33269,31830,10; guard: QuestLine>0;zgodna vocation;target nie846/847; skutki: MachineGemCount=max(1,old+1);gemstack-1.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Source enchanting z profesją, target guardem, postępem i dokładnym MachineGemCount. Krok: Ładowanie gemami:Paladin; trigger: Use675 na33268/33269,31830,10; guard: QuestLine>0;zgodna vocation;target nie846/847; skutki: MachineGemCount=max(1,old+1);gemstack-1.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 197,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 197,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Ładowanie gemami:Sorcerer",
+          "patterns": [
+            "P02"
+          ],
+          "trigger": "Use676 na33268/33269,31830,10",
+          "guard": "QuestLine>0;zgodna vocation;target nie846/847",
+          "effect": "MachineGemCount=max(1,old+1);gemstack-1",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6",
+          "source_path": "data-global/scripts/actions/other/enchanting.lua",
+          "line": 6,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/other/enchanting.lua#L6",
+        "status": "LEFT_OUT",
+        "reason_code": "VOCATION_GEM_CHARGING_NOT_QUALIFIED",
+        "reason": "Źródłowe ładowanie wymaga zgodnej profesji, questline, target guardu i licznika MachineGemCount. Nie zakwalifikowano tego wspólnego enchanting callbacku dla questa.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowe ładowanie wymaga zgodnej profesji, questline, target guardu i licznika MachineGemCount. Nie zakwalifikowano tego wspólnego enchanting callbacku dla questa.",
+            "missing_function": "Source enchanting z profesją, target guardem, postępem i dokładnym MachineGemCount. Krok: Ładowanie gemami:Sorcerer; trigger: Use676 na33268/33269,31830,10; guard: QuestLine>0;zgodna vocation;target nie846/847; skutki: MachineGemCount=max(1,old+1);gemstack-1.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Source enchanting z profesją, target guardem, postępem i dokładnym MachineGemCount. Krok: Ładowanie gemami:Sorcerer; trigger: Use676 na33268/33269,31830,10; guard: QuestLine>0;zgodna vocation;target nie846/847; skutki: MachineGemCount=max(1,old+1);gemstack-1.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 198,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 198,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Ładowanie gemami:Druid",
+          "patterns": [
+            "P02"
+          ],
+          "trigger": "Use677 na33268/33269,31830,10",
+          "guard": "QuestLine>0;zgodna vocation;target nie846/847",
+          "effect": "MachineGemCount=max(1,old+1);gemstack-1",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6",
+          "source_path": "data-global/scripts/actions/other/enchanting.lua",
+          "line": 6,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/other/enchanting.lua#L6",
+        "status": "LEFT_OUT",
+        "reason_code": "VOCATION_GEM_CHARGING_NOT_QUALIFIED",
+        "reason": "Źródłowe ładowanie wymaga zgodnej profesji, questline, target guardu i licznika MachineGemCount. Nie zakwalifikowano tego wspólnego enchanting callbacku dla questa.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowe ładowanie wymaga zgodnej profesji, questline, target guardu i licznika MachineGemCount. Nie zakwalifikowano tego wspólnego enchanting callbacku dla questa.",
+            "missing_function": "Source enchanting z profesją, target guardem, postępem i dokładnym MachineGemCount. Krok: Ładowanie gemami:Druid; trigger: Use677 na33268/33269,31830,10; guard: QuestLine>0;zgodna vocation;target nie846/847; skutki: MachineGemCount=max(1,old+1);gemstack-1.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Source enchanting z profesją, target guardem, postępem i dokładnym MachineGemCount. Krok: Ładowanie gemami:Druid; trigger: Use677 na33268/33269,31830,10; guard: QuestLine>0;zgodna vocation;target nie846/847; skutki: MachineGemCount=max(1,old+1);gemstack-1.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 199,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 199,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Ładowanie gemami:Knight",
+          "patterns": [
+            "P02"
+          ],
+          "trigger": "Use678 na33268/33269,31830,10",
+          "guard": "QuestLine>0;zgodna vocation;target nie846/847",
+          "effect": "MachineGemCount=max(1,old+1);gemstack-1",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6",
+          "source_path": "data-global/scripts/actions/other/enchanting.lua",
+          "line": 6,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/other/enchanting.lua#L6",
+        "status": "LEFT_OUT",
+        "reason_code": "VOCATION_GEM_CHARGING_NOT_QUALIFIED",
+        "reason": "Źródłowe ładowanie wymaga zgodnej profesji, questline, target guardu i licznika MachineGemCount. Nie zakwalifikowano tego wspólnego enchanting callbacku dla questa.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/enchanting.lua:6"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowe ładowanie wymaga zgodnej profesji, questline, target guardu i licznika MachineGemCount. Nie zakwalifikowano tego wspólnego enchanting callbacku dla questa.",
+            "missing_function": "Source enchanting z profesją, target guardem, postępem i dokładnym MachineGemCount. Krok: Ładowanie gemami:Knight; trigger: Use678 na33268/33269,31830,10; guard: QuestLine>0;zgodna vocation;target nie846/847; skutki: MachineGemCount=max(1,old+1);gemstack-1.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Source enchanting z profesją, target guardem, postępem i dokładnym MachineGemCount. Krok: Ładowanie gemami:Knight; trigger: Use678 na33268/33269,31830,10; guard: QuestLine>0;zgodna vocation;target nie846/847; skutki: MachineGemCount=max(1,old+1);gemstack-1.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 200,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 200,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Maszyna:wejścieSorcerer",
+          "patterns": [
+            "P01",
+            "P03"
+          ],
+          "trigger": "Use842/843/846/847",
+          "guard": "przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20",
+          "effect": "teleport33183,32197,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:2",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_machine1.lua",
+          "line": 2,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_machine1.lua#L2",
+        "status": "LEFT_OUT",
+        "reason_code": "TWO_PART_MACHINE_NOT_PORTED",
+        "reason": "Dwie połówki maszyny przełączają się także gdy nie doszło do wejścia; koszt20 dotyczy licznika. Nie zastąpiono kompozycji prostym consume+teleport.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:2"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Dwie połówki maszyny przełączają się także gdy nie doszło do wejścia; koszt20 dotyczy licznika. Nie zastąpiono kompozycji prostym consume+teleport.",
+            "missing_function": "Spójne przełączenie obu części maszyny, koszt licznika i warunkowe wejście. Krok: Maszyna:wejścieSorcerer; trigger: Use842/843/846/847; guard: przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20; skutki: teleport33183,32197,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Spójne przełączenie obu części maszyny, koszt licznika i warunkowe wejście. Krok: Maszyna:wejścieSorcerer; trigger: Use842/843/846/847; guard: przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20; skutki: teleport33183,32197,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 201,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 201,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Maszyna:wejścieDruid",
+          "patterns": [
+            "P01",
+            "P03"
+          ],
+          "trigger": "Use842/843/846/847",
+          "guard": "przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20",
+          "effect": "teleport33331,32076,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:3",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_machine1.lua",
+          "line": 3,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_machine1.lua#L3",
+        "status": "LEFT_OUT",
+        "reason_code": "TWO_PART_MACHINE_NOT_PORTED",
+        "reason": "Dwie połówki maszyny przełączają się także gdy nie doszło do wejścia; koszt20 dotyczy licznika. Nie zastąpiono kompozycji prostym consume+teleport.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:3"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Dwie połówki maszyny przełączają się także gdy nie doszło do wejścia; koszt20 dotyczy licznika. Nie zastąpiono kompozycji prostym consume+teleport.",
+            "missing_function": "Spójne przełączenie obu części maszyny, koszt licznika i warunkowe wejście. Krok: Maszyna:wejścieDruid; trigger: Use842/843/846/847; guard: przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20; skutki: teleport33331,32076,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Spójne przełączenie obu części maszyny, koszt licznika i warunkowe wejście. Krok: Maszyna:wejścieDruid; trigger: Use842/843/846/847; guard: przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20; skutki: teleport33331,32076,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 202,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 202,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Maszyna:wejściePaladin",
+          "patterns": [
+            "P01",
+            "P03"
+          ],
+          "trigger": "Use842/843/846/847",
+          "guard": "przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20",
+          "effect": "teleport33265,32202,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:4",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_machine1.lua",
+          "line": 4,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_machine1.lua#L4",
+        "status": "LEFT_OUT",
+        "reason_code": "TWO_PART_MACHINE_NOT_PORTED",
+        "reason": "Dwie połówki maszyny przełączają się także gdy nie doszło do wejścia; koszt20 dotyczy licznika. Nie zastąpiono kompozycji prostym consume+teleport.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:4"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Dwie połówki maszyny przełączają się także gdy nie doszło do wejścia; koszt20 dotyczy licznika. Nie zastąpiono kompozycji prostym consume+teleport.",
+            "missing_function": "Spójne przełączenie obu części maszyny, koszt licznika i warunkowe wejście. Krok: Maszyna:wejściePaladin; trigger: Use842/843/846/847; guard: przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20; skutki: teleport33265,32202,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Spójne przełączenie obu części maszyny, koszt licznika i warunkowe wejście. Krok: Maszyna:wejściePaladin; trigger: Use842/843/846/847; guard: przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20; skutki: teleport33265,32202,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 203,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 203,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Maszyna:wejścieKnight",
+          "patterns": [
+            "P01",
+            "P03"
+          ],
+          "trigger": "Use842/843/846/847",
+          "guard": "przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20",
+          "effect": "teleport33087,32096,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:5",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_machine1.lua",
+          "line": 5,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_machine1.lua#L5",
+        "status": "LEFT_OUT",
+        "reason_code": "TWO_PART_MACHINE_NOT_PORTED",
+        "reason": "Dwie połówki maszyny przełączają się także gdy nie doszło do wejścia; koszt20 dotyczy licznika. Nie zastąpiono kompozycji prostym consume+teleport.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine1.lua:5"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Dwie połówki maszyny przełączają się także gdy nie doszło do wejścia; koszt20 dotyczy licznika. Nie zastąpiono kompozycji prostym consume+teleport.",
+            "missing_function": "Spójne przełączenie obu części maszyny, koszt licznika i warunkowe wejście. Krok: Maszyna:wejścieKnight; trigger: Use842/843/846/847; guard: przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20; skutki: teleport33087,32096,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Spójne przełączenie obu części maszyny, koszt licznika i warunkowe wejście. Krok: Maszyna:wejścieKnight; trigger: Use842/843/846/847; guard: przyoff842/843 @33268/33269,31830,10 i MachineGemCount≥20; skutki: teleport33087,32096,13;count-=20;obie połówki maszyny toggle±4;toggle następuje także bez teleportu.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 204,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 204,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Naładowanie pierścienia:item940",
+          "patterns": [
+            "P02",
+            "P16"
+          ],
+          "trigger": "Use940 na7742",
+          "guard": "zgodny target",
+          "effect": "target→7746 zdecay;soil stack-1",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:2",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_soils1.lua",
+          "line": 2,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_soils1.lua#L2",
+        "status": "LEFT_OUT",
+        "reason_code": "DECAY_TRANSFORM_NOT_PORTED",
+        "reason": "Źródło konsumuje odpowiedni soil, zamienia target w7746 i uruchamia decay. Nie podłączono całego target/state/timer przebiegu.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:2"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródło konsumuje odpowiedni soil, zamienia target w7746 i uruchamia decay. Nie podłączono całego target/state/timer przebiegu.",
+            "missing_function": "Source soil consumption, transformacja targetu w 7746 oraz decay tego obiektu. Krok: Naładowanie pierścienia:item940; trigger: Use940 na7742; guard: zgodny target; skutki: target→7746 zdecay;soil stack-1.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Source soil consumption, transformacja targetu w 7746 oraz decay tego obiektu. Krok: Naładowanie pierścienia:item940; trigger: Use940 na7742; guard: zgodny target; skutki: target→7746 zdecay;soil stack-1.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 205,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 205,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Naładowanie pierścienia:item941",
+          "patterns": [
+            "P02",
+            "P16"
+          ],
+          "trigger": "Use941 na7743",
+          "guard": "zgodny target",
+          "effect": "target→7745 zdecay;soil stack-1",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:3",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_soils1.lua",
+          "line": 3,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_soils1.lua#L3",
+        "status": "LEFT_OUT",
+        "reason_code": "DECAY_TRANSFORM_NOT_PORTED",
+        "reason": "Źródło konsumuje odpowiedni soil, zamienia target w7746 i uruchamia decay. Nie podłączono całego target/state/timer przebiegu.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:3"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródło konsumuje odpowiedni soil, zamienia target w7746 i uruchamia decay. Nie podłączono całego target/state/timer przebiegu.",
+            "missing_function": "Source soil consumption, transformacja targetu w 7746 oraz decay tego obiektu. Krok: Naładowanie pierścienia:item941; trigger: Use941 na7743; guard: zgodny target; skutki: target→7745 zdecay;soil stack-1.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Source soil consumption, transformacja targetu w 7746 oraz decay tego obiektu. Krok: Naładowanie pierścienia:item941; trigger: Use941 na7743; guard: zgodny target; skutki: target→7745 zdecay;soil stack-1.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 206,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 206,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Naładowanie pierścienia:item944",
+          "patterns": [
+            "P02",
+            "P16"
+          ],
+          "trigger": "Use944 na7741",
+          "guard": "zgodny target",
+          "effect": "target→7744 zdecay;soil stack-1",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:4",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_soils1.lua",
+          "line": 4,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_soils1.lua#L4",
+        "status": "LEFT_OUT",
+        "reason_code": "DECAY_TRANSFORM_NOT_PORTED",
+        "reason": "Źródło konsumuje odpowiedni soil, zamienia target w7746 i uruchamia decay. Nie podłączono całego target/state/timer przebiegu.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:4"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródło konsumuje odpowiedni soil, zamienia target w7746 i uruchamia decay. Nie podłączono całego target/state/timer przebiegu.",
+            "missing_function": "Source soil consumption, transformacja targetu w 7746 oraz decay tego obiektu. Krok: Naładowanie pierścienia:item944; trigger: Use944 na7741; guard: zgodny target; skutki: target→7744 zdecay;soil stack-1.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Source soil consumption, transformacja targetu w 7746 oraz decay tego obiektu. Krok: Naładowanie pierścienia:item944; trigger: Use944 na7741; guard: zgodny target; skutki: target→7744 zdecay;soil stack-1.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 207,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 207,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Naładowanie pierścienia:item945",
+          "patterns": [
+            "P02",
+            "P16"
+          ],
+          "trigger": "Use945 na7737",
+          "guard": "zgodny target",
+          "effect": "target→tworzy2126 zdecay;soil stack-1",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:5",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_soils1.lua",
+          "line": 5,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_soils1.lua#L5",
+        "status": "LEFT_OUT",
+        "reason_code": "DECAY_TRANSFORM_NOT_PORTED",
+        "reason": "Źródło konsumuje odpowiedni soil, zamienia target w7746 i uruchamia decay. Nie podłączono całego target/state/timer przebiegu.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils1.lua:5"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródło konsumuje odpowiedni soil, zamienia target w7746 i uruchamia decay. Nie podłączono całego target/state/timer przebiegu.",
+            "missing_function": "Source soil consumption, transformacja targetu w 7746 oraz decay tego obiektu. Krok: Naładowanie pierścienia:item945; trigger: Use945 na7737; guard: zgodny target; skutki: target→tworzy2126 zdecay;soil stack-1.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Source soil consumption, transformacja targetu w 7746 oraz decay tego obiektu. Krok: Naładowanie pierścienia:item945; trigger: Use945 na7737; guard: zgodny target; skutki: target→tworzy2126 zdecay;soil stack-1.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 208,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 208,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Przywołanie:Energy Overlord",
+          "patterns": [
+            "P19",
+            "P22"
+          ],
+          "trigger": "AddItem8139 naaltar7738",
+          "guard": "8 pól ma item2126;worldboss!=1",
+          "effect": "usuwa corpse;spawnEnergy Overlord@33095,32194,13;worldboss=1;charged pól nie usuwa",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:2",
+          "source_path": "data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua",
+          "line": 2,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua#L2",
+        "status": "LEFT_OUT",
+        "reason_code": "WORLD_BOSS_GATE_NOT_PORTED",
+        "reason": "Wymaga8 naładowanych pól, osobnego worldboss, spawnu i usunięcia corpse. Pola nie są konsumowane. Brak kwalifikacji w zamkniętym BossActivityHandoff.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:2"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Wymaga8 naładowanych pól, osobnego worldboss, spawnu i usunięcia corpse. Pola nie są konsumowane. Brak kwalifikacji w zamkniętym BossActivityHandoff.",
+            "missing_function": "Sprawdzenie ośmiu niezużywanych naładowanych pól, world boss state, spawn i usunięcie corpse. Krok: Przywołanie:Energy Overlord; trigger: AddItem8139 naaltar7738; guard: 8 pól ma item2126;worldboss!=1; skutki: usuwa corpse;spawnEnergy Overlord@33095,32194,13;worldboss=1;charged pól nie usuwa.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Sprawdzenie ośmiu niezużywanych naładowanych pól, world boss state, spawn i usunięcie corpse. Krok: Przywołanie:Energy Overlord; trigger: AddItem8139 naaltar7738; guard: 8 pól ma item2126;worldboss!=1; skutki: usuwa corpse;spawnEnergy Overlord@33095,32194,13;worldboss=1;charged pól nie usuwa.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 209,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 209,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Przywołanie:Fire Overlord",
+          "patterns": [
+            "P19",
+            "P22"
+          ],
+          "trigger": "AddItem8141 naaltar7739",
+          "guard": "8 pól ma item7745;worldboss!=1",
+          "effect": "usuwa corpse;spawnFire Overlord@33199,32103,13;worldboss=1;charged pól nie usuwa",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:21",
+          "source_path": "data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua",
+          "line": 21,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua#L21",
+        "status": "LEFT_OUT",
+        "reason_code": "WORLD_BOSS_GATE_NOT_PORTED",
+        "reason": "Wymaga8 naładowanych pól, osobnego worldboss, spawnu i usunięcia corpse. Pola nie są konsumowane. Brak kwalifikacji w zamkniętym BossActivityHandoff.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:21"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Wymaga8 naładowanych pól, osobnego worldboss, spawnu i usunięcia corpse. Pola nie są konsumowane. Brak kwalifikacji w zamkniętym BossActivityHandoff.",
+            "missing_function": "Sprawdzenie ośmiu niezużywanych naładowanych pól, world boss state, spawn i usunięcie corpse. Krok: Przywołanie:Fire Overlord; trigger: AddItem8141 naaltar7739; guard: 8 pól ma item7745;worldboss!=1; skutki: usuwa corpse;spawnFire Overlord@33199,32103,13;worldboss=1;charged pól nie usuwa.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Sprawdzenie ośmiu niezużywanych naładowanych pól, world boss state, spawn i usunięcie corpse. Krok: Przywołanie:Fire Overlord; trigger: AddItem8141 naaltar7739; guard: 8 pól ma item7745;worldboss!=1; skutki: usuwa corpse;spawnFire Overlord@33199,32103,13;worldboss=1;charged pól nie usuwa.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 210,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 210,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Przywołanie:Ice Overlord",
+          "patterns": [
+            "P19",
+            "P22"
+          ],
+          "trigger": "AddItem8140 naaltar7740",
+          "guard": "8 pól ma item7744;worldboss!=1",
+          "effect": "usuwa corpse;spawnIce Overlord@33286,32102,13;worldboss=1;charged pól nie usuwa",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:40",
+          "source_path": "data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua",
+          "line": 40,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua#L40",
+        "status": "LEFT_OUT",
+        "reason_code": "WORLD_BOSS_GATE_NOT_PORTED",
+        "reason": "Wymaga8 naładowanych pól, osobnego worldboss, spawnu i usunięcia corpse. Pola nie są konsumowane. Brak kwalifikacji w zamkniętym BossActivityHandoff.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:40"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Wymaga8 naładowanych pól, osobnego worldboss, spawnu i usunięcia corpse. Pola nie są konsumowane. Brak kwalifikacji w zamkniętym BossActivityHandoff.",
+            "missing_function": "Sprawdzenie ośmiu niezużywanych naładowanych pól, world boss state, spawn i usunięcie corpse. Krok: Przywołanie:Ice Overlord; trigger: AddItem8140 naaltar7740; guard: 8 pól ma item7744;worldboss!=1; skutki: usuwa corpse;spawnIce Overlord@33286,32102,13;worldboss=1;charged pól nie usuwa.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Sprawdzenie ośmiu niezużywanych naładowanych pól, world boss state, spawn i usunięcie corpse. Krok: Przywołanie:Ice Overlord; trigger: AddItem8140 naaltar7740; guard: 8 pól ma item7744;worldboss!=1; skutki: usuwa corpse;spawnIce Overlord@33286,32102,13;worldboss=1;charged pól nie usuwa.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 211,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 211,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Przywołanie:Earth Overlord",
+          "patterns": [
+            "P19",
+            "P22"
+          ],
+          "trigger": "AddItem8106 naaltar7748",
+          "guard": "8 pól ma item7746;worldboss!=1",
+          "effect": "usuwa corpse;spawnEarth Overlord@33347,32208,13;worldboss=1;charged pól nie usuwa",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:60",
+          "source_path": "data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua",
+          "line": 60,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua#L60",
+        "status": "LEFT_OUT",
+        "reason_code": "WORLD_BOSS_GATE_NOT_PORTED",
+        "reason": "Wymaga8 naładowanych pól, osobnego worldboss, spawnu i usunięcia corpse. Pola nie są konsumowane. Brak kwalifikacji w zamkniętym BossActivityHandoff.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_summon_overlord.lua:60"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Wymaga8 naładowanych pól, osobnego worldboss, spawnu i usunięcia corpse. Pola nie są konsumowane. Brak kwalifikacji w zamkniętym BossActivityHandoff.",
+            "missing_function": "Sprawdzenie ośmiu niezużywanych naładowanych pól, world boss state, spawn i usunięcie corpse. Krok: Przywołanie:Earth Overlord; trigger: AddItem8106 naaltar7748; guard: 8 pól ma item7746;worldboss!=1; skutki: usuwa corpse;spawnEarth Overlord@33347,32208,13;worldboss=1;charged pól nie usuwa.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Sprawdzenie ośmiu niezużywanych naładowanych pól, world boss state, spawn i usunięcie corpse. Krok: Przywołanie:Earth Overlord; trigger: AddItem8106 naaltar7748; guard: 8 pól ma item7746;worldboss!=1; skutki: usuwa corpse;spawnEarth Overlord@33347,32208,13;worldboss=1;charged pól nie usuwa.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 212,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 212,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Overlords:progres uczestników",
+          "patterns": [
+            "P07",
+            "P21",
+            "P22"
+          ],
+          "trigger": "ElementalOverlordDeath",
+          "guard": "Energy/Fire/Ice/Earth Overlord;damage-participation",
+          "effect": "worldboss=0;BossStorage min1 dla każdego kwalifikującego;Lord of Elements nie daje storage w tym hooku",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/creaturescripts_overlord_kill.lua:1",
+          "source_path": "data-global/scripts/quests/elemental_spheres/creaturescripts_overlord_kill.lua",
+          "line": 1,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/creaturescripts_overlord_kill.lua#L1",
+        "status": "LEFT_OUT",
+        "reason_code": "DAMAGE_PARTICIPATION_CREDIT_NOT_PORTED",
+        "reason": "Reset worldboss i BossStorage uczestników dotyczą damage map, a nie last-hit. Nie podłączono tego eventu ani nie utożsamiono world/player storage.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/creaturescripts_overlord_kill.lua:1"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Reset worldboss i BossStorage uczestników dotyczą damage map, a nie last-hit. Nie podłączono tego eventu ani nie utożsamiono world/player storage.",
+            "missing_function": "Źródłowy damage-map/party death credit z właściwym postępem każdego kwalifikowanego uczestnika. Krok: Overlords:progres uczestników; trigger: ElementalOverlordDeath; guard: Energy/Fire/Ice/Earth Overlord;damage-participation; skutki: worldboss=0;BossStorage min1 dla każdego kwalifikującego;Lord of Elements nie daje storage w tym hooku.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Źródłowy damage-map/party death credit z właściwym postępem każdego kwalifikowanego uczestnika. Krok: Overlords:progres uczestników; trigger: ElementalOverlordDeath; guard: Energy/Fire/Ice/Earth Overlord;damage-participation; skutki: worldboss=0;BossStorage min1 dla każdego kwalifikującego;Lord of Elements nie daje storage w tym hooku.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 213,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 213,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Wyjście ze sfer",
+          "patterns": [
+            "P03"
+          ],
+          "trigger": "StepIn aid24545",
+          "guard": "pierwszy player storage10130..10133≥1",
+          "effect": "teleportEK33264,31835,10/RP33272,31835,10/ED33268,31840,10/SORC33268,31831,10;wybrany=0;fallback town temple",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_soil_exit.lua:1",
+          "source_path": "data-global/scripts/quests/elemental_spheres/movements_soil_exit.lua",
+          "line": 1,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/movements_soil_exit.lua#L1",
+        "status": "LEFT_OUT",
+        "reason_code": "PRIORITY_ROUTE_NOT_PORTED",
+        "reason": "Wyjście wybiera pierwszy player storage10130..10133, zeruje tylko wybrany, inaczej używa town temple. Brak kwalifikacji tej priorytetowej trasy.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_soil_exit.lua:1"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Wyjście wybiera pierwszy player storage10130..10133, zeruje tylko wybrany, inaczej używa town temple. Brak kwalifikacji tej priorytetowej trasy.",
+            "missing_function": "Priorytetowy wybór pierwszego player storage 10130..10133, reset tylko wybranego i fallback town temple. Krok: Wyjście ze sfer; trigger: StepIn aid24545; guard: pierwszy player storage10130..10133≥1; skutki: teleportEK33264,31835,10/RP33272,31835,10/ED33268,31840,10/SORC33268,31831,10;wybrany=0;fallback town temple.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Priorytetowy wybór pierwszego player storage 10130..10133, reset tylko wybranego i fallback town temple. Krok: Wyjście ze sfer; trigger: StepIn aid24545; guard: pierwszy player storage10130..10133≥1; skutki: teleportEK33264,31835,10/RP33272,31835,10/ED33268,31840,10/SORC33268,31831,10;wybrany=0;fallback town temple.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 214,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 214,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Komnata Lord:wpuszczenie4profesji",
+          "patterns": [
+            "P06"
+          ],
+          "trigger": "Use uid1010;2772;actor33270,31835,10",
+          "guard": "4 pola:Sorc+946,Druid+947,Knight+948,Paladin+942;każdyQuestLine≥1;room bez gracza i BossRoom≤0",
+          "effect": "teleport4osób na osobne pozycje;nie zabiera rzadkich przedmiotów;lever2773",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lever.lua:1",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_lever.lua",
+          "line": 1,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_lever.lua#L1",
+        "status": "LEFT_OUT",
+        "reason_code": "FOUR_VOCATION_PARTY_GATE_CLOSED",
+        "reason": "Czterej gracze różnych profesji i cztery rare items są warunkiem, nie kosztem. Room occupancy i osobne cele wymagają zamkniętego handoff; nie dodano solo obejścia.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lever.lua:1"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Czterej gracze różnych profesji i cztery rare items są warunkiem, nie kosztem. Room occupancy i osobne cele wymagają zamkniętego handoff; nie dodano solo obejścia.",
+            "missing_function": "Handoff czterech graczy różnych profesji z czterema niezużywanymi rare items, room occupancy i osobnymi celami. Krok: Komnata Lord:wpuszczenie4profesji; trigger: Use uid1010;2772;actor33270,31835,10; guard: 4 pola:Sorc+946,Druid+947,Knight+948,Paladin+942;każdyQuestLine≥1;room bez gracza i BossRoom≤0; skutki: teleport4osób na osobne pozycje;nie zabiera rzadkich przedmiotów;lever2773.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Handoff czterech graczy różnych profesji z czterema niezużywanymi rare items, room occupancy i osobnymi celami. Krok: Komnata Lord:wpuszczenie4profesji; trigger: Use uid1010;2772;actor33270,31835,10; guard: 4 pola:Sorc+946,Druid+947,Knight+948,Paladin+942;każdyQuestLine≥1;room bez gracza i BossRoom≤0; skutki: teleport4osób na osobne pozycje;nie zabiera rzadkich przedmiotów;lever2773.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 215,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 215,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Komnata Lord:przełączniki maszyn",
+          "patterns": [
+            "P01"
+          ],
+          "trigger": "Use844/845/848/849",
+          "guard": "target w33238,31806,12..33297,31865,12",
+          "effect": "obie połówki±4 iON/OFF",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine2.lua:2",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_machine2.lua",
+          "line": 2,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_machine2.lua#L2",
+        "status": "LEFT_OUT",
+        "reason_code": "WORLD_MACHINE_STATE_NOT_PORTED",
+        "reason": "Dwuczęściowe maszyny i world raw10005..10008 nie są player trackami ani Machine1..4=41659..41662. ANSWER nie rozszerza world/instance ownera.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_machine2.lua:2"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Dwuczęściowe maszyny i world raw10005..10008 nie są player trackami ani Machine1..4=41659..41662. ANSWER nie rozszerza world/instance ownera.",
+            "missing_function": "Wspólne dwuczęściowe maszyny z world raw10005..10008, odrębne od player tracks. Krok: Komnata Lord:przełączniki maszyn; trigger: Use844/845/848/849; guard: target w33238,31806,12..33297,31865,12; skutki: obie połówki±4 iON/OFF.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Wspólne dwuczęściowe maszyny z world raw10005..10008, odrębne od player tracks. Krok: Komnata Lord:przełączniki maszyn; trigger: Use844/845/848/849; guard: target w33238,31806,12..33297,31865,12; skutki: obie połówki±4 iON/OFF.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 216,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 216,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Komnata Lord:ładowanie4rdzeni",
+          "patterns": [
+            "P02",
+            "P22"
+          ],
+          "trigger": "942/946/947/948 na842..849",
+          "guard": "zgodna profesja;target wkomnacie ioff842..845",
+          "effect": "world raw10005..10008=1;item-1;nie są to Machine1..4=41659..41662",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils2.lua:1",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_soils2.lua",
+          "line": 1,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_soils2.lua#L1",
+        "status": "LEFT_OUT",
+        "reason_code": "WORLD_MACHINE_STATE_NOT_PORTED",
+        "reason": "Dwuczęściowe maszyny i world raw10005..10008 nie są player trackami ani Machine1..4=41659..41662. ANSWER nie rozszerza world/instance ownera.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_soils2.lua:1"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Dwuczęściowe maszyny i world raw10005..10008 nie są player trackami ani Machine1..4=41659..41662. ANSWER nie rozszerza world/instance ownera.",
+            "missing_function": "Wspólne dwuczęściowe maszyny z world raw10005..10008, odrębne od player tracks. Krok: Komnata Lord:ładowanie4rdzeni; trigger: 942/946/947/948 na842..849; guard: zgodna profesja;target wkomnacie ioff842..845; skutki: world raw10005..10008=1;item-1;nie są to Machine1..4=41659..41662.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Wspólne dwuczęściowe maszyny z world raw10005..10008, odrębne od player tracks. Krok: Komnata Lord:ładowanie4rdzeni; trigger: 942/946/947/948 na842..849; guard: zgodna profesja;target wkomnacie ioff842..845; skutki: world raw10005..10008=1;item-1;nie są to Machine1..4=41659..41662.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 217,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 217,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Komnata Lord:4dźwignie",
+          "patterns": [
+            "P01",
+            "P06",
+            "P22"
+          ],
+          "trigger": "Use uid1011..1014;2772",
+          "guard": "actor na1 z4 pozycji;donor najpierw ustawia wszystkieMachine1..4=1",
+          "effect": "lever2773;5walli na stronę;po4 aktywnych BossRoom=1;Lord@33267,31836,12;warning5min;reset10min",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua:129",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua",
+          "line": 129,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua#L129",
+        "status": "LEFT_OUT",
+        "reason_code": "LORD_ENCOUNTER_TIMERS_CLOSED",
+        "reason": "Cztery dźwignie,20 ścian, wspólny spawn, warning5min i reset10min wymagają kompletnej obsługi grupy i świata. Nie zmieniono guardów ani nie rozszerzono handoff.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua:129"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Cztery dźwignie,20 ścian, wspólny spawn, warning5min i reset10min wymagają kompletnej obsługi grupy i świata. Nie zmieniono guardów ani nie rozszerzono handoff.",
+            "missing_function": "Pełna komnata Lord: cztery dźwignie, dwadzieścia ścian, spawn, warning po 5min i reset po 10min. Krok: Komnata Lord:4dźwignie; trigger: Use uid1011..1014;2772; guard: actor na1 z4 pozycji;donor najpierw ustawia wszystkieMachine1..4=1; skutki: lever2773;5walli na stronę;po4 aktywnych BossRoom=1;Lord@33267,31836,12;warning5min;reset10min.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Pełna komnata Lord: cztery dźwignie, dwadzieścia ścian, spawn, warning po 5min i reset po 10min. Krok: Komnata Lord:4dźwignie; trigger: Use uid1011..1014;2772; guard: actor na1 z4 pozycji;donor najpierw ustawia wszystkieMachine1..4=1; skutki: lever2773;5walli na stronę;po4 aktywnych BossRoom=1;Lord@33267,31836,12;warning5min;reset10min.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 218,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 218,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Komnata Lord:timeout/reset",
+          "patterns": [
+            "P16",
+            "P25"
+          ],
+          "trigger": "timer10min",
+          "guard": "wyłonieni gracze nadal warea",
+          "effect": "teleport33265,31838,10;usuwa20walli iLord;reset4lever;BossRoom=-1;Machine1..4=-1",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua:63",
+          "source_path": "data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua",
+          "line": 63,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua#L63",
+        "status": "LEFT_OUT",
+        "reason_code": "LORD_ENCOUNTER_TIMERS_CLOSED",
+        "reason": "Cztery dźwignie,20 ścian, wspólny spawn, warning5min i reset10min wymagają kompletnej obsługi grupy i świata. Nie zmieniono guardów ani nie rozszerzono handoff.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/actions_lord_of_elements_lever.lua:63"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Cztery dźwignie,20 ścian, wspólny spawn, warning5min i reset10min wymagają kompletnej obsługi grupy i świata. Nie zmieniono guardów ani nie rozszerzono handoff.",
+            "missing_function": "Pełna komnata Lord: cztery dźwignie, dwadzieścia ścian, spawn, warning po 5min i reset po 10min. Krok: Komnata Lord:timeout/reset; trigger: timer10min; guard: wyłonieni gracze nadal warea; skutki: teleport33265,31838,10;usuwa20walli iLord;reset4lever;BossRoom=-1;Machine1..4=-1.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Pełna komnata Lord: cztery dźwignie, dwadzieścia ścian, spawn, warning po 5min i reset po 10min. Krok: Komnata Lord:timeout/reset; trigger: timer10min; guard: wyłonieni gracze nadal warea; skutki: teleport33265,31838,10;usuwa20walli iLord;reset4lever;BossRoom=-1;Machine1..4=-1.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 219,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316953",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "stage1_row": 219,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Komnata Lord:wyjście",
+          "patterns": [
+            "P03",
+            "P29"
+          ],
+          "trigger": "StepIn aid9029",
+          "guard": "player",
+          "effect": "teleport33265,31838,10;PLAYER raw10005..10008=-1 (world pozostaje)",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_aoe_teleport_out.lua:3",
+          "source_path": "data-global/scripts/quests/elemental_spheres/movements_aoe_teleport_out.lua",
+          "line": 3,
+          "oteryn": "TAK — kształt Use/StepIn+storage/teleport (powiązanie wymaga importu); Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "AUTO"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/elemental_spheres/movements_aoe_teleport_out.lua#L3",
+        "status": "CALLBACK_PRESENT_MAP_BLOCKED",
+        "callback_keys": [
+          "oteryn:quest-callback/elemental_spheres/lord_room_exit"
+        ],
+        "reason": "Implementacja źródłowego kroku istnieje; aktywacja pozostaje Left out z powodu dokładnego native bindingu. Dokładna prezentacja wskazana osobno w unimplemented_components zgodnie z ostatnim ANSWER.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-MAP-BINDINGS",
+          "batch4-feedback-presentation"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316953",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_aoe_teleport_out.lua:3",
+          "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_aoe_teleport_out.lua:3-19",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_aoe_teleport_out.lua:10"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "map_binding",
+            "reason": "Kod/deklaracja i donorowe dane są zachowane, ale dokładny native UID/AID jest nieobecny.",
+            "missing_function": "Kwalifikacja źródłowego native selektora: [{\"position\":null,\"unique\":null,\"action\":9029,\"appearance\":null}]. Nie osłabiać UID/AID do dowolnej pozycji i nie tworzyć brakującego obiektu.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589316953"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391"
+          },
+          {
+            "kind": "presentation",
+            "reason": "ANSWER6589897950 odkłada efekty i dokładny typ wypowiedzi do osobnego PR właściciela prezentacji (capability23).",
+            "missing_function": "Wyemitowanie źródłowego CONST_ME_TELEPORT po poprawnym przejściu przez istniejącego właściciela prezentacji.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+            "source_reference": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/elemental_spheres/movements_aoe_teleport_out.lua:10"
+          }
+        ],
+        "reason_code": "SOURCE_CLOSED_MAP_BLOCKED",
+        "implementation_layer": "IMPLEMENTED_DECLARATIVE_CALLBACK",
+        "source_semantic_closure": "CLOSED_IMPLEMENTED_RULE_WITH_EXPLICIT_PRESENTATION_LEFT_OUT",
+        "physical_admission": "MISSING_NATIVE_UID_OR_AID",
+        "runtime_admission": "MAP_BLOCKED",
+        "missing_function": "Kwalifikacja źródłowego native selektora: [{\"position\":null,\"unique\":null,\"action\":9029,\"appearance\":null}]. Nie osłabiać UID/AID do dowolnej pozycji i nie tworzyć brakującego obiektu. Wyemitowanie źródłowego CONST_ME_TELEPORT po poprawnym przejściu przez istniejącego właściciela prezentacji."
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 220,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 220,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Neutral matter:świeże zwłoki",
+          "patterns": [
+            "P02",
+            "P11"
+          ],
+          "trigger": "obsidian knife5908 na8181",
+          "guard": "player raw789100≤1",
+          "effect": "+954;789100=1;donor nie zmienia corpse,można powtarzać",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:259",
+          "source_path": "data-global/scripts/actions/tools/skinning.lua",
+          "line": 259,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/tools/skinning.lua#L259",
+        "status": "LEFT_OUT",
+        "reason_code": "REPEATABLE_SKINNING_GRANT_CLOSED",
+        "reason": "Fresh corpse8181 i guard≤1 pozwalają na powtarzalne954 bez transformacji corpse;8182 zapisuje2. Nie ograniczono tego do once ani nie rozszerzono Mint.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:259"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Fresh corpse8181 i guard≤1 pozwalają na powtarzalne954 bez transformacji corpse;8182 zapisuje2. Nie ograniczono tego do once ani nie rozszerzono Mint.",
+            "missing_function": "Repeatable source corpse grant neutral matter bez once-only zastępstwa i bez transformacji świeżych zwłok. Krok: Neutral matter:świeże zwłoki; trigger: obsidian knife5908 na8181; guard: player raw789100≤1; skutki: +954;789100=1;donor nie zmienia corpse,można powtarzać.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Repeatable source corpse grant neutral matter bez once-only zastępstwa i bez transformacji świeżych zwłok. Krok: Neutral matter:świeże zwłoki; trigger: obsidian knife5908 na8181; guard: player raw789100≤1; skutki: +954;789100=1;donor nie zmienia corpse,można powtarzać.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 221,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 221,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Neutral matter:starsze zwłoki",
+          "patterns": [
+            "P02",
+            "P11"
+          ],
+          "trigger": "obsidian knife5908 na8182",
+          "guard": "player raw789100≤1",
+          "effect": "+954;789100=2",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:264",
+          "source_path": "data-global/scripts/actions/tools/skinning.lua",
+          "line": 264,
+          "oteryn": "CZĘŚCIOWO — ograniczony kształt Use/StepIn; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:22; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/tools/skinning.lua#L264",
+        "status": "LEFT_OUT",
+        "reason_code": "REPEATABLE_SKINNING_GRANT_CLOSED",
+        "reason": "Fresh corpse8181 i guard≤1 pozwalają na powtarzalne954 bez transformacji corpse;8182 zapisuje2. Nie ograniczono tego do once ani nie rozszerzono Mint.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/tools/skinning.lua:264"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Fresh corpse8181 i guard≤1 pozwalają na powtarzalne954 bez transformacji corpse;8182 zapisuje2. Nie ograniczono tego do once ani nie rozszerzono Mint.",
+            "missing_function": "Repeatable source corpse grant neutral matter bez once-only zastępstwa i bez transformacji świeżych zwłok. Krok: Neutral matter:starsze zwłoki; trigger: obsidian knife5908 na8182; guard: player raw789100≤1; skutki: +954;789100=2.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Repeatable source corpse grant neutral matter bez once-only zastępstwa i bez transformacji świeżych zwłok. Krok: Neutral matter:starsze zwłoki; trigger: obsidian knife5908 na8182; guard: player raw789100≤1; skutki: +954;789100=2.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 222,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 222,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Przedmiot rzadkiego żywiołu:Earth Overlord",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "loot Earth Overlord",
+          "guard": "standardowy rozdział łupu/reward boss",
+          "effect": "mother soil;chance100000 w donorze",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/earth_overlord.lua:74",
+          "source_path": "data-global/monster/quests/the_elemental_spheres/earth_overlord.lua",
+          "line": 74,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/the_elemental_spheres/earth_overlord.lua#L74",
+        "status": "LEFT_OUT",
+        "reason_code": "LOOT_DEPENDENCY_NOT_QUALIFIED",
+        "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/earth_overlord.lua:74"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+            "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Przedmiot rzadkiego żywiołu:Earth Overlord; trigger: loot Earth Overlord; guard: standardowy rozdział łupu/reward boss; skutki: mother soil;chance100000 w donorze.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Przedmiot rzadkiego żywiołu:Earth Overlord; trigger: loot Earth Overlord; guard: standardowy rozdział łupu/reward boss; skutki: mother soil;chance100000 w donorze.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 223,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 223,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Przedmiot rzadkiego żywiołu:Energy Overlord",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "loot Energy Overlord",
+          "guard": "standardowy rozdział łupu/reward boss",
+          "effect": "pure energy;chance100000 w donorze",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/energy_overlord.lua:72",
+          "source_path": "data-global/monster/quests/the_elemental_spheres/energy_overlord.lua",
+          "line": 72,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/the_elemental_spheres/energy_overlord.lua#L72",
+        "status": "LEFT_OUT",
+        "reason_code": "LOOT_DEPENDENCY_NOT_QUALIFIED",
+        "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/energy_overlord.lua:72"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+            "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Przedmiot rzadkiego żywiołu:Energy Overlord; trigger: loot Energy Overlord; guard: standardowy rozdział łupu/reward boss; skutki: pure energy;chance100000 w donorze.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Przedmiot rzadkiego żywiołu:Energy Overlord; trigger: loot Energy Overlord; guard: standardowy rozdział łupu/reward boss; skutki: pure energy;chance100000 w donorze.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 224,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 224,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Przedmiot rzadkiego żywiołu:Fire Overlord",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "loot Fire Overlord",
+          "guard": "standardowy rozdział łupu/reward boss",
+          "effect": "eternal flames;chance100000 w donorze",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/fire_overlord.lua:73",
+          "source_path": "data-global/monster/quests/the_elemental_spheres/fire_overlord.lua",
+          "line": 73,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/the_elemental_spheres/fire_overlord.lua#L73",
+        "status": "LEFT_OUT",
+        "reason_code": "LOOT_DEPENDENCY_NOT_QUALIFIED",
+        "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/fire_overlord.lua:73"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+            "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Przedmiot rzadkiego żywiołu:Fire Overlord; trigger: loot Fire Overlord; guard: standardowy rozdział łupu/reward boss; skutki: eternal flames;chance100000 w donorze.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Przedmiot rzadkiego żywiołu:Fire Overlord; trigger: loot Fire Overlord; guard: standardowy rozdział łupu/reward boss; skutki: eternal flames;chance100000 w donorze.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 225,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 225,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Przedmiot rzadkiego żywiołu:Ice Overlord",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "loot Ice Overlord",
+          "guard": "standardowy rozdział łupu/reward boss",
+          "effect": "flawless ice crystal;chance100000 w donorze",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/ice_overlord.lua:72",
+          "source_path": "data-global/monster/quests/the_elemental_spheres/ice_overlord.lua",
+          "line": 72,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/the_elemental_spheres/ice_overlord.lua#L72",
+        "status": "LEFT_OUT",
+        "reason_code": "LOOT_DEPENDENCY_NOT_QUALIFIED",
+        "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/ice_overlord.lua:72"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+            "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Przedmiot rzadkiego żywiołu:Ice Overlord; trigger: loot Ice Overlord; guard: standardowy rozdział łupu/reward boss; skutki: flawless ice crystal;chance100000 w donorze.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Przedmiot rzadkiego żywiołu:Ice Overlord; trigger: loot Ice Overlord; guard: standardowy rozdział łupu/reward boss; skutki: flawless ice crystal;chance100000 w donorze.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 226,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 226,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Podstawowy soil loot:Muddy Earth Elemental",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "loot Muddy Earth Elemental",
+          "guard": "standardowy rozdział łupu",
+          "effect": "natural soil;chance3750; silniejszy wariant elementala ma oddzielną tabelę",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/muddy_earth_elemental.lua:70",
+          "source_path": "data-global/monster/quests/the_elemental_spheres/muddy_earth_elemental.lua",
+          "line": 70,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/the_elemental_spheres/muddy_earth_elemental.lua#L70",
+        "status": "LEFT_OUT",
+        "reason_code": "LOOT_DEPENDENCY_NOT_QUALIFIED",
+        "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/muddy_earth_elemental.lua:70"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+            "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Podstawowy soil loot:Muddy Earth Elemental; trigger: loot Muddy Earth Elemental; guard: standardowy rozdział łupu; skutki: natural soil;chance3750; silniejszy wariant elementala ma oddzielną tabelę.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Podstawowy soil loot:Muddy Earth Elemental; trigger: loot Muddy Earth Elemental; guard: standardowy rozdział łupu; skutki: natural soil;chance3750; silniejszy wariant elementala ma oddzielną tabelę.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 227,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 227,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Podstawowy soil loot:Blazing Fire Elemental",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "loot Blazing Fire Elemental",
+          "guard": "standardowy rozdział łupu",
+          "effect": "glimmering soil;chance2500; silniejszy wariant elementala ma oddzielną tabelę",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/blazing_fire_elemental.lua:66",
+          "source_path": "data-global/monster/quests/the_elemental_spheres/blazing_fire_elemental.lua",
+          "line": 66,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/the_elemental_spheres/blazing_fire_elemental.lua#L66",
+        "status": "LEFT_OUT",
+        "reason_code": "LOOT_DEPENDENCY_NOT_QUALIFIED",
+        "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/blazing_fire_elemental.lua:66"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+            "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Podstawowy soil loot:Blazing Fire Elemental; trigger: loot Blazing Fire Elemental; guard: standardowy rozdział łupu; skutki: glimmering soil;chance2500; silniejszy wariant elementala ma oddzielną tabelę.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Podstawowy soil loot:Blazing Fire Elemental; trigger: loot Blazing Fire Elemental; guard: standardowy rozdział łupu; skutki: glimmering soil;chance2500; silniejszy wariant elementala ma oddzielną tabelę.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 228,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 228,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Podstawowy soil loot:Charged Energy Elemental",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "loot Charged Energy Elemental",
+          "guard": "standardowy rozdział łupu",
+          "effect": "energy soil;chance2063; silniejszy wariant elementala ma oddzielną tabelę",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/charged_energy_elemental.lua:69",
+          "source_path": "data-global/monster/quests/the_elemental_spheres/charged_energy_elemental.lua",
+          "line": 69,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/the_elemental_spheres/charged_energy_elemental.lua#L69",
+        "status": "LEFT_OUT",
+        "reason_code": "LOOT_DEPENDENCY_NOT_QUALIFIED",
+        "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/charged_energy_elemental.lua:69"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+            "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Podstawowy soil loot:Charged Energy Elemental; trigger: loot Charged Energy Elemental; guard: standardowy rozdział łupu; skutki: energy soil;chance2063; silniejszy wariant elementala ma oddzielną tabelę.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Podstawowy soil loot:Charged Energy Elemental; trigger: loot Charged Energy Elemental; guard: standardowy rozdział łupu; skutki: energy soil;chance2063; silniejszy wariant elementala ma oddzielną tabelę.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 229,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 229,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Podstawowy soil loot:Slick Water Elemental",
+          "patterns": [
+            "P30"
+          ],
+          "trigger": "loot Slick Water Elemental",
+          "guard": "standardowy rozdział łupu",
+          "effect": "iced soil;chance6000; silniejszy wariant elementala ma oddzielną tabelę",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/slick_water_elemental.lua:71",
+          "source_path": "data-global/monster/quests/the_elemental_spheres/slick_water_elemental.lua",
+          "line": 71,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/the_elemental_spheres/slick_water_elemental.lua#L71",
+        "status": "LEFT_OUT",
+        "reason_code": "LOOT_DEPENDENCY_NOT_QUALIFIED",
+        "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/slick_water_elemental.lua:71"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Źródłowy monster loot jest zinwentaryzowany; ta partia nie kwalifikuje fizycznego item admission, dropu i powiązania z przebiegiem. Nie twierdzi się, że istniejąca ogólna baza loot została usunięta.",
+            "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Podstawowy soil loot:Slick Water Elemental; trigger: loot Slick Water Elemental; guard: standardowy rozdział łupu; skutki: iced soil;chance6000; silniejszy wariant elementala ma oddzielną tabelę.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Kwalifikacja wskazanego source monster loot wraz z fizycznym item admission i powiązaniem z gałęzią questu. Krok: Podstawowy soil loot:Slick Water Elemental; trigger: loot Slick Water Elemental; guard: standardowy rozdział łupu; skutki: iced soil;chance6000; silniejszy wariant elementala ma oddzielną tabelę.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    },
+    {
+      "cluster": "cults",
+      "cluster_row": 230,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+      ],
+      "disposition": {
+        "stage1_row": 230,
+        "stage1": {
+          "quest": "elemental_spheres",
+          "element": "Lord of the Elements: walka i przemiany",
+          "patterns": [
+            "P20",
+            "P30"
+          ],
+          "trigger": "standardowe ataki/defense/summon bossa",
+          "guard": "4typy summon;maxSummons4",
+          "effect": "melee do690;heal100..195;czasowe wyglądy4Overlords na3000ms; corpse8181",
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/lord_of_the_elements.lua:69",
+          "source_path": "data-global/monster/quests/the_elemental_spheres/lord_of_the_elements.lua",
+          "line": 69,
+          "oteryn": "NIE — brak tej kompozycji w zamkniętym world_callbacks; poza modelem niepotwierdzone; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+          "import": "RĘCZNIE"
+        },
+        "source_url": "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/quests/the_elemental_spheres/lord_of_the_elements.lua#L69",
+        "status": "LEFT_OUT",
+        "reason_code": "LORD_COMBAT_GRAPH_NOT_PORTED",
+        "reason": "Brak kwalifikacji walki/przemian Lord of the Elements razem z jego spawnem, uczestnikami i timeoutem; sama statyczna definicja nie jest pełnym portem.",
+        "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+        "decision_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "source_status": "PINNED_SOURCE_PRESENT",
+        "question_ids": [
+          "Q4-CLUSTER-APPROXIMATION"
+        ],
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+        ],
+        "question_coverage": "PUBLISHED_QUEST_OR_MECHANISM_QUESTION_WITH_BINDING_GENERAL_SCOPE",
+        "source_only_npc": false,
+        "source_references": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/quests/the_elemental_spheres/lord_of_the_elements.lua:69"
+        ],
+        "unimplemented_components": [
+          {
+            "kind": "runtime_function",
+            "reason": "Brak kwalifikacji walki/przemian Lord of the Elements razem z jego spawnem, uczestnikami i timeoutem; sama statyczna definicja nie jest pełnym portem.",
+            "missing_function": "Podłączona walka i przemiany Lord of the Elements wraz z uczestnikami, spawnem i timeoutem. Krok: Lord of the Elements: walka i przemiany; trigger: standardowe ataki/defense/summon bossa; guard: 4typy summon;maxSummons4; skutki: melee do690;heal100..195;czasowe wyglądy4Overlords na3000ms; corpse8181.",
+            "question_urls": [
+              "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589054766"
+            ],
+            "answer_url": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+          }
+        ],
+        "implementation_layer": "PRESERVED_SOURCE_ONLY",
+        "physical_admission": "NOT_ASSERTED_FOR_UNIMPLEMENTED_BRANCH",
+        "runtime_admission": "LEFT_OUT_SHARED_FUNCTION_OR_QUALIFICATION",
+        "missing_function": "Podłączona walka i przemiany Lord of the Elements wraz z uczestnikami, spawnem i timeoutem. Krok: Lord of the Elements: walka i przemiany; trigger: standardowe ataki/defense/summon bossa; guard: 4typy summon;maxSummons4; skutki: melee do690;heal100..195;czasowe wyglądy4Overlords na3000ms; corpse8181.",
+        "source_semantic_closure": "SOURCE_RULE_PRESENT_RUNTIME_QUALIFICATION_NOT_COMPLETED"
+      }
+    }
+  ]
+}

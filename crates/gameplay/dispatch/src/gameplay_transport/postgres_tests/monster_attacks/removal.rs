@@ -19,7 +19,7 @@ pub(super) async fn scenario(harness: &Harness) -> TestResult {
     let (deps, monster) = dependencies(active, &pin, AttackCase::TheMonster)?;
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = deps.room.movement_cells();
+    owner.movement_cells = (deps.room.movement_cells()).into();
     owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
         &[11, 30],
         crate::foundation::RuntimeScopeRefV1::channel(world, deps.admitted.channel_id),
@@ -91,8 +91,17 @@ pub(super) async fn scenario(harness: &Harness) -> TestResult {
     assert_eq!((committed[0].2, committed[0].3, committed[0].4), (2, 0, 2));
     assert_eq!((committed[0].5, committed[0].6), (0, 1));
     assert_eq!(wall_state(harness, wall).await?, (2, 0, 2, 0, 1));
-    let sequence = owner.states.spell_states.lock().await.monster_ai_sequence;
-    owner.drain_monster_melee().await;
+    let (sequence, next_pass) = {
+        let states = owner.states.spell_states.lock().await;
+        (states.monster_ai_sequence, states.next_monster_ai_pass_us)
+    };
+    // Repeat the drain inside the committing pass's think window. A real-clock
+    // drain on a loaded runner can land in the next window, which is a new
+    // legitimate pass (sequence + 1), not a repeat of this one.
+    let same_window = next_pass.checked_sub(1).ok_or("next monster pass")?;
+    owner.drain_monster_melee_at(
+        oteryn_simulation_determinism::SemanticTimeMicros::from_micros(same_window),
+    ).await;
     assert_eq!(owner.states.spell_states.lock().await.monster_ai_sequence, sequence);
     assert_eq!(removal_receipts(harness, monster, wall).await?, committed,
         "repeated drain cannot retire the item or append its source receipt again");

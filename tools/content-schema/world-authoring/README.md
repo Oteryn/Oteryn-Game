@@ -589,6 +589,49 @@ The validator requires unique ids and keys, every non-retired entry referenced a
 retired entry unreferenced. Oteryn edits authored on top of the base map will later need a
 separate patch layer that survives a regeneration. That layer is not implemented.
 
+## Quest chest startup UIDs
+
+The Naginata cohort also restores the exact access rock at `(32356,32074,10)`:
+Item1791/action40031 from `startup/tables/item.lua:2612-2616`. That table repeats
+40031 for an unrelated Item644; capture matches the full position and appearance.
+The production pick owner retains the six Channel-local hits and their replay
+bindings with the rock's map projection (`register_actions.lua:751-774`).
+
+`quest_chest_bindings.py --apply` restores selected Crystal startup chest UIDs
+and their source level-door actions on the existing map entries. Each cohort
+has its own normalized source capture under `samples/quest-chest-bindings/`;
+selectors must also agree with the
+canonical RewardClaim. A missing or ambiguous top-level appearance, a house
+tile or a conflicting UID fails closed. Every other tile/item attribute stays
+unchanged. `--apply --check` verifies the entire selected cohort without writing.
+`--capture CRYSTAL_ROOT --claims CLAIM... --output CAPTURE.json` reproduces a
+cohort from the pinned chest and level-door tables; add `--check` to verify it.
+The world converter and content regenerator apply the same overlay; the native
+Item generator also admits the selected ready claims' exact reward definitions.
+Filled-container and authored-text cohorts retain their existing exact W15b native
+projection and source holds; map selection never promotes an unsupported reward.
+`questpc2-phase-a.json` captures the O/P reward cohort and Orc Fortress level gate.
+Its four `quest_reward_claims_phase_a_*_cohort` tests reuse the same production wire
+USE scenario, checking root, ordered children, authored text, atomic audit rows,
+session fencing and command/cold-owner replay. Each claim prints a completion
+marker and elapsed time; these qualify the reward path only.
+Missing native policies for the cohort's source carriers are generated with
+`native-gameplay/build_quest_chest_profiles.py SOURCE_DIRECTORY` (add `--check`
+for replay), using the existing pinned importer. It preserves pickupable Box2473
+and solid coffin/bookcases2474/2436/2438; map selection never substitutes Terrain
+or weakens Item-reference admission.
+
+`panpipe-key.json` restores UID5001 on source stone1777 for Panpipe's Key4055.
+It uses the runtime's existing complete key-only variant lowering, with no new
+reward format. Selection retains source/data/charge holds and requires the exact
+key binding and Item2969; capture also verifies `isKey` and storage4055 in the
+pinned table. The native carrier generator retains the stone's immovable,
+nonpickupable physics. The shared dispatch scenario
+`quest_reward_claims_panpipe_key_4055_once_and_replay` checks the key number and
+its mint transaction alongside once-only completion, stale fencing and replay.
+This proves key acquisition; the dungeon door and approach route require their
+own journey evidence.
+
 ## Appearance-only ids
 
 An appearance-only id is a base map palette id that the official Tibia 15.30 client declares in
@@ -615,3 +658,16 @@ each row with the id, `class`, occurrences, `speed` (bank waypoints, ground only
 ```bash
 python convert_appearance_only_ids.py --crystal-root /path/to/crystalserver [--check]
 ```
+
+Panpipe's selected reward also restores action4055 on the existing locked1631
+at `(32643,32128,8)`. The exact saved `quest-authoring/samples/doors/gates.json`
+digest binds the normalized two-donor key-door observation (Canary04b83b51
+`door_key.lua:137`, Crystal9f5a72c6 `door_key.lua:158`). Its "key3791" label is
+a stale comment; the captured storage and the saved Wiki require4055. The
+overlay changes only that action and refuses an existing different action.
+Native admission adds only locked1631; closed1632/open1633 retain their existing
+profiles. The filtered dispatch case
+`quest_reward_claims_panpipe_locked_door_to_reward_and_replay` covers carried
+key custody, direct locked USE, wrong key, matching key and replay, then walking
+through the doorway and the once-only bag reward. Hollow-stone acquisition is
+qualified separately; the long dungeon approach remains outside these cases.

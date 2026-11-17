@@ -74,3 +74,6 @@ fn decode_receipt(row: &PgRow) -> Result<DailyRewardReceipt, DurabilityError> {
             .map_err(|_| invalid())?,
     })
 }
+
+#[path = "daily_reward/history.rs"]
+pub(super) mod history;

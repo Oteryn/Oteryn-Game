@@ -1,0 +1,24 @@
+{
+  "mechanic": "0470-imbuement-scroll-catalogue",
+  "kind": "handlers",
+  "id": "0470-imbuement-scroll-catalogue-window",
+  "status": "supported",
+  "commands": [],
+  "shared_commands": [
+    85
+  ],
+  "direction": "server_to_client",
+  "capability": 470,
+  "entry": "protocol.rs::apply_result",
+  "not_applicable": {
+    "state": "The existing 0068 shrine window stores all family/tier offers and applied rows.",
+    "view": "The existing shrine picker displays canonical family names, tier and gold.",
+    "input": "The existing 0068 play queue sends the selected offer index through command 85.",
+    "settings": "The catalogue and unlocks are server-owned."
+  },
+  "push_messages": [
+    "ImbuementReply"
+  ],
+  "reducer": "protocol.rs::apply_result",
+  "test": "protocol.rs::catalogue_window_keeps_all_48_offers"
+}

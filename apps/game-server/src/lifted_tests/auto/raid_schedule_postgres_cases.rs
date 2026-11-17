@@ -593,6 +593,7 @@ async fn exercise_source_schedule(h: &Harness, case: SourceScheduleCase) -> Test
                 SourceScheduleCase::Calendar => Some(CalendarRaidScheduleCandidate {
                     window: RaidCalendarWindow { start_month: 1, start_day: 2, end_month: 1, end_day: 2 },
                     interval_ms: 120_000,
+                    repeat: false,
                 }),
                 SourceScheduleCase::Lua | SourceScheduleCase::LuaInstance => None,
             },

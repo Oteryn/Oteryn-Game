@@ -2,18 +2,32 @@
   {
     "mechanic": "0115-mail",
     "kind": "handlers",
-    "id": "0115-mail-unsupported",
-    "status": "unsupported",
-    "reason": "The native server protocol is registered; client mail views and input are pending.",
+    "id": "0115-mail-command-124",
+    "status": "supported",
     "commands": [
       124
     ],
+    "direction": "client_to_server",
+    "capability": 115,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "No client mail state owner yet.",
-      "protocol": "Server-only until the client mechanic migration.",
-      "view": "No client mail view yet.",
-      "input": "No client mail input yet.",
-      "settings": "Mail has no client settings."
+      "settings": "This panel has no persistent client settings."
     }
+  },
+  {
+    "mechanic": "0115-mail",
+    "kind": "keybindings",
+    "id": "0115-mail-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+M",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0115-mail",
+    "kind": "panels",
+    "id": "0115-mail-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   }
 ]

@@ -1,11 +1,14 @@
-//! A declaration correction must preserve immutable XP receipts and allow the next award.
+//! A declaration correction must preserve immutable XP receipts, recovery and the next award.
 use super::TestResult;
 use super::fixture::{Harness, debug, fence, id, run};
 use crate::domain::progression::{
     FiniteProgressionPolicy, LevelThreshold, ProgressionRevisionContext,
 };
+use crate::durability::DurabilityError;
+use crate::durability::character_authority::CharacterAuthorityError;
 use crate::durability::character_progression::{
-    ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+    CharacterProgressionError, ExperienceAwardRequest, ExperienceCommitOutcome,
+    ExperienceRewardOccurrence,
 };
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
@@ -98,6 +101,13 @@ fn low_level_declaration_postgres_migrates_state_preserves_receipt_and_next_awar
             sqlx::raw_sql(MIGRATION).execute(&mut *tx).await?;
             sqlx::raw_sql(MIGRATION).execute(&mut *tx).await?;
             tx.commit().await?;
+            // Recover while the latest immutable receipt still has the old declaration.
+            drop(authority);
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
             let current: serde_json::Value = serde_json::from_str(include_str!(
                 "../../../../../../rulesets/character/experience/declared-differences.json"
             ))?;
@@ -121,6 +131,13 @@ fn low_level_declaration_postgres_migrates_state_preserves_receipt_and_next_awar
                     .fetch_one(&h.pool)
                     .await?;
             assert_eq!(receipt_before, receipt_after);
+            // The migrated legacy receipt must pass the same integrity gate as a new boot.
+            drop(authority);
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
             let replay = h
                 .root
                 .commit_character_experience(&authority, &h.node, fence(1)?, request)
@@ -130,14 +147,44 @@ fn low_level_declaration_postgres_migrates_state_preserves_receipt_and_next_awar
                 return Err("first award was replayed".into());
             };
             assert_eq!(replay, ExperienceCommitOutcome::AlreadyCommitted(committed));
-            assert!(
-                h.root
-                    .commit_character_experience(&authority, &h.node, fence(2)?, award(92, OLD)?)
-                    .await
-                    .is_err()
-            );
-            h.root
+            for declaration in [OLD, "unregistered-declaration"] {
+                assert!(matches!(
+                    h.root
+                        .commit_character_experience(
+                            &authority,
+                            &h.node,
+                            fence(2)?,
+                            award(92, declaration)?,
+                        )
+                        .await,
+                    Err(CharacterProgressionError::ProgressionContextMismatch)
+                ));
+            }
+            let next = h
+                .root
                 .commit_character_experience(&authority, &h.node, fence(2)?, award(92, expected)?)
+                .await
+                .map_err(debug)?;
+            assert!(matches!(next, ExperienceCommitOutcome::Committed(_)));
+            let declarations: Vec<String> = sqlx::query_scalar(
+                "SELECT declaration_revision FROM game_character_xp_receipts ORDER BY committed_character_revision",
+            )
+            .fetch_all(&h.pool)
+            .await?;
+            assert_eq!(declarations, vec![OLD.to_owned(), expected.to_owned()]);
+            // The current receipt now matches exactly; recovery must still accept the
+            // authorized historical declaration earlier in the same immutable chain.
+            drop(authority);
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            // After a current award, the legacy declaration remains in the historical chain.
+            drop(authority);
+            let authority = h
+                .root
+                .open_character_authority(&seal)
                 .await
                 .map_err(debug)?;
             let triggers: i64 = sqlx::query_scalar("SELECT count(*) FROM pg_trigger WHERE tgrelid='game_character_progression_state'::regclass AND tgenabled='D'")
@@ -155,8 +202,27 @@ fn low_level_declaration_postgres_migrates_state_preserves_receipt_and_next_awar
                     .fetch_one(&unrelated.pool)
                     .await?;
             assert_eq!(unrelated_before, unrelated_after);
+            for (revision, original) in [(2, OLD), (3, expected)] {
+                tamper_receipt_declaration(&h, revision, "unrelated-declaration").await?;
+                assert!(
+                    matches!(
+                        h.root.open_character_authority(&seal).await,
+                        Err(CharacterAuthorityError::Unavailable(
+                            DurabilityError::Unavailable
+                        ))
+                    ),
+                    "unrelated declaration in receipt revision {revision} must fail admission closed"
+                );
+                tamper_receipt_declaration(&h, revision, original).await?;
+                drop(
+                    h.root
+                        .open_character_authority(&seal)
+                        .await
+                        .map_err(debug)?,
+                );
+            }
             eprintln!(
-                "PKG3 declaration migration: stored revision, unchanged receipt, replay, stale refusal and next award executed"
+                "PKG3 declaration migration: stored revision, unchanged receipt, replay, strict write refusals, next award and both recovery points executed"
             );
             drop(authority);
             drop(seal);
@@ -164,4 +230,27 @@ fn low_level_declaration_postgres_migrates_state_preserves_receipt_and_next_awar
             h.cleanup().await
         })
     })
+}
+
+async fn tamper_receipt_declaration(h: &Harness, revision: i64, declaration: &str) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let updated = sqlx::query(
+        "UPDATE game_character_xp_receipts SET declaration_revision=$1 \
+         WHERE character_id=encode($2,'hex')::uuid AND committed_character_revision=$3",
+    )
+    .bind(declaration)
+    .bind(id(41).as_slice())
+    .bind(revision)
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(
+        updated.rows_affected(),
+        1,
+        "tamper exactly one existing receipt"
+    );
+    tx.commit().await?;
+    Ok(())
 }

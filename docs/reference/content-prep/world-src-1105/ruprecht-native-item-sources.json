@@ -1,0 +1,1754 @@
+{
+  "schema": "OTERYN_WORLD_SRC_RUPRECHT_ITEM_SOURCES/v1",
+  "sources": [
+    {
+      "donor": "canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/items.xml",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "git_blob": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/items.xml"
+    },
+    {
+      "donor": "canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/appearances.dat",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+      "git_blob": "2cc2f4910af4f002f99f39e486d1a91b1b56a728",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/appearances.dat"
+    },
+    {
+      "donor": "crystal",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/items/items.xml",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509",
+      "git_blob": "ea4196beae8f77be898f05de89db81de134886b6",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data/items/items.xml"
+    },
+    {
+      "donor": "crystal",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/ruprecht.lua",
+      "sha256": "6788ae0c3290515135d30609ec56dba504713884822b82312e7dea84055cbb6f",
+      "git_blob": "6718df2ef51872c95a8fe2036add77d2623141bb",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/ruprecht.lua"
+    },
+    {
+      "donor": "canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/items/items.cpp",
+      "sha256": "f695ed647e111923cf8e4d487c4a0706f19e7edbfb7896655c20494d6d927fd7",
+      "git_blob": "eecbf060ef9e85b452bb897277ff3d3d013a0cf9",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/items.cpp"
+    },
+    {
+      "donor": "canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/items/items.hpp",
+      "sha256": "b8c12f45122eeb575ad548719c5fb178a96460d8a41ad882d0d88b2e66d797e6",
+      "git_blob": "5181a8894449fd552626bd932ce0aaaeff749919",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/src/items/items.hpp"
+    }
+  ],
+  "offer_source": {
+    "donor": "crystal",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "path": "data-global/npc/ruprecht.lua",
+    "lines": [
+      54,
+      124
+    ]
+  },
+  "offers": [
+    {
+      "name": "gingerbreadman",
+      "item": 6500,
+      "cost": 1
+    },
+    {
+      "name": "christmas cookie tray",
+      "item": 20310,
+      "cost": 1
+    },
+    {
+      "name": "gingerbread recipe",
+      "item": 174,
+      "cost": 10
+    },
+    {
+      "name": "jewel case",
+      "item": 7527,
+      "cost": 25
+    },
+    {
+      "name": "santa hat",
+      "item": 6531,
+      "cost": 50
+    },
+    {
+      "name": "santa backpack",
+      "item": 10346,
+      "cost": 75
+    },
+    {
+      "name": "snow flake tapestry",
+      "item": 20315,
+      "cost": 75
+    },
+    {
+      "name": "santa doll",
+      "item": 6511,
+      "cost": 100
+    },
+    {
+      "name": "snowman doll",
+      "item": 10339,
+      "cost": 150
+    },
+    {
+      "name": "snow globe",
+      "item": 20311,
+      "cost": 150
+    },
+    {
+      "name": "frazzlemaw santa",
+      "item": 20308,
+      "cost": 250
+    },
+    {
+      "name": "leaf golem santa",
+      "item": 20309,
+      "cost": 250
+    },
+    {
+      "name": "santa music box",
+      "item": 20313,
+      "cost": 250
+    },
+    {
+      "name": "santa teddy",
+      "item": 10338,
+      "cost": 500
+    },
+    {
+      "name": "maxxen santa",
+      "item": 21952,
+      "cost": 250
+    },
+    {
+      "name": "present bag",
+      "item": 6496,
+      "cost": 1
+    },
+    {
+      "name": "ferumbras' teddy santa",
+      "item": 22879,
+      "cost": 250
+    },
+    {
+      "name": "nightmare beast santa",
+      "item": 29947,
+      "cost": 250
+    },
+    {
+      "name": "orclops santa",
+      "item": 24394,
+      "cost": 250
+    },
+    {
+      "name": "raccoon santa",
+      "item": 35692,
+      "cost": 250
+    },
+    {
+      "name": "santa fox",
+      "item": 27591,
+      "cost": 250
+    },
+    {
+      "name": "santa leech",
+      "item": 32746,
+      "cost": 250
+    }
+  ],
+  "items": [
+    {
+      "source_item_id": 174,
+      "name": "parchment",
+      "weight_centi_oz": 200,
+      "canary_xml_lines": [
+        254,
+        260
+      ],
+      "crystal_xml_lines": [
+        253,
+        259
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 174,
+        "byte_range_zero_based_end_exclusive": [
+          7968,
+          8120
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 200
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 6496,
+      "name": "christmas present bag",
+      "weight_centi_oz": 8000,
+      "canary_xml_lines": [
+        17841,
+        17845
+      ],
+      "crystal_xml_lines": [
+        17922,
+        17926
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 6496,
+        "byte_range_zero_based_end_exclusive": [
+          677822,
+          677990
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 8000
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 6500,
+      "name": "gingerbreadman",
+      "weight_centi_oz": 500,
+      "canary_xml_lines": [
+        17857,
+        17860
+      ],
+      "crystal_xml_lines": [
+        17938,
+        17941
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 6500,
+        "byte_range_zero_based_end_exclusive": [
+          678537,
+          678640
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 500
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 6511,
+      "name": "santa doll",
+      "weight_centi_oz": 750,
+      "canary_xml_lines": [
+        17900,
+        17903
+      ],
+      "crystal_xml_lines": [
+        17981,
+        17984
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 6511,
+        "byte_range_zero_based_end_exclusive": [
+          686076,
+          686173
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 750
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 6526,
+      "name": "christmas token",
+      "weight_centi_oz": 5,
+      "canary_xml_lines": [
+        17953,
+        17957
+      ],
+      "crystal_xml_lines": [
+        18034,
+        18038
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 6526,
+        "byte_range_zero_based_end_exclusive": [
+          687333,
+          687468
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 5
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 6531,
+      "name": "santa hat",
+      "weight_centi_oz": 750,
+      "canary_xml_lines": [
+        18009,
+        18016
+      ],
+      "crystal_xml_lines": [
+        18090,
+        18097
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 6531,
+        "byte_range_zero_based_end_exclusive": [
+          688034,
+          688138
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 750
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 7527,
+      "name": "jewel case",
+      "weight_centi_oz": 170,
+      "canary_xml_lines": [
+        20669,
+        20674
+      ],
+      "crystal_xml_lines": [
+        20750,
+        20755
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 7527,
+        "byte_range_zero_based_end_exclusive": [
+          782622,
+          782762
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 170
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "KNOWN",
+          "value": {
+            "capacity": {
+              "state": "KNOWN",
+              "value": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "source_item_id": 10338,
+      "name": "santa teddy",
+      "weight_centi_oz": 550,
+      "canary_xml_lines": [
+        26956,
+        26959
+      ],
+      "crystal_xml_lines": [
+        27085,
+        27088
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 10338,
+        "byte_range_zero_based_end_exclusive": [
+          1011527,
+          1011624
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 550
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 10339,
+      "name": "snowman doll",
+      "weight_centi_oz": 620,
+      "canary_xml_lines": [
+        26960,
+        26963
+      ],
+      "crystal_xml_lines": [
+        27089,
+        27092
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 10339,
+        "byte_range_zero_based_end_exclusive": [
+          1011626,
+          1011724
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 620
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 10346,
+      "name": "santa backpack",
+      "weight_centi_oz": 1650,
+      "canary_xml_lines": [
+        26993,
+        27003
+      ],
+      "crystal_xml_lines": [
+        27122,
+        27132
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 10346,
+        "byte_range_zero_based_end_exclusive": [
+          1012411,
+          1012524
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 1650
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "KNOWN",
+          "value": {
+            "capacity": {
+              "state": "KNOWN",
+              "value": 20
+            }
+          }
+        }
+      }
+    },
+    {
+      "source_item_id": 20308,
+      "name": "frazzlemaw santa",
+      "weight_centi_oz": 600,
+      "canary_xml_lines": [
+        40974,
+        40977
+      ],
+      "crystal_xml_lines": [
+        41175,
+        41178
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 20308,
+        "byte_range_zero_based_end_exclusive": [
+          1630857,
+          1630963
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 600
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 20309,
+      "name": "leaf golem santa",
+      "weight_centi_oz": 650,
+      "canary_xml_lines": [
+        40978,
+        40981
+      ],
+      "crystal_xml_lines": [
+        41179,
+        41182
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 20309,
+        "byte_range_zero_based_end_exclusive": [
+          1630965,
+          1631071
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 650
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 20310,
+      "name": "christmas cookie tray",
+      "weight_centi_oz": 650,
+      "canary_xml_lines": [
+        40982,
+        40985
+      ],
+      "crystal_xml_lines": [
+        41183,
+        41186
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 20310,
+        "byte_range_zero_based_end_exclusive": [
+          1631073,
+          1631187
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 650
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 20311,
+      "name": "snow globe",
+      "weight_centi_oz": 1000,
+      "canary_xml_lines": [
+        40986,
+        40990
+      ],
+      "crystal_xml_lines": [
+        41187,
+        41191
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 20311,
+        "byte_range_zero_based_end_exclusive": [
+          1631189,
+          1631303
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 1000
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 20313,
+      "name": "santa music box",
+      "weight_centi_oz": 750,
+      "canary_xml_lines": [
+        40996,
+        40999
+      ],
+      "crystal_xml_lines": [
+        41197,
+        41200
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 20313,
+        "byte_range_zero_based_end_exclusive": [
+          1631445,
+          1631552
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 750
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 20315,
+      "name": "snow flake tapestry",
+      "weight_centi_oz": 1000,
+      "canary_xml_lines": [
+        41000,
+        41003
+      ],
+      "crystal_xml_lines": [
+        41201,
+        41204
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 20315,
+        "byte_range_zero_based_end_exclusive": [
+          1631700,
+          1631841
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 1000
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 21952,
+      "name": "maxxen santa",
+      "weight_centi_oz": 650,
+      "canary_xml_lines": [
+        43372,
+        43375
+      ],
+      "crystal_xml_lines": [
+        43569,
+        43572
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 21952,
+        "byte_range_zero_based_end_exclusive": [
+          1739799,
+          1739901
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 650
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 22879,
+      "name": "ferumbras' teddy santa",
+      "weight_centi_oz": 650,
+      "canary_xml_lines": [
+        45708,
+        45711
+      ],
+      "crystal_xml_lines": [
+        45901,
+        45904
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 22879,
+        "byte_range_zero_based_end_exclusive": [
+          1803035,
+          1803147
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 650
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 24394,
+      "name": "orclops santa",
+      "weight_centi_oz": 650,
+      "canary_xml_lines": [
+        47423,
+        47426
+      ],
+      "crystal_xml_lines": [
+        47612,
+        47615
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 24394,
+        "byte_range_zero_based_end_exclusive": [
+          1910775,
+          1910878
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 650
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 27591,
+      "name": "santa fox",
+      "weight_centi_oz": 650,
+      "canary_xml_lines": [
+        52235,
+        52238
+      ],
+      "crystal_xml_lines": [
+        52425,
+        52428
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 27591,
+        "byte_range_zero_based_end_exclusive": [
+          2088857,
+          2088956
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 650
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 29947,
+      "name": "nightmare beast santa",
+      "weight_centi_oz": 650,
+      "canary_xml_lines": [
+        55760,
+        55763
+      ],
+      "crystal_xml_lines": [
+        55954,
+        55957
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 29947,
+        "byte_range_zero_based_end_exclusive": [
+          2205996,
+          2206107
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 650
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 32746,
+      "name": "santa leech",
+      "weight_centi_oz": 720,
+      "canary_xml_lines": [
+        62063,
+        62066
+      ],
+      "crystal_xml_lines": [
+        62261,
+        62264
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 32746,
+        "byte_range_zero_based_end_exclusive": [
+          2399836,
+          2399937
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 720
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    },
+    {
+      "source_item_id": 35692,
+      "name": "raccoon santa",
+      "weight_centi_oz": 650,
+      "canary_xml_lines": [
+        66263,
+        66266
+      ],
+      "crystal_xml_lines": [
+        66470,
+        66473
+      ],
+      "appearance_object": {
+        "donor": "canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "object_id": 35692,
+        "byte_range_zero_based_end_exclusive": [
+          2616622,
+          2616725
+        ],
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "semantics": {
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 650
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        }
+      }
+    }
+  ],
+  "overlay_sha256": "752370f3a6a2ed8e04cdf68202f274fc79e678ff162713da3e20d59efee49ef9",
+  "engine_flag_mapping": {
+    "donor": "canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+    "path": "src/items/items.cpp",
+    "lines": [
+      235,
+      254
+    ],
+    "fields": {
+      "has_height": "has_height",
+      "block_solid": "unpass",
+      "block_projectile": "unsight",
+      "pickupable": "take",
+      "movable": "not unmove",
+      "stackable": "cumulative"
+    }
+  },
+  "engine_defaults": [
+    {
+      "donor": "canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/items/items.hpp",
+      "line": 331,
+      "field": "stackSize",
+      "value": 100
+    },
+    {
+      "donor": "canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/items/items.hpp",
+      "line": 29,
+      "field": "abilities.speed",
+      "value": 0
+    },
+    {
+      "donor": "canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/items/items.hpp",
+      "line": 224,
+      "field": "missing_abilities_speed",
+      "value": 0
+    }
+  ],
+  "note": "174 is source parchment, despite the offer label gingerbread recipe. Existing admitted 6500 is preserved; the overlay adds the other 22 profiles."
+}

@@ -124,7 +124,7 @@ async fn field_scenario(harness: &Harness, case: AttackCase) -> TestResult {
     let (deps, monster) = dependencies(active, &pin, case)?;
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = deps.room.movement_cells();
+    owner.movement_cells = (deps.room.movement_cells()).into();
     // The source keeps all three canonical attacks. A larger test player pool survives
     // their real damage while the field's original schedule gets its first cast.
     let initial_health = crate::gameplay_transport::actor_spell::tests::FACTS.max_health
@@ -205,14 +205,45 @@ async fn field_scenario(harness: &Harness, case: AttackCase) -> TestResult {
             runtime.read_actor_position(deps.actor).map_err(debug)?.position(),
             "canonical zero source range is uncapped, not restricted to the caster cell");
     }
-    let sequence = owner.states.spell_states.lock().await.monster_ai_sequence;
-    owner.drain_monster_melee().await;
-    assert_eq!(owner.states.spell_states.lock().await.monster_ai_sequence, sequence);
+    let committed = repeat_before_deadline(&owner, || async {
+        Ok((health(&owner, &deps).await?,
+            committed_source_fields(harness, monster, case, &field.ability.key).await?))
+    }).await?;
+    assert_eq!(health(&owner, &deps).await?, committed.0);
     assert_eq!(
-        committed_source_fields(harness, monster, case, &field.ability.key).await?, committed,
+        committed_source_fields(harness, monster, case, &field.ability.key).await?, committed.1,
         "a repeated connection drain does not mint a second field or receipt",
     );
     Ok(())
+}
+
+// A slow durable read can consume the shared think interval. Only check a repeat
+// when the post-drain clock proves that its captured deadline has not passed.
+async fn repeat_before_deadline<T, F, Fut>(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    mut observe: F,
+) -> TestResult<T>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = TestResult<T>>,
+{
+    let mut checked = None;
+    for _ in 0..8 {
+        let (sequence, deadline) = {
+            let states = owner.states.spell_states.lock().await;
+            (states.monster_ai_sequence, states.next_monster_ai_pass_us)
+        };
+        let observed = observe().await?;
+        owner.drain_monster_melee().await;
+        if owner.owner_now().get() < deadline {
+            assert_eq!(owner.states.spell_states.lock().await.monster_ai_sequence, sequence,
+                "a second connection drain before the shared deadline is not another swing");
+            checked = Some(observed);
+            break;
+        }
+    }
+    assert!(checked.is_some(), "no repeat drain was checked before the shared deadline in 8 attempts");
+    checked.ok_or_else(|| "missing checked repeat drain".into())
 }
 
 async fn committed_source_fields(
@@ -247,7 +278,7 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
     let (deps, monster) = dependencies(active, &pin, case)?;
     let mut owner = deps.owner(harness, &authority);
     owner.active_generation = Some(active);
-    owner.movement_cells = deps.room.movement_cells();
+    owner.movement_cells = (deps.room.movement_cells()).into();
     let maximum = maximum_source_damage(active, case)?;
     let area_case = matches!(case, AttackCase::FireDevil | AttackCase::FireDevilInvisibleBystander);
     let invisible_bystander = case == AttackCase::FireDevilInvisibleBystander;
@@ -341,28 +372,28 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
             assert!(!states.monster_spells.casts.is_empty(), "the production spell owner executed");
         }
     }
-    let sequence = owner.states.spell_states.lock().await.monster_ai_sequence;
-    let repeat_area = if invisible_bystander {
-        let (actor, session) = bystander.ok_or("visible source area target")?;
-        Some((player_health(&owner, actor, session).await?,
+    let (repeat_health, repeat_area, cast_count) = repeat_before_deadline(&owner, || async {
+        let repeat_area = if let Some((actor, session)) = bystander {
+            Some(player_health(&owner, actor, session).await?)
+        } else {
+            None
+        };
+        Ok((health(&owner, &deps).await?, repeat_area,
             owner.states.spell_states.lock().await.monster_spells.casts.len()))
-    } else {
-        None
-    };
-    owner.drain_monster_melee().await;
-    assert_eq!(
-        owner.states.spell_states.lock().await.monster_ai_sequence,
-        sequence,
-        "a second connection drain before the shared deadline is not another swing"
-    );
-    assert_eq!(health(&owner, &deps).await?, after);
-    if let Some((visible_health, cast_count)) = repeat_area {
-        let visible = bystander.ok_or("visible source area target")?;
-        invisible_area::assert_current(&owner, &deps, monster, visible).await?;
-        assert_eq!(player_health(&owner, visible.0, visible.1).await?, visible_health);
+    }).await?;
+    assert_eq!(health(&owner, &deps).await?, repeat_health);
+    if area_case {
         assert_eq!(owner.states.spell_states.lock().await.monster_spells.casts.len(), cast_count,
             "an unchanged drain does not publish another area occurrence");
     }
+    if let Some(visible_health) = repeat_area {
+        let visible = bystander.ok_or("visible source area target")?;
+        if invisible_bystander {
+            invisible_area::assert_current(&owner, &deps, monster, visible).await?;
+        }
+        assert_eq!(player_health(&owner, visible.0, visible.1).await?, visible_health);
+    }
+    after = repeat_health;
 
     if case == AttackCase::Rat {
         rat_movement_retry(&mut owner, &deps, monster).await?;

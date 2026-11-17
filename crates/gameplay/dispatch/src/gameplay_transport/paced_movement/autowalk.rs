@@ -79,11 +79,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 y: at.y,
                 floor: at.floor.checked_neg().ok_or(())?,
             },
-            AutoWalkTarget::Cell(at) => MovementLocalPosition {
-                x: at.x,
-                y: at.y,
-                floor: at.floor,
-            },
+            AutoWalkTarget::Cell(at) => self
+                .wire_position_frame(&runtime)
+                .and_then(|frame| frame.unproject(at))
+                .ok_or(())?,
             AutoWalkTarget::Follow(target) => {
                 let census = runtime.visible_entities();
                 let named = |other: ExactActorRef, generation| {
@@ -216,14 +215,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let (none, legacy, bundle_doors);
         let blocking: &dyn crate::map::floor::CellBlocker = if self
-            .rooms
+            .rooms()
             .gate_source_world()
             .is_some_and(|room| room.source_world().is_some())
         {
             none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
             &none
         } else if let Some(map) = self.bundle_map() {
-            bundle_doors = crate::map::floor::BundleDoors(map.facts.doors());
+            bundle_doors = crate::map::floor::BundleDoors(&map.facts);
             &bundle_doors
         } else {
             legacy = self.door.lock().await.blocking_cells().clone();
@@ -231,7 +230,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let pvp_blocking = pvp_live::PvpBlocker {
             inner: blocking,
-            cells: self.movement_cells,
+            cells: self.movement_cells(),
             blocked: pvp_live::pz_blocked(&states, actor, session, self.owner_now()),
         };
         let occupancy = PathOccupancy::current(&runtime);
@@ -262,7 +261,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 y: at.y,
                 z: i32::from(at.floor),
             };
-            let cells = self.movement_cells;
+            let cells = self.movement_cells();
             // Bundle spell facts deliberately become unknown over movable items and doors.
             // Movement instead owns complete floor-change facts in the booted floor table.
             let ordinary = if let Some(floors) = crate::map::floor::table_of(cells) {
@@ -321,6 +320,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     crate::movement::CardinalStep::East => StepDirection::East,
                     crate::movement::CardinalStep::South => StepDirection::South,
                     crate::movement::CardinalStep::West => StepDirection::West,
+                    crate::movement::CardinalStep::NorthEast => StepDirection::NorthEast,
+                    crate::movement::CardinalStep::SouthEast => StepDirection::SouthEast,
+                    crate::movement::CardinalStep::SouthWest => StepDirection::SouthWest,
+                    crate::movement::CardinalStep::NorthWest => StepDirection::NorthWest,
                 })
                 .collect(),
         }))
@@ -347,12 +350,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read(actor)
             .ok()
             .filter(|current| {
-                let (dx, dy) = match direction {
-                    StepDirection::North => (0, -1),
-                    StepDirection::East => (1, 0),
-                    StepDirection::South => (0, 1),
-                    StepDirection::West => (-1, 0),
-                };
+                let (dx, dy) = direction.delta();
                 expected.revision().checked_add(1) == Some(current.revision())
                     && expected.context() == current.context()
                     && expected.position().x.checked_add(dx) == Some(current.position().x)

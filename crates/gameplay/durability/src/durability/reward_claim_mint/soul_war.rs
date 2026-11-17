@@ -15,9 +15,20 @@ impl DurabilityRoot {
         let fence = gameplay_fence.item_fence();
         validate_soul_war_request(&request)?;
         let binding = intent_binding(&request, fence.character_id)?;
-        let weight_pin = format!("sha256:{}", weights.generation_digest().iter().map(|b| format!("{b:02x}")).collect::<String>());
-        if request.content_revision != weight_pin { return Err(RewardClaimMintError::InvalidInput) }
-        let recovery = authority.record_for(self).map_err(|_| RewardClaimMintError::AuthorityRejected)?;
+        let weight_pin = format!(
+            "sha256:{}",
+            weights
+                .generation_digest()
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect::<String>()
+        );
+        if request.content_revision != weight_pin {
+            return Err(RewardClaimMintError::InvalidInput);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
         let node = node.clone();
         let mut context = weights;
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, weights| Box::pin(async move {
@@ -107,18 +118,22 @@ impl DurabilityRoot {
     }
 }
 
-
 fn validate_soul_war_request(request: &RewardClaimMintRequest) -> Result<()> {
     use super::super::quest_state::soul_war::{
         SOUL_WAR_REWARD_CLAIM, SOUL_WAR_REWARD_PLACEMENT, SOUL_WAR_REWARD_REVISION,
     };
     validate_request(request)?;
-    if request.claim.family != "RewardClaim" || request.claim.production_key != SOUL_WAR_REWARD_CLAIM
+    if request.claim.family != "RewardClaim"
+        || request.claim.production_key != SOUL_WAR_REWARD_CLAIM
         || request.claim.revision_ref != SOUL_WAR_REWARD_REVISION
         || request.source_placement != SOUL_WAR_REWARD_PLACEMENT
-        || request.quantity != 1 || request.achievement.is_some()
-        || request.quest_transition.is_some() || request.key_number.is_some()
-    { return Err(RewardClaimMintError::InvalidInput); }
+        || request.quantity != 1
+        || request.achievement.is_some()
+        || request.quest_transition.is_some()
+        || request.key_number.is_some()
+    {
+        return Err(RewardClaimMintError::InvalidInput);
+    }
     Ok(())
 }
 
@@ -126,25 +141,35 @@ impl DurabilityRoot {
     /// Receipt-only recovery for the original request retained before MINT. It
     /// never reserves, delivers, reacquires NPC/chest authority or starts a new claim.
     pub async fn reconcile_soul_war_reward(
-        &self, authority: &ReconciledCharacterAuthority<'_, '_>,
-        character: CharacterId, request: &RewardClaimMintRequest,
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        request: &RewardClaimMintRequest,
     ) -> Result<Option<CommittedRewardClaimMint>> {
         validate_soul_war_request(request)?;
         let binding = intent_binding(request, character)?;
         let command = request.command;
-        let recovery = authority.record_for(self).map_err(|_| RewardClaimMintError::AuthorityRejected)?;
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_cause(&mut tx, command).await?;
-            let outcome = if let Some(row) = load_receipt(&mut tx, command).await? {
-                if row.try_get::<Vec<u8>, _>("intent_binding")? != binding {
-                    return Ok(Err(RewardClaimMintError::ConflictingCause));
-                }
-                Some(decode_receipt(&row)?)
-            } else { None };
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(outcome))
-        })).await?
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| RewardClaimMintError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_cause(&mut tx, command).await?;
+                    let outcome = if let Some(row) = load_receipt(&mut tx, command).await? {
+                        if row.try_get::<Vec<u8>, _>("intent_binding")? != binding {
+                            return Ok(Err(RewardClaimMintError::ConflictingCause));
+                        }
+                        Some(decode_receipt(&row)?)
+                    } else {
+                        None
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(outcome))
+                })
+            })
+            .await?
     }
 }

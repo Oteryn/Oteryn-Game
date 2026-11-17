@@ -9,7 +9,7 @@ impl PlayLink {
             && self.commands.send(PlayCommand::Feature(command)).is_err()
         {
             mailbox.boss_difficulty.pending = false;
-            mailbox.boss_difficulty.feedback = Some("The session has ended");
+            mailbox.boss_difficulty.feedback = Some(tr!("The session has ended"));
         }
     }
     pub fn boss_difficulty_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -17,9 +17,10 @@ impl PlayLink {
             return false;
         }
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).boss_difficulty.open = true;
         }
         true

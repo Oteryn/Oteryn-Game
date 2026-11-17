@@ -7,7 +7,9 @@
 
 mod appearance;
 mod catalog;
+mod effects;
 mod error;
+pub use effects::EffectCatalog;
 mod sheets;
 mod store;
 /// Bounded map-window appearance loading.

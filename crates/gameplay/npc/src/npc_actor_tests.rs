@@ -77,6 +77,7 @@ fn catalogue(revision: &str, speed: i64, interval_ms: u64, radius: u16) -> NpcDa
     };
     let npc =
         |key: &str, fields: Vec<ProjectV2CandidateField>, linked: bool| ProjectV2Declaration::Npc {
+            visibility: Default::default(),
             identity: ProjectV2Identity {
                 key: key.into(),
                 revision: "definition-r1".into(),
@@ -201,4 +202,35 @@ fn disabled_missing_mistyped_and_duplicate_source_values_cannot_supply_walk_prof
     assert!(WalkProfile::from_source(&fields, &source).is_none());
     source.movement.wander = None;
     assert!(WalkProfile::from_source(&fields, &source).is_none());
+}
+
+#[test]
+fn s10_crystal_only_wander_profiles_reach_the_production_book() {
+    let catalogue = NpcDataCatalogue::load(
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+        std::ffi::OsStr::new("world"),
+        npc_catalogue_preproduction_limits(),
+    )
+    .expect("repository catalogue");
+    let model = catalogue
+        .service_model_for_project()
+        .expect("service model");
+    let book = NpcWalkBook::from_catalogue(&catalogue, &model).expect("source-bound walk book");
+    // Crystal 201189f8 data-global/npc/<stem>.lua:10-11,24-25.
+    for (stem, radius) in [
+        ("wyrdins_apprentice", 2),
+        ("taya", 2),
+        ("fernlor", 1),
+        ("captain_coohan", 1),
+    ] {
+        let key = format!("oteryn:npc.{stem}");
+        let profile = book.profile(&key).expect(&key);
+        assert_eq!(profile.interval_ms, 2000, "{key}");
+        assert_eq!(profile.radius_tiles, radius, "{key}");
+        assert_eq!(profile.base_speed, 55, "{key}");
+        assert!(
+            book.terrain_qualified(&key),
+            "{key}: height facts must be source-bound"
+        );
+    }
 }

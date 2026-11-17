@@ -163,7 +163,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 let index = pinned_index(&runtime, self.active_generation)?;
                 let at =
-                    super::super::bundle_map_position(&mut runtime, self.movement_cells, actor)?;
+                    super::super::bundle_map_position(&mut runtime, self.movement_cells(), actor)?;
                 let facts = at.map.facts.pinned();
                 let map = super::super::world_map::MapViewSource {
                     overlay: &at.map.overlay,

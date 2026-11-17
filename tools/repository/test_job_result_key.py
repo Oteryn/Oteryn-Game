@@ -272,7 +272,7 @@ class Ledger(CliAndMarker):
         self.set_packages(["missing"])
         self.assertEqual(self.plan(), {"missing": ""})
 
-    def test_junit_lists_packages_without_a_failed_suite(self):
+    def test_junit_lists_only_observed_packages_without_a_failed_suite(self):
         self.set_packages(["a", "b", "c"])
         (self.root / "junit.xml").write_text(
             '<testsuites><testsuite name="a" tests="1" failures="0" errors="0"><testcase name="t"/></testsuite>'
@@ -280,10 +280,70 @@ class Ledger(CliAndMarker):
             '<testsuite name="b" tests="1" failures="0" errors="0"><testcase name="u"/></testsuite></testsuites>')
         out = self.root / "passed.txt"
         self.invoke("junit-passed", "--junit", str(self.root / "junit.xml"), "--packages", str(self.packages), "--out", str(out))
-        self.assertEqual(out.read_text().split(), ["a", "c"])
+        self.assertEqual(out.read_text().split(), ["a"])
         (self.root / "junit.xml").write_text("<testsuites><testsuite")
         self.invoke("junit-passed", "--junit", str(self.root / "junit.xml"), "--packages", str(self.packages), "--out", str(out))
         self.assertEqual(out.read_text(), "")
+
+    def test_cancelled_empty_junit_keeps_every_selected_package_uncached(self):
+        self.set_packages(["a", "c"])
+        self.plan()
+        (self.root / "junit.xml").write_text("<testsuites/>\n")
+        out = self.root / "passed.txt"
+        self.invoke("junit-passed", "--junit", str(self.root / "junit.xml"), "--packages", str(self.packages), "--out", str(out))
+        self.record(out.read_text().split())
+        self.assertEqual(self.select(), ["a", "c"])
+        self.assertEqual(out.read_text(), "")
+
+    def test_partial_junit_only_caches_the_observed_passing_package(self):
+        self.set_packages(["a", "b", "c"])
+        self.plan()
+        (self.root / "junit.xml").write_text(
+            '<testsuites><testsuite name="a::bin/probe" tests="1" failures="0" errors="0">'
+            '<testcase name="completed"/></testsuite></testsuites>')
+        out = self.root / "passed.txt"
+        self.invoke("junit-passed", "--junit", str(self.root / "junit.xml"), "--packages", str(self.packages), "--out", str(out))
+        self.record(out.read_text().split())
+        self.assertEqual(self.select(), ["b", "c"])
+        self.assertEqual(out.read_text().split(), ["a"])
+
+    def test_incomplete_binary_blocks_package_despite_another_passing_binary(self):
+        self.set_packages(["a", "b"])
+        self.plan()
+        (self.root / "junit.xml").write_text(
+            '<testsuites><testsuite name="a" tests="1" failures="0" errors="0"><testcase name="passed"/></testsuite>'
+            '<testsuite name="a::bin/partial" tests="2" failures="0" errors="0"><testcase name="first"/></testsuite>'
+            '<testsuite name="b" tests="1" failures="0" errors="0"><testcase name="passed"/></testsuite></testsuites>')
+        out = self.root / "passed.txt"
+        self.invoke("junit-passed", "--junit", str(self.root / "junit.xml"), "--packages", str(self.packages), "--out", str(out))
+        self.record(out.read_text().split())
+        self.assertEqual(self.select(), ["a"])
+        self.assertEqual(out.read_text().split(), ["b"])
+
+    def test_explicit_zero_test_suite_is_observed_but_all_skipped_is_not_a_pass(self):
+        self.set_packages(["a", "b", "c"])
+        self.plan()
+        (self.root / "junit.xml").write_text(
+            '<testsuites><testsuite name="a" tests="0" failures="0" errors="0"/>'
+            '<testsuite name="b" tests="1" failures="0" errors="0" skipped="1"><testcase name="ignored"><skipped/></testcase></testsuite>'
+            '<testsuite name="c" tests="1" failures="0" errors="0"><testcase name="passed"/></testsuite></testsuites>')
+        out = self.root / "passed.txt"
+        self.invoke("junit-passed", "--junit", str(self.root / "junit.xml"), "--packages", str(self.packages), "--out", str(out))
+        self.record(out.read_text().split())
+        self.assertEqual(self.select(), ["b"])
+        self.assertEqual(out.read_text().split(), ["a", "c"])
+
+    def test_failure_in_any_binary_blocks_the_package(self):
+        self.set_packages(["a", "b"])
+        out = self.root / "passed.txt"
+        for tag in ("failure", "error", "flakyFailure", "rerunFailure"):
+            with self.subTest(tag=tag):
+                (self.root / "junit.xml").write_text(
+                    '<testsuites><testsuite name="a" tests="1"><testcase name="passed"/></testsuite>'
+                    '<testsuite name="b" tests="1"><testcase name="passed"/></testsuite>'
+                    f'<testsuite name="b::bin/probe" tests="1"><testcase name="failed"><{tag}/></testcase></testsuite></testsuites>')
+                self.invoke("junit-passed", "--junit", str(self.root / "junit.xml"), "--packages", str(self.packages), "--out", str(out))
+                self.assertEqual(out.read_text().split(), ["a"])
 
 
 class RepositoryGuards(unittest.TestCase):

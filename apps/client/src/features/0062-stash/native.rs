@@ -19,6 +19,9 @@ const NEXT: usize = 105;
 const REFRESH: usize = 106;
 const ITEM: usize = 108;
 const STOW: usize = 109;
+const SEARCH: usize = 111;
+const SORT: usize = 112;
+const MARKET: usize = 6190;
 #[derive(Default)]
 struct Actions(Vec<usize>);
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
@@ -39,17 +42,20 @@ fn wide(s: &str) -> Vec<u16> {
         .chain(Some(0))
         .collect()
 }
-pub(in crate::play) fn open_window(link: &PlayLink) {
+pub(in crate::play) fn open_window(
+    shared: &Arc<std::sync::Mutex<crate::play::mailbox::Mailbox>>,
+    commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
+) {
     {
-        let mut m = lock(&link.mailbox);
-        if m.stash.open {
+        let mut m = lock(shared);
+        if m.stash.open || m.depot_shutdown {
             return;
         }
         m.stash.open = true;
     }
-    let weak = Arc::downgrade(&link.mailbox);
+    let weak = Arc::downgrade(shared);
     let failed = weak.clone();
-    let commands = link.commands.clone();
+    let commands = commands.clone();
     if std::thread::Builder::new()
         .name("stash-panel".into())
         .spawn(move || run(weak, commands))
@@ -66,12 +72,12 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Stash — Ctrl+S").as_ptr(),
+            wide(tr!("Stash — Ctrl+S")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            620,
-            560,
+            940,
+            610,
             null_mut(),
             null_mut(),
             null_mut(),
@@ -81,6 +87,10 @@ fn run(
             close(&weak);
             return;
         }
+        let context = weak
+            .upgrade()
+            .map(|shared| lock(&shared).stash.clone())
+            .unwrap_or_default();
         let mut actions = Box::<Actions>::default();
         SetWindowLongPtrW(
             hwnd,
@@ -107,7 +117,7 @@ fn run(
         let withdraw = control(
             hwnd,
             "BUTTON",
-            "Withdraw",
+            tr!("Withdraw"),
             WITHDRAW,
             [110, 320, 120, 28],
             WS_TABSTOP,
@@ -115,7 +125,7 @@ fn run(
         let previous = control(
             hwnd,
             "BUTTON",
-            "Previous",
+            tr!("Previous"),
             PREVIOUS,
             [10, 358, 100, 28],
             WS_TABSTOP,
@@ -123,7 +133,7 @@ fn run(
         let next = control(
             hwnd,
             "BUTTON",
-            "Next",
+            tr!("Next"),
             NEXT,
             [120, 358, 100, 28],
             WS_TABSTOP,
@@ -131,37 +141,103 @@ fn run(
         let refresh = control(
             hwnd,
             "BUTTON",
-            "Refresh",
+            tr!("Refresh"),
             REFRESH,
             [230, 358, 100, 28],
             WS_TABSTOP,
         );
-        let item = control(
+        let search = control(
             hwnd,
             "EDIT",
+            &context.query,
+            113,
+            [340, 320, 170, 28],
+            ES_AUTOHSCROLL as u32 | WS_BORDER | WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            tr!("Search"),
+            SEARCH,
+            [520, 320, 70, 28],
+            WS_TABSTOP,
+        );
+        control(
+            hwnd,
+            "BUTTON",
+            tr!("Sort name / stock"),
+            SORT,
+            [340, 358, 250, 28],
+            WS_TABSTOP,
+        );
+        let category = control(
+            hwnd,
+            "EDIT",
+            &context.category,
+            114,
+            [100, 400, 170, 28],
+            ES_AUTOHSCROLL as u32 | WS_BORDER | WS_TABSTOP,
+        );
+        let trader = control(
+            hwnd,
+            "EDIT",
+            &context.trader,
+            115,
+            [370, 400, 220, 28],
+            ES_AUTOHSCROLL as u32 | WS_BORDER | WS_TABSTOP,
+        );
+        control(hwnd, "STATIC", "Category:", 116, [10, 402, 85, 24], 0);
+        control(hwnd, "STATIC", "Trader:", 117, [290, 402, 75, 24], 0);
+        let item = control(
+            hwnd,
+            "LISTBOX",
             "",
             ITEM,
-            [340, 320, 120, 28],
-            ES_NUMBER as u32 | WS_BORDER | WS_TABSTOP,
+            [610, 35, 300, 275],
+            LBS_NOTIFY as u32 | WS_BORDER | WS_VSCROLL | WS_TABSTOP,
         );
         let stow = control(
             hwnd,
             "BUTTON",
-            "Stow item handle",
+            tr!("Stow selected item"),
             STOW,
-            [470, 320, 120, 28],
+            [610, 320, 300, 28],
             WS_TABSTOP,
+        );
+        control(
+            hwnd, "BUTTON", tr!("Market"), MARKET,
+            [610, 358, 300, 28], WS_TABSTOP,
+        );
+        let carried_label = control(
+            hwnd,
+            "STATIC",
+            tr!("Carried items (open bags in Depot)"),
+            110,
+            [610, 10, 300, 20],
+            0,
         );
         let status = control(
             hwnd,
             "EDIT",
             "",
             107,
-            [10, 396, 580, 115],
+            [10, 442, 900, 115],
             ES_MULTILINE as u32 | ES_READONLY as u32 | WS_BORDER | WS_VSCROLL,
         );
         if [
-            list, amount, withdraw, previous, next, refresh, item, stow, status,
+            list,
+            amount,
+            withdraw,
+            previous,
+            next,
+            refresh,
+            item,
+            stow,
+            status,
+            carried_label,
+            search,
+            category,
+            trader,
         ]
         .iter()
         .any(|h| h.is_null())
@@ -184,27 +260,66 @@ fn run(
                 break;
             };
             let mut mailbox = lock(&shared);
+            if mailbox.depot_shutdown || !mailbox.stash.open {
+                break;
+            }
+            let mut market = false;
             for id in std::mem::take(&mut actions.0) {
                 let intent = match id {
+                    SEARCH if !mailbox.stash.pending => {
+                        let mut text = [0u16; 129];
+                        let n = GetWindowTextW(search, text.as_mut_ptr(), 129);
+                        let search = String::from_utf16_lossy(&text[..n.max(0) as usize]);
+                        let n = GetWindowTextW(category, text.as_mut_ptr(), 129);
+                        let category = String::from_utf16_lossy(&text[..n.max(0) as usize]);
+                        let n = GetWindowTextW(trader, text.as_mut_ptr(), 129);
+                        let trader = String::from_utf16_lossy(&text[..n.max(0) as usize]);
+                        PlayLink::stash_enqueue_filter(
+                            &mut mailbox,
+                            &commands,
+                            search,
+                            category,
+                            trader,
+                        );
+                        None
+                    }
+                    SORT if !mailbox.stash.pending => {
+                        PlayLink::stash_enqueue_sort(&mut mailbox, &commands);
+                        None
+                    }
+                    MARKET => {
+                        market = true;
+                        None
+                    }
                     PREVIOUS => Some(Intent::Previous),
                     NEXT => Some(Intent::Next),
                     REFRESH => Some(Intent::Refresh),
                     STOW => {
-                        let mut buffer = [0_u16; 21];
-                        let length = GetWindowTextW(item, buffer.as_mut_ptr(), 21);
-                        String::from_utf16_lossy(&buffer[..length as usize])
-                            .parse()
-                            .ok()
-                            .and_then(oteryn_client_runtime::stash::ItemHandle::new)
-                            .map(Intent::Stow)
+                        // Resolve only against the exact projection currently displayed.
+                        if held.as_ref() == Some(&mailbox.stash)
+                            && let Ok(row) = usize::try_from(SendMessageW(item, LB_GETCURSEL, 0, 0))
+                        {
+                            let displayed = mailbox.stash.carried.clone();
+                            PlayLink::stash_enqueue_selected(
+                                &mut mailbox,
+                                &commands,
+                                &displayed,
+                                row,
+                            );
+                        }
+                        None
                     }
                     WITHDRAW => {
+                        if held.as_ref() != Some(&mailbox.stash) {
+                            continue;
+                        }
                         let row = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0)).ok();
                         let mut b = [0u16; 11];
                         let n = GetWindowTextW(amount, b.as_mut_ptr(), 11);
                         let amount = String::from_utf16_lossy(&b[..n as usize]).parse().ok();
-                        row.zip(amount)
-                            .map(|(row, amount)| Intent::Withdraw { row, amount })
+                        row.zip(amount).and_then(|(row, amount)| {
+                            oteryn_client_ui::stash::visible_withdraw(&mailbox.stash, row, amount)
+                        })
                     }
                     _ => None,
                 };
@@ -216,12 +331,18 @@ fn run(
                         .is_err()
                 {
                     mailbox.stash.pending = false;
-                    mailbox.stash.feedback = Some("The session has ended".into());
+                    mailbox.stash.feedback = Some(tr!("The session has ended").into());
                 }
             }
             if held.as_ref() != Some(&mailbox.stash) {
+                SendMessageW(item, LB_RESETCONTENT, 0, 0);
+                for entry in &mailbox.stash.carried {
+                    let label = lfmt!("Item {} × {}", entry.item_definition_ref, entry.count);
+                    SendMessageW(item, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
+                }
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
-                for row in &mailbox.stash.rows {
+                for index in oteryn_client_ui::stash::visible_rows(&mailbox.stash) {
+                    let row = &mailbox.stash.rows[index];
                     SendMessageW(
                         list,
                         LB_ADDSTRING,
@@ -235,10 +356,15 @@ fn run(
                 EnableWindow(previous, i32::from(ready && mailbox.stash.page > 0));
                 EnableWindow(next, i32::from(ready && mailbox.stash.has_more));
                 EnableWindow(refresh, i32::from(ready));
-                EnableWindow(stow, i32::from(ready));
+                EnableWindow(stow, i32::from(ready && !mailbox.stash.carried.is_empty()));
                 held = Some(mailbox.stash.clone());
             }
             drop(mailbox);
+            if market {
+                DestroyWindow(hwnd);
+                crate::play::feature_0063_market::input::open_from_depot(&shared, &commands);
+                return;
+            }
             std::thread::sleep(Duration::from_millis(30));
         }
         if IsWindow(hwnd) != 0 {

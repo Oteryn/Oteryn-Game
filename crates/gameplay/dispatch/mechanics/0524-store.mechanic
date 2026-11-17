@@ -1,5 +1,5 @@
 name=store
-commands=183,185
+commands=183,184,185,501,6118
 transport=store
 composed=store
 authority=store

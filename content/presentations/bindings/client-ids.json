@@ -1056,6 +1056,13 @@
       "source_member": "CONST_ANI_BURSTARROW"
     },
     {
+      "client_id": 42,
+      "key": "canary.appearance:missile/cake",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_CAKE"
+    },
+    {
       "client_id": 62,
       "key": "canary.appearance:missile/cherrybomb",
       "kind": "missile",

@@ -1,0 +1,35 @@
+crates/gameplay/quests/src/quest/rotten_blood.rs:38:        storage: vec![Storage { track: ACCESS_TRACK.into(), minimum: 0, maximum: 3, set: 1, preserve: false, read_only: false }],
+crates/gameplay/quests/src/quest/world_callbacks.rs:57:pub struct Storage {
+crates/gameplay/quests/src/quest/npc_rules/validate.rs:110:                    NpcRuleGuard::Storage {
+crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:81:            NpcRuleGuard::Storage {
+crates/gameplay/quests/src/quest/npc_rules/evaluate.rs:322:                        NpcRuleGuard::Storage { .. } | NpcRuleGuard::StorageTime { .. }
+crates/gameplay/quests/src/quest/grizzly_adams.rs:222:pub struct GrizzlyStorage {
+crates/gameplay/quests/src/quest/npc_rules.rs:110:    Storage {
+crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs:266:            .map(|(track, value)| NpcRuleGuard::Storage {
+crates/gameplay/content/src/content/world_reward_claims.rs:293:        return Ok(Err(LeftOut::OwnerExcluded));
+crates/gameplay/content/src/content/world_reward_claims.rs:300:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:303:        return Ok(Err(LeftOut::Variant));
+crates/gameplay/content/src/content/world_reward_claims.rs:309:        return Ok(Err(LeftOut::NotReady));
+crates/gameplay/content/src/content/world_reward_claims.rs:341:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:362:        return Ok(Err(LeftOut::UnencodedField));
+crates/gameplay/content/src/content/world_reward_claims.rs:371:        return Ok(Err(LeftOut::ItemNotAdmitted));
+crates/gameplay/content/src/content/world_reward_claims.rs:1208:            Ok(Err(LeftOut::ItemNotAdmitted))
+crates/gameplay/durability/src/durability/core_modules.rs:1454:fn scope_storage_v2(record: &ReconnectDurabilityRecordV1) -> V2ScopeStorage {
+crates/gameplay/durability/src/durability/quest_state/npc_program.rs:82:                if let oteryn_gameplay_quests::quest::npc_rules::NpcRuleGuard::Storage {
+crates/gameplay/durability/src/durability/admission_journal.rs:1764:fn scope_storage(record: &ReconnectDurabilityRecordV1) -> ScopeStorage {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/underwater_drowning.rs:433:                    vec![Storage {
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:493:            ("oteryn:reward-claim.kv.variant", LeftOut::Variant),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:494:            ("oteryn:reward-claim.kv.waiting", LeftOut::NotReady),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:495:            ("oteryn:reward-claim.kv.hours", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:496:            ("oteryn:reward-claim.kv.container", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:497:            ("oteryn:reward-claim.kv.two", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:498:            ("oteryn:reward-claim.kv.grant", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:580:                LeftOut::UnencodedField
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:582:            ("oteryn:reward-claim.kv.zero", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:583:            ("oteryn:reward-claim.kv.wide", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:584:            ("oteryn:reward-claim.kv.container", LeftOut::Variant),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:585:            ("oteryn:reward-claim.kv.stack", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:586:            ("oteryn:reward-claim.kv.plain_key", LeftOut::UnencodedField),
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:607:            LeftOut::ItemNotAdmitted
+apps/game-server/tests/integration_rest/world_reward_claims_binding.rs:674:            .filter(|(_, why)| *why == LeftOut::NotReady)
+tools/content-schema/encounter-authoring/canary_encounters.py:259:                    f'Every player in creature:getDamageMap() is credited (D27): the quest domain raises Storage {questline} by 1 '

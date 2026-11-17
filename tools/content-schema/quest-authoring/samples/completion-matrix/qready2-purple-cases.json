@@ -1,0 +1,20 @@
+{
+  "test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready2_purple_claims.rs",
+  "cases": [
+    {
+      "wiki_title": "Purple Tome Quest",
+      "claim_key": "oteryn:reward-claim.kv.purpletome1",
+      "test": "qready2_purple_tome_quest_1"
+    },
+    {
+      "wiki_title": "Purple Tome Quest",
+      "claim_key": "oteryn:reward-claim.kv.purpletome2",
+      "test": "qready2_purple_tome_quest_2"
+    },
+    {
+      "wiki_title": "Purple Tome Quest",
+      "claim_key": "oteryn:reward-claim.kv.purpletome3",
+      "test": "qready2_purple_tome_quest_3"
+    }
+  ]
+}

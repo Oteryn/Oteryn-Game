@@ -39,3 +39,9 @@ Every item below is a class that Codex has actually flagged on Oteryn PRs (P1/P2
 ## Hygiene
 26. **clippy `-D warnings` on all targets, and fmt.** No `explicit_counter_loop` or similar left in test code.
 27. **Protocol codes.** No removed or renumbered codes (E8002). New codes are registered in the protocol registry and docs.
+
+## Runtime / liveness
+28. **Foreground vs background holders.** A request path never waits on a lock or slot that a background task (save, flush, sweep) can hold for long. Check lock order and that no guard is held across `.await` or I/O. (#3128)
+29. **No silent end of a stream.** Every EOF or disconnect after a session is accepted (join, join_snapshot, dispatch) logs or returns its cause. A test asserts the cause, not just the close. (#3112)
+30. **Overflow refuses, it does not wrap.** Additions to durable value (gold, bounty, counters) use checked arithmetic up to `i64::MAX` and refuse with a named outcome. Add a test at the bound. (#3115 ClaimBounty)
+31. **Watchdogs bound the hang.** A watchdog or deadline covers the whole wait it guards (including retries and the shutdown path) and fails with a message naming the stage, instead of letting the job hang until the CI timeout.

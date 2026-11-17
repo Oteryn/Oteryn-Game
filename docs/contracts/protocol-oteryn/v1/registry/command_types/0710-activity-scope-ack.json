@@ -1,0 +1,10 @@
+{
+  "id": 710,
+  "name": "ACTIVITY_SCOPE_ACK",
+  "owner_decision": "SOULPIT W07 owner task 2026-11-07; next free command670 plus lane offset40",
+  "capability": 117,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/activity-scope-v1.md#acknowledgement",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/activity-scope-v1.md#acknowledgement-result",
+  "max_payload_bytes": 32,
+  "max_result_payload_bytes": 0
+}

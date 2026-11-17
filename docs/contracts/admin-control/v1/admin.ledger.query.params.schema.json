@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LedgerQuery",
+  "type": "object",
+  "properties": {
+    "admin_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "character_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "from": {
+      "type": "string"
+    },
+    "limit": {
+      "type": "integer",
+      "format": "uint16",
+      "maximum": 100,
+      "minimum": 1
+    },
+    "operation": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "to": {
+      "type": "string"
+    },
+    "world_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "limit",
+    "from",
+    "to"
+  ]
+}

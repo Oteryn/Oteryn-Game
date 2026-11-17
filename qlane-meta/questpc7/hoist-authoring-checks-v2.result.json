@@ -1,0 +1,11 @@
+{
+  "command": [
+    "python3",
+    "tools/content-schema/quest-authoring/run_checks.py",
+    "--part",
+    "checks"
+  ],
+  "exit_code": 1,
+  "seconds": 99.629,
+  "log": ".questpc7/hoist-authoring-checks-v2.log"
+}

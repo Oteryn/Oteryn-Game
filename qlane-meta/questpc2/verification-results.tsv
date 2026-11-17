@@ -1,0 +1,12 @@
+qualified-fmt	PASS
+qualified-fixture-fmt	PASS
+qualified-pin-refresh	PASS
+qualified-clippy	PASS
+qualified-questpc2	PASS
+qualified-world-unit	PASS
+qualified-content-unit	PASS
+qualified-server-content	PASS
+qualified-server-world	PASS
+qualified-pin-check	PASS
+qualified-fmt-check	PASS
+qualified-diff-check	PASS

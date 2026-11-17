@@ -58,6 +58,9 @@ pub struct SoulpitActivityBinding {
 
 /// Current native map and AI observations from the shared runtime, not client coordinates.
 pub trait ActivityHandoffScene {
+    fn emit_spawn_effect(&self, _: MovementLocalPosition, _: u16) -> bool {
+        false
+    }
     fn permits_spawn(&self, at: MovementLocalPosition) -> bool;
     fn attack_target(&self, source: ExactActorRef) -> Option<ExactActorRef>;
     fn permits_condition(
@@ -92,8 +95,11 @@ pub struct SoulpitKernel<'a> {
 /// and WeaponProficiencyDispatch. No method here grants authority from a handoff UUID.
 pub trait ActivityHandoffOwnerRuntime: Send {
     fn binding(&self) -> SoulpitActivityBinding;
-    fn kernel(&mut self) -> Result<SoulpitKernel<'_>, SoulpitRuntimeError>;
-    fn survivors(&self) -> Vec<CurrentCharacterGameplayFence>;
+    fn with_kernel<T>(
+        &mut self,
+        operation: impl FnOnce(SoulpitKernel<'_>) -> Result<T, SoulpitRuntimeError>,
+    ) -> Result<T, SoulpitRuntimeError>;
+    fn survivors(&self) -> Result<Vec<CurrentCharacterGameplayFence>, SoulpitRuntimeError>;
     fn read_encounter(&mut self) -> ActivityFuture<'_, SoulpitStoredEncounter>;
     /// Calls DurabilityRoot::advance_soulpit with current reconciled authority/node and
     /// all survivor revision slots held. The writer independently proves the Instance.
@@ -113,7 +119,10 @@ pub trait ActivityHandoffOwnerRuntime: Send {
     fn settle_boss_rewards(&mut self, reward: SoulpitBossReward) -> ActivityFuture<'_, ()>;
     /// Calls the shared return/recovery owner for every remaining participant. Completion
     /// has already credited Animus in the lifecycle transaction; timeout/abort never does.
-    fn return_participants(&mut self, phase: EncounterPhase) -> ActivityFuture<'_, ()>;
+    fn return_participants(
+        &mut self,
+        phase: EncounterPhase,
+    ) -> impl Future<Output = Result<(), SoulpitRuntimeError>>;
 }
 
 #[derive(Debug, Clone)]
@@ -180,7 +189,83 @@ fn draw(
     ))
 }
 
-fn request(
+fn retain_wave_plan(
+    kernel: &mut SoulpitKernel<'_>,
+    binding: SoulpitActivityBinding,
+    stored: &SoulpitStoredEncounter,
+) -> Result<SoulpitWaveRequest, SoulpitRuntimeError> {
+    let wave = stored.encounter.snapshot().wave;
+    if let Some(plan) =
+        kernel
+            .carrier
+            .soulpit_wave_plan(kernel.continuity, binding.handoff_id, wave)?
+    {
+        return Ok(plan);
+    }
+    let stacks = wave_stacks(wave).map_err(|_| SoulpitRuntimeError::InvalidState)?;
+    let floor = kernel.content.entry_start().floor;
+    // Crystal zones.lua12–35 filters real ground first. Occupancy is deliberately
+    // excluded: Game.createSoulPitMonster may fail later without redrawing.
+    let mut eligible = Vec::new();
+    for y in 31132..=31153 {
+        for x in 32362..=32390 {
+            let at = MovementLocalPosition { x, y, floor };
+            if kernel.scene.permits_spawn(at) {
+                eligible.push(at);
+            }
+        }
+    }
+    let root = kernel.content.server_artifact_digest();
+    let id = occurrence(binding, b"wave", u64::from(wave));
+    let mut positions = [None; MONSTERS_PER_WAVE];
+    for (ordinal, stack) in stacks.into_iter().enumerate() {
+        positions[ordinal] = if stack == SoulpitStack::Boss {
+            Some(MovementLocalPosition {
+                x: 32376,
+                y: 31144,
+                floor,
+            })
+        } else if eligible.len() == 638 {
+            // Preserve existing deterministic decisions when the full rectangle
+            // is source-qualified; this is the same uniform distribution.
+            Some(MovementLocalPosition {
+                x: draw(root, id, "soulpit_x", ordinal as u64, 32362, 32390)? as i32,
+                y: draw(root, id, "soulpit_y", ordinal as u64, 31132, 31153)? as i32,
+                floor,
+            })
+        } else if eligible.is_empty() {
+            None
+        } else {
+            let max =
+                i64::try_from(eligible.len() - 1).map_err(|_| SoulpitRuntimeError::InvalidState)?;
+            let at = draw(root, id, "soulpit_position", ordinal as u64, 0, max)?;
+            Some(
+                *eligible
+                    .get(usize::try_from(at).map_err(|_| SoulpitRuntimeError::InvalidState)?)
+                    .ok_or(SoulpitRuntimeError::InvalidState)?,
+            )
+        };
+    }
+    let boss_ability =
+        BossAbility::from_roll(draw(root, id, "soulpit_boss_ability", 6, 1, 3)? as u8)
+            .map_err(|_| SoulpitRuntimeError::InvalidState)?;
+    kernel
+        .carrier
+        .retain_soulpit_wave_plan(
+            kernel.continuity,
+            SoulpitWaveRequest {
+                handoff_id: binding.handoff_id,
+                wave,
+                species: stored.species.clone(),
+                positions,
+                boss_ability,
+                now_micros: 0,
+            },
+        )
+        .map_err(Into::into)
+}
+
+pub(super) fn request(
     binding: SoulpitActivityBinding,
     stored: &SoulpitStoredEncounter,
     now: u64,
@@ -213,8 +298,7 @@ async fn settle_lethal_bosses(
     owner: &mut impl ActivityHandoffOwnerRuntime,
     binding: SoulpitActivityBinding,
 ) -> Result<(), SoulpitRuntimeError> {
-    let rewards = {
-        let kernel = owner.kernel()?;
+    let rewards = owner.with_kernel(|kernel| {
         let mut rewards = Vec::new();
         for actor in kernel
             .carrier
@@ -240,8 +324,8 @@ async fn settle_lethal_bosses(
                 death,
             });
         }
-        rewards
-    };
+        Ok(rewards)
+    })?;
     for reward in rewards {
         owner.settle_boss_rewards(reward).await?;
     }
@@ -275,14 +359,14 @@ async fn drive(
     {
         return Err(SoulpitRuntimeError::InvalidScope);
     }
-    {
-        let kernel = owner.kernel()?;
+    owner.with_kernel(|kernel| {
         if kernel.carrier.encounter_scope() != (binding.scope, binding.generation)
             || kernel.native.policies().source_digest() != kernel.content.server_artifact_digest()
         {
             return Err(SoulpitRuntimeError::InvalidScope);
         }
-    }
+        Ok(())
+    })?;
     let mut stored = owner.read_encounter().await?;
     settle_lethal_bosses(owner, binding).await?;
     let mut effect = EncounterEffect::NoChange;
@@ -291,13 +375,14 @@ async fn drive(
         // the durable wave is still Preparing. Keep their deaths and summons intact until
         // the same spawn receipt is acknowledged; reconciliation requires Fighting.
         let mut actors = if stored.encounter.snapshot().phase == EncounterPhase::Fighting {
-            let kernel = owner.kernel()?;
-            kernel
-                .carrier
-                .cascade_soulpit_summon_deaths(kernel.continuity, binding.handoff_id)?;
-            kernel
-                .carrier
-                .soulpit_actors(kernel.continuity, binding.handoff_id)?
+            owner.with_kernel(|kernel| {
+                kernel
+                    .carrier
+                    .cascade_soulpit_summon_deaths(kernel.continuity, binding.handoff_id)?;
+                Ok(kernel
+                    .carrier
+                    .soulpit_actors(kernel.continuity, binding.handoff_id)?)
+            })?
         } else {
             Vec::new()
         };
@@ -317,7 +402,7 @@ async fn drive(
                     monster_id: actor.tag.monster_id,
                     stack: actor.tag.stack.get(),
                 };
-                let step = request(binding, &stored, now_micros, action, owner.survivors())?;
+                let step = request(binding, &stored, now_micros, action, owner.survivors()?)?;
                 let outcome = owner.commit_progress(step).await?;
                 update(&mut stored, &outcome);
                 effect = outcome.effect;
@@ -333,24 +418,26 @@ async fn drive(
             if actor.tag.wave < stored.encounter.snapshot().wave
                 || stored.encounter.monster(actor.tag.monster_id).is_none()
             {
-                let kernel = owner.kernel()?;
-                kernel
-                    .carrier
-                    .retire_soulpit_defeated(kernel.continuity, actor.actor)?;
+                owner.with_kernel(|kernel| {
+                    Ok(kernel
+                        .carrier
+                        .retire_soulpit_defeated(kernel.continuity, actor.actor)?)
+                })?;
                 continue;
             }
             let action = SoulpitAction::Defeated {
                 wave: actor.tag.wave,
                 monster_id: actor.tag.monster_id,
             };
-            let step = request(binding, &stored, now_micros, action, owner.survivors())?;
+            let step = request(binding, &stored, now_micros, action, owner.survivors()?)?;
             let outcome = owner.commit_progress(step).await?;
             update(&mut stored, &outcome);
             effect = outcome.effect;
-            let kernel = owner.kernel()?;
-            kernel
-                .carrier
-                .retire_soulpit_defeated(kernel.continuity, actor.actor)?;
+            owner.with_kernel(|kernel| {
+                Ok(kernel
+                    .carrier
+                    .retire_soulpit_defeated(kernel.continuity, actor.actor)?)
+            })?;
         }
         if !stored.encounter.snapshot().phase.is_terminal()
             && matches!(effect, EncounterEffect::NoChange)
@@ -360,7 +447,7 @@ async fn drive(
                 &stored,
                 now_micros,
                 SoulpitAction::Advance,
-                owner.survivors(),
+                owner.survivors()?,
             )?;
             let outcome = owner.commit_progress(step).await?;
             update(&mut stored, &outcome);
@@ -379,126 +466,103 @@ async fn drive(
                 &stored,
                 now_micros,
                 SoulpitAction::Advance,
-                owner.survivors(),
+                owner.survivors()?,
             )?;
             let outcome = owner.commit_progress(step).await?;
             update(&mut stored, &outcome);
             effect = outcome.effect;
         }
     }
+    if stored.encounter.snapshot().phase == EncounterPhase::Preparing
+        || matches!(effect, EncounterEffect::SpawnWave { .. })
+    {
+        owner.with_kernel(|mut kernel| {
+            let plan = retain_wave_plan(&mut kernel, binding, &stored)?;
+            emit_prepared_cues(&mut kernel, binding, &stored, &plan, now_micros)
+        })?;
+    }
     if let EncounterEffect::SpawnWave { wave, stacks } = effect {
         if stacks != wave_stacks(wave).map_err(|_| SoulpitRuntimeError::InvalidState)? {
             return Err(SoulpitRuntimeError::InvalidState);
         }
-        let actors = {
-            let kernel = owner.kernel()?;
-            let root = kernel.content.server_artifact_digest();
-            let id = occurrence(binding, b"wave", u64::from(wave));
-            let mut positions = [MovementLocalPosition {
-                x: 0,
-                y: 0,
-                floor: 8,
-            }; MONSTERS_PER_WAVE];
-            for (ordinal, stack) in stacks.into_iter().enumerate() {
-                positions[ordinal] = if stack == SoulpitStack::Boss {
-                    MovementLocalPosition {
-                        x: 32376,
-                        y: 31144,
-                        floor: 8,
-                    }
-                } else {
-                    MovementLocalPosition {
-                        x: draw(root, id, "soulpit_x", ordinal as u64, 32362, 32390)? as i32,
-                        y: draw(root, id, "soulpit_y", ordinal as u64, 31132, 31153)? as i32,
-                        floor: 8,
-                    }
-                };
-            }
-            let boss_ability =
-                BossAbility::from_roll(draw(root, id, "soulpit_boss_ability", 6, 1, 3)? as u8)
-                    .map_err(|_| SoulpitRuntimeError::InvalidState)?;
-            kernel.carrier.spawn_soulpit_wave(
+        let actors = owner.with_kernel(|mut kernel| {
+            let mut plan = retain_wave_plan(&mut kernel, binding, &stored)?;
+            plan.now_micros = now_micros;
+            Ok(kernel.carrier.spawn_soulpit_wave(
                 kernel.continuity,
                 kernel.content,
                 kernel.native.policies(),
-                SoulpitWaveRequest {
-                    handoff_id: binding.handoff_id,
-                    wave,
-                    species: stored.species.clone(),
-                    positions,
-                    boss_ability,
-                    now_micros,
-                },
-                |position| kernel.scene.permits_spawn(position),
-            )?
-        };
+                plan,
+                |at| kernel.scene.permits_spawn(at),
+            )?)
+        })?;
         owner.register_creatures(&actors.iter().flatten().copied().collect::<Vec<_>>())?;
         let action = SoulpitAction::Spawned {
             wave,
             monster_ids: actors.map(|actor| actor.map(|actor| actor.monster_id)),
         };
-        let step = request(binding, &stored, now_micros, action, owner.survivors())?;
+        let step = request(binding, &stored, now_micros, action, owner.survivors()?)?;
         let outcome = owner.commit_progress(step).await?;
         update(&mut stored, &outcome);
     }
     let phase = stored.encounter.snapshot().phase;
     if phase.is_terminal() {
-        {
-            let kernel = owner.kernel()?;
-            kernel
+        owner.with_kernel(|kernel| {
+            Ok(kernel
                 .carrier
-                .retire_soulpit(kernel.continuity, binding.handoff_id)?;
-        }
+                .retire_soulpit(kernel.continuity, binding.handoff_id)?)
+        })?;
         owner.return_participants(phase).await?;
         return Ok(None);
     }
     // Oppressor's own two-second cadence is in its actual actor tag. The source AI selects
     // its target; the shared map supplies current wall, life and combat legality.
-    let kernel = owner.kernel()?;
-    for actor in kernel
-        .carrier
-        .soulpit_actors(kernel.continuity, binding.handoff_id)?
-    {
-        let Some(boss) = actor
-            .tag
-            .boss
-            .filter(|boss| boss.ability == BossAbility::Oppressor)
-        else {
-            continue;
-        };
-        if actor.health <= 0 || now_micros < boss.next_oppressor_at_micros {
-            continue;
+    owner.with_kernel(|kernel| {
+        for actor in kernel
+            .carrier
+            .soulpit_actors(kernel.continuity, binding.handoff_id)?
+        {
+            let Some(boss) = actor
+                .tag
+                .boss
+                .filter(|boss| boss.ability == BossAbility::Oppressor)
+            else {
+                continue;
+            };
+            if actor.health <= 0 || now_micros < boss.next_oppressor_at_micros {
+                continue;
+            }
+            let root = kernel.content.server_artifact_digest();
+            let id = occurrence(binding, b"oppressor", boss.ordinal);
+            let mut draws = [0; 3];
+            for (ordinal, value) in draws.iter_mut().enumerate() {
+                *value = draw(root, id, "soulpit_oppressor", ordinal as u64, 1, 100)? as u8;
+            }
+            let cast = SoulpitOppressorCast {
+                source: actor.actor,
+                current_target: kernel.scene.attack_target(actor.actor),
+                now_micros,
+                draws,
+                decision_root: root,
+            };
+            kernel.carrier.drive_soulpit_oppressor(
+                kernel.continuity,
+                cast,
+                |target, _, from, to| {
+                    kernel
+                        .scene
+                        .permits_condition(actor.actor, target, from, to)
+                },
+                |target, session| {
+                    kernel
+                        .scene
+                        .player_attribute_damage_delta(target, session, now_micros)
+                        .ok_or(CarrierError::InvalidCommitBinding)
+                },
+            )?;
         }
-        let root = kernel.content.server_artifact_digest();
-        let id = occurrence(binding, b"oppressor", boss.ordinal);
-        let mut draws = [0; 3];
-        for (ordinal, value) in draws.iter_mut().enumerate() {
-            *value = draw(root, id, "soulpit_oppressor", ordinal as u64, 1, 100)? as u8;
-        }
-        let cast = SoulpitOppressorCast {
-            source: actor.actor,
-            current_target: kernel.scene.attack_target(actor.actor),
-            now_micros,
-            draws,
-            decision_root: root,
-        };
-        kernel.carrier.drive_soulpit_oppressor(
-            kernel.continuity,
-            cast,
-            |target, _, from, to| {
-                kernel
-                    .scene
-                    .permits_condition(actor.actor, target, from, to)
-            },
-            |target, session| {
-                kernel
-                    .scene
-                    .player_attribute_damage_delta(target, session, now_micros)
-                    .ok_or(CarrierError::InvalidCommitBinding)
-            },
-        )?;
-    }
-    next_soulpit_deadline(binding, &stored, &kernel)
+        next_soulpit_deadline(binding, &stored, &kernel)
+    })
 }
 
 /// A restart never recreates the source's process-local timers or monsters. The shared
@@ -512,23 +576,22 @@ pub async fn interrupt_soulpit_activity(
     {
         return Err(SoulpitRuntimeError::InvalidScope);
     }
-    {
-        let kernel = owner.kernel()?;
+    owner.with_kernel(|kernel| {
         if kernel.carrier.encounter_scope() != (binding.scope, binding.generation)
             || kernel.native.policies().source_digest() != kernel.content.server_artifact_digest()
         {
             return Err(SoulpitRuntimeError::InvalidScope);
         }
-    }
+        Ok(())
+    })?;
     let stored = owner.read_encounter().await?;
     settle_lethal_bosses(owner, binding).await?;
     if stored.encounter.snapshot().phase.is_terminal() {
-        {
-            let kernel = owner.kernel()?;
-            kernel
+        owner.with_kernel(|kernel| {
+            Ok(kernel
                 .carrier
-                .retire_soulpit(kernel.continuity, binding.handoff_id)?;
-        }
+                .retire_soulpit(kernel.continuity, binding.handoff_id)?)
+        })?;
         return owner
             .return_participants(stored.encounter.snapshot().phase)
             .await;
@@ -538,15 +601,14 @@ pub async fn interrupt_soulpit_activity(
         &stored,
         now_micros,
         SoulpitAction::Interrupt,
-        owner.survivors(),
+        owner.survivors()?,
     )?;
     let outcome = owner.commit_progress(step).await?;
-    {
-        let kernel = owner.kernel()?;
-        kernel
+    owner.with_kernel(|kernel| {
+        Ok(kernel
             .carrier
-            .retire_soulpit(kernel.continuity, binding.handoff_id)?;
-    }
+            .retire_soulpit(kernel.continuity, binding.handoff_id)?)
+    })?;
     owner
         .return_participants(outcome.encounter.snapshot().phase)
         .await
@@ -554,6 +616,51 @@ pub async fn interrupt_soulpit_activity(
 
 /// Precise source addEvent deadlines, independently of the source one-second global tick.
 /// The shared owner returns their minimum to its existing world cadence after every pass.
+fn emit_prepared_cues(
+    kernel: &mut SoulpitKernel<'_>,
+    binding: SoulpitActivityBinding,
+    stored: &SoulpitStoredEncounter,
+    plan: &SoulpitWaveRequest,
+    now: u64,
+) -> Result<(), SoulpitRuntimeError> {
+    while let Some(cue) =
+        kernel
+            .carrier
+            .next_soulpit_wave_cue(kernel.continuity, binding.handoff_id, plan.wave)?
+    {
+        let deadline = stored
+            .encounter
+            .snapshot()
+            .wave_started_at_micros
+            .checked_add((u64::from(cue) / 7 + 1) * 1_000_000)
+            .ok_or(SoulpitRuntimeError::InvalidState)?;
+        if now < deadline {
+            break;
+        }
+        let slot = usize::from(cue % 7);
+        if let Some(at) = plan.positions[slot] {
+            let stacks = wave_stacks(plan.wave).map_err(|_| SoulpitRuntimeError::InvalidState)?;
+            let effect = match stacks[slot].get() {
+                1 => 11,
+                5 => 224,
+                15 => 223,
+                40 => 222,
+                _ => return Err(SoulpitRuntimeError::InvalidState),
+            };
+            if !kernel.scene.emit_spawn_effect(at, effect) {
+                return Err(SoulpitRuntimeError::AdapterUnavailable);
+            }
+        }
+        kernel.carrier.acknowledge_soulpit_wave_cue(
+            kernel.continuity,
+            binding.handoff_id,
+            plan.wave,
+            cue,
+        )?;
+    }
+    Ok(())
+}
+
 pub fn next_soulpit_deadline(
     binding: SoulpitActivityBinding,
     stored: &SoulpitStoredEncounter,
@@ -572,6 +679,18 @@ pub fn next_soulpit_deadline(
         .ok_or(SoulpitRuntimeError::InvalidState)?;
     let mut due = timeout;
     if snapshot.phase == EncounterPhase::Preparing {
+        if let Some(cue) = kernel.carrier.next_soulpit_wave_cue(
+            kernel.continuity,
+            binding.handoff_id,
+            snapshot.wave,
+        )? {
+            due = due.min(
+                snapshot
+                    .wave_started_at_micros
+                    .checked_add((u64::from(cue) / 7 + 1) * 1_000_000)
+                    .ok_or(SoulpitRuntimeError::InvalidState)?,
+            );
+        }
         due = due.min(
             snapshot
                 .wave_started_at_micros

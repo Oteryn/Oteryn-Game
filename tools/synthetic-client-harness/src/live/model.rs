@@ -249,7 +249,7 @@ pub fn render_chat_line(line: &ChatLine) -> String {
             ..
         } => {
             let verb = match mode {
-                ChatSpeechMode::Say => "says",
+                ChatSpeechMode::Say | ChatSpeechMode::MonsterSay => "says",
                 ChatSpeechMode::Whisper => "whispers",
                 ChatSpeechMode::Yell => "yells",
             };

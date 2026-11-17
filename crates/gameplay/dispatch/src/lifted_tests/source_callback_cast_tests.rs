@@ -16,7 +16,7 @@ use crate::gameplay_transport::actor_spell::{
 use crate::source_callback_cast::*;
 use oteryn_gameplay_foundation::foundation::profile_schedule::ScheduleList;
 
-fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
+pub(crate) fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
     let v: serde_json::Value = serde_json::from_str(include_str!(
         "../../../../../apps/game-server/src/source_callback_native_fixture.json"
     ))
@@ -45,12 +45,16 @@ fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
         },
     }
 }
-fn fence(r: &ChannelRuntimeV1) -> (ScopeRuntimeFence, RuntimeWorkStamp) {
+pub(crate) fn fence(r: &ChannelRuntimeV1) -> (ScopeRuntimeFence, RuntimeWorkStamp) {
     let b = r.binding();
     crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
         .expect("qualified fixture")
 }
-fn proposal(a: ExactActorRef, s: &SourceCallbackCast, sequence: u64) -> ProfileAbilityProposal {
+pub(crate) fn proposal(
+    a: ExactActorRef,
+    s: &SourceCallbackCast,
+    sequence: u64,
+) -> ProfileAbilityProposal {
     let atom = format!("actor:{}", hex(&a.placement_identity()));
     ProfileAbilityProposal {
         issuer: a,
@@ -480,4 +484,980 @@ fn every_source_callback_missing_facts_provenance_scope_dead_parent_refuses() {
             Err(AttackError::StaleIssuer)
         ));
     }
+}
+
+// Canary47dfd51f foam_splash.lua:39-51 retains the original `var` in all
+// three addEvent closures. Crystal201189f spells.cpp:1293-1328 constructs a
+// VARIANT_POSITION for this needTarget=false spell; combat_functions.cpp:198-215
+// executes that saved position rather than the caster's later position.
+#[test]
+fn srx3_foam_splash_delayed_first_ring_keeps_original_cast_position() {
+    let (mut r, player, session) = runtime_with_player(0x7a);
+    r.initialize_movement_test_position(
+        player,
+        MovementLocalPosition {
+            x: 100,
+            y: 99,
+            floor: 7,
+        },
+    )
+    .expect("player position");
+    let actor = r
+        .admit_monster_lab_creature(
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            "oteryn:creature.foam_stalker",
+            300000,
+        )
+        .expect("source creature");
+    let draft = draft(&r);
+    let creature = Ref {
+        family: ProjectV2Family::Creature,
+        key: "oteryn:creature.foam_stalker".into(),
+        revision: "definition-r1".into(),
+    };
+    let source = SourceCallbackCast::qualify(
+        &draft,
+        &creature,
+        4,
+        r.content_pin().server_artifact_digest(),
+    )
+    .expect("source proof")
+    .expect("source callback");
+    let mut states = ChannelSpellStates::default();
+    states
+        .initialize(
+            &r,
+            player,
+            session,
+            crate::spell::cast::CharacterCastFacts {
+                max_health: 100000,
+                ..FACTS
+            },
+            (0, 0),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+        )
+        .expect("player vitals");
+    let before =
+        crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, player, session);
+    let (mut fence, stamp) = fence(&r);
+    let mut owner = CallbackCastOwner::new(&r, &fence).expect("callback owner");
+    let mut proposal = proposal(actor, &source, 0);
+    proposal.target = player;
+    proposal.intent = crate::ability::AiAbilityAdapter::normalize(
+        &format!("actor:{}", hex(&actor.placement_identity())),
+        &[&format!("actor:{}", hex(&player.placement_identity()))],
+    )
+    .expect("original intent");
+    owner
+        .schedule(
+            &r,
+            &fence,
+            stamp,
+            &source,
+            &proposal,
+            SemanticTimeMicros::from_micros(0),
+        )
+        .expect("source schedule");
+    let snapshot = r
+        .read_actor_position(actor)
+        .expect("current source position");
+    r.borrow_movement_position()
+        .commit_creature_relocation(
+            actor,
+            snapshot,
+            MovementLocalPosition {
+                x: 105,
+                y: 100,
+                floor: 7,
+            },
+        )
+        .expect("actual position commit");
+    let mut reader = Reader {
+        player,
+        session,
+        facts: true,
+        pz: false,
+    };
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(1_000_000));
+    let results = owner
+        .drain(
+            &mut r,
+            &mut fence,
+            stamp,
+            &mut states,
+            &DamageSpellOwner::default(),
+            &mut reader,
+            &clock,
+        )
+        .expect("first source pulse");
+    assert_eq!(results.len(), 1);
+    assert!(results[0].3.is_ok());
+    assert_ne!(
+        crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, player, session),
+        before,
+        "first ring must hit original cast neighbor after caster movement"
+    );
+}
+
+// Canary47dfd51f plagirath_bog.lua:33-40,57-58 retains targetID VARIANT_NUMBER.
+#[test]
+fn srx3_plagirath_bog_delayed_damage_tracks_original_target_position() {
+    let (mut r, player, session) = runtime_with_player(0x7a);
+    r.initialize_movement_test_position(
+        player,
+        MovementLocalPosition {
+            x: 100,
+            y: 99,
+            floor: 7,
+        },
+    )
+    .expect("player position");
+    let actor = r
+        .admit_monster_lab_creature(
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            "oteryn:creature.plagirath",
+            300000,
+        )
+        .expect("source creature");
+    let draft = draft(&r);
+    let creature = Ref {
+        family: ProjectV2Family::Creature,
+        key: "oteryn:creature.plagirath".into(),
+        revision: "definition-r1".into(),
+    };
+    let source = SourceCallbackCast::qualify(
+        &draft,
+        &creature,
+        6,
+        r.content_pin().server_artifact_digest(),
+    )
+    .expect("source proof")
+    .expect("source callback");
+    let mut states = ChannelSpellStates::default();
+    states
+        .initialize(
+            &r,
+            player,
+            session,
+            crate::spell::cast::CharacterCastFacts {
+                max_health: 100000,
+                ..FACTS
+            },
+            (0, 0),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+        )
+        .expect("player vitals");
+    let before =
+        crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, player, session);
+    let (mut fence, stamp) = fence(&r);
+    let mut owner = CallbackCastOwner::new(&r, &fence).expect("callback owner");
+    let mut proposal = proposal(actor, &source, 0);
+    proposal.target = player;
+    proposal.intent = crate::ability::AiAbilityAdapter::normalize(
+        &format!("actor:{}", hex(&actor.placement_identity())),
+        &[&format!("actor:{}", hex(&player.placement_identity()))],
+    )
+    .expect("original intent");
+    owner
+        .schedule(
+            &r,
+            &fence,
+            stamp,
+            &source,
+            &proposal,
+            SemanticTimeMicros::from_micros(0),
+        )
+        .expect("source schedule");
+    for x in 101..=118 {
+        let snapshot = r
+            .read_actor_position(player)
+            .expect("current target position");
+        r.borrow_movement_position()
+            .commit_cardinal(snapshot, MovementLocalPosition { x, y: 99, floor: 7 })
+            .expect("actual target position commit");
+    }
+    let mut reader = Reader {
+        player,
+        session,
+        facts: true,
+        pz: false,
+    };
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(10_000_000));
+    let results = owner
+        .drain(
+            &mut r,
+            &mut fence,
+            stamp,
+            &mut states,
+            &DamageSpellOwner::default(),
+            &mut reader,
+            &clock,
+        )
+        .expect("first source pulse");
+    assert_eq!(results.len(), 1);
+    assert!(results[0].3.is_ok());
+    assert_ne!(
+        crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, player, session),
+        before,
+        "delayed poison must follow original target within source distance20"
+    );
+}
+
+#[test]
+fn srx3_native_source_component_damage_hooks_are_available() {
+    let _definition =
+        crate::ability::creature_bite::CreatureBiteDefinition::from_native_source_with_roll;
+    let _bite =
+        <dyn crate::ability::creature_bite::CreatureBiteVitals>::source_combat_component_damage;
+    let _spell = <dyn SpellWorldReader>::source_combat_component_damage;
+}
+
+// Canary47dfd51f plagirath_bog.lua:39 uses strictdistance<20.
+#[test]
+fn srx3_plagirath_bog_delayed_damage_refuses_source_distance_twenty() {
+    let (mut r, player, session) = runtime_with_player(0x7c);
+    r.initialize_movement_test_position(
+        player,
+        MovementLocalPosition {
+            x: 100,
+            y: 99,
+            floor: 7,
+        },
+    )
+    .expect("player position");
+    let actor = r
+        .admit_monster_lab_creature(
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            "oteryn:creature.plagirath",
+            300000,
+        )
+        .expect("source creature");
+    let draft = draft(&r);
+    let creature = Ref {
+        family: ProjectV2Family::Creature,
+        key: "oteryn:creature.plagirath".into(),
+        revision: "definition-r1".into(),
+    };
+    let source = SourceCallbackCast::qualify(
+        &draft,
+        &creature,
+        6,
+        r.content_pin().server_artifact_digest(),
+    )
+    .expect("source proof")
+    .expect("source callback");
+    let mut states = ChannelSpellStates::default();
+    states
+        .initialize(
+            &r,
+            player,
+            session,
+            crate::spell::cast::CharacterCastFacts {
+                max_health: 100000,
+                ..FACTS
+            },
+            (0, 0),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+        )
+        .expect("player vitals");
+    let before =
+        crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, player, session);
+    let (mut fence, stamp) = fence(&r);
+    let mut owner = CallbackCastOwner::new(&r, &fence).expect("callback owner");
+    let mut proposal = proposal(actor, &source, 0);
+    proposal.target = player;
+    proposal.intent = crate::ability::AiAbilityAdapter::normalize(
+        &format!("actor:{}", hex(&actor.placement_identity())),
+        &[&format!("actor:{}", hex(&player.placement_identity()))],
+    )
+    .expect("original intent");
+    owner
+        .schedule(
+            &r,
+            &fence,
+            stamp,
+            &source,
+            &proposal,
+            SemanticTimeMicros::from_micros(0),
+        )
+        .expect("source schedule");
+    for x in 101..=120 {
+        let snapshot = r
+            .read_actor_position(player)
+            .expect("current target position");
+        r.borrow_movement_position()
+            .commit_cardinal(snapshot, MovementLocalPosition { x, y: 99, floor: 7 })
+            .expect("actual target position commit");
+    }
+    let mut reader = Reader {
+        player,
+        session,
+        facts: true,
+        pz: false,
+    };
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(10_000_000));
+    let results = owner
+        .drain(
+            &mut r,
+            &mut fence,
+            stamp,
+            &mut states,
+            &DamageSpellOwner::default(),
+            &mut reader,
+            &clock,
+        )
+        .expect("first source pulse");
+    assert_eq!(results.len(), 1);
+    assert_eq!(
+        results[0].3,
+        Err(crate::creature_auto_attack::AttackError::OutOfRange)
+    );
+    assert_eq!(
+        crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, player, session),
+        before,
+        "source distance20 must cancel the delayed poison"
+    );
+}
+
+// Canary47dfd51f plagirath_bog.lua:6-20 is the explicitdiamond matrix,
+// not AreaCombat's numeric radius4kernel (which has different edges).
+#[test]
+fn srx3_plagirath_bog_preserves_exact_source_matrix_edges() {
+    let (runtime, _, _) = runtime_with_player(0x7d);
+    let definitions = draft(&runtime);
+    let creature = Ref {
+        family: ProjectV2Family::Creature,
+        key: "oteryn:creature.plagirath".into(),
+        revision: "definition-r1".into(),
+    };
+    let source = SourceCallbackCast::qualify(
+        &definitions,
+        &creature,
+        6,
+        runtime.content_pin().server_artifact_digest(),
+    )
+    .expect("source proof")
+    .expect("source callback");
+    let stages = source.stages();
+    assert_eq!(stages.len(), 1);
+    let area = stages[0].1.area.as_ref().expect("source poison matrix");
+    let cells = oteryn_gameplay_content::content::creature_attack_geometry::offsets(
+        area,
+        oteryn_gameplay_content::content::creature_attack_geometry::Facing::North,
+    )
+    .expect("source matrix geometry");
+    assert_eq!(cells.len(), 41);
+    assert!(cells.contains(&(4, 0)) && cells.contains(&(0, 4)) && cells.contains(&(3, 1)));
+    assert!(!cells.contains(&(3, 2)) && !cells.contains(&(4, 1)));
+}
+
+#[test]
+fn srx3_four_current_foam_stalkers_keep_independent_source_casts() {
+    let (mut runtime, target, _) =
+        crate::gameplay_transport::actor_spell::tests::runtime_with_capacity(0x7e, 8);
+    runtime
+        .initialize_movement_test_position(
+            target,
+            MovementLocalPosition {
+                x: 100,
+                y: 99,
+                floor: 7,
+            },
+        )
+        .expect("actual target position");
+    let definitions = draft(&runtime);
+    let creature = Ref {
+        family: ProjectV2Family::Creature,
+        key: "oteryn:creature.foam_stalker".into(),
+        revision: "definition-r1".into(),
+    };
+    let source = SourceCallbackCast::qualify(
+        &definitions,
+        &creature,
+        4,
+        runtime.content_pin().server_artifact_digest(),
+    )
+    .expect("source proof")
+    .expect("source callback");
+    let (fence, stamp) = fence(&runtime);
+    let mut owner = CallbackCastOwner::new(&runtime, &fence).expect("current owner");
+    for ordinal in 0..4 {
+        let actor = runtime
+            .admit_monster_lab_creature(
+                MovementLocalPosition {
+                    x: 100 + ordinal,
+                    y: 100,
+                    floor: 7,
+                },
+                &creature.key,
+                300000,
+            )
+            .expect("independent real actor slot");
+        let mut proposal = proposal(actor, &source, 0);
+        proposal.target = target;
+        proposal.intent = crate::ability::AiAbilityAdapter::normalize(
+            &format!("actor:{}", hex(&actor.placement_identity())),
+            &[&format!("actor:{}", hex(&target.placement_identity()))],
+        )
+        .expect("actual target intent");
+        assert_eq!(
+            owner.schedule(
+                &runtime,
+                &fence,
+                stamp,
+                &source,
+                &proposal,
+                SemanticTimeMicros::from_micros(0)
+            ),
+            Ok(true),
+            "source has independent addEvent closures percurrent caster {ordinal}"
+        );
+    }
+    assert_eq!(owner.casts.len(), 4);
+}
+
+#[test]
+fn srx3_source_callback_missing_facts_retries_original_due_stage_once() {
+    let (mut runtime, player, session) = runtime_with_player(0x7f);
+    runtime
+        .initialize_movement_test_position(
+            player,
+            MovementLocalPosition {
+                x: 100,
+                y: 99,
+                floor: 7,
+            },
+        )
+        .expect("actual player position");
+    let actor = runtime
+        .admit_monster_lab_creature(
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            "oteryn:creature.foam_stalker",
+            300000,
+        )
+        .expect("actual current caster");
+    let source = SourceCallbackCast::qualify(
+        &draft(&runtime),
+        &Ref {
+            family: ProjectV2Family::Creature,
+            key: "oteryn:creature.foam_stalker".into(),
+            revision: "definition-r1".into(),
+        },
+        4,
+        runtime.content_pin().server_artifact_digest(),
+    )
+    .expect("source qualification")
+    .expect("actual source callback");
+    let mut states = ChannelSpellStates::default();
+    states
+        .initialize(
+            &runtime,
+            player,
+            session,
+            crate::spell::cast::CharacterCastFacts {
+                max_health: 100000,
+                ..FACTS
+            },
+            (0, 0),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+        )
+        .expect("canonical player vitals");
+    let before =
+        crate::gameplay_transport::actor_spell::observe_vitals(&runtime, &states, player, session);
+    let (mut fence, stamp) = fence(&runtime);
+    let mut owner = CallbackCastOwner::new(&runtime, &fence).expect("current callback owner");
+    let proposal = proposal(actor, &source, 0);
+    owner
+        .schedule(
+            &runtime,
+            &fence,
+            stamp,
+            &source,
+            &proposal,
+            SemanticTimeMicros::from_micros(0),
+        )
+        .expect("original source callback schedule");
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(1_000_000));
+    let mut reader = Reader {
+        player,
+        session,
+        facts: false,
+        pz: false,
+    };
+    let first = owner
+        .drain(
+            &mut runtime,
+            &mut fence,
+            stamp,
+            &mut states,
+            &DamageSpellOwner::default(),
+            &mut reader,
+            &clock,
+        )
+        .expect("missing DATA pass");
+    assert_eq!(first.len(), 1);
+    assert!(matches!(first[0].3, Err(AttackError::MissingCombatFacts)));
+    assert_eq!(
+        crate::gameplay_transport::actor_spell::observe_vitals(&runtime, &states, player, session),
+        before
+    );
+    reader.facts = true;
+    let retried = owner
+        .drain(
+            &mut runtime,
+            &mut fence,
+            stamp,
+            &mut states,
+            &DamageSpellOwner::default(),
+            &mut reader,
+            &clock,
+        )
+        .expect("same due callback with current DATA");
+    assert_eq!(
+        retried.len(),
+        1,
+        "unavailable DATA must retain the original source callback, not silently consume it"
+    );
+    assert!(retried[0].3.is_ok());
+    let after =
+        crate::gameplay_transport::actor_spell::observe_vitals(&runtime, &states, player, session);
+    assert_ne!(after, before);
+    assert!(
+        owner
+            .drain(
+                &mut runtime,
+                &mut fence,
+                stamp,
+                &mut states,
+                &DamageSpellOwner::default(),
+                &mut reader,
+                &clock
+            )
+            .expect("replay pass")
+            .is_empty()
+    );
+    assert_eq!(
+        crate::gameplay_transport::actor_spell::observe_vitals(&runtime, &states, player, session),
+        after
+    );
+}
+
+#[test]
+fn srx3_target_tile_casts_retain_exact_four_base_vocation_selector() {
+    use oteryn_gameplay_content::content::spell_data::Vocation;
+    let mut wrongly_allowed = Vec::new();
+    for (slug, index) in [
+        ("gaz_haragoth", 10),
+        ("eruption_of_destruction", 1),
+        ("lady_tenebris", 4),
+    ] {
+        let (mut runtime, _, _) = runtime_with_player(0x6e);
+        let key = format!("oteryn:creature.{slug}");
+        let caster = runtime
+            .admit_monster_lab_creature(
+                MovementLocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                },
+                &key,
+                300000,
+            )
+            .expect("real caster slot");
+        let source = SourceCallbackCast::qualify(
+            &draft(&runtime),
+            &Ref {
+                family: ProjectV2Family::Creature,
+                key,
+                revision: "definition-r1".into(),
+            },
+            index,
+            runtime.content_pin().server_artifact_digest(),
+        )
+        .expect("complete source closure")
+        .expect("actual source callback");
+        let (fence, stamp) = fence(&runtime);
+        let mut owner = CallbackCastOwner::new(&runtime, &fence).expect("actual callback owner");
+        owner
+            .schedule(
+                &runtime,
+                &fence,
+                stamp,
+                &source,
+                &proposal(caster, &source, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .expect("original source occurrence");
+        let plans = owner
+            .due_stages(
+                &runtime,
+                &fence,
+                stamp,
+                SemanticTimeMicros::from_micros(10_000_000),
+            )
+            .expect("actual due source stage");
+        assert_eq!(plans.len(), 1);
+        for vocation in [Vocation::None, Vocation::Monk, Vocation::ExaltedMonk] {
+            if plans[0].permits_player_vocation(vocation) {
+                wrongly_allowed.push((slug, vocation));
+            }
+        }
+        for vocation in [
+            Vocation::Sorcerer,
+            Vocation::MasterSorcerer,
+            Vocation::Druid,
+            Vocation::ElderDruid,
+            Vocation::Paladin,
+            Vocation::RoyalPaladin,
+            Vocation::Knight,
+            Vocation::EliteKnight,
+        ] {
+            assert!(plans[0].permits_player_vocation(vocation));
+        }
+    }
+    assert!(
+        wrongly_allowed.is_empty(),
+        "pinned target-tile Lua lists exactly four base IDs: {wrongly_allowed:?}"
+    );
+}
+
+#[test]
+fn srx3_source_cast_stages_retain_literal_donor_impact_bindings() {
+    for (slug, index, expected) in [
+        ("energy_pulse", 0, vec!["energyarea"]),
+        (
+            "foam_stalker",
+            4,
+            vec!["watersplash", "watersplash", "watersplash"],
+        ),
+        ("charging_outburst", 5, vec!["purpleenergy"]),
+        ("eruption_of_destruction", 1, vec!["firearea"]),
+        ("gaz_haragoth", 10, vec!["purpleenergy"]),
+        ("lady_tenebris", 4, vec!["mortarea"]),
+        ("plagirath", 6, vec!["poison"]),
+        (
+            "rootthing_amber_shaper",
+            4,
+            vec!["smallplants", "fireattack"],
+        ),
+        ("rootthing_nutshell", 3, vec!["holydamage", "groundshaker"]),
+    ] {
+        let (mut runtime, _, _) = runtime_with_player(0x6f);
+        let key = format!("oteryn:creature.{slug}");
+        let caster = runtime
+            .admit_monster_lab_creature(
+                MovementLocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                },
+                &key,
+                300000,
+            )
+            .expect("real source caster");
+        let source = SourceCallbackCast::qualify(
+            &draft(&runtime),
+            &Ref {
+                family: ProjectV2Family::Creature,
+                key,
+                revision: "definition-r1".into(),
+            },
+            index,
+            runtime.content_pin().server_artifact_digest(),
+        )
+        .expect("frozen source closure")
+        .expect("actual callback");
+        let (fence, stamp) = fence(&runtime);
+        let mut owner = CallbackCastOwner::new(&runtime, &fence).expect("real owner");
+        owner
+            .schedule(
+                &runtime,
+                &fence,
+                stamp,
+                &source,
+                &proposal(caster, &source, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .expect("actual parent occurrence");
+        let plans = owner
+            .due_stages(
+                &runtime,
+                &fence,
+                stamp,
+                SemanticTimeMicros::from_micros(10_000_000),
+            )
+            .expect("exact retained due stages");
+        assert_eq!(plans.len(), expected.len());
+        for (plan, expected) in plans.iter().zip(expected) {
+            assert_eq!(
+                plan.source_impact_binding(),
+                Some(format!("canary.appearance:effect/{expected}").as_str()),
+                "{slug} loses the donor stage visual even when no player takes damage"
+            );
+        }
+    }
+}
+
+#[test]
+fn srx3_source_large_callback_areas_keep_literal_lua_matrix_edges() {
+    let (runtime, _, _) = runtime_with_player(0x73);
+    let definitions = draft(&runtime);
+    for (slug, index, count, included, excluded) in [
+        ("charging_outburst", 5, 101, (2, -5), (3, -5)),
+        ("eruption_of_destruction", 1, 101, (2, -5), (3, -5)),
+        ("gaz_haragoth", 10, 101, (2, -5), (3, -5)),
+        ("lady_tenebris", 4, 113, (1, -6), (2, -6)),
+    ] {
+        let source = SourceCallbackCast::qualify(
+            &definitions,
+            &Ref {
+                family: ProjectV2Family::Creature,
+                key: format!("oteryn:creature.{slug}"),
+                revision: "definition-r1".into(),
+            },
+            index,
+            runtime.content_pin().server_artifact_digest(),
+        )
+        .expect("source closure")
+        .expect("actual callback");
+        let cells = oteryn_gameplay_content::content::creature_attack_geometry::offsets(
+            source.stages()[0]
+                .1
+                .area
+                .as_ref()
+                .expect("literal source area"),
+            oteryn_gameplay_content::content::creature_attack_geometry::Facing::North,
+        )
+        .expect("actual geometry owner");
+        assert_eq!(cells.len(), count, "{slug}");
+        assert!(cells.contains(&included), "{slug}");
+        assert!(!cells.contains(&excluded), "{slug}");
+    }
+}
+#[test]
+fn gaz_completion_at_hp0_does_not_abort_death_and_doom() -> Result<(), String> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            let error = |e: &dyn std::fmt::Debug| format!("{e:?}");
+            let id = |tag: u8| {
+                let mut value = [tag; 16];
+                value[6] = 0x70;
+                value[8] = 0x80;
+                value
+            };
+            let world = crate::content::native_gameplay_test_world_id().map_err(|e| error(&e))?;
+            let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json");
+            let native = crate::content::native_gameplay::retained_callback_native_fixture_at(
+                world, &manifest,
+            );
+            let key = "oteryn:creature.gaz_haragoth";
+            let record = native
+                .creature_profiles()
+                .records
+                .iter()
+                .find(|record| record.profile.target.key == key)
+                .ok_or("actual native Gaz'haragoth profile")?;
+            let crate::content::ProjectV2AuthoringProfileData::Behavior(behavior) = &record
+                .behavior
+                .as_ref()
+                .ok_or("actual native Gaz'haragoth behavior")?
+                .data
+            else {
+                return Err("actual native Gaz'haragoth behavior kind".into());
+            };
+            let index = behavior
+                .attacks
+                .iter()
+                .position(|attack| attack.ability.key == "oteryn:ability.spell.gaz_haragoth_death")
+                .ok_or("actual native DEATH AND DOOM schedule")?;
+            let source = SourceCallbackCast::qualify_native(
+                &native,
+                &record.profile.target,
+                index,
+                ScheduleList::Attack,
+            )
+            .map_err(|e| error(&e))?
+            .ok_or("actual native DEATH AND DOOM callback")?;
+            let pin = crate::foundation::ChannelContentPin::from_activation(
+                world,
+                1,
+                native.source_digest(),
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (100, 100, 7),
+            );
+            let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
+                crate::foundation::RuntimeScopeRefV1::channel(
+                    world,
+                    crate::foundation::ChannelId::decode(&id(0x94)).map_err(|e| error(&e))?,
+                ),
+                crate::foundation::NodeId::decode(&id(0x95)).map_err(|e| error(&e))?,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                8,
+                pin,
+            )
+            .map_err(|e| error(&e))?;
+            // Native logical death keeps HP0 Gaz registered until its queued onDeath.
+            assert!(!runtime.uses_classic_creature_deaths());
+            native
+                .install_companion_policies(&mut runtime)
+                .map_err(|e| error(&e))?;
+            let maximum = runtime
+                .companion_policy(key)
+                .map_err(|e| error(&e))?
+                .maximum_health;
+            let actor = runtime
+                .admit_source_pinned_lab_creature(
+                    MovementLocalPosition {
+                        x: 100,
+                        y: 100,
+                        floor: 7,
+                    },
+                    key,
+                    maximum,
+                )
+                .map_err(|e| error(&e))?;
+            runtime
+                .install_creature_policy(actor, key)
+                .map_err(|e| error(&e))?;
+            let session = GameSessionId::decode(&id(0x96)).map_err(|e| error(&e))?;
+            let reservation = runtime
+                .reserve_fresh_session(session)
+                .map_err(|e| error(&e))?;
+            let player = runtime
+                .commit_fresh_session(reservation)
+                .map_err(|e| error(&e))?;
+            runtime
+                .initialize_pinned_test_position(
+                    player,
+                    MovementLocalPosition {
+                        x: 101,
+                        y: 100,
+                        floor: 7,
+                    },
+                )
+                .map_err(|e| error(&e))?;
+            let mut states = ChannelSpellStates::default();
+            states
+                .initialize(
+                    &runtime,
+                    player,
+                    session,
+                    crate::spell::cast::CharacterCastFacts {
+                        max_health: 100000,
+                        ..FACTS
+                    },
+                    (0, 0),
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+                )
+                .ok_or("player spell state")?;
+            let stamp = runtime.issue_owner_work().map_err(|e| error(&e))?;
+            let mut owner = CallbackCastOwner::new_current(&runtime).map_err(|e| error(&e))?;
+            let mut cast = proposal(actor, &source, 0);
+            cast.target = player;
+            cast.intent = crate::ability::AiAbilityAdapter::normalize(
+                &format!("actor:{}", hex(&actor.placement_identity())),
+                &[&format!("actor:{}", hex(&player.placement_identity()))],
+            )
+            .map_err(|e| error(&e))?;
+            assert!(
+                owner
+                    .schedule_current(
+                        &runtime,
+                        stamp,
+                        &source,
+                        &cast,
+                        SemanticTimeMicros::from_micros(1_000_000),
+                    )
+                    .map_err(|e| error(&e))?
+            );
+            assert_eq!(
+                owner.take_source_speech().len(),
+                1,
+                "the live caster announces the channel"
+            );
+            runtime
+                .borrow_exact_actor_commit_at_us(2_000_000)
+                .commit_damage(
+                    actor,
+                    oteryn_gameplay_entities::OwnerDamageCommand {
+                        target: key.as_bytes(),
+                        occurrence: b"gaz-death-and-doom:lethal",
+                        binding: b"gaz-death-and-doom:lethal\0source",
+                        damage: maximum,
+                    },
+                )
+                .map_err(|e| error(&e))?;
+            let receipt = runtime
+                .borrow_combat_death()
+                .committed_lethal_receipt(actor)
+                .map_err(|e| error(&e))?;
+            runtime
+                .borrow_combat_death()
+                .project_committed_lethal(receipt)
+                .map_err(|e| error(&e))?;
+            assert!(
+                runtime
+                    .source_creature_is_registered(actor)
+                    .map_err(|e| error(&e))?,
+                "HP0 Gaz stays registered until its queued onDeath"
+            );
+            assert!(!runtime.matches_live_creature_identity(actor, key.as_bytes()));
+            let mut reader = Reader {
+                player,
+                session,
+                facts: true,
+                pz: false,
+            };
+            let results = owner
+                .drain_current(
+                    &mut runtime,
+                    stamp,
+                    &mut states,
+                    &DamageSpellOwner::default(),
+                    &mut reader,
+                    &VirtualOwnerClock::new(SemanticTimeMicros::from_micros(7_000_000)),
+                )
+                .map_err(|e| format!("completion speech aborted the damage stage: {e:?}"))?;
+            assert_eq!(
+                results
+                    .iter()
+                    .filter(|(issuer, _, stage, _)| *issuer == actor && *stage == 0)
+                    .count(),
+                1,
+                "the DEATH AND DOOM stage reached its damage owner"
+            );
+            assert!(
+                owner.take_source_speech().is_empty(),
+                "an HP0 caster cannot speak its completion line"
+            );
+            assert_eq!(owner.source_stage_done_for_test(actor), Some(vec![true]));
+            Ok(())
+        })
+        .map_err(|e| format!("{e:?}"))?
+        .join()
+        .map_err(|_| "Gaz DEATH AND DOOM test thread panicked".to_owned())?
 }

@@ -1,0 +1,641 @@
+{
+  "schema": "SRX3_FOAM_PHYSICAL_DROP_SOURCE_AUDIT/v1",
+  "status": "READ_ONLY_AUDIT; no native profiles, provider, SQL or pins changed",
+  "sources": [
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/items/items.xml",
+      "git_blob": "ea4196beae8f77be898f05de89db81de134886b6",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/items/appearances.dat",
+      "git_blob": "37ce9c8ee497b7edffe809f40d02c5d12ec4ccf0",
+      "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/items.xml",
+      "git_blob": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/appearances.dat",
+      "git_blob": "2cc2f4910af4f002f99f39e486d1a91b1b56a728",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "src/items/items.hpp",
+      "git_blob": "b502ec621701f1cebfe7e509207649081ee3e470",
+      "sha256": "06d52ee83250ba852fe804c6b006b0aac150ceb26893e9079fa8c93502d209ca",
+      "facts": [
+        {
+          "line": 300,
+          "text": "int32_t weight = 0;"
+        },
+        {
+          "line": 348,
+          "text": "uint8_t stackSize = 100;"
+        },
+        {
+          "line": 384,
+          "text": "bool stopTime = false;"
+        }
+      ]
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "src/items/items.cpp",
+      "git_blob": "bdb7b4b48aadfeb9e031311ca107aadb4ee6e30b",
+      "sha256": "f39d8fc6c1c81b8ec6f749e1f152dd945472ffd5a36b9cf3cd9a3a64b2f19b1d",
+      "facts": [
+        {
+          "line": 173,
+          "text": "iType.type = ITEM_TYPE_CONTAINER;"
+        },
+        {
+          "line": 236,
+          "text": "iType.pickupable = object.flags().take();"
+        },
+        {
+          "line": 244,
+          "text": "iType.movable = object.flags().unmove() == false;"
+        },
+        {
+          "line": 251,
+          "text": "iType.stackable = object.flags().cumulative();"
+        }
+      ]
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "src/items/item.cpp",
+      "git_blob": "c35e9d8cf8c0c6a4e4eb781db6493808b402a539",
+      "sha256": "e27e622bf4fd9a94d7fffb3a818fd0c5f911e6fbf4b92844320154ded326950b",
+      "facts": [
+        {
+          "line": 92,
+          "text": "newItem = std::make_shared<Container>(type);"
+        }
+      ]
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/items/items.hpp",
+      "git_blob": "5181a8894449fd552626bd932ce0aaaeff749919",
+      "sha256": "b8c12f45122eeb575ad548719c5fb178a96460d8a41ad882d0d88b2e66d797e6",
+      "facts": [
+        {
+          "line": 282,
+          "text": "int32_t weight = 0;"
+        },
+        {
+          "line": 331,
+          "text": "uint8_t stackSize = 100;"
+        },
+        {
+          "line": 369,
+          "text": "bool stopTime = false;"
+        }
+      ]
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/items/items.cpp",
+      "git_blob": "eecbf060ef9e85b452bb897277ff3d3d013a0cf9",
+      "sha256": "f695ed647e111923cf8e4d487c4a0706f19e7edbfb7896655c20494d6d927fd7",
+      "facts": [
+        {
+          "line": 176,
+          "text": "iType.type = ITEM_TYPE_CONTAINER;"
+        },
+        {
+          "line": 239,
+          "text": "iType.pickupable = object.flags().take();"
+        },
+        {
+          "line": 247,
+          "text": "iType.movable = object.flags().unmove() == false;"
+        },
+        {
+          "line": 254,
+          "text": "iType.stackable = object.flags().cumulative();"
+        }
+      ]
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/items/item.cpp",
+      "git_blob": "62e8117dc7dcb135d4849c22832a251032420a93",
+      "sha256": "9bbf46dbecd43748737a2636eb2200f39f5a35d7fa524a800adabaa10473b3bb",
+      "facts": [
+        {
+          "line": 435,
+          "text": "newItem = std::make_shared<Container>(type);"
+        }
+      ]
+    }
+  ],
+  "agreed_item_policies": [
+    {
+      "server_item_id": 3125,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": true,
+      "pickupable": true,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "weight",
+          "value": "110"
+        }
+      ],
+      "magic_field": false,
+      "stackable": true
+    },
+    {
+      "server_item_id": 3130,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": true,
+      "pickupable": true,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "rubbish"
+        },
+        {
+          "key": "weight",
+          "value": "210"
+        }
+      ],
+      "magic_field": false,
+      "stackable": true
+    },
+    {
+      "server_item_id": 39341,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": true,
+      "pickupable": false,
+      "container": false,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "decayTo",
+          "value": "0"
+        },
+        {
+          "key": "duration",
+          "value": "60"
+        }
+      ],
+      "magic_field": false,
+      "stackable": false
+    },
+    {
+      "server_item_id": 39342,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": true,
+      "pickupable": false,
+      "container": true,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "containerSize",
+          "value": "15"
+        },
+        {
+          "key": "decayTo",
+          "value": "39341"
+        },
+        {
+          "key": "duration",
+          "value": "300"
+        }
+      ],
+      "magic_field": false,
+      "stackable": false
+    },
+    {
+      "server_item_id": 39343,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": true,
+      "pickupable": false,
+      "container": true,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "containerSize",
+          "value": "30"
+        },
+        {
+          "key": "decayTo",
+          "value": "39342"
+        },
+        {
+          "key": "duration",
+          "value": "300"
+        },
+        {
+          "key": "fluidSource",
+          "value": "blood"
+        }
+      ],
+      "magic_field": false,
+      "stackable": false
+    },
+    {
+      "server_item_id": 39344,
+      "ground": false,
+      "ground_speed": 0,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "movable": false,
+      "pickupable": false,
+      "container": true,
+      "floor_change": false,
+      "floor_change_kind": null,
+      "has_height": false,
+      "dynamic_kind": null,
+      "xml_attributes": [
+        {
+          "key": "containerSize",
+          "value": "30"
+        },
+        {
+          "key": "decayTo",
+          "value": "39343"
+        },
+        {
+          "key": "duration",
+          "value": "10"
+        },
+        {
+          "key": "fluidSource",
+          "value": "blood"
+        }
+      ],
+      "magic_field": false,
+      "stackable": false
+    }
+  ],
+  "corpse_chain": [
+    [
+      39344,
+      30,
+      10000,
+      39343
+    ],
+    [
+      39343,
+      30,
+      300000,
+      39342
+    ],
+    [
+      39342,
+      15,
+      300000,
+      39341
+    ],
+    [
+      39341,
+      null,
+      60000,
+      null
+    ]
+  ],
+  "xml_lines": {
+    "Crystal": {
+      "39341": 72771,
+      "39342": 72775,
+      "39343": 72780,
+      "39344": 72786,
+      "3125": 7599,
+      "3130": 7615
+    },
+    "Canary": {
+      "39341": 72565,
+      "39342": 72569,
+      "39343": 72574,
+      "39344": 72580,
+      "3125": 7578,
+      "3130": 7594
+    }
+  },
+  "current_gap": {
+    "missing_corpse_profiles": [
+      39341,
+      39342,
+      39343,
+      39344
+    ],
+    "missing_yield_profiles": [
+      3125,
+      3130
+    ],
+    "provider_false_but_existing_native_facts_qualify": [
+      {
+        "item": 813,
+        "whole_profile_sha256": "5fae8eef1a1c3d404153d44d3845c2daacfd5627126c57a35aa3f7e21a1ecee7",
+        "already_qualified_facts": {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i813",
+            "revision": "definition-r1"
+          },
+          "materializable": true,
+          "container_capacity": null,
+          "stackable": false
+        }
+      },
+      {
+        "item": 3289,
+        "whole_profile_sha256": "4d068261b79c53723b5b84850b8c27a219e12249c8127cbd5232dbf2bb8d8899",
+        "already_qualified_facts": {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3289",
+            "revision": "definition-r1"
+          },
+          "materializable": true,
+          "container_capacity": null,
+          "stackable": false
+        }
+      },
+      {
+        "item": 3371,
+        "whole_profile_sha256": "2b974b4e99c5089c97d976acd1d022d9420fb9dcb302682fc0ece96db3f614c1",
+        "already_qualified_facts": {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i3371",
+            "revision": "definition-r1"
+          },
+          "materializable": true,
+          "container_capacity": null,
+          "stackable": false
+        }
+      },
+      {
+        "item": 39406,
+        "whole_profile_sha256": "2591d370a3d20e9d17af903d0731ad501785b0c18023f288a5e8bf4fa3c74386",
+        "already_qualified_facts": {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i39406",
+            "revision": "definition-r1"
+          },
+          "materializable": true,
+          "container_capacity": null,
+          "stackable": true
+        }
+      },
+      {
+        "item": 39407,
+        "whole_profile_sha256": "6a4fb028bc859d55e6a6ddd91c5b23289e6f1663513953a7da8675c7b5095d63",
+        "already_qualified_facts": {
+          "item": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i39407",
+            "revision": "definition-r1"
+          },
+          "materializable": true,
+          "container_capacity": null,
+          "stackable": true
+        }
+      }
+    ],
+    "provider_gate": "build_full_spell_artifact.py:618-642 admits native ordinary yields only after its owning native corpse qualifies"
+  },
+  "source_semantics": {
+    "cpp_factory": "DAT container flags select Container for39344/39343/39342;39341 is plain Item. XML defines30/30/15 capacities and10/300/300/60-second chain. Defaultweight0, stopTime=false. New yields3125/3130 are DATcumulative/pickupable/movable with XMLweights110/210 and CPPstackSize100.",
+    "actual_41g_case": "CREDITED ordinary FoamStalker. Native masterless fixture has no arena/dropLoot suppression; real bound Player lethal/principal. Existing ordinary physical drop owner applies once qualified.",
+    "uncredited_caution": "Pinned Canary and Crystal data/scripts/eventcallbacks/monster/ondroploot__base.lua:4-22 roll/add ordinary loot at factor1 even with no Player. RewardBoss NULL emptyOutburst rule cannot be widened to ordinary NULLFoam."
+  },
+  "next_controlled_window": "Add8exact native corpse profiles (Foam4+Primal4) and2newyield profiles; corpse capture191\u2192199 andyield44\u219246. Preserve all191previous corpse whole records,5already-qualified Foam yields and4Primal canonical whole definitions; existingkeys/ordinals unchanged. No metadata/admission/keyparse fallback.",
+  "primal_native_metadata_gap": {
+    "actual_target": "42o386 full native play reached strict cold CorpseWithAppearance failure after real server journey125.16s",
+    "existing_tool": "primal_corpse_items.py:165-172 qualifies canonical physical definitions only; no native item policy is produced",
+    "chain": [
+      [
+        39530,
+        30,
+        10000,
+        39529
+      ],
+      [
+        39529,
+        30,
+        300000,
+        39528
+      ],
+      [
+        39528,
+        15,
+        300000,
+        39527
+      ],
+      [
+        39527,
+        null,
+        60000,
+        null
+      ]
+    ],
+    "records": [
+      {
+        "item": 39530,
+        "existing_canonical_whole_definition_sha256": "910e53fad3309bc313af53a13877062b17f95b5b63b3768d0683ce5c0a12e096",
+        "existing_canonical_presentation": {
+          "state": "UNKNOWN"
+        },
+        "new_native_presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "dead the primal menace"
+            }
+          }
+        },
+        "exact_existing_native_binding": {
+          "disposition": "EXACT",
+          "external_id": "39530",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i39530",
+            "revision": "definition-r1"
+          }
+        }
+      },
+      {
+        "item": 39529,
+        "existing_canonical_whole_definition_sha256": "9067a15ef1fa42effe7fa50cfbc4376ab039932d22f87ac3d7d52c33c940ce70",
+        "existing_canonical_presentation": {
+          "state": "UNKNOWN"
+        },
+        "new_native_presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "dead the primal menace"
+            }
+          }
+        },
+        "exact_existing_native_binding": {
+          "disposition": "EXACT",
+          "external_id": "39529",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i39529",
+            "revision": "definition-r1"
+          }
+        }
+      },
+      {
+        "item": 39528,
+        "existing_canonical_whole_definition_sha256": "0455026ae97e5d51fb0078eaaed9ce6749b1abf27f5cafc23a11ad99766057fd",
+        "existing_canonical_presentation": {
+          "state": "UNKNOWN"
+        },
+        "new_native_presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "dead the primal menace"
+            }
+          }
+        },
+        "exact_existing_native_binding": {
+          "disposition": "EXACT",
+          "external_id": "39528",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i39528",
+            "revision": "definition-r1"
+          }
+        }
+      },
+      {
+        "item": 39527,
+        "existing_canonical_whole_definition_sha256": "f85e8092843ecd0cf9c622df7832f55975f60f1e68cf37c340e047aebd2d9b14",
+        "existing_canonical_presentation": {
+          "state": "UNKNOWN"
+        },
+        "new_native_presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "dead the primal menace"
+            }
+          }
+        },
+        "exact_existing_native_binding": {
+          "disposition": "EXACT",
+          "external_id": "39527",
+          "identity_namespace": "ots/item_server_id",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+          "target": {
+            "family": "Item",
+            "key": "oteryn:item.tibia.i39527",
+            "revision": "definition-r1"
+          }
+        }
+      }
+    ],
+    "xml_lines": {
+      "Crystal": {
+        "39530": 73343,
+        "39529": 73337,
+        "39528": 73332,
+        "39527": 73328
+      },
+      "Canary": {
+        "39530": 73137,
+        "39529": 73131,
+        "39528": 73126,
+        "39527": 73122
+      }
+    }
+  }
+}

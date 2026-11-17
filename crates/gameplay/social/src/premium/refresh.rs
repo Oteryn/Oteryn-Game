@@ -119,6 +119,7 @@ impl PremiumRefresher {
     /// Fresh admission or reconnect of `account_id`: pull before any Premium read. Returns at
     /// once; must run inside the Tokio runtime.
     pub fn admit(&self, account_id: [u8; 16]) {
+        self.inner.consumer.profile_b_admit(account_id);
         if self.inner.client.is_none() {
             return;
         }
@@ -131,12 +132,22 @@ impl PremiumRefresher {
             return;
         }
         let wake = Arc::new(Notify::new());
-        let task = tokio::spawn(run(self.inner.clone(), account_id, wake.clone()));
+        self.inner
+            .consumer
+            .profile_b_register_wake(account_id, &wake);
+        let task_wake = wake.clone();
+        let inner = self.inner.clone();
+        let task = oteryn_task_supervisor::spawn_supervised_with_heartbeat(
+            "premium_refresh",
+            None,
+            move |heartbeat| run(inner, account_id, task_wake, heartbeat),
+        );
         schedules.insert(account_id, Schedule { wake, task });
     }
 
     /// The account has no session left on this node: cancel its schedule and drop its view.
     pub fn release(&self, account_id: [u8; 16]) {
+        self.inner.consumer.profile_b_release(account_id);
         if let Some(schedule) = self.schedules().remove(&account_id) {
             schedule.task.abort();
         }
@@ -151,13 +162,19 @@ impl PremiumRefresher {
     }
 }
 
-async fn run(inner: Arc<Inner>, account_id: [u8; 16], wake: Arc<Notify>) {
+async fn run(
+    inner: Arc<Inner>,
+    account_id: [u8; 16],
+    wake: Arc<Notify>,
+    heartbeat: oteryn_task_supervisor::Heartbeat,
+) {
     let Some(client) = &inner.client else { return };
     // A load failure only delays the restrictive durable facts: the first pull fences against
     // the same durable rows and returns them.
     let _ = inner.consumer.load(&inner.root, account_id).await;
     let mut attempt = 0;
     loop {
+        heartbeat.beat();
         let ticket = inner.consumer.ticket();
         let delay = match pull(&inner, client, account_id, ticket).await {
             Next::Refresh => {
@@ -172,6 +189,7 @@ async fn run(inner: Arc<Inner>, account_id: [u8; 16], wake: Arc<Notify>) {
             }
         };
         // Sleep until the next pull is due, or a reconnect wakes it.
+        let _idle = heartbeat.expected_idle();
         let _ = tokio::time::timeout(delay, wake.notified()).await;
     }
 }
@@ -216,7 +234,7 @@ fn now_us() -> i64 {
         .unwrap_or(0)
 }
 
-fn jitter() -> f64 {
+pub(crate) fn jitter() -> f64 {
     let mut byte = [0u8; 2];
     let filled = rustls::crypto::aws_lc_rs::default_provider()
         .secure_random

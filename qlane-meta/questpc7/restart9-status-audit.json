@@ -1,0 +1,41 @@
+{
+  "task_id": "questpc",
+  "head": "1fa04bbbddb5d96e21fecca0bc456f3c5e1109b7",
+  "lifecycle": "AUTHORING; no frozen candidate or publication",
+  "titles": 178,
+  "counts": {
+    "BLOCKED": 156,
+    "QUALIFIED": 22
+  },
+  "terminal_condition_satisfied": true,
+  "unchanged_inherited_product_files": 174,
+  "validated_blocker_references": 427,
+  "retained_passing_pg_cohorts": 9,
+  "retained_positive_native_pg_markers": 82,
+  "fresh_dispatch_check": {
+    "command": "CARGO_BUILD_JOBS=4 /home/mole/oteryn-cache/codex-bin/cargo check --locked --offline -p oteryn-gameplay-dispatch --quiet",
+    "exit": 0,
+    "log": ".questpc/restart9-initial-check.log"
+  },
+  "pg_rerun_this_continuation": false,
+  "retained_evidence_scope": "Source, input, manifest and complete log hashes match. No new PG pass or full-quest qualification is claimed.",
+  "exact_retained_pg_filters": [
+    "quest_catalogue_chests_phase_a_01_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_02_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_03_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_04_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_05_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_06_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_08_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_09_use_replay_and_refusal",
+    "quest_catalogue_chests_phase_a_11_use_replay_and_refusal"
+  ],
+  "new_product_changes": [],
+  "review": "Both requested checklists re-read. Record-only delta; no new enum variant, struct field, trait method, pub fn, fixture, test or migration. Inherited implementation is not declared integration-ready.",
+  "changed_files_this_continuation": [
+    ".questpc/restart9-initial-check.log",
+    ".questpc/restart9-status-audit.json",
+    ".questpc/RESUME.md"
+  ],
+  "unfinished": "155 nonexcluded full quest paths plus excluded Dawnport remain BLOCKED with exact missing pieces, references and attempts in QUEST-STATUS.json. Retained Hot Cuisine failure: catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic, command2603 hi Rejected!=Ok at classic_quests.rs:168. No new CI, review or publication claim."
+}

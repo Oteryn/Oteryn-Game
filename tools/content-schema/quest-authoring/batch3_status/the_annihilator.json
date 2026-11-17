@@ -1,0 +1,394 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "the_annihilator",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "root/implementation-status.json",
+    "sha256": "1b48d46dbce6c98c52aa1df0c4cf29b5d033d596e63b17336c0adfbae2eeac6b"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 10,
+  "import_counts": {
+    "RĘCZNIE": 6,
+    "AUTO": 4
+  },
+  "content_counts": {
+    "npc_rules_source_only": 0,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 0,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "45e18ed646dcf91614e2e5b466dfed98527d3eafcc0d570e9e3f1c927861444a",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "the_annihilator",
+        "step": "Kwalifikacja grupy",
+        "pattern": "P06",
+        "trigger": "Use uid30025; item2772",
+        "guard": "cztery pola x33225..33222,y31671,z13; każde topCreature, level>=100; arena bez graczy",
+        "effect": "odmowa przy niespełnieniu; nie stosować last-hit ani innej liczby graczy",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:26"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Brak atomowego group-start ownera dla czterech graczy, sześciu Angry Demon i stanu dźwigni2773. settings.daily=true zachowane; gałąź daily=false jest nieaktywna i nie włączona. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:26",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "aaa38862fc6304528f1564547ae7c56dcce207647b95e2a6cd89024c0a3a1daa",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "the_annihilator",
+        "step": "Spawn i wejście",
+        "pattern": "P06",
+        "trigger": "udana dźwignia",
+        "guard": "pokój center(33221,31659,13), spectators4×4",
+        "effect": "sześć Angry Demon ze źródłowych pozycji; gracze do x33222..33219,y31659,z13; lever2773",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:42"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Brak atomowego group-start ownera dla czterech graczy, sześciu Angry Demon i stanu dźwigni2773. settings.daily=true zachowane; gałąź daily=false jest nieaktywna i nie włączona. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:42",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "54706b68c5da982de6ff3cb27f33dac970ad6553fdec43e43f3ac4c561536fc0",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "the_annihilator",
+        "step": "Jedno użycie do resetu mapy",
+        "pattern": "P15/P06",
+        "trigger": "Use lever2773",
+        "guard": "settings.daily=true",
+        "effect": "odmowa You can use this lever only once a day; bez timestampu24h gracza",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:63"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Brak atomowego group-start ownera dla czterech graczy, sześciu Angry Demon i stanu dźwigni2773. settings.daily=true zachowane; gałąź daily=false jest nieaktywna i nie włączona. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:63",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "dbf9fbe342b17a2f8067379cbe6266f927921d5b1e554bdd9724f62813dd0f01",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "the_annihilator",
+        "step": "Alternatywna konfiguracja resetu",
+        "pattern": "P25",
+        "trigger": "Use lever2773 przy daily=false",
+        "guard": "nieaktywne w przypiętym settings.daily=true",
+        "effect": "usuń potwory, lever2772; zapis w raporcie nie zmienia ustawienia źródła",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:70"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Brak atomowego group-start ownera dla czterech graczy, sześciu Angry Demon i stanu dźwigni2773. settings.daily=true zachowane; gałąź daily=false jest nieaktywna i nie włączona. Decyzja R-ANNIHILATOR-GROUP: Brakuje atomowego admission dokładnie czterech graczy poziomu >=100, kontroli zajętości, teleportacji grupy, spawnu sześciu Angry Demon i zmiany dźwigni 2773. Brak źródłowego cooldownu 24 h; nie dodano takiego zamiennika.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589773424"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:70",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/lever.lua:1-83"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "0ca3be6bb728d17838c656f85fe06ec27a9c8e27a66d2bdd182c427024380c88",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "the_annihilator",
+        "step": "Drzwi wejściowe",
+        "pattern": "P04",
+        "trigger": "Use aid10102 item5113",
+        "guard": "Reward10102 !=1",
+        "effect": "teleport na pozycję drzwi; transform5114",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/door.lua:4"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Istniejący generyczny door guard sprawdza zapis !=-1, a Crystal odmawia Reward=1. Brak kwalifikacji source-specific !=1 i teleportu na drzwi; nowa polityka shared door owner poza zakresem. Decyzja R-ANNIHILATOR-DOOR: Brakuje obsługi odwróconego guardu Reward!=1, otwarcia 5113->5114 z teleportacją oraz zamknięcia z checkCreatureInsideDoor w istniejącym ownerze drzwi. Bez konkurencyjnego handlera Use.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590373502"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/door.lua:4",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/door.lua:4-24"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "2aad13175e029c63f3c79ae7d134bd95bd7e1c74edaac19fa008f4bdf348663b",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "the_annihilator",
+        "step": "Zamknięcie drzwi",
+        "pattern": "P04",
+        "trigger": "Use aid10102 item5114",
+        "guard": "checkCreatureInsideDoor",
+        "effect": "transform5113 po dopuszczonej kontroli",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/door.lua:12"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Istniejący generyczny door guard sprawdza zapis !=-1, a Crystal odmawia Reward=1. Brak kwalifikacji source-specific !=1 i teleportu na drzwi; nowa polityka shared door owner poza zakresem. Decyzja R-ANNIHILATOR-DOOR: Brakuje obsługi odwróconego guardu Reward!=1, otwarcia 5113->5114 z teleportacją oraz zamknięcia z checkCreatureInsideDoor w istniejącym ownerze drzwi. Bez konkurencyjnego handlera Use.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590373502"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/door.lua:12",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_annihilator/door.lua:4-24"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "8cba4bb82ef34fc09f0775a25fc3efc7a154850110b043702b2461ec6f3de8ef",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "the_annihilator",
+        "step": "Wspólny wybór nagrody uid6085",
+        "pattern": "P05",
+        "trigger": "Use uid6085",
+        "guard": "wspólny Reward10102 nieodebrany",
+        "effect": "item3388×1; Reward10102=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1235"
+        ],
+        "oteryn": "TAK — wspólny claim dispatch_pg_qualified, test quest_container_chests; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:50",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "existing_qualified",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Zachowany jeden wspólny claim Reward10102 i cztery wybory. Istniejący test PG ponownie przeszedł: wspólny wybór nagrody, storage i achievement.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1235"
+      ],
+      "evidence": {
+        "test": "quest_container_chests_annihilator_choices_share_storage_and_achievement",
+        "test_result": "PASS: quest_container_chests_annihilator_choices_share_storage_and_achievement; końcowy zestaw publikacji podlega ponownej walidacji.",
+        "test_evidence": "Scoped PostgreSQL 18.6 run: quests3-annihilator_regression.log; W15B_STORAGE_CHOICE_POSTGRES_CASE_COMPLETED, exit 0, 55.01 s."
+      }
+    },
+    {
+      "id": "f54d331a60a272083407f39343b406045a5079136337cc2abaea571860c55b33",
+      "quest_row": 8,
+      "inventory": {
+        "quest": "the_annihilator",
+        "step": "Wspólny wybór nagrody uid6086",
+        "pattern": "P05",
+        "trigger": "Use uid6086",
+        "guard": "wspólny Reward10102 nieodebrany",
+        "effect": "item3288×1; Reward10102=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1242"
+        ],
+        "oteryn": "TAK — wspólny claim dispatch_pg_qualified, test quest_container_chests; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:50",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "existing_qualified",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Zachowany jeden wspólny claim Reward10102 i cztery wybory. Istniejący test PG ponownie przeszedł: wspólny wybór nagrody, storage i achievement.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1242"
+      ],
+      "evidence": {
+        "test": "quest_container_chests_annihilator_choices_share_storage_and_achievement",
+        "test_result": "PASS: quest_container_chests_annihilator_choices_share_storage_and_achievement; końcowy zestaw publikacji podlega ponownej walidacji.",
+        "test_evidence": "Scoped PostgreSQL 18.6 run: quests3-annihilator_regression.log; W15B_STORAGE_CHOICE_POSTGRES_CASE_COMPLETED, exit 0, 55.01 s."
+      }
+    },
+    {
+      "id": "f045092aa6b4d9a05628d15037bf42731fbc6d1141689d012736143faef050ab",
+      "quest_row": 9,
+      "inventory": {
+        "quest": "the_annihilator",
+        "step": "Wspólny wybór nagrody uid6087",
+        "pattern": "P05",
+        "trigger": "Use uid6087",
+        "guard": "wspólny Reward10102 nieodebrany",
+        "effect": "item3319×1; Reward10102=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1249"
+        ],
+        "oteryn": "TAK — wspólny claim dispatch_pg_qualified, test quest_container_chests; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:50",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "existing_qualified",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Zachowany jeden wspólny claim Reward10102 i cztery wybory. Istniejący test PG ponownie przeszedł: wspólny wybór nagrody, storage i achievement.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1249"
+      ],
+      "evidence": {
+        "test": "quest_container_chests_annihilator_choices_share_storage_and_achievement",
+        "test_result": "PASS: quest_container_chests_annihilator_choices_share_storage_and_achievement; końcowy zestaw publikacji podlega ponownej walidacji.",
+        "test_evidence": "Scoped PostgreSQL 18.6 run: quests3-annihilator_regression.log; W15B_STORAGE_CHOICE_POSTGRES_CASE_COMPLETED, exit 0, 55.01 s."
+      }
+    },
+    {
+      "id": "06c40f353fec620ea3a2bd5c9b9fc0ddc056352c7c91abced181aaaf5da12b48",
+      "quest_row": 10,
+      "inventory": {
+        "quest": "the_annihilator",
+        "step": "Wspólny wybór nagrody uid6088",
+        "pattern": "P05",
+        "trigger": "Use uid6088",
+        "guard": "wspólny Reward10102 nieodebrany",
+        "effect": "item3213×1; container2856; Reward10102=1",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1256"
+        ],
+        "oteryn": "TAK — wspólny claim dispatch_pg_qualified, test quest_container_chests; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:50",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "existing_qualified",
+      "classification": "DERIVED",
+      "delivery": "existing_data",
+      "new_runtime_callback": false,
+      "done": "Zachowany jeden wspólny claim Reward10102 i cztery wybory. Istniejący test PG ponownie przeszedł: wspólny wybór nagrody, storage i achievement.",
+      "left_out": "",
+      "question_urls": [],
+      "answer_urls": [],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1256"
+      ],
+      "evidence": {
+        "test": "quest_container_chests_annihilator_choices_share_storage_and_achievement",
+        "test_result": "PASS: quest_container_chests_annihilator_choices_share_storage_and_achievement; końcowy zestaw publikacji podlega ponownej walidacji.",
+        "test_evidence": "Scoped PostgreSQL 18.6 run: quests3-annihilator_regression.log; W15B_STORAGE_CHOICE_POSTGRES_CASE_COMPLETED, exit 0, 55.01 s."
+      }
+    }
+  ]
+}

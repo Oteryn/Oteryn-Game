@@ -117,6 +117,9 @@ pub struct SourceAppearanceTarget<'a> {
 pub enum PlayerHitKind {
     /// Existing source without a qualified element; grants no elemental resistance.
     Mitigated,
+    /// Crystal src/game/game.cpp:8142: a real Undefined hit retains mitigation but
+    /// bypasses mana shield. It is distinct from an absent/unqualified element.
+    Undefined,
     Physical,
     Energy,
     Fire,
@@ -130,6 +133,7 @@ pub enum PlayerHitKind {
 impl PlayerHitKind {
     pub fn from_element(element: Option<&str>) -> Self {
         match element {
+            Some("undefined") => Self::Undefined,
             Some("physical") => Self::Physical,
             Some("energy") => Self::Energy,
             Some("fire") => Self::Fire,
@@ -166,12 +170,127 @@ impl PlayerHitKind {
             Self::Death => Some("Death Resistance"),
             Self::LifeDrain => Some("Life Drain Resistance"),
             Self::ManaDrain => Some("Mana Drain Resistance"),
-            Self::Mitigated => None,
+            Self::Mitigated | Self::Undefined => None,
         }
     }
 }
 
+/// Existing source-owned secondary admission, carried into the single incoming commit.
+pub struct SourceHitConditions<'a> {
+    pub definitions: &'a [crate::foundation::ConditionDefinition],
+    pub facts: &'a crate::foundation::ApplicationFacts<'a>,
+    pub immunities: &'a [crate::foundation::ConditionType],
+    pub fence: Option<&'a crate::foundation::ScopeRuntimeFence>,
+    pub stamp: crate::foundation::RuntimeWorkStamp,
+}
+
+/// Native reflection metadata; keeps source-none and physical-only equipment rules intact.
+pub struct SourceHitEquipment<'a> {
+    /// Native bites reflect Parry first and retain the elite source damage response.
+    pub native_bite: bool,
+    pub magnitude: u32,
+    pub element: Option<&'a str>,
+    pub stream: &'a [u8],
+}
+
 pub trait PlayerLethalVitals {
+    /// Read-only post-mitigation gate for components of one admitted source occurrence.
+    #[allow(clippy::too_many_arguments)]
+    fn source_hit_gate(
+        &self,
+        _runtime: &ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        magnitude: u32,
+        _kind: PlayerHitKind,
+        _now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<bool> {
+        Some(magnitude > 0)
+    }
+
+    /// Source's original health roll and admitted magnitude meet at the existing player owner.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_source_incoming_hit(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        _base_damage: u32,
+        _charm_occurrence: Option<oteryn_simulation_determinism::DecisionOccurrenceId>,
+        kind: PlayerHitKind,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        conditions: Option<SourceHitConditions<'_>>,
+        equipment: Option<SourceHitEquipment<'_>>,
+    ) -> Option<PlayerDamageReceipt> {
+        if let Some(equipment) = equipment
+            && !self.reflect_equipment_damage(
+                runtime,
+                source,
+                target,
+                session,
+                equipment.element,
+                equipment.magnitude,
+                equipment.stream,
+                now,
+            )
+        {
+            return None;
+        }
+        if let Some(c) = conditions {
+            match c.fence {
+                Some(fence) => self.apply_typed_composite_attack_damage(
+                    runtime,
+                    target,
+                    session,
+                    magnitude,
+                    kind,
+                    occurrence,
+                    source,
+                    c.definitions,
+                    c.facts,
+                    c.immunities,
+                    fence,
+                    c.stamp,
+                ),
+                None => self.apply_typed_composite_attack_damage_current(
+                    runtime,
+                    target,
+                    session,
+                    magnitude,
+                    kind,
+                    occurrence,
+                    source,
+                    c.definitions,
+                    c.facts,
+                    c.immunities,
+                    c.stamp,
+                ),
+            }
+        } else {
+            self.apply_source_typed_attack_damage(
+                runtime, source, target, session, magnitude, kind, occurrence, now,
+            )
+        }
+    }
+
+    /// Read-only defensive selection after independent source/target admission.
+    /// The source owner retains its cancellation in the occurrence receipt before
+    /// returning; no synthetic zero-damage HP/MP receipt is manufactured.
+    /// A successful Dodge cancels the whole attack, including attached conditions.
+    fn dodge_source_attack(
+        &self,
+        _runtime: &ChannelRuntimeV1,
+        _source: ExactActorRef,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _occurrence: &str,
+    ) -> bool {
+        false
+    }
+
     /// EQMOD2: the incoming source calls once after blocking and before HP/mana shield.
     /// The source stream's clock is strictly increasing; extension hits never enter here.
     #[allow(clippy::too_many_arguments)]
@@ -187,6 +306,27 @@ pub trait PlayerLethalVitals {
         _now: crate::foundation::owner_timer::SemanticTimeMicros,
     ) -> bool {
         true
+    }
+
+    /// A retained native callback keeps its exact replay sequence independently
+    /// of the real attribution clock. Owners without that receipt port refuse.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source occurrence identity and actual execution time are independent"
+    )]
+    fn reflect_equipment_damage_at_occurrence(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _element: Option<&str>,
+        _magnitude: u32,
+        _stream: &[u8],
+        _sequence: u64,
+        _now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> bool {
+        false
     }
 
     /// Source cast owns occurrence/replay and independently current tile/Combat admission.
@@ -225,6 +365,17 @@ pub trait PlayerLethalVitals {
         _session: GameSessionId,
     ) -> Option<(u32, u32, u64)> {
         None
+    }
+
+    /// A registered HP0 Player can still be a native callback target. This read
+    /// grants no hit: the source owner must publish a known no-hit for that state.
+    fn source_player_health_including_dead(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u32, u32, u64)> {
+        self.source_player_health(runtime, target, session)
     }
 
     /// Private source-qualified caller seam. Unsupported owners refuse, never synthesize HP.
@@ -267,6 +418,24 @@ pub trait PlayerLethalVitals {
         _now: crate::foundation::owner_timer::SemanticTimeMicros,
     ) -> Option<PlayerManaDrainReceipt> {
         None
+    }
+
+    /// Retain the independently admitted creature source for race-specific mana inversion.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source and current target/session remain independent owner inputs"
+    )]
+    fn apply_source_mana_drain(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<PlayerManaDrainReceipt> {
+        self.apply_attack_mana_drain(runtime, target, session, magnitude, occurrence, now)
     }
 
     /// An admitted secondary-only effect, with no primary HP receipt or synthetic hit.
@@ -326,6 +495,25 @@ pub trait PlayerLethalVitals {
         } else {
             None
         }
+    }
+
+    /// Preserve the admitted creature identity for the lethal hit's Bless selection.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "source identity is separate from target/session authority"
+    )]
+    fn apply_source_typed_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        kind: PlayerHitKind,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<PlayerDamageReceipt> {
+        self.apply_typed_attack_damage(runtime, target, session, magnitude, kind, occurrence, now)
     }
 
     /// Element-aware forwarding through the same damage/receipt owner.

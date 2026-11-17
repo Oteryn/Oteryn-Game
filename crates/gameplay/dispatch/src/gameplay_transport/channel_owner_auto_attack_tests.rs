@@ -79,7 +79,16 @@ fn pinned(bytes: &[u8]) -> PinnedGameplayBytes {
 }
 
 /// The source-qualified Thalom spell world: its tiles carry the protection-zone flags.
+/// Qualified once per test thread from constant inputs; the room is immutable and every
+/// `Owner` builds its own runtime, sessions and attack state around a clone of it.
 fn source_world() -> QualifiedNativeEntryRoom {
+    thread_local! {
+        static ROOM: QualifiedNativeEntryRoom = qualify_source_world();
+    }
+    ROOM.with(QualifiedNativeEntryRoom::clone)
+}
+
+fn qualify_source_world() -> QualifiedNativeEntryRoom {
     let input = NativeGameplayInput {
         cosmetics: NativeGameplayInput::unavailable_cosmetics(),
         native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,

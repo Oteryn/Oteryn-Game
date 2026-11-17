@@ -1,0 +1,5 @@
+{
+  "command": "rustup run 1.99.1 rustfmt --edition 2024 --check --config skip_children=true crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs",
+  "exit": 0,
+  "duration_seconds": 0.019
+}

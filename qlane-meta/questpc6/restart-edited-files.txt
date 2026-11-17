@@ -1,0 +1,8 @@
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_catalogue_chests.rs
+crates/gameplay/quests/src/quest/loader.rs
+.questpc/RESUME.md
+.questpc/SHARED-FIXES.md
+.questpc/restart-phase-a-run.py
+.questpc/restart-phase-a-cohorts.json
+.questpc/restart-review.md
+.questpc/restart-validation.json

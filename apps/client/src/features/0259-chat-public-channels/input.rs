@@ -21,9 +21,10 @@ impl PlayLink {
             return false;
         }
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).chat_public.open = true;
         }
         true
@@ -39,6 +40,6 @@ pub(in crate::play) fn enqueue(
         && commands.send(PlayCommand::ChatPublic(command)).is_err()
     {
         mailbox.chat_public.pending = false;
-        mailbox.chat_public.feedback = Some("The session has ended".into());
+        mailbox.chat_public.feedback = Some(tr!("The session has ended").into());
     }
 }

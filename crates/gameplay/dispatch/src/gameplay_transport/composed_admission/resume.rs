@@ -5,7 +5,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         attempt: connection::ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
+        // Recovery routing runs before the scoped owner is selected. Keep the
+        // same root preference across that handoff and every later readback.
+        let _foreground = self
+            .root
+            .foreground_demand()
+            .map_err(|_| AdmissionRefusal::Unavailable)?;
         let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
+        if self.states.security_revocation_stream_enabled
+            && !budget
+                .retry_unavailable(async || {
+                    self.root
+                        .security_revocation_read_fresh_now()
+                        .await
+                        .map_err(|_| AdmissionRefusal::Unavailable)
+                })
+                .await?
+        {
+            return Err(AdmissionRefusal::Rejected);
+        }
+
+        if budget
+            .retry_unavailable(async || {
+                self.root
+                    .security_session_revoked(attempt.game_session_id)
+                    .await
+                    .map_err(|_| AdmissionRefusal::Unavailable)
+            })
+            .await?
+        {
+            return Err(AdmissionRefusal::Rejected);
+        }
         if let Some(admitted) = self.recover_activity_session(&budget, &attempt).await? {
             return Ok(admitted);
         }
@@ -52,7 +82,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await?;
         let recovered_transfer = transferred.is_some();
-        let admitted = if let Some(admitted) = transferred {
+        let mut admitted = if let Some(admitted) = transferred {
             admitted
         } else {
             loop {
@@ -76,6 +106,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         };
+        // NBGRANT: only the final spell repair was pending on this positioned actor.
+        // Complete it under the new controller's current fence before making it playable;
+        // other refused entry participants retain their own refusal and are never promoted.
+        if self.repair_pending_spell_entry(admitted).await {
+            admitted.first_entry = FirstEntryOutcome::Reconciled;
+        }
         self.finish_resumed_session(admitted, recovered_transfer)
             .await;
         Ok(admitted)
@@ -86,6 +122,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         recovered_house_transfer: bool,
     ) {
+        if let Some(actor) = admitted.runtime_actor {
+            // Finish the durable departure before rebuilding the resumed observations.
+            let _ = self
+                .resume_dawnport_departure(actor, admitted.game_session_id)
+                .await;
+        }
         // ATTACK-0 §3 Reconnect: only the target is cleared; the in-fight deadline is kept.
         if let Some(actor) = admitted.runtime_actor {
             self.states

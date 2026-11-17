@@ -1,0 +1,370 @@
+{
+  "schema": 1,
+  "summary": {
+    "quest": "between_the_lines",
+    "elements": 9,
+    "auto": 8,
+    "manual": 1,
+    "statuses": {
+      "CALLBACK_DATA_IMPLEMENTED": 8,
+      "LEFT_OUT": 1
+    },
+    "new_callbacks": 8,
+    "prepared_npc": {
+      "rules": 0,
+      "reply_paragraphs": 0,
+      "conversations": 0
+    }
+  },
+  "runtime_claim": "Only the encoded callback operations are loaded by the existing owner. No whole-quest playthrough, missing world placement, source-specific presentation, NPC routing, encounter or reward hold is declared complete.",
+  "source_pin": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callback_keys": [
+    "oteryn:quest-callback/between-the-lines-edron-to-one",
+    "oteryn:quest-callback/between-the-lines-one-to-edron",
+    "oteryn:quest-callback/between-the-lines-one-to-two",
+    "oteryn:quest-callback/between-the-lines-third-labelled-to-two",
+    "oteryn:quest-callback/between-the-lines-one-to-four",
+    "oteryn:quest-callback/between-the-lines-two-to-one",
+    "oteryn:quest-callback/between-the-lines-three-to-one",
+    "oteryn:quest-callback/between-the-lines-four-to-one"
+  ],
+  "elements": [
+    {
+      "row": 1,
+      "step": "Edron → I",
+      "pattern": "P03",
+      "trigger": "Use 50978 @ (33185, 31794, 7)",
+      "condition": "dokładna pozycja i item; brak storage/level",
+      "effect": "teleport (32520, 32514, 8); prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:7",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Efekty OPEN_BOOKMACHINE/OPEN_BOOKSPELL i tekst wejścia są osobnym elementem Prezentacja przejścia; brak wspólnego publication ownera. Teleporty pozostawiono zgodnie z ANSWER pkt 6.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 2,
+      "step": "I → Edron",
+      "pattern": "P03",
+      "trigger": "Use 51528 @ (32522, 32512, 8)",
+      "condition": "dokładna pozycja i item; brak storage/level",
+      "effect": "teleport (33185, 31795, 7); prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:14",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Efekty OPEN_BOOKMACHINE/OPEN_BOOKSPELL i tekst wejścia są osobnym elementem Prezentacja przejścia; brak wspólnego publication ownera. Teleporty pozostawiono zgodnie z ANSWER pkt 6.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 3,
+      "step": "I → II",
+      "pattern": "P03",
+      "trigger": "Use 51624 @ (32526, 32512, 8)",
+      "condition": "dokładna pozycja i item; brak storage/level",
+      "effect": "teleport (32526, 32513, 9); prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:20",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Efekty OPEN_BOOKMACHINE/OPEN_BOOKSPELL i tekst wejścia są osobnym elementem Prezentacja przejścia; brak wspólnego publication ownera. Teleporty pozostawiono zgodnie z ANSWER pkt 6.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 4,
+      "step": "Portal opisany III",
+      "pattern": "P03",
+      "trigger": "Use 51625 @ (32536, 32512, 8)",
+      "condition": "dokładna pozycja i item; brak storage/level",
+      "effect": "teleport (32526, 32513, 9); prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:26",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Efekty OPEN_BOOKMACHINE/OPEN_BOOKSPELL i tekst wejścia są osobnym elementem Prezentacja przejścia; brak wspólnego publication ownera. Teleporty pozostawiono zgodnie z ANSWER pkt 6.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 5,
+      "step": "I → IV",
+      "pattern": "P03",
+      "trigger": "Use 51626 @ (32540, 32512, 8)",
+      "condition": "dokładna pozycja i item; brak storage/level",
+      "effect": "teleport (32585, 32558, 11); prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:32",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Efekty OPEN_BOOKMACHINE/OPEN_BOOKSPELL i tekst wejścia są osobnym elementem Prezentacja przejścia; brak wspólnego publication ownera. Teleporty pozostawiono zgodnie z ANSWER pkt 6.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 6,
+      "step": "II → I",
+      "pattern": "P03",
+      "trigger": "Use 51756 @ (32526, 32512, 9)",
+      "condition": "dokładna pozycja i item; brak storage/level",
+      "effect": "teleport (32520, 32514, 8); prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:38",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Efekty OPEN_BOOKMACHINE/OPEN_BOOKSPELL i tekst wejścia są osobnym elementem Prezentacja przejścia; brak wspólnego publication ownera. Teleporty pozostawiono zgodnie z ANSWER pkt 6.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 7,
+      "step": "III → I",
+      "pattern": "P03",
+      "trigger": "Use 51756 @ (32552, 32594, 10)",
+      "condition": "dokładna pozycja i item; brak storage/level",
+      "effect": "teleport (32520, 32514, 8); prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:38",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Efekty OPEN_BOOKMACHINE/OPEN_BOOKSPELL i tekst wejścia są osobnym elementem Prezentacja przejścia; brak wspólnego publication ownera. Teleporty pozostawiono zgodnie z ANSWER pkt 6.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 8,
+      "step": "IV → I",
+      "pattern": "P03",
+      "trigger": "Use 51756 @ (32585, 32557, 11)",
+      "condition": "dokładna pozycja i item; brak storage/level",
+      "effect": "teleport (32520, 32514, 8); prezentacja opisana osobno",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:38",
+      "initial_import": "AUTO",
+      "import_kind": "AUTO",
+      "status": "CALLBACK_DATA_IMPLEMENTED",
+      "implementation": [
+        "content/quests/world-callbacks.json"
+      ],
+      "reason": "Źródłowe selektory, warunki i reprezentowane efekty zapisano w istniejącym kontrakcie; bez nowego ownera.",
+      "missing_owner_function": "Istniejący zamknięty world callback",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [
+        {
+          "reason": "Efekty OPEN_BOOKMACHINE/OPEN_BOOKSPELL i tekst wejścia są osobnym elementem Prezentacja przejścia; brak wspólnego publication ownera. Teleporty pozostawiono zgodnie z ANSWER pkt 6.",
+          "questions": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+          ],
+          "answers": [
+            "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+          ]
+        }
+      ],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": [
+        "content/quests/world-callbacks.json"
+      ]
+    },
+    {
+      "row": 9,
+      "step": "Prezentacja przejścia",
+      "pattern": "P30",
+      "trigger": "każdy skuteczny teleport",
+      "condition": "po teleportTo",
+      "effect": "efekty OPEN_BOOKMACHINE=296 w celu i OPEN_BOOKSPELL=297 przy książce; wejście z Edron także komunikat",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/between_the_lines/actions_teleport_book_world.lua:10",
+      "initial_import": "RĘCZNIE",
+      "import_kind": "RĘCZNIE",
+      "status": "LEFT_OUT",
+      "implementation": [],
+      "reason": "Brak dopuszczonego powiązania całej źródłowej reguły losowej, czasowej, przemiany lub prezentacji z istniejącym ownerem. Nie rozszerzono wspólnego kontraktu i nie pominięto części operacji w runtime.",
+      "missing_owner_function": "Quest condition / timed world effect / appearance grant / presentation publication",
+      "questions": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539"
+      ],
+      "answers": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637"
+      ],
+      "remaining_effects": [],
+      "question": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589757539",
+      "answer": "https://github.com/Oteryn/Oteryn-Game/pull/2846#issuecomment-6589906637",
+      "source_implementation": []
+    }
+  ]
+}

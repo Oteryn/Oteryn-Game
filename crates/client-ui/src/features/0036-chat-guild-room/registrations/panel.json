@@ -1,0 +1,7 @@
+{
+  "mechanic": "0036-chat-guild-room",
+  "kind": "panels",
+  "id": "0036-chat-guild-room-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

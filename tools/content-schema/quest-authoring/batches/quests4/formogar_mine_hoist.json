@@ -1,0 +1,257 @@
+{
+  "schema": 1,
+  "quest_directory": "formogar_mine_hoist",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/formogar-hoist-3059",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 3059,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32157,
+        "y": 31125,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_skeleton",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You must first find the hoist instruction before using it.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:926",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:927"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/formogar-hoist-3060",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 3060,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32157,
+        "y": 31125,
+        "floor": -9
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_skeleton",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You must first find the hoist instruction before using it.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:18-23",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:926",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:927"
+      ],
+      "remote_teleport": {
+        "position": {
+          "x": 32156,
+          "y": 31125,
+          "floor": -10
+        },
+        "appearance": 2772,
+        "destination": {
+          "x": 32157,
+          "y": 31125,
+          "floor": -11
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/formogar-hoist-3061",
+      "quest": "oteryn:quest.formogar_mine_hoist",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 3061,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32157,
+        "y": 31125,
+        "floor": -10
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_skeleton",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_0/the_ice_islands/formorgar_mines_hoist_chest",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "read_only": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": true,
+      "failure_message": "You must first find the hoist instruction before using it.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:30",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:926",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/core/storages.lua:927"
+      ]
+    }
+  ],
+  "runtime_exclusions": [],
+  "npc_source": {
+    "quest": "formogar_mine_hoist",
+    "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+    "runtime_admission": false,
+    "entries": [],
+    "policy": "Source-only guarded dialogue evidence. No Lua execution or automatic native keyword admission."
+  },
+  "step_inventory": [
+    {
+      "element": "Brama instrukcji",
+      "patterns": "P03",
+      "trigger": "UID3059/3060/3061",
+      "condition": "Skeleton41309=1 AND Chest41310=1",
+      "effect": "Odmowa: powrót na fromPosition, komunikat, POFF",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Przejazd UID3059",
+      "patterns": "P03",
+      "trigger": "StepIn UID3059",
+      "condition": "Obie instrukcje=1",
+      "effect": "Teleport32157,31125,10",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Przejazd UID3061",
+      "patterns": "P03",
+      "trigger": "StepIn UID3061",
+      "condition": "Obie instrukcje=1",
+      "effect": "Teleport32157,31125,10",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:16"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "AUTO"
+    },
+    {
+      "element": "Kierunek środkowego pomostu",
+      "patterns": "P03/P01",
+      "trigger": "StepIn UID3060",
+      "condition": "Obie instrukcje=1; tile32156,31125,10 ma2772",
+      "effect": "Z2772:32157,31125,11; bez2772:32157,31125,9",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:18"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Prezentacja przejazdu",
+      "patterns": "P03",
+      "trigger": "Udany przejazd",
+      "condition": "jak wyżej",
+      "effect": "TELEPORT na pozycji po przeniesieniu",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:25"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Instrukcja ze szkieletu",
+      "patterns": "P05",
+      "trigger": "Wspólna tabela quest_system2",
+      "condition": "Rekord FormorgarMinesHoistSkeleton",
+      "effect": "Źródło zapisu dostępu poza katalogiem; pełna kwalifikacja chest owner wymagana",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:295"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    },
+    {
+      "element": "Instrukcja ze skrzyni",
+      "patterns": "P05",
+      "trigger": "NIEZNANE",
+      "condition": "Brak znalezionego writer FormorgarMinesHoistChest w przeszukanych scripts/startup",
+      "effect": "NIEZNANE; nie zastępować warunku samym Skeleton",
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/formogar_mine_hoist/movements_hoist.lua:9"
+      ],
+      "existing": "CZĘŚCIOWO — `crates/gameplay/quests/src/quest/world_callbacks.rs` i `content/quests/missions/quest-state.json`; opis konkretnego braku w uwagach B/NIEZNANE",
+      "initial_import_mode": "RĘCZNIE"
+    }
+  ],
+  "preserved_claims": []
+}

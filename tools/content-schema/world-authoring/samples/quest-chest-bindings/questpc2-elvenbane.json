@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "repository": "zimbadev/crystalserver",
+  "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+  "table": "data-global/startup/tables/chest.lua",
+  "table_sha256": "0ca1a7ad6da9589d1b77ff847a70f306b2086464e7dce21afad53e0c852478ca",
+  "startup": "data-global/startup/others/functions.lua:97-120",
+  "bindings": [
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
+      "position": [
+        32588,
+        31645,
+        3
+      ],
+      "appearance": 2434,
+      "unique": 6255,
+      "source_line": 2566
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
+      "position": [
+        32588,
+        31644,
+        3
+      ],
+      "appearance": 2434,
+      "unique": 6256,
+      "source_line": 2574
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
+      "position": [
+        32591,
+        31647,
+        3
+      ],
+      "appearance": 2472,
+      "unique": 6253,
+      "source_line": 2552
+    },
+    {
+      "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star",
+      "position": [
+        32590,
+        31647,
+        3
+      ],
+      "appearance": 2472,
+      "unique": 6254,
+      "source_line": 2559
+    }
+  ],
+  "level_source_sha256": "d8868f675aae7c541ddc3e76b3648b6a886e0ae31a4a614747d17e1784d234fc",
+  "level_access": [],
+  "startup_sha256": "897c4ea5572c6adef1d2b300fd75c141910d608a093ca15c3d3bf65fcf56826c"
+}

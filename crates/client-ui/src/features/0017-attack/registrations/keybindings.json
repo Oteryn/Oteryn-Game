@@ -1,0 +1,9 @@
+{
+  "kind": "keybindings",
+  "id": "0017-battle-toggle",
+  "entry": "input.rs::toggle_key",
+  "context": "gameplay",
+  "chord": "ALT+B",
+  "mechanic": "0017-attack",
+  "status": "supported"
+}

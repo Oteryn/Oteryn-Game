@@ -212,3 +212,22 @@ fn remove_dispositions_map_each_refusal_and_name_the_fee_only_when_removed() {
         (CharmRemoveDisposition::Rejected, 0)
     );
 }
+
+#[test]
+fn srx2_native_owner_qualifies_runtime_effect_availability() {
+    let qualified = content().with_runtime_consumers(true);
+    let view = qualified
+        .project(snapshot())
+        .expect("qualified native view");
+    assert!(view.charms.charms.iter().all(|charm| charm.effect_active));
+    let unavailable = content().with_runtime_consumers(false);
+    assert!(
+        unavailable
+            .project(snapshot())
+            .expect("unavailable reader")
+            .charms
+            .charms
+            .iter()
+            .all(|charm| !charm.effect_active)
+    );
+}

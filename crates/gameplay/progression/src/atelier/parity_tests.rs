@@ -22,10 +22,10 @@ fn state() -> Result<AtelierState, Error> {
                     Gem {
                         id,
                         quality: GemQuality::Lesser,
-                        domain: WheelDomain::Green,
                         mods: vec![31],
                         locked: false,
                         vessel: false,
+                        slot: None,
                         ruleset_revision: data.revision().into(),
                     },
                 )
@@ -45,7 +45,6 @@ fn reveal(quality: GemQuality) -> AtelierAction {
     AtelierAction::Reveal {
         id: 100,
         quality,
-        domain: WheelDomain::Red,
         mods: match quality {
             GemQuality::Lesser => vec![31],
             GemQuality::Regular => vec![31, 0],
@@ -73,7 +72,6 @@ fn reveal_quality_prices_shapes_and_resource_refusals_are_atomic() -> Result<(),
         assert_eq!(next.unrevealed.get(&quality), Some(&0));
         let gem = next.gems.get(&100).ok_or("revealed gem missing")?;
         assert_eq!(gem.quality, quality);
-        assert_eq!(gem.domain, WheelDomain::Red);
         assert_eq!(gem.mods, mods);
         assert!(!gem.locked && !gem.vessel);
 
@@ -103,12 +101,7 @@ fn reveal_rejects_duplicate_identity_wrong_shape_and_incompatible_modifiers() ->
     ] {
         refused(
             &state,
-            AtelierAction::Reveal {
-                id,
-                quality,
-                domain: WheelDomain::Green,
-                mods,
-            },
+            AtelierAction::Reveal { id, quality, mods },
             AtelierRefusal::InvalidDraw,
         );
     }
@@ -220,42 +213,30 @@ fn modifier_grade_refusals_preserve_gold_fragments_revision_and_gems() -> Result
 }
 
 #[test]
-fn rotation_prices_and_clockwise_domains_match_crystal() -> Result<(), Error> {
-    // Crystal tools.cpp:2110-2125; configmanager.cpp:438-440.
-    for (quality, fee) in [
-        (GemQuality::Lesser, 125_000),
-        (GemQuality::Regular, 250_000),
-        (GemQuality::Greater, 500_000),
-    ] {
-        let mut state = state()?;
-        state.gems.get_mut(&1).ok_or("gem")?.quality = quality;
-        for domain in [
-            WheelDomain::Red,
-            WheelDomain::Purple,
-            WheelDomain::Blue,
-            WheelDomain::Green,
-        ] {
-            let gold = state.gold;
-            state
-                .commit(state.revision, AtelierAction::SwitchDomain { id: 1 })
-                .map_err(|error| format!("rotation refused: {error:?}"))?;
-            assert_eq!(state.gems.get(&1).ok_or("gem")?.domain, domain);
-            assert_eq!(state.gold, gold - fee);
-        }
-        state.gold = fee - 1;
-        refused(
-            &state,
-            AtelierAction::SwitchDomain { id: 1 },
-            AtelierRefusal::InsufficientGold,
-        );
-    }
+fn dismantle_last_gem_allowed_when_not_socketed() -> Result<(), Error> {
+    // Winter Update 2026 (thread 559): gems have no domain, so the former "last gem of this
+    // domain" refusal is gone; a socketed or locked gem still cannot be dismantled.
+    let mut state = state()?;
+    state.gems.remove(&2);
+    state
+        .commit(
+            0,
+            AtelierAction::Dismantle {
+                id: 1,
+                yield_amount: 1,
+            },
+        )
+        .map_err(|error| format!("last gem refused: {error:?}"))?;
+    assert!(state.gems.is_empty());
+    assert_eq!(state.fragments.get(&FragmentKind::Basic), Some(&51));
     Ok(())
 }
 
 #[test]
 fn native_vessel_and_lock_guards_remain_atomic() -> Result<(), Error> {
     // Locked protection: Crystal player_wheel.cpp:1299-1302,1359-1362.
-    // In-vessel/last-domain refusals: accepted WHEEL-GEM-0 sections7,15 R2.
+    // In-vessel refusals: accepted WHEEL-GEM-0 sections7,15 R2. Slot occupancy and quality
+    // belong to the Gem Vessel owner, so a second gem of the same quality may be socketed.
     let mut state = state()?;
     state
         .commit(0, AtelierAction::Socket { id: 1 })
@@ -265,16 +246,9 @@ fn native_vessel_and_lock_guards_remain_atomic() -> Result<(), Error> {
         AtelierAction::Socket { id: 1 },
         AtelierRefusal::AlreadySocketed,
     );
-    refused(
-        &state,
-        AtelierAction::Socket { id: 2 },
-        AtelierRefusal::VesselOccupied,
-    );
-    refused(
-        &state,
-        AtelierAction::SwitchDomain { id: 1 },
-        AtelierRefusal::InVessel,
-    );
+    let mut both = state.clone();
+    both.commit(1, AtelierAction::Socket { id: 2 })
+        .map_err(|error| format!("second socket refused: {error:?}"))?;
     refused(
         &state,
         AtelierAction::Dismantle {
@@ -302,11 +276,6 @@ fn native_vessel_and_lock_guards_remain_atomic() -> Result<(), Error> {
         .map_err(|error| format!("lock refused: {error:?}"))?;
     refused(
         &state,
-        AtelierAction::SwitchDomain { id: 1 },
-        AtelierRefusal::Locked,
-    );
-    refused(
-        &state,
         AtelierAction::Dismantle {
             id: 1,
             yield_amount: 1,
@@ -323,14 +292,15 @@ fn native_vessel_and_lock_guards_remain_atomic() -> Result<(), Error> {
         )
         .map_err(|error| format!("unlock refused: {error:?}"))?;
     state.gems.remove(&2);
-    refused(
-        &state,
-        AtelierAction::Dismantle {
-            id: 1,
-            yield_amount: 1,
-        },
-        AtelierRefusal::LastDomainGem,
-    );
+    state
+        .commit(
+            4,
+            AtelierAction::Dismantle {
+                id: 1,
+                yield_amount: 1,
+            },
+        )
+        .map_err(|error| format!("unsocketed last gem refused: {error:?}"))?;
     Ok(())
 }
 
@@ -352,7 +322,6 @@ fn missing_or_non_current_gems_and_stale_revision_never_mutate() -> Result<(), E
     for action in [
         AtelierAction::Socket { id: 100 },
         AtelierAction::Remove { id: 100 },
-        AtelierAction::SwitchDomain { id: 100 },
         AtelierAction::Lock {
             id: 100,
             locked: true,
@@ -368,7 +337,6 @@ fn missing_or_non_current_gems_and_stale_revision_never_mutate() -> Result<(), E
     for action in [
         AtelierAction::Socket { id: 1 },
         AtelierAction::Remove { id: 1 },
-        AtelierAction::SwitchDomain { id: 1 },
         AtelierAction::Lock {
             id: 1,
             locked: true,

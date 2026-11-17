@@ -1,0 +1,10 @@
+{
+  "id": 669,
+  "name": "MECHANICS_STATUS_QUERY",
+  "owner_decision": "CL6 owner authorization 2026-11-06",
+  "capability": 384,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/mechanics-status-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/mechanics-status-v1.md#reply",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 65536
+}

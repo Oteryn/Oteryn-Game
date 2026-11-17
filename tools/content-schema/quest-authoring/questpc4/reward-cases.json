@@ -1,0 +1,2010 @@
+[
+  {
+    "title": "Thais Lighthouse Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.kv.lighthouse1",
+        "position": [
+          32225,
+          32265,
+          -10
+        ],
+        "unique": 6014,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3305",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:685"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.lighthouse2",
+        "position": [
+          32226,
+          32265,
+          -10
+        ],
+        "unique": 6015,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3421",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:693"
+      }
+    ]
+  },
+  {
+    "title": "The Annihilator Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+        "position": [
+          33227,
+          31656,
+          -13
+        ],
+        "unique": 6085,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3388",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": "oteryn:achievement/annihilator",
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1235"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+        "position": [
+          33229,
+          31656,
+          -13
+        ],
+        "unique": 6086,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3288",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": "oteryn:achievement/annihilator",
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1242"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+        "position": [
+          33231,
+          31656,
+          -13
+        ],
+        "unique": 6087,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3319",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": "oteryn:achievement/annihilator",
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1249"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_24.the_annihilator.reward",
+        "position": [
+          33233,
+          31656,
+          -13
+        ],
+        "unique": 6088,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i2856",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i3213",
+            1
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": "oteryn:achievement/annihilator",
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1256"
+      }
+    ]
+  },
+  {
+    "title": "The Ape City Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.old_parchment",
+        "position": [
+          32935,
+          32886,
+          -7
+        ],
+        "unique": 6103,
+        "appearance": 2473,
+        "root": "oteryn:item.tibia.i4831",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1368"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.whisper_moss",
+        "position": [
+          32782,
+          32910,
+          -8
+        ],
+        "unique": 6102,
+        "appearance": 2469,
+        "root": "oteryn:item.tibia.i4827",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1361"
+      }
+    ]
+  },
+  {
+    "title": "The Desert Dungeon Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.kv.desert1",
+        "position": [
+          32668,
+          32069,
+          -8
+        ],
+        "unique": 6157,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3035",
+        "quantity": 100,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1806"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.desert2",
+        "position": [
+          32675,
+          32069,
+          -8
+        ],
+        "unique": 6158,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i2857",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i3084",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3098",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3046",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3077",
+            1
+          ]
+        ],
+        "charges": [
+          [
+            "oteryn:item.tibia.i3084",
+            250
+          ]
+        ],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1813"
+      }
+    ]
+  },
+  {
+    "title": "The Explorer Society Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.books.cyclops",
+        "position": [
+          32770,
+          32245,
+          -8
+        ],
+        "unique": 6186,
+        "appearance": 2434,
+        "root": "oteryn:item.tibia.i2821",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2042"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.books.hengis",
+        "position": [
+          32786,
+          32254,
+          -8
+        ],
+        "unique": 6187,
+        "appearance": 2523,
+        "root": "oteryn:item.tibia.i2821",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": "Diary of Hengis Wulfson\n... I can only hope I can escape the cyclopes someday. For now I have occupied their chief with an attempt to learn to read and write, but for how long? I'm so desperate. What a foolish idea to travel here to search the famous treasures of this ancient, knightly order. I wish I had never heard about it. I wish I never had sung thant song. No clue how many unfortunate souls I have lured to death with it.",
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2049"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.gold_coin",
+        "position": [
+          32778,
+          32253,
+          -8
+        ],
+        "unique": 6079,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3031",
+        "quantity": 100,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1186"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
+        "position": [
+          32776,
+          32253,
+          -8
+        ],
+        "unique": 6078,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i12510",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1179; https://github.com/Oteryn/Oteryn-Game/pull/2770#issuecomment-6542716086 Q5=A (donor3208, accepted12510)"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.talon",
+        "position": [
+          32774,
+          32253,
+          -8
+        ],
+        "unique": 6077,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3034",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1172"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag1",
+        "position": [
+          32845,
+          31917,
+          -6
+        ],
+        "unique": 6083,
+        "appearance": 2469,
+        "root": "oteryn:item.tibia.i2853",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i3026",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3207",
+            1
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1216"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_6.explorer_society.skull_of_ratha.bag2",
+        "position": [
+          32847,
+          31917,
+          -6
+        ],
+        "unique": 6084,
+        "appearance": 2469,
+        "root": "oteryn:item.tibia.i2853",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i3012",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3097",
+            1
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1225"
+      }
+    ]
+  },
+  {
+    "title": "The Hidden City of Beregar Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.bpthe_undeath_stare",
+        "position": [
+          32546,
+          31522,
+          -11
+        ],
+        "unique": 6283,
+        "appearance": 1983,
+        "root": "oteryn:item.tibia.i2867",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i3035",
+            13
+          ],
+          [
+            "oteryn:item.tibia.i3003",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3457",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i268",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i239",
+            2
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2709"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_gold_ingot",
+        "position": [
+          32601,
+          31386,
+          -14
+        ],
+        "unique": 6279,
+        "appearance": 4024,
+        "root": "oteryn:item.tibia.i9058",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2681"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_rusted_armor",
+        "position": [
+          32650,
+          31467,
+          -15
+        ],
+        "unique": 6281,
+        "appearance": 4024,
+        "root": "oteryn:item.tibia.i8895",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2695"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.corpse_small_topazes",
+        "position": [
+          32588,
+          31406,
+          -14
+        ],
+        "unique": 6280,
+        "appearance": 4240,
+        "root": "oteryn:item.tibia.i9057",
+        "quantity": 3,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2688"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
+        "position": [
+          32582,
+          31405,
+          -15
+        ],
+        "unique": 6284,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i9019",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2717"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.prison_cell_key",
+        "position": [
+          32754,
+          31462,
+          -15
+        ],
+        "unique": 6282,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i9172",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2702"
+      }
+    ]
+  },
+  {
+    "title": "The Ice Islands Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_chest",
+        "position": [
+          32027,
+          31104,
+          -11
+        ],
+        "unique": 6214,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i2820",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": ".... the lever points to the left, the hoist will bring you one level higher. If it points to the right you will go one level deeper.\n\nThese are the construction plans of the hoist. You now understand the mechanism and can use it according to your wishes.",
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2259"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_0.the_ice_islands.formorgar_glacier_skeleton",
+        "position": [
+          32121,
+          31106,
+          -12
+        ],
+        "unique": 6213,
+        "appearance": 4024,
+        "root": "oteryn:item.tibia.i2853",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i3450",
+            20
+          ],
+          [
+            "oteryn:item.tibia.i3349",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i7443",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3031",
+            100
+          ],
+          [
+            "oteryn:item.tibia.i7290",
+            1
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2251"
+      }
+    ]
+  },
+  {
+    "title": "The Inquisition Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.reward_room_text",
+        "position": [
+          32316,
+          32260,
+          -8
+        ],
+        "unique": 6500,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i2821",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": "I\n\nIt is of utmost importance to keep the subject unaware that he is under survey. To begin an inquiry it is necessary to start as casual as possible. The best thing to do is to ask 'how are you?' immediately after the exchange of greeting phrases. If the suspect answers that something troubles him, than immediately ask him about that subject. If not, ask the subject if he had any TROUBLE lately.\n\nII\n\nNext, ask him if he thinks that the AUTHORITIES will handle the subject that troubles him. If he states that the authorities will solve the trouble, ask him if he thinks that they could have AVOIDED the trouble in the first place. If he confirms that the trouble could have been avoided, he is to be observed for heretical tendencies. If the suspect has yet not shown any heretic opinion, ask him why he thinks that the GODS would ALLOW that such things are happening. If he claims that he doesn't know, it is implied that he doubts this godly decision and is to be observed for heretical tendencies. If he comes up with an explanation that suggests that the gods lack the power to prevent that such a thing happens, than he is to be observed for heretical tendencies as well. If he answers that only the gods know the answer or that the gods had some plausible reason, like testing humanity, he may have no heretical tendencies at all.\n\nIII\n\nIf the suspect claims that he has no trouble at all, ask him if he thinks that the lack of trouble is explained by the FORESIGHT of the AUTHORITIES. If he denies, he is to be observed for heretical tendencies. If he agrees, ask him if he thinks that it is ALSO for the GODS' will that he has no trouble. If he disagrees, he is to be observed for heretical tendencies. If the subject does not show any suspicious behaviour at this point, ask him if he thinks that any TROUBLE will arise in the near FUTURE. If he negates, he obviously will become lax in the line of his duty and he is to be observed for heretical tendencies. If he confirms that trouble might arise, continue as in paragraph II.",
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:3167"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_2.the_inquisition_quest.witches_grimoire",
+        "position": [
+          32649,
+          31932,
+          -1
+        ],
+        "unique": 6270,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i7874",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2615"
+      }
+    ]
+  },
+  {
+    "title": "The New Frontier Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.chest_tome_of_knowledge1",
+        "position": [
+          33164,
+          31257,
+          -10
+        ],
+        "unique": 6287,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i10217",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2741"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.chest_tome_of_knowledge2",
+        "position": [
+          33057,
+          31019,
+          -2
+        ],
+        "unique": 6288,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i10217",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2748"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.gold_ingot",
+        "position": [
+          33055,
+          31029,
+          -7
+        ],
+        "unique": 6098,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i9058",
+        "quantity": 2,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1332"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.pig_bank",
+        "position": [
+          33053,
+          31029,
+          -7
+        ],
+        "unique": 6099,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i2995",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1339"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_54.the_new_frontier.reward.potions",
+        "position": [
+          33057,
+          31029,
+          -7
+        ],
+        "unique": 6097,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i2854",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i7439",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i7440",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i7443",
+            1
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1324"
+      }
+    ]
+  },
+  {
+    "title": "The Outlaw Camp Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.key.id3301",
+        "position": [
+          32617,
+          32250,
+          -7
+        ],
+        "unique": 5019,
+        "appearance": 3634,
+        "root": "oteryn:item.tibia.i2970",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": 3301,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:516"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.key.id3302",
+        "position": [
+          32609,
+          32244,
+          -7
+        ],
+        "unique": 5020,
+        "appearance": 3634,
+        "root": "oteryn:item.tibia.i2969",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": 3302,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:524"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.key.id3303",
+        "position": [
+          32651,
+          32244,
+          -7
+        ],
+        "unique": 5021,
+        "appearance": 3634,
+        "root": "oteryn:item.tibia.i2970",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": 3303,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:532"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.key.id3304",
+        "position": [
+          32623,
+          32187,
+          -9
+        ],
+        "unique": 5022,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i2972",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": 3304,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:540"
+      }
+    ]
+  },
+  {
+    "title": "The Paradox Tower Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.key.id3899",
+        "position": [
+          32497,
+          31887,
+          -7
+        ],
+        "unique": 5011,
+        "appearance": 3634,
+        "root": "oteryn:item.tibia.i2970",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": 3899,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:452"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.egg",
+        "position": [
+          32477,
+          31900,
+          -1
+        ],
+        "unique": 6089,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3215",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1266"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.gold",
+        "position": [
+          32478,
+          31900,
+          -1
+        ],
+        "unique": 6090,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3035",
+        "quantity": 100,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1273"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.talon",
+        "position": [
+          32479,
+          31900,
+          -1
+        ],
+        "unique": 6091,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3034",
+        "quantity": 32,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1280"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_24.the_paradox_tower.reward.wand",
+        "position": [
+          32480,
+          31900,
+          -1
+        ],
+        "unique": 6092,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3073",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1287"
+      }
+    ]
+  },
+  {
+    "title": "The Pits of Inferno Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.key.id3700",
+        "position": [
+          32842,
+          32225,
+          -8
+        ],
+        "unique": 5024,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i2971",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": 3700,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:556"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.chest_tible",
+        "position": [
+          32828,
+          32340,
+          -7
+        ],
+        "unique": 6202,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i2836",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": "Banor I praise your name.\nBe with me in the battle.\nBe my shield, let me be your sword.\nI will honour the godly spark in my soul.\nMay it flourish and grow.",
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2171"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_book",
+        "position": [
+          32854,
+          32325,
+          -11
+        ],
+        "unique": 6203,
+        "appearance": 5972,
+        "root": "oteryn:item.tibia.i2816",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": "look at the 4 and ignore the 2\nend the 7 with 5 in mind\nvalue of 6 is 9\nexplain the second of 4\nrun past the 7\nsubstract 10\nuse the northeast first\nsee the colors change\nerrors are red\nlook what changes\nexpect no mercy\nsix times 10\nstupidity is red.",
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2178"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.corpse_pirate_bp",
+        "position": [
+          32832,
+          32277,
+          -10
+        ],
+        "unique": 6204,
+        "appearance": 5972,
+        "root": "oteryn:item.tibia.i5926",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i6561",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i6299",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3052",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i5021",
+            3
+          ],
+          [
+            "oteryn:item.tibia.i3026",
+            5
+          ],
+          [
+            "oteryn:item.tibia.i3035",
+            11
+          ],
+          [
+            "oteryn:item.tibia.i5944",
+            2
+          ],
+          [
+            "oteryn:item.tibia.i3160",
+            3
+          ],
+          [
+            "oteryn:item.tibia.i3155",
+            2
+          ],
+          [
+            "oteryn:item.tibia.i3147",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i238",
+            1
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2185"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_bp",
+        "position": [
+          32826,
+          32232,
+          -11
+        ],
+        "unique": 6205,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3253",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i11605",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i11607",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i11609",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i11603",
+            1
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2193"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_frozen_starlight",
+        "position": [
+          32819,
+          32232,
+          -11
+        ],
+        "unique": 6207,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3249",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2208"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_platinum_coins",
+        "position": [
+          32824,
+          32232,
+          -11
+        ],
+        "unique": 6206,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3035",
+        "quantity": 100,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2201"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_soft_boots",
+        "position": [
+          32812,
+          32232,
+          -11
+        ],
+        "unique": 6209,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i6529",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2222"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest",
+        "position": [
+          32804,
+          32229,
+          -11
+        ],
+        "unique": 6210,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3341",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2229"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest",
+        "position": [
+          32806,
+          32229,
+          -11
+        ],
+        "unique": 6211,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i6527",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2236"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_staff_avenger_arbalest",
+        "position": [
+          32808,
+          32229,
+          -11
+        ],
+        "unique": 6212,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i5803",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2243"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u7_9.the_pits_of_inferno.reward_chest_stuffed",
+        "position": [
+          32814,
+          32232,
+          -11
+        ],
+        "unique": 6208,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i5791",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2215"
+      }
+    ]
+  },
+  {
+    "title": "The Shattered Isles Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook",
+        "position": [
+          32093,
+          32574,
+          -8
+        ],
+        "unique": 6194,
+        "appearance": 4240,
+        "root": "oteryn:item.tibia.i6120",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2108"
+      }
+    ]
+  },
+  {
+    "title": "The Thieves Guild Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.compromising_letter",
+        "position": [
+          32902,
+          32143,
+          -4
+        ],
+        "unique": 6274,
+        "appearance": 2433,
+        "root": "oteryn:item.tibia.i7935",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2644"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.golden_goblet",
+        "position": [
+          32551,
+          32652,
+          -10
+        ],
+        "unique": 6273,
+        "appearance": 2469,
+        "root": "oteryn:item.tibia.i7870",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2637"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_book",
+        "position": [
+          32367,
+          31781,
+          -8
+        ],
+        "unique": 6272,
+        "appearance": 2473,
+        "root": "oteryn:item.tibia.i8117",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": "Knight Brave: At last we meet face-to-face!\nDoctor Darkness: Too late, puny knight. You can't stop my master plan anymore!\n1st Knave: Watch out! It's a trap!\nKnight Brave: Don't quail, my faithful follower! We have mastered worse obstacles to get here!\nDoctor Darkness: Haha! You may not fear for your own life, but how about hers!?\n2nd Knave: Oh no! Look! It's Princess Buttercup! He's holding her hostage!\nDoctor Darkness: Indeed I do! Wouldn't it be a pity for such a beautiful young lady to die so tragically?\nPrincess Buttercup: Don't care about me! Save the world!\nDoctor Darkness: Keep quiet! Else your hair will make the acquaintance of these scissors!\nAll: You're such a monster!\nDoctor Darkness: Hahaha! Now drop your weapons or else...\n1st Knave: Never!\n2nd Knave: But what about the princess?\nKnight Brave: Trust me, my loyal minions. Drop your weapons.\nDoctor Darkness: At last! The brave Knight Brave in my hands! Your death is near!\nKnight Brave: Not that fast, Doctor Dumbness!\nDoctor Darkness: How dare you? Are you mad? I hold the princess hostage and you drop your weapons. You're all lost!\nKnight Brave: I don't think so, dear doctor!\n1st Knave: What's this? Behind the doctor?\n2nd Knave: Look! It's Lucky, the wonder dog!\nLucky: Woof! Woof!\nDoctor Darkness: Noooooo!\nKnight Brave: Get him, boy!\nLucky: Grrr!\nDoctor Darkness: Ahhhhhh!\nAll: Hooray!\nKnight Brave: Lucky, once again you saved the day!\nLucky: Woof!",
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2630"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
+        "position": [
+          32309,
+          32209,
+          -8
+        ],
+        "unique": 6275,
+        "appearance": 2434,
+        "root": "oteryn:item.tibia.i8021",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2651"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
+        "position": [
+          32309,
+          32211,
+          -8
+        ],
+        "unique": 6276,
+        "appearance": 2434,
+        "root": "oteryn:item.tibia.i7404",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2658"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_end",
+        "position": [
+          32309,
+          32213,
+          -8
+        ],
+        "unique": 6277,
+        "appearance": 2434,
+        "root": "oteryn:item.tibia.i8073",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2665"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_2.the_thieves_guild_quest.reward_oasis",
+        "position": [
+          33131,
+          32661,
+          -7
+        ],
+        "unique": 6271,
+        "appearance": 2473,
+        "root": "oteryn:item.tibia.i235",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2623"
+      }
+    ]
+  },
+  {
+    "title": "The White Raven Monastery Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u7_24.family_brooch.brooch",
+        "position": [
+          32248,
+          31866,
+          -8
+        ],
+        "unique": 6055,
+        "appearance": 2476,
+        "root": "oteryn:item.tibia.i3205",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:992"
+      }
+    ]
+  },
+  {
+    "title": "Threatened Dreams Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission01.poacher_chest",
+        "position": [
+          32787,
+          31975,
+          -11
+        ],
+        "unique": 6100,
+        "appearance": 12764,
+        "root": "oteryn:item.tibia.i25235",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1347"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u11_40.threatened_dreams.mission02.dark_moon_mirror",
+        "position": [
+          33594,
+          32214,
+          -9
+        ],
+        "unique": 6101,
+        "appearance": 25762,
+        "root": "oteryn:item.tibia.i25729",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1354"
+      }
+    ]
+  },
+  {
+    "title": "Throwing Star Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.kv.throwingstar",
+        "position": [
+          32522,
+          32111,
+          -15
+        ],
+        "unique": 6159,
+        "appearance": 2473,
+        "root": "oteryn:item.tibia.i3287",
+        "quantity": 10,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1823"
+      }
+    ]
+  },
+  {
+    "title": "Time Ring Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.kv.timering1",
+        "position": [
+          33038,
+          32171,
+          -9
+        ],
+        "unique": 6049,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3076",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:948"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.timering2",
+        "position": [
+          33039,
+          32171,
+          -9
+        ],
+        "unique": 6050,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3053",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:955"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.timering3",
+        "position": [
+          33040,
+          32171,
+          -9
+        ],
+        "unique": 6051,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3082",
+        "quantity": 1,
+        "children": [],
+        "charges": [
+          [
+            "oteryn:item.tibia.i3082",
+            50
+          ]
+        ],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:962"
+      }
+    ]
+  },
+  {
+    "title": "To Blind the Enemy Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp1",
+        "position": [
+          32588,
+          31645,
+          -3
+        ],
+        "unique": 6255,
+        "appearance": 2434,
+        "root": "oteryn:item.tibia.i2853",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i237",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3147",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3059",
+            1
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2566"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.bp2",
+        "position": [
+          32588,
+          31644,
+          -3
+        ],
+        "unique": 6256,
+        "appearance": 2434,
+        "root": "oteryn:item.tibia.i2853",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i3028",
+            2
+          ],
+          [
+            "oteryn:item.tibia.i3031",
+            100
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2574"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.dwarven_shield",
+        "position": [
+          32591,
+          31647,
+          -3
+        ],
+        "unique": 6253,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3425",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2552"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.morning_star",
+        "position": [
+          32590,
+          31647,
+          -3
+        ],
+        "unique": 6254,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i3282",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2559"
+      }
+    ]
+  },
+  {
+    "title": "To Outfox a Fox Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.to_outfox_afox_quest.mining_helmet",
+        "position": [
+          32467,
+          31970,
+          -5
+        ],
+        "unique": 6257,
+        "appearance": 2469,
+        "root": "oteryn:item.tibia.i139",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2583"
+      }
+    ]
+  },
+  {
+    "title": "Tomes of Knowledge Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge1",
+        "position": [
+          33009,
+          31251,
+          -8
+        ],
+        "unique": 6292,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i10217",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2778"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge2",
+        "position": [
+          32978,
+          31427,
+          -2
+        ],
+        "unique": 6293,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i10217",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2785"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge3",
+        "position": [
+          33306,
+          31125,
+          -9
+        ],
+        "unique": 6294,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i10217",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2792"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.chest_tome_of_knowledge4",
+        "position": [
+          33157,
+          31229,
+          -15
+        ],
+        "unique": 6295,
+        "appearance": 2480,
+        "root": "oteryn:item.tibia.i10217",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2799"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_54.tomes_of_knowledge.top_tower",
+        "position": [
+          33154,
+          31297,
+          -3
+        ],
+        "unique": 6104,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i10217",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1375"
+      }
+    ]
+  },
+  {
+    "title": "Triangle Tower Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.kv.triangletower",
+        "position": [
+          32565,
+          32119,
+          -3
+        ],
+        "unique": 6160,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i2853",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i3083",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3029",
+            2
+          ],
+          [
+            "oteryn:item.tibia.i3097",
+            1
+          ]
+        ],
+        "charges": [
+          [
+            "oteryn:item.tibia.i3083",
+            150
+          ]
+        ],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1831"
+      }
+    ]
+  },
+  {
+    "title": "Troll Cave Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.kv.trollcave1",
+        "position": [
+          33143,
+          31719,
+          -10
+        ],
+        "unique": 6039,
+        "appearance": 2473,
+        "root": "oteryn:item.tibia.i3083",
+        "quantity": 1,
+        "children": [],
+        "charges": [
+          [
+            "oteryn:item.tibia.i3083",
+            150
+          ]
+        ],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:873"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.trollcave1",
+        "position": [
+          33143,
+          31721,
+          -10
+        ],
+        "unique": 6040,
+        "appearance": 2473,
+        "root": "oteryn:item.tibia.i3372",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:880"
+      }
+    ]
+  },
+  {
+    "title": "Vampire Hunter Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_2.vampire_hunter_quest.blood_skull",
+        "position": [
+          32972,
+          31461,
+          -10
+        ],
+        "unique": 6278,
+        "appearance": 1986,
+        "root": "oteryn:item.tibia.i8532",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2673"
+      }
+    ]
+  },
+  {
+    "title": "Vampire Shield Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.kv.vampireshield1",
+        "position": [
+          33188,
+          31682,
+          -14
+        ],
+        "unique": 6071,
+        "appearance": 2469,
+        "root": "oteryn:item.tibia.i2853",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i3058",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3027",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3078",
+            1
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:1119"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.vampireshield2",
+        "position": [
+          33189,
+          31688,
+          -14
+        ],
+        "unique": 6041,
+        "appearance": 2469,
+        "root": "oteryn:item.tibia.i3302",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:888"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.vampireshield3",
+        "position": [
+          33195,
+          31688,
+          -14
+        ],
+        "unique": 6042,
+        "appearance": 2469,
+        "root": "oteryn:item.tibia.i3434",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:895"
+      }
+    ]
+  },
+  {
+    "title": "Waterfall Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.waterfall_quest",
+        "position": [
+          32970,
+          32646,
+          -8
+        ],
+        "unique": 6258,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i5926",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i6096",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i3097",
+            1
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2591"
+      }
+    ]
+  },
+  {
+    "title": "Wedding Ring Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.kv.weddingring1",
+        "position": [
+          33158,
+          31621,
+          -15
+        ],
+        "unique": 6043,
+        "appearance": 2469,
+        "root": "oteryn:item.tibia.i3085",
+        "quantity": 1,
+        "children": [],
+        "charges": [
+          [
+            "oteryn:item.tibia.i3085",
+            200
+          ]
+        ],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:903"
+      },
+      {
+        "claim": "oteryn:reward-claim.kv.weddingring2",
+        "position": [
+          33158,
+          31622,
+          -15
+        ],
+        "unique": 6044,
+        "appearance": 2469,
+        "root": "oteryn:item.tibia.i3004",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:910"
+      }
+    ]
+  },
+  {
+    "title": "What a Foolish Quest",
+    "chests": [
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.bag_book_knife",
+        "position": [
+          32661,
+          31855,
+          -13
+        ],
+        "unique": 6269,
+        "appearance": 2472,
+        "root": "oteryn:item.tibia.i2853",
+        "quantity": 1,
+        "children": [
+          [
+            "oteryn:item.tibia.i3469",
+            1
+          ],
+          [
+            "oteryn:item.tibia.i2821",
+            1
+          ]
+        ],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2607"
+      },
+      {
+        "claim": "oteryn:reward-claim.quest.u8_1.what_afoolish_quest.magical_watch",
+        "position": [
+          32563,
+          32115,
+          -4
+        ],
+        "unique": 6259,
+        "appearance": 2469,
+        "root": "oteryn:item.tibia.i112",
+        "quantity": 1,
+        "children": [],
+        "charges": [],
+        "key_number": null,
+        "root_text": null,
+        "achievement": null,
+        "source": "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:2600"
+      }
+    ]
+  }
+]

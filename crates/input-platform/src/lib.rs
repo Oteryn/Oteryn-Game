@@ -1,4 +1,7 @@
-//! Bounded Windows/winit physical-input adapter.
+//! Bounded winit physical-input adapter for native desktop hosts.
+//!
+//! Windows exposes the existing winit ingress by default. Other desktop hosts
+//! opt in through `native-winit`; Linux enables the existing X11 backend.
 //!
 //! This crate maps supported platform events into the merged framework-neutral
 //! `oteryn-input-actions` physical-event contract. It owns no product keymap,
@@ -8,7 +11,7 @@
 mod adapter;
 mod error;
 
-#[cfg(windows)]
+#[cfg(any(windows, feature = "native-winit"))]
 mod winit_adapter;
 
 pub use adapter::InputPlatformAdapter;

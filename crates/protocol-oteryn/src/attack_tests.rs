@@ -294,6 +294,7 @@ fn the_registries_bind_the_attack_constants() {
         serde_json::json!([
             COMMAND_TYPE_ATTACK_TARGET_INTENT, // ATTACK_TARGET_INTENT
             COMMAND_TYPE_FIGHT_MODES_INTENT,   // FIGHT_MODES_INTENT
+            crate::battle_metadata::COMMAND_TYPE_BATTLE_METADATA_QUERY, // BATTLE_METADATA_QUERY (O014)
         ])
     );
     assert_eq!(

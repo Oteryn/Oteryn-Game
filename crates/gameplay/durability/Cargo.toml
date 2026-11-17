@@ -26,6 +26,7 @@ oteryn-gameplay-quests = { version = "=0.1.0", path = "../quests" }
 oteryn-gameplay-world-change = { version = "=0.1.0", path = "../world-change" }
 oteryn-gameplay-housing = { version = "=0.1.0", path = "../housing" }
 base64.workspace = true
+ed25519-dalek.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../error-codes" }
 oteryn-gameplay-admission-evidence = { version = "=0.1.0", path = "../admission-evidence" }
 oteryn-gameplay-character-recovery-fence = { version = "=0.1.0", path = "../character-recovery-fence" }
@@ -36,6 +37,7 @@ oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
 oteryn-gameplay-native-admission-source = { version = "=0.1.0", path = "../native-admission-source" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../protocol-oteryn" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../simulation-determinism" }
+oteryn-task-supervisor = { version = "=0.1.0", path = "../../task-supervisor" }
 oteryn-world-bundle = { version = "=0.1.0", path = "../../world-bundle" }
 prost.workspace = true
 serde = { workspace = true, features = ["derive"] }

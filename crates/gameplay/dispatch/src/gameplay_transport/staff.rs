@@ -115,9 +115,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
     pub(super) async fn staff_muted(&self, session: GameSessionId) -> bool {
-        self.staff_mute_wait(session).await.is_some()
+        self.staff_only_mute_wait(session).await.is_some()
     }
     pub(super) async fn staff_mute_wait(&self, session: GameSessionId) -> Option<u32> {
+        // This shared gate covers every player-chat path. Staff's spell gate
+        // remains staff-only: Platform MUTE does not restrict spell casting.
+        let mut platform_wait = None;
+        if platform_enforcement_enabled(self.states.platform_enforcement_enabled) {
+            use super::connection::AdmissionRefusal;
+            use crate::durability::DurabilityError;
+            let read = async {
+                let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
+                retry
+                    .retry_unavailable(async || {
+                        self.root
+                            .platform_mute_for_session(self.character, session)
+                            .await
+                            .map_err(|error| match error {
+                                DurabilityError::RootUnavailable
+                                | DurabilityError::Unavailable
+                                | DurabilityError::Database(_)
+                                | DurabilityError::RootPassDeadlineExceeded => {
+                                    AdmissionRefusal::Unavailable
+                                }
+                                _ => AdmissionRefusal::Rejected,
+                            })
+                    })
+                    .await
+                    .ok()
+            }
+            .await;
+            // No failure is cached. The next chat command retries current truth.
+            platform_wait = read
+                .unwrap_or(Some(1))
+                .map(|wait| wait.clamp(1, oteryn_protocol_oteryn::chat::MAX_CHAT_WAIT_SECONDS));
+        }
+        match (self.staff_only_mute_wait(session).await, platform_wait) {
+            (Some(a), Some(b)) => Some(a.max(b)),
+            (a, b) => a.or(b),
+        }
+    }
+    async fn staff_only_mute_wait(&self, session: GameSessionId) -> Option<u32> {
         // All booted nodes enforce DB truth, including nodes without operator trust.
         if !self.root.staff_moderation_configured() {
             return None;
@@ -153,6 +191,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 }
+fn platform_enforcement_enabled(serving_enabled: bool) -> bool {
+    #[cfg(test)]
+    if let Some(enabled) = test_clock::enforcement() {
+        return enabled;
+    }
+    serving_enabled
+}
+
 macro_rules! composed_methods {
     () => {
         async fn staff_command(
@@ -169,15 +215,38 @@ pub(super) use composed_methods;
 
 #[cfg(test)]
 pub(super) mod test_clock {
-    // Only this mechanic's PG tests override time; no runtime input can reach it.
-    use std::sync::Mutex;
-    static NOW: Mutex<Option<Option<(u64, u64)>>> = Mutex::new(None);
-    pub(in super::super) fn set(now: Option<(u64, u64)>) {
-        if let Ok(mut value) = NOW.lock() {
-            *value = Some(now);
-        }
+    // Each PG scenario owns a current-thread runtime on its own OS thread.
+    // A missing/future clock in one scenario must not affect another fixture.
+    use std::cell::Cell;
+    thread_local! {
+        static NOW: Cell<Option<Option<(u64, u64)>>> = const { Cell::new(None) };
+        static ENFORCEMENT: Cell<Option<bool>> = const { Cell::new(None) };
     }
-    pub(super) fn get() -> Option<Option<(u64, u64)>> {
-        NOW.lock().ok().and_then(|now| *now)
+    pub(in super::super) fn set(now: Option<(u64, u64)>) {
+        NOW.set(Some(now));
+    }
+    pub(in crate::gameplay_transport) fn get() -> Option<Option<(u64, u64)>> {
+        NOW.get()
+    }
+    pub(in crate::gameplay_transport) fn set_enforcement(enabled: bool) {
+        ENFORCEMENT.set(Some(enabled));
+    }
+    pub(in crate::gameplay_transport) fn enforcement() -> Option<bool> {
+        ENFORCEMENT.get()
+    }
+    #[test]
+    fn staff_test_clock_overrides_are_isolated_between_scenarios() {
+        let available = std::thread::spawn(|| {
+            set(Some((1, 1)));
+            let unavailable = std::thread::spawn(|| {
+                assert_eq!(get(), None);
+                set(None);
+                assert_eq!(get(), Some(None));
+            });
+            assert!(unavailable.join().is_ok());
+            assert_eq!(get(), Some(Some((1, 1))));
+        });
+        assert!(available.join().is_ok());
+        assert_eq!(get(), None);
     }
 }

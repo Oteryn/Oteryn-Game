@@ -372,7 +372,14 @@ fn highscores_outside_the_contract_are_refused() {
     zero.level = 0;
     assert!(refused(vec![zero]));
     assert!(refused(vec![row(1, 1, "Al\"dric")]));
-    for (category, filter) in [(0, 0), (12, 0), (1, 6)] {
+    for category in [14, 17] {
+        let mut drome = highscores(vec![row(1, 1, "Aa")]);
+        drome.category = category;
+        assert!(encode_highscores(AUTHORITY, &drome).is_ok());
+        drome.filter = 6;
+        assert!(encode_highscores(AUTHORITY, &drome).is_err());
+    }
+    for (category, filter) in [(0, 0), (13, 0), (15, 0), (18, 0), (255, 0), (1, 6)] {
         let mut snapshot = highscores(vec![]);
         snapshot.category = category;
         snapshot.filter = filter;
@@ -441,7 +448,12 @@ impl ReportClock for Clock {
 
 #[derive(Default)]
 struct Store {
+    v2_rows: Vec<v2::Snapshot>,
+    v2_acks: Vec<u64>,
+    v2_facts: Option<v2::Facts>,
     epoch: u64,
+    totals: Vec<TotalsSnapshot>,
+    totals_facts: Option<TotalsFacts>,
     highscores_source: bool,
     profiles: Vec<ProfileSnapshot>,
     batches: Vec<HighscoresBatch>,
@@ -464,6 +476,48 @@ struct Store {
 type Shared = Arc<Mutex<Store>>;
 
 impl PublicStore for Shared {
+    async fn next_v2(
+        &self,
+        family: v2::Family,
+        held: &[String],
+    ) -> Result<Option<v2::Snapshot>, ()> {
+        Ok(self
+            .lock()
+            .unwrap()
+            .v2_rows
+            .iter()
+            .find(|s| {
+                s.family() == family && !held.contains(&format!("{}:{}", s.world_id, s.subject))
+            })
+            .cloned())
+    }
+    async fn ack_v2(&self, snapshot: &v2::Snapshot) -> Result<(), ()> {
+        let mut s = self.lock().unwrap();
+        s.v2_acks.push(snapshot.projection_revision);
+        s.v2_rows.retain(|r| {
+            r.subject != snapshot.subject
+                || r.projection_epoch > snapshot.projection_epoch
+                || r.projection_revision > snapshot.projection_revision
+        });
+        Ok(())
+    }
+    async fn v2_facts(&self, _: v2::Family) -> Result<v2::Facts, ()> {
+        self.lock().unwrap().v2_facts.ok_or(())
+    }
+    async fn sample_totals(&self, _after: &str) -> Result<Option<String>, ()> {
+        Ok(None)
+    }
+    async fn next_totals(&self) -> Result<Vec<TotalsSnapshot>, ()> {
+        Ok(self.lock().unwrap().totals.clone())
+    }
+    async fn ack_totals(&self, sample: &TotalsSnapshot) -> Result<(), ()> {
+        self.lock().unwrap().totals.retain(|s| s != sample);
+        Ok(())
+    }
+    async fn totals_facts(&self) -> Result<Option<TotalsFacts>, ()> {
+        Ok(self.lock().unwrap().totals_facts)
+    }
+
     fn gameplay_waiting(&self) -> bool {
         self.lock().unwrap().demand
     }
@@ -1447,6 +1501,34 @@ fn line_and_paragraph_separators_are_outside_the_name_grammar() {
 }
 
 #[test]
+fn highscores_accept_boss_points_category_twelve() {
+    let mut snapshot = highscores(vec![]);
+    snapshot.category = 12;
+    assert!(encode_highscores(AUTHORITY, &snapshot).is_ok());
+    assert!(HIGHSCORE_CATEGORIES.contains(&("boss", 12)));
+}
+
+#[test]
+fn highscores_accept_drome_fourteen_seventeen_with_canonical_snapshot_retries() {
+    for category in [14, 16, 17] {
+        for rows in [vec![], vec![row(1, 1, "Aldric")]] {
+            let mut snapshot = highscores(rows);
+            snapshot.category = category;
+            let encoded = encode_highscores(AUTHORITY, &snapshot).unwrap();
+            let parsed: serde_json::Value = serde_json::from_str(&encoded).unwrap();
+            assert_eq!(parsed["category"], category);
+            assert_eq!(parsed["projection_revision"], "17");
+            assert_eq!(encoded, encode_highscores(AUTHORITY, &snapshot).unwrap());
+        }
+    }
+    assert!(HIGHSCORE_CATEGORIES.contains(&("drome", 14)));
+    assert!(HIGHSCORE_CATEGORIES.contains(&("drome_current", 17)));
+    for reserved in [13, 15] {
+        assert!(!HIGHSCORE_CATEGORIES.iter().any(|(_, id)| *id == reserved));
+    }
+}
+
+#[test]
 fn highscores_filters_and_categories_match_the_platform_consumer() {
     // Filter 0 is all; 1..5 are the base vocations by their wire vocation id
     // (Platform `highscoreVocationFilter`: Druid 1, Knight 2, Monk 3,
@@ -1459,7 +1541,8 @@ fn highscores_filters_and_categories_match_the_platform_consumer() {
             assert_eq!(vocation_id(name), Some(*id), "{name}");
         }
     }
-    // Platform `CommunityDataPolicy` category ids 1..9, then 10 and 11.
+    // Platform base ids 1..9 remain unchanged; Game also exports 10..12,
+    // reserved Drome Score14 and new current Drome17. Loyalty13 and future15 stay absent.
     let platform = [
         ("experience", 1),
         ("magic", 2),
@@ -1474,8 +1557,9 @@ fn highscores_filters_and_categories_match_the_platform_consumer() {
     for (name, id) in platform {
         assert!(HIGHSCORE_CATEGORIES.contains(&(name, id)), "{name}");
     }
-    for (index, (_, id)) in HIGHSCORE_CATEGORIES.iter().enumerate() {
-        assert_eq!(usize::from(*id), index + 1);
+    let ids: Vec<_> = HIGHSCORE_CATEGORIES.iter().map(|(_, id)| *id).collect();
+    assert_eq!(ids, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 17]);
+    for (_, id) in &HIGHSCORE_CATEGORIES {
         let mut snapshot = highscores(vec![]);
         snapshot.category = *id;
         assert!(encode_highscores(AUTHORITY, &snapshot).is_ok());
@@ -1642,4 +1726,371 @@ fn projection_names_refuse_slash_dot_and_dot_dot() {
     for name in ["Al Dric", "...", "Al.dric", ".a"] {
         assert!(projection_name_valid(name), "{name:?}");
     }
+}
+
+fn totals() -> TotalsSnapshot {
+    TotalsSnapshot {
+        world_id: WORLD.into(),
+        projection_epoch: 1,
+        projection_revision: 17,
+        source_observed_at: 1_790_000_000,
+        online_players: 0,
+        player_deaths: 42,
+    }
+}
+
+#[test]
+fn world_totals_match_golden_vectors_and_reject_invalid_envelopes() {
+    use world_totals::encode_totals;
+    let fixture =
+        include_str!("../../../../docs/contracts/world-totals/v1/vectors/zero-online.json");
+    assert_eq!(encode_totals(AUTHORITY, &totals()).unwrap(), fixture.trim());
+    let mut wide = totals();
+    wide.online_players = 4097; // No public-list cap or float precision loss.
+    wide.player_deaths = 9_007_199_254_740_993;
+    assert_eq!(
+        encode_totals(AUTHORITY, &wide).unwrap(),
+        include_str!("../../../../docs/contracts/world-totals/v1/vectors/wide-counts.json").trim()
+    );
+    let mut next = totals();
+    next.projection_revision = 18;
+    next.source_observed_at += 10;
+    assert_eq!(
+        encode_totals(AUTHORITY, &next).unwrap(),
+        include_str!(
+            "../../../../docs/contracts/world-totals/v1/vectors/unchanged-next-sample.json"
+        )
+        .trim()
+    );
+    for bad in [
+        TotalsSnapshot {
+            projection_epoch: 0,
+            ..totals()
+        },
+        TotalsSnapshot {
+            projection_revision: 0,
+            ..totals()
+        },
+        TotalsSnapshot {
+            source_observed_at: -1,
+            ..totals()
+        },
+        TotalsSnapshot {
+            player_deaths: u64::MAX,
+            ..totals()
+        },
+        TotalsSnapshot {
+            online_players: u64::MAX,
+            ..totals()
+        },
+        TotalsSnapshot {
+            world_id: "private text".into(),
+            ..totals()
+        },
+    ] {
+        assert!(encode_totals(AUTHORITY, &bad).is_err());
+    }
+    assert_eq!(Operation::PublishWorldTotalsV1.path(), world_totals::PATH);
+    assert_eq!(Operation::PublishWorldTotalsV1.request_bytes_max(), 1024);
+}
+
+#[test]
+fn world_totals_retry_identically_and_ack_only_after_delivery_with_epoch_fence() {
+    let store = Shared::default();
+    store.lock().unwrap().totals.push(totals());
+    let p = publisher(&store, vec![Some(Err(NotDelivered::Unavailable)), OK]);
+    assert!(block_on(p.totals_step()).is_err());
+    assert_eq!(store.lock().unwrap().totals.len(), 1);
+    block_on(p.totals_step()).unwrap();
+    assert!(store.lock().unwrap().totals.is_empty());
+    let sent = p.sink.sent();
+    assert_eq!(sent.len(), 2);
+    assert_eq!(sent[0], sent[1]);
+    store.lock().unwrap().totals.push(totals());
+    p.fence.lock().unwrap().0 = Some(2);
+    assert!(block_on(p.totals_step()).is_err());
+    assert_eq!(p.sink.sent().len(), 2);
+    assert_eq!(store.lock().unwrap().totals.len(), 1);
+}
+
+#[test]
+fn world_totals_watermark_requires_durable_sampling_coverage() {
+    let store = Shared::default();
+    let p = publisher(&store, vec![OK]);
+    assert!(block_on(p.totals_watermark()).is_err());
+    assert!(p.sink.sent().is_empty());
+    store.lock().unwrap().totals_facts = Some(TotalsFacts {
+        projection_epoch: 1,
+        complete_through: 1_790_000_000,
+        observed_at: 1_790_000_010,
+    });
+    block_on(p.totals_watermark()).unwrap();
+    let sent = p.sink.sent();
+    assert_eq!(sent[0].0, Operation::PublishPublicProjectionWatermarkV1);
+    assert!(sent[0].1.contains(r#""family":"world_totals""#));
+    assert!(sent[0].1.contains(r#""complete_through":"1790000000""#));
+}
+
+// Bounded virtual-clock execution of the actual asynchronous family loop: no sleeps.
+#[derive(Clone)]
+struct FamilyClock {
+    now: Arc<Mutex<Duration>>,
+    until: Duration,
+}
+impl ReportClock for FamilyClock {
+    fn elapsed(&self) -> Duration {
+        *self.now.lock().unwrap()
+    }
+    fn unix_now(&self) -> i64 {
+        1790000000
+    }
+    async fn sleep(&self, d: Duration) {
+        // Let every concurrent family reach its source before advancing virtual time.
+        let mut yielded = false;
+        std::future::poll_fn(|cx| {
+            if yielded {
+                std::task::Poll::Ready(())
+            } else {
+                yielded = true;
+                cx.waker().wake_by_ref();
+                std::task::Poll::Pending
+            }
+        })
+        .await;
+        let next = self.elapsed() + d;
+        if next > self.until {
+            std::future::pending::<()>().await;
+        }
+        *self.now.lock().unwrap() = next;
+    }
+}
+type FamilyReply = (Result<Delivery, NotDelivered>, Option<Duration>);
+struct FamilySink {
+    clock: FamilyClock,
+    sent: Mutex<Vec<(Duration, Operation, String)>>,
+    replies: Mutex<VecDeque<FamilyReply>>,
+    store: Shared,
+    successor: bool,
+}
+impl PublicSink for FamilySink {
+    async fn send(&self, op: Operation, body: &str) -> Result<Delivery, NotDelivered> {
+        self.send_with_retry(op, body).await.0
+    }
+    async fn send_with_retry(
+        &self,
+        op: Operation,
+        body: &str,
+    ) -> (Result<Delivery, NotDelivered>, Option<Duration>) {
+        self.sent
+            .lock()
+            .unwrap()
+            .push((self.clock.elapsed(), op, body.into()));
+        if op == Operation::PublishPublicProjectionWatermarkV2 {
+            return (Ok(Delivery::Accepted), None);
+        }
+        if self.successor {
+            let mut s = self.store.lock().unwrap();
+            if s.v2_acks.is_empty() {
+                let mut next = s.v2_rows[0].clone();
+                next.projection_revision += 1;
+                s.v2_rows.insert(0, next);
+            }
+        }
+        self.replies
+            .lock()
+            .unwrap()
+            .pop_front()
+            .unwrap_or((Err(NotDelivered::Unavailable), None))
+    }
+}
+fn family_publisher(
+    until: u64,
+    replies: Vec<FamilyReply>,
+    successor: bool,
+) -> Publisher<FamilyClock, Shared, FamilySink, Fence> {
+    let snapshot = v2::decode_character_snapshot(
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/contracts/fixtures/public-projections/character_skills_v2.json"
+        ))
+        .trim_ascii_end(),
+    )
+    .unwrap();
+    let store = Shared::default();
+    store.lock().unwrap().v2_rows.push(snapshot);
+    let clock = FamilyClock {
+        now: Arc::default(),
+        until: Duration::from_secs(until),
+    };
+    let sink = FamilySink {
+        clock: clock.clone(),
+        sent: Mutex::default(),
+        replies: Mutex::new(replies.into()),
+        store: store.clone(),
+        successor,
+    };
+    let mut p = Publisher::new(clock, store, sink, Fence(Some(1)), AUTHORITY.into(), MAX_TX);
+    p.v2_activation.character_skills = true;
+    p
+}
+fn drive_family(p: &Publisher<FamilyClock, Shared, FamilySink, Fence>) {
+    let mut work = Box::pin(p.v2_family_loop(v2::Family::CharacterSkills));
+    let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+    for _ in 0..4096 {
+        assert!(work.as_mut().poll(&mut cx).is_pending());
+    }
+}
+#[test]
+fn public_v2_new_families_flag_off_never_published() {
+    let mut p = family_publisher(5, vec![], false);
+    p.v2_activation = Default::default();
+    for bytes in [
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/contracts/fixtures/public-projections/character_achievements_v2.json"
+        ))
+        .as_slice(),
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/contracts/fixtures/public-projections/character_equipment_v2.json"
+        ))
+        .as_slice(),
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/contracts/fixtures/public-projections/character_outfit_v2.json"
+        ))
+        .as_slice(),
+    ] {
+        p.store
+            .lock()
+            .unwrap()
+            .v2_rows
+            .push(v2::decode_character_snapshot(bytes.trim_ascii_end()).unwrap());
+    }
+    assert_eq!(p.store.lock().unwrap().v2_rows.len(), 4);
+    let mut work = Box::pin(p.v2_loops());
+    let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+    for _ in 0..256 {
+        assert!(work.as_mut().poll(&mut cx).is_pending());
+    }
+    assert!(
+        p.sink
+            .sent
+            .lock()
+            .unwrap()
+            .iter()
+            .all(|(_, op, _)| !matches!(
+                op,
+                Operation::PublishCharacterSkillsV2
+                    | Operation::PublishCharacterAchievementsV2
+                    | Operation::PublishCharacterEquipmentV2
+                    | Operation::PublishCharacterOutfitV2
+            ))
+    );
+    assert!(p.store.lock().unwrap().v2_acks.is_empty());
+}
+#[test]
+fn public_v2_skills_flag_on_publishes_golden_bytes() {
+    let p = family_publisher(1, vec![(Ok(Delivery::Accepted), None)], false);
+    drive_family(&p);
+    let sent = p.sink.sent.lock().unwrap();
+    assert_eq!(
+        sent.iter()
+            .find(|(_, op, _)| *op == Operation::PublishCharacterSkillsV2)
+            .unwrap()
+            .2,
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/contracts/fixtures/public-projections/character_skills_v2.json"
+        ))
+        .trim_end()
+    );
+    assert_eq!(p.store.lock().unwrap().v2_acks, vec![7]);
+}
+#[test]
+fn public_v2_definite_refusal_holds_subject_300s() {
+    for error in [
+        NotDelivered::Malformed,
+        NotDelivered::InvalidReport,
+        NotDelivered::Unauthenticated,
+        NotDelivered::Conflict,
+    ] {
+        let p = family_publisher(
+            303,
+            vec![(Err(error), None), (Ok(Delivery::Accepted), None)],
+            false,
+        );
+        drive_family(&p);
+        let sent = p.sink.sent.lock().unwrap();
+        let snapshots: Vec<_> = sent
+            .iter()
+            .filter(|(_, op, _)| *op == Operation::PublishCharacterSkillsV2)
+            .collect();
+        assert_eq!(snapshots.len(), 2);
+        assert!(snapshots[1].0 - snapshots[0].0 >= Duration::from_secs(300));
+        assert!(snapshots[1].0 - snapshots[0].0 < Duration::from_secs(302));
+        assert_eq!(snapshots[0].2, snapshots[1].2);
+        assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 1);
+    }
+}
+#[test]
+fn public_v2_retry_after_honoured() {
+    let p = family_publisher(
+        125,
+        vec![
+            (
+                Err(NotDelivered::Unavailable),
+                Some(Duration::from_secs(123)),
+            ),
+            (Ok(Delivery::Accepted), None),
+        ],
+        false,
+    );
+    drive_family(&p);
+    let sent = p.sink.sent.lock().unwrap();
+    let snapshots: Vec<_> = sent
+        .iter()
+        .filter(|(_, op, _)| *op == Operation::PublishCharacterSkillsV2)
+        .collect();
+    assert_eq!(snapshots.len(), 2);
+    assert!(snapshots[1].0 - snapshots[0].0 >= Duration::from_secs(123));
+    assert!(snapshots[1].0 - snapshots[0].0 < Duration::from_secs(124));
+    assert_eq!(snapshots[0].2, snapshots[1].2);
+}
+#[test]
+fn public_v2_ack_clears_only_acknowledged_revision() {
+    let p = family_publisher(1, vec![(Ok(Delivery::Accepted), None)], true);
+    drive_family(&p);
+    let s = p.store.lock().unwrap();
+    assert_eq!(s.v2_acks, vec![7]);
+    assert_eq!(s.v2_rows[0].projection_revision, 8);
+}
+#[test]
+fn public_v2_watermark_not_past_poison_row() {
+    let p = family_publisher(12, vec![(Err(NotDelivered::InvalidReport), None)], false);
+    p.store.lock().unwrap().v2_facts = Some(v2::Facts {
+        projection_epoch: 1,
+        oldest_undelivered_ms: Some(1790000000000),
+        now_ms: 1790000015000,
+    });
+    drive_family(&p);
+    let sent = p.sink.sent.lock().unwrap();
+    let watermarks: Vec<serde_json::Value> = sent
+        .iter()
+        .filter(|(_, op, _)| *op == Operation::PublishPublicProjectionWatermarkV2)
+        .map(|(_, _, body)| serde_json::from_str(body).unwrap())
+        .collect();
+    assert!(watermarks.len() >= 4);
+    for w in watermarks {
+        assert!(
+            w["complete_through"]
+                .as_str()
+                .unwrap()
+                .parse::<u64>()
+                .unwrap()
+                < 1790000000
+        );
+        assert!(w["complete_through"].as_str().unwrap() <= w["observed_at"].as_str().unwrap());
+    }
+    assert_eq!(p.store.lock().unwrap().v2_rows.len(), 1);
 }

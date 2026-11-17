@@ -1,0 +1,7 @@
+{
+  "mechanic": "0054-training",
+  "kind": "panels",
+  "id": "0054-training-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

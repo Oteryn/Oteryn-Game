@@ -1,0 +1,14 @@
+{
+  "module": "world",
+  "owner": "crates",
+  "events": [
+    {
+      "event": "tick_overrun",
+      "level": "warn",
+      "span": false,
+      "fields": ["breaches", "window_ms"],
+      "codes": [],
+      "note": "Rate-limited aggregate of world ticks exceeding the configured budget."
+    }
+  ]
+}

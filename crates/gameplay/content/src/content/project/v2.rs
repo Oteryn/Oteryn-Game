@@ -143,6 +143,22 @@ impl ProjectV2Identity {
     }
 }
 
+/// Public catalogue visibility, independent of runtime availability. G-2 is an owner rule
+/// (2026-11-07), not inferred from donor quest flags or NPC behaviour.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PublicVisibility {
+    #[default]
+    Public,
+    Hidden,
+}
+
+impl PublicVisibility {
+    pub fn is_public(&self) -> bool {
+        *self == Self::Public
+    }
+}
+
 /// Candidate-only structural declarations. No enum variant has an executable lowering.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", deny_unknown_fields)]
@@ -154,6 +170,8 @@ pub enum ProjectV2Declaration {
     },
     Area {
         identity: ProjectV2Identity,
+        #[serde(default, skip_serializing_if = "PublicVisibility::is_public")]
+        visibility: PublicVisibility,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         parent: Option<ProjectV2DefinitionRef>,
         fields: Vec<ProjectV2CandidateField>,
@@ -228,6 +246,8 @@ pub enum ProjectV2Declaration {
     #[serde(rename = "NPC")]
     Npc {
         identity: ProjectV2Identity,
+        #[serde(default, skip_serializing_if = "PublicVisibility::is_public")]
+        visibility: PublicVisibility,
         presentation: Option<ProjectV2DefinitionRef>,
         behavior: Option<ProjectV2DefinitionRef>,
         dialogue: Option<ProjectV2DefinitionRef>,
@@ -279,6 +299,8 @@ pub enum ProjectV2Declaration {
     },
     Quest {
         identity: ProjectV2Identity,
+        #[serde(default, skip_serializing_if = "PublicVisibility::is_public")]
+        visibility: PublicVisibility,
         fields: Vec<ProjectV2CandidateField>,
     },
     Transition {
@@ -296,7 +318,16 @@ pub enum ProjectV2Declaration {
 }
 
 impl ProjectV2Declaration {
-    fn family(&self) -> ProjectV2Family {
+    pub fn public_visibility(&self) -> PublicVisibility {
+        match self {
+            Self::Area { visibility, .. }
+            | Self::Npc { visibility, .. }
+            | Self::Quest { visibility, .. } => *visibility,
+            _ => PublicVisibility::Public,
+        }
+    }
+
+    pub(super) fn family(&self) -> ProjectV2Family {
         match self {
             Self::WorldObject { .. } => ProjectV2Family::WorldObject,
             Self::Area { .. } => ProjectV2Family::Area,
@@ -318,7 +349,7 @@ impl ProjectV2Declaration {
         }
     }
 
-    fn identity(&self) -> &ProjectV2Identity {
+    pub(super) fn identity(&self) -> &ProjectV2Identity {
         match self {
             Self::WorldObject { identity, .. }
             | Self::Area { identity, .. }

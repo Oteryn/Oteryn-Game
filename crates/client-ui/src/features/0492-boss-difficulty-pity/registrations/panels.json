@@ -1,0 +1,7 @@
+{
+  "mechanic": "0492-boss-difficulty-pity",
+  "kind": "panels",
+  "id": "0492-boss-difficulty-pity-panel",
+  "status": "supported",
+  "entry": "protocol.rs::tracker_text"
+}

@@ -44,6 +44,7 @@ impl KeyResolver for Resolver {
             kind: TerrainKind::Ground,
             walkable: Some(true),
             ground_speed: Some(150),
+            blocks_projectile: None,
         }))
     }
 
@@ -153,7 +154,7 @@ fn assemble(tiles: &[Tile]) -> Result<(Vec<u8>, [u8; 32]), Box<dyn StdError>> {
     out.extend_from_slice(&npc_frame);
     let body = out.len();
     let digest: [u8; 32] = Sha256::new()
-        .chain_update(b"OTERYN_WORLD_BUNDLE/v6\0")
+        .chain_update(b"OTERYN_WORLD_BUNDLE/v8\0")
         .chain_update(&out)
         .finalize()
         .into();

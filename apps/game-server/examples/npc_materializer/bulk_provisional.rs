@@ -73,6 +73,7 @@ pub(super) fn apply(
     for declaration in &a.declarations {
         match declaration {
             ProjectV2Declaration::Npc {
+                visibility: _,
                 identity,
                 presentation,
                 behavior,

@@ -1,0 +1,254 @@
+apps/game-server/src/lifted_tests/auto/imbuement_postgres_cases.rs:283:                                side: NpcTradeSide::Sell,
+crates/session/src/session_tests_capability_native.rs:157:                        side: NpcTradeSide::Buy,
+crates/protocol-oteryn/src/npc_service_tests.rs:45:        side: NpcTradeSide::Sell,
+crates/protocol-oteryn/src/npc_service_tests.rs:54:        side: NpcTradeSide::Buy,
+crates/protocol-oteryn/src/npc_service_tests.rs:83:    for side in [NpcTradeSide::Buy, NpcTradeSide::Sell] {
+crates/protocol-oteryn/src/npc_service_tests.rs:488:                    side: NpcTradeSide::Buy,
+crates/protocol-oteryn/src/npc_service_tests.rs:494:                    side: NpcTradeSide::Sell,
+crates/protocol-oteryn/src/npc_service_tests.rs:830:        side: NpcTradeSide::Sell,
+crates/protocol-oteryn/src/npc_service_tests.rs:844:        side: NpcTradeSide::Buy,
+crates/protocol-oteryn/src/npc_service_fuzz_tests.rs:23:            side: *rng.pick(&[NpcTradeSide::Buy, NpcTradeSide::Sell]),
+crates/protocol-oteryn/src/npc_service.rs:331:                NpcTradeSide::from_wire(read_uint32(input, cursor)?)?,
+crates/protocol-oteryn/src/npc_service.rs:444:            NpcTradeSide::from_wire(read_uint32(input, cursor)?)?,
+tools/synthetic-client-harness/tests/native_npc_shop/peer.rs:29:            side: NpcTradeSide::Buy,
+tools/synthetic-client-harness/tests/native_npc_shop/peer.rs:35:            side: NpcTradeSide::Sell,
+tools/synthetic-client-harness/tests/native_npc_shop/peer.rs:217:            NpcTradeSide::Buy,
+tools/synthetic-client-harness/tests/native_npc_shop/peer.rs:224:            NpcTradeSide::Sell,
+tools/synthetic-client-harness/tests/native_npc_shop/peer.rs:231:            NpcTradeSide::Sell,
+tools/synthetic-client-harness/tests/native_npc_shop/peer.rs:236:        (4, NpcTradeSide::Sell, 1, None, NpcIntentDisposition::Stale),
+tools/synthetic-client-harness/tests/native_npc_shop/peer.rs:237:        (5, NpcTradeSide::Sell, 3, Some(4), NpcIntentDisposition::Ok),
+tools/synthetic-client-harness/tests/native_npc_shop/peer.rs:248:            if side == NpcTradeSide::Buy || query == 5 {
+crates/protocol-oteryn/src/npc_shop.rs:128:                NpcTradeSide::from_wire(read_uint32(input, cursor)?)?,
+apps/game-server/src/qualification/client_phases/full_e2ef7.rs:3035:                    o.side == npc::NpcTradeSide::Buy && o.item_definition_ref == reference.get()
+apps/game-server/src/qualification/client_phases/full_e2ef5.rs:1205:            offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == reference.get()
+apps/game-server/src/qualification/client_phases/full_e2ef6.rs:1998:    let (offer_index, offer) = window.offers.iter().enumerate().find(|(_, offer)| offer.side == wire::NpcTradeSide::Buy && offer.item_definition_ref == definition.get())
+apps/game-server/src/qualification/client_phases/full_e2ef4.rs:341:        .filter(|(_, o)| o.side == wire::NpcTradeSide::Buy)
+crates/protocol-oteryn/src/npc_shop_tests.rs:13:        side: NpcTradeSide::Sell,
+crates/protocol-oteryn/src/npc_shop_tests.rs:51:    no_action.side = NpcTradeSide::Buy;
+apps/game-server/src/qualification/client_phases/npc_shop.rs:65:        .filter(|(_, offer)| offer.side == ui::NpcTradeSide::Buy)
+apps/client/src/features/0081-npc-shop/native.rs:235:                            key.side == oteryn_client_ui::npc_shop::NpcTradeSide::Sell
+apps/client/src/features/0081-npc-shop/input.rs:50:        && (quote.side != oteryn_client_ui::npc_shop::NpcTradeSide::Sell || quote.count != 1)
+apps/client/src/features/0081-npc-shop/tests/play.rs:73:        side: NpcTradeSide::Sell,
+apps/client/src/features/0081-npc-shop/tests/play.rs:134:            side: NpcTradeSide::Sell,
+apps/game-server/tests/content_world_project_v2.rs:1085:    service.push(ProjectV2ServiceRecipe {
+crates/gameplay/items/src/imbuement.rs:313:pub struct ImbuementRecipe {
+crates/gameplay/npc/src/npc_command.rs:129:                    ProjectV2ServiceOfferDirection::SellToPlayer => NpcTradeSide::Buy,
+crates/gameplay/npc/src/npc_command.rs:130:                    ProjectV2ServiceOfferDirection::BuyFromPlayer => NpcTradeSide::Sell,
+crates/gameplay/spell/src/spell/world_execution.rs:565:pub enum VerticalRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:14:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:22:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:30:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:42:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:50:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:58:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:70:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:78:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:86:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:98:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:106:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:114:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:126:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:134:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:142:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:154:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:162:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:170:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:182:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:190:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:198:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:210:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:218:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:226:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:238:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:246:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:254:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:266:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:274:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:282:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:290:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:298:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:306:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:318:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:326:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:334:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:346:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:354:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:362:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:374:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:382:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:390:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:402:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:410:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:418:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:430:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:438:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:446:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:458:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:466:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:474:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:486:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:494:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:502:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:514:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:522:    ImbuementRecipe {
+crates/gameplay/items/src/imbuement_catalogue.rs:530:    ImbuementRecipe {
+crates/client-ui/src/features/0081-npc-shop/state.rs:104:            NpcTradeSide::Buy => 20_000_000 + 999_999_999_999u64,
+crates/client-ui/src/features/0081-npc-shop/state.rs:105:            NpcTradeSide::Sell => 1_009_999,
+crates/client-ui/src/features/0081-npc-shop/mod.rs:117:    (offer.side == NpcTradeSide::Buy).then_some(npc_service::NpcTradeIntent {
+crates/client-ui/src/features/0081-npc-shop/tests/state.rs:11:        side: NpcTradeSide::Sell,
+crates/client-ui/src/features/0081-npc-shop/tests/state.rs:69:            side: NpcTradeSide::Buy,
+crates/client-ui/src/features/0081-npc-shop/tests/live.rs:10:        side: NpcTradeSide::Sell,
+crates/client-ui/src/features/0081-npc-shop/tests/live.rs:54:        side: NpcTradeSide::Buy,
+crates/client-ui/src/features/0081-npc-shop/tests/live.rs:60:        side: NpcTradeSide::Sell,
+crates/client-ui/src/features/0081-npc-shop/tests/live.rs:76:    assert_eq!(request.side, NpcTradeSide::Buy);
+crates/client-ui/src/features/0081-npc-shop/tests/live.rs:127:            side: NpcTradeSide::Sell,
+crates/client-ui/src/features/0081-npc-shop/tests/live.rs:174:        side: NpcTradeSide::Sell,
+crates/client-ui/src/features/0081-npc-shop/tests/live.rs:182:            side: NpcTradeSide::Buy,
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:262:        let request = trade(10, NpcTradeSide::Buy, 5, 47)?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:308:                side: NpcTradeSide::Buy,
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:352:        let mut retry = trade(10, NpcTradeSide::Buy, 5, 47)?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:367:        let mut same_command = trade(30, NpcTradeSide::Buy, 1, 1)?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:369:        let mut same_event = trade(30, NpcTradeSide::Buy, 1, 1)?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:371:        let mut same_output = trade(30, NpcTradeSide::Buy, 1, 1)?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:389:            trade(40, NpcTradeSide::Sell, 2, 12_345)?,
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:424:        let sold = committed(&harness, &authority, trade(60, NpcTradeSide::Sell, 3, 1)?).await?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:456:        let free = committed(&harness, &authority, trade(70, NpcTradeSide::Buy, 1, 0)?).await?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:469:        let given = committed(&harness, &authority, trade(90, NpcTradeSide::Sell, 1, 0)?).await?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:504:        match commit(&harness, &authority, trade(10, NpcTradeSide::Buy, 1, 1)?).await {
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:515:        let mut small = trade(30, NpcTradeSide::Buy, 1, 1)?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:517:        let mut other_backpack = trade(40, NpcTradeSide::Buy, 1, 1)?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:519:        let mut stale = trade(50, NpcTradeSide::Buy, 1, 1)?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:521:        let mut coin_offer = trade(60, NpcTradeSide::Buy, 1, 1)?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:526:                trade(10, NpcTradeSide::Buy, 1, 11)?,
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:531:                trade(20, NpcTradeSide::Sell, 3, 1)?,
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:552:        let mut shield = trade(50, NpcTradeSide::Sell, 1, 1)?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:567:                trade(70, NpcTradeSide::Buy, 1, 1)?,
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:577:        let bought = committed(&harness, &authority, trade(80, NpcTradeSide::Buy, 2, 5)?).await?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:636:        match commit(&harness, &authority, trade(10, NpcTradeSide::Buy, 1, 1)?).await {
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:643:        let free = committed(&harness, &authority, trade(20, NpcTradeSide::Buy, 1, 0)?).await?;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:677:                    trade(seed, NpcTradeSide::Sell, 1, 4)
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:736:                side: NpcTradeSide::Sell,
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:762:        let plain = commit(&harness, &authority, trade(10, NpcTradeSide::Sell, 1, 4)?).await;
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:772:        for (side, quantity) in [(NpcTradeSide::Buy, 1), (NpcTradeSide::Sell, 2)] {
+apps/game-server/tests/support/authority_cases/npc_trade_postgres_cases.rs:808:            let mut request = trade(seed, NpcTradeSide::Buy, 1, 10)?;
+apps/game-server/tests/support/npc_econ_bank_postgres_cases.rs:359:            side: NpcTradeSide::Buy,
+crates/gameplay/dispatch/src/gameplay_transport/hireling_services/purchase.rs:319:            side: crate::durability::npc_trade::NpcTradeSide::Buy,
+crates/gameplay/dispatch/src/gameplay_transport/hireling_services/trade.rs:39:                    catalogue::Side::Buy => NpcTradeSide::Buy,
+crates/gameplay/dispatch/src/gameplay_transport/hireling_services/trade.rs:40:                    catalogue::Side::Sell => NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/npc_shop.rs:98:            if intent.side != NpcTradeSide::Sell {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/grizzly_shop.rs:209:            side: oteryn_protocol_oteryn::npc_service::NpcTradeSide::Buy,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/grizzly_shop.rs:215:            side: oteryn_protocol_oteryn::npc_service::NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc2_item_exchanges.rs:15:struct Recipe {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc2_item_exchanges.rs:23:const PICK_RECIPE: Recipe = Recipe {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc2_item_exchanges.rs:31:const KNIFE_RECIPE: Recipe = Recipe {
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc2_item_exchanges.rs:82:                if receipt.side == NpcTradeSide::Exchange && recipe(&receipt.npc_key).is_some() =>
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc2_item_exchanges.rs:238:            side: NpcTradeSide::Exchange,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc2_item_exchanges.rs:264:            .exchange_obsidian_knife(
+crates/gameplay/dispatch/src/gameplay_transport/npc_command/questpc2_item_exchanges.rs:275:            .exchange_small_axe_for_pick(
+crates/gameplay/dispatch/src/gameplay_transport/npc_command_tests.rs:440:                side: NpcTradeSide::Buy,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command_tests.rs:446:                side: NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command_tests.rs:637:        side: NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command_tests.rs:664:            side: NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command_tests.rs:701:            side: NpcTradeSide::Buy,
+crates/gameplay/dispatch/src/gameplay_transport/npc_command_tests.rs:745:            side: NpcTradeSide::Buy,
+crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command_tests.rs:20:        side: NpcTradeSide::Buy,
+crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command_tests.rs:31:        side: npc_trade::NpcTradeSide::Buy,
+crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command_tests.rs:106:            side: NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command_tests.rs:170:        side: npc_trade::NpcTradeSide::Sell,
+crates/gameplay/content/src/content/project/v2.rs:622:pub struct ProjectV2ServiceRecipe {
+crates/gameplay/content/src/content/project/v2.rs:632:impl ProjectV2ServiceRecipe {
+crates/gameplay/quests/src/quest/batch3_a/hot_cuisine.rs:26:struct Recipe {
+crates/gameplay/economy/src/npc_trade_tests.rs:148:    let value = request(NpcTradeSide::Buy, 1, 235);
+crates/gameplay/economy/src/npc_trade_tests.rs:277:    let value = request(NpcTradeSide::Sell, 2, 12_345);
+crates/gameplay/economy/src/npc_trade_tests.rs:324:    let value = request(NpcTradeSide::Sell, 5, 12_345);
+crates/gameplay/economy/src/npc_trade_tests.rs:326:    let value = request(NpcTradeSide::Sell, 2, 12_345);
+crates/gameplay/economy/src/npc_trade_tests.rs:335:    let mut other = request(NpcTradeSide::Sell, 1, 1);
+crates/gameplay/economy/src/npc_trade_tests.rs:342:    let free = request(NpcTradeSide::Sell, 2, 0);
+crates/gameplay/economy/src/npc_trade_tests.rs:356:    let value = request(NpcTradeSide::Buy, 1, 250);
+crates/gameplay/economy/src/npc_trade_tests.rs:439:    let value = request(NpcTradeSide::Sell, 1, 99);
+crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:85:        NpcTradeSide::Buy => npc_trade::NpcTradeSide::Buy,
+crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:86:        NpcTradeSide::Sell => npc_trade::NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:244:    if offer.side == NpcTradeSide::Sell
+crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:263:        && offer.side == NpcTradeSide::Buy
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/oriental_trader.rs:258:            side: NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/npc_shop_tests.rs:13:        side: NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/npc_shop_tests.rs:26:    assert_eq!(trade.side, NpcTradeSide::Sell);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_shop.rs:307:            side: NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_shop.rs:393:            side: NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_npc/shop.rs:49:    assert_eq!(shown.side, NpcTradeSide::Buy);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/full_world_e2e.rs:110:                if offer.side != NpcTradeSide::Buy || u64::from(offer.unit_price) > 100 {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/full_world_e2e.rs:117:                    side: NpcTradeSide::Buy,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s2_economy.rs:41:                o.side == NpcTradeSide::Sell
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s2_economy.rs:68:            side: NpcTradeSide::Sell,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pick_exchange.rs:30:struct ExchangeCase {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pick_exchange.rs:41:const PICK_CASE: ExchangeCase = ExchangeCase {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pick_exchange.rs:51:const KNIFE_CASE: ExchangeCase = ExchangeCase {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pick_exchange.rs:79:fn execute(case: &'static ExchangeCase) -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pick_exchange.rs:157:fn scenario(case: &ExchangeCase) -> TestResult {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pick_exchange.rs:389:async fn counts(h: &Harness, case: &ExchangeCase) -> TestResult<(i64, i64, i64, i64)> {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pick_exchange.rs:395:async fn remaining_inputs(h: &Harness, case: &ExchangeCase) -> TestResult<Vec<(String, i64)>> {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle/furniture.rs:34:        assert_eq!((shown.side,shown.unit_price),(npc::NpcTradeSide::Buy,20));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle/furniture.rs:36:            side:npc::NpcTradeSide::Buy,quantity:1,expected_unit_price:20};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle/trader.rs:33:    assert_eq!((shown.side,shown.unit_price),(wire::NpcTradeSide::Sell,5_400_000));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle/trader.rs:35:        side:wire::NpcTradeSide::Sell,quantity:1,expected_unit_price:5_400_000};
+crates/gameplay/durability/src/durability/npc_trade/pick_exchange.rs:87:    pub async fn exchange_small_axe_for_pick(
+crates/gameplay/durability/src/durability/npc_trade/pick_exchange.rs:95:        if request.cause.side != NpcTradeSide::Exchange || validate(&request, false).is_err() {
+crates/gameplay/durability/src/durability/npc_trade/grizzly.rs:14:        NpcTradeSide::Buy => ProjectV2ServiceOfferDirection::SellToPlayer,
+crates/gameplay/durability/src/durability/npc_trade/grizzly.rs:15:        NpcTradeSide::Sell => ProjectV2ServiceOfferDirection::BuyFromPlayer,
+crates/gameplay/durability/src/durability/npc_trade/grizzly.rs:16:        NpcTradeSide::Exchange => return Ok(matches!(request.cause.npc_key.as_str(), "oteryn:npc.al_dee" | "oteryn:npc.uzgod")),
+crates/gameplay/durability/src/durability/npc_trade/obsidian_knife.rs:131:    pub async fn exchange_obsidian_knife(
+crates/gameplay/durability/src/durability/npc_trade/obsidian_knife.rs:139:        if request.cause.side != NpcTradeSide::Exchange {
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:101:    let mut value = request(NpcTradeSide::Exchange, 1, 0);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:138:    let mut value = request(NpcTradeSide::Exchange, 1, 0);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:170:    assert!(validate(&request(NpcTradeSide::Sell, 1, 99), true)
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:173:    let mut count = request(NpcTradeSide::Sell, 1, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:176:        ("a BUY", request(NpcTradeSide::Buy, 1, 1)),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:177:        ("two units", request(NpcTradeSide::Sell, 2, 1)),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:181:            request(NpcTradeSide::Sell, 1, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX + 1),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:210:    let value = request(NpcTradeSide::Sell, 1, 99);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:256:        priced(&request(NpcTradeSide::Buy, 2, 50)).unwrap(),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:260:        ("zero quantity", request(NpcTradeSide::Buy, 0, 50)),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:261:        ("quantity 101", request(NpcTradeSide::Buy, 101, 1)),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:264:            request(NpcTradeSide::Buy, 1, NPC_TRADE_BUY_GOLD_UNITS_MAX + 1),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:268:            request(NpcTradeSide::Sell, 1, 1_010_000),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:270:        ("price overflow", request(NpcTradeSide::Buy, 2, u64::MAX)),
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:272:    let mut value = request(NpcTradeSide::Buy, 1, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:275:    let mut value = request(NpcTradeSide::Buy, 1, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:278:    let mut value = request(NpcTradeSide::Buy, 1, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:281:    let mut value = request(NpcTradeSide::Buy, 1, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:284:    let mut value = request(NpcTradeSide::Buy, 1, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:287:    let mut value = request(NpcTradeSide::Buy, 1, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:290:    let mut value = request(NpcTradeSide::Buy, 2, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:293:    let mut value = request(NpcTradeSide::Buy, 20, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:296:    let mut value = request(NpcTradeSide::Buy, 1, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:305:    let mut value = request(NpcTradeSide::Buy, 1, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:309:    for side in [NpcTradeSide::Buy, NpcTradeSide::Sell] {
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:312:    let mut value = request(NpcTradeSide::Buy, 20, 1);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:337:        for side in [NpcTradeSide::Buy, NpcTradeSide::Sell] {
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:342:            let plan = if side == NpcTradeSide::Buy { plan_buy(
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:368:            let moved_units = if side == NpcTradeSide::Buy { {
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:399:            if side == NpcTradeSide::Buy { {
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:425:    let value = request(NpcTradeSide::Buy, 1, 250);
+crates/gameplay/durability/src/durability/npc_trade/tests.rs:460:    let mut value = request(NpcTradeSide::Buy, 1, 25_000);
+crates/gameplay/durability/src/durability/npc_trade/sell_hireling.rs:31:    request.cause.side==NpcTradeSide::Sell && matches!(extra,Some(hireling::Extra::Trade(_)))
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:42:                if source.item_id==23721 && request.cause.side==NpcTradeSide::Sell {
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:45:                let price=match request.cause.side {NpcTradeSide::Buy=>source.buy,NpcTradeSide::Sell=>source.sell,NpcTradeSide::Exchange=>return Err(NpcTradeError::InvalidInput)};
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:46:                let wrapped = request.cause.side == NpcTradeSide::Buy
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:59:                    || (source.sub_type!=0 && (request.cause.side!=NpcTradeSide::Buy || selection.full_charges!=Some(source.sub_type))) {
+crates/gameplay/durability/src/durability/npc_trade/hireling.rs:65:                if sell_all || request.cause.side!=NpcTradeSide::Buy || request.quantity!=1 || request.offer_count!=1
+crates/gameplay/durability/src/durability/npc_trade/sell_hireling/tests.rs:11:        cause:NpcTradeCause {npc_key:crate::durability::house_hireling::npc_key(id(60)),catalogue_revision:1,offer_index:0,side:NpcTradeSide::Sell,occurrence:id(70)},
+crates/gameplay/durability/src/durability/npc_trade.rs:278:        && request.cause.side == NpcTradeSide::Buy
+crates/gameplay/durability/src/durability/npc_trade.rs:337:    if request.cause.side == NpcTradeSide::Exchange {
+crates/gameplay/durability/src/durability/npc_trade.rs:347:        if cause.side != NpcTradeSide::Sell
+crates/gameplay/durability/src/durability/npc_trade.rs:356:        Some(if cause.side==NpcTradeSide::Buy {
+crates/gameplay/durability/src/durability/npc_trade.rs:590:                        1 => NpcTradeSide::Buy,
+crates/gameplay/durability/src/durability/npc_trade.rs:591:                        2 => NpcTradeSide::Sell,
+crates/gameplay/durability/src/durability/npc_trade.rs:592:                        3 => NpcTradeSide::Exchange,
+crates/gameplay/durability/src/durability/npc_trade.rs:764:                    if request.cause.side == NpcTradeSide::Exchange {
+crates/gameplay/durability/src/durability/npc_trade.rs:779:                        (Some((total, units)), NpcTradeSide::Buy) => plan_buy(&request, total, units, capacity, &entries, tx.tuple().tuple(), super::bank::fee_payer_is_junior(fence.character_id))
+crates/gameplay/durability/src/durability/npc_trade.rs:781:                        (Some((total, units)), NpcTradeSide::Sell) => plan_sell(&request, total, units, capacity, &entries)
+crates/gameplay/durability/src/durability/npc_trade.rs:783:                        (Some(_), NpcTradeSide::Exchange) => {
+crates/gameplay/durability/src/durability/npc_trade.rs:940:        None if request.cause.side == NpcTradeSide::Exchange && line.kind == NpcTradeLineKind::ItemBurn => {
+crates/gameplay/durability/src/durability/npc_trade.rs:1218:        1 => NpcTradeSide::Buy,
+crates/gameplay/durability/src/durability/npc_trade.rs:1219:        2 => NpcTradeSide::Sell,
+crates/gameplay/durability/src/durability/npc_trade.rs:1220:        3 => NpcTradeSide::Exchange,

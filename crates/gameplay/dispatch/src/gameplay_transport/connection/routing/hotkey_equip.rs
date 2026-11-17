@@ -8,7 +8,9 @@ use crate::gameplay_transport::{
     item_move::{self, ItemMoveStep},
 };
 use oteryn_protocol_oteryn::{
-    ClientCommandView, hotkey_equip::Request, item_view::ItemMoveOutcome,
+    ClientCommandView,
+    hotkey_equip::{CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1, TieredRequest},
+    item_view::ItemMoveOutcome,
 };
 
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
@@ -19,7 +21,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     item_view: &mut Option<SessionItemView>,
     views: &mut Option<ContainerViewState>,
 ) -> Option<Dispatch> {
-    let Some(request) = Request::decode(command.payload) else {
+    let tiered = admitted
+        .continuity
+        .selected_capabilities
+        .contains(CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1);
+    let Some(TieredRequest {
+        request,
+        upgrade_tier,
+    }) = TieredRequest::decode_selected(tiered, command.payload)
+    else {
         return Some(Dispatch::ItemMove(
             ItemMoveOutcome::Rejected,
             Vec::new(),
@@ -38,7 +48,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         command_id: command.command_id,
         item_fence: admitted.item_fence,
     };
-    let outcome = if admitted
+    let outcome = if let Some(tier) = upgrade_tier {
+        authority
+            .hotkey_equip_tiered(actor, command, request, tier)
+            .await?
+    } else if admitted
         .continuity
         .selected_capabilities
         .contains(oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_CARRIED_V1)

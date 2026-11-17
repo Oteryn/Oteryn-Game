@@ -1,0 +1,7 @@
+{
+  "mechanic": "0486-analyser-hit-attribution",
+  "kind": "panels",
+  "id": "0486-analyser-hit-attribution-panel",
+  "status": "supported",
+  "entry": "protocol.rs::hit_flash_visible"
+}

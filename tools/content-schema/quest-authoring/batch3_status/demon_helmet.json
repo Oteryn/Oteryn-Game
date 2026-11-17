@@ -1,0 +1,319 @@
+{
+  "schema": "OTERYN_QUESTS3_IMPLEMENTATION_STATUS/v1",
+  "quest": "demon_helmet",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "inventory_origin": {
+    "document": "docs/agents/evidence/OTV2-20261102-quests-3-20261102.md",
+    "commit": "f2b37d4c6b313952750189d75e6d19d99fde8641",
+    "identity_fields": [
+      "quest",
+      "step",
+      "donor"
+    ]
+  },
+  "normalization_provenance": {
+    "worker_status": "root/implementation-status.json",
+    "sha256": "1b48d46dbce6c98c52aa1df0c4cf29b5d033d596e63b17336c0adfbae2eeac6b"
+  },
+  "classification": "DERIVED",
+  "authority": "PR comments govern scope; this file records evidence and does not authorize a runtime adapter.",
+  "coordinator_answers": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589517205",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590300355",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6590725297",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6591050910",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6598199611"
+  ],
+  "row_count": 7,
+  "import_counts": {
+    "RĘCZNIE": 4,
+    "AUTO": 3
+  },
+  "content_counts": {
+    "npc_rules_source_only": 0,
+    "world_callbacks_enabled": 0,
+    "world_callbacks_held": 0,
+    "death_rules_source_only": 0
+  },
+  "content_inputs": [],
+  "final_head_validation": {
+    "status": "EXTERNAL_PR_EVIDENCE",
+    "tested_sha": null,
+    "evidence_url": "https://github.com/Oteryn/Oteryn-Game/pull/2843",
+    "note": "Exact frozen publication SHA and its gate results are recorded in PR Validation; this source document does not attest a final-head PASS."
+  },
+  "rows": [
+    {
+      "id": "c688a175218c5afab306dd7606c4d6536a239201a496ef2d3275730f8cb00cc9",
+      "quest_row": 1,
+      "inventory": {
+        "quest": "demon_helmet",
+        "step": "Dźwignia: otwarcie",
+        "pattern": "P01/P03",
+        "trigger": "Use uid30007, item2772",
+        "guard": "pola (33316,31574,15), (33314,31575,15)",
+        "effect": "utwórz teleport1949 do(33328,31592,14); usuń1842; lever2773",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:7"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Brak source World mutation dla dynamicznego teleportu1949 lub ścian i przemieszczenia stworzeń przy StepOut; bez rozszerzenia wspólnego właściciela mapy. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:7",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "3456be439a38990d2ed2fa29367bbc754b6083b2e1a6cd4d3fc413d37fac782e",
+      "quest_row": 2,
+      "inventory": {
+        "quest": "demon_helmet",
+        "step": "Dźwignia: zamknięcie",
+        "pattern": "P01",
+        "trigger": "Use uid30007, item2773",
+        "guard": "topCreature na stonePosition jeśli istnieje",
+        "effect": "przenieś stworzenie do(33315,31575,15); usuń1949; utwórz1842; lever2772",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:16"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Brak source World mutation dla dynamicznego teleportu1949 lub ścian i przemieszczenia stworzeń przy StepOut; bez rozszerzenia wspólnego właściciela mapy. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:16",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "ed778f9844dcb78e834e527b5d55d607768fbc03a3b659202ec913cdf01153d9",
+      "quest_row": 3,
+      "inventory": {
+        "quest": "demon_helmet",
+        "step": "Dwa pola otwierają ścianę",
+        "pattern": "P01/P18",
+        "trigger": "StepIn (33190,31629,13)/(33191,31629,13)",
+        "guard": "na obu polach topCreature jest graczem",
+        "effect": "usuń1295 z(33210..33212,31630,13)",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:15"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Brak source World mutation dla dynamicznego teleportu1949 lub ścian i przemieszczenia stworzeń przy StepOut; bez rozszerzenia wspólnego właściciela mapy. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:15",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "3830acfa8f555f1276abff077cbf60d777e3d217ff72f8d07947521c137c24cd",
+      "quest_row": 4,
+      "inventory": {
+        "quest": "demon_helmet",
+        "step": "Odtworzenie ścian",
+        "pattern": "P01/P25",
+        "trigger": "StepOut z dwóch pól",
+        "guard": "gracz; dla każdej brakującej ściany",
+        "effect": "przenieś zajmujące stworzenie do(33211,31631,13); utwórz1295",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:44"
+        ],
+        "oteryn": "CZĘŚCIOWO — zamknięte prymitywy, bez potwierdzenia tego całego callbacku; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:crates/gameplay/quests/src/quest/world_callbacks.rs:84",
+        "import_mode": "RĘCZNIE"
+      },
+      "implementation_status": "left_out",
+      "classification": "DERIVED",
+      "delivery": "source_only_or_left_out",
+      "new_runtime_callback": false,
+      "done": "",
+      "left_out": "Brak source World mutation dla dynamicznego teleportu1949 lub ścian i przemieszczenia stworzeń przy StepOut; bez rozszerzenia wspólnego właściciela mapy. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:44",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {}
+    },
+    {
+      "id": "e1476f3f64eba4202eaf24c8b9a35f37b79d25405afb0eb586f9cfb31b3b4fbd",
+      "quest_row": 5,
+      "inventory": {
+        "quest": "demon_helmet",
+        "step": "Nagroda uid6029",
+        "pattern": "P05",
+        "trigger": "Use uid6029, item2472",
+        "guard": "storage40076 nieodebrany",
+        "effect": "item3554×1; zapis odbioru",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:799"
+        ],
+        "oteryn": "CZĘŚCIOWO — claim istnieje jako supported_unqualified; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:docs/repository/QUEST_CALLBACK_COVERAGE.json:1",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "qualified_pg",
+      "classification": "DERIVED",
+      "delivery": "qualified_reward",
+      "new_runtime_callback": false,
+      "done": "Istniejący canonical reward claim zakwalifikowany przez rzeczywisty USE → atomowy MINT → replay → cold reconnect; trzy testy PG przeszły w tym PR. Generator dodał wyłącznie native profile 3387; definicje nagród pozostają niezmienione.",
+      "left_out": "Cały dostęp do skrzyń nadal wymaga niewdrożonych dźwigni/ścian. Sam test dotyczy dokładnego źródłowego selektora skrzyni, nie pełnego questu. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:799",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "test": "quest_demon_helmet_chests_",
+        "test_result": "PASS: 3/3 quest_demon_helmet_chests_; końcowy zestaw publikacji podlega ponownej walidacji.",
+        "test_evidence": "Scoped PostgreSQL 18.6 run: quests3-demon_helmet_green.log; 3 completed markers, exit 0, 146.99 s."
+      }
+    },
+    {
+      "id": "8213e55c2a390b279c418f45ca5c4de4856470a2914b070fca07fa107efd4bcf",
+      "quest_row": 6,
+      "inventory": {
+        "quest": "demon_helmet",
+        "step": "Nagroda uid6030",
+        "pattern": "P05",
+        "trigger": "Use uid6030, item2472",
+        "guard": "storage40077 nieodebrany",
+        "effect": "item3387×1; zapis odbioru",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:806"
+        ],
+        "oteryn": "CZĘŚCIOWO — claim istnieje jako supported_unqualified; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:docs/repository/QUEST_CALLBACK_COVERAGE.json:1",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "qualified_pg",
+      "classification": "DERIVED",
+      "delivery": "qualified_reward",
+      "new_runtime_callback": false,
+      "done": "Istniejący canonical reward claim zakwalifikowany przez rzeczywisty USE → atomowy MINT → replay → cold reconnect; trzy testy PG przeszły w tym PR. Generator dodał wyłącznie native profile 3387; definicje nagród pozostają niezmienione.",
+      "left_out": "Cały dostęp do skrzyń nadal wymaga niewdrożonych dźwigni/ścian. Sam test dotyczy dokładnego źródłowego selektora skrzyni, nie pełnego questu. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:806",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "test": "quest_demon_helmet_chests_",
+        "test_result": "PASS: 3/3 quest_demon_helmet_chests_; końcowy zestaw publikacji podlega ponownej walidacji.",
+        "test_evidence": "Scoped PostgreSQL 18.6 run: quests3-demon_helmet_green.log; 3 completed markers, exit 0, 146.99 s."
+      }
+    },
+    {
+      "id": "b757f2da1163edae0defd87ea01fa99f2c1250332faa2cf41b3b080c1d1f85b1",
+      "quest_row": 7,
+      "inventory": {
+        "quest": "demon_helmet",
+        "step": "Nagroda uid6031",
+        "pattern": "P05",
+        "trigger": "Use uid6031, item2472",
+        "guard": "storage40078 nieodebrany",
+        "effect": "item3420×1; zapis odbioru",
+        "donor": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:813"
+        ],
+        "oteryn": "CZĘŚCIOWO — claim istnieje jako supported_unqualified; Oteryn/Oteryn-Game@798e5b1ce27f441d5cbeece333dc7ac45e19d348:docs/repository/QUEST_CALLBACK_COVERAGE.json:1",
+        "import_mode": "AUTO"
+      },
+      "implementation_status": "qualified_pg",
+      "classification": "DERIVED",
+      "delivery": "qualified_reward",
+      "new_runtime_callback": false,
+      "done": "Istniejący canonical reward claim zakwalifikowany przez rzeczywisty USE → atomowy MINT → replay → cold reconnect; trzy testy PG przeszły w tym PR. Generator dodał wyłącznie native profile 3387; definicje nagród pozostają niezmienione.",
+      "left_out": "Cały dostęp do skrzyń nadal wymaga niewdrożonych dźwigni/ścian. Sam test dotyczy dokładnego źródłowego selektora skrzyni, nie pełnego questu. Decyzja R-MAP-OWNER: Demon Helmet wymaga tworzenia/usuwania teleportu 1949, ewakuacji istot i ścian StepOut; Life Ring wymaga zmiany sześciu pól 4610/5770 i przeniesienia istot z tych pól. Brakuje operacji wspólnego właściciela mapy; pozostają Left out.",
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589772967"
+      ],
+      "answer_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2843#issuecomment-6589900671"
+      ],
+      "implementation_paths": [],
+      "sources": [
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:813",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/action-lever.lua:4-22",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_helmet/movement-walls.lua:1-49",
+        "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/thais_quest/actions_life_ring_lever.lua:1-37"
+      ],
+      "evidence": {
+        "test": "quest_demon_helmet_chests_",
+        "test_result": "PASS: 3/3 quest_demon_helmet_chests_; końcowy zestaw publikacji podlega ponownej walidacji.",
+        "test_evidence": "Scoped PostgreSQL 18.6 run: quests3-demon_helmet_green.log; 3 completed markers, exit 0, 146.99 s."
+      }
+    }
+  ]
+}

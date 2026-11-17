@@ -1,0 +1,5 @@
+{
+  "command": "python3 tools/content-migration/quest_reward_item_semantics.py --output-root .",
+  "exit": 0,
+  "duration_seconds": 3.207
+}

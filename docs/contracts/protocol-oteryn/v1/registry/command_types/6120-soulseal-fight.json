@@ -1,0 +1,10 @@
+{
+  "id": 6120,
+  "name": "SOULSEAL_FIGHT",
+  "owner_decision": "B-2026-11-09-T114",
+  "capability": 72,
+  "payload_schema": "docs/contracts/gameplay/soul-seals-fights-v1.md#request",
+  "result_schema": "docs/contracts/gameplay/soul-seals-fights-v1.md#result",
+  "max_payload_bytes": 20,
+  "max_result_payload_bytes": 8192
+}

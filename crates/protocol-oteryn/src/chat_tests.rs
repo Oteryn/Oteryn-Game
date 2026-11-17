@@ -45,6 +45,23 @@ fn round_trip_line(line: &ChatLine) -> Vec<u8> {
 }
 
 #[test]
+fn server_owned_mount_voice_cannot_be_forged_as_player_intent() {
+    let mut line = local_line(4, 5);
+    if let ChatLine::Local { mode, .. } = &mut line {
+        *mode = ChatSpeechMode::MonsterSay;
+    }
+    round_trip_line(&line);
+    assert!(
+        encode_chat_intent(&ChatIntent::Say {
+            mode: ChatSpeechMode::MonsterSay,
+            text: "Groar".into(),
+        })
+        .is_err()
+    );
+    assert!(decode_chat_intent(&[0x0a, 5, 8, 4, 0x12, 1, b'x']).is_err());
+}
+
+#[test]
 fn intents_round_trip_and_the_private_message_is_the_byte_bound() {
     let say = ChatIntent::Say {
         mode: ChatSpeechMode::Say,
@@ -374,7 +391,7 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
     assert_eq!(capability["offered"], true, "offered since CHAT-WIRE-1");
     assert_eq!(
         capability["command_types"],
-        serde_json::json!([COMMAND_TYPE_CHAT_INTENT])
+        serde_json::json!([COMMAND_TYPE_CHAT_INTENT, super::console::COMMAND])
     );
     assert_eq!(
         capability["state_domains"],
@@ -424,7 +441,9 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                 u64::from(DELTA_TYPE_CHAT_LINE_V1),
                 "CHAT_LINE_DELTA_V1".to_owned(),
                 schema("ChatLineV1"),
-                MAX_CHAT_LINE_BYTES as u64
+                // WU26 capabilities 493, 495 and 496 extend the line; without them it keeps
+                // `MAX_CHAT_LINE_BYTES`.
+                line_extended::MAX_CHAT_LINE_EXTENDED_BYTES as u64
             ),
             (
                 u64::from(DELTA_TYPE_CHAT_ROOMS_V1),
@@ -436,7 +455,9 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                 u64::from(private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1),
                 "CHAT_CHANNEL_LIST_DELTA_V1".to_owned(),
                 schema("ChatChannelListV1"),
-                private_channel::MAX_CHAT_CHANNEL_LIST_BYTES as u64
+                // WU26 capabilities 494 and 495 extend the list; without them it keeps
+                // `MAX_CHAT_CHANNEL_LIST_BYTES`.
+                private_channel_extended::MAX_CHAT_CHANNEL_LIST_EXTENDED_BYTES as u64
             ),
             // S19 adds negotiated typing updates to the existing CHAT revision stream.
             (
@@ -452,6 +473,13 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                 "docs/contracts/protocol-oteryn/v1/vip-presence-v1.proto#VipPresenceBatchV1"
                     .to_owned(),
                 crate::vip_presence::MAX_BYTES as u64
+            ),
+            (
+                u64::from(crate::native_map_cues::DELTA_TYPE_NATIVE_MAP_CHAT_LINE_V1),
+                "NATIVE_MAP_CHAT_LINE_V1".to_owned(),
+                "docs/contracts/protocol-oteryn/v1/native-map-cues-v1.md#native-local-chat"
+                    .to_owned(),
+                MAX_CHAT_LINE_BYTES as u64
             ),
         ]
     );
@@ -496,6 +524,8 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
         MAX_CHAT_ROOMS_BYTES,
         MAX_CHAT_LINE_BYTES,
         private_channel::MAX_CHAT_CHANNEL_LIST_BYTES,
+        line_extended::MAX_CHAT_LINE_EXTENDED_BYTES,
+        private_channel_extended::MAX_CHAT_CHANNEL_LIST_EXTENDED_BYTES,
     ] {
         assert!(
             SCHEMA.contains(&format!("At most {bound} bytes")),

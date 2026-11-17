@@ -137,20 +137,54 @@ fn cross_crate_sealed_impl_sites_match_allowlist() {
             .filter(|l| !l.trim().is_empty() && !l.starts_with('#'))
             .map(str::to_owned),
     );
+    let problems = allowlist_problems(&found, &allowed);
+    assert!(problems.is_empty(), "{}", problems.join("\n"));
+}
+
+/// Multiplicity is intentional: two private fixtures in one file still count
+/// as two seals. Registration never grants a third or a new implementer.
+fn allowlist_problems(
+    found: &BTreeMap<String, usize>,
+    allowed: &BTreeMap<String, usize>,
+) -> Vec<String> {
     let mut problems = Vec::new();
-    for (site, n) in &found {
+    for (site, n) in found {
         if *n > allowed.get(site).copied().unwrap_or(0) {
             problems.push(format!(
                 "new cross-crate Sealed impl {site}: seals must stay inside the owning crate; add to the allowlist only with CP review"
             ));
         }
     }
-    for (site, n) in &allowed {
+    for (site, n) in allowed {
         if *n > found.get(site).copied().unwrap_or(0) {
             problems.push(format!(
                 "stale allowlist entry {site}: remove it from sealed_impl_allowlist.txt"
             ));
         }
     }
-    assert!(problems.is_empty(), "{}", problems.join("\n"));
+    problems
+}
+
+#[test]
+fn sealed_impl_guard_rejects_unregistered_duplicate_and_stale_sites() {
+    let known = "fixture.rs | source_reservation_seal::Sealed | Proof".to_owned();
+    let allowed = counts([known.clone(), known.clone()]);
+    assert!(allowlist_problems(&allowed, &allowed).is_empty());
+    let duplicate = counts([known.clone(), known.clone(), known.clone()]);
+    let problems = allowlist_problems(&duplicate, &allowed);
+    assert_eq!(problems.len(), 1);
+    assert!(problems[0].contains("new cross-crate Sealed impl"));
+    let missing = counts([known]);
+    let problems = allowlist_problems(&missing, &allowed);
+    assert_eq!(problems.len(), 1);
+    assert!(problems[0].contains("stale allowlist entry"));
+    let mut sites = Vec::new();
+    impl_sites(
+        "unregistered.rs",
+        "impl source_reservation_seal::Sealed for UnregisteredOwner {}",
+        &mut sites,
+    );
+    let problems = allowlist_problems(&counts(sites), &BTreeMap::new());
+    assert_eq!(problems.len(), 1);
+    assert!(problems[0].contains("UnregisteredOwner"));
 }

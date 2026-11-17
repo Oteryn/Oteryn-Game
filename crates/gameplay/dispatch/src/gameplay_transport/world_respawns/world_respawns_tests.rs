@@ -181,3 +181,17 @@ fn installed_respawn_job_rechecks_retirement_after_every_wake() {
             );
         });
 }
+
+#[test]
+fn an_unchanged_boss_point_waits_before_its_next_check() {
+    let now = tokio::time::Instant::now();
+    let due = unchanged_boss_recheck(now).expect("recheck");
+    assert_eq!(due.duration_since(now), UNCHANGED_BOSS_RECHECK);
+    // The pass skips a point whose timer is still in the future.
+    let timers = std::collections::BTreeMap::from([(String::from("boss"), Some(due))]);
+    assert!(
+        timers
+            .get("boss")
+            .is_some_and(|due| due.is_none_or(|due| due > now))
+    );
+}

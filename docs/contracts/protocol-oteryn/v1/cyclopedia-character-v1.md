@@ -9,8 +9,8 @@ capability selected, its commands are refused.
 
 ## Badges request
 
-Command type 387 has an empty payload. It names the requesting session's
-account; no other account can be read.
+The legacy command-type-387 request has an empty payload. It names the
+requesting session's account; this legacy request cannot read another account.
 
 ## Badges reply
 
@@ -72,7 +72,7 @@ and 5 page by key. Tabs 1, 6, 7, 8, 9 and 10 ignore the page.
 ## Character tab reply
 
 `tab:u8`, then the tab body. Integers are little-endian; text is `len:u8` and
-UTF-8 unless noted. At most 16384 bytes.
+UTF-8 unless noted. Legacy tab replies are at most 16384 bytes.
 
 | Tab | Body |
 |---|---|
@@ -200,3 +200,147 @@ No native owner currently records these facts:
   skill percentages: live state.
 - The outfit/mount split of appearance unlocks: the keys are opaque.
 - Store summary XP boosts, house items and purchase history: no owner.
+
+### Rich Character achievement pages
+
+Command 388 also accepts opt-in selector 128: `128:u8, page:u8`, optionally followed by the 16-byte target Character. Pages are zero-based, 64 rows each, with a maximum complete list of 16,384 earned facts. Legacy tab request/reply grammars and their bounds are unchanged.
+
+The rich reply is `128:u8, character:[u8;16], name_bytes:u8, name:UTF-8`, followed by the existing AccountAchievementsResult codec. The name is 2–29 bytes. Metadata and earned timestamps come from the activated catalogue and immutable grant-request provenance. The same recovery/session-generation fence and foreign-target VIP consent apply. The total command result budget is 32,836 bytes; legacy replies remain bounded at 16,384 bytes. Unsupported, over-limit or unreadable target data is refused without an invented empty list.
+
+## Account badge visibility extension (T027)
+
+The empty command-387 request and its legacy reply remain unchanged. Prefix
+`f0` selects the bounded visibility extension: `f0 00` queries self;
+`f0 01 <target:16 bytes>` queries another character under the existing accepted
+VIP consent rule; `f0 02 <earned badge:u8> <public:0|1>` sets the requesting
+account's visibility. Extra bytes and unknown badge ids are rejected.
+
+The reply is `f0 <earned-count:u8> <earned ids> <hidden-count:u8> <hidden ids>`.
+Each list is ascending, unique and bounded by the 20 admitted badges. Hidden
+ids must be a subset of earned ids. Other-character queries contain only public
+badges and an empty hidden list. Mutations cannot target another account or an
+unearned badge. Visibility never changes the permanent award rows. Mutations
+are session-fenced and receipted by the command id; replay returns its original
+reply without overwriting later visibility edits.
+
+A new client retries only a refused extension self query once as the legacy empty
+self query. A legacy reply leaves visibility editing unavailable; mutations and
+other-character queries never downgrade. Command-387 bounds are 18 request bytes
+and 43 reply bytes when this extension is supported.
+
+## Appearance gallery
+
+Command 388 additionally accepts selector 129 followed by `offset:u16`.
+This is a self-only, session-fenced read. It returns available outfits (including
+starter choices) and owned mounts from the same qualified cosmetics projection
+used for appearance selection. Familiar entries describe the active content
+catalogue; they do not assert an account unlock or summon eligibility.
+
+Reply: `129:u8, offset:u16, total:u16, count:u8`, then `count` entries of
+`kind:u8, look_type:u32, key:text`. Kinds are outfit=1, mount=2, familiar=3.
+Entries are sorted by kind and key, with exactly `min(24, total-offset)` rows.
+Look ids must be positive; keys are nonempty UTF-8 of at most 255 bytes without
+NUL/newlines. Maximum reply: 6270 bytes. The client resolves these confirmed ids
+through its pinned local sprite loader, without packaging additional art.
+
+## Item summary
+
+Selector 130 on command 388 accepts `offset:u16` and reads only the requesting
+Character under its current item/session fence. The single statement includes
+main backpack and equipment roots, legacy and nested bag edges, depot boxes,
+Character inboxes, and World-scoped stash balances. Closed bags are included.
+
+Reply: `130:u8, offset:u16, total:u16, count:u8`, then `count` rows of
+`definition_len:u16, definition:UTF-8, inventory:u64, depot:u64, stash:u64, inbox:u64`.
+There are exactly `min(24,total-offset)` rows, sorted by definition in byte
+order; keys are nonempty, at most 512 bytes, and contain no NUL/newlines.
+At least one quantity per row is positive. Maximum reply: 13110 bytes.
+Filters on the client apply to the confirmed page; pagination retains the
+complete server custody projection and does not require opening containers.
+
+## Death loss forecast
+
+Command 388 accepts the single-byte selector 131 for a self-only forecast under
+the current Character/session fence. It is read-only: it neither samples a
+future lost-item set nor consumes a blessing or creates a death receipt.
+
+The reply is at most 51 bytes: `131:u8, observed_at_unix_ms:u64, level:u32,
+experience:u64, regular_blessings:u8, flags:u8`, followed by a creature-death scenario and an optional
+player-death scenario. The latter is present only when flag 16 is set; without
+it the reply is 37 bytes and carries no player-death estimates. Each scenario is `experience_lost:u64,
+equipment_per_mille:u16, container_per_mille:u16, consumption:u8,
+amulet_consumed:u8`. Consumption is keep=0, regular=1, PvP safeguard=2.
+Flags are owned Twist=1, current promotion benefit=2, effective red/black skull=4,
+Adventurer PvP exemption=8, and published PvP available in this scope=16.
+Reserved flags, invalid bool/enumeration tags, chances above 1000, XP loss above
+current XP, trailing bytes and truncation are rejected.
+
+The server uses the same XP formula, blessing disposition, item-loss ladders,
+Amulet of Loss, vocation/level exemptions and Adventurer owner as normal death
+settlement. Promotion includes the current Premium gate. A player-death scenario
+is displayed only with a published compatible World policy. XP is the baseline
+before attacker-specific Bless reductions; final death settlement re-reads its
+facts and determines actual item loss. A lost backpack includes its contents.
+
+## Coherent profile (opt-in selector 132, command 388)
+
+Request: `132:u8` plus optional `target:16 bytes`; absent target selects self.
+Reply: `132:u8, character:16 bytes, name_len:u8, name:utf8, badge_count:u8, badge_ids:u8[], equipment_count:u8`, followed by each `slot:u8, definition_len:u16le, definition:utf8, quantity:u32le`. Name is 2–29 bytes, definitions 1–512 bytes, equipment at most 32 unique slots, quantity positive; badges use the admitted catalogue in ascending order without duplicates. Reply is bounded to 17000 bytes.
+
+Identity, permanent account badges and equipped items are read together under the current viewer item/session, node and recovery fences and existing accepted VIP consent rule. Self queries refresh eligible badges first; foreign reads never grant awards. Refusal discloses no profile. Legacy empty command 387 and tab 7 remain unchanged. Native Badges and Inspection use this opt-in snapshot and discard cached facts on target changes or refused refreshes.
+
+## Named spell modifiers (selector 133, command 388)
+
+Request: `133:u8, page:u8, filter:u8`, optionally followed by the target Character's 16 bytes. The low three filter bits select equipment (1), weapon proficiency (2) and Wheel (4); at least one source is required. Bit 3 selects source ordering; its absence selects spell ordering. Other bits are rejected. Filtering and ordering precede pagination; each page contains at most 64 of at most 1024 observed modifiers.
+
+Reply: `133:u8, page:u8, filter:u8, character:16 bytes, total:u16le, stats_len:u16le, stats:bytes, available:u8`, then the modifier snapshot when available. `stats` is the unchanged Offence combat codec, including the observation time and Character/equipment revisions. The reply is bounded to 32000 bytes. The target is identified by `character`; the query target is not echoed separately.
+
+The snapshot has `schema=1:u8, known_sources:u8, source_count:u8`, followed by sources (`kind:u8, equipment_slot:u8, key_len:u16le, key:utf8`), then `row_count:u16le` and rows (`source_index:u8, effect:u8, spell_len:u16le, spell:utf8, value:i64le`). There are at most 32 sources; keys are 1–512 bytes and spell names 1–128 bytes, without control characters. Values are non-negative. Source kinds are equipment (1), proficiency (2), Wheel (3); known-source bits use the request's source masks. An unavailable source is distinct from an observed source with no modifiers. An absent snapshot identifies an observation made without named modifier facts.
+
+Effects 1–6 are base damage, base healing, critical chance, critical extra damage, life leech and mana leech, in hundredths of a percentage point. Effect 7 is an individual cooldown reduction in milliseconds, effect 8 a Wheel spell-augment stage (1–3), and effect 9 a secondary Focus-group cooldown reduction in milliseconds. Individual reductions remain subject to the cast owner's half-base floor. Modifiers describe the observed equipment/allocation; cast, vocation and target conditions still apply.
+
+Production samples read native item declarations, the actual selected weapon-proficiency cast rewards, and the current Wheel projection/stages. Named facts and scalar combat facts are committed together after the existing current session/node/recovery, content and exact-equipment checks; named facts participate in the replay fingerprint. Legacy writers leave the optional column NULL. Reads preserve the existing accepted VIP consent and current viewer fence, including for offline targets. The read model grants no combat, item or cast authority.
+
+Stored modifiers also carry their sample revision. Reads accept them only when that revision matches the scalar sample, so older writers that leave optional columns untouched make prior modifiers unavailable instead of attaching them to a newer observation.
+
+## Vocation in General Stats (capability 487)
+
+Capability 487 `CYCLOPEDIA_CHARACTER_VOCATION_V1` requires 199. When a session
+selected it, a General Stats reply (tab 1) appends `vocation_id:u8` after the
+unchanged V1 body. Ids follow the spellbook details vocation order: `none`=1,
+`druid`=2, `elder_druid`=3, `sorcerer`=4, `master_sorcerer`=5, `knight`=6,
+`elite_knight`=7, `paladin`=8, `royal_paladin`=9, `monk`=10, `exalted_monk`=11.
+The value is the target's stored build-state vocation, read in the same fenced
+transaction as the rest of the tab. Other tabs never carry it, and a session
+without 487 receives byte-identical replies. Any reply with an extension is
+bounded by `MAX_EXTENDED_TAB_RESULT_BYTES` (32768), within the registry bound
+of command 388.
+
+## Structured Recent Deaths rows (capability 488)
+
+Capability 488 `CYCLOPEDIA_DEATH_DETAILS_V1` requires 199. When a session
+selected it, each Recent Deaths row (tab 2) is
+`at:i64le, cause_len:u8, cause:utf8, level:u32le, killer_len:u8, killer:utf8,
+most_damage_len:u8, most_damage:utf8, unjustified:u8`; the count and the first
+two fields are unchanged. `level` is the character level at death. `killer` is
+the public final-blow killer recorded at death (the ordinal 0 public killer
+whose kind matches the death classification), empty when the final blow is
+unknown. `unjustified` is 1 when the death awarded unjustified points to any
+killer. Killer names hold at most 64 bytes (`MAX_DEATH_NAME_BYTES`); the reader
+cuts a longer stored name at a character boundary.
+
+`most_damage` is the most-damage dealer the fenced death transaction captured
+(migration 2780, `game_public_death_classifications.most_damage_ordinal`, a
+reference to one of the death's own historical killer rows, so the name is the
+one frozen at death). It is the killer cohort player with the largest recorded
+damage total in the PvP harm receipts of the last five minutes (a tie keeps the
+earlier capture position); without player damage evidence it is the captured
+final blow (a creature, or the final player in the cohort). It is empty when
+neither is known, and for every death captured before migration 2780; the
+client must not substitute another name. A session without 488 receives
+byte-identical rows.
+
+Current difference: Crystal `Player::death` compares the damage of every
+attacker, creatures included. Only player damage has durable amounts here, so
+a player who dealt any recorded damage is reported over a creature that may have
+dealt more.

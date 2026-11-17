@@ -1,0 +1,18 @@
+{
+  "mechanic": "0449-spellbook-details",
+  "kind": "handlers",
+  "id": "0449-spellbook-details-query",
+  "status": "supported",
+  "commands": [
+    733
+  ],
+  "direction": "client_to_server",
+  "capability": 449,
+  "entry": "protocol.rs::command",
+  "not_applicable": {
+    "state": "The existing actor spell catalog app feature owns confirmed pages and pending queries.",
+    "view": "The native spellbook in the actor spell catalog app feature renders server pages.",
+    "input": "The existing spell catalog shortcut opens this negotiated query view.",
+    "settings": "Character-scoped filters are stored by the reference preferences app feature."
+  }
+}

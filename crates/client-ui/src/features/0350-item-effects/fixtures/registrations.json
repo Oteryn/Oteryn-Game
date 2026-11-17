@@ -1,0 +1,29 @@
+[
+  {
+    "mechanic": "0350-item-effects",
+    "kind": "handlers",
+    "id": "0350-item-effects-push",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "not_applicable": {
+      "state": "Transient effects live in the bounded native world scene.",
+      "input": "Ordinary item USE is the input.",
+      "settings": "Existing world rendering settings apply."
+    },
+    "capability": 350,
+    "entry": "protocol.rs::cue",
+    "reducer": "protocol.rs::cue",
+    "push_messages": [
+      "ItemEffectBatch"
+    ],
+    "test": "tests/state.rs::item_effects_reject_non_item_visual_data"
+  },
+  {
+    "mechanic": "0350-item-effects",
+    "kind": "panels",
+    "id": "0350-item-effects-scene",
+    "status": "supported",
+    "entry": "view.rs::status"
+  }
+]

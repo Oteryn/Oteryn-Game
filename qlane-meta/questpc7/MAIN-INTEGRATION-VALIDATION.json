@@ -1,0 +1,96 @@
+{
+  "state": "RUNNING",
+  "push_gate": "full mandatory validation before push",
+  "main_merge": "bbb3e06d0",
+  "packages": [
+    "oteryn-client",
+    "oteryn-client-assets",
+    "oteryn-game-server",
+    "oteryn-gameplay-characters",
+    "oteryn-gameplay-combat",
+    "oteryn-gameplay-combat-rules",
+    "oteryn-gameplay-content",
+    "oteryn-gameplay-content-promotion",
+    "oteryn-gameplay-dispatch",
+    "oteryn-gameplay-durability",
+    "oteryn-gameplay-encounter-rules",
+    "oteryn-gameplay-encounters",
+    "oteryn-gameplay-entities",
+    "oteryn-gameplay-items",
+    "oteryn-gameplay-monster-ai",
+    "oteryn-gameplay-npc",
+    "oteryn-gameplay-progression",
+    "oteryn-gameplay-quests",
+    "oteryn-gameplay-social",
+    "oteryn-gameplay-spell",
+    "oteryn-gameplay-spell-rules",
+    "oteryn-gameplay-world",
+    "oteryn-pre-native-client-tests",
+    "oteryn-world-bundle",
+    "oteryn-world-bundle-compiler"
+  ],
+  "attempts": [
+    {
+      "log": "/tmp/questpc7-full-nextest-1.log",
+      "outcome": "COMPILE_RED",
+      "errors": [
+        "creation-mode fixture constructor retained old appearance variable",
+        "starter fixture constructor retained bool parameter after creation-mode enum integration"
+      ],
+      "tests_executed": false
+    },
+    {
+      "log": "/tmp/questpc7-full-nextest-2.log",
+      "outcome": "BUILD_INFRA_RED",
+      "errors": [
+        "No space left on device (os error 28)",
+        "ld terminated with signal 7 [Bus error]"
+      ],
+      "tests_executed": false
+    },
+    {
+      "log": "/tmp/questpc7-full-nextest-3.log",
+      "outcome": "BUILD_INFRA_RED",
+      "errors": [
+        "No space left on device (os error 28)"
+      ],
+      "tests_executed": false
+    },
+    {
+      "log": "/tmp/questpc7-full-nextest-4.log",
+      "outcome": "RUNNING",
+      "success_output": "immediate"
+    }
+  ],
+  "authoring_failures": {
+    "cosmetics": {
+      "tests": 25,
+      "failures": 1,
+      "log": "/tmp/questpc7-main-cosmetics-tests.log"
+    },
+    "quest_rewards": {
+      "tests": 34,
+      "failures": 3,
+      "log": "/tmp/questpc7-main-quest-author-tests.log"
+    }
+  },
+  "qualification_change": false,
+  "regeneration": {
+    "state": "RED",
+    "exact_error": "ValueError: STARTING_LOADOUT_PROFILE_DUPLICATE",
+    "log": "/tmp/questpc7-main-regeneration3.log",
+    "root": "native base already owns source-compatible items3571,3572,7991 before dedicated starting overlay",
+    "mechanical_known_conflicts": 0,
+    "presentation_difference": "7991 terminal full stop only",
+    "repair_plan": "reuse existing shared merge_fact, retain canonical text, refuse known mechanical disagreement, emit only missing identities"
+  },
+  "cache_recovery": "removed obsolete pre-16:12 lane test/crate artifacts while Cargo idle; restored11GB free; monitor only completed inactive incremental directories",
+  "composition_red": {
+    "command": "python3 -m unittest discover -s tools/content-migration -p 'test_starting_loadout_composition.py'",
+    "tests": 3,
+    "errors": 1,
+    "duration_seconds": 4.112,
+    "exact_error": "ValueError: STARTING_LOADOUT_PROFILE_DUPLICATE",
+    "log": "/tmp/questpc7-starter-composition-red.log"
+  }
+}

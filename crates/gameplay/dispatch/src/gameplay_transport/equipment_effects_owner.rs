@@ -212,6 +212,130 @@ pub(in crate::gameplay_transport) fn equipped_mana_shield(
     )
 }
 
+/// I05-r2 (Crystal movement.cpp:647-650): any worn item in its own slot whose worn form has
+/// INVISIBILITY true. `None` for the same unreadable equipment `equipment_effects` refuses.
+pub(in crate::gameplay_transport) fn equipped_invisibility(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+) -> Option<bool> {
+    use crate::content::{ReferenceModifierParameter, ReferenceSkillModifierKind};
+    if equipment.content_digest != content.source_digest() {
+        return None;
+    }
+    for item in &equipment.items {
+        if item.definition.family != "Item" {
+            return None;
+        }
+        let (_, semantic_slot) = canonical_slot(item.slot)?;
+        let Some(active) =
+            super::super::timed_item_content::equipped_definition(content, &item.definition)
+        else {
+            continue;
+        };
+        let policy = content.item_policy(&active.production_key, &active.revision_ref)?;
+        let semantics = &policy.record().semantics;
+        if !in_own_slot(semantics, semantic_slot) {
+            continue;
+        }
+        if matches!(&semantics.skill_modifiers, ReferenceItemField::Known(group)
+            if matches!(&group.modifiers, ReferenceItemField::Known(modifiers)
+                if modifiers.iter().any(|modifier| modifier.kind == ReferenceSkillModifierKind::Invisibility
+                    && modifier.parameter == ReferenceItemField::Known(ReferenceModifierParameter::Boolean(true)))))
+        {
+            return Some(true);
+        }
+    }
+    Some(false)
+}
+
+/// I05-r1 (Crystal movement.cpp:664-685): one regeneration per worn item in its own slot,
+/// read from the worn (active) form. Ammo/Extra, the hands and the container count only when
+/// the item is in its own slot. `None` for the same unreadable equipment that
+/// `equipment_effects` refuses.
+pub(in crate::gameplay_transport) fn equipped_regeneration(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+) -> Option<
+    Vec<(
+        u8,
+        oteryn_gameplay_progression::regeneration::EquipmentRegeneration,
+    )>,
+> {
+    use crate::content::{ReferenceModifierParameter as Parameter, ReferenceSkillModifierKind};
+    use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
+
+    if equipment.content_digest != content.source_digest() {
+        return None;
+    }
+    let mut items: Vec<_> = equipment.items.iter().collect();
+    items.sort_by_key(|item| item.slot);
+    let mut worn = Vec::new();
+    for item in items {
+        if item.definition.family != "Item" {
+            return None;
+        }
+        let (_, semantic_slot) = canonical_slot(item.slot)?;
+        let Some(active) =
+            super::super::timed_item_content::equipped_definition(content, &item.definition)
+        else {
+            continue;
+        };
+        let policy = content.item_policy(&active.production_key, &active.revision_ref)?;
+        let semantics = &policy.record().semantics;
+        if !in_own_slot(semantics, semantic_slot) {
+            continue;
+        }
+        let mut regeneration = EquipmentRegeneration {
+            health_gain: 0,
+            health_ticks_ms: 0,
+            mana_gain: 0,
+            mana_ticks_ms: 0,
+        };
+        if let ReferenceItemField::Known(group) = &semantics.skill_modifiers
+            && let ReferenceItemField::Known(modifiers) = &group.modifiers
+        {
+            let gain = |kind| {
+                modifiers.iter().find_map(|modifier| {
+                    match (modifier.kind == kind, &modifier.parameter) {
+                        (true, ReferenceItemField::Known(Parameter::SignedPoints(value))) => {
+                            u32::try_from(value.0).ok()
+                        }
+                        _ => None,
+                    }
+                })
+            };
+            let ticks = |kind| {
+                modifiers.iter().find_map(|modifier| {
+                    match (modifier.kind == kind, &modifier.parameter) {
+                        (true, ReferenceItemField::Known(Parameter::Milliseconds(value))) => {
+                            Some(u32::try_from(value.0).unwrap_or(u32::MAX))
+                        }
+                        _ => None,
+                    }
+                })
+            };
+            if let Some(value) = gain(ReferenceSkillModifierKind::HealthGain) {
+                regeneration.health_gain = value;
+            }
+            if let Some(value) = ticks(ReferenceSkillModifierKind::HealthTicks) {
+                regeneration.health_ticks_ms = value;
+            }
+            if let Some(value) = gain(ReferenceSkillModifierKind::ManaGain) {
+                regeneration.mana_gain = value;
+            }
+            if let Some(value) = ticks(ReferenceSkillModifierKind::ManaTicks) {
+                regeneration.mana_ticks_ms = value;
+            }
+        }
+        if (regeneration.health_gain > 0 && regeneration.health_ticks_ms > 0)
+            || (regeneration.mana_gain > 0 && regeneration.mana_ticks_ms > 0)
+        {
+            worn.push((item.slot, regeneration));
+        }
+    }
+    Some(worn)
+}
+
 /// ARMOR-MITIGATION-1 (`Player::getArmor`): the armor of the items worn in their own head,
 /// necklace, torso, legs, feet, ring and ammo slots; the hands and the container never count.
 /// An item whose armor is not known contributes nothing; a negative armor value contributes
@@ -395,6 +519,8 @@ fn equipped_offence_inner(
         return None;
     }
     let mut tiers = (0, 0);
+    let mut conversion = None;
+    let mut vibrancy = 0;
     let mut sums = [0_i64; 7];
     let mut shots = std::collections::BTreeMap::<u16, i64>::new();
     for item in &equipment.items {
@@ -441,6 +567,22 @@ fn equipped_offence_inner(
             .filter(|b| b.item == item.item_instance_id && b.remaining_ms > 0)
         {
             let tier = usize::from(installed.tier.checked_sub(1)?);
+            use crate::content::ProjectV2RangedElement as E;
+            if (20..=24).contains(&installed.category) && matches!(item.slot, 5 | 6) {
+                let element = match installed.category {
+                    20 => E::Fire,
+                    21 => E::Earth,
+                    22 => E::Ice,
+                    23 => E::Energy,
+                    _ => E::Death,
+                };
+                conversion = Some((element, *[10, 25, 50].get(tier)?));
+                continue;
+            }
+            if matches!(installed.category, 12 | 25) && item.slot == 4 {
+                vibrancy = vibrancy.max(*[15, 25, 50].get(tier)?);
+                continue;
+            }
             let values = match installed.category {
                 0 => [500, *[500, 1500, 4000].get(tier)?, 0, 0],
                 10 => [0, 0, *[500, 1000, 2500].get(tier)?, 0],
@@ -469,6 +611,8 @@ fn equipped_offence_inner(
         }
     }
     let mut offence = EquippedOffence::from_sums(sums[0], sums[1], sums[2], sums[3]);
+    offence.elemental_conversion = conversion;
+    offence.paralysis_deflection_percent = vibrancy;
     offence.cleave = u64::try_from(sums[4].max(0)).ok()?;
     offence.reflect_percent = u64::try_from(sums[5].max(0)).ok()?;
     offence.reflect_flat = u32::try_from(sums[6].clamp(0, i64::from(u32::MAX))).ok()?;
@@ -665,6 +809,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             self.install_proficiency_equipment(runtime, actor, session, &equipment)
                 .await?;
             let mantra = equipped_mantra(&equipment, self.active_generation?.native_gameplay()?)?;
+            let regeneration =
+                equipped_regeneration(&equipment, self.active_generation?.native_gameplay()?)?;
+            let invisible =
+                equipped_invisibility(&equipment, self.active_generation?.native_gameplay()?)?;
             let wheel_hands =
                 equipped_wheel_hands(&equipment, self.active_generation?.native_gameplay()?);
             let (proficiency_weapon, proficiency_defense, proficiency_shield_modifier) =
@@ -678,6 +826,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 proficiency_shield_modifier,
             );
             install_prepared_effects(state, effects, armor, defence, mana_shield, offence, mantra);
+            state.install_equipped_regeneration(regeneration);
+            state.install_equipped_invisibility(invisible);
         }
         Some(())
     }
@@ -695,6 +845,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             self.install_house_proficiency_equipment(runtime, actor, session, fence, &equipment)
                 .await?;
             let mantra = equipped_mantra(&equipment, self.active_generation?.native_gameplay()?)?;
+            let regeneration =
+                equipped_regeneration(&equipment, self.active_generation?.native_gameplay()?)?;
+            let invisible =
+                equipped_invisibility(&equipment, self.active_generation?.native_gameplay()?)?;
             let wheel_hands =
                 equipped_wheel_hands(&equipment, self.active_generation?.native_gameplay()?);
             let (proficiency_weapon, proficiency_defense, proficiency_shield_modifier) =
@@ -708,6 +862,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 proficiency_shield_modifier,
             );
             install_prepared_effects(state, effects, armor, defence, mana_shield, offence, mantra);
+            state.install_equipped_regeneration(regeneration);
+            state.install_equipped_invisibility(invisible);
         }
         Some(())
     }

@@ -12,6 +12,7 @@
 77 house_move_out
 72 cyclopedia
 73 cyclopedia
+6178 cyclopedia
 40 guild
 41 guild
 68 guild
@@ -26,6 +27,7 @@
 45 party
 46 party
 13 chat
+6117 chat
 7 npc
 8 npc_trade
 11 attack

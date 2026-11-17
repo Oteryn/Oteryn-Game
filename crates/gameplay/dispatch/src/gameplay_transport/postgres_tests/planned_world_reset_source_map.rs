@@ -84,7 +84,18 @@ fn scenario(epoch: u64) -> TestResult {
             .active_world_reset_epoch(world)
             .await?
             .ok_or("active epoch")?;
-        assert!(owner.ensure_source_map_initialized().await);
+        // Admission retries this idempotent owner step after a transient holder
+        // failure; readiness still requires the real epoch-bound SQL commit.
+        let initialization_budget = crate::gameplay_transport::AdmissionRetryBudget::for_root(
+            &deps.admitted.game_session_id,
+            &harness.root,
+        );
+        assert!(
+            initialization_budget
+                .retry_until(async || owner.ensure_source_map_initialized().await)
+                .await,
+            "source-map initialization within the admission budget"
+        );
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_native_map_item_receipts")
             .fetch_one(&harness.pool)
             .await?;
@@ -95,14 +106,28 @@ fn scenario(epoch: u64) -> TestResult {
         let bad:i64=sqlx::query_scalar("SELECT count(*) FROM game_native_map_item_receipts r LEFT JOIN game_native_map_item_audit a USING(transaction_id) WHERE r.reset_epoch<>$1::text::numeric OR ($1='0' AND convert_from(r.source_intent,'UTF8')::jsonb ? 'reset_epoch') OR ($1<>'0' AND convert_from(r.source_intent,'UTF8')::jsonb->>'reset_epoch' IS DISTINCT FROM $1) OR a.envelope IS DISTINCT FROM r.source_intent OR a.envelope_digest IS DISTINCT FROM r.binding").bind(epoch.to_string()).fetch_one(&harness.pool).await?;
         assert_eq!(bad, 0);
         // Drop the in-memory initialization marker and replay the actual owner.
-        owner.states.spell_states.lock().await.source_map_initialized = None;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .source_map_initialized = None;
         owner
             .states
             .spell_states
             .lock()
             .await
             .next_map_initialization_pass_us = 0;
-        assert!(owner.ensure_source_map_initialized().await);
+        let replay_budget = crate::gameplay_transport::AdmissionRetryBudget::for_root(
+            &deps.admitted.game_session_id,
+            &harness.root,
+        );
+        assert!(
+            replay_budget
+                .retry_until(async || owner.ensure_source_map_initialized().await)
+                .await,
+            "source-map replay within the admission budget"
+        );
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_native_map_item_receipts")
                 .fetch_one(&harness.pool)

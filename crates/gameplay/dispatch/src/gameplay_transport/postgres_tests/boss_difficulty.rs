@@ -18,11 +18,28 @@ use tokio::io::AsyncWriteExt;
 
 const BOSS: &str = "oteryn:boss.difficulty_fixture";
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     id: u64,
     payload: &[u8],
+) -> TestResult<(CommandStatus, Vec<u8>)> {
+    exchange_kind(
+        owner,
+        admitted,
+        id,
+        payload,
+        wire::COMMAND_TYPE_BOSS_DIFFICULTY,
+    )
+    .await
+}
+
+pub(super) async fn exchange_kind(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    id: u64,
+    payload: &[u8],
+    kind: u32,
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
     let before = *admitted;
     let (mut server, mut client) = tokio::io::duplex(4096);
@@ -46,7 +63,7 @@ async fn exchange(
                 before.continuity.connection_generation,
                 &ClientCommandValue {
                     command_id: id,
-                    command_type: wire::COMMAND_TYPE_BOSS_DIFFICULTY,
+                    command_type: kind,
                     payload,
                 },
             )
@@ -100,8 +117,12 @@ fn window(context: [u8; 16], revision: &str, selected_difficulty: u16) -> TestRe
     wire::encode_reply(&Reply::Window {
         context,
         boss_key: BOSS.into(),
+        boss_creature_key: "oteryn:creature.fixture".into(),
         content_revision: revision.into(),
         selected_difficulty,
+        personal_highest: 0,
+        unlocked_max: 0,
+        maximum_difficulty: 25,
     })
     .map_err(debug)
 }

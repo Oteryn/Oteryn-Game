@@ -1,0 +1,80 @@
+{
+  "schema": "OTERYN_QUEST_REWARD_USE_PROOF/v1",
+  "runtime_path": "bundle_chest::use_bundle_chest -> reward_claim_mint",
+  "test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready2_claims.rs",
+  "test_sha256": "d38da5f632c20232dabfa0283990485721d1eb74d17e04376e77f6740404b184",
+  "cases": [
+    {
+      "wiki_title": "Mintwallin Cyclops Quest",
+      "claim_key": "oteryn:reward-claim.kv.mintwallincyclops",
+      "test": "qready2_mintwallin_cyclops_quest_1",
+      "marker": "QREADY2_MINTWALLIN_CYCLOPS_QUEST_1",
+      "duration_seconds": 43.623,
+      "claim_sha256": "4a63e26ce805fd8bbb9e8e4f38a1b2595e5ce112e35e3f29e0ce97bdc678014a"
+    },
+    {
+      "wiki_title": "Naginata Quest",
+      "claim_key": "oteryn:reward-claim.kv.naginata",
+      "test": "qready2_naginata_quest_1",
+      "marker": "QREADY2_NAGINATA_QUEST_1",
+      "duration_seconds": 41.795,
+      "claim_sha256": "0ab99e3761d846551fea6f2478b9c23fa11347b087944725f466bdca4ae06ead"
+    },
+    {
+      "wiki_title": "Nightmare Teddy Quest",
+      "claim_key": "oteryn:reward-claim.kv.nightmare_teddy_quest",
+      "test": "qready2_nightmare_teddy_quest_1",
+      "marker": "QREADY2_NIGHTMARE_TEDDY_QUEST_1",
+      "duration_seconds": 47.305,
+      "claim_sha256": "da14e551887a1bb07cc6548a0093fdc231e99f3d8d263b69889fb84e2504c302"
+    },
+    {
+      "wiki_title": "Noble Armor Quest",
+      "claim_key": "oteryn:reward-claim.kv.noblearmor1",
+      "test": "qready2_noble_armor_quest_1",
+      "marker": "QREADY2_NOBLE_ARMOR_QUEST_1",
+      "duration_seconds": 44.647,
+      "claim_sha256": "57ed30a5062735513fe5ad8debb6f0317e9bb7b3fa83204fa0dbcf886b094f29"
+    },
+    {
+      "wiki_title": "Noble Armor Quest",
+      "claim_key": "oteryn:reward-claim.kv.noblearmor2",
+      "test": "qready2_noble_armor_quest_2",
+      "marker": "QREADY2_NOBLE_ARMOR_QUEST_2",
+      "duration_seconds": 41.998,
+      "claim_sha256": "6cf6cfa1aedbc3b763a521465d6940819814fbdf0a70f7840e0c98f8728cc4f0"
+    },
+    {
+      "wiki_title": "Orc Fortress Quest",
+      "claim_key": "oteryn:reward-claim.kv.orcfortress1",
+      "test": "qready2_orc_fortress_quest_1",
+      "marker": "QREADY2_ORC_FORTRESS_QUEST_1",
+      "duration_seconds": 45.176,
+      "claim_sha256": "b24a39468e30ca9c43fbf0cd3bf196e1a5364b555b63111a2570a8b3cec1325b"
+    },
+    {
+      "wiki_title": "Orc Fortress Quest",
+      "claim_key": "oteryn:reward-claim.kv.orcfortress2",
+      "test": "qready2_orc_fortress_quest_2",
+      "marker": "QREADY2_ORC_FORTRESS_QUEST_2",
+      "duration_seconds": 42.903,
+      "claim_sha256": "d6fc766d10437f8e5b7eade8100087dcf5fb1dabdcabdf824fd9e8bfd4ec6bb6"
+    },
+    {
+      "wiki_title": "Orc Fortress Quest",
+      "claim_key": "oteryn:reward-claim.kv.orcfortress3",
+      "test": "qready2_orc_fortress_quest_3",
+      "marker": "QREADY2_ORC_FORTRESS_QUEST_3",
+      "duration_seconds": 44.043,
+      "claim_sha256": "f4759b58b1dbab9f20301eb482e0ab05c2371e9c01163fc81b447653b1b8f417"
+    },
+    {
+      "wiki_title": "Plate Armor Quest",
+      "claim_key": "oteryn:reward-claim.kv.platearmor",
+      "test": "qready2_plate_armor_quest_1",
+      "marker": "QREADY2_PLATE_ARMOR_QUEST_1",
+      "duration_seconds": 42.037,
+      "claim_sha256": "e5cb60d3feebe3314f9d0c16e2578491896eb8a842ca5f0b84090df3cc584c17"
+    }
+  ]
+}

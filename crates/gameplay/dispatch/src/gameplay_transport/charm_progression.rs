@@ -3,6 +3,12 @@
 //! port: the same gameplay fence, revision slot and receipts as CHARM-3, and the gold fee owner
 //! for a remove. The Bestiary races and their charm points are the canonical Bestiary source,
 //! the catalogue is the resident imported one, and both views are read after the command.
+#[path = "charm_progression/charm_details.rs"]
+mod charm_details;
+#[path = "charm_progression/catalogue.rs"]
+mod catalogue;
+#[path = "charm_progression/metadata.rs"]
+mod metadata;
 use std::sync::LazyLock;
 
 use super::charm::CharmProgressionPort;
@@ -82,7 +88,6 @@ fn bestiary() -> Option<&'static Bestiary> {
 }
 
 /// The canonical Bestiary races in wire index order (index = position + 1).
-#[cfg(test)]
 pub(super) fn canonical_races() -> Option<&'static [BestiaryRace]> {
     bestiary().map(|b| b.races.as_slice())
 }
@@ -150,6 +155,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return GuildReply::Rejected;
         };
+        if matches!(payload.first().copied(), Some(254 | 255)) {
+            if CommandId::new(id).is_err() {
+                return GuildReply::Rejected;
+            }
+            return catalogue::dispatch(self, admitted, payload).await;
+        }
         let Ok(action) = wire::decode_charm_progression_request(payload) else {
             return GuildReply::Rejected;
         };
@@ -234,6 +245,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return GuildReply::Unavailable;
         };
+        let ready = {
+            let runtime = self.runtime.lock().await;
+            super::item_ref_admission::pinned_index(&runtime, self.active_generation).is_some()
+                && self
+                    .active_generation
+                    .and_then(|active| active.native_gameplay())
+                    .is_some()
+        };
+        let content = content.with_runtime_consumers(ready);
         let Ok(mut port) = NativeCharmProgressionPort::bind(
             self.root,
             self.character,

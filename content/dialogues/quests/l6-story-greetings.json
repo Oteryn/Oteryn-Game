@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "npcs": [
+    {
+      "npc": "oteryn:npc.oldrak",
+      "greet": "Greetings. Have you come to ask about Hugo?",
+      "farewell": "Farewell.",
+      "walkaway": "Another time, then.",
+      "sources": [
+        "content/quests/authoring/paradox-tower.md"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.padreia",
+      "greet": "Peace be with you. What story brings you here?",
+      "farewell": "Farewell.",
+      "walkaway": "Another time, then.",
+      "sources": [
+        "content/quests/authoring/paradox-tower.md"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "greet": "Hello there. Are you looking for news of Hugo?",
+      "farewell": "Farewell.",
+      "walkaway": "Another time, then.",
+      "sources": [
+        "content/quests/authoring/paradox-tower.md"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.a_prisoner",
+      "greet": "A visitor! Perhaps we can talk about mathemagics.",
+      "farewell": "Farewell.",
+      "walkaway": "Another time, then.",
+      "sources": [
+        "content/quests/authoring/paradox-tower.md"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.riddler",
+      "greet": "Welcome to the tower. Are you ready for its questions?",
+      "farewell": "Farewell.",
+      "walkaway": "Another time, then.",
+      "sources": [
+        "content/quests/authoring/paradox-tower.md"
+      ]
+    }
+  ]
+}

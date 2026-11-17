@@ -1,0 +1,38 @@
+{
+  "schema": "OTERYN_AUTHORED_STATIC_ITEM_CONSTRUCTORS/v1",
+  "basis": "CHOSEN_OTERYN_APPROXIMATION",
+  "recipes": {
+    "path": "tools/content-schema/quest-authoring/samples/authored68/recipes.json",
+    "sha256": "7927f67d7680f6801c5cb2a9ab0fd7fee8bc1db0260d8a4aaf03f0d91f57e3fc"
+  },
+  "constructors": [
+    {
+      "item": "oteryn:item.tibia.i50335",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "recipe_title": "Mystery of the Valley Quest",
+      "role": "Guardian Statue (Quest)",
+      "weight": 900
+    },
+    {
+      "item": "oteryn:item.tibia.i50336",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "recipe_title": "Mystery of the Valley Quest",
+      "role": "Fragment of a Statue (1st)",
+      "weight": 300
+    },
+    {
+      "item": "oteryn:item.tibia.i50337",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "recipe_title": "Mystery of the Valley Quest",
+      "role": "Fragment of a Statue (2nd)",
+      "weight": 300
+    },
+    {
+      "item": "oteryn:item.tibia.i50338",
+      "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
+      "recipe_title": "Mystery of the Valley Quest",
+      "role": "Fragment of a Statue (3rd)",
+      "weight": 300
+    }
+  ]
+}

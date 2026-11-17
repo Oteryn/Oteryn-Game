@@ -1,0 +1,15 @@
+{
+  "mechanic": "0278-battle-instinct-status",
+  "kind": "handlers",
+  "id": "0278-battle-instinct-status-query",
+  "status": "supported",
+  "commands": [
+    494
+  ],
+  "direction": "client_to_server",
+  "capability": 278,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "The server owns current Battle Instinct bonuses."
+  }
+}

@@ -2,19 +2,63 @@
   {
     "mechanic": "0057-cyclopedia-map",
     "kind": "handlers",
-    "id": "0057-cyclopedia-map-unsupported",
-    "status": "unsupported",
-    "reason": "Command dispatch and live map state move with CLIENT-STRUCT-5; step 4 owns navigation.",
+    "id": "0057-cyclopedia-map-command-6178",
+    "status": "supported",
     "commands": [
-      72,
+      6178
+    ],
+    "direction": "client_to_server",
+    "capability": 57,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "This panel has no persistent client settings."
+    }
+  },
+  {
+    "mechanic": "0057-cyclopedia-map",
+    "kind": "handlers",
+    "id": "0057-cyclopedia-map-command-72",
+    "status": "supported",
+    "commands": [
+      72
+    ],
+    "direction": "client_to_server",
+    "capability": 57,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "This panel has no persistent client settings."
+    }
+  },
+  {
+    "mechanic": "0057-cyclopedia-map",
+    "kind": "handlers",
+    "id": "0057-cyclopedia-map-command-73",
+    "status": "supported",
+    "commands": [
       73
     ],
+    "direction": "client_to_server",
+    "capability": 57,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "This panel has no persistent client settings."
     }
+  },
+  {
+    "mechanic": "0057-cyclopedia-map",
+    "kind": "keybindings",
+    "id": "0057-cyclopedia-map-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+D",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0057-cyclopedia-map",
+    "kind": "panels",
+    "id": "0057-cyclopedia-map-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
   },
   {
     "mechanic": "0057-cyclopedia-map",

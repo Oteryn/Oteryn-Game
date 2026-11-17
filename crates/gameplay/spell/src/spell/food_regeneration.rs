@@ -1,7 +1,6 @@
 //! Always-on player health/mana regeneration. Food selects the faster clocks;
-//! the existing vocation table supplies the amount credited per completed period.
+//! the effective vocation supplies the percentage credited per completed period.
 //! Protection zones hold progress without credits for both hungry and fed actors.
-#[cfg(test)]
 use super::Vocation;
 use super::cast::PlayerSpellState;
 
@@ -28,33 +27,70 @@ pub(super) fn step_due(state: &mut PlayerSpellState, now: u64, in_protection_zon
     } else {
         credit_second(state, fed);
     }
+    credit_equipment(state, in_protection_zone);
     state.regeneration_next_tick_us = Some(now.saturating_add(u64::from(FOOD_TICK_MS) * 1_000));
+}
+
+fn credit_equipment(state: &mut PlayerSpellState, in_protection_zone: bool) {
+    let mut regeneration = RegenerationState {
+        health: state.health,
+        mana: state.mana,
+        regen_health_ms: state.regen_health_ms,
+        regen_mana_ms: state.regen_mana_ms,
+        regen_health_carry: state.regen_health_carry,
+        regen_mana_carry: state.regen_mana_carry,
+    };
+    let streak = if state.premium_current {
+        state.resting_streak
+    } else {
+        state.resting_streak.min(3)
+    };
+    let mut clocks = std::mem::take(&mut state.equipped_regeneration);
+    oteryn_gameplay_progression::regeneration::credit_equipment_second(
+        &mut regeneration,
+        &mut clocks,
+        state.facts.max_health,
+        state.facts.max_mana,
+        in_protection_zone,
+        streak,
+    );
+    state.equipped_regeneration = clocks;
+    state.health = regeneration.health;
+    state.mana = regeneration.mana;
 }
 
 /// Credits one fed tick to a living actor. Dead actors neither accumulate nor gain.
 pub fn credit_fed_second(state: &mut PlayerSpellState) {
-    apply(state, |regeneration, rate, max_health, max_mana| {
-        oteryn_gameplay_progression::regeneration::credit_fed_second(
-            regeneration,
-            rate,
-            max_health,
-            max_mana,
-        );
-    });
+    apply(
+        state,
+        |regeneration, vocation, rate, max_health, max_mana| {
+            oteryn_gameplay_progression::regeneration::credit_fed_second(
+                regeneration,
+                vocation,
+                rate,
+                max_health,
+                max_mana,
+            );
+        },
+    );
 }
 
 /// Credits the always-on native clock, using the saturation state selected by the condition
 /// owner for this occurrence.
 pub fn credit_second(state: &mut PlayerSpellState, fed: bool) {
-    apply(state, |regeneration, rate, max_health, max_mana| {
-        oteryn_gameplay_progression::regeneration::credit_second(
-            regeneration,
-            rate,
-            max_health,
-            max_mana,
-            fed,
-        );
-    });
+    apply(
+        state,
+        |regeneration, vocation, rate, max_health, max_mana| {
+            oteryn_gameplay_progression::regeneration::credit_second(
+                regeneration,
+                vocation,
+                rate,
+                max_health,
+                max_mana,
+                fed,
+            );
+        },
+    );
 }
 
 /// Credit the daily-reward resting-area clocks. The streak unlocks health at two,
@@ -70,10 +106,10 @@ fn credit_resting_second(state: &mut PlayerSpellState, streak: u32, fed: bool) {
         return;
     }
     let health_before = state.health;
-    let mana_before = (state.mana, state.regen_mana_ms);
+    let mana_before = (state.mana, state.regen_mana_ms, state.regen_mana_carry);
     credit_second(state, fed);
     if streak < 3 {
-        (state.mana, state.regen_mana_ms) = mana_before;
+        (state.mana, state.regen_mana_ms, state.regen_mana_carry) = mana_before;
         let health = (state.health, state.regen_health_ms);
         hold_fed_second(state, fed);
         (state.health, state.regen_health_ms) = health;
@@ -94,7 +130,7 @@ fn credit_resting_second(state: &mut PlayerSpellState, streak: u32, fed: bool) {
 
 /// Holds one native tick in a protection zone. The historical helper also serves hungry actors.
 pub fn hold_fed_second(state: &mut PlayerSpellState, fed: bool) {
-    apply(state, |regeneration, mut rate, _, _| {
+    apply(state, |regeneration, _, mut rate, _, _| {
         use oteryn_gameplay_progression::regeneration::{
             FED_HEALTH_PERIOD_MS, FED_MANA_PERIOD_MS, UNFED_HEALTH_PERIOD_MS, UNFED_MANA_PERIOD_MS,
         };
@@ -109,17 +145,21 @@ pub fn hold_fed_second(state: &mut PlayerSpellState, fed: bool) {
 
 fn apply(
     state: &mut PlayerSpellState,
-    step: impl FnOnce(&mut RegenerationState, RegenerationRate, u32, u32),
+    step: impl FnOnce(&mut RegenerationState, Vocation, RegenerationRate, u32, u32),
 ) {
     let mut regeneration = RegenerationState {
         health: state.health,
         mana: state.mana,
         regen_health_ms: state.regen_health_ms,
         regen_mana_ms: state.regen_mana_ms,
+        regen_health_carry: state.regen_health_carry,
+        regen_mana_carry: state.regen_mana_carry,
     };
+    let vocation = effective(state.facts.vocation, state.premium_current);
     step(
         &mut regeneration,
-        rate(effective(state.facts.vocation, state.premium_current)),
+        vocation,
+        rate(vocation),
         state.facts.max_health,
         state.facts.max_mana,
     );
@@ -127,6 +167,8 @@ fn apply(
     state.mana = regeneration.mana;
     state.regen_health_ms = regeneration.regen_health_ms;
     state.regen_mana_ms = regeneration.regen_mana_ms;
+    state.regen_health_carry = regeneration.regen_health_carry;
+    state.regen_mana_carry = regeneration.regen_mana_carry;
 }
 
 #[cfg(test)]
@@ -157,6 +199,53 @@ mod tests {
     }
 
     #[test]
+    fn equipped_regeneration_runs_on_the_native_tick_and_survives_reinstall() {
+        use oteryn_gameplay_progression::regeneration::EquipmentRegeneration;
+
+        let ring = EquipmentRegeneration {
+            health_gain: 6,
+            health_ticks_ms: 6_000,
+            mana_gain: 24,
+            mana_ticks_ms: 6_000,
+        };
+        let mut with_ring = actor(Vocation::Knight);
+        let mut without_ring = actor(Vocation::Knight);
+        with_ring.install_equipped_regeneration(vec![(8, ring)]);
+        for second in 1..=6 {
+            step_due(&mut with_ring, second * 1_000_000, false);
+            step_due(&mut without_ring, second * 1_000_000, false);
+            assert_eq!(
+                (with_ring.regen_health_carry, with_ring.regen_mana_carry),
+                (
+                    without_ring.regen_health_carry,
+                    without_ring.regen_mana_carry
+                ),
+                "equipment preserves the native percentage carries"
+            );
+        }
+        assert_eq!(with_ring.health - without_ring.health, 6);
+        assert_eq!(with_ring.mana - without_ring.mana, 24);
+
+        let mut reinstalled = actor(Vocation::Knight);
+        reinstalled.install_equipped_regeneration(vec![(8, ring)]);
+        for second in 1..=3 {
+            step_due(&mut reinstalled, second * 1_000_000, false);
+        }
+        reinstalled.install_equipped_regeneration(vec![(8, ring)]);
+        assert_eq!(reinstalled.equipped_regeneration()[0].health_ms, 3_000);
+        reinstalled.install_equipped_regeneration(vec![(
+            8,
+            EquipmentRegeneration {
+                health_gain: 2,
+                ..ring
+            },
+        )]);
+        assert_eq!(reinstalled.equipped_regeneration()[0].health_ms, 0);
+        reinstalled.install_equipped_regeneration(vec![]);
+        assert!(reinstalled.equipped_regeneration().is_empty());
+    }
+
+    #[test]
     fn daily_resting_health_and_mana_below_at_and_above_every_threshold() {
         for streak in 0..=8 {
             for premium in [false, true] {
@@ -175,9 +264,9 @@ mod tests {
                 let health = if streak < 2 {
                     0
                 } else if premium && streak >= 5 {
-                    60
+                    48
                 } else {
-                    30
+                    24
                 };
                 let mana = if streak < 3 {
                     0
@@ -197,11 +286,11 @@ mod tests {
 
     #[test]
     fn daily_resting_double_tiers_multiply_amounts_without_accelerating_the_clocks() {
-        for (streak, expected) in [
-            (4, (101, 102)),
-            (5, (102, 102)),
-            (6, (102, 104)),
-            (7, (102, 104)),
+        for (streak, expected_at_six) in [
+            (4, (100, 102)),
+            (5, (100, 102)),
+            (6, (100, 104)),
+            (7, (100, 104)),
         ] {
             let mut state = actor(Vocation::Druid);
             state.premium_current = true;
@@ -211,11 +300,11 @@ mod tests {
                 assert_eq!((state.health, state.mana), (100, 100));
             }
             step_due(&mut state, 4_000_000, true);
-            assert_eq!((state.health, state.mana), (expected.0, 100));
+            assert_eq!((state.health, state.mana), (100, 100));
             step_due(&mut state, 5_000_000, true);
-            assert_eq!(state.mana, 100);
+            assert_eq!((state.health, state.mana), (100, 100));
             step_due(&mut state, 6_000_000, true);
-            assert_eq!((state.health, state.mana), expected);
+            assert_eq!((state.health, state.mana), expected_at_six);
         }
     }
 
@@ -228,7 +317,7 @@ mod tests {
             for second in 1..=120 {
                 step_due(&mut state, second * 1_000_000, false);
             }
-            assert_eq!((state.health, state.mana), (130, 140));
+            assert_eq!((state.health, state.mana), (124, 140));
         }
     }
 
@@ -268,13 +357,13 @@ mod tests {
         let mut state = actor(Vocation::Knight);
         eat_food(&mut state, 10, 0).expect("eat");
         run(&mut state, 0, 5, TickFacts::default());
-        assert_eq!((state.health, state.mana), (101, 102));
+        assert_eq!((state.health, state.mana), (101, 101));
         run(&mut state, 5, 15, TickFacts::default());
         // Ten fed seconds followed by five unfed seconds retain one credit per due clock.
         assert_eq!((state.health, state.mana), (104, 104));
         assert!(state.conditions.instances().is_empty());
         run(&mut state, 15, 18, TickFacts::default());
-        assert_eq!((state.health, state.mana), (105, 106));
+        assert_eq!((state.health, state.mana), (105, 104));
     }
 
     #[test]
@@ -321,8 +410,8 @@ mod tests {
         eat_food(&mut druid, 12, 0).expect("eat");
         run(&mut druid, 0, 12, TickFacts::default());
         run(&mut unfed, 0, 12, TickFacts::default());
-        assert_eq!((druid.health, druid.mana), (104, 104));
-        assert_eq!((unfed.health, unfed.mana), (103, 104));
+        assert_eq!((druid.health, druid.mana), (103, 108));
+        assert_eq!((unfed.health, unfed.mana), (102, 104));
     }
 
     #[test]
@@ -350,7 +439,7 @@ mod tests {
         dispatch(&mut fed, 6);
         dispatch(&mut unfed, 6);
         assert_eq!((fed.health, fed.mana), (102, 102));
-        assert_eq!((unfed.health, unfed.mana), (101, 102));
+        assert_eq!((unfed.health, unfed.mana), (101, 101));
     }
 
     #[test]
@@ -375,18 +464,18 @@ mod tests {
             in_protection_zone: true,
             standing_on_field: None,
         };
-        // Fed clocks hold one second short of HP 3 s and MP 5 s.
+        // Fed clocks hold one second short of the shared 3 s period.
         run(&mut state, 0, 10, pz);
         assert_eq!((state.health, state.mana), (100, 100));
-        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (2_000, 4_000));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (2_000, 2_000));
         // The first tick outside credits once and starts the next period from zero.
         run(&mut state, 10, 11, TickFacts::default());
-        assert_eq!((state.health, state.mana), (101, 102));
+        assert_eq!((state.health, state.mana), (101, 101));
         assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
         run(&mut state, 11, 16, TickFacts::default());
-        assert_eq!((state.health, state.mana), (102, 104));
+        assert_eq!((state.health, state.mana), (102, 102));
         run(&mut state, 16, 17, TickFacts::default());
-        assert_eq!((state.health, state.mana), (103, 104));
+        assert_eq!((state.health, state.mana), (103, 103));
     }
 
     #[test]
@@ -432,7 +521,7 @@ mod tests {
         assert_eq!((state.health, state.mana), (100, 100));
         assert_eq!((state.regen_health_ms, state.regen_mana_ms), (3_000, 5_000));
         run(&mut state, 10, 11, TickFacts::default());
-        assert_eq!((state.health, state.mana), (101, 102));
+        assert_eq!((state.health, state.mana), (101, 101));
         assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
     }
 

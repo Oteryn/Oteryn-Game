@@ -142,7 +142,8 @@ pub struct CorpseDecayDeadline {
     pub corpse_item_instance_id: [u8; 16],
     pub definition: super::item_mint::TypedDefinitionRef,
     pub materialized_at_unix_ms: i64,
-    pub decay_at_unix_ms: i64,
+    /// None is the source's undecaying terminal, still counted as a live corpse.
+    pub decay_at_unix_ms: Option<i64>,
 }
 
 /// The recovery query's result: every live corpse of the scope (at most
@@ -326,6 +327,7 @@ struct Admitted {
     key_number: u32,
     /// `None` for the corpse's own step.
     placement_ordinal: Option<u64>,
+    death_entry: Option<super::world_reset::ground_step::DeathTreeEntry>,
     corpse_ground: OneItemGroundV1,
     deadline_unix_ms: i64,
     database_now_unix_ms: i64,
@@ -483,7 +485,11 @@ async fn admit(
     if uuid_text(item.try_get("world_id")?)? != world_id {
         return Err(DurabilityError::InvalidStoredState);
     }
-    let deadline_unix_ms: i64 = corpse.try_get("deadline")?;
+    let Some(deadline_unix_ms) = corpse.try_get::<Option<i64>, _>("deadline")? else {
+        return Ok(Err(DecayRetireError::Refused(
+            DecayRetireRefusal::NotYetDue,
+        )));
+    };
     let database_now_unix_ms: i64 = corpse.try_get("database_now")?;
     if database_now_unix_ms < deadline_unix_ms
         || !corpse.try_get::<bool, _>("terminal_stage_ready")?
@@ -541,6 +547,7 @@ async fn admit(
         key_number: u32::try_from(item.try_get::<i64, _>("key_number")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         placement_ordinal,
+        death_entry: None,
         corpse_ground: OneItemGroundV1 {
             world_id: world_id.to_vec(),
             channel_id: runtime_scope
@@ -586,22 +593,23 @@ async fn apply_retire(
             .await?
         }
         Some(ordinal) => {
-            let death_container = matches!(
-                step.cause,
-                RetireCause::WorldReset(_) | RetireCause::ActivityRetirement(_)
-            ) && super::world_reset::ground_step::is_death_container(
-                tx,
-                step.corpse_item_instance_id,
-            )
-            .await?;
-            let query = if death_container {
-                "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)"
-            } else {
-                "DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)"
+            use super::world_reset::ground_step::DeathEntryKind;
+            let (query, parent) = match admitted.death_entry {
+                Some(entry) => (
+                    match entry.kind {
+                        DeathEntryKind::Direct => "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
+                        DeathEntryKind::Nested => "DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
+                    },
+                    entry.parent,
+                ),
+                None => (
+                    "DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)",
+                    step.corpse_item_instance_id,
+                ),
             };
             sqlx::query(query)
                 .bind(item)
-                .bind(step.corpse_item_instance_id.as_slice())
+                .bind(parent.as_slice())
                 .bind(ordinal.to_string())
                 .execute(&mut **tx)
                 .await?
@@ -833,6 +841,7 @@ mod tests {
             quantity_before: 3,
             key_number: 0,
             placement_ordinal: ordinal,
+            death_entry: None,
             corpse_ground: OneItemGroundV1 {
                 world_id: id(1).to_vec(),
                 channel_id: id(2).to_vec(),

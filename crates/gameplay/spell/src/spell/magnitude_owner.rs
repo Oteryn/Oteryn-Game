@@ -11,6 +11,7 @@ use super::combat_batch::{Error, LiveActorBinding, MAX_EFFECTS};
 use super::native_combat::{Element, MagnitudePlan, NativeCombatPlan};
 use crate::foundation::{
     ChannelRuntimeV1, CharacterId, CompanionSnapshot, ExactActorRef, GameSessionId,
+    NativeHealthChangeObservation,
 };
 use oteryn_gameplay_domain::domain::condition::ConditionValues;
 use oteryn_gameplay_foundation::foundation::condition::ConditionBuffDelta;
@@ -239,7 +240,24 @@ struct Target {
     actor: ExactActorRef,
     atom: String,
     owner: TargetOwner,
+    cruelty_drain: Option<u64>,
+    native_health_required: bool,
+    native_health: Option<NativeHealthChangeObservation>,
 }
+impl Target {
+    fn native_primary(&self, value: i64) -> Result<i64, Error> {
+        if self.native_health_required {
+            self.native_health
+                .as_ref()
+                .ok_or(Error::InvalidBatch)?
+                .primary(value)
+                .map_err(Error::Owner)
+        } else {
+            Ok(value)
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct PreparedMagnitudeOwner {
     pub attributes: MagnitudeOwnedAttributes,
@@ -254,7 +272,8 @@ pub struct PreparedMagnitudeOwner {
     canonical_hex: Vec<(ExactActorRef, ConditionBuffDelta)>,
     plan: NativeCombatPlan,
     targets: Vec<Target>,
-    shared_extensions: Option<(bool, bool)>,
+    shared_extensions: Option<(Option<i64>, bool)>,
+    charm_critical: Vec<(ExactActorRef, u16, u16)>,
     pvp_targets: Vec<(ExactActorRef, bool)>,
     delayed_damage_percent: Option<u32>,
     /// Position snapshots are captured only for an active adjacency consumer and revalidated.
@@ -330,6 +349,31 @@ fn signed_truncate(value: f64) -> Result<i64, Error> {
 fn signed_round(value: f64) -> Result<i64, Error> {
     signed_truncate(value.round())
 }
+// Crystal 201189f soul_war_mechanics.lua:1091-1098 scales BOTH signed
+// components for a Player caster, including healing. The callbacks run before
+// Game applies Wheel modifiers (game.cpp:7827/7838 and7933/7946).
+fn current_cruelty_drain(
+    runtime: &ChannelRuntimeV1,
+    snapshot: &CompanionSnapshot,
+) -> Result<Option<u64>, Error> {
+    if !runtime
+        .soul_war_health_callback(snapshot.actor)
+        .map_err(Error::Owner)?
+        .is_some_and(|policy| policy.is_cruelty())
+    {
+        return Ok(None);
+    }
+    runtime
+        .soul_war_cruelty_drain(snapshot)
+        .map_err(Error::Owner)
+        .map(|value| Some(value.unwrap_or(2)))
+}
+fn cruelty_health_component(value: i64, drain: Option<u64>) -> Result<i64, Error> {
+    match drain {
+        Some(drain) => signed_truncate(value as f64 * (1.0 - drain as f64 / 100.0).max(0.0)),
+        None => Ok(value),
+    }
+}
 fn percent(value: i64, multiplier: u32) -> Result<i64, Error> {
     signed_truncate(value as f64 * f64::from(multiplier) / 100.0)
 }
@@ -359,6 +403,72 @@ fn condition_attributes(
 }
 
 impl PreparedMagnitudeOwner {
+    /// Race identities come from the already-qualified creature owner snapshots.
+    pub fn charm_targets(&self) -> impl Iterator<Item = (ExactActorRef, &str)> {
+        self.targets
+            .iter()
+            .filter_map(|target| match &target.owner {
+                TargetOwner::Creature(creature) => {
+                    Some((target.actor, creature.state.policy.definition_key.as_str()))
+                }
+                TargetOwner::Player(_) => None,
+            })
+    }
+
+    /// Install per-target passive critical contributions before any damage roll.
+    /// Chance and extra are hundredths of a percentage point, not multipliers.
+    pub fn select_charm_critical(
+        &mut self,
+        bonuses: Vec<(ExactActorRef, u16, u16)>,
+    ) -> Result<(), Error> {
+        if self.shared_extensions.is_some()
+            || !self.finished_player_damage.is_empty()
+            || bonuses.len() > MAX_EFFECTS
+        {
+            return Err(Error::InvalidBatch);
+        }
+        for (i, (actor, chance, extra)) in bonuses.iter().enumerate() {
+            if bonuses[..i].iter().any(|(other, _, _)| other == actor)
+                || !self.charm_targets().any(|(target, _)| target == *actor)
+                || *chance > 10_000
+                || *extra > 10_000
+            {
+                return Err(Error::InvalidBatch);
+            }
+        }
+        self.charm_critical = bonuses;
+        Ok(())
+    }
+
+    /// Immediate AoE leech cardinality from the actual qualified plan, before
+    /// zero-damage effects are omitted. Central and combined side beams differ.
+    #[must_use]
+    pub fn leech_target_count(&self, actor: ExactActorRef) -> Option<usize> {
+        let target = self.targets.iter().find(|target| target.actor == actor)?;
+        let NativeCombatPlan::Combat(plan) = &self.plan else {
+            return None;
+        };
+        plan.leech_target_count(target.source_id)
+    }
+
+    /// Damage classification for advisory committed-outcome emission.
+    pub fn analyser_element(&self) -> oteryn_protocol_oteryn::damage_element::DamageElement {
+        use oteryn_protocol_oteryn::damage_element::DamageElement as D;
+        match &self.plan {
+            NativeCombatPlan::Combat(plan) => match plan.element {
+                Element::Physical => D::Physical,
+                Element::Energy => D::Energy,
+                Element::Fire => D::Fire,
+                Element::Death => D::Death,
+                Element::Ice => D::Ice,
+                Element::Earth => D::Earth,
+                Element::Holy => D::Holy,
+                Element::Healing => D::Untyped,
+            },
+            _ => D::Untyped,
+        }
+    }
+
     fn damage_dealt_percent(&self) -> Result<u32, Error> {
         if let Some(frozen) = self.delayed_damage_percent {
             return Ok(frozen);
@@ -673,6 +783,9 @@ impl PreparedMagnitudeOwner {
                         actor: binding.actor,
                         atom: binding.target_atom.clone(),
                         owner,
+                        cruelty_drain: None,
+                        native_health_required: false,
+                        native_health: None,
                     });
                     continue;
                 }
@@ -700,7 +813,20 @@ impl PreparedMagnitudeOwner {
                     return invalid();
                 }
             }
+            let cruelty_drain = match &owner {
+                TargetOwner::Creature(snapshot) => current_cruelty_drain(runtime, snapshot)?,
+                TargetOwner::Player(_) => None,
+            };
+            let native_health_required = match &owner {
+                TargetOwner::Creature(snapshot) => runtime.native_health_event(snapshot.actor)
+                    .map_err(Error::Owner)?
+                    .is_some_and(|policy| policy.kind() == oteryn_gameplay_content::content::native_monster_callbacks::NativeHealthEventKind::HealthForgotten),
+                TargetOwner::Player(_) => false,
+            };
             targets.push(Target {
+                native_health_required,
+                native_health: None,
+                cruelty_drain,
                 source_id: binding.source_id,
                 actor: binding.actor,
                 atom: binding.target_atom.clone(),
@@ -798,6 +924,7 @@ impl PreparedMagnitudeOwner {
             plan: plan.clone(),
             targets,
             shared_extensions: None,
+            charm_critical: Vec::new(),
             pvp_targets: pvp_targets.to_vec(),
             delayed_damage_percent: None,
             wheel_positions,
@@ -807,6 +934,44 @@ impl PreparedMagnitudeOwner {
             player_block_shielding,
             finished_player_damage: Vec::new(),
         })
+    }
+
+    /// Bind current source HEALTHCHANGE DATA from the same sealed all-role
+    /// name read as this target preparation. This grants no target legality.
+    pub fn bind_native_health_observations(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        observations: &[NativeHealthChangeObservation],
+    ) -> Result<(), Error> {
+        if observations.len() > runtime.actor_slot_capacity() {
+            return invalid();
+        }
+        for observation in observations {
+            runtime
+                .validate_native_health_change_observation(observation)
+                .map_err(Error::Owner)?;
+            if observations
+                .iter()
+                .filter(|other| other.target() == observation.target())
+                .count()
+                != 1
+            {
+                return invalid();
+            }
+        }
+        for target in &mut self.targets {
+            let observation = observations
+                .iter()
+                .find(|value| value.target() == target.actor);
+            if target.native_health_required && observation.is_none() {
+                return invalid();
+            }
+            if !target.native_health_required && observation.is_some() {
+                return invalid();
+            }
+            target.native_health = observation.cloned();
+        }
+        Ok(())
     }
 
     /// Independent actual owner reads are required again before any physical replacement.
@@ -894,8 +1059,18 @@ impl PreparedMagnitudeOwner {
             }
         }
         for target in &self.targets {
+            if target.native_health_required {
+                runtime
+                    .validate_native_health_change_observation(
+                        target.native_health.as_ref().ok_or(Error::InvalidBatch)?,
+                    )
+                    .map_err(Error::Owner)?;
+            }
             match &target.owner {
                 TargetOwner::Creature(before) => {
+                    if current_cruelty_drain(runtime, before)? != target.cruelty_drain {
+                        return Err(Error::SnapshotChanged);
+                    }
                     if runtime
                         .validate_companion_snapshot(before.as_ref())
                         .is_err()
@@ -966,11 +1141,9 @@ impl PreparedMagnitudeOwner {
     fn extensions(
         &mut self,
         shared: bool,
+        charm_chance: u16,
         draw: &mut dyn FnMut(i64, i64) -> i64,
     ) -> Result<(bool, bool), Error> {
-        if shared && let Some(value) = self.shared_extensions {
-            return Ok(value);
-        }
         let a = &self.resolved_attributes;
         let mut skill_chance = u32::from(needed(a.equipment_critical_chance_permyriad)?);
         let mut bonus = needed(a.equipment_critical_extra_permyriad)?;
@@ -996,16 +1169,32 @@ impl PreparedMagnitudeOwner {
         let _ = bonus
             .checked_add(needed(a.base_critical_extra_permyriad)?)
             .ok_or(Error::InvalidMagnitude)?;
-        let critical = chance > 0 && checked_draw(draw, 1, 10000)? <= i64::from(chance);
-        let fatal_chance = needed(a.fatal_chance_permyriad)?;
-        let fatal = fatal_chance.numerator > 0
-            && i128::from(checked_draw(draw, 0, 10000)?) * i128::from(fatal_chance.denominator)
-                < i128::from(fatal_chance.numerator);
-        let value = (critical, fatal);
-        if shared {
-            self.shared_extensions = Some(value);
-        }
-        Ok(value)
+        let chance = chance
+            .checked_add(u32::from(charm_chance))
+            .ok_or(Error::InvalidMagnitude)?;
+        // Reuse the uniform draw, not the first target's critical boolean: only
+        // the assigned species receives Low Blow's extra threshold. All such
+        // targets share the resulting crit, regardless of evaluation order.
+        let cached = if shared { self.shared_extensions } else { None };
+        let (roll, fatal) = if let Some(value) = cached {
+            value
+        } else {
+            let roll = if chance > 0 || self.charm_critical.iter().any(|(_, chance, _)| *chance > 0)
+            {
+                Some(checked_draw(draw, 1, 10000)?)
+            } else {
+                None
+            };
+            let fatal_chance = needed(a.fatal_chance_permyriad)?;
+            let fatal = fatal_chance.numerator > 0
+                && i128::from(checked_draw(draw, 0, 10000)?) * i128::from(fatal_chance.denominator)
+                    < i128::from(fatal_chance.numerator);
+            if shared {
+                self.shared_extensions = Some((roll, fatal));
+            }
+            (roll, fatal)
+        };
+        Ok((roll.is_some_and(|roll| roll <= i64::from(chance)), fatal))
     }
 
     /// Retains source healingMap separately from the residual damage; the
@@ -1078,6 +1267,9 @@ impl PreparedMagnitudeOwner {
             })
             .ok_or(Error::InvalidBatch)?
             .clone();
+        if target.native_health_required && target.native_health.is_none() {
+            return invalid();
+        }
         let (element, armor, shared) = match plan {
             NativeCombatPlan::Combat(p) => (
                 p.element,
@@ -1089,10 +1281,15 @@ impl PreparedMagnitudeOwner {
         };
         // Ordinary healing does not roll extensions. Grove's critical heal is rolled
         // after its healing bonuses below (Crystal 201189f game.cpp:7629-7645).
+        let (charm_chance, charm_extra) = self
+            .charm_critical
+            .iter()
+            .find(|(actor, _, _)| *actor == binding.actor)
+            .map_or((0, 0), |(_, chance, extra)| (*chance, *extra));
         let (critical, fatal) = if element == Element::Healing {
             (false, false)
         } else {
-            self.extensions(shared, draw)?
+            self.extensions(shared, charm_chance, draw)?
         };
         let a = &self.resolved_attributes;
         let mut value = signed_truncate(hit.magnitude as f64)?;
@@ -1110,7 +1307,10 @@ impl PreparedMagnitudeOwner {
             }
         }
         if critical {
-            let bonus = self.critical_extra()?;
+            let bonus = self
+                .critical_extra()?
+                .checked_add(i32::from(charm_extra))
+                .ok_or(Error::InvalidMagnitude)?;
             value = signed_truncate(value as f64 * (1.0 + f64::from(bonus) / 10000.0))?;
         }
         if fatal {
@@ -1123,6 +1323,11 @@ impl PreparedMagnitudeOwner {
             .virtue_party_bonuses(self.now_ms.saturating_mul(1_000));
         if element == Element::Healing {
             value = percent(value, needed(a.healing_dealt_percent)?)?;
+            value = target.native_primary(value)?;
+            value = cruelty_health_component(value, target.cruelty_drain)?;
+            if target.cruelty_drain.is_some() && value == 0 {
+                return Ok(0);
+            }
             value = compound(
                 value,
                 needed(a.source_healing_multiplier_percent)?
@@ -1282,6 +1487,14 @@ impl PreparedMagnitudeOwner {
         }
         value = signed_round(value as f64 * sensitivity / 100.0)?.max(0);
         // Source immunity/armor zero short-circuit occurs BEFORE Wheel flat damage.
+        if value == 0 {
+            return Ok(0);
+        }
+        value = target
+            .native_primary(value.checked_neg().ok_or(Error::InvalidMagnitude)?)?
+            .checked_neg()
+            .ok_or(Error::InvalidMagnitude)?;
+        value = cruelty_health_component(value, target.cruelty_drain)?;
         if value == 0 {
             return Ok(0);
         }

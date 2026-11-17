@@ -6,6 +6,7 @@ pub mod config;
 pub mod descriptor_facts;
 mod quest_log_content;
 mod runtime_status;
+mod scheduler_diagnostics;
 pub mod serve;
 
 pub use oteryn_gameplay_node_files::{operator_files, secure_file};

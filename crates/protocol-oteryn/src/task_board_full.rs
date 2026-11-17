@@ -2,6 +2,10 @@
 use super::{Error, TALISMAN_PATHS, valid_race};
 use crate::charm_wire::{push_message_field, push_varint_field, read_bytes, read_varint, set_once};
 
+pub const CAPABILITY_WEEKLY_RESULTS_V1: u32 = 474;
+pub const COMMAND_WEEKLY_RESULTS: u32 = 6172;
+pub const COMMAND_ELITE_BOUNTY: u32 = 6174;
+
 pub const MAX_REQUEST_BYTES: usize = 192;
 pub const MAX_REPLY_BYTES: usize = 16_384;
 pub const MAX_KILL_TASKS: usize = 9;
@@ -30,8 +34,9 @@ impl Request {
     fn valid(&self) -> bool {
         let selection = usize::from(self.selection);
         let selected = match self.action {
-            4 | 7 | 9 | 11 | 12 | 15 | 17 => selection == 0,
+            4 | 7 | 9 | 11 | 15 | 17 => selection == 0,
             5 | 10 | 18 => selection < 4,
+            19 => selection < 2,
             6 => selection < MAX_DELIVERY_TASKS,
             8 => selection < MAX_BOUNTY_OFFERS,
             13 | 14 => selection < MAX_LIST_SLOTS,
@@ -121,6 +126,8 @@ pub struct Weekly {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BountyOffer {
+    pub elite: bool,
+    pub dust: u32,
     pub race: String,
     pub required: u32,
     pub experience: u64,
@@ -137,6 +144,7 @@ pub struct ListSlot {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Bounty {
+    pub elite: bool,
     pub state: u8,
     pub difficulty: u8,
     /// Zero when no task is selected; otherwise the original offer slot plus one.
@@ -168,6 +176,14 @@ pub struct ShopOffer {
     pub bought: bool,
 }
 
+/// Rewards already paid by the Monday reset, retained until the next board starts.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WeeklyResults {
+    pub period: u64,
+    pub points: u32,
+    pub soulseals: u32,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Reply {
     /// 0 success; other values name the contract's durable refusal category.
@@ -178,6 +194,7 @@ pub struct Reply {
     pub bounty_points: u64,
     pub soulseals: u64,
     pub weekly: Weekly,
+    pub weekly_results: Option<WeeklyResults>,
     pub bounty: Bounty,
     pub talisman: [TalismanPath; TALISMAN_PATHS],
     pub shop: Vec<ShopOffer>,
@@ -350,7 +367,11 @@ fn decode_weekly(bytes: &[u8]) -> Result<Weekly, Error> {
     })
 }
 fn encode_bounty_offer(offer: &BountyOffer) -> Result<Vec<u8>, Error> {
-    if !valid_race(&offer.race) || offer.required == 0 || offer.grade > 2 {
+    if !valid_race(&offer.race)
+        || offer.required == 0
+        || offer.grade > 3
+        || (!offer.elite && offer.dust != 0)
+    {
         return Err(Error::Malformed);
     }
     let mut out = Vec::new();
@@ -363,11 +384,18 @@ fn encode_bounty_offer(offer: &BountyOffer) -> Result<Vec<u8>, Error> {
     ] {
         push_varint_field(&mut out, field, value);
     }
+    if offer.elite {
+        push_varint_field(&mut out, 6, 1);
+    }
+    if offer.dust > 0 {
+        push_varint_field(&mut out, 7, u64::from(offer.dust));
+    }
     Ok(out)
 }
 fn decode_bounty_offer(bytes: &[u8]) -> Result<BountyOffer, Error> {
     let (mut race, mut required, mut experience, mut points, mut grade) =
         (None, None, None, None, None);
+    let (mut elite, mut dust) = (None, None);
     let mut at = 0;
     while at < bytes.len() {
         match read_varint(bytes, &mut at)? {
@@ -376,10 +404,14 @@ fn decode_bounty_offer(bytes: &[u8]) -> Result<BountyOffer, Error> {
             24 => set_once(&mut experience, read_varint(bytes, &mut at)?)?,
             32 => set_once(&mut points, u32_value(bytes, &mut at)?)?,
             40 => set_once(&mut grade, u8_value(bytes, &mut at)?)?,
+            48 => set_once(&mut elite, bool_value(bytes, &mut at)?)?,
+            56 => set_once(&mut dust, u32_value(bytes, &mut at)?)?,
             _ => return Err(Error::Malformed),
         }
     }
     Ok(BountyOffer {
+        elite: elite.unwrap_or(false),
+        dust: dust.unwrap_or(0),
         race: race.ok_or(Error::Malformed)?,
         required: required.ok_or(Error::Malformed)?,
         experience: experience.ok_or(Error::Malformed)?,
@@ -451,12 +483,16 @@ fn encode_bounty(board: &Bounty) -> Result<Vec<u8>, Error> {
     for slot in &board.lists {
         push_message_field(&mut out, 9, &encode_list(slot)?);
     }
+    if board.elite {
+        push_varint_field(&mut out, 10, 1);
+    }
     Ok(out)
 }
 fn decode_bounty(bytes: &[u8]) -> Result<Bounty, Error> {
     let (mut state, mut difficulty, mut selected, mut current, mut rerolls, mut daily_reroll_at) =
         (None, None, None, None, None, None);
     let (mut offers, mut active, mut lists) = (Vec::new(), None, Vec::new());
+    let mut elite = None;
     let mut at = 0;
     while at < bytes.len() {
         match read_varint(bytes, &mut at)? {
@@ -480,10 +516,12 @@ fn decode_bounty(bytes: &[u8]) -> Result<Bounty, Error> {
                 decode_list(read_bytes(bytes, &mut at)?)?,
                 MAX_LIST_SLOTS,
             )?,
+            80 => set_once(&mut elite, bool_value(bytes, &mut at)?)?,
             _ => return Err(Error::Malformed),
         }
     }
     Ok(Bounty {
+        elite: elite.unwrap_or(false),
         state: state.ok_or(Error::Malformed)?,
         difficulty: difficulty.ok_or(Error::Malformed)?,
         selected: selected.ok_or(Error::Malformed)?,
@@ -597,6 +635,16 @@ pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>, Error> {
     for offer in &reply.shop {
         push_message_field(&mut out, 9, &encode_shop(offer)?);
     }
+    if let Some(results) = &reply.weekly_results {
+        if results.period >= reply.period || reply.weekly.started {
+            return Err(Error::Malformed);
+        }
+        let mut row = Vec::new();
+        push_varint_field(&mut row, 1, results.period);
+        push_varint_field(&mut row, 2, u64::from(results.points));
+        push_varint_field(&mut row, 3, u64::from(results.soulseals));
+        push_message_field(&mut out, 10, &row);
+    }
     if out.len() > MAX_REPLY_BYTES {
         return Err(Error::LimitExceeded);
     }
@@ -617,6 +665,7 @@ pub fn decode_reply(bytes: &[u8]) -> Result<Reply, Error> {
         mut bounty,
     ) = (None, None, None, None, None, None, None);
     let (mut talisman, mut shop) = (Vec::new(), Vec::new());
+    let mut weekly_results = None;
     let mut at = 0;
     while at < bytes.len() {
         match read_varint(bytes, &mut at)? {
@@ -637,10 +686,32 @@ pub fn decode_reply(bytes: &[u8]) -> Result<Reply, Error> {
                 decode_shop(read_bytes(bytes, &mut at)?)?,
                 MAX_SHOP_OFFERS,
             )?,
+            82 => {
+                let row = read_bytes(bytes, &mut at)?;
+                let (mut period, mut points, mut soulseals) = (None, None, None);
+                let mut cursor = 0;
+                while cursor < row.len() {
+                    match read_varint(row, &mut cursor)? {
+                        8 => set_once(&mut period, read_varint(row, &mut cursor)?)?,
+                        16 => set_once(&mut points, u32_value(row, &mut cursor)?)?,
+                        24 => set_once(&mut soulseals, u32_value(row, &mut cursor)?)?,
+                        _ => return Err(Error::Malformed),
+                    }
+                }
+                set_once(
+                    &mut weekly_results,
+                    WeeklyResults {
+                        period: period.ok_or(Error::Malformed)?,
+                        points: points.ok_or(Error::Malformed)?,
+                        soulseals: soulseals.ok_or(Error::Malformed)?,
+                    },
+                )?;
+            }
             _ => return Err(Error::Malformed),
         }
     }
     let reply = Reply {
+        weekly_results,
         refusal: refusal.ok_or(Error::Malformed)?,
         period: period.ok_or(Error::Malformed)?,
         points: points.ok_or(Error::Malformed)?,

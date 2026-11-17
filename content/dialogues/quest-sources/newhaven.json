@@ -1,0 +1,1409 @@
+{
+  "quest": "newhaven",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "runtime_admission": false,
+  "entries": [
+    {
+      "npc_source_name": "gustavo_the_guard",
+      "source_blob_sha256": "fcbad64774a465f75e29c353bb11fb0d9745193a7902be42bdd3033e2152158f",
+      "review_rows": [
+        "R4C150",
+        "R4C151",
+        "R4C152"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gustavo_the_guard.lua:35-137",
+          "line_start": 35,
+          "line_end": 137,
+          "source_sha256": "9a3cd10c93881880839a041fb0fcf7383637fddc07d4e6dbb1acd994efd99f0c",
+          "guarded_source_lua": "local NEWHAVEN_GOBLIN_QUEST_START = Storage.Quest.U15_12.newhavenGoblinQuestStart\nlocal NEWHAVEN_GOBLIN_QUEST_DONE = Storage.Quest.U15_12.newhavenGoblinQuestDone\nlocal MUGLEX_KILL_COUNT = Storage.Quest.U15_12.newhavenMuglexKillCount\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"goblins\") or MsgContains(message, \"goblin\") or MsgContains(message, \"muglex\") or MsgContains(message, \"quest\") or MsgContains(message, \"mission\") then\n\t\tlocal questStart = player:getStorageValue(NEWHAVEN_GOBLIN_QUEST_START)\n\t\tlocal questDone = player:getStorageValue(NEWHAVEN_GOBLIN_QUEST_DONE)\n\n\t\tif questDone == 1 then\n\t\t\tnpcHandler:say(\"You rendered a great favour to this village. Thank you!\", npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif questStart ~= 1 then\n\t\t\t-- Start the quest\n\t\t\tnpcHandler:say(\"They call themselves the Muglex Clan. They may be small, but don't be fooled, they can be quite dangerous. You seem capable enough, though. ... Please take down twenty of these Muglex goblins. That should make life in the village safer again.\", npc, creature)\n\t\t\tplayer:setStorageValue(NEWHAVEN_GOBLIN_QUEST_START, 1)\n\t\t\tplayer:setStorageValue(MUGLEX_KILL_COUNT, 0)\n\t\telse\n\t\t\t-- Check kill count\n\t\t\tlocal kills = player:getStorageValue(MUGLEX_KILL_COUNT)\n\t\t\tif kills >= 20 then\n\t\t\t\tnpcHandler:say(\"You rendered a great favour to this village. Thank you! Now take this ring as a form of my gratitude, I'm sure it will aid you in combat. Oh, and if you did not talk to Viola yet, you should visit her. ... She might also have a small task for you. I've heard she's missing one of her books.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(NEWHAVEN_GOBLIN_QUEST_DONE, 1)\n\t\t\t\tplayer:addItem(3052, 1) -- Ring of Healing or appropriate reward\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You still need to kill \" .. (20 - kills) .. \" more Muglex goblins. Keep hunting!\", npc, creature)\n\t\t\tend\n\t\tend\n\t\treturn true\n\tend\n\n\treturn true\nend\n\n-- Keywords about NPCs and topics\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"My name is Gustavo.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"I used to serve in Thais, but I volunteered to protect this village. I wonder how Tim is doing in the capital.\" })\nkeywordHandler:addKeyword({ \"newhaven\" }, StdModule.say, { npcHandler = npcHandler, text = \"Though it might not seem like it, our island once had a promising future ahead of it. Many workers came from abroad, looking for jobs in the mines and as helpers around the village. ... Anyway...\" })\nkeywordHandler:addKeyword({ \"island\" }, StdModule.say, { npcHandler = npcHandler, text = \"Being the only trained guard here on Newhaven makes things difficult sometimes. Fortunately for us, many young adventurers come to help with the ever growing danger from the goblins and the mines.\" })\nkeywordHandler:addKeyword({ \"thais\" }, StdModule.say, { npcHandler = npcHandler, text = \"Thais is our beautiful capital, ruled by our benevolent king Tibianus III.\" })\nkeywordHandler:addKeyword({ \"king\", \"tibianus\" }, StdModule.say, { npcHandler = npcHandler, text = \"Tibianus III is our beloved king! He resides in the castle in the city of Thais.\" })\nkeywordHandler:addKeyword({ \"avriel\" }, StdModule.say, { npcHandler = npcHandler, text = \"Avriel runs a small shop here in the village. You can buy useful things there, but you can also sell things you no longer need. You will find his shop in the south of the village.\" })\nkeywordHandler:addKeyword({ \"anna\" }, StdModule.say, { npcHandler = npcHandler, text = \"She offers a passage to the Mainland. You can find her at the ferry house.\" })\nkeywordHandler:addKeyword({ \"viola\" }, StdModule.say, { npcHandler = npcHandler, text = \"She's a well-read woman who knows a thing or two about magic. Maybe she can teach you a few spells. She might also have a small task for you. I've heard she's missing one of her books.\" })\nkeywordHandler:addKeyword({ \"flavius\" }, StdModule.say, { npcHandler = npcHandler, text = \"Flavius runs the small bank in this village. You can find him over there in his the house.\" })\nkeywordHandler:addKeyword({ \"tim\" }, StdModule.say, { npcHandler = npcHandler, text = \"Tim is a good friend of mine. He works as a guard in the city of Thais.\" })\nkeywordHandler:addKeyword({ \"ben\" }, StdModule.say, { npcHandler = npcHandler, text = \"You're talking about the bear, aren't you? Yes, it's a long story. And one that I don't necessarily want to share with everyone. It's personal, you could say.\" })\nkeywordHandler:addKeyword({ \"banor\" }, StdModule.say, { npcHandler = npcHandler, text = \"Praise Banor! May the great warrior be with us!\" })\nkeywordHandler:addKeyword(\n\t{ \"crunor\" },\n\tStdModule.say,\n\t{ npcHandler = npcHandler, text = \"Crunor is the god of nature, trees, plants and fertility. He created all plants of Tibia after his own image. He is also called the Lord of The Trees and the Great Tree. ... Crunor also created the wolves in order to protect his forests against the orcs. There is a small shrine in his honour in the woods south of the village.\" }\n)\nkeywordHandler:addKeyword({ \"spells\" }, StdModule.say, { npcHandler = npcHandler, text = \"If you want to learn some spells, talk to Viola. She lives in the house south of the bank.\" })\nkeywordHandler:addKeyword({ \"bank\" }, StdModule.say, { npcHandler = npcHandler, text = \"You can find the bank right over there.\" })\nkeywordHandler:addKeyword({ \"shop\" }, StdModule.say, { npcHandler = npcHandler, text = \"Visit Avriel's shop to buy or sell wares. You can find him south of here.\" })\nkeywordHandler:addKeyword({ \"tibia\" }, StdModule.say, { npcHandler = npcHandler, text = \"Tibia is the world we live in, my friend.\" })\nkeywordHandler:addKeyword({ \"hint\" }, StdModule.say, { npcHandler = npcHandler, text = \"If you're looking for adventure, ask me about the {goblins} that have been terrorising us!\" })\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Those bloody goblins are too close to the village for my liking.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Take care!\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Take care!\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 74,
+              "lua_literal": "\"goblins\""
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"goblin\""
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"muglex\""
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"quest\""
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 79,
+              "lua_literal": "\"You rendered a great favour to this village. Thank you!\""
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"They call themselves the Muglex Clan. They may be small, but don't be fooled, they can be quite dangerous. You seem capable enough, though. ... Please take down twenty of these Muglex goblins. That should make life in the village safer again.\""
+            },
+            {
+              "line": 92,
+              "lua_literal": "\"You rendered a great favour to this village. Thank you! Now take this ring as a form of my gratitude, I'm sure it will aid you in combat. Oh, and if you did not talk to Viola yet, you should visit her. ... She might also have a small task for you. I've heard she's missing one of her books.\""
+            },
+            {
+              "line": 96,
+              "lua_literal": "\"You still need to kill \""
+            },
+            {
+              "line": 96,
+              "lua_literal": "\" more Muglex goblins. Keep hunting!\""
+            },
+            {
+              "line": 106,
+              "lua_literal": "\"name\""
+            },
+            {
+              "line": 106,
+              "lua_literal": "\"My name is Gustavo.\""
+            },
+            {
+              "line": 107,
+              "lua_literal": "\"job\""
+            },
+            {
+              "line": 107,
+              "lua_literal": "\"I used to serve in Thais, but I volunteered to protect this village. I wonder how Tim is doing in the capital.\""
+            },
+            {
+              "line": 108,
+              "lua_literal": "\"newhaven\""
+            },
+            {
+              "line": 108,
+              "lua_literal": "\"Though it might not seem like it, our island once had a promising future ahead of it. Many workers came from abroad, looking for jobs in the mines and as helpers around the village. ... Anyway...\""
+            },
+            {
+              "line": 109,
+              "lua_literal": "\"island\""
+            },
+            {
+              "line": 109,
+              "lua_literal": "\"Being the only trained guard here on Newhaven makes things difficult sometimes. Fortunately for us, many young adventurers come to help with the ever growing danger from the goblins and the mines.\""
+            },
+            {
+              "line": 110,
+              "lua_literal": "\"thais\""
+            },
+            {
+              "line": 110,
+              "lua_literal": "\"Thais is our beautiful capital, ruled by our benevolent king Tibianus III.\""
+            },
+            {
+              "line": 111,
+              "lua_literal": "\"king\""
+            },
+            {
+              "line": 111,
+              "lua_literal": "\"tibianus\""
+            },
+            {
+              "line": 111,
+              "lua_literal": "\"Tibianus III is our beloved king! He resides in the castle in the city of Thais.\""
+            },
+            {
+              "line": 112,
+              "lua_literal": "\"avriel\""
+            },
+            {
+              "line": 112,
+              "lua_literal": "\"Avriel runs a small shop here in the village. You can buy useful things there, but you can also sell things you no longer need. You will find his shop in the south of the village.\""
+            },
+            {
+              "line": 113,
+              "lua_literal": "\"anna\""
+            },
+            {
+              "line": 113,
+              "lua_literal": "\"She offers a passage to the Mainland. You can find her at the ferry house.\""
+            },
+            {
+              "line": 114,
+              "lua_literal": "\"viola\""
+            },
+            {
+              "line": 114,
+              "lua_literal": "\"She's a well-read woman who knows a thing or two about magic. Maybe she can teach you a few spells. She might also have a small task for you. I've heard she's missing one of her books.\""
+            },
+            {
+              "line": 115,
+              "lua_literal": "\"flavius\""
+            },
+            {
+              "line": 115,
+              "lua_literal": "\"Flavius runs the small bank in this village. You can find him over there in his the house.\""
+            },
+            {
+              "line": 116,
+              "lua_literal": "\"tim\""
+            },
+            {
+              "line": 116,
+              "lua_literal": "\"Tim is a good friend of mine. He works as a guard in the city of Thais.\""
+            },
+            {
+              "line": 117,
+              "lua_literal": "\"ben\""
+            },
+            {
+              "line": 117,
+              "lua_literal": "\"You're talking about the bear, aren't you? Yes, it's a long story. And one that I don't necessarily want to share with everyone. It's personal, you could say.\""
+            },
+            {
+              "line": 118,
+              "lua_literal": "\"banor\""
+            },
+            {
+              "line": 118,
+              "lua_literal": "\"Praise Banor! May the great warrior be with us!\""
+            },
+            {
+              "line": 120,
+              "lua_literal": "\"crunor\""
+            },
+            {
+              "line": 122,
+              "lua_literal": "\"Crunor is the god of nature, trees, plants and fertility. He created all plants of Tibia after his own image. He is also called the Lord of The Trees and the Great Tree. ... Crunor also created the wolves in order to protect his forests against the orcs. There is a small shrine in his honour in the woods south of the village.\""
+            },
+            {
+              "line": 124,
+              "lua_literal": "\"spells\""
+            },
+            {
+              "line": 124,
+              "lua_literal": "\"If you want to learn some spells, talk to Viola. She lives in the house south of the bank.\""
+            },
+            {
+              "line": 125,
+              "lua_literal": "\"bank\""
+            },
+            {
+              "line": 125,
+              "lua_literal": "\"You can find the bank right over there.\""
+            },
+            {
+              "line": 126,
+              "lua_literal": "\"shop\""
+            },
+            {
+              "line": 126,
+              "lua_literal": "\"Visit Avriel's shop to buy or sell wares. You can find him south of here.\""
+            },
+            {
+              "line": 127,
+              "lua_literal": "\"tibia\""
+            },
+            {
+              "line": 127,
+              "lua_literal": "\"Tibia is the world we live in, my friend.\""
+            },
+            {
+              "line": 128,
+              "lua_literal": "\"hint\""
+            },
+            {
+              "line": 128,
+              "lua_literal": "\"If you're looking for adventure, ask me about the {goblins} that have been terrorising us!\""
+            },
+            {
+              "line": 130,
+              "lua_literal": "\"Those bloody goblins are too close to the village for my liking.\""
+            },
+            {
+              "line": 131,
+              "lua_literal": "\"Take care!\""
+            },
+            {
+              "line": 132,
+              "lua_literal": "\"Take care!\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Gustavo, The Guard\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 134,\n\tlookHead = 95,\n\tlookBody = 0,\n\tlookLegs = 96,\n\tlookFeet = 116,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 15000,\n\tchance = 50,\n\t{ text = \"Bloody goblins!\" },\n\t{ text = \"Long live the king!\" },\n\t{ text = \"Hey there, young adventurer! Need a hint?\" },\n}\n\n-- Quest storage keys\nlocal NEWHAVEN_GOBLIN_QUEST_START = Storage.Quest.U15_12.newhavenGoblinQuestStart\nlocal NEWHAVEN_GOBLIN_QUEST_DONE = Storage.Quest.U15_12.newhavenGoblinQuestDone\nlocal MUGLEX_KILL_COUNT = Storage.Quest.U15_12.newhavenMuglexKillCount\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"goblins\") or MsgContains(message, \"goblin\") or MsgContains(message, \"muglex\") or MsgContains(message, \"quest\") or MsgContains(message, \"mission\") then\n\t\tlocal questStart = player:getStorageValue(NEWHAVEN_GOBLIN_QUEST_START)\n\t\tlocal questDone = player:getStorageValue(NEWHAVEN_GOBLIN_QUEST_DONE)\n\n\t\tif questDone == 1 then\n\t\t\tnpcHandler:say(\"You rendered a great favour to this village. Thank you!\", npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif questStart ~= 1 then\n\t\t\t-- Start the quest\n\t\t\tnpcHandler:say(\"They call themselves the Muglex Clan. They may be small, but don't be fooled, they can be quite dangerous. You seem capable enough, though. ... Please take down twenty of these Muglex goblins. That should make life in the village safer again.\", npc, creature)\n\t\t\tplayer:setStorageValue(NEWHAVEN_GOBLIN_QUEST_START, 1)\n\t\t\tplayer:setStorageValue(MUGLEX_KILL_COUNT, 0)\n\t\telse\n\t\t\t-- Check kill count\n\t\t\tlocal kills = player:getStorageValue(MUGLEX_KILL_COUNT)\n\t\t\tif kills >= 20 then\n\t\t\t\tnpcHandler:say(\"You rendered a great favour to this village. Thank you! Now take this ring as a form of my gratitude, I'm sure it will aid you in combat. Oh, and if you did not talk to Viola yet, you should visit her. ... She might also have a small task for you. I've heard she's missing one of her books.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(NEWHAVEN_GOBLIN_QUEST_DONE, 1)\n\t\t\t\tplayer:addItem(3052, 1) -- Ring of Healing or appropriate reward\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You still need to kill \" .. (20 - kills) .. \" more Muglex goblins. Keep hunting!\", npc, creature)\n\t\t\tend\n\t\tend\n\t\treturn true\n\tend\n\n\treturn true\nend\n\n-- Keywords about NPCs and topics\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"My name is Gustavo.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"I used to serve in Thais, but I volunteered to protect this village. I wonder how Tim is doing in the capital.\" })\nkeywordHandler:addKeyword({ \"newhaven\" }, StdModule.say, { npcHandler = npcHandler, text = \"Though it might not seem like it, our island once had a promising future ahead of it. Many workers came from abroad, looking for jobs in the mines and as helpers around the village. ... Anyway...\" })\nkeywordHandler:addKeyword({ \"island\" }, StdModule.say, { npcHandler = npcHandler, text = \"Being the only trained guard here on Newhaven makes things difficult sometimes. Fortunately for us, many young adventurers come to help with the ever growing danger from the goblins and the mines.\" })\nkeywordHandler:addKeyword({ \"thais\" }, StdModule.say, { npcHandler = npcHandler, text = \"Thais is our beautiful capital, ruled by our benevolent king Tibianus III.\" })\nkeywordHandler:addKeyword({ \"king\", \"tibianus\" }, StdModule.say, { npcHandler = npcHandler, text = \"Tibianus III is our beloved king! He resides in the castle in the city of Thais.\" })\nkeywordHandler:addKeyword({ \"avriel\" }, StdModule.say, { npcHandler = npcHandler, text = \"Avriel runs a small shop here in the village. You can buy useful things there, but you can also sell things you no longer need. You will find his shop in the south of the village.\" })\nkeywordHandler:addKeyword({ \"anna\" }, StdModule.say, { npcHandler = npcHandler, text = \"She offers a passage to the Mainland. You can find her at the ferry house.\" })\nkeywordHandler:addKeyword({ \"viola\" }, StdModule.say, { npcHandler = npcHandler, text = \"She's a well-read woman who knows a thing or two about magic. Maybe she can teach you a few spells. She might also have a small task for you. I've heard she's missing one of her books.\" })\nkeywordHandler:addKeyword({ \"flavius\" }, StdModule.say, { npcHandler = npcHandler, text = \"Flavius runs the small bank in this village. You can find him over there in his the house.\" })\nkeywordHandler:addKeyword({ \"tim\" }, StdModule.say, { npcHandler = npcHandler, text = \"Tim is a good friend of mine. He works as a guard in the city of Thais.\" })\nkeywordHandler:addKeyword({ \"ben\" }, StdModule.say, { npcHandler = npcHandler, text = \"You're talking about the bear, aren't you? Yes, it's a long story. And one that I don't necessarily want to share with everyone. It's personal, you could say.\" })\nkeywordHandler:addKeyword({ \"banor\" }, StdModule.say, { npcHandler = npcHandler, text = \"Praise Banor! May the great warrior be with us!\" })\nkeywordHandler:addKeyword(\n\t{ \"crunor\" },\n\tStdModule.say,\n\t{ npcHandler = npcHandler, text = \"Crunor is the god of nature, trees, plants and fertility. He created all plants of Tibia after his own image. He is also called the Lord of The Trees and the Great Tree. ... Crunor also created the wolves in order to protect his forests against the orcs. There is a small shrine in his honour in the woods south of the village.\" }\n)\nkeywordHandler:addKeyword({ \"spells\" }, StdModule.say, { npcHandler = npcHandler, text = \"If you want to learn some spells, talk to Viola. She lives in the house south of the bank.\" })\nkeywordHandler:addKeyword({ \"bank\" }, StdModule.say, { npcHandler = npcHandler, text = \"You can find the bank right over there.\" })\nkeywordHandler:addKeyword({ \"shop\" }, StdModule.say, { npcHandler = npcHandler, text = \"Visit Avriel's shop to buy or sell wares. You can find him south of here.\" })\nkeywordHandler:addKeyword({ \"tibia\" }, StdModule.say, { npcHandler = npcHandler, text = \"Tibia is the world we live in, my friend.\" })\nkeywordHandler:addKeyword({ \"hint\" }, StdModule.say, { npcHandler = npcHandler, text = \"If you're looking for adventure, ask me about the {goblins} that have been terrorising us!\" })\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Those bloody goblins are too close to the village for my liking.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Take care!\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Take care!\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gustavo_the_guard.lua:1-137"
+    },
+    {
+      "npc_source_name": "viola",
+      "source_blob_sha256": "36b2a0483070c530040f7f3e4b14a8a59b01c1c714b1f68da1a2f5c9e48f9a78",
+      "review_rows": [
+        "R4C153",
+        "R4C154",
+        "R4C155",
+        "R4C156",
+        "R4C157",
+        "R4C158",
+        "R4C159",
+        "R4C160",
+        "R4C161",
+        "R4C162",
+        "R4C163"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/viola.lua:53-292",
+          "line_start": 53,
+          "line_end": 292,
+          "source_sha256": "3f317425f1d1e698eb9ca507d072f7f2018e80269dad230ff807407fe51cab08",
+          "guarded_source_lua": "-- Quest storage keys\nlocal VIOLA_BOOK_QUEST_START = Storage.Quest.U15_12.newhavenViolaBookQuestStart\nlocal VIOLA_BOOK_QUEST_DONE = Storage.Quest.U15_12.newhavenViolaBookQuestDone\n\n-- Book of Wisdom item ID\nlocal BOOK_OF_WISDOM_ID = 44774\n\n-- Keywords about NPCs and places\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"My name is Viola, I am the spelltrainer here in Newhaven. So if you're interested in new spells, let me know.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"Due to my knowledge in multiple different fields, I became a trainer for all vocations, teaching them some new spells.\" })\nkeywordHandler:addKeyword({ \"newhaven\", \"island\" }, StdModule.say, { npcHandler = npcHandler, text = \"Our little island once had a strong economy based on the mines. Lots of workers came from overseas to work here. I still remember that beautiful harbour we had here, good old times.\" })\nkeywordHandler:addKeyword({ \"mainland\" }, StdModule.say, { npcHandler = npcHandler, text = \"The mainland with its capital Thais.\" })\nkeywordHandler:addKeyword({ \"thais\" }, StdModule.say, { npcHandler = npcHandler, text = \"A good friend of mine used to live there, such a beautiful city. I always enjoyed my stay at Kingsday tho', can't recommend it enough.\" })\nkeywordHandler:addKeyword({ \"king\" }, StdModule.say, { npcHandler = npcHandler, text = \"The king's castle is in Thais, make sure to visit it someday.\" })\nkeywordHandler:addKeyword({ \"avriel\" }, StdModule.say, { npcHandler = npcHandler, text = \"Avriel takes care of our little shop just west from my house. When you're looking for supplies or want to sell stuff, you should talk to him.\" })\nkeywordHandler:addKeyword({ \"anna\" }, StdModule.say, { npcHandler = npcHandler, text = \"Anna always enjoyed the thrill of the open sea. She often supplies Avriels shop with goods for all of us. Then you're ready to leave I suggest talking to her.\" })\nkeywordHandler:addKeyword({ \"flavius\" }, StdModule.say, { npcHandler = npcHandler, text = \"Flavius is the banker on our island. When you need any financial advice, you will find him just north of my house.\" })\nkeywordHandler:addKeyword({ \"gustavo\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ahh, yes my dearest Gustavo. He's the guard of our little village protecting us from the muglex. If you're interested in helping, you should talk to him.\" })\nkeywordHandler:addKeyword({ \"tim\" }, StdModule.say, { npcHandler = npcHandler, text = \"He once visited over from Thais, I heard Gustavo and him are are good friends.\" })\nkeywordHandler:addKeyword({ \"shop\" }, StdModule.say, { npcHandler = npcHandler, text = \"You can find the shop just east of here. Avriel will get you going with everything you need.\" })\nkeywordHandler:addKeyword({ \"bank\" }, StdModule.say, { npcHandler = npcHandler, text = \"The bank can be found just north of us. Flavius will take care of all your financial needs.\" })\nkeywordHandler:addKeyword({ \"guard\" }, StdModule.say, { npcHandler = npcHandler, text = \"Gustavo serves as our guard, keeping us safe from the northern part of the island. It can get pretty dangerous there, take care if you ever find yourself there.\" })\nkeywordHandler:addKeyword({ \"danger\" }, StdModule.say, { npcHandler = npcHandler, text = \"Those muglex have been terrorising our little village for a while now, maybe you could talk to Gustavo. I bet he knows more about them.\" })\nkeywordHandler:addKeyword({ \"muglex\" }, StdModule.say, { npcHandler = npcHandler, text = \"These little green goblins once arrived with ships, ever since our village has been under constant attack. Fortunately the wooden walls and Gustavo are keeping the danger out.\" })\nkeywordHandler:addKeyword({ \"mines\" }, StdModule.say, { npcHandler = npcHandler, text = \"These mines were once a thriving force for workers and investors alike, ever since the last ores have been mined, these trenches have been abandoned for good.\" })\nkeywordHandler:addKeyword({ \"teach\" }, StdModule.say, { npcHandler = npcHandler, text = \"I see you are eager to learn new spells.\" })\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome |PLAYERNAME|! Are you here to {learn} new wisdom or do you have time for a {mission}?\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Goodbye and take care.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Goodbye and take care.\")\n\n-- Spell teaching setup\nnpcConfig.spells = {\n\t-- Healing spells\n\t{ name = \"Wound Cleansing\", words = \"exura infir ico\", price = 0, level = 1, vocation = { \"All\" } },\n\t{ name = \"Cure Poison\", words = \"exana pox\", price = 150, level = 10, vocation = { \"All\" } },\n\t-- Support spells\n\t{ name = \"Magic Rope\", words = \"exani tera\", price = 200, level = 9, vocation = { \"All\" } },\n\t{ name = \"Light\", words = \"utevo lux\", price = 0, level = 8, vocation = { \"All\" } },\n}\n\n-- Function to give vocation-based reward\nlocal function giveVocationReward(player)\n\tlocal vocationId = player:getVocation():getBaseId()\n\tlocal rewardItem = nil\n\tlocal rewardName = \"\"\n\n\tif vocationId == 1 then -- Sorcerer\n\t\trewardItem = 3074 -- Wand of Vortex\n\t\trewardName = \"Wand of Vortex\"\n\telseif vocationId == 2 then -- Druid\n\t\trewardItem = 3066 -- Snakebite Rod\n\t\trewardName = \"Snakebite Rod\"\n\telseif vocationId == 3 then -- Paladin\n\t\trewardItem = 3350 -- Bow\n\t\trewardName = \"Bow\"\n\telseif vocationId == 4 then -- Knight\n\t\trewardItem = 3264 -- Sword\n\t\trewardName = \"Sword\"\n\telseif vocationId == 11 then -- Monk\n\t\trewardItem = 3290 -- Silver Dagger (fist weapon)\n\t\trewardName = \"Silver Dagger\"\n\telse\n\t\trewardItem = 3031 -- Gold coin\n\t\trewardName = \"some gold coins\"\n\t\tplayer:addItem(3031, 50)\n\t\treturn rewardName\n\tend\n\n\tplayer:addItem(rewardItem, 1)\n\treturn rewardName\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\t-- Mission/Quest logic\n\tif MsgContains(message, \"mission\") or MsgContains(message, \"task\") or MsgContains(message, \"book\") then\n\t\tlocal questStart = player:getStorageValue(VIOLA_BOOK_QUEST_START)\n\t\tlocal questDone = player:getStorageValue(VIOLA_BOOK_QUEST_DONE)\n\n\t\tif questDone == 1 then\n\t\t\tnpcHandler:say(\"You have already helped me recover my book. Thank you again for your kindness!\", npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif questStart ~= 1 then\n\t\t\tnpcHandler:say(\"Oh, I'm so glad you asked! A ghost took my precious Book of Wisdom into the {mines} to the northeast of the island. Would you be so kind as to retrieve it for me?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 50)\n\t\t\treturn true\n\t\telse\n\t\t\t-- Quest in progress, check if player has the book\n\t\t\tif player:getItemCount(BOOK_OF_WISDOM_ID) > 0 then\n\t\t\t\tnpcHandler:say(\"You found my Book of Wisdom! Oh, thank you so much! Please, take this as a token of my gratitude.\", npc, creature)\n\t\t\t\tplayer:removeItem(BOOK_OF_WISDOM_ID, 1)\n\t\t\t\tplayer:setStorageValue(VIOLA_BOOK_QUEST_DONE, 1)\n\t\t\t\tlocal rewardName = giveVocationReward(player)\n\t\t\t\tplayer:sendTextMessage(MESSAGE_EVENT_ADVANCE, \"Viola gave you a \" .. rewardName .. \" as a reward!\")\n\t\t\t\treturn true\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Have you found my Book of Wisdom yet? It should be somewhere in the mines to the northeast. Be careful of the corrupted creatures down there!\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\t\tend\n\tend\n\n\t-- Handle yes response for quest start\n\tif MsgContains(message, \"yes\") then\n\t\tlocal topic = npcHandler:getTopic(playerId)\n\n\t\tif topic == 50 then\n\t\t\tnpcHandler:say(\"Thank you so much! The ghost took my book into the corrupted mines to the northeast. Please be careful, there are dangerous creatures down there. The book should be in a chest somewhere inside.\", npc, creature)\n\t\t\tplayer:setStorageValue(VIOLA_BOOK_QUEST_START, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\n\t\t-- Spell learning yes responses\n\t\tif topic == 10 then -- Wound Cleansing (free)\n\t\t\tplayer:learnSpell(\"exura infir ico\")\n\t\t\tnpcHandler:say(\"Here you are. Look in your spellbook for the pronunciation of this spell.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\telseif topic == 11 then -- Cure Poison (150 gold)\n\t\t\tif player:removeMoney(150) then\n\t\t\t\tplayer:learnSpell(\"exana pox\")\n\t\t\t\tnpcHandler:say(\"Here you are. Look in your spellbook for the pronunciation of this spell.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You don't have enough gold.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\telseif topic == 12 then -- Magic Rope (200 gold)\n\t\t\tif player:removeMoney(200) then\n\t\t\t\tplayer:learnSpell(\"exani tera\")\n\t\t\t\tnpcHandler:say(\"Here you are. Look in your spellbook for the pronunciation of this spell.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You don't have enough gold.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\telseif topic == 13 then -- Light (free)\n\t\t\tplayer:learnSpell(\"utevo lux\")\n\t\t\tnpcHandler:say(\"Here you are. Look in your spellbook for the pronunciation of this spell.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\tend\n\n\tif MsgContains(message, \"no\") then\n\t\tlocal topic = npcHandler:getTopic(playerId)\n\t\tif topic == 50 then\n\t\t\tnpcHandler:say(\"Oh, that's a shame. Please come back if you change your mind. That book is very important to me.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\t\tnpcHandler:say(\"Maybe another time then.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\t-- Spell learning logic\n\tif MsgContains(message, \"learn\") or MsgContains(message, \"spells\") then\n\t\tnpcHandler:say(\"I see you are eager to learn new spells. I can teach you {instant spells}. What kind of spell do you wish to learn? You can also tell me for which level you would like to learn a spell, if you prefer that.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\t\treturn true\n\tend\n\n\tif npcHandler:getTopic(playerId) == 1 or MsgContains(message, \"instant spells\") then\n\t\tnpcHandler:say(\"I sell {healing spells} and {support spells}. Which of these interests you most?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\t\treturn true\n\tend\n\n\tif npcHandler:getTopic(playerId) == 2 then\n\t\tif MsgContains(message, \"healing spells\") or MsgContains(message, \"healing\") then\n\t\t\tnpcHandler:say(\"In this category I have 'Wound Cleansing' and 'Cure Poison'.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\treturn true\n\t\telseif MsgContains(message, \"support spells\") or MsgContains(message, \"support\") then\n\t\t\tnpcHandler:say(\"In this category I have 'Magic Rope' and 'Light'.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\treturn true\n\t\tend\n\tend\n\n\t-- Teaching specific spells\n\tif MsgContains(message, \"wound cleansing\") then\n\t\tif player:hasLearnedSpell(\"exura infir ico\") then\n\t\t\tnpcHandler:say(\"You already know how to cast this spell.\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"Do you want to have the spell 'Wound Cleansing' for free?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 10)\n\t\tend\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"cure poison\") then\n\t\tif player:hasLearnedSpell(\"exana pox\") then\n\t\t\tnpcHandler:say(\"You already know how to cast this spell.\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"Do you want to buy the spell 'Cure Poison' for 150 gold?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 11)\n\t\tend\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"magic rope\") then\n\t\tif player:hasLearnedSpell(\"exani tera\") then\n\t\t\tnpcHandler:say(\"You already know how to cast this spell.\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"Do you want to learn the spell 'Magic Rope' for 200 gold?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 12)\n\t\tend\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"light\") then\n\t\tif player:hasLearnedSpell(\"utevo lux\") then\n\t\t\tnpcHandler:say(\"You already know how to cast this spell.\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"Do you want to have the spell 'Light' for free?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 13)\n\t\tend\n\t\treturn true\n\tend\n\n\treturn true\nend\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 61,
+              "lua_literal": "\"name\""
+            },
+            {
+              "line": 61,
+              "lua_literal": "\"My name is Viola, I am the spelltrainer here in Newhaven. So if you're interested in new spells, let me know.\""
+            },
+            {
+              "line": 62,
+              "lua_literal": "\"job\""
+            },
+            {
+              "line": 62,
+              "lua_literal": "\"Due to my knowledge in multiple different fields, I became a trainer for all vocations, teaching them some new spells.\""
+            },
+            {
+              "line": 63,
+              "lua_literal": "\"newhaven\""
+            },
+            {
+              "line": 63,
+              "lua_literal": "\"island\""
+            },
+            {
+              "line": 63,
+              "lua_literal": "\"Our little island once had a strong economy based on the mines. Lots of workers came from overseas to work here. I still remember that beautiful harbour we had here, good old times.\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"mainland\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"The mainland with its capital Thais.\""
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"thais\""
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"A good friend of mine used to live there, such a beautiful city. I always enjoyed my stay at Kingsday tho', can't recommend it enough.\""
+            },
+            {
+              "line": 66,
+              "lua_literal": "\"king\""
+            },
+            {
+              "line": 66,
+              "lua_literal": "\"The king's castle is in Thais, make sure to visit it someday.\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"avriel\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"Avriel takes care of our little shop just west from my house. When you're looking for supplies or want to sell stuff, you should talk to him.\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"anna\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"Anna always enjoyed the thrill of the open sea. She often supplies Avriels shop with goods for all of us. Then you're ready to leave I suggest talking to her.\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"flavius\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"Flavius is the banker on our island. When you need any financial advice, you will find him just north of my house.\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"gustavo\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"Ahh, yes my dearest Gustavo. He's the guard of our little village protecting us from the muglex. If you're interested in helping, you should talk to him.\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"tim\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"He once visited over from Thais, I heard Gustavo and him are are good friends.\""
+            },
+            {
+              "line": 72,
+              "lua_literal": "\"shop\""
+            },
+            {
+              "line": 72,
+              "lua_literal": "\"You can find the shop just east of here. Avriel will get you going with everything you need.\""
+            },
+            {
+              "line": 73,
+              "lua_literal": "\"bank\""
+            },
+            {
+              "line": 73,
+              "lua_literal": "\"The bank can be found just north of us. Flavius will take care of all your financial needs.\""
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"guard\""
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"Gustavo serves as our guard, keeping us safe from the northern part of the island. It can get pretty dangerous there, take care if you ever find yourself there.\""
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"danger\""
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"Those muglex have been terrorising our little village for a while now, maybe you could talk to Gustavo. I bet he knows more about them.\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"muglex\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"These little green goblins once arrived with ships, ever since our village has been under constant attack. Fortunately the wooden walls and Gustavo are keeping the danger out.\""
+            },
+            {
+              "line": 77,
+              "lua_literal": "\"mines\""
+            },
+            {
+              "line": 77,
+              "lua_literal": "\"These mines were once a thriving force for workers and investors alike, ever since the last ores have been mined, these trenches have been abandoned for good.\""
+            },
+            {
+              "line": 78,
+              "lua_literal": "\"teach\""
+            },
+            {
+              "line": 78,
+              "lua_literal": "\"I see you are eager to learn new spells.\""
+            },
+            {
+              "line": 80,
+              "lua_literal": "\"Welcome |PLAYERNAME|! Are you here to {learn} new wisdom or do you have time for a {mission}?\""
+            },
+            {
+              "line": 81,
+              "lua_literal": "\"Goodbye and take care.\""
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"Goodbye and take care.\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"Wound Cleansing\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"exura infir ico\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"All\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"Cure Poison\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"exana pox\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"All\""
+            },
+            {
+              "line": 90,
+              "lua_literal": "\"Magic Rope\""
+            },
+            {
+              "line": 90,
+              "lua_literal": "\"exani tera\""
+            },
+            {
+              "line": 90,
+              "lua_literal": "\"All\""
+            },
+            {
+              "line": 91,
+              "lua_literal": "\"Light\""
+            },
+            {
+              "line": 91,
+              "lua_literal": "\"utevo lux\""
+            },
+            {
+              "line": 91,
+              "lua_literal": "\"All\""
+            },
+            {
+              "line": 98,
+              "lua_literal": "\"\""
+            },
+            {
+              "line": 102,
+              "lua_literal": "\"Wand of Vortex\""
+            },
+            {
+              "line": 105,
+              "lua_literal": "\"Snakebite Rod\""
+            },
+            {
+              "line": 108,
+              "lua_literal": "\"Bow\""
+            },
+            {
+              "line": 111,
+              "lua_literal": "\"Sword\""
+            },
+            {
+              "line": 114,
+              "lua_literal": "\"Silver Dagger\""
+            },
+            {
+              "line": 117,
+              "lua_literal": "\"some gold coins\""
+            },
+            {
+              "line": 135,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 135,
+              "lua_literal": "\"task\""
+            },
+            {
+              "line": 135,
+              "lua_literal": "\"book\""
+            },
+            {
+              "line": 140,
+              "lua_literal": "\"You have already helped me recover my book. Thank you again for your kindness!\""
+            },
+            {
+              "line": 145,
+              "lua_literal": "\"Oh, I'm so glad you asked! A ghost took my precious Book of Wisdom into the {mines} to the northeast of the island. Would you be so kind as to retrieve it for me?\""
+            },
+            {
+              "line": 151,
+              "lua_literal": "\"You found my Book of Wisdom! Oh, thank you so much! Please, take this as a token of my gratitude.\""
+            },
+            {
+              "line": 155,
+              "lua_literal": "\"Viola gave you a \""
+            },
+            {
+              "line": 155,
+              "lua_literal": "\" as a reward!\""
+            },
+            {
+              "line": 158,
+              "lua_literal": "\"Have you found my Book of Wisdom yet? It should be somewhere in the mines to the northeast. Be careful of the corrupted creatures down there!\""
+            },
+            {
+              "line": 165,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 169,
+              "lua_literal": "\"Thank you so much! The ghost took my book into the corrupted mines to the northeast. Please be careful, there are dangerous creatures down there. The book should be in a chest somewhere inside.\""
+            },
+            {
+              "line": 177,
+              "lua_literal": "\"exura infir ico\""
+            },
+            {
+              "line": 178,
+              "lua_literal": "\"Here you are. Look in your spellbook for the pronunciation of this spell.\""
+            },
+            {
+              "line": 183,
+              "lua_literal": "\"exana pox\""
+            },
+            {
+              "line": 184,
+              "lua_literal": "\"Here you are. Look in your spellbook for the pronunciation of this spell.\""
+            },
+            {
+              "line": 186,
+              "lua_literal": "\"You don't have enough gold.\""
+            },
+            {
+              "line": 192,
+              "lua_literal": "\"exani tera\""
+            },
+            {
+              "line": 193,
+              "lua_literal": "\"Here you are. Look in your spellbook for the pronunciation of this spell.\""
+            },
+            {
+              "line": 195,
+              "lua_literal": "\"You don't have enough gold.\""
+            },
+            {
+              "line": 200,
+              "lua_literal": "\"utevo lux\""
+            },
+            {
+              "line": 201,
+              "lua_literal": "\"Here you are. Look in your spellbook for the pronunciation of this spell.\""
+            },
+            {
+              "line": 207,
+              "lua_literal": "\"no\""
+            },
+            {
+              "line": 210,
+              "lua_literal": "\"Oh, that's a shame. Please come back if you change your mind. That book is very important to me.\""
+            },
+            {
+              "line": 214,
+              "lua_literal": "\"Maybe another time then.\""
+            },
+            {
+              "line": 220,
+              "lua_literal": "\"learn\""
+            },
+            {
+              "line": 220,
+              "lua_literal": "\"spells\""
+            },
+            {
+              "line": 221,
+              "lua_literal": "\"I see you are eager to learn new spells. I can teach you {instant spells}. What kind of spell do you wish to learn? You can also tell me for which level you would like to learn a spell, if you prefer that.\""
+            },
+            {
+              "line": 226,
+              "lua_literal": "\"instant spells\""
+            },
+            {
+              "line": 227,
+              "lua_literal": "\"I sell {healing spells} and {support spells}. Which of these interests you most?\""
+            },
+            {
+              "line": 233,
+              "lua_literal": "\"healing spells\""
+            },
+            {
+              "line": 233,
+              "lua_literal": "\"healing\""
+            },
+            {
+              "line": 234,
+              "lua_literal": "\"In this category I have 'Wound Cleansing' and 'Cure Poison'.\""
+            },
+            {
+              "line": 237,
+              "lua_literal": "\"support spells\""
+            },
+            {
+              "line": 237,
+              "lua_literal": "\"support\""
+            },
+            {
+              "line": 238,
+              "lua_literal": "\"In this category I have 'Magic Rope' and 'Light'.\""
+            },
+            {
+              "line": 245,
+              "lua_literal": "\"wound cleansing\""
+            },
+            {
+              "line": 246,
+              "lua_literal": "\"exura infir ico\""
+            },
+            {
+              "line": 247,
+              "lua_literal": "\"You already know how to cast this spell.\""
+            },
+            {
+              "line": 249,
+              "lua_literal": "\"Do you want to have the spell 'Wound Cleansing' for free?\""
+            },
+            {
+              "line": 255,
+              "lua_literal": "\"cure poison\""
+            },
+            {
+              "line": 256,
+              "lua_literal": "\"exana pox\""
+            },
+            {
+              "line": 257,
+              "lua_literal": "\"You already know how to cast this spell.\""
+            },
+            {
+              "line": 259,
+              "lua_literal": "\"Do you want to buy the spell 'Cure Poison' for 150 gold?\""
+            },
+            {
+              "line": 265,
+              "lua_literal": "\"magic rope\""
+            },
+            {
+              "line": 266,
+              "lua_literal": "\"exani tera\""
+            },
+            {
+              "line": 267,
+              "lua_literal": "\"You already know how to cast this spell.\""
+            },
+            {
+              "line": 269,
+              "lua_literal": "\"Do you want to learn the spell 'Magic Rope' for 200 gold?\""
+            },
+            {
+              "line": 275,
+              "lua_literal": "\"light\""
+            },
+            {
+              "line": 276,
+              "lua_literal": "\"utevo lux\""
+            },
+            {
+              "line": 277,
+              "lua_literal": "\"You already know how to cast this spell.\""
+            },
+            {
+              "line": 279,
+              "lua_literal": "\"Do you want to have the spell 'Light' for free?\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Viola\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 138,\n\tlookHead = 95,\n\tlookBody = 109,\n\tlookLegs = 94,\n\tlookFeet = 116,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\n-- Quest storage keys\nlocal VIOLA_BOOK_QUEST_START = Storage.Quest.U15_12.newhavenViolaBookQuestStart\nlocal VIOLA_BOOK_QUEST_DONE = Storage.Quest.U15_12.newhavenViolaBookQuestDone\n\n-- Book of Wisdom item ID\nlocal BOOK_OF_WISDOM_ID = 44774\n\n-- Keywords about NPCs and places\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"My name is Viola, I am the spelltrainer here in Newhaven. So if you're interested in new spells, let me know.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"Due to my knowledge in multiple different fields, I became a trainer for all vocations, teaching them some new spells.\" })\nkeywordHandler:addKeyword({ \"newhaven\", \"island\" }, StdModule.say, { npcHandler = npcHandler, text = \"Our little island once had a strong economy based on the mines. Lots of workers came from overseas to work here. I still remember that beautiful harbour we had here, good old times.\" })\nkeywordHandler:addKeyword({ \"mainland\" }, StdModule.say, { npcHandler = npcHandler, text = \"The mainland with its capital Thais.\" })\nkeywordHandler:addKeyword({ \"thais\" }, StdModule.say, { npcHandler = npcHandler, text = \"A good friend of mine used to live there, such a beautiful city. I always enjoyed my stay at Kingsday tho', can't recommend it enough.\" })\nkeywordHandler:addKeyword({ \"king\" }, StdModule.say, { npcHandler = npcHandler, text = \"The king's castle is in Thais, make sure to visit it someday.\" })\nkeywordHandler:addKeyword({ \"avriel\" }, StdModule.say, { npcHandler = npcHandler, text = \"Avriel takes care of our little shop just west from my house. When you're looking for supplies or want to sell stuff, you should talk to him.\" })\nkeywordHandler:addKeyword({ \"anna\" }, StdModule.say, { npcHandler = npcHandler, text = \"Anna always enjoyed the thrill of the open sea. She often supplies Avriels shop with goods for all of us. Then you're ready to leave I suggest talking to her.\" })\nkeywordHandler:addKeyword({ \"flavius\" }, StdModule.say, { npcHandler = npcHandler, text = \"Flavius is the banker on our island. When you need any financial advice, you will find him just north of my house.\" })\nkeywordHandler:addKeyword({ \"gustavo\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ahh, yes my dearest Gustavo. He's the guard of our little village protecting us from the muglex. If you're interested in helping, you should talk to him.\" })\nkeywordHandler:addKeyword({ \"tim\" }, StdModule.say, { npcHandler = npcHandler, text = \"He once visited over from Thais, I heard Gustavo and him are are good friends.\" })\nkeywordHandler:addKeyword({ \"shop\" }, StdModule.say, { npcHandler = npcHandler, text = \"You can find the shop just east of here. Avriel will get you going with everything you need.\" })\nkeywordHandler:addKeyword({ \"bank\" }, StdModule.say, { npcHandler = npcHandler, text = \"The bank can be found just north of us. Flavius will take care of all your financial needs.\" })\nkeywordHandler:addKeyword({ \"guard\" }, StdModule.say, { npcHandler = npcHandler, text = \"Gustavo serves as our guard, keeping us safe from the northern part of the island. It can get pretty dangerous there, take care if you ever find yourself there.\" })\nkeywordHandler:addKeyword({ \"danger\" }, StdModule.say, { npcHandler = npcHandler, text = \"Those muglex have been terrorising our little village for a while now, maybe you could talk to Gustavo. I bet he knows more about them.\" })\nkeywordHandler:addKeyword({ \"muglex\" }, StdModule.say, { npcHandler = npcHandler, text = \"These little green goblins once arrived with ships, ever since our village has been under constant attack. Fortunately the wooden walls and Gustavo are keeping the danger out.\" })\nkeywordHandler:addKeyword({ \"mines\" }, StdModule.say, { npcHandler = npcHandler, text = \"These mines were once a thriving force for workers and investors alike, ever since the last ores have been mined, these trenches have been abandoned for good.\" })\nkeywordHandler:addKeyword({ \"teach\" }, StdModule.say, { npcHandler = npcHandler, text = \"I see you are eager to learn new spells.\" })\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome |PLAYERNAME|! Are you here to {learn} new wisdom or do you have time for a {mission}?\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Goodbye and take care.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Goodbye and take care.\")\n\n-- Spell teaching setup\nnpcConfig.spells = {\n\t-- Healing spells\n\t{ name = \"Wound Cleansing\", words = \"exura infir ico\", price = 0, level = 1, vocation = { \"All\" } },\n\t{ name = \"Cure Poison\", words = \"exana pox\", price = 150, level = 10, vocation = { \"All\" } },\n\t-- Support spells\n\t{ name = \"Magic Rope\", words = \"exani tera\", price = 200, level = 9, vocation = { \"All\" } },\n\t{ name = \"Light\", words = \"utevo lux\", price = 0, level = 8, vocation = { \"All\" } },\n}\n\n-- Function to give vocation-based reward\nlocal function giveVocationReward(player)\n\tlocal vocationId = player:getVocation():getBaseId()\n\tlocal rewardItem = nil\n\tlocal rewardName = \"\"\n\n\tif vocationId == 1 then -- Sorcerer\n\t\trewardItem = 3074 -- Wand of Vortex\n\t\trewardName = \"Wand of Vortex\"\n\telseif vocationId == 2 then -- Druid\n\t\trewardItem = 3066 -- Snakebite Rod\n\t\trewardName = \"Snakebite Rod\"\n\telseif vocationId == 3 then -- Paladin\n\t\trewardItem = 3350 -- Bow\n\t\trewardName = \"Bow\"\n\telseif vocationId == 4 then -- Knight\n\t\trewardItem = 3264 -- Sword\n\t\trewardName = \"Sword\"\n\telseif vocationId == 11 then -- Monk\n\t\trewardItem = 3290 -- Silver Dagger (fist weapon)\n\t\trewardName = \"Silver Dagger\"\n\telse\n\t\trewardItem = 3031 -- Gold coin\n\t\trewardName = \"some gold coins\"\n\t\tplayer:addItem(3031, 50)\n\t\treturn rewardName\n\tend\n\n\tplayer:addItem(rewardItem, 1)\n\treturn rewardName\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\t-- Mission/Quest logic\n\tif MsgContains(message, \"mission\") or MsgContains(message, \"task\") or MsgContains(message, \"book\") then\n\t\tlocal questStart = player:getStorageValue(VIOLA_BOOK_QUEST_START)\n\t\tlocal questDone = player:getStorageValue(VIOLA_BOOK_QUEST_DONE)\n\n\t\tif questDone == 1 then\n\t\t\tnpcHandler:say(\"You have already helped me recover my book. Thank you again for your kindness!\", npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif questStart ~= 1 then\n\t\t\tnpcHandler:say(\"Oh, I'm so glad you asked! A ghost took my precious Book of Wisdom into the {mines} to the northeast of the island. Would you be so kind as to retrieve it for me?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 50)\n\t\t\treturn true\n\t\telse\n\t\t\t-- Quest in progress, check if player has the book\n\t\t\tif player:getItemCount(BOOK_OF_WISDOM_ID) > 0 then\n\t\t\t\tnpcHandler:say(\"You found my Book of Wisdom! Oh, thank you so much! Please, take this as a token of my gratitude.\", npc, creature)\n\t\t\t\tplayer:removeItem(BOOK_OF_WISDOM_ID, 1)\n\t\t\t\tplayer:setStorageValue(VIOLA_BOOK_QUEST_DONE, 1)\n\t\t\t\tlocal rewardName = giveVocationReward(player)\n\t\t\t\tplayer:sendTextMessage(MESSAGE_EVENT_ADVANCE, \"Viola gave you a \" .. rewardName .. \" as a reward!\")\n\t\t\t\treturn true\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"Have you found my Book of Wisdom yet? It should be somewhere in the mines to the northeast. Be careful of the corrupted creatures down there!\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\t\tend\n\tend\n\n\t-- Handle yes response for quest start\n\tif MsgContains(message, \"yes\") then\n\t\tlocal topic = npcHandler:getTopic(playerId)\n\n\t\tif topic == 50 then\n\t\t\tnpcHandler:say(\"Thank you so much! The ghost took my book into the corrupted mines to the northeast. Please be careful, there are dangerous creatures down there. The book should be in a chest somewhere inside.\", npc, creature)\n\t\t\tplayer:setStorageValue(VIOLA_BOOK_QUEST_START, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\n\t\t-- Spell learning yes responses\n\t\tif topic == 10 then -- Wound Cleansing (free)\n\t\t\tplayer:learnSpell(\"exura infir ico\")\n\t\t\tnpcHandler:say(\"Here you are. Look in your spellbook for the pronunciation of this spell.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\telseif topic == 11 then -- Cure Poison (150 gold)\n\t\t\tif player:removeMoney(150) then\n\t\t\t\tplayer:learnSpell(\"exana pox\")\n\t\t\t\tnpcHandler:say(\"Here you are. Look in your spellbook for the pronunciation of this spell.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You don't have enough gold.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\telseif topic == 12 then -- Magic Rope (200 gold)\n\t\t\tif player:removeMoney(200) then\n\t\t\t\tplayer:learnSpell(\"exani tera\")\n\t\t\t\tnpcHandler:say(\"Here you are. Look in your spellbook for the pronunciation of this spell.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You don't have enough gold.\", npc, creature)\n\t\t\tend\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\telseif topic == 13 then -- Light (free)\n\t\t\tplayer:learnSpell(\"utevo lux\")\n\t\t\tnpcHandler:say(\"Here you are. Look in your spellbook for the pronunciation of this spell.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\tend\n\n\tif MsgContains(message, \"no\") then\n\t\tlocal topic = npcHandler:getTopic(playerId)\n\t\tif topic == 50 then\n\t\t\tnpcHandler:say(\"Oh, that's a shame. Please come back if you change your mind. That book is very important to me.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\t\tnpcHandler:say(\"Maybe another time then.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\n\n\t-- Spell learning logic\n\tif MsgContains(message, \"learn\") or MsgContains(message, \"spells\") then\n\t\tnpcHandler:say(\"I see you are eager to learn new spells. I can teach you {instant spells}. What kind of spell do you wish to learn? You can also tell me for which level you would like to learn a spell, if you prefer that.\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\t\treturn true\n\tend\n\n\tif npcHandler:getTopic(playerId) == 1 or MsgContains(message, \"instant spells\") then\n\t\tnpcHandler:say(\"I sell {healing spells} and {support spells}. Which of these interests you most?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\t\treturn true\n\tend\n\n\tif npcHandler:getTopic(playerId) == 2 then\n\t\tif MsgContains(message, \"healing spells\") or MsgContains(message, \"healing\") then\n\t\t\tnpcHandler:say(\"In this category I have 'Wound Cleansing' and 'Cure Poison'.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\treturn true\n\t\telseif MsgContains(message, \"support spells\") or MsgContains(message, \"support\") then\n\t\t\tnpcHandler:say(\"In this category I have 'Magic Rope' and 'Light'.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\t\treturn true\n\t\tend\n\tend\n\n\t-- Teaching specific spells\n\tif MsgContains(message, \"wound cleansing\") then\n\t\tif player:hasLearnedSpell(\"exura infir ico\") then\n\t\t\tnpcHandler:say(\"You already know how to cast this spell.\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"Do you want to have the spell 'Wound Cleansing' for free?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 10)\n\t\tend\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"cure poison\") then\n\t\tif player:hasLearnedSpell(\"exana pox\") then\n\t\t\tnpcHandler:say(\"You already know how to cast this spell.\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"Do you want to buy the spell 'Cure Poison' for 150 gold?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 11)\n\t\tend\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"magic rope\") then\n\t\tif player:hasLearnedSpell(\"exani tera\") then\n\t\t\tnpcHandler:say(\"You already know how to cast this spell.\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"Do you want to learn the spell 'Magic Rope' for 200 gold?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 12)\n\t\tend\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"light\") then\n\t\tif player:hasLearnedSpell(\"utevo lux\") then\n\t\t\tnpcHandler:say(\"You already know how to cast this spell.\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"Do you want to have the spell 'Light' for free?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 13)\n\t\tend\n\t\treturn true\n\tend\n\n\treturn true\nend\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/viola.lua:1-292"
+    },
+    {
+      "npc_source_name": "anna",
+      "source_blob_sha256": "5ad524861ac070192466d751215e9be859f6cea67a3d8fa2612e43a12b4fdd2e",
+      "review_rows": [
+        "R4C164"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/anna.lua:53-147",
+          "line_start": 53,
+          "line_end": 147,
+          "source_sha256": "9dde849fe1651bbfd35ac69cecc8712e175ccb0c2ffb991163069aa12c1e0a0d",
+          "guarded_source_lua": "end\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal TARGUNA_DESTINATION = Position(31938, 31928, 7)\nlocal MIN_LEVEL_TO_TRAVEL = 8\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tif not player then\n\t\treturn true\n\tend\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"passage\") then\n\t\tif player:getLevel() < MIN_LEVEL_TO_TRAVEL then\n\t\t\tnpcHandler:say(\"You need to be at least level \" .. MIN_LEVEL_TO_TRAVEL .. \" to travel to Targuna. Keep training!\", npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tnpcHandler:say(\"I'm offering a ferry service to the island {Targuna}, are you interested?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yes\") then\n\t\tif player:getLevel() < MIN_LEVEL_TO_TRAVEL then\n\t\t\tnpcHandler:say(\"You need to be at least level \" .. MIN_LEVEL_TO_TRAVEL .. \" to travel.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"Very well, I'll take you to Targuna then. The locals there could use a helping hand!\", npc, creature)\n\t\t\tplayer:teleportTo(TARGUNA_DESTINATION)\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenCitizen, -1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenTutorialHunting, -1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenNewLootTheCorruptor, -1)\n\n\t\t\tplayer:setTown(Town(TOWNS_LIST.TARGUNA))\n\t\tend\n\telseif MsgContains(message, \"no\") then\n\t\tif npcHandler:getTopic(playerId) >= 1 then\n\t\t\tnpcHandler:say(\"No problem. Come back when you're ready to explore Targuna!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\n-- Keywords about NPCs\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"My full {name} is Anna Maria Mauricia, but you may call me just Anna.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm offering a ferry service to the island of {Targuna}.\" })\nkeywordHandler:addKeyword({ \"targuna\" }, StdModule.say, { npcHandler = npcHandler, text = \"Targuna is a beautiful island where adventurers are always welcome. Ask me for a {passage} if you're interested.\" })\nkeywordHandler:addKeyword({ \"mainland\" }, StdModule.say, { npcHandler = npcHandler, text = \"You chose a peaceful world. Not much danger from other adventurers. Just beware the monsters. Ask me for a passage if you're interested.\" })\nkeywordHandler:addKeyword({ \"blue valley\" }, StdModule.say, { npcHandler = npcHandler, text = \"The {Blue Valley} is the heart of the {Merudri} culture, or what is left of it.\" })\nkeywordHandler:addKeyword({ \"merudri\" }, StdModule.say, { npcHandler = npcHandler, text = \"The {Merudri} are warrior monks. Honing serenity, preserving their legacy, defending the {Blue Valley} and beyond.\" })\nkeywordHandler:addKeyword({ \"newhaven\" }, StdModule.say, { npcHandler = npcHandler, text = \"Back when the mines were still full of ores, our island used to be a much busier place. Workers, suppliers and travelers from all over Tibia began visiting our small village.\" })\nkeywordHandler:addKeyword({ \"island\" }, StdModule.say, { npcHandler = npcHandler, text = \"Back when the mines were still full of ores, our island used to be a much busier place. Workers, suppliers and travelers from all over Tibia began visiting our small village.\" })\nkeywordHandler:addKeyword({ \"thais\" }, StdModule.say, { npcHandler = npcHandler, text = \"{Thais} is actually the oldest city in Tibia. But be careful on those streets, there are bandits everywhere. ? It might be better if I take you to the {Thais Peninsula}. Ask me for a passage if you're interested.\" })\nkeywordHandler:addKeyword({ \"peninsila\" }, StdModule.say, { npcHandler = npcHandler, text = \"The {Thais Peninsula} is highly recommendable for unexperienced and first-time adventurers, it's not far from the city {Thais}, too. I can take you there if you like. Ask me for a passage if you're interested.\" })\nkeywordHandler:addKeyword({ \"avriel\" }, StdModule.say, { npcHandler = npcHandler, text = \"{Avriel} runs a small shop here in the village. You can buy useful things there, but you can also sell things you no longer need. You will find his shop right south of the ferry house.\" })\nkeywordHandler:addKeyword({ \"flavius\" }, StdModule.say, { npcHandler = npcHandler, text = \"He runs the small bank in this village. You can find him over there in the house.\" })\nkeywordHandler:addKeyword({ \"gustavo\" }, StdModule.say, { npcHandler = npcHandler, text = \"He is a capable fighter and keeps our village safe from the Muglex Clan goblins.\" })\nkeywordHandler:addKeyword({ \"viola\" }, StdModule.say, { npcHandler = npcHandler, text = \"{Viola} is a good friend of mine and knows a thing or two about magic. Maybe she can teach you a few spells.\" })\nkeywordHandler:addKeyword({ \"tim\" }, StdModule.say, { npcHandler = npcHandler, text = \"He is a friend of our guard {Gustavo} but he lives in the capital {Thais}.\" })\nkeywordHandler:addKeyword({ \"ben\" }, StdModule.say, { npcHandler = npcHandler, text = \"Hmm, no one in the village has that {name}. Oh wait... {Gustavo} mentioned it once.\" })\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hello, my friend. Do you seek {passage} to the island {Targuna}?\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Fair winds, |PLAYERNAME|! Safe travels!\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Take care!\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"passage\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 82,
+              "lua_literal": "\"passage\""
+            },
+            {
+              "line": 84,
+              "lua_literal": "\"You need to be at least level \""
+            },
+            {
+              "line": 84,
+              "lua_literal": "\" to travel to Targuna. Keep training!\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"I'm offering a ferry service to the island {Targuna}, are you interested?\""
+            },
+            {
+              "line": 90,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 92,
+              "lua_literal": "\"You need to be at least level \""
+            },
+            {
+              "line": 92,
+              "lua_literal": "\" to travel.\""
+            },
+            {
+              "line": 98,
+              "lua_literal": "\"Very well, I'll take you to Targuna then. The locals there could use a helping hand!\""
+            },
+            {
+              "line": 109,
+              "lua_literal": "\"no\""
+            },
+            {
+              "line": 111,
+              "lua_literal": "\"No problem. Come back when you're ready to explore Targuna!\""
+            },
+            {
+              "line": 119,
+              "lua_literal": "\"name\""
+            },
+            {
+              "line": 119,
+              "lua_literal": "\"My full {name} is Anna Maria Mauricia, but you may call me just Anna.\""
+            },
+            {
+              "line": 120,
+              "lua_literal": "\"job\""
+            },
+            {
+              "line": 120,
+              "lua_literal": "\"I'm offering a ferry service to the island of {Targuna}.\""
+            },
+            {
+              "line": 121,
+              "lua_literal": "\"targuna\""
+            },
+            {
+              "line": 121,
+              "lua_literal": "\"Targuna is a beautiful island where adventurers are always welcome. Ask me for a {passage} if you're interested.\""
+            },
+            {
+              "line": 122,
+              "lua_literal": "\"mainland\""
+            },
+            {
+              "line": 122,
+              "lua_literal": "\"You chose a peaceful world. Not much danger from other adventurers. Just beware the monsters. Ask me for a passage if you're interested.\""
+            },
+            {
+              "line": 123,
+              "lua_literal": "\"blue valley\""
+            },
+            {
+              "line": 123,
+              "lua_literal": "\"The {Blue Valley} is the heart of the {Merudri} culture, or what is left of it.\""
+            },
+            {
+              "line": 124,
+              "lua_literal": "\"merudri\""
+            },
+            {
+              "line": 124,
+              "lua_literal": "\"The {Merudri} are warrior monks. Honing serenity, preserving their legacy, defending the {Blue Valley} and beyond.\""
+            },
+            {
+              "line": 125,
+              "lua_literal": "\"newhaven\""
+            },
+            {
+              "line": 125,
+              "lua_literal": "\"Back when the mines were still full of ores, our island used to be a much busier place. Workers, suppliers and travelers from all over Tibia began visiting our small village.\""
+            },
+            {
+              "line": 126,
+              "lua_literal": "\"island\""
+            },
+            {
+              "line": 126,
+              "lua_literal": "\"Back when the mines were still full of ores, our island used to be a much busier place. Workers, suppliers and travelers from all over Tibia began visiting our small village.\""
+            },
+            {
+              "line": 127,
+              "lua_literal": "\"thais\""
+            },
+            {
+              "line": 127,
+              "lua_literal": "\"{Thais} is actually the oldest city in Tibia. But be careful on those streets, there are bandits everywhere. ? It might be better if I take you to the {Thais Peninsula}. Ask me for a passage if you're interested.\""
+            },
+            {
+              "line": 128,
+              "lua_literal": "\"peninsila\""
+            },
+            {
+              "line": 128,
+              "lua_literal": "\"The {Thais Peninsula} is highly recommendable for unexperienced and first-time adventurers, it's not far from the city {Thais}, too. I can take you there if you like. Ask me for a passage if you're interested.\""
+            },
+            {
+              "line": 129,
+              "lua_literal": "\"avriel\""
+            },
+            {
+              "line": 129,
+              "lua_literal": "\"{Avriel} runs a small shop here in the village. You can buy useful things there, but you can also sell things you no longer need. You will find his shop right south of the ferry house.\""
+            },
+            {
+              "line": 130,
+              "lua_literal": "\"flavius\""
+            },
+            {
+              "line": 130,
+              "lua_literal": "\"He runs the small bank in this village. You can find him over there in the house.\""
+            },
+            {
+              "line": 131,
+              "lua_literal": "\"gustavo\""
+            },
+            {
+              "line": 131,
+              "lua_literal": "\"He is a capable fighter and keeps our village safe from the Muglex Clan goblins.\""
+            },
+            {
+              "line": 132,
+              "lua_literal": "\"viola\""
+            },
+            {
+              "line": 132,
+              "lua_literal": "\"{Viola} is a good friend of mine and knows a thing or two about magic. Maybe she can teach you a few spells.\""
+            },
+            {
+              "line": 133,
+              "lua_literal": "\"tim\""
+            },
+            {
+              "line": 133,
+              "lua_literal": "\"He is a friend of our guard {Gustavo} but he lives in the capital {Thais}.\""
+            },
+            {
+              "line": 134,
+              "lua_literal": "\"ben\""
+            },
+            {
+              "line": 134,
+              "lua_literal": "\"Hmm, no one in the village has that {name}. Oh wait... {Gustavo} mentioned it once.\""
+            },
+            {
+              "line": 136,
+              "lua_literal": "\"Hello, my friend. Do you seek {passage} to the island {Targuna}?\""
+            },
+            {
+              "line": 137,
+              "lua_literal": "\"Fair winds, |PLAYERNAME|! Safe travels!\""
+            },
+            {
+              "line": 138,
+              "lua_literal": "\"Take care!\""
+            },
+            {
+              "line": 145,
+              "lua_literal": "\"passage\""
+            },
+            {
+              "line": 145,
+              "lua_literal": "\"bye\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Anna\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 1576,\n\tlookHead = 114,\n\tlookBody = 71,\n\tlookLegs = 71,\n\tlookFeet = 66,\n\tlookAddons = 2,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.light = {\n\tlevel = 0,\n\tcolor = 0,\n}\n\nnpcConfig.voices = {\n\tinterval = 10000,\n\tchance = 50,\n\t{ text = \"Ready for a passage to Targuna?\" },\n\t{ text = \"No fear! This ferry will take you safely to the island of Targuna.\" },\n}\n\nnpcType:speechBubble(SPEECHBUBBLE_TRAVELER)\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal TARGUNA_DESTINATION = Position(31938, 31928, 7)\nlocal MIN_LEVEL_TO_TRAVEL = 8\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tif not player then\n\t\treturn true\n\tend\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"passage\") then\n\t\tif player:getLevel() < MIN_LEVEL_TO_TRAVEL then\n\t\t\tnpcHandler:say(\"You need to be at least level \" .. MIN_LEVEL_TO_TRAVEL .. \" to travel to Targuna. Keep training!\", npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tnpcHandler:say(\"I'm offering a ferry service to the island {Targuna}, are you interested?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yes\") then\n\t\tif player:getLevel() < MIN_LEVEL_TO_TRAVEL then\n\t\t\tnpcHandler:say(\"You need to be at least level \" .. MIN_LEVEL_TO_TRAVEL .. \" to travel.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"Very well, I'll take you to Targuna then. The locals there could use a helping hand!\", npc, creature)\n\t\t\tplayer:teleportTo(TARGUNA_DESTINATION)\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenCitizen, -1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenTutorialHunting, -1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenNewLootTheCorruptor, -1)\n\n\t\t\tplayer:setTown(Town(TOWNS_LIST.TARGUNA))\n\t\tend\n\telseif MsgContains(message, \"no\") then\n\t\tif npcHandler:getTopic(playerId) >= 1 then\n\t\t\tnpcHandler:say(\"No problem. Come back when you're ready to explore Targuna!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\n\treturn true\nend\n\n-- Keywords about NPCs\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"My full {name} is Anna Maria Mauricia, but you may call me just Anna.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm offering a ferry service to the island of {Targuna}.\" })\nkeywordHandler:addKeyword({ \"targuna\" }, StdModule.say, { npcHandler = npcHandler, text = \"Targuna is a beautiful island where adventurers are always welcome. Ask me for a {passage} if you're interested.\" })\nkeywordHandler:addKeyword({ \"mainland\" }, StdModule.say, { npcHandler = npcHandler, text = \"You chose a peaceful world. Not much danger from other adventurers. Just beware the monsters. Ask me for a passage if you're interested.\" })\nkeywordHandler:addKeyword({ \"blue valley\" }, StdModule.say, { npcHandler = npcHandler, text = \"The {Blue Valley} is the heart of the {Merudri} culture, or what is left of it.\" })\nkeywordHandler:addKeyword({ \"merudri\" }, StdModule.say, { npcHandler = npcHandler, text = \"The {Merudri} are warrior monks. Honing serenity, preserving their legacy, defending the {Blue Valley} and beyond.\" })\nkeywordHandler:addKeyword({ \"newhaven\" }, StdModule.say, { npcHandler = npcHandler, text = \"Back when the mines were still full of ores, our island used to be a much busier place. Workers, suppliers and travelers from all over Tibia began visiting our small village.\" })\nkeywordHandler:addKeyword({ \"island\" }, StdModule.say, { npcHandler = npcHandler, text = \"Back when the mines were still full of ores, our island used to be a much busier place. Workers, suppliers and travelers from all over Tibia began visiting our small village.\" })\nkeywordHandler:addKeyword({ \"thais\" }, StdModule.say, { npcHandler = npcHandler, text = \"{Thais} is actually the oldest city in Tibia. But be careful on those streets, there are bandits everywhere. ? It might be better if I take you to the {Thais Peninsula}. Ask me for a passage if you're interested.\" })\nkeywordHandler:addKeyword({ \"peninsila\" }, StdModule.say, { npcHandler = npcHandler, text = \"The {Thais Peninsula} is highly recommendable for unexperienced and first-time adventurers, it's not far from the city {Thais}, too. I can take you there if you like. Ask me for a passage if you're interested.\" })\nkeywordHandler:addKeyword({ \"avriel\" }, StdModule.say, { npcHandler = npcHandler, text = \"{Avriel} runs a small shop here in the village. You can buy useful things there, but you can also sell things you no longer need. You will find his shop right south of the ferry house.\" })\nkeywordHandler:addKeyword({ \"flavius\" }, StdModule.say, { npcHandler = npcHandler, text = \"He runs the small bank in this village. You can find him over there in the house.\" })\nkeywordHandler:addKeyword({ \"gustavo\" }, StdModule.say, { npcHandler = npcHandler, text = \"He is a capable fighter and keeps our village safe from the Muglex Clan goblins.\" })\nkeywordHandler:addKeyword({ \"viola\" }, StdModule.say, { npcHandler = npcHandler, text = \"{Viola} is a good friend of mine and knows a thing or two about magic. Maybe she can teach you a few spells.\" })\nkeywordHandler:addKeyword({ \"tim\" }, StdModule.say, { npcHandler = npcHandler, text = \"He is a friend of our guard {Gustavo} but he lives in the capital {Thais}.\" })\nkeywordHandler:addKeyword({ \"ben\" }, StdModule.say, { npcHandler = npcHandler, text = \"Hmm, no one in the village has that {name}. Oh wait... {Gustavo} mentioned it once.\" })\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hello, my friend. Do you seek {passage} to the island {Targuna}?\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Fair winds, |PLAYERNAME|! Safe travels!\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Take care!\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"passage\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/anna.lua:1-147"
+    },
+    {
+      "npc_source_name": "a_seagull",
+      "source_blob_sha256": "37a33b5fb206e0756b7b25327457e1b7e34eec5b537e14d784e46f5331eb733c",
+      "review_rows": [
+        "R4C165",
+        "R4C166"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_seagull.lua:53-115",
+          "line_start": 53,
+          "line_end": 115,
+          "source_sha256": "d359b149ab88ee9c1a2b859ca678e171e5adc75f80ec3b0e2968e0ee8639abed",
+          "guarded_source_lua": "\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\n-- Rookgaard destination\nlocal ROOKGAARD_DESTINATION = Position(32097, 32219, 7)\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"rookgaard\") then\n\t\tnpcHandler:say(\"Squawk! Long time I visited that isle. Why do you ask? Do you wish to go there?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"Careful, it's a one-way ticket! Squawk! You can never come back here if you leave now! Are you {SURE} you want to go to Rookgaard?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say(\"Squawk! Then so be it.\", npc, creature)\n\t\t\tplayer:teleportTo(ROOKGAARD_DESTINATION)\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"no\") then\n\t\tif npcHandler:getTopic(playerId) >= 1 then\n\t\t\tnpcHandler:say(\"Squawk! Wise decision perhaps.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"sure\") then\n\t\tif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say(\"Squawk! Then so be it.\", npc, creature)\n\t\t\tplayer:teleportTo(ROOKGAARD_DESTINATION)\n\t\t\tlocal town = Town(TOWNS_LIST.ROOKGAARD)\n\t\t\tplayer:setTown(town)\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenCitizen, -1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenTutorialHunting, -1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenNewLootTheCorruptor, -1)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Squawk!\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"*screech*\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Squawk!\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 73,
+              "lua_literal": "\"rookgaard\""
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"Squawk! Long time I visited that isle. Why do you ask? Do you wish to go there?\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 78,
+              "lua_literal": "\"Careful, it's a one-way ticket! Squawk! You can never come back here if you leave now! Are you {SURE} you want to go to Rookgaard?\""
+            },
+            {
+              "line": 81,
+              "lua_literal": "\"Squawk! Then so be it.\""
+            },
+            {
+              "line": 86,
+              "lua_literal": "\"no\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"Squawk! Wise decision perhaps.\""
+            },
+            {
+              "line": 91,
+              "lua_literal": "\"sure\""
+            },
+            {
+              "line": 93,
+              "lua_literal": "\"Squawk! Then so be it.\""
+            },
+            {
+              "line": 108,
+              "lua_literal": "\"Squawk!\""
+            },
+            {
+              "line": 109,
+              "lua_literal": "\"*screech*\""
+            },
+            {
+              "line": 110,
+              "lua_literal": "\"Squawk!\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"A Seagull\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 3\n\nnpcConfig.outfit = {\n\tlookType = 223,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 10000,\n\tchance = 50,\n\t{ text = \"*squawk*\" },\n\t{ text = \"*screech*\" },\n}\n\nnpcType:speechBubble(SPEECHBUBBLE_TRAVELER)\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\n-- Rookgaard destination\nlocal ROOKGAARD_DESTINATION = Position(32097, 32219, 7)\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"rookgaard\") then\n\t\tnpcHandler:say(\"Squawk! Long time I visited that isle. Why do you ask? Do you wish to go there?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"Careful, it's a one-way ticket! Squawk! You can never come back here if you leave now! Are you {SURE} you want to go to Rookgaard?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say(\"Squawk! Then so be it.\", npc, creature)\n\t\t\tplayer:teleportTo(ROOKGAARD_DESTINATION)\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"no\") then\n\t\tif npcHandler:getTopic(playerId) >= 1 then\n\t\t\tnpcHandler:say(\"Squawk! Wise decision perhaps.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"sure\") then\n\t\tif npcHandler:getTopic(playerId) == 2 then\n\t\t\tnpcHandler:say(\"Squawk! Then so be it.\", npc, creature)\n\t\t\tplayer:teleportTo(ROOKGAARD_DESTINATION)\n\t\t\tlocal town = Town(TOWNS_LIST.ROOKGAARD)\n\t\t\tplayer:setTown(town)\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenCitizen, -1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenTutorialHunting, -1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U15_12.newhavenNewLootTheCorruptor, -1)\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Squawk!\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"*screech*\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Squawk!\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/a_seagull.lua:1-115"
+    },
+    {
+      "npc_source_name": "avriel",
+      "source_blob_sha256": "f892faf0fb59b2fd2e44d04e14bb522c89f480b24867b489fa77f7f3dbe8e6d5",
+      "review_rows": [],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avriel.lua:53-78",
+          "line_start": 53,
+          "line_end": 78,
+          "source_sha256": "9258ecc84e532d55c500ca698242fab1221a9ab0c719190f7243a7a86feb279a",
+          "guarded_source_lua": "-- Keywords about NPCs and topics\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"Avriel is the name, I take care of all goods, gear and supplies. Though I'm also a great at chest, ah nevermind....\" })\nkeywordHandler:addKeyword({ \"avriel\" }, StdModule.say, { npcHandler = npcHandler, text = \"Yes, that's me.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm the shop owner here, if you're interested ask me for a {trade}.\" })\nkeywordHandler:addKeyword({ \"shop\", \"goods\", \"equipment\", \"potions\" }, StdModule.say, { npcHandler = npcHandler, text = \"I am selling all kinds of equipment. Let me know if you're interested in a {trade}.\" })\nkeywordHandler:addKeyword({ \"quest\", \"mission\" }, StdModule.say, { npcHandler = npcHandler, text = \"Quest? Oh no, I can't help you with that. But maybe {Viola} or {Gustavo} could use some help.\" })\nkeywordHandler:addKeyword({ \"king\" }, StdModule.say, { npcHandler = npcHandler, text = \"Our King Tibianus rules over everything.\" })\nkeywordHandler:addKeyword({ \"tibianus\" }, StdModule.say, { npcHandler = npcHandler, text = \"Our King Tibianus rules over everything.\" })\nkeywordHandler:addKeyword({ \"thais\" }, StdModule.say, { npcHandler = npcHandler, text = \"You should visit Thais someday, it's our capital with lots of shops, trainers and great people.\" })\nkeywordHandler:addKeyword({ \"newhaven\", \"island\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ever since I moved here, life has just been great, if only those goblins wouldn't terrorise us. Maybe you could help us, talk to {Gustavo} for more information.\" })\nkeywordHandler:addKeyword({ \"gustavo\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ah, my good friend Gustavo, he's keeping us safe from the north part of this island. I heard he's talking about needing some assistance, if you're interested don't be shy to talk to him.\" })\nkeywordHandler:addKeyword({ \"viola\" }, StdModule.say, { npcHandler = npcHandler, text = \"Viola always wins on our quiz nights, one can really learn much from her. I guess if your interested in learning more, she's the right person to talk to.\" })\nkeywordHandler:addKeyword({ \"flavius\" }, StdModule.say, { npcHandler = npcHandler, text = \"Flavius is running the bank here in Newhaven.\" })\nkeywordHandler:addKeyword({ \"anna\" }, StdModule.say, { npcHandler = npcHandler, text = \"Anna often travels to the mainland to get supplies for my shop, it's great working with her. You can find her at the ferry house just north of here.\" })\nkeywordHandler:addKeyword({ \"tim\" }, StdModule.say, { npcHandler = npcHandler, text = \"If you ever need someone to handle the ugly things, he's your guard to do it.\" })\nkeywordHandler:addKeyword({ \"guard\" }, StdModule.say, { npcHandler = npcHandler, text = \"Oh yes, our Gustavo is the guard here in Newhaven. I heard he could use some help with the muglex problem, though.\" })\nkeywordHandler:addKeyword({ \"muglex\" }, StdModule.say, { npcHandler = npcHandler, text = \"These little creatures have been terrorising our village for quite some time now, I just hope we stay safe here.\" })\nkeywordHandler:addKeyword({ \"goblin\", \"goblins\" }, StdModule.say, { npcHandler = npcHandler, text = \"These little creatures have been terrorising our village for quite some time now, I just hope we stay safe here.\" })\nkeywordHandler:addKeyword({ \"mines\" }, StdModule.say, { npcHandler = npcHandler, text = \"Legends say that a tragic accident buried a group of miners alive. Since then their souls have been roaming these tunnels, willing to find their next victim. So please be careful there!\" })\nkeywordHandler:addKeyword({ \"mainland\" }, StdModule.say, { npcHandler = npcHandler, text = \"I once lived on the mainland a long time ago, I was working at a shop in Yalahar, but they had to close it due to some monster problems.\" })\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to my little shop, |PLAYERNAME|! Are you looking to {trade} anything precious?\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"See you around, adventurer.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"See you around, adventurer.\")\nnpcHandler:setMessage(MESSAGE_SENDTRADE, \"Of course, take a look and see what might interest you.\")\n\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 54,
+              "lua_literal": "\"name\""
+            },
+            {
+              "line": 54,
+              "lua_literal": "\"Avriel is the name, I take care of all goods, gear and supplies. Though I'm also a great at chest, ah nevermind....\""
+            },
+            {
+              "line": 55,
+              "lua_literal": "\"avriel\""
+            },
+            {
+              "line": 55,
+              "lua_literal": "\"Yes, that's me.\""
+            },
+            {
+              "line": 56,
+              "lua_literal": "\"job\""
+            },
+            {
+              "line": 56,
+              "lua_literal": "\"I'm the shop owner here, if you're interested ask me for a {trade}.\""
+            },
+            {
+              "line": 57,
+              "lua_literal": "\"shop\""
+            },
+            {
+              "line": 57,
+              "lua_literal": "\"goods\""
+            },
+            {
+              "line": 57,
+              "lua_literal": "\"equipment\""
+            },
+            {
+              "line": 57,
+              "lua_literal": "\"potions\""
+            },
+            {
+              "line": 57,
+              "lua_literal": "\"I am selling all kinds of equipment. Let me know if you're interested in a {trade}.\""
+            },
+            {
+              "line": 58,
+              "lua_literal": "\"quest\""
+            },
+            {
+              "line": 58,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 58,
+              "lua_literal": "\"Quest? Oh no, I can't help you with that. But maybe {Viola} or {Gustavo} could use some help.\""
+            },
+            {
+              "line": 59,
+              "lua_literal": "\"king\""
+            },
+            {
+              "line": 59,
+              "lua_literal": "\"Our King Tibianus rules over everything.\""
+            },
+            {
+              "line": 60,
+              "lua_literal": "\"tibianus\""
+            },
+            {
+              "line": 60,
+              "lua_literal": "\"Our King Tibianus rules over everything.\""
+            },
+            {
+              "line": 61,
+              "lua_literal": "\"thais\""
+            },
+            {
+              "line": 61,
+              "lua_literal": "\"You should visit Thais someday, it's our capital with lots of shops, trainers and great people.\""
+            },
+            {
+              "line": 62,
+              "lua_literal": "\"newhaven\""
+            },
+            {
+              "line": 62,
+              "lua_literal": "\"island\""
+            },
+            {
+              "line": 62,
+              "lua_literal": "\"Ever since I moved here, life has just been great, if only those goblins wouldn't terrorise us. Maybe you could help us, talk to {Gustavo} for more information.\""
+            },
+            {
+              "line": 63,
+              "lua_literal": "\"gustavo\""
+            },
+            {
+              "line": 63,
+              "lua_literal": "\"Ah, my good friend Gustavo, he's keeping us safe from the north part of this island. I heard he's talking about needing some assistance, if you're interested don't be shy to talk to him.\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"viola\""
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"Viola always wins on our quiz nights, one can really learn much from her. I guess if your interested in learning more, she's the right person to talk to.\""
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"flavius\""
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"Flavius is running the bank here in Newhaven.\""
+            },
+            {
+              "line": 66,
+              "lua_literal": "\"anna\""
+            },
+            {
+              "line": 66,
+              "lua_literal": "\"Anna often travels to the mainland to get supplies for my shop, it's great working with her. You can find her at the ferry house just north of here.\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"tim\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"If you ever need someone to handle the ugly things, he's your guard to do it.\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"guard\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"Oh yes, our Gustavo is the guard here in Newhaven. I heard he could use some help with the muglex problem, though.\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"muglex\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"These little creatures have been terrorising our village for quite some time now, I just hope we stay safe here.\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"goblin\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"goblins\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"These little creatures have been terrorising our village for quite some time now, I just hope we stay safe here.\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"mines\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"Legends say that a tragic accident buried a group of miners alive. Since then their souls have been roaming these tunnels, willing to find their next victim. So please be careful there!\""
+            },
+            {
+              "line": 72,
+              "lua_literal": "\"mainland\""
+            },
+            {
+              "line": 72,
+              "lua_literal": "\"I once lived on the mainland a long time ago, I was working at a shop in Yalahar, but they had to close it due to some monster problems.\""
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"Welcome to my little shop, |PLAYERNAME|! Are you looking to {trade} anything precious?\""
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"See you around, adventurer.\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"See you around, adventurer.\""
+            },
+            {
+              "line": 77,
+              "lua_literal": "\"Of course, take a look and see what might interest you.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Avriel\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 472,\n\tlookHead = 78,\n\tlookBody = 25,\n\tlookLegs = 32,\n\tlookFeet = 118,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\n-- Keywords about NPCs and topics\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"Avriel is the name, I take care of all goods, gear and supplies. Though I'm also a great at chest, ah nevermind....\" })\nkeywordHandler:addKeyword({ \"avriel\" }, StdModule.say, { npcHandler = npcHandler, text = \"Yes, that's me.\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm the shop owner here, if you're interested ask me for a {trade}.\" })\nkeywordHandler:addKeyword({ \"shop\", \"goods\", \"equipment\", \"potions\" }, StdModule.say, { npcHandler = npcHandler, text = \"I am selling all kinds of equipment. Let me know if you're interested in a {trade}.\" })\nkeywordHandler:addKeyword({ \"quest\", \"mission\" }, StdModule.say, { npcHandler = npcHandler, text = \"Quest? Oh no, I can't help you with that. But maybe {Viola} or {Gustavo} could use some help.\" })\nkeywordHandler:addKeyword({ \"king\" }, StdModule.say, { npcHandler = npcHandler, text = \"Our King Tibianus rules over everything.\" })\nkeywordHandler:addKeyword({ \"tibianus\" }, StdModule.say, { npcHandler = npcHandler, text = \"Our King Tibianus rules over everything.\" })\nkeywordHandler:addKeyword({ \"thais\" }, StdModule.say, { npcHandler = npcHandler, text = \"You should visit Thais someday, it's our capital with lots of shops, trainers and great people.\" })\nkeywordHandler:addKeyword({ \"newhaven\", \"island\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ever since I moved here, life has just been great, if only those goblins wouldn't terrorise us. Maybe you could help us, talk to {Gustavo} for more information.\" })\nkeywordHandler:addKeyword({ \"gustavo\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ah, my good friend Gustavo, he's keeping us safe from the north part of this island. I heard he's talking about needing some assistance, if you're interested don't be shy to talk to him.\" })\nkeywordHandler:addKeyword({ \"viola\" }, StdModule.say, { npcHandler = npcHandler, text = \"Viola always wins on our quiz nights, one can really learn much from her. I guess if your interested in learning more, she's the right person to talk to.\" })\nkeywordHandler:addKeyword({ \"flavius\" }, StdModule.say, { npcHandler = npcHandler, text = \"Flavius is running the bank here in Newhaven.\" })\nkeywordHandler:addKeyword({ \"anna\" }, StdModule.say, { npcHandler = npcHandler, text = \"Anna often travels to the mainland to get supplies for my shop, it's great working with her. You can find her at the ferry house just north of here.\" })\nkeywordHandler:addKeyword({ \"tim\" }, StdModule.say, { npcHandler = npcHandler, text = \"If you ever need someone to handle the ugly things, he's your guard to do it.\" })\nkeywordHandler:addKeyword({ \"guard\" }, StdModule.say, { npcHandler = npcHandler, text = \"Oh yes, our Gustavo is the guard here in Newhaven. I heard he could use some help with the muglex problem, though.\" })\nkeywordHandler:addKeyword({ \"muglex\" }, StdModule.say, { npcHandler = npcHandler, text = \"These little creatures have been terrorising our village for quite some time now, I just hope we stay safe here.\" })\nkeywordHandler:addKeyword({ \"goblin\", \"goblins\" }, StdModule.say, { npcHandler = npcHandler, text = \"These little creatures have been terrorising our village for quite some time now, I just hope we stay safe here.\" })\nkeywordHandler:addKeyword({ \"mines\" }, StdModule.say, { npcHandler = npcHandler, text = \"Legends say that a tragic accident buried a group of miners alive. Since then their souls have been roaming these tunnels, willing to find their next victim. So please be careful there!\" })\nkeywordHandler:addKeyword({ \"mainland\" }, StdModule.say, { npcHandler = npcHandler, text = \"I once lived on the mainland a long time ago, I was working at a shop in Yalahar, but they had to close it due to some monster problems.\" })\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to my little shop, |PLAYERNAME|! Are you looking to {trade} anything precious?\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"See you around, adventurer.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"See you around, adventurer.\")\nnpcHandler:setMessage(MESSAGE_SENDTRADE, \"Of course, take a look and see what might interest you.\")\n\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"bone sword\", clientId = 3338, buy = 75 },\n\t{ itemName = \"bow\", clientId = 3350, buy = 350 },\n\t{ itemName = \"fish\", clientId = 3578, buy = 5 },\n\t{ itemName = \"health potion\", clientId = 266, buy = 50 },\n\t{ itemName = \"light jo staff\", clientId = 50166, buy = 250 },\n\t{ itemName = \"light stone shower rune\", clientId = 3178, buy = 25 },\n\t{ itemName = \"lightest missile rune\", clientId = 3174, buy = 20 },\n\t{ itemName = \"mace\", clientId = 3286, buy = 90 },\n\t{ itemName = \"mana potion\", clientId = 268, buy = 56 },\n\t{ itemName = \"rapier\", clientId = 3272, buy = 15 },\n\t{ itemName = \"rope\", clientId = 3003, buy = 50 },\n\t{ itemName = \"short sword\", clientId = 3294, buy = 30 },\n\t{ itemName = \"simple arrow\", clientId = 21470, buy = 2 },\n\t{ itemName = \"spear\", clientId = 3277, buy = 10 },\n\t{ itemName = \"the chiller\", clientId = 21350, buy = 250 },\n\t{ itemName = \"the scorcher\", clientId = 21348, buy = 250 },\n\t{ itemName = \"white mushroom\", clientId = 3723, buy = 6 },\n\n\t{ itemName = \"axe\", clientId = 3274, sell = 7 },\n\t{ itemName = \"bone club\", clientId = 3337, sell = 5 },\n\t{ itemName = \"bone sword\", clientId = 3338, sell = 20 },\n\t{ itemName = \"brass armor\", clientId = 3359, sell = 150 },\n\t{ itemName = \"brass legs\", clientId = 3372, sell = 49 },\n\t{ itemName = \"empty potion flask\", clientId = 285, sell = 5 },\n\t{ itemName = \"fish\", clientId = 3578, sell = 2 },\n\t{ itemName = \"longsword\", clientId = 3285, sell = 51 },\n\t{ itemName = \"mace\", clientId = 3286, sell = 30 },\n\t{ itemName = \"mage hat\", clientId = 7992, sell = 25 },\n\t{ itemName = \"magician's robe\", clientId = 7991, sell = 150 },\n\t{ itemName = \"plain monk robe\", clientId = 50257, sell = 1 },\n\t{ itemName = \"ranger legs\", clientId = 8095, sell = 36 },\n\t{ itemName = \"ranger's cloak\", clientId = 3571, sell = 150 },\n\t{ itemName = \"refined bow\", clientId = 51760, sell = 150 },\n\t{ itemName = \"rope\", clientId = 3003, sell = 8 },\n\t{ itemName = \"short sword\", clientId = 3294, sell = 10 },\n\t{ itemName = \"simple jo staff\", clientId = 51119, sell = 10 },\n\t{ itemName = \"small axe\", clientId = 3462, sell = 5 },\n\t{ itemName = \"snakebite rod\", clientId = 3066, sell = 100 },\n\t{ itemName = \"soldier helmet\", clientId = 3375, sell = 16 },\n\t{ itemName = \"spear\", clientId = 3277, sell = 3 },\n\t{ itemName = \"spellbook\", clientId = 3059, sell = 30 },\n\t{ itemName = \"stealth ring\", clientId = 3049, sell = 200 },\n\t{ itemName = \"steel shield\", clientId = 3409, sell = 80 },\n\t{ itemName = \"stone skin amulet\", clientId = 3081, sell = 500 },\n\t{ itemName = \"wand of vortex\", clientId = 3074, sell = 100 },\n\t{ itemName = \"white mushroom\", clientId = 3723, sell = 2 },\n}\n\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- npcType registering the npcConfig table\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/avriel.lua:1-146"
+    },
+    {
+      "npc_source_name": "flavius",
+      "source_blob_sha256": "88e3de09992b88dea1a33a299acc7d5d11f97314478718c1eb2a438f37b8690f",
+      "review_rows": [],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/flavius.lua:53-116",
+          "line_start": 53,
+          "line_end": 116,
+          "source_sha256": "47ba2f160303a15fd9fd863309cb6a44b727e017b478dd2607ebf1b48a173b26",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\n-- NPC dialog options for banker\nnpcType:addDialogOptions(\"withdraw\", \"deposit all\", \"balance\")\nnpcType:speechBubble(SPEECHBUBBLE_TRADE)\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\t-- Parse bank\n\tnpc:parseBank(message, npc, creature, npcHandler)\n\t-- Parse guild bank\n\tnpc:parseGuildBank(message, npc, creature, playerId, npcHandler)\n\t-- Normal messages\n\tnpc:parseBankMessages(message, npc, creature, npcHandler)\n\treturn true\nend\n\n-- Keywords about NPCs and topics\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"My name is Flavius, how may I assist you today?\" })\nkeywordHandler:addKeyword({ \"flavius\" }, StdModule.say, { npcHandler = npcHandler, text = \"Mhm?\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"I`m the banker here in Newhaven. It's my job to manage your bank account and change currencies. Though I may also help with questions you might have.\" })\nkeywordHandler:addKeyword({ \"mission\", \"quest\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm just a banker, ask around maybe someone else could need your help.\" })\nkeywordHandler:addKeyword({ \"anna\" }, StdModule.say, { npcHandler = npcHandler, text = \"She often travels to the mainland for supplies. I bet she can help you once you've reached level 8. You can find her at the ferry house just west of here.\" })\nkeywordHandler:addKeyword({ \"avriel\" }, StdModule.say, { npcHandler = npcHandler, text = \"Avriel runs a small shop here in the village. You can buy useful things for your adventures, but also sell things you might not need any longer. You will find his shop in the south of the village.\" })\nkeywordHandler:addKeyword({ \"gustavo\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ah, my good friend Gustavo, he's keeping us safe from the north part of this island. It can get pretty dangerous out there.\" })\nkeywordHandler:addKeyword({ \"viola\" }, StdModule.say, { npcHandler = npcHandler, text = \"She's a well-read woman who knows a thing or two about magic. Maybe she can teach you a few spells. She might also have a small task for you. I've heard she's missing one of her books.\" })\nkeywordHandler:addKeyword({ \"tim\" }, StdModule.say, { npcHandler = npcHandler, text = \"Isn't that the guard from Thais? I heard Gustavo talking about their ongoing friendship despite being apart.\" })\nkeywordHandler:addKeyword({ \"thais\" }, StdModule.say, { npcHandler = npcHandler, text = \"Thais is our beautiful capital, ruled by our beloved king Tibianus III.\" })\nkeywordHandler:addKeyword({ \"newhaven\" }, StdModule.say, { npcHandler = npcHandler, text = \"I heard the name refers to older times, where the economy was thriving much more than it does today.\" })\nkeywordHandler:addKeyword({ \"island\" }, StdModule.say, { npcHandler = npcHandler, text = \"If you enjoy the life outside of busy cities, you've come to the right place.\" })\nkeywordHandler:addKeyword({ \"king\", \"tibianus\" }, StdModule.say, { npcHandler = npcHandler, text = \"Our dearest King Tibianus, maybe someday I will be able to meet his highness. He resides at his castle in Thais.\" })\nkeywordHandler:addKeyword({ \"mines\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ever since the mining industry left our beautiful village, the mines have been haunted. I'd rather stay away from any kind of danger. But I heard Viola could need your help, adventurer.\" })\nkeywordHandler:addKeyword({ \"bank\" }, StdModule.say, { npcHandler = npcHandler, text = \"You can deposit and withdraw money from your bank account here. I can also change money for you.\" })\nkeywordHandler:addKeyword({ \"functions\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Every Tibian has a global bank account. This means you can deposit your gold in one bank, and withdraw it from the same or any other Tibian bank in any city. ... Here on Newhaven, I run the bank. I keep any gold you deposit safe, so you can't lose it when you're out fighting or dying, heh. Ask me for your {balance} to learn how much money you've already saved. ... There are also {advanced} functions, but those are only available to you once you have reached the Tibian mainland.\",\n})\nkeywordHandler:addKeyword({ \"advanced\" }, StdModule.say, { npcHandler = npcHandler, text = \"Your bank account will be used automatically when you want to rent a house or place an offer on an item on the market. Let me know if you want to know about how either one works.\" })\nkeywordHandler:addKeyword({ \"rent\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Renting a house has never been this easy. Simply make a bid for an auction on the house section of the official Tibia website. We will check immediately if you have enough money ... Please keep in mind that the sum you have used to bid will be unavailable unless somebody places a higher bid. Once you have acquired a house the rent will be charged automatically from your bank account every month.\",\n})\nkeywordHandler:addKeyword({ \"market\" }, StdModule.say, { npcHandler = npcHandler, text = \"If you buy an item from the market, the required gold will be deducted from your bank account automatically. On the other hand, money you earn for selling items via the market will be added to your account. It's easy!\" })\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to the Tibian bank, young adventurer! Deposit your gold or withdraw your money from your bank account. Remember to deposit all of your gold before you leave here. I can also explain the {functions} of your bank account to you.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Goodbye.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Goodbye.\")\nnpcHandler:setCallback(CALLBACK_GREET, NpcBankGreetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 61,
+              "lua_literal": "\"withdraw\""
+            },
+            {
+              "line": 61,
+              "lua_literal": "\"deposit all\""
+            },
+            {
+              "line": 61,
+              "lua_literal": "\"balance\""
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"name\""
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"My name is Flavius, how may I assist you today?\""
+            },
+            {
+              "line": 83,
+              "lua_literal": "\"flavius\""
+            },
+            {
+              "line": 83,
+              "lua_literal": "\"Mhm?\""
+            },
+            {
+              "line": 84,
+              "lua_literal": "\"job\""
+            },
+            {
+              "line": 84,
+              "lua_literal": "\"I`m the banker here in Newhaven. It's my job to manage your bank account and change currencies. Though I may also help with questions you might have.\""
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"mission\""
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"quest\""
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"I'm just a banker, ask around maybe someone else could need your help.\""
+            },
+            {
+              "line": 86,
+              "lua_literal": "\"anna\""
+            },
+            {
+              "line": 86,
+              "lua_literal": "\"She often travels to the mainland for supplies. I bet she can help you once you've reached level 8. You can find her at the ferry house just west of here.\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"avriel\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"Avriel runs a small shop here in the village. You can buy useful things for your adventures, but also sell things you might not need any longer. You will find his shop in the south of the village.\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"gustavo\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"Ah, my good friend Gustavo, he's keeping us safe from the north part of this island. It can get pretty dangerous out there.\""
+            },
+            {
+              "line": 89,
+              "lua_literal": "\"viola\""
+            },
+            {
+              "line": 89,
+              "lua_literal": "\"She's a well-read woman who knows a thing or two about magic. Maybe she can teach you a few spells. She might also have a small task for you. I've heard she's missing one of her books.\""
+            },
+            {
+              "line": 90,
+              "lua_literal": "\"tim\""
+            },
+            {
+              "line": 90,
+              "lua_literal": "\"Isn't that the guard from Thais? I heard Gustavo talking about their ongoing friendship despite being apart.\""
+            },
+            {
+              "line": 91,
+              "lua_literal": "\"thais\""
+            },
+            {
+              "line": 91,
+              "lua_literal": "\"Thais is our beautiful capital, ruled by our beloved king Tibianus III.\""
+            },
+            {
+              "line": 92,
+              "lua_literal": "\"newhaven\""
+            },
+            {
+              "line": 92,
+              "lua_literal": "\"I heard the name refers to older times, where the economy was thriving much more than it does today.\""
+            },
+            {
+              "line": 93,
+              "lua_literal": "\"island\""
+            },
+            {
+              "line": 93,
+              "lua_literal": "\"If you enjoy the life outside of busy cities, you've come to the right place.\""
+            },
+            {
+              "line": 94,
+              "lua_literal": "\"king\""
+            },
+            {
+              "line": 94,
+              "lua_literal": "\"tibianus\""
+            },
+            {
+              "line": 94,
+              "lua_literal": "\"Our dearest King Tibianus, maybe someday I will be able to meet his highness. He resides at his castle in Thais.\""
+            },
+            {
+              "line": 95,
+              "lua_literal": "\"mines\""
+            },
+            {
+              "line": 95,
+              "lua_literal": "\"Ever since the mining industry left our beautiful village, the mines have been haunted. I'd rather stay away from any kind of danger. But I heard Viola could need your help, adventurer.\""
+            },
+            {
+              "line": 96,
+              "lua_literal": "\"bank\""
+            },
+            {
+              "line": 96,
+              "lua_literal": "\"You can deposit and withdraw money from your bank account here. I can also change money for you.\""
+            },
+            {
+              "line": 97,
+              "lua_literal": "\"functions\""
+            },
+            {
+              "line": 99,
+              "lua_literal": "\"Every Tibian has a global bank account. This means you can deposit your gold in one bank, and withdraw it from the same or any other Tibian bank in any city. ... Here on Newhaven, I run the bank. I keep any gold you deposit safe, so you can't lose it when you're out fighting or dying, heh. Ask me for your {balance} to learn how much money you've already saved. ... There are also {advanced} functions, but those are only available to you once you have reached the Tibian mainland.\""
+            },
+            {
+              "line": 101,
+              "lua_literal": "\"advanced\""
+            },
+            {
+              "line": 101,
+              "lua_literal": "\"Your bank account will be used automatically when you want to rent a house or place an offer on an item on the market. Let me know if you want to know about how either one works.\""
+            },
+            {
+              "line": 102,
+              "lua_literal": "\"rent\""
+            },
+            {
+              "line": 104,
+              "lua_literal": "\"Renting a house has never been this easy. Simply make a bid for an auction on the house section of the official Tibia website. We will check immediately if you have enough money ... Please keep in mind that the sum you have used to bid will be unavailable unless somebody places a higher bid. Once you have acquired a house the rent will be charged automatically from your bank account every month.\""
+            },
+            {
+              "line": 106,
+              "lua_literal": "\"market\""
+            },
+            {
+              "line": 106,
+              "lua_literal": "\"If you buy an item from the market, the required gold will be deducted from your bank account automatically. On the other hand, money you earn for selling items via the market will be added to your account. It's easy!\""
+            },
+            {
+              "line": 108,
+              "lua_literal": "\"Welcome to the Tibian bank, young adventurer! Deposit your gold or withdraw your money from your bank account. Remember to deposit all of your gold before you leave here. I can also explain the {functions} of your bank account to you.\""
+            },
+            {
+              "line": 109,
+              "lua_literal": "\"Goodbye.\""
+            },
+            {
+              "line": 110,
+              "lua_literal": "\"Goodbye.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Flavius\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 132,\n\tlookHead = 39,\n\tlookBody = 44,\n\tlookLegs = 49,\n\tlookFeet = 76,\n\tlookAddons = 1,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {\n\tinterval = 10000,\n\tchance = 50,\n\t{ text = \"Any questions about the functions of your bank account? Feel free to ask me for help!\" },\n\t{ text = \"Deposit your money here!\" },\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\n-- NPC dialog options for banker\nnpcType:addDialogOptions(\"withdraw\", \"deposit all\", \"balance\")\nnpcType:speechBubble(SPEECHBUBBLE_TRADE)\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\t-- Parse bank\n\tnpc:parseBank(message, npc, creature, npcHandler)\n\t-- Parse guild bank\n\tnpc:parseGuildBank(message, npc, creature, playerId, npcHandler)\n\t-- Normal messages\n\tnpc:parseBankMessages(message, npc, creature, npcHandler)\n\treturn true\nend\n\n-- Keywords about NPCs and topics\nkeywordHandler:addKeyword({ \"name\" }, StdModule.say, { npcHandler = npcHandler, text = \"My name is Flavius, how may I assist you today?\" })\nkeywordHandler:addKeyword({ \"flavius\" }, StdModule.say, { npcHandler = npcHandler, text = \"Mhm?\" })\nkeywordHandler:addKeyword({ \"job\" }, StdModule.say, { npcHandler = npcHandler, text = \"I`m the banker here in Newhaven. It's my job to manage your bank account and change currencies. Though I may also help with questions you might have.\" })\nkeywordHandler:addKeyword({ \"mission\", \"quest\" }, StdModule.say, { npcHandler = npcHandler, text = \"I'm just a banker, ask around maybe someone else could need your help.\" })\nkeywordHandler:addKeyword({ \"anna\" }, StdModule.say, { npcHandler = npcHandler, text = \"She often travels to the mainland for supplies. I bet she can help you once you've reached level 8. You can find her at the ferry house just west of here.\" })\nkeywordHandler:addKeyword({ \"avriel\" }, StdModule.say, { npcHandler = npcHandler, text = \"Avriel runs a small shop here in the village. You can buy useful things for your adventures, but also sell things you might not need any longer. You will find his shop in the south of the village.\" })\nkeywordHandler:addKeyword({ \"gustavo\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ah, my good friend Gustavo, he's keeping us safe from the north part of this island. It can get pretty dangerous out there.\" })\nkeywordHandler:addKeyword({ \"viola\" }, StdModule.say, { npcHandler = npcHandler, text = \"She's a well-read woman who knows a thing or two about magic. Maybe she can teach you a few spells. She might also have a small task for you. I've heard she's missing one of her books.\" })\nkeywordHandler:addKeyword({ \"tim\" }, StdModule.say, { npcHandler = npcHandler, text = \"Isn't that the guard from Thais? I heard Gustavo talking about their ongoing friendship despite being apart.\" })\nkeywordHandler:addKeyword({ \"thais\" }, StdModule.say, { npcHandler = npcHandler, text = \"Thais is our beautiful capital, ruled by our beloved king Tibianus III.\" })\nkeywordHandler:addKeyword({ \"newhaven\" }, StdModule.say, { npcHandler = npcHandler, text = \"I heard the name refers to older times, where the economy was thriving much more than it does today.\" })\nkeywordHandler:addKeyword({ \"island\" }, StdModule.say, { npcHandler = npcHandler, text = \"If you enjoy the life outside of busy cities, you've come to the right place.\" })\nkeywordHandler:addKeyword({ \"king\", \"tibianus\" }, StdModule.say, { npcHandler = npcHandler, text = \"Our dearest King Tibianus, maybe someday I will be able to meet his highness. He resides at his castle in Thais.\" })\nkeywordHandler:addKeyword({ \"mines\" }, StdModule.say, { npcHandler = npcHandler, text = \"Ever since the mining industry left our beautiful village, the mines have been haunted. I'd rather stay away from any kind of danger. But I heard Viola could need your help, adventurer.\" })\nkeywordHandler:addKeyword({ \"bank\" }, StdModule.say, { npcHandler = npcHandler, text = \"You can deposit and withdraw money from your bank account here. I can also change money for you.\" })\nkeywordHandler:addKeyword({ \"functions\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Every Tibian has a global bank account. This means you can deposit your gold in one bank, and withdraw it from the same or any other Tibian bank in any city. ... Here on Newhaven, I run the bank. I keep any gold you deposit safe, so you can't lose it when you're out fighting or dying, heh. Ask me for your {balance} to learn how much money you've already saved. ... There are also {advanced} functions, but those are only available to you once you have reached the Tibian mainland.\",\n})\nkeywordHandler:addKeyword({ \"advanced\" }, StdModule.say, { npcHandler = npcHandler, text = \"Your bank account will be used automatically when you want to rent a house or place an offer on an item on the market. Let me know if you want to know about how either one works.\" })\nkeywordHandler:addKeyword({ \"rent\" }, StdModule.say, {\n\tnpcHandler = npcHandler,\n\ttext = \"Renting a house has never been this easy. Simply make a bid for an auction on the house section of the official Tibia website. We will check immediately if you have enough money ... Please keep in mind that the sum you have used to bid will be unavailable unless somebody places a higher bid. Once you have acquired a house the rent will be charged automatically from your bank account every month.\",\n})\nkeywordHandler:addKeyword({ \"market\" }, StdModule.say, { npcHandler = npcHandler, text = \"If you buy an item from the market, the required gold will be deducted from your bank account automatically. On the other hand, money you earn for selling items via the market will be added to your account. It's easy!\" })\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to the Tibian bank, young adventurer! Deposit your gold or withdraw your money from your bank account. Remember to deposit all of your gold before you leave here. I can also explain the {functions} of your bank account to you.\")\nnpcHandler:setMessage(MESSAGE_FAREWELL, \"Goodbye.\")\nnpcHandler:setMessage(MESSAGE_WALKAWAY, \"Goodbye.\")\nnpcHandler:setCallback(CALLBACK_GREET, NpcBankGreetCallback)\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/flavius.lua:1-116"
+    }
+  ],
+  "policy": "Existing Rotten Blood owner ANSWERs and Newhaven native travel design remain authoritative; do not activate superseded raw branches. Kesar Order of Stag branches excluded."
+}

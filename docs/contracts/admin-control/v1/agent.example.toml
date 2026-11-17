@@ -1,0 +1,12 @@
+agent_id = "agent-example"
+platform_endpoint = "https://platform.example/"
+mtls_certificate_path = "/etc/oteryn/admin-agent.crt.pem"
+mtls_private_key_path = "/etc/oteryn/admin-agent.key.pem"
+mtls_ca_path = "/etc/oteryn/platform-ca.pem"
+signing_key_path = "/etc/oteryn/admin-agent.ed25519-seed"
+policy_file_path = "/etc/oteryn/admin_policy.toml"
+db_url_env_name = "OTERYN_ADMIN_DATABASE_URL"
+owner_epoch = 1
+worlds = ["w-example"]
+nodes = ["node-example"]
+build_revision = "replace-with-pinned-build-revision"

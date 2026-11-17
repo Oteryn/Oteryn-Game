@@ -4,10 +4,8 @@
 //! stage builds the six corners of each quad from the vertex index, so there is no vertex or
 //! index buffer beyond the per-instance data built in `batch.rs`.
 
-use crate::{
-    AtlasImage, MAX_BATCH_QUADS, QUAD_INSTANCE_BYTES, SpriteBatch, SurfaceSize, TileBatch,
-    VERTICES_PER_QUAD, instance_bytes,
-};
+use crate::lighting::LIT_INSTANCE_BYTES;
+use crate::{AtlasImage, MAX_BATCH_QUADS, SpriteBatch, SurfaceSize, TileBatch, VERTICES_PER_QUAD};
 
 const SHADER: &str = r"
 struct Screen {
@@ -23,11 +21,13 @@ struct Instance {
     @location(0) position: vec2<f32>,
     @location(1) size: vec2<f32>,
     @location(2) uv: vec4<f32>,
+    @location(3) light: vec4<f32>,
 }
 
 struct VertexOutput {
     @builtin(position) clip: vec4<f32>,
     @location(0) uv: vec2<f32>,
+    @location(1) light: vec4<f32>,
 }
 
 @vertex
@@ -50,20 +50,22 @@ fn vs_main(@builtin(vertex_index) index: u32, instance: Instance) -> VertexOutpu
         1.0,
     );
     output.uv = mix(instance.uv.xy, instance.uv.zw, corner);
+    output.light = instance.light;
     return output;
 }
 
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(atlas, atlas_sampler, input.uv);
+    let texel = textureSample(atlas, atlas_sampler, input.uv);
+    return vec4<f32>(texel.rgb * input.light.rgb, texel.a * input.light.a);
 }
 ";
 
-const INSTANCE_ATTRIBUTES: [wgpu::VertexAttribute; 3] =
-    wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x4];
+const INSTANCE_ATTRIBUTES: [wgpu::VertexAttribute; 4] =
+    wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x4, 3 => Float32x4];
 
 const UNIFORM_BYTES: u64 = 16;
-const INSTANCE_BUFFER_BYTES: u64 = (2 * MAX_BATCH_QUADS * QUAD_INSTANCE_BYTES) as u64;
+const INSTANCE_BUFFER_BYTES: u64 = (2 * MAX_BATCH_QUADS * LIT_INSTANCE_BYTES) as u64;
 
 pub(crate) struct SceneGpu {
     format: wgpu::TextureFormat,
@@ -80,6 +82,7 @@ impl SceneGpu {
         queue: &wgpu::Queue,
         format: wgpu::TextureFormat,
         atlas: &AtlasImage,
+        antialiasing: crate::Antialiasing,
     ) -> Self {
         let extent = wgpu::Extent3d {
             width: atlas.width(),
@@ -192,14 +195,17 @@ impl SceneGpu {
                 entry_point: Some("vs_main"),
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
                 buffers: &[Some(wgpu::VertexBufferLayout {
-                    array_stride: QUAD_INSTANCE_BYTES as u64,
+                    array_stride: LIT_INSTANCE_BYTES as u64,
                     step_mode: wgpu::VertexStepMode::Instance,
                     attributes: &INSTANCE_ATTRIBUTES,
                 })],
             },
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
+            multisample: wgpu::MultisampleState {
+                count: antialiasing.samples(),
+                ..Default::default()
+            },
             fragment: Some(wgpu::FragmentState {
                 module: &module,
                 entry_point: Some("fs_main"),
@@ -275,8 +281,8 @@ impl SceneGpu {
             *chunk = value.to_ne_bytes();
         }
         queue.write_buffer(&self.uniform, 0, &screen);
-        let tile_bytes = instance_bytes(tiles.instances());
-        let sprite_bytes = instance_bytes(sprites.instances());
+        let tile_bytes = sprites.lighting.opaque_instance_bytes(tiles.instances());
+        let sprite_bytes = sprites.lighting.instance_bytes(sprites.instances());
         if !tile_bytes.is_empty() {
             queue.write_buffer(&self.instances, 0, &tile_bytes);
         }

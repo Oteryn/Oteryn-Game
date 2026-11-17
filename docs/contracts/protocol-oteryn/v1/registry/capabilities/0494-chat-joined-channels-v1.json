@@ -1,0 +1,13 @@
+{
+  "id": 494,
+  "name": "CHAT_JOINED_CHANNELS_V1",
+  "owner_decision": "WU26 chat channels as in Tibia Global; parity rule: current Tibia, then Crystal 201189f8",
+  "owner": "Game private chat channel list (capability 80, domain 12 delta 3) and its durable membership",
+  "requires": [
+    80
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only, with CHAT_PRIVATE_CHANNEL_V1. The channel list delta appends repeated field 4 joined_channel, the listed channels the character is in now, ascending and distinct. Without selection the list bytes are unchanged."
+}

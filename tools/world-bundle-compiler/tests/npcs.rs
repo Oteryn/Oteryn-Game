@@ -51,6 +51,7 @@ impl KeyResolver for Resolver {
             kind: TerrainKind::Ground,
             walkable: Some(walkable),
             ground_speed: Some(if walkable { 150 } else { 0 }),
+            blocks_projectile: None,
         };
         match key {
             "terrain:grass" => Ok(Some(ground(true))),
@@ -59,6 +60,7 @@ impl KeyResolver for Resolver {
                 kind: TerrainKind::Wall,
                 walkable: None,
                 ground_speed: None,
+                blocks_projectile: None,
             })),
             "terrain:mystery" => Err(Error::Key("unclassified".into())),
             _ => Ok(None),
@@ -581,6 +583,7 @@ impl KeyResolver for ItemFloors {
             kind,
             walkable,
             ground_speed: None,
+            blocks_projectile: None,
         }))
     }
 
@@ -636,3 +639,15 @@ fn ground_and_walkable_border_items_do_not_block_an_npc_cell() -> TestResult {
     );
     Ok(())
 }
+
+#[path = "npcs/m38_minzy.rs"]
+mod m38_minzy;
+
+#[path = "npcs/m38_mistrock.rs"]
+mod m38_mistrock;
+
+#[path = "npcs/m38_stationary.rs"]
+mod m38_stationary;
+
+#[path = "npcs/m38_zarifan.rs"]
+mod m38_zarifan;

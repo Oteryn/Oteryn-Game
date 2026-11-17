@@ -1,10 +1,10 @@
 {
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
   "kind": "static_content",
-  "notes": "Outfit/addon definitions and acquisition interactions.",
+  "notes": "Canonical catalogue: Citizen fallback plus 13 item-unlock outfits, 8 mounts and 49 explicit grant mappings (47 item and 2 quest base). Production V6 provisioning: content/spells.manifest.json; admission decision NX-5.",
   "owner": "Outfit",
   "path": "content/cosmetics/outfits/",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "repository": "Oteryn/Oteryn-Game",
   "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

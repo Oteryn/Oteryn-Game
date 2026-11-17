@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python3",
+    ".questpc/restart5-quest-status.py"
+  ],
+  "exit": 0,
+  "duration_seconds": 0.568,
+  "log": ".questpc/restart5-status.log"
+}

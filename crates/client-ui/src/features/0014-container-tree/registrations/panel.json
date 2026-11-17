@@ -1,0 +1,7 @@
+{
+  "mechanic": "0014-container-tree",
+  "kind": "panels",
+  "id": "0014-container-tree-browser",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

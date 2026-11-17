@@ -32,6 +32,9 @@ fn wide(s: &str) -> Vec<u16> {
         .collect()
 }
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut mailbox = lock(&link.mailbox);
         if mailbox.exiva.open {
@@ -61,7 +64,7 @@ fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide("Exiva permissions — Ctrl+E").as_ptr(),
+            wide(tr!("Exiva permissions")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
@@ -101,25 +104,31 @@ fn run(
         let add = control(
             hwnd,
             "BUTTON",
-            "Add name",
+            tr!("Add name"),
             (3, 10, 315, 130, 32),
             WS_TABSTOP,
         );
         let remove = control(
             hwnd,
             "BUTTON",
-            "Remove selected",
+            tr!("Remove selected"),
             (4, 150, 315, 130, 32),
             WS_TABSTOP,
         );
-        let refresh = control(hwnd, "BUTTON", "Refresh", (5, 10, 355, 130, 32), WS_TABSTOP);
+        let refresh = control(
+            hwnd,
+            "BUTTON",
+            tr!("Refresh"),
+            (5, 10, 355, 130, 32),
+            WS_TABSTOP,
+        );
         let mut modes = Vec::new();
         for (index, label) in [
-            "Allow everyone",
-            "Allow player list",
-            "Allow own guild",
-            "Allow own party",
-            "Allow VIP list",
+            tr!("Allow everyone"),
+            tr!("Allow player list"),
+            tr!("Allow own guild"),
+            tr!("Allow own party"),
+            tr!("Allow VIP list"),
         ]
         .iter()
         .enumerate()
@@ -182,7 +191,7 @@ fn run(
                     && commands.send(PlayCommand::Exiva(payload)).is_err()
                 {
                     mailbox.exiva.pending = false;
-                    mailbox.exiva.error = Some("Session ended");
+                    mailbox.exiva.error = Some(tr!("Session ended"));
                 }
             }
             let panel = &mailbox.exiva;

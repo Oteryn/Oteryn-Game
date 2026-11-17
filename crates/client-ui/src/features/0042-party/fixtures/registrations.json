@@ -2,19 +2,65 @@
   {
     "mechanic": "0042-party",
     "kind": "handlers",
-    "id": "0042-party-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0042-party-feedback",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "capability": 42,
+    "entry": "protocol.rs::push_feedback",
+    "shared_commands": [
+      13
+    ],
+    "push_messages": [
+      "ChatLine"
+    ],
+    "reducer": "protocol.rs::push_feedback",
+    "test": "tests.rs::shared_refusal_text_reaches_party_projection_only_for_a_shared_request"
+  },
+  {
+    "mechanic": "0042-party",
+    "kind": "handlers",
+    "id": "0042-party-intent",
+    "status": "supported",
     "commands": [
-      45,
+      45
+    ],
+    "direction": "client_to_server",
+    "capability": 42,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Party membership and permissions are server-owned."
+    }
+  },
+  {
+    "mechanic": "0042-party",
+    "kind": "keybindings",
+    "id": "0042-party-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+SHIFT+G",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0042-party",
+    "kind": "panels",
+    "id": "0042-party-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0042-party",
+    "kind": "handlers",
+    "id": "0042-party-query",
+    "status": "supported",
+    "commands": [
       46
     ],
+    "direction": "client_to_server",
+    "capability": 42,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "Party membership and permissions are server-owned."
     }
   }
 ]

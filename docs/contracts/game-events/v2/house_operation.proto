@@ -8,7 +8,7 @@ message HouseOperationV1 {
   string house = 2;
   bytes account = 3;
   bytes character = 4;
-  uint32 kind = 5; // 1 bid edit, 2 winner, 3 refund, 4 disposition
+  uint32 kind = 5; // 1 bid edit, 2 winner, 3 refund, 4 disposition, 5 ownership transfer
   uint64 maximum = 6;
   uint64 first_rent = 7;
   uint64 price = 8;
@@ -29,6 +29,7 @@ message HouseOperationV1 {
   int64 due_at_unix_ms = 23;
   optional bytes census_digest = 24;
   repeated HouseDispositionTransferV1 transfers = 25; // <=100; immutable reclaim subject
+  optional HouseOwnershipTransferV1 ownership_transfer = 26;
 }
 message HouseEligibilityV1 {
   bytes account = 1;
@@ -58,4 +59,22 @@ message HouseDispositionTransferV1 {
   bytes item = 1;
   bytes reclaim_subject = 2;
   uint64 ordinal = 3;
+}
+
+// T135: Game gold held on acceptance; refund or seller payment plus rent burn.
+message HouseOwnershipTransferV1 {
+  bytes offer = 1;
+  bytes seller = 2;
+  bytes recipient = 3;
+  bytes seller_account = 4;
+  bytes recipient_account = 5;
+  uint32 action = 6; // 3 offer, 4 cancel, 5 accept, 6 reject, 7 handover
+  uint32 state = 7; // 1 offered, 2 accepted, 3 cancelled, 4 rejected, 5 handed over
+  uint64 price = 8;
+  uint64 rent = 9;
+  int64 due_at_unix_ms = 10;
+  uint64 reserved_gold = 11;
+  uint64 refunded_gold = 12;
+  uint64 seller_payment = 13;
+  uint64 rent_burn = 14;
 }

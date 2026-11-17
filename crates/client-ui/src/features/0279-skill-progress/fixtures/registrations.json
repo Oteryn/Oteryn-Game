@@ -1,0 +1,33 @@
+[
+  {
+    "mechanic": "0279-skill-progress",
+    "kind": "keybindings",
+    "id": "0279-skill-progress-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+ALT+SHIFT+K",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0279-skill-progress",
+    "kind": "panels",
+    "id": "0279-skill-progress-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0279-skill-progress",
+    "kind": "handlers",
+    "id": "0279-skill-progress-query",
+    "status": "supported",
+    "commands": [
+      495
+    ],
+    "direction": "client_to_server",
+    "capability": 279,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "Trained progress is server-owned; no local settings modify it."
+    }
+  }
+]

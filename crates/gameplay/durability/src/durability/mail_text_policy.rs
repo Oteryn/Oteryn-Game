@@ -30,11 +30,37 @@ impl NativeGameplayMailTextPolicyExt for NativeGameplayState {
             &record.semantics,
             definition,
         )?;
-        Ok(MailTextPolicy::from_qualified_content(
+        let mut result = MailTextPolicy::from_qualified_content(
             definition.clone(),
             policy.source_digest(),
             maximum,
-        ))
+        );
+        if let ReferenceItemField::Known(text) = &record.semantics.readable_writeable
+            && let ReferenceItemField::Known(target) = &text.write_once_target
+        {
+            let target_policy = self
+                .item_policy(&target.key, &target.revision)
+                .ok_or(ItemTextWriteError::NotWritable)?;
+            let fixed = target_policy.record();
+            if !fixed.admission.materializable
+                || fixed.admission.stack_class != NativeItemStackClass::NonStackable
+                || !fixed
+                    .admission
+                    .legal_destinations
+                    .contains(&NativeItemDestination::CharacterInventory)
+                || !matches!(&fixed.semantics.readable_writeable, ReferenceItemField::Known(text)
+                    if text.readable == ReferenceItemField::Known(true)
+                        && text.writeable == ReferenceItemField::Known(false))
+            {
+                return Err(ItemTextWriteError::NotWritable);
+            }
+            result.write_once_target = Some(TypedDefinitionRef {
+                family: fixed.production_definition.family.clone(),
+                production_key: target.key.clone(),
+                revision_ref: target.revision.clone(),
+            });
+        }
+        Ok(result)
     }
 }
 
@@ -75,7 +101,10 @@ fn qualified_profile(
                 if text.readable == ReferenceItemField::Known(true)
                     && text.writeable == ReferenceItemField::Known(true)
                     && text.max_text_length == ReferenceItemField::Known(maximum)
-                    && matches!(text.write_once_target, ReferenceItemField::NotApplicable)
+                    && (matches!(text.write_once_target, ReferenceItemField::NotApplicable)
+                        || matches!(&text.write_once_target, ReferenceItemField::Known(target)
+                            if !matches!(requested.production_key.as_str(), "oteryn:item.tibia.i3505" | "oteryn:item.tibia.i3507")
+                                && target.key != requested.production_key && !target.key.is_empty() && !target.revision.is_empty()))
         )
     {
         return Err(ItemTextWriteError::NotWritable);
@@ -126,6 +155,25 @@ mod tests {
                 revision_ref: "definition-r1".into(),
             },
         )
+    }
+
+    #[test]
+    fn gap_sv2_i04_explicit_non_mail_write_once_source_is_qualified()
+    -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let (definition, admission, mut semantics, requested) =
+            fields("oteryn:item.tibia.i2818", 1023);
+        let ReferenceItemField::Known(text) = &mut semantics.readable_writeable else {
+            return Err("text fixture".into());
+        };
+        text.write_once_target = ReferenceItemField::Known(ReferenceItemTarget {
+            key: "oteryn:item.tibia.i2834".into(),
+            revision: "definition-r1".into(),
+        });
+        assert_eq!(
+            qualified_profile(&definition, &admission, &semantics, &requested)?,
+            1023
+        );
+        Ok(())
     }
 
     #[test]
@@ -292,9 +340,8 @@ mod tests {
             .active()
             .and_then(|active| active.native_gameplay())
             .ok_or("production gameplay activation missing")?;
-        // Scroll is the existing materializable rewrite; MAIL E09 admits the letter and the
-        // parcel label (Canary items.xml 3505, 3507) at their accepted limits. Do not widen
-        // mint permission for the content-only books, the stamped letter or blackboards.
+        // MAIL E09 retains the letter/label limits. SRX-1 additionally admits
+        // portable documents; fixed text and Ground-only blackboards stay refused.
         let requested = TypedDefinitionRef {
             family: "Item".into(),
             production_key: "oteryn:item.tibia.i2815".into(),
@@ -307,18 +354,55 @@ mod tests {
                 ..requested.clone()
             })?;
         }
+        for (id, maximum, target) in [
+            (2813, 511, None),
+            (2814, 1023, None),
+            (2817, 1023, Some(2819)),
+            (2818, 1023, Some(2834)),
+            (2839, 1023, Some(2824)),
+            (7879, 1023, None),
+        ] {
+            let document = TypedDefinitionRef {
+                production_key: format!("oteryn:item.tibia.i{id}"),
+                ..requested.clone()
+            };
+            let policy = native.mail_text_policy(&document)?;
+            assert_eq!(
+                policy.write_once_target,
+                target.map(|id| TypedDefinitionRef {
+                    production_key: format!("oteryn:item.tibia.i{id}"),
+                    ..requested.clone()
+                })
+            );
+            let record = native
+                .item_policy(&document.production_key, &document.revision_ref)
+                .ok_or("document profile")?
+                .record();
+            assert_eq!(
+                qualified_profile(
+                    &record.production_definition,
+                    &record.admission,
+                    &record.semantics,
+                    &document
+                )?,
+                maximum
+            );
+        }
         for id in [
-            173, 177, 2598, 2605, 2813, 2814, 2816, 2817, 2818, 2819, 2824, 2834, 2837, 2839, 3506,
-            6386, 6533, 6538, 7879, 8747, 27932, 27933, 27934,
+            173, 177, 637, 639, 641, 2598, 2605, 2816, 2819, 2824, 2834, 2837, 3506, 6386, 6533,
+            6538, 8747, 27932, 27933, 27934,
         ] {
             let other = TypedDefinitionRef {
                 production_key: format!("oteryn:item.tibia.i{id}"),
                 ..requested.clone()
             };
-            assert!(matches!(
-                native.mail_text_policy(&other),
-                Err(ItemTextWriteError::NotWritable)
-            ));
+            assert!(
+                matches!(
+                    native.mail_text_policy(&other),
+                    Err(ItemTextWriteError::NotWritable)
+                ),
+                "{other:?}"
+            );
         }
         for other in [
             TypedDefinitionRef {

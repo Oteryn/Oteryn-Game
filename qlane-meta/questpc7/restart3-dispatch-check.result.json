@@ -1,0 +1,5 @@
+{
+  "command": "CARGO_BUILD_JOBS=4 /home/mole/oteryn-cache/codex-bin/cargo check --locked --offline -p oteryn-gameplay-dispatch --all-targets --all-features --quiet",
+  "exit": 0,
+  "log": ".questpc/restart3-dispatch-check.log"
+}

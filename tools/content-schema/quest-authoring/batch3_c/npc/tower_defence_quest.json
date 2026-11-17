@@ -1,0 +1,259 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.tower_defence_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+      "quest": "oteryn:quest.tower_defence_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bunny_bonecrusher.lua:64-85"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/door",
+      "quest": "oteryn:quest.tower_defence_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/thanita.lua:64-72"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/tower-defence/offer",
+      "quest": "oteryn:quest.tower_defence_quest",
+      "npc": "oteryn:npc.bunny_bonecrusher",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "op": "lt",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Normally we don't assign missions to civilians - and particularly to MALE civilians - but in this case I think we can make an exception. ...",
+        "I need a courier to deliver a parcel to the watchtower in Femor Hills. You think you can handle that??"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bunny_bonecrusher.lua:66-67"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tower-defence/request-password",
+      "quest": "oteryn:quest.tower_defence_quest",
+      "npc": "oteryn:npc.bunny_bonecrusher",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "op": "eq",
+          "value": 4
+        }
+      ],
+      "reply": [
+        "Alright, you delivered the parcel. So what is the password Thanita told you?"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bunny_bonecrusher.lua:71-71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tower-defence/accept",
+      "quest": "oteryn:quest.tower_defence_quest",
+      "npc": "oteryn:npc.bunny_bonecrusher",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [],
+      "reply": [
+        "I am not sure if I should be glad now or not but anyway ... you will get a password so I will know if you just threw it away or actually delivered it. Here is the parcel. See you ....or not."
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i140",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bunny_bonecrusher.lua:75-75"
+      ],
+      "topics": [
+        1
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tower-defence/reward",
+      "quest": "oteryn:quest.tower_defence_quest",
+      "npc": "oteryn:npc.bunny_bonecrusher",
+      "trigger": "say",
+      "keywords": [
+        "password*"
+      ],
+      "guards": [],
+      "reply": [
+        "That's right. Here is your reward some elementary arrows. You did pretty well on your mission!"
+      ],
+      "effects": [
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i762",
+          "count": 50
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i774",
+          "count": 50
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i763",
+          "count": 50
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i761",
+          "count": 50
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "value": 5
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bunny_bonecrusher.lua:80-80"
+      ],
+      "topics": [
+        2
+      ],
+      "exclude_keywords": [
+        "mission"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tower-defence/deliver-parcel",
+      "quest": "oteryn:quest.tower_defence_quest",
+      "npc": "oteryn:npc.thanita",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Oh great! Supplies from Carlin! Let me see ...<she digs into the parcel>...ahh, nothing meaningful at all, like always. Well, before I give you the password for the delivery, you have to help me! ...",
+        "I have massive problems with the goblin tribe that lives here. You look strong enough to face their leader but you need to be smart to lure him out. ...",
+        "I heard they don't like fire very much, maybe that's worth a try. Their beds are mostly made of straw which is known as easily inflammable. ...",
+        "The entrance to their cave is at the pond south east of here."
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i140",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "value": 2
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/door",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/thanita.lua:66-69"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/tower-defence/receive-password",
+      "quest": "oteryn:quest.tower_defence_quest",
+      "npc": "oteryn:npc.thanita",
+      "trigger": "say",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "op": "eq",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Impressive!! I could need someone like you here at the watchtower! Okay, the password you need to tell Bunny is ' password* '. Come back and visit me if you like to!"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline",
+          "value": 4
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/thanita.lua:75-75"
+      ]
+    }
+  ]
+}

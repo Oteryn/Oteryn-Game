@@ -1,0 +1,3467 @@
+{
+  "schema": "OTERYN_QUESTS4_FINAL_DISPOSITION/v1",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "stage1_report_commit": "a80c080878034db477b6868eac5d49da4dd3ba13",
+  "decision_urls": [
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950",
+    "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590298958"
+  ],
+  "npc_adapter_scope_question": "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+  "summary": {
+    "quest": "the_first_dragon",
+    "frozen_stage1": {
+      "total": 59,
+      "auto": 4,
+      "manual": 55
+    },
+    "authored_callback_definitions": 4,
+    "runtime_catalogue_callback_definitions": 4,
+    "runtime_exclusions": [],
+    "npc_source_files": 4,
+    "complete_runtime_quest_claim": false,
+    "implemented_summary": "4 callbacki wyjścia oraz pełne źródła rozmów, w tym quiz.",
+    "left_out_summary": "Brak UID wejść, wyjść i skrzyń; boss phases, party credit, outfity i nowy caller quizu poza zakresem."
+  },
+  "steps": [
+    {
+      "cluster": "explorer",
+      "cluster_row": 81,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Tamoril: otwarcie prób",
+        "pattern": "P09/P15",
+        "trigger": "Tamoril: first dragon → rumours → descendants → draconic incitements → find → yes → yes",
+        "condition": "14 stycznia–12 lutego wg os.date; topic5→6",
+        "effect": "Questline co najmniej1; ChestCounter inicjalizowany0 gdy<0; DragonCounter, GelidrazahAccess, SecretsCounter bezwarunkowo0",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 80,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Tamoril: first dragon → rumours → descendants → draconic incitements → find → yes → yes”: warunki 14 stycznia–12 lutego wg os.date; topic5→6; wynik Questline co najmniej1; ChestCounter inicjalizowany0 gdy<0; DragonCounter, GelidrazahAccess, SecretsCounter bezwarunkowo0. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Konkretny caller Tamoril musi obliczać źródłowy okres14sty–12lut w UTC i zapisać5 własnych tracków z różną inicjalizacją/resetem. Nie zastępować go bezwarunkowym startem; brak nowego NPC adaptera podlega aktualnej decyzji."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "canonical-unset-tracks"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/tamoril.lua:60"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589066987"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 82,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Próba Tazhadur: licznik smoków",
+        "pattern": "P08/P21",
+        "trigger": "TheFirstDragonDragonTaskDeath na Dragon; onDeathForParty(mostDamageKiller)",
+        "condition": "DragonCounter>=0 i <200",
+        "effect": "DragonCounter+1; bez party lub bez shared experience: mostDamageKiller; przy aktywnym shared experience: wszyscy members+leader; helper nie sprawdza odległości",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 81,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „TheFirstDragonDragonTaskDeath na Dragon; onDeathForParty(mostDamageKiller)”: warunki DragonCounter>=0 i <200; wynik DragonCounter+1; bez party lub bez shared experience: mostDamageKiller; przy aktywnym shared experience: wszyscy members+leader; helper nie sprawdza odległości. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak zamkniętego handoffu Dragon onDeathForParty: mostDamageKiller albo members+leader przy active shared experience, dokładnie bez donorowego testu odległości, licznik0..199→+1."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/creaturescripts_kill_dragon.lua:3",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/functions.lua:1064",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data/libs/functions/party.lua:129",
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/monster/dragons/dragon.lua:16"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 83,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14001",
+        "pattern": "P05/P08",
+        "trigger": "use UID14001",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje giant shimmering pearl×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 82,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14001”: warunki storage[UID]<=0; brak guard Questline; wynik daje giant shimmering pearl×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14001], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:2"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14001
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 84,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14002",
+        "pattern": "P05/P08",
+        "trigger": "use UID14002",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje 3040 gold nugget×2; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 83,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14002”: warunki storage[UID]<=0; brak guard Questline; wynik daje 3040 gold nugget×2; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14002], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:6"
+        ],
+        "item_facts": {
+          "3040": {
+            "key": "oteryn:item.tibia.i3040",
+            "definition": {
+              "path": "content/items/definitions/items-17500-17999.json",
+              "line": 1,
+              "record": 346,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i3040",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 425,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i3040",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14002
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 85,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14003",
+        "pattern": "P05/P08",
+        "trigger": "use UID14003",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje blue crystal shard×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 84,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14003”: warunki storage[UID]<=0; brak guard Questline; wynik daje blue crystal shard×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14003], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:11"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14003
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 86,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14004",
+        "pattern": "P05/P08",
+        "trigger": "use UID14004",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje violet crystal shard×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 85,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14004”: warunki storage[UID]<=0; brak guard Questline; wynik daje violet crystal shard×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14004], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:15"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14004
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 87,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14005",
+        "pattern": "P05/P08",
+        "trigger": "use UID14005",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje green crystal splinter×2; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 86,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14005”: warunki storage[UID]<=0; brak guard Questline; wynik daje green crystal splinter×2; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14005], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:19"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14005
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 88,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14006",
+        "pattern": "P05/P08",
+        "trigger": "use UID14006",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje 3039 red gem×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 87,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14006”: warunki storage[UID]<=0; brak guard Questline; wynik daje 3039 red gem×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14006], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:23"
+        ],
+        "item_facts": {
+          "3039": {
+            "key": "oteryn:item.tibia.i3039",
+            "definition": {
+              "path": "content/items/definitions/items-17500-17999.json",
+              "line": 1,
+              "record": 337,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i3039",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 424,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i3039",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14006
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 89,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14007",
+        "pattern": "P05/P08",
+        "trigger": "use UID14007",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje onyx chip×3; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 88,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14007”: warunki storage[UID]<=0; brak guard Questline; wynik daje onyx chip×3; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14007], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:28"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14007
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 90,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14008",
+        "pattern": "P05/P08",
+        "trigger": "use UID14008",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje platinum coin×3; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 89,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14008”: warunki storage[UID]<=0; brak guard Questline; wynik daje platinum coin×3; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14008], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:32"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14008
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 91,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14009",
+        "pattern": "P05/P08",
+        "trigger": "use UID14009",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje red crystal fragment×2; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 90,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14009”: warunki storage[UID]<=0; brak guard Questline; wynik daje red crystal fragment×2; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14009], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:36"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14009
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 92,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14010",
+        "pattern": "P05/P08",
+        "trigger": "use UID14010",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje yellow gem×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 91,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14010”: warunki storage[UID]<=0; brak guard Questline; wynik daje yellow gem×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14010], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:40"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14010
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 93,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14011",
+        "pattern": "P05/P08",
+        "trigger": "use UID14011",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje talon×3; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 92,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14011”: warunki storage[UID]<=0; brak guard Questline; wynik daje talon×3; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14011], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:44"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14011
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 94,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14012",
+        "pattern": "P05/P08",
+        "trigger": "use UID14012",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje white pearl×2; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 93,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14012”: warunki storage[UID]<=0; brak guard Questline; wynik daje white pearl×2; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14012], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:48"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14012
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 95,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14013",
+        "pattern": "P05/P08",
+        "trigger": "use UID14013",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje gold ingot×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 94,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14013”: warunki storage[UID]<=0; brak guard Questline; wynik daje gold ingot×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14013], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:52"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14013
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 96,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14014",
+        "pattern": "P05/P08",
+        "trigger": "use UID14014",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje opal×3; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 95,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14014”: warunki storage[UID]<=0; brak guard Questline; wynik daje opal×3; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14014], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:56"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14014
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 97,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14015",
+        "pattern": "P05/P08",
+        "trigger": "use UID14015",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje small diamond×2; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 96,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14015”: warunki storage[UID]<=0; brak guard Questline; wynik daje small diamond×2; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14015], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:60"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14015
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 98,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14016",
+        "pattern": "P05/P08",
+        "trigger": "use UID14016",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje green crystal shard×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 97,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14016”: warunki storage[UID]<=0; brak guard Questline; wynik daje green crystal shard×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14016], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:64"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14016
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 99,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14017",
+        "pattern": "P05/P08",
+        "trigger": "use UID14017",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje black pearl×3; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 98,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14017”: warunki storage[UID]<=0; brak guard Questline; wynik daje black pearl×3; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14017], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:68"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14017
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 100,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14018",
+        "pattern": "P05/P08",
+        "trigger": "use UID14018",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje emerald bangle×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 99,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14018”: warunki storage[UID]<=0; brak guard Questline; wynik daje emerald bangle×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14018], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:72"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14018
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 101,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14019",
+        "pattern": "P05/P08",
+        "trigger": "use UID14019",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje green gem×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 100,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14019”: warunki storage[UID]<=0; brak guard Questline; wynik daje green gem×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14019], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:76"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14019
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 102,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Skrzynia skarbów 14020",
+        "pattern": "P05/P08",
+        "trigger": "use UID14020",
+        "condition": "storage[UID]<=0; brak guard Questline",
+        "effect": "daje giant shimmering pearl×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 101,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14020”: warunki storage[UID]<=0; brak guard Questline; wynik daje giant shimmering pearl×1; storage[UID]=1; ChestCounter+1; jeśli counter przed>=19: Treasure Hunter. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14020], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_treasure_chest.lua:80"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14020
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 103,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Sekret Zorvorax DesertTile",
+        "pattern": "P03/P08",
+        "trigger": "stepin AID25002",
+        "condition": "DesertTile<1; brak Questline guard",
+        "effect": "DesertTile=1; SecretsCounter+1; odpowiadający tekst miejsca",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 102,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin AID25002”: warunki DesertTile<1; brak Questline guard; wynik DesertTile=1; SecretsCounter+1; odpowiadający tekst miejsca. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[], AID=[25002]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_zorvorax_secrets.lua:2"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": [
+            25002
+          ]
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 104,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Sekret Zorvorax StoneSculptureTile",
+        "pattern": "P03/P08",
+        "trigger": "stepin AID25003",
+        "condition": "StoneSculptureTile<1; brak Questline guard",
+        "effect": "StoneSculptureTile=1; SecretsCounter+1; odpowiadający tekst miejsca",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 103,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin AID25003”: warunki StoneSculptureTile<1; brak Questline guard; wynik StoneSculptureTile=1; SecretsCounter+1; odpowiadający tekst miejsca. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[], AID=[25003]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_zorvorax_secrets.lua:6"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": [
+            25003
+          ]
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 105,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Sekret Zorvorax SuntowerTile",
+        "pattern": "P03/P08",
+        "trigger": "stepin AID25004",
+        "condition": "SuntowerTile<1; brak Questline guard",
+        "effect": "SuntowerTile=1; SecretsCounter+1; odpowiadający tekst miejsca",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 104,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin AID25004”: warunki SuntowerTile<1; brak Questline guard; wynik SuntowerTile=1; SecretsCounter+1; odpowiadający tekst miejsca. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[], AID=[25004]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_zorvorax_secrets.lua:10"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": [
+            25004
+          ]
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 106,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Gelidrazah: trzy odpowiedzi",
+        "pattern": "P09/P13",
+        "trigger": "Gelidrazahs Thirst: yes → yes → Tahmehe → Ishara → Svir",
+        "condition": "topic0→1→2→3→4",
+        "effect": "GelidrazahAccess=1; błędna odpowiedź nie zmienia etapu",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 105,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Dane są źródłowo zamknięte i nie wymagają Item/foreign mutation. Przygotowany nowy batch4_npcs Quest adapter, pełne topics, unit RED stubs i source placements przeniesiono do deferred-npc-runtime; aktywne2 promocje usunięto. Docelowy status LEFT_OUT_SHARED_ADAPTER wynika z aktualnego ANSWER, a pytanie o wyjątek6590007979 pozostaje bez odpowiedzi.",
+          "Brak podłączonej źródłowej funkcji dla „Gelidrazahs Thirst: yes → yes → Tahmehe → Ishara → Svir”: warunki topic0→1→2→3→4; wynik GelidrazahAccess=1; błędna odpowiedź nie zmienia etapu. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/gelidrazahs_thirst.lua:57"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "source_closed_plain_branch": true,
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 107,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Wejście Tazhadur",
+        "pattern": "P03/P06/P17",
+        "trigger": "stepin UID35001",
+        "condition": "Questline>=1; DragonCounter>=200; pusty pokój range10; canFightBoss",
+        "effect": "spawn Tazhadur@32018,32465,8; teleport32015,32466,8; cooldown2h; clearBossRoom30min (tekst10min)",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 106,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin UID35001”: warunki Questline>=1; DragonCounter>=200; pusty pokój range10; canFightBoss; wynik spawn Tazhadur@32018,32465,8; teleport32015,32466,8; cooldown2h; clearBossRoom30min (tekst10min). Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[35001], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_entrance_teleport.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35001
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 108,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Wejście Kalyassa",
+        "pattern": "P03/P06/P17",
+        "trigger": "stepin UID35002",
+        "condition": "Questline>=1; ChestCounter>=4; pusty pokój range10; canFightBoss",
+        "effect": "spawn Kalyassa@32079,32459,8; teleport32078,32456,8; cooldown2h; clearBossRoom30min (tekst10min)",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 107,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin UID35002”: warunki Questline>=1; ChestCounter>=4; pusty pokój range10; canFightBoss; wynik spawn Kalyassa@32079,32459,8; teleport32078,32456,8; cooldown2h; clearBossRoom30min (tekst10min). Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[35002], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_entrance_teleport.lua:12"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35002
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 109,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Wejście Zorvorax",
+        "pattern": "P03/P06/P17",
+        "trigger": "stepin UID35003",
+        "condition": "Questline>=1; SecretsCounter>=3; pusty pokój range10; canFightBoss",
+        "effect": "spawn Zorvorax@32015,32396,8; teleport32008,32396,8; cooldown2h; clearBossRoom30min (tekst10min)",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 108,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin UID35003”: warunki Questline>=1; SecretsCounter>=3; pusty pokój range10; canFightBoss; wynik spawn Zorvorax@32015,32396,8; teleport32008,32396,8; cooldown2h; clearBossRoom30min (tekst10min). Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[35003], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_entrance_teleport.lua:21"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35003
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 110,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Wejście Gelidrazah The Frozen",
+        "pattern": "P03/P06/P17",
+        "trigger": "stepin UID35004",
+        "condition": "Questline>=1; GelidrazahAccess>=1; pusty pokój range10; canFightBoss",
+        "effect": "spawn Gelidrazah The Frozen@32078,32400,8; teleport32076,32402,8; cooldown2h; clearBossRoom30min (tekst10min)",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 109,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin UID35004”: warunki Questline>=1; GelidrazahAccess>=1; pusty pokój range10; canFightBoss; wynik spawn Gelidrazah The Frozen@32078,32400,8; teleport32076,32402,8; cooldown2h; clearBossRoom30min (tekst10min). Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[35004], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_entrance_teleport.lua:30"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35004
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 111,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Wyjście UID35005",
+        "pattern": "P03",
+        "trigger": "stepin UID35005",
+        "condition": "gracz",
+        "effect": "teleport33234,32278,12",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "AUTO",
+        "row_zero_based": 110,
+        "status": "IMPLEMENTED_CORE_INGRESS_LEFT_OUT",
+        "implemented_parts": [
+          "Źródłowy callback First Dragon exit35005 zachowany w authored batch input. Obecny w wygenerowanym runtime catalogue z istniejącym parser/Quest/world caller."
+        ],
+        "left_out_parts": [
+          "Nie jest to dowód kompletnego ani przechodniego questa.",
+          "Brak exact native map binding: UID=[35005], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35005
+          ],
+          "aid": []
+        },
+        "callback_key": "oteryn:quest-callback/first-dragon-exit-35005",
+        "runtime_callback_present": true,
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 112,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Wyjście UID35006",
+        "pattern": "P03",
+        "trigger": "stepin UID35006",
+        "condition": "gracz",
+        "effect": "teleport33162,31320,5",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "AUTO",
+        "row_zero_based": 111,
+        "status": "IMPLEMENTED_CORE_INGRESS_LEFT_OUT",
+        "implemented_parts": [
+          "Źródłowy callback First Dragon exit35006 zachowany w authored batch input. Obecny w wygenerowanym runtime catalogue z istniejącym parser/Quest/world caller."
+        ],
+        "left_out_parts": [
+          "Nie jest to dowód kompletnego ani przechodniego questa.",
+          "Brak exact native map binding: UID=[35006], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:7"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35006
+          ],
+          "aid": []
+        },
+        "callback_key": "oteryn:quest-callback/first-dragon-exit-35006",
+        "runtime_callback_present": true,
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 113,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Wyjście UID35007",
+        "pattern": "P03",
+        "trigger": "stepin UID35007",
+        "condition": "gracz",
+        "effect": "teleport33002,31595,11",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "AUTO",
+        "row_zero_based": 112,
+        "status": "IMPLEMENTED_CORE_INGRESS_LEFT_OUT",
+        "implemented_parts": [
+          "Źródłowy callback First Dragon exit35007 zachowany w authored batch input. Obecny w wygenerowanym runtime catalogue z istniejącym parser/Quest/world caller."
+        ],
+        "left_out_parts": [
+          "Nie jest to dowód kompletnego ani przechodniego questa.",
+          "Brak exact native map binding: UID=[35007], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:11"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35007
+          ],
+          "aid": []
+        },
+        "callback_key": "oteryn:quest-callback/first-dragon-exit-35007",
+        "runtime_callback_present": true,
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 114,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Wyjście UID35008",
+        "pattern": "P03",
+        "trigger": "stepin UID35008",
+        "condition": "gracz",
+        "effect": "teleport32278,31367,4",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "AUTO",
+        "row_zero_based": 113,
+        "status": "IMPLEMENTED_CORE_INGRESS_LEFT_OUT",
+        "implemented_parts": [
+          "Źródłowy callback First Dragon exit35008 zachowany w authored batch input. Obecny w wygenerowanym runtime catalogue z istniejącym parser/Quest/world caller."
+        ],
+        "left_out_parts": [
+          "Nie jest to dowód kompletnego ani przechodniego questa.",
+          "Brak exact native map binding: UID=[35008], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:15"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35008
+          ],
+          "aid": []
+        },
+        "callback_key": "oteryn:quest-callback/first-dragon-exit-35008",
+        "runtime_callback_present": true,
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 115,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Ofiara Scale",
+        "pattern": "P02/P08",
+        "trigger": "item24939 na25160@33047,32712,3",
+        "condition": "Scale<1; AccessCave<4",
+        "effect": "AccessCave<0 inicjalizuje0 (przed testem celu); poprawny cel: AccessCave+1, Scale=1, zużywa24939×1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 114,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „item24939 na25160@33047,32712,3”: warunki Scale<1; AccessCave<4; wynik AccessCave<0 inicjalizuje0 (przed testem celu); poprawny cel: AccessCave+1, Scale=1, zużywa24939×1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_sacrifice_items.lua:2"
+        ],
+        "item_facts": {
+          "24939": {
+            "key": "oteryn:item.tibia.i24939",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 266,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i24939",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 1858,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i24939",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          },
+          "25160": {
+            "key": "oteryn:item.tibia.i25160",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 476,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25160",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 116,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Ofiara Tooth",
+        "pattern": "P02/P08",
+        "trigger": "item24940 na25160@33047,32712,3",
+        "condition": "Tooth<1; AccessCave<4",
+        "effect": "AccessCave<0 inicjalizuje0 (przed testem celu); poprawny cel: AccessCave+1, Tooth=1, zużywa24940×1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 115,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „item24940 na25160@33047,32712,3”: warunki Tooth<1; AccessCave<4; wynik AccessCave<0 inicjalizuje0 (przed testem celu); poprawny cel: AccessCave+1, Tooth=1, zużywa24940×1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_sacrifice_items.lua:3"
+        ],
+        "item_facts": {
+          "24940": {
+            "key": "oteryn:item.tibia.i24940",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 268,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i24940",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 1859,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i24940",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          },
+          "25160": {
+            "key": "oteryn:item.tibia.i25160",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 476,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25160",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 117,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Ofiara Horn",
+        "pattern": "P02/P08",
+        "trigger": "item24941 na25160@33047,32712,3",
+        "condition": "Horn<1; AccessCave<4",
+        "effect": "AccessCave<0 inicjalizuje0 (przed testem celu); poprawny cel: AccessCave+1, Horn=1, zużywa24941×1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 116,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „item24941 na25160@33047,32712,3”: warunki Horn<1; AccessCave<4; wynik AccessCave<0 inicjalizuje0 (przed testem celu); poprawny cel: AccessCave+1, Horn=1, zużywa24941×1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_sacrifice_items.lua:4"
+        ],
+        "item_facts": {
+          "24941": {
+            "key": "oteryn:item.tibia.i24941",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 269,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i24941",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 1860,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i24941",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          },
+          "25160": {
+            "key": "oteryn:item.tibia.i25160",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 476,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25160",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 118,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Ofiara Bones",
+        "pattern": "P02/P08",
+        "trigger": "item24942 na25160@33047,32712,3",
+        "condition": "Bones<1; AccessCave<4",
+        "effect": "AccessCave<0 inicjalizuje0 (przed testem celu); poprawny cel: AccessCave+1, Bones=1, zużywa24942×1",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 117,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „item24942 na25160@33047,32712,3”: warunki Bones<1; AccessCave<4; wynik AccessCave<0 inicjalizuje0 (przed testem celu); poprawny cel: AccessCave+1, Bones=1, zużywa24942×1. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_sacrifice_items.lua:5"
+        ],
+        "item_facts": {
+          "24942": {
+            "key": "oteryn:item.tibia.i24942",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 270,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i24942",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 1861,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i24942",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          },
+          "25160": {
+            "key": "oteryn:item.tibia.i25160",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 476,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25160",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 119,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Lair: przejście z 33047,32712,3",
+        "pattern": "P03",
+        "trigger": "use item25160@33047,32712,3",
+        "condition": "AccessCave>3",
+        "effect": "teleport31994,32391,9",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 118,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use item25160@33047,32712,3”: warunki AccessCave>3; wynik teleport31994,32391,9. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_lair_entrance.lua:9"
+        ],
+        "item_facts": {
+          "25160": {
+            "key": "oteryn:item.tibia.i25160",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 476,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25160",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 120,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Lair: przejście z 31994,32390,9",
+        "pattern": "P03",
+        "trigger": "use item25160@31994,32390,9",
+        "condition": "AccessCave>3",
+        "effect": "teleport33047,32713,3",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 119,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use item25160@31994,32390,9”: warunki AccessCave>3; wynik teleport33047,32713,3. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_lair_entrance.lua:13"
+        ],
+        "item_facts": {
+          "25160": {
+            "key": "oteryn:item.tibia.i25160",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 476,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25160",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": null
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 121,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Teleport sezonowy do finału",
+        "pattern": "P03/P15/P17",
+        "trigger": "stepin UID24889",
+        "condition": "14 stycznia–12 lutego; FirstDragonTimer<os.time()",
+        "effect": "teleport33585,30990,14; odmowa fromPosition; ten callback nie zapisuje timera",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 120,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „stepin UID24889”: warunki 14 stycznia–12 lutego; FirstDragonTimer<os.time(); wynik teleport33585,30990,14; odmowa fromPosition; ten callback nie zapisuje timera. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[24889], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_last_teleport.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            24889
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 122,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Finał: dźwignia i rozstawienie",
+        "pattern": "P06/P27/P30",
+        "trigger": "use@33583,30992,14",
+        "condition": "BossLever; maks15 pozycji graczy; pokój33566,31006,14–33626,31032,14",
+        "effect": "cooldown20h; 15 docelowych miejsc; SomewhatBeatable=0; Spirit of Fertility+5 Fallen Challenger+5 Unbeatable Dragon; exit33597,30994,14",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 121,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use@33583,30992,14”: warunki BossLever; maks15 pozycji graczy; pokój33566,31006,14–33626,31032,14; wynik cooldown20h; 15 docelowych miejsc; SomewhatBeatable=0; Spirit of Fertility+5 Fallen Challenger+5 Unbeatable Dragon; exit33597,30994,14. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_lever.lua:1"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 123,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Finał: Fallen Challenger jako portal",
+        "pattern": "P16/P30",
+        "trigger": "FallenDeath z corpse",
+        "condition": "corpse istnieje",
+        "effect": "corpse destination33621,31023,14; usuwa item1949 po30s",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 122,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „FallenDeath z corpse”: warunki corpse istnieje; wynik corpse destination33621,31023,14; usuwa item1949 po30s. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/creaturescripts_death_fallen.lua:10"
+        ],
+        "item_facts": {
+          "1949": {
+            "key": "oteryn:item.tibia.i1949",
+            "definition": {
+              "path": "content/items/definitions/items-08500-08999.json",
+              "line": 1,
+              "record": 140,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i1949",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 200,
+              "admission": {
+                "legal_destinations": [
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "NonStackable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i1949",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 124,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Finał: Spirit of Fertility na blossom",
+        "pattern": "P24/P30",
+        "trigger": "monster stepin item3657 UID1066",
+        "condition": "name dokładnie Spirit of Fertility",
+        "effect": "usuwa Spirit; spawn Angry Plant na pozycji; usuwa blossom",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 123,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „monster stepin item3657 UID1066”: warunki name dokładnie Spirit of Fertility; wynik usuwa Spirit; spawn Angry Plant na pozycji; usuwa blossom. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[1066], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_heaven_blossom.lua:3"
+        ],
+        "item_facts": {
+          "3657": {
+            "key": "oteryn:item.tibia.i3657",
+            "definition": {
+              "path": "content/items/definitions/items-21500-21999.json",
+              "line": 1,
+              "record": 300,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i3657",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 715,
+              "admission": {
+                "legal_destinations": [
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "NonStackable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i3657",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            1066
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 125,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Finał: śmierć Angry Plant",
+        "pattern": "P07/P30",
+        "trigger": "AngryPlantDeath",
+        "condition": "corpse istnieje",
+        "effect": "ustawia corpse UNIQUEID1066",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 124,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „AngryPlantDeath”: warunki corpse istnieje; wynik ustawia corpse UNIQUEID1066. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/creaturescripts_death_angry_plant.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 126,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Finał: Unbeatable Dragon na bowl",
+        "pattern": "P24/P30",
+        "trigger": "monster stepin item2983 UID1066",
+        "condition": "name dokładnie Unbeatable Dragon",
+        "effect": "usuwa dragon; spawn Somewhat Beatable na pozycji; nie usuwa bowl",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 125,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „monster stepin item2983 UID1066”: warunki name dokładnie Unbeatable Dragon; wynik usuwa dragon; spawn Somewhat Beatable na pozycji; nie usuwa bowl. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[1066], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_flower_bowl.lua:3"
+        ],
+        "item_facts": {
+          "2983": {
+            "key": "oteryn:item.tibia.i2983",
+            "definition": {
+              "path": "content/items/definitions/items-17000-17499.json",
+              "line": 1,
+              "record": 382,
+              "materializable": false,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2983",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 388,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "NonStackable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i2983",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            1066
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 127,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Finał: pięć Somewhat Beatable",
+        "pattern": "P07/P08/P27/P30",
+        "trigger": "SomewhatBeatableDeath",
+        "condition": "gracze w spectators33617,31023,14 range14; counter<5",
+        "effect": "counter+1; dla każdego gracza counter=5 spawn6 Dragon Essence losowo x33609..33624,y31017..31028,z14; counter=0",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 126,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „SomewhatBeatableDeath”: warunki gracze w spectators33617,31023,14 range14; counter<5; wynik counter+1; dla każdego gracza counter=5 spawn6 Dragon Essence losowo x33609..33624,y31017..31028,z14; counter=0. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/creaturescripts_death_somewhat_beatable.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 128,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Finał: Dragon Essence i First Dragon",
+        "pattern": "P07/P27/P30",
+        "trigger": "DragonEssenceDeath",
+        "condition": "spectators33617,31023,14 range14",
+        "effect": "usuwa wszystkie Dragon Essence w obszarze; spawn The First Dragon@33617,31023,14",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 127,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „DragonEssenceDeath”: warunki spectators33617,31023,14 range14; wynik usuwa wszystkie Dragon Essence w obszarze; spawn The First Dragon@33617,31023,14. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/creaturescripts_death_dragon_essence.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 129,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Finał: śmierć First Dragon",
+        "pattern": "P07/P21",
+        "trigger": "FirstDragonDeath",
+        "condition": "każdy gracz spectators33617,31023,14 range14; brak damage-map gate",
+        "effect": "teleport33617,31020,13; Feathers<1→1; lista15 destinations deklarowana ale niewykorzystana",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 128,
+        "status": "LEFT_OUT_SHARED_ADAPTER",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „FirstDragonDeath”: warunki każdy gracz spectators33617,31023,14 range14; brak damage-map gate; wynik teleport33617,31020,13; Feathers<1→1; lista15 destinations deklarowana ale niewykorzystana. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Wymaga wspólnego ownera room occupancy/spawn/clearBossRoom/BossLever lub dynamic corpse/monster transformation. W02/WorldBundle/Instance/BossActivity rozszerzenia są Left out (ANSWER6589513391 pkt5). Źródłowe cooldown2h/clear30min oraz finał20h pozostają dokładnie w danych, mimo tekstu10min."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/creaturescripts_death_first_dragon.lua:21"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 130,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Nagroda NPC First Dragon",
+        "pattern": "P09/P12",
+        "trigger": "The First Dragon: reward",
+        "condition": "Feathers=1",
+        "effect": "outfit929/931 addon0; Feathers=2; efekt MAGIC_BLUE",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 129,
+        "status": "LEFT_OUT_FOREIGN_DEPENDENCY",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „The First Dragon: reward”: warunki Feathers=1; wynik outfit929/931 addon0; Feathers=2; efekt MAGIC_BLUE. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Outfit929/931 i addons0/1/2 wymagają odrębnego właściciela outfit/addon; nie zastąpiono nagrody innym przedmiotem. ANSWER pkt6 i nowy zakaz wspólnego ownera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/the_first_dragon.lua:57"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 131,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Nagroda końcowa UID14021",
+        "pattern": "P05/P17",
+        "trigger": "use UID14021",
+        "condition": "Feathers=2; RewardMask<os.time()",
+        "effect": "dajeporcelain mask×1; RewardMask=now+5 dni; zawartość plecaka jawnie w actions_rewards.lua:1–18",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 130,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14021”: warunki Feathers=2; RewardMask<os.time(); wynik dajeporcelain mask×1; RewardMask=now+5 dni; zawartość plecaka jawnie w actions_rewards.lua:1–18. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14021], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_rewards.lua:48"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14021
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 132,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Nagroda końcowa UID14022",
+        "pattern": "P05/P17",
+        "trigger": "use UID14022",
+        "condition": "Feathers=2; RewardBackpack<os.time()",
+        "effect": "dajebackpack +16 rodzajów zawartości×1; RewardBackpack=now+365 dni; zawartość plecaka jawnie w actions_rewards.lua:1–18",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 131,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14022”: warunki Feathers=2; RewardBackpack<os.time(); wynik dajebackpack +16 rodzajów zawartości×1; RewardBackpack=now+365 dni; zawartość plecaka jawnie w actions_rewards.lua:1–18. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14022], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_rewards.lua:52"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14022
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 133,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Nagroda końcowa UID14023",
+        "pattern": "P05/P17",
+        "trigger": "use UID14023",
+        "condition": "Feathers=2; RewardFeather<os.time()",
+        "effect": "dajecolourful feathers×3; RewardFeather=now+1 dni; zawartość plecaka jawnie w actions_rewards.lua:1–18",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 132,
+        "status": "LEFT_OUT_MAP_BINDING",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „use UID14023”: warunki Feathers=2; RewardFeather<os.time(); wynik dajecolourful feathers×3; RewardFeather=now+1 dni; zawartość plecaka jawnie w actions_rewards.lua:1–18. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Brak exact native map binding: UID=[14023], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/actions_rewards.lua:66"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            14023
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 134,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Muriel: pierwszy Festive addon",
+        "pattern": "P10/P12",
+        "trigger": "Muriel: addons/yes/yes/mask",
+        "condition": "Feathers=2 dla wejścia addons; Addon1=1; 25088×3",
+        "effect": "zabiera25088×3; outfit929/931 addon1; Addon1=2; inicjalizacja Addon1=1 za topic3",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 133,
+        "status": "LEFT_OUT_FOREIGN_DEPENDENCY",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Muriel: addons/yes/yes/mask”: warunki Feathers=2 dla wejścia addons; Addon1=1; 25088×3; wynik zabiera25088×3; outfit929/931 addon1; Addon1=2; inicjalizacja Addon1=1 za topic3. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Outfit929/931 i addons0/1/2 wymagają odrębnego właściciela outfit/addon; nie zastąpiono nagrody innym przedmiotem. ANSWER pkt6 i nowy zakaz wspólnego ownera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/muriel.lua:97"
+        ],
+        "item_facts": {
+          "25088": {
+            "key": "oteryn:item.tibia.i25088",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 401,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25088",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 1865,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "NonStackable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i25088",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "KNOWN",
+                "value": {
+                  "patterns": {
+                    "state": "KNOWN",
+                    "value": [
+                      {
+                        "additional_reserved_slots": {
+                          "state": "KNOWN",
+                          "value": []
+                        },
+                        "compatibility_rule": {
+                          "state": "UNKNOWN"
+                        },
+                        "level": {
+                          "state": "UNKNOWN"
+                        },
+                        "mutually_exclusive_groups": {
+                          "state": "KNOWN",
+                          "value": []
+                        },
+                        "pattern_id": 1,
+                        "primary_slot": {
+                          "state": "KNOWN",
+                          "value": "HEAD"
+                        },
+                        "vocations": {
+                          "state": "UNKNOWN"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 135,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Muriel: drugi Festive addon",
+        "pattern": "P10/P12",
+        "trigger": "Muriel: addons/yes/feather",
+        "condition": "Feathers=2 dla wejścia addons; Addon2=1; 25089×50",
+        "effect": "zabiera25089×50; outfit929/931 addon2; Addon2=2; inicjalizacja Addon2=1 za topic4",
+        "existing": "CZĘŚCIOWO — katalog `content/quests/definitions/quests-00200-00299.json` i tracks `content/quests/missions/quest-state.json`; brak dowodu podłączenia tej gałęzi",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 134,
+        "status": "LEFT_OUT_FOREIGN_DEPENDENCY",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brak podłączonej źródłowej funkcji dla „Muriel: addons/yes/feather”: warunki Feathers=2 dla wejścia addons; Addon2=1; 25089×50; wynik zabiera25089×50; outfit929/931 addon2; Addon2=2; inicjalizacja Addon2=1 za topic4. Pełne dane źródłowe są zachowane. Nowy parser/adapter/owner/router jest objęty ANSWER6589897950; nie jest to twierdzenie, że brak danych albo samo niewykonanie implementacji wystarczało wcześniej do Left out.",
+          "Outfit929/931 i addons0/1/2 wymagają odrębnego właściciela outfit/addon; nie zastąpiono nagrody innym przedmiotem. ANSWER pkt6 i nowy zakaz wspólnego ownera."
+        ],
+        "question_ids": [
+          "batch4-quest-specific-npc-adapters"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/muriel.lua:121"
+        ],
+        "item_facts": {
+          "25089": {
+            "key": "oteryn:item.tibia.i25089",
+            "definition": {
+              "path": "content/items/definitions/items-13500-13999.json",
+              "line": 1,
+              "record": 402,
+              "materializable": true,
+              "kind": "Item",
+              "identity": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i25089",
+                "revision": "definition-r1"
+              }
+            },
+            "profile": {
+              "path": "content/items/definitions/spell-native-profiles.json",
+              "line": 1,
+              "record": 1866,
+              "admission": {
+                "legal_destinations": [
+                  "CharacterInventory",
+                  "Ground"
+                ],
+                "materializable": true,
+                "stack_class": "StackCapable"
+              },
+              "definition": {
+                "family": "Item",
+                "production_key": "oteryn:item.tibia.i25089",
+                "revision_ref": "definition-r1"
+              },
+              "equipment": {
+                "state": "NOT_APPLICABLE"
+              },
+              "fluid": {
+                "state": "UNKNOWN"
+              },
+              "attributes": {
+                "blocks_movement": false,
+                "blocks_projectile": false,
+                "field_condition": null,
+                "field_replaceable": null,
+                "has_height": false,
+                "immovable_block_solid": false,
+                "rune_consumption": null,
+                "speed_bonus": 0,
+                "spell_augments": []
+              }
+            }
+          }
+        },
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6590007979"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 209,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Prezentacja: Wyjście UID35005",
+        "pattern": "P03",
+        "trigger": "stepin UID35005",
+        "condition": "gracz",
+        "effect": "TELEPORT na docelowej pozycji gracza",
+        "existing": "NIE w zamkniętym modelu `crates/gameplay/quests/src/quest/world_callbacks.rs:84`; wymagany adapter prezentacji sukcesu",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 208,
+        "status": "LEFT_OUT_PRESENTATION",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brakuje przekazania do właściciela prezentacji capability23: TELEPORT na docelowej pozycji gracza. ANSWER6589897950 pkt2 jawnie pozostawia efekty i typ mowy do osobnego PR.",
+          "Brak exact native map binding: UID=[35005], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-feedback-presentation",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:3"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35005
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 210,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Prezentacja: Wyjście UID35006",
+        "pattern": "P03",
+        "trigger": "stepin UID35006",
+        "condition": "gracz",
+        "effect": "TELEPORT na docelowej pozycji gracza",
+        "existing": "NIE w zamkniętym modelu `crates/gameplay/quests/src/quest/world_callbacks.rs:84`; wymagany adapter prezentacji sukcesu",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 209,
+        "status": "LEFT_OUT_PRESENTATION",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brakuje przekazania do właściciela prezentacji capability23: TELEPORT na docelowej pozycji gracza. ANSWER6589897950 pkt2 jawnie pozostawia efekty i typ mowy do osobnego PR.",
+          "Brak exact native map binding: UID=[35006], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-feedback-presentation",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:7"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35006
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 211,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Prezentacja: Wyjście UID35007",
+        "pattern": "P03",
+        "trigger": "stepin UID35007",
+        "condition": "gracz",
+        "effect": "TELEPORT na docelowej pozycji gracza",
+        "existing": "NIE w zamkniętym modelu `crates/gameplay/quests/src/quest/world_callbacks.rs:84`; wymagany adapter prezentacji sukcesu",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 210,
+        "status": "LEFT_OUT_PRESENTATION",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brakuje przekazania do właściciela prezentacji capability23: TELEPORT na docelowej pozycji gracza. ANSWER6589897950 pkt2 jawnie pozostawia efekty i typ mowy do osobnego PR.",
+          "Brak exact native map binding: UID=[35007], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-feedback-presentation",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:11"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35007
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    },
+    {
+      "cluster": "explorer",
+      "cluster_row": 212,
+      "question_urls": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317"
+      ],
+      "disposition": {
+        "quest": "the_first_dragon",
+        "step": "Prezentacja: Wyjście UID35008",
+        "pattern": "P03",
+        "trigger": "stepin UID35008",
+        "condition": "gracz",
+        "effect": "TELEPORT na docelowej pozycji gracza",
+        "existing": "NIE w zamkniętym modelu `crates/gameplay/quests/src/quest/world_callbacks.rs:84`; wymagany adapter prezentacji sukcesu",
+        "import_mode": "RĘCZNIE",
+        "row_zero_based": 211,
+        "status": "LEFT_OUT_PRESENTATION",
+        "implemented_parts": [],
+        "left_out_parts": [
+          "Brakuje przekazania do właściciela prezentacji capability23: TELEPORT na docelowej pozycji gracza. ANSWER6589897950 pkt2 jawnie pozostawia efekty i typ mowy do osobnego PR.",
+          "Brak exact native map binding: UID=[35008], AID=[]. Census wszystkich1208 regionów/31119 sektorów nie znalazł tych attrs; nie zgadywać pozycji ani dopisywać UID/AID. Dla dynamicznego1066 w finale dochodzi właściciel mechaniki bossa, a nie założenie statycznego spawn celu."
+        ],
+        "question_ids": [
+          "batch4-feedback-presentation",
+          "missing-unique-map-bindings"
+        ],
+        "decisions": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589513391",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589897950"
+        ],
+        "sources": [
+          "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_first_dragon/movements_exit_teleport.lua:15"
+        ],
+        "item_facts": {},
+        "blocked_inventory_items": [],
+        "missing_native_selectors": {
+          "uid": [
+            35008
+          ],
+          "aid": []
+        },
+        "question_urls": [
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589846317",
+          "https://github.com/Oteryn/Oteryn-Game/pull/2842#issuecomment-6589067831"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,601 @@
+{
+  "lane": "npcfix",
+  "target_branch": "claude/happy-davinci-ijz3wy-qm-npcfix",
+  "assignment": "M38",
+  "state": "IN_PROGRESS",
+  "new_migration_range": "2140-2149",
+  "current_slice": {
+    "name": "Exact-occurrence conditional NPC actor projection",
+    "state": "GREEN",
+    "production_api": "oteryn_gameplay_entities::ConditionalNpcActor",
+    "red": {
+      "unit": "another quest's copy must survive",
+      "pg_seconds": 0.233288979,
+      "pg_marker": "POSTGRES_STARTED NPCFIX_M38 conditional NPC occurrence projection"
+    },
+    "green": {
+      "unit_tests": 259,
+      "integration_tests": 2,
+      "doctests": 4,
+      "pg_seconds": 0.355733197,
+      "clippy": "cargo clippy -p oteryn-gameplay-entities --all-targets -- -D warnings",
+      "fmt": "cargo fmt --all --check"
+    },
+    "migration": "none",
+    "scope": "One admitted occurrence reconciles committed availability, with replay and generation-safe cleanup. Content/event bindings and other M38 rows remain unfinished.",
+    "code_commit": "8cc2aaf7e"
+  },
+  "legacy_handoff": {
+    "local_branch": "claude/happy-davinci-ijz3wy-npcfix",
+    "saved_head": "9bacece303995f3f70fdc1dd6a1b882f58a0cd76",
+    "stash": "npcfix retained legacy handoff and M38 Mistrock PG source before isolated mechanic slice",
+    "state": "retained locally; not claimed delivered to qmech"
+  },
+  "swan_slice": {
+    "state": "GREEN_FOCUSED",
+    "npc": "oteryn:npc.a_swan",
+    "source_cell": [
+      33185,
+      31732,
+      7
+    ],
+    "scope": "Published stationary Threatened Dreams contact; ordinary compiler admission already accepts its exact cell. No general collision exception or whole-quest completion is claimed.",
+    "red": "source placement is not published; 0 != 1 in authoring test",
+    "green": {
+      "authoring_tests": 10,
+      "npc_compiler_tests": 8,
+      "clippy": "PASS",
+      "fmt": "PASS",
+      "duplicate_migrations": "PASS",
+      "world_pin_refresh_seconds": 124.967
+    },
+    "broader_authoring_checks": "PASS on merged batch: checks,111 unit modules,content-tree validation",
+    "new_migrations": []
+  },
+  "hoaxette_slice": {
+    "state": "GREEN_FOCUSED_BOOT_PENDING",
+    "code_commit": "d06fa01e7",
+    "scope": "April-only conditional source occurrence, exact actor retirement; not the NPC services or whole quest",
+    "source_cell": [
+      32380,
+      32215,
+      7
+    ],
+    "source": "content/npcs/definitions/npcs-00500-00999.json records[107] source metadata, BR revision357473",
+    "red_pg_seconds": 11.705896845,
+    "green_pg_seconds": 16.201671309,
+    "focused_tests": 3,
+    "clippy": "PASS game-server and quests all-targets, -D warnings",
+    "pin_check": "PASS after qmech merge",
+    "migrations": [],
+    "boot": "initial image-download attempt interrupted for stable publication; full18 variants pending",
+    "green_post_merge_pg_seconds": 12.841554544,
+    "authoring": {
+      "checks_seconds": 716.94,
+      "unit_modules": 111,
+      "unit_seconds": 1321.755,
+      "content_tree_seconds": 411.744,
+      "exit": 0
+    },
+    "auto_mounted_pg": "PASS including frozen-calendar occupied-anchor deferral and retry",
+    "workspace_check": {
+      "exit": 0,
+      "seconds": 703.271,
+      "command": "cargo check --locked --workspace --all-targets"
+    },
+    "source_evidence": {
+      "file": "content/npcs/definitions/npcs-00500-00999.json:1#records/107",
+      "coordinate_source_sha256": "1033268693d2b2353d40f007576190e41c18b6467fddcda13797b4ab6ebed2da",
+      "description_source_sha256": "034492a01371fb96f64bcfbb494f7a9c696cfcd602728a4427c8dcae863dc61c",
+      "retail_placement_equivalence_claim": false
+    },
+    "fmt": "PASS",
+    "merged_qmech": "a8c2bf20c",
+    "clippy_seconds": 523.514,
+    "latest_green_pg_seconds": 9.4342814
+  },
+  "mistrock_slice": {
+    "state": "GREEN_FOCUSED",
+    "source_cell": [
+      32640,
+      31437,
+      7
+    ],
+    "scope": "Reuses existing Beregar native rules; publishes the missing contact and tests guarded progress and replay",
+    "red": {
+      "authoring": "0 != 1 published placements",
+      "compiler_seconds": 28.86,
+      "compiler_error": "M38 Mistrock source placement is not published"
+    },
+    "green": {
+      "authoring_tests": 11,
+      "authoring_seconds": 0.444,
+      "compiler_tests": 1,
+      "compiler_seconds": 29.89,
+      "pin_refresh_seconds": 64.08,
+      "pg_eligible_replay_seconds": 257.887529366,
+      "pg_ineligible_seconds": 256.50464213
+    },
+    "pg_cases": [
+      "npcfix_m38_mistrock_source_dialogue_commits_once_and_replays_postgres",
+      "npcfix_m38_mistrock_requires_current_premium_postgres"
+    ],
+    "pg_state": "Both real PostgreSQL cases passed after current entitlement refresh",
+    "premium_policy": "Existing questpc2_live_eligibility prerequisite preserved",
+    "migration": "none",
+    "pg_no_entitlement_seconds": 134.828247516,
+    "pg_last_red": "eligible case returned 0 dialogue lines; expected 2",
+    "pg_fix": "Current session premium gate refreshed and asserted; rerun passed",
+    "world_pin_refresh_seconds": 64.08,
+    "publication": "cd0beb21f1101d49af214be518f472ddadfe87c2, verified on origin"
+  },
+  "merge_policy": "Owner override: no more qmech/main merges; committed merge3f5d54a83 retained",
+  "zarifan_slice": {
+    "state": "GREEN_FOCUSED",
+    "code_commit": "48076c67b8fb211f1252ad96a7a62c595c82da3f",
+    "safety_commit": "aaeeca77d029668f0f54654c9a51bf02e3abc0bb",
+    "source_cell": [
+      33040,
+      32484,
+      11
+    ],
+    "red": "BlockSolid at the exact retained source anchor",
+    "green": {
+      "real_map_seconds": 108.88,
+      "authoring_tests": 12,
+      "safety_tests": 2,
+      "clippy": "PASS",
+      "fmt": "PASS",
+      "world_pin_check": "PASS"
+    },
+    "scope": "Explicit solid-object contact permission; every other terrain hold and movement collision remain intact"
+  },
+  "conditional_return_slice": {
+    "state": "GREEN_FOCUSED_BOOT_PENDING",
+    "scope": "Defer CellOccupied only and retry exact source occurrence; strict errors remain visible",
+    "red": "Error: CellOccupied",
+    "green": {
+      "focused_cases": 5,
+      "pg_seconds": 0.23507951,
+      "pg_marker": "POSTGRES_CASE_COMPLETED NPCFIX_M38 conditional NPC occurrence projection",
+      "clippy": "PASS all-targets all-features -D warnings",
+      "server_focused_cases": 4,
+      "server_pg_seconds": 9.4342814,
+      "server_clippy": "PASS all-targets -D warnings",
+      "fmt": "PASS",
+      "pin_check": "PASS"
+    },
+    "caller": "Hoaxette timed-NPC tick now defers occupied anchors and retries later",
+    "api_commit": "90381fab932642f456fdf1580b5076487d4099c5",
+    "workspace_check": "PASS after preserving both collected M20 test sets under distinct namespaces"
+  },
+  "latest_authoring": {
+    "checks": "PASS exit 0",
+    "unit_modules": 114,
+    "unit_exit": 0,
+    "content_tree": "PASS exit 0",
+    "scope": "Zarifan content slice; no content changes in the return-retry slices"
+  },
+  "workspace_compile_repair": {
+    "state": "GREEN",
+    "source": "crates/gameplay/quests/src/quest/reward_callbacks/recipe_tests.rs",
+    "red": "E0428: two m20 recipe test function names defined multiple times",
+    "fix": "Keep both collected bodies in a distinct test namespace; all assertions retained",
+    "focused_tests": 5,
+    "focused_seconds": 0.03,
+    "clippy": "PASS quests all-targets -D warnings",
+    "production_behavior_change": false,
+    "workspace_all_targets": "PASS",
+    "fmt": "PASS",
+    "pin_check": "PASS sequential rerun after concurrent verification was killed",
+    "duplicate_migrations": "PASS"
+  },
+  "minzy_contact_slice": {
+    "state": "GREEN_BASIC_CONTACT_LIVE_PG",
+    "scope": "Published source-informed basic contact; favour exchanges and source-accurate off-event presence remain unqualified",
+    "source_cell": [
+      32743,
+      31971,
+      12
+    ],
+    "source": "content/npcs/definitions/npcs-00500-00999.json:1#records/295",
+    "source_sha256": "792ec5bbc93991f54d94d97ca9149f6ae8df781f2bb93eb7ccc77949bba6df62",
+    "red": {
+      "authoring": "0 != 1 contacts",
+      "compiler_seconds": 25.0,
+      "compiler": "M38 Minzy source placement is not published"
+    },
+    "green": {
+      "placement_authoring_tests": 14,
+      "real_map_seconds": 24.69,
+      "compiler_clippy": "PASS all-targets -D warnings",
+      "fmt": "PASS",
+      "native_regeneration": "PASS",
+      "world_pin_refresh": "PASS",
+      "content_tree": "PASS",
+      "duplicate_migrations": "PASS",
+      "quest_authoring_checks": "PASS exit 0",
+      "quest_authoring_unit_modules": 114,
+      "quest_authoring_unit_exit": 0,
+      "workspace_all_targets": "PASS 15m30s",
+      "pg_case": "npcfix_m38_minzy_basic_contact_and_stale_actor_are_fenced_postgres",
+      "pg_seconds": 116.972860194,
+      "pg_marker": "POSTGRES_CASE_COMPLETED NPCFIX_M38_MINZY",
+      "dispatch_clippy": "PASS all-targets all-features -D warnings",
+      "pg_story_fmt": "PASS",
+      "pg_story_pin_check": "PASS"
+    },
+    "pending": [
+      "dialogue engine workspace all-target recheck",
+      "full node-boot matrix remains pending for M38"
+    ],
+    "migrations": [],
+    "dialogue_admission": {
+      "source": "crates/gameplay/npc/src/npc_talk/literal_contacts.rs",
+      "scope": [
+        "name",
+        "job",
+        "story"
+      ],
+      "red_unit": "Minzy literal contact is not admitted",
+      "red_pg": "name returned [] instead of I am known as Minzy.",
+      "red_pg_seconds": 117.09,
+      "green_cases": 3,
+      "green_seconds": 52.11,
+      "clippy": "PASS npc all-targets -D warnings",
+      "fmt": "PASS",
+      "pin_check": "PASS",
+      "policy_revision_bound": true,
+      "api_commit": "4024aa021f8378144204ffbd609b68feaa6f7c54"
+    }
+  },
+  "rascalio_event_slice": {
+    "state": "GREEN_FOCUSED",
+    "binding": "nimmersatts_lair",
+    "anchor": [
+      32259,
+      31643,
+      7
+    ],
+    "red_seconds": 7.17,
+    "red": "PostgreSQL committed active=true; expected 2 occurrences, got 1",
+    "scope": "Projects committed world-change presence at the Carlin anchor only; preserves other Rascalio roles. Event producer/schedule and Banor anchor remain unqualified.",
+    "migration": "none",
+    "green_pg_seconds": 7.996967822,
+    "test": "m38_rascalio_postgres_event_presence_preserves_other_quest_occurrences",
+    "checks": [
+      "strict game-server all-target/all-feature clippy PASS 4m02s",
+      "cargo fmt --all --check PASS",
+      "World pin-check PASS (unchanged inputs)",
+      "duplicate migrations PASS"
+    ]
+  },
+  "rascalio_literal_slice": {
+    "state": "GREEN_FOCUSED",
+    "red_seconds": 45.64,
+    "green_seconds": 51.93,
+    "unit_cases": 3,
+    "test": "m38_rascalio_event_contact_answers_literal_topics_without_granting_travel",
+    "production": "Closed name/job leaves and neutral, player-name-rendered greeting; talk-book policy revision updated",
+    "scope": "Basic dialogue only; ferrying, event producer/schedule and whole M38 remain unfinished",
+    "checks": [
+      "strict NPC all-target/all-feature Clippy PASS",
+      "fmt PASS",
+      "duplicate migration check PASS"
+    ],
+    "pg": {
+      "state": "GREEN",
+      "seconds": 109.392083377,
+      "test": "npcfix_m38_rascalio_basic_contact_and_stale_actor_are_fenced_postgres",
+      "proof": [
+        "POSTGRES_STARTED NPCFIX_M38 Rascalio basic source contact",
+        "POSTGRES_CASE_COMPLETED NPCFIX_M38_RASCALIO duration=109.392083377s"
+      ],
+      "coverage": [
+        "exact Carlin anchor",
+        "rendered neutral greeting",
+        "name/job leaves",
+        "same-command replay",
+        "passage stays closed",
+        "stale generation refused",
+        "unchanged fee receipts"
+      ],
+      "checks": [
+        "strict dispatch all-target/all-feature Clippy PASS 5m22s",
+        "fmt PASS",
+        "duplicate migrations PASS"
+      ]
+    }
+  },
+  "guarded_travel_slice": {
+    "state": "GREEN_FOCUSED",
+    "mechanic": "Optional quest_clear_gate in the existing quote/commit owner",
+    "red_pg_seconds": 8.92,
+    "red": "fine=100 with permission granted quoted100 instead of UnavailableRoute",
+    "green_pg_seconds": 9.752431968,
+    "test": "npcfix_m38_travel_permission_and_clear_fine_are_both_required_postgres",
+    "unit_cases": 2,
+    "coverage": [
+      "fenced quest writer changes state",
+      "permission absent/granted",
+      "fine absent/positive/zero/negative",
+      "malformed key refusal",
+      "legacy routes unchanged",
+      "no quote fee or arrival writes",
+      "guard track bound into replay hash"
+    ],
+    "scope": "Reusable guard only. Captain Jack remains held pending native Costello permission/fine producers and physical qualification. No whole quest or M38 completion claim.",
+    "migration": "none",
+    "checks": [
+      "World pin-check PASS",
+      "duplicate migrations PASS",
+      "strict content/durability/dispatch all-target/all-feature Clippy PASS 5m54s",
+      "cargo fmt --all --check PASS"
+    ],
+    "remaining_validation": "Fresh workspace all-target compilation and full node-boot matrix remain pending; no PR-ready or whole M38 claim."
+  },
+  "travel_ticket_slice": {
+    "state": "GREEN_FOCUSED",
+    "mechanic": "Optional elapsed ticket requirement in existing paid-travel quote and commit owner",
+    "pg_seconds": 9.919992454,
+    "test": "npcfix_m38_travel_ticket_requires_an_unexpired_server_purchase_postgres",
+    "red": "No purchase existed; quote returned100 instead of UnavailableRoute. Actual PG marker and18.38s two-case dispatch partition retained.",
+    "focused_tests": 8,
+    "fine_guard_regression_pg_seconds": 9.722255115,
+    "source": "docs/reference/tibia-manual/products.md:162 sha256 cf08d91adf258fab093f7e66767374ecd0bdc5a401ce4bdde7e6f918b6b2c2df",
+    "coverage": [
+      "strict24h elapsed window across midnight",
+      "missing/zero/expired/future purchase refusal",
+      "server-owned SetNow purchase",
+      "invalid lifetime refusal",
+      "quotes never renew purchase time",
+      "optional legacy policy unchanged",
+      "track and lifetime included in replay binding"
+    ],
+    "scope": "Requirement only. Ticket-sale/arrival integration and last-port return remain unfinished. Existing routes omit the field; Petros returns remain unrestricted.",
+    "migration": "none",
+    "checks": [
+      "8 focused tests PASS including real PG9.919992454s and fine-guard PG9.722255115s",
+      "cargo check --workspace --all-targets PASS6m13s",
+      "strict content/durability/dispatch all-target/all-feature Clippy PASS6m37s",
+      "fmt PASS",
+      "World pin-check PASS",
+      "duplicate migrations PASS"
+    ]
+  },
+  "temporal_purchase_admission_slice": {
+    "state": "GREEN_UNIT",
+    "mechanic": "Closed fee plus positive-cooldown SetNow callback admission",
+    "red": "Public callback parser rejected a1000-gold timestamp purchase without a dummy item reward",
+    "unit_tests": 33,
+    "test": "m38_travel_temporal_purchase_admits_exact_fee_and_cooldown_stamp",
+    "coverage": [
+      "positive exact fee and positive elapsed cooldown",
+      "free/zero-cost/unguarded/zero-cooldown refresh refusal",
+      "quest completion excluded",
+      "existing callback regressions"
+    ],
+    "checks": [
+      "33 callback unit tests PASS",
+      "workspace all-target check PASS5m35s",
+      "strict quests all-target/all-feature Clippy PASS14.45s",
+      "fmt PASS",
+      "duplicate migrations PASS",
+      "World pin-check PASS"
+    ],
+    "sql": "No SQL write path or schema changed; this slice adds no PG execution claim.",
+    "scope": "Admission capability only. Actual ticket-sale data/arrival and last-port return remain unfinished; no whole M38 completion claim."
+  },
+  "preserved_display_name_consumer": {
+    "state": "GREEN",
+    "names": [
+      "Ferryman Kamil",
+      "Harlow",
+      "Junkar",
+      "Maris"
+    ],
+    "red": "service model ignored authored display names",
+    "tests": "344 passed, 0 failed, 1 pre-existing ignored; 566.52s",
+    "workspace_check": "PASS 6m29s",
+    "clippy": "PASS strict content all-targets/all-features 44.14s",
+    "fmt": "PASS",
+    "pins": "PASS unchanged inputs",
+    "migration": "none",
+    "remaining": "Four native data repairs now restored and locally checked; other M38 bindings remain unfinished."
+  },
+  "preserved_display_name_data": {
+    "state": "GREEN",
+    "count": 4,
+    "keys": [
+      "oteryn:npc.ferryman_kamil_meluna",
+      "oteryn:npc.harlow_vengoth",
+      "oteryn:npc.junkar_mines",
+      "oteryn:npc.maris_mistrock"
+    ],
+    "red": "Two new materializer tests failed before correction implementation",
+    "green": "Two correction tests and repaired existing Quest fixture pass",
+    "authoring_checks": "PASS full checks rerun",
+    "authoring_units": {
+      "modules": 114,
+      "cases": 1145,
+      "state": "PASS full rerun after generated packet fixes"
+    },
+    "content_tree": "PASS; no declarations added or removed; only four display-name fields changed",
+    "workspace_check": "PASS 14m30s",
+    "clippy": "PASS strict changed materializer target 10m26s",
+    "fmt": "PASS",
+    "pins": "PASS after isolated repository pin-refresh",
+    "duplicate_migrations": "PASS; no SQL changed",
+    "validation_limits": "Broader materializer example suite and generator broad integration-check phase were stopped for focused checks, not reported green. No new PG case claimed; no SQL change. Node boot delegated to CI by owner.",
+    "deployment_handoff": {
+      "coordinator_refresh_required": true,
+      "path": "deploy/synology-game/preprod-topology.toml",
+      "action": "coordinator runs pin-refresh after integration; no deployment file changed in lane checkout"
+    },
+    "whole_M38": "PARTIAL"
+  },
+  "node_boot_execution": {
+    "owner_decision": "CI runs node boot; unavailable container qualification is not a blocker",
+    "local": "NOT_RUN",
+    "coordinator_action": "Refresh deployment manifest digest during integration; protected deployment path unchanged by this lane."
+  },
+  "travel_prompt_component": {
+    "state": "GREEN",
+    "capability": "Captured route and context; one or two confirmations; single-use exclusive 60-second deadline",
+    "red": "2 failing expiry cases; 2 passing context/route cases",
+    "green": "4 focused NPC unit cases PASS",
+    "production_wiring": "GREEN: Anna and Seagull use the captured route; explicit Targuna remains disabled pending atomic relocation/citizenship.",
+    "workspace": "PASS 10m44s",
+    "clippy": "PASS strict NPC and quests all-target/all-feature 4m04s",
+    "fmt": "PASS",
+    "pins": "PASS unchanged content inputs",
+    "sql": "unchanged; no new PG claim",
+    "reuse_check": "QENGINE2 97cb9db791482391e77049c8a27fefd659003669 and qmech 0326dc2e5517435bbbe599df2007d835a7ee3477 lack captured travel prompt; no merges",
+    "whole_M38": "PARTIAL"
+  },
+  "optional_binding_watch_fix": {
+    "state": "GREEN",
+    "cause": "Missing optional content/quests/authored-bindings was always watched, forcing repeated Cargo rebuilds",
+    "fix": "Watch nearest existing ancestor until optional directory is created; keep registry scope/limits unchanged",
+    "red": "Real Cargo rebuilt unchanged fixture twice; expected once",
+    "green": "Cargo integration regression PASS 0.47s; unchanged builds cached and first new binding detected"
+  },
+  "travel_prompt_wiring": {
+    "state": "GREEN",
+    "caller": "crates/gameplay/dispatch/src/gameplay_transport/newhaven_travel.rs",
+    "scope": "Existing Anna/Seagull confirmations; captured route used for destination and receipt, ordinary-message validity reads do not consume a confirmation",
+    "tests": "5 focused prompt cases PASS; existing expiry RED carried from component slice",
+    "workspace": "PASS 12m34s",
+    "clippy": "PASS strict NPC/dispatch all-target/all-feature 10m54s",
+    "fmt": "PASS",
+    "pins": "PASS unchanged inputs",
+    "duplicate_migrations": "PASS; no SQL changes",
+    "pg": "No new PG case claimed; SQL/arrival owners unchanged",
+    "whole_M38": "PARTIAL; Targuna, last-port and other unfinished source bindings remain"
+  },
+  "return_port_policy_component": {
+    "state": "GREEN",
+    "api": "TravelReturnRequirement",
+    "scope": "A bounded unique inbound group (1..64 receipt routes), canonical route grammar, exact expected-port match; absent/ambiguous latest history stays closed",
+    "red": "2 positive policy cases failed before implementation; 2 denial cases passed",
+    "green": "4 focused content unit cases PASS",
+    "workspace": "PASS 12m27s",
+    "clippy": "PASS strict content all-target/all-feature 1m24s",
+    "fmt": "PASS",
+    "pins": "PASS unchanged native inputs",
+    "duplicate_migrations": "PASS; no SQL change",
+    "reader_and_native_binding": "NEXT; component does not yet activate a return route",
+    "new_pg_proof": "none; no SQL changed",
+    "whole_M38": "PARTIAL"
+  },
+  "m38_return_receipt_reader": {
+    "state": "GREEN_PUSHED",
+    "migration": "2140_npc_travel_completed_origin.sql",
+    "sql_red_seconds": 0.288316,
+    "sql_green_seconds": 0.147351,
+    "pg_test": "npcfix_m38_travel_return_remembers_only_completed_inbound_ports_postgres",
+    "pg_green_seconds": 23.878212218,
+    "scope": "Fenced read of completed inbound receipt groups; pending/replay/clock repair/stale-session checks. Quote/commit gate and native Petros return wiring remain unfinished.",
+    "publication_checks": {
+      "fmt": "PASS",
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS",
+      "workspace_all_targets": "PASS 15m42s after publication",
+      "clippy": "PASS durability/dispatch all-target/all-feature 16m09s after publication"
+    },
+    "head": "f01758270bea550745ee5662af323f8f16a6a2ff"
+  },
+  "m38_return_origin_gate": {
+    "state": "GREEN_PUSHED",
+    "migration": "none",
+    "pg_test": "npcfix_m38_return_origin_is_rechecked_at_quote_and_commit_postgres",
+    "red": {
+      "seconds": 35.6,
+      "actual": "Ok(0)",
+      "expected": "Err(UnavailableRoute)",
+      "marker": "POSTGRES_STARTED NPCFIX_M38 return-origin quote/commit gate"
+    },
+    "green_seconds": 36.559200869,
+    "regression_pg_seconds": {
+      "permission_and_fine": 13.820097114,
+      "completed_origin_reader": 25.567601634,
+      "ticket": 38.229691628
+    },
+    "scope": "Optional correction/route policy. Shared quote/commit eligibility rechecks latest completed inbound receipt under character root lock. Receipt binding includes expected origin and whole group; None preserves existing v1 receipts. Native Petros ticket/return content remains unfinished.",
+    "model_unit": "PASS 1 test, 0 failed; correction optionality/exact policy/unknown fallback",
+    "publication_checks": {
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS HEAD",
+      "workspace_all_targets": "PASS 16m32s on gate commit 6da7963b9 before redundant-dereference-only correction",
+      "clippy": "PASS strict --lib content/durability/dispatch after replacing redundant explicit transaction dereference; no suppression",
+      "fmt": "PASS cargo fmt --all --check"
+    },
+    "head": "6da7963b9381a50bf2c9128779f208a604ed67cc",
+    "lint_followup": {
+      "change": "Pass tx directly; compiler performs the same dereference coercion",
+      "sql_or_test_changes": false,
+      "sql_conformance_pg_seconds": 0.211019,
+      "full_pg_stories": "Four PASS results above precede this equivalent coercion-only change; not rerun afterward",
+      "fmt": "PASS",
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS HEAD"
+    }
+  },
+  "m38_ticket_clock_binding": {
+    "state": "GREEN_PUSHED",
+    "scope": "Bind timestamp-only paid callback payment terms into its primary quest hash. New bound SetNow effect uses the unchanged evaluator transaction time; no native purchase/data activation.",
+    "reused_from": "qengine2 790996f8e52fef43fe728ec3af4309078f319cd4 (inspected at 6c0bf0ccb)",
+    "encoding_integration_note": "Qengine2 currently encodes both SetNowWithBinding and SetWhenAtLeast with tag11. Preserve published SetWhenAtLeast=11 and SetNow=3; new bound-clock tag=12 on this branch. Coordinator must retain unique tags during integration.",
+    "red": "Fee1000->1001 left primary quest definition hash unchanged: 1 failed executed unit regression",
+    "green": {
+      "focused_units": 5,
+      "focused_seconds": 0.06,
+      "crate_units": 402,
+      "crate_unit_seconds": 238.86,
+      "registry_integration": 1,
+      "registry_seconds": 0.68,
+      "clippy": "PASS quests --all-targets -D warnings 1m49s",
+      "pins": "PASS unchanged inputs",
+      "duplicate_migrations": "PASS HEAD",
+      "fmt": "PASS cargo fmt --all --check"
+    },
+    "sql_changes": false,
+    "pg": "No new SQL/storage mutation path; pure effect encoding/lowering/evaluation change. No new PG claim.",
+    "workspace_all_targets": "PASS 17m54s after publication",
+    "head": "ebbcdddb83b1b5b4108ac7a04be22cae3ef91f75"
+  },
+  "m38_targuna_town_catalogue": {
+    "state": "GREEN_READY_TO_PUSH",
+    "scope": "Retain source town34/area526/Targuna temple31934,31925,7; preserve Newhaven default33. No Anna route activation.",
+    "red": "Source::load returns subarea admission: Targuna town is not admitted; actual failing test8.23s",
+    "green": {
+      "compiler_units": 8,
+      "unit_seconds": 11.21,
+      "real_mask_integration": 1,
+      "integration_seconds": 101.14,
+      "clippy": "PASS world-bundle-compiler all-targets12.60s",
+      "release_tool": "Rebuilt successfully59.31s",
+      "pin_refresh": "PASS repo release tool, rebuilt from current source, isolated copy",
+      "pin_check": "PASS",
+      "fmt": "PASS cargo fmt --all --check",
+      "duplicate_migrations": "PASS HEAD"
+    },
+    "source_evidence": "docs/reference/content-prep/npcfix-m38/anna-targuna.md",
+    "sql_or_migration_changes": false,
+    "world_digest": "fce3240094398fbb07d98014b56583818fa6b6b234cc77eaa580b5b05fa48399",
+    "integration_handoff": "Coordinator must refresh protected deploy/synology-game/preprod-topology.toml to generated digest; lane did not edit it.",
+    "tree_validation": "PASS 34111 items,1282 NPC records,399 services; canonical inputs unchanged",
+    "workspace_all_targets": "PENDING after publication"
+  },
+  "targuna_receipt_schema_slice": {
+    "state": "GREEN_PG_COMPILE_PENDING",
+    "migration": "2141_targuna_free_travel_receipt.sql",
+    "test": "npcfix_m38_targuna_receipt.py",
+    "red_pg_seconds": 0.148875,
+    "green_pg_seconds": 0.086338,
+    "scope": "Exact free receipt destination only; original paid route shape preserved. Anna offer remains disabled; atomic citizenship/arrival and story wiring outstanding.",
+    "fmt": "PASS",
+    "pin_check": "PASS unchanged pins",
+    "workspace_all_targets": "RUNNING; publication requested without holding tested SQL"
+  }
+}

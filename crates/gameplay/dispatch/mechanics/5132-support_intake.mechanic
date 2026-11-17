@@ -1,0 +1,7 @@
+name=support_intake
+commands=6144,6145
+transport=support_intake
+composed=support_intake
+authority=support_intake
+[route]
+routing::support_intake::route(authority, &session.admitted, command).await

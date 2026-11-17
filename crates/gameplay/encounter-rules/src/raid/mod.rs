@@ -9,13 +9,14 @@ mod lua_schedule;
 mod placement;
 mod runner;
 mod schedule;
+pub mod source_claustrophobic;
 
 pub use calendar::{CalendarDay, CalendarSelector};
 pub use catalogue::{
     CatalogueAmount, CatalogueAnnouncement, CatalogueAnnouncementKind, CatalogueArea, CatalogueEnd,
     CatalogueEntry, CatalogueKind, CataloguePosition, CatalogueRaid, CatalogueRegion,
     CatalogueSchedule, CatalogueSpawnMode, CatalogueVariant, CatalogueWave, CatalogueWindow,
-    RaidCatalogue, SelectedRaid,
+    CatalogueWorldChange, RaidCatalogue, SelectedRaid,
 };
 pub use definition::{Announcement, AnnouncementKind, RaidDefinition, RaidPolicy, Wave, WaveEntry};
 pub use lifecycle::{LegacyRaidGate, RaidCalendarWindow, RaidEndDecision, RaidEndPolicy};

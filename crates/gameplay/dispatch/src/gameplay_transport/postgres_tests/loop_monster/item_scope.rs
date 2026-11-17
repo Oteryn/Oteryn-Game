@@ -100,6 +100,9 @@ async fn read_cell(
     let mut map = crate::movement::monster_map::CurrentMonsterMap::new(
         &mut tx, &authority, &runtime, &deps.room, &objects, native,
     );
+    map.prefetch_empty_tiles(&runtime, &[cell(3)])
+        .await
+        .map_err(debug)?;
     let result = map.read(&runtime, cell(3)).await;
     assert!(map.validate_transaction(&runtime).await);
     drop(map);

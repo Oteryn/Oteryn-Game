@@ -955,3 +955,13 @@ fn physical_events_never_run_global_wave_clearance_or_completion() -> Result<(),
     );
     Ok(())
 }
+
+#[test]
+fn t114_soulseal_cost_uses_every_reference_difficulty_and_refuses_unknown_stars() {
+    for stars in 0..=5 {
+        assert_eq!(soulseal_cost(stars), Ok((u16::from(stars) + 1) * 10));
+    }
+    for stars in 6..=u8::MAX {
+        assert!(soulseal_cost(stars).is_err());
+    }
+}

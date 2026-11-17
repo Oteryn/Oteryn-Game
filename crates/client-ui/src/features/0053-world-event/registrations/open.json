@@ -1,0 +1,9 @@
+{
+  "mechanic": "0053-world-event",
+  "kind": "keybindings",
+  "id": "0053-world-event-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+N",
+  "entry": "input.rs::open_key"
+}

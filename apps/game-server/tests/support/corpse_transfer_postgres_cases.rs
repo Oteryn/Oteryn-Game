@@ -40,8 +40,8 @@ use std::time::Duration;
 /// A top-damage identity that is not any fenced Character of these cases.
 pub(crate) const OTHER_TOP: u8 = 150;
 const SECOND_ACCOUNT: u8 = 60;
-const SECOND_CHARACTER: u8 = 61;
-const SECOND_SESSION: u8 = 62;
+pub(crate) const SECOND_CHARACTER: u8 = 61;
+pub(crate) const SECOND_SESSION: u8 = 62;
 /// The death's runtime-scope ownership generation of every corpse below.
 pub(crate) const GENERATION: u64 = 1;
 
@@ -81,7 +81,7 @@ pub(crate) fn command_of(session: u8, value: u64) -> TestResult<CommandRef> {
     ))
 }
 
-fn fence_of(character: u8, session: u8) -> TestResult<CurrentCharacterItemFence> {
+pub(crate) fn fence_of(character: u8, session: u8) -> TestResult<CurrentCharacterItemFence> {
     Ok(CurrentCharacterItemFence {
         character_id: CharacterId::from_bytes(id(character)).map_err(debug)?,
         game_session_id: GameSessionId::decode(&id(session)).map_err(debug)?,
@@ -115,7 +115,7 @@ fn second_bootstrap_binding() -> Vec<u8> {
 /// A second player in the same World and Channel: Character 61 (account 60)
 /// with progression state, an active GameSession 62 and its admission guards; the
 /// runtime-scope assignment and readiness are the harness's, shared.
-async fn seed_second_character(pool: &sqlx::PgPool) -> TestResult {
+pub(crate) async fn seed_second_character(pool: &sqlx::PgPool) -> TestResult {
     sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")
         .bind(id(SECOND_ACCOUNT).as_slice())
         .execute(pool)
@@ -296,14 +296,14 @@ fn forge_loot_entry(
     vec![
         format!(
             "INSERT INTO game_item_mint_reservations \
-               (death_world_id, death_channel_id, death_scope_ownership_generation, \
+               (death_scope_kind,death_scope_key,death_world_id, death_channel_id, death_scope_ownership_generation, \
                 death_actor_local_id, death_actor_local_generation, loot_table_family, \
                 loot_table_production_key, loot_table_revision_ref, loot_purpose_key, \
                 draw_ordinal, intent_binding, transaction_id, event_id, item_instance_id, \
                 occurred_at, envelope, fence_scope_ownership_generation, fence_holder_node_id, \
                 fence_holder_registration_revision, work_units_used, reserved_at) \
              VALUES \
-               ('{world}', '{channel}', {GENERATION}, {actor}, 1, \
+               (1,game_item_death_scope_key('{world}'::uuid,1::smallint,'{channel}'::uuid,NULL),'{world}', '{channel}', {GENERATION}, {actor}, 1, \
                 'LootTable', 'fixture:loot.alpha', 'loot-r1', 'fixture:purpose.drop', {ordinal}, \
                 decode(repeat('cd',33),'hex'), '{tx}', '{ev}', '{item}', 1000, \
                 decode(repeat('ab',16),'hex'), {GENERATION}, '{node}', 0, 0, 900)"
@@ -316,14 +316,14 @@ fn forge_loot_entry(
         ),
         format!(
             "INSERT INTO game_item_mint_receipts \
-               (death_world_id, death_channel_id, death_scope_ownership_generation, \
+               (death_scope_kind,death_scope_key,death_world_id, death_channel_id, death_scope_ownership_generation, \
                 death_actor_local_id, death_actor_local_generation, loot_table_family, \
                 loot_table_production_key, loot_table_revision_ref, loot_purpose_key, \
                 draw_ordinal, intent_binding, transaction_id, event_id, item_instance_id, \
                 occurred_at, envelope_sha256, committed_at, destination_parent_item_instance_id, \
                 destination_ordinal) \
              VALUES \
-               ('{world}', '{channel}', {GENERATION}, {actor}, 1, \
+               (1,game_item_death_scope_key('{world}'::uuid,1::smallint,'{channel}'::uuid,NULL),'{world}', '{channel}', {GENERATION}, {actor}, 1, \
                 'LootTable', 'fixture:loot.alpha', 'loot-r1', 'fixture:purpose.drop', {ordinal}, \
                 decode(repeat('cd',33),'hex'), '{tx}', '{ev}', '{item}', 1000, \
                 sha256(decode(repeat('ab',16),'hex')), 1000, '{corpse}', {ordinal})"
@@ -604,6 +604,7 @@ fn the_corpse_itself_is_never_a_transfer_source() -> TestResult {
     };
     runtime()?.block_on(async move {
         let harness = Harness::create(admin, "corpseitself").await?;
+        seed_second_character(&harness.pool).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
             .root
@@ -617,20 +618,11 @@ fn the_corpse_itself_is_never_a_transfer_source() -> TestResult {
         let entry = put_loot(&harness, full, 1001, 1, 100).await?;
         let second = put_loot(&harness, full, 1001, 2, 104).await?;
 
+        // The owner has MAIN occupied; the second Character has MAIN empty.
+        // D134's source refusal precedes destination shape/capacity for both.
         let before = harness.footprint().await?;
         for (n, corpse) in [(10_u64, empty), (11, full)] {
-            for destination_slot in [false, true] {
-                let command = command_of(SESSION, n + if destination_slot { 10 } else { 0 })?;
-                let request = if destination_slot {
-                    to_slot(command, corpse, corpse_facts())
-                } else {
-                    to_backpack(command, corpse, corpse_facts())
-                };
-                refused(
-                    harness.transfer(&authority, fence()?, request).await,
-                    ItemTransferRefusal::CorpseNotPickupable,
-                )?;
-            }
+            corpse_source_refusals(&harness, &authority, corpse, n).await?;
         }
         assert_eq!(harness.footprint().await?, before);
         assert!(harness.on_ground(empty).await?);
@@ -648,16 +640,7 @@ fn the_corpse_itself_is_never_a_transfer_source() -> TestResult {
             0
         );
         let before = harness.footprint().await?;
-        refused(
-            harness
-                .transfer(
-                    &authority,
-                    fence()?,
-                    to_backpack(command_of(SESSION, 30)?, full, corpse_facts()),
-                )
-                .await,
-            ItemTransferRefusal::CorpseNotPickupable,
-        )?;
+        corpse_source_refusals(&harness, &authority, full, 30).await?;
         assert_eq!(harness.footprint().await?, before);
         assert!(harness.on_ground(full).await?);
 
@@ -691,6 +674,79 @@ fn the_corpse_itself_is_never_a_transfer_source() -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+/// The same source must be refused with either MAIN state, and current actor
+/// authority must still win over corpse classification. Every refusal preserves
+/// complete rows, including immutable receipts and exact custody metadata.
+async fn corpse_source_refusals(
+    harness: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    corpse: [u8; 16],
+    ordinal: u64,
+) -> TestResult {
+    let before = corpse_transfer_snapshot(harness).await?;
+    for (character, session) in [(CHARACTER, SESSION), (SECOND_CHARACTER, SECOND_SESSION)] {
+        let current = fence_of(character, session)?;
+        for destination_slot in [false, true] {
+            let command = command_of(session, ordinal + if destination_slot { 100 } else { 0 })?;
+            let request = if destination_slot {
+                to_slot(command, corpse, corpse_facts())
+            } else {
+                to_backpack(command, corpse, corpse_facts())
+            };
+            refused(
+                harness.transfer(authority, current, request.clone()).await,
+                ItemTransferRefusal::CorpseNotPickupable,
+            )?;
+            assert_eq!(corpse_transfer_snapshot(harness).await?, before);
+            let mut wrong_connection = current;
+            wrong_connection.connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+            let mut wrong_lease = current;
+            wrong_lease.character_lease_generation += 1;
+            let mut wrong_scope = current;
+            wrong_scope.scope_ownership_generation =
+                ScopeOwnershipGeneration::new(GENERATION + 1).map_err(debug)?;
+            let mut wrong_character = current;
+            wrong_character.character_id = if character == CHARACTER {
+                fence_of(SECOND_CHARACTER, SECOND_SESSION)?.character_id
+            } else {
+                fence()?.character_id
+            };
+            for invalid in [wrong_connection, wrong_lease, wrong_scope, wrong_character] {
+                crate::item_transfer_postgres_cases::rejected(
+                    harness.transfer(authority, invalid, request.clone()).await,
+                    "corpse source still requires the exact current actor fence",
+                )?;
+                assert_eq!(corpse_transfer_snapshot(harness).await?, before);
+            }
+        }
+    }
+    Ok(())
+}
+
+async fn corpse_transfer_snapshot(harness: &Harness) -> TestResult<Vec<Vec<String>>> {
+    let mut snapshot = Vec::new();
+    for relation in [
+        "game_item_transfer_reservations",
+        "game_item_transfer_receipts",
+        "game_item_ground_locations",
+        "game_item_container_slots",
+        "game_item_container_entries",
+        "game_item_corpse_container_entries",
+        "game_item_nested_entries",
+        "game_item_audit_outbox",
+        "game_item_instances",
+    ] {
+        snapshot.push(
+            sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+                "SELECT to_jsonb(r)::text FROM {relation} r ORDER BY to_jsonb(r)::text"
+            )))
+            .fetch_all(&harness.pool)
+            .await?,
+        );
+    }
+    Ok(snapshot)
 }
 
 /// Raw-SQL statements of one forged shape-2 (NewEntry) TRANSFER commit, the

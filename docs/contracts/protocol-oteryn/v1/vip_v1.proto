@@ -1,8 +1,9 @@
 syntax = "proto3";
 package oteryn.game.v1;
 
-// Capability 43. Command 48 admits operations 1-6, 49 admits 7-11,
-// and 50 admits 12. Presence and client UI are outside VIP-1.
+// Capability 43. Command 48 admits operations 1-6, 13-14, 16;
+// command 49 admits 7-11, 15, 18; command 50 admits 12, 17.
+// Account Friends operations 13-18 are specified in vip_v1.md. Presence is excluded.
 message VipRequestV1 {
   uint32 operation = 1;
   uint64 number = 2; // local entry/group number, session handle, setting, or query cursor

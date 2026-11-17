@@ -249,6 +249,8 @@ fn decode(row: &sqlx::postgres::PgRow) -> Result<Offer> {
 
 mod book;
 mod operations;
+mod projection;
+pub use projection::Projection;
 mod reads;
 mod settlement;
 

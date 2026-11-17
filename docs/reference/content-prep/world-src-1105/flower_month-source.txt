@@ -1,0 +1,74 @@
+Source: zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8
+SHA256: dc1607c195712ed166dcda95423fba91821d0ea1b22b85a249fc9aab8d74b1bb
+1: local DRYADS_PER_WAVE = 25
+2: local WAVE_INTERVAL = 15 * 60 * 1000
+3: local ROSEMARIE_POS = { x = 32534, y = 32827, z = 7 }
+4:
+5: local WAVES = {
+6: 	{
+7: 		message = "Dryads have returned to protect the forest north of Edron.",
+8: 		from = { x = 33166, y = 31694, z = 7 },
+9: 		to = { x = 33241, y = 31736, z = 7 },
+10: 	},
+11: 	{
+12: 		message = "Dryads have returned to protect the northern forests near Ab'Dendriel.",
+13: 		from = { x = 32414, y = 31691, z = 7 },
+14: 		to = { x = 32483, y = 31736, z = 7 },
+15: 	},
+16: 	{
+17: 		message = "Dryads have returned to protect the jungle of Tiquanda.",
+18: 		from = { x = 32755, y = 32739, z = 7 },
+19: 		to = { x = 32824, y = 32780, z = 7 },
+20: 	},
+21: 	{
+22: 		message = "Dryads have returned to protect their tree gardens underneath Cormaya.",
+23: 		from = { x = 33154, y = 31976, z = 11 },
+24: 		to = { x = 33283, y = 32066, z = 11 },
+25: 	},
+26: }
+27:
+28: local function spawnDryads(wave)
+29: 	Game.broadcastMessage(wave.message, MESSAGE_EVENT_ADVANCE)
+30:
+31: 	local spawned = 0
+32: 	local attempts = 0
+33:
+34: 	while spawned < DRYADS_PER_WAVE and attempts < DRYADS_PER_WAVE * 10 do
+35: 		local pos = {
+36: 			x = math.random(wave.from.x, wave.to.x),
+37: 			y = math.random(wave.from.y, wave.to.y),
+38: 			z = wave.from.z,
+39: 		}
+40: 		local tile = Tile(pos)
+41: 		if tile and tile:isWalkable() then
+42: 			Game.createMonster("Dryad", pos, false, true)
+43: 			spawned = spawned + 1
+44: 		end
+45: 		attempts = attempts + 1
+46: 	end
+47: end
+48:
+49: local function scheduleWave(index)
+50: 	spawnDryads(WAVES[index])
+51: 	local next = index < #WAVES and index + 1 or 1
+52: 	addEvent(function()
+53: 		scheduleWave(next)
+54: 	end, WAVE_INTERVAL)
+55: end
+56:
+57: local dryadRaid = GlobalEvent("FlowerMonth")
+58:
+59: function dryadRaid.onStartup()
+60: 	local t = os.date("*t")
+61: 	local month = t.month
+62:
+63: 	if month == 6 then
+64: 		Game.createNpc("Rosemarie", ROSEMARIE_POS, true)
+65: 		scheduleWave(1)
+66: 		print(string.format("[%04d-%02d-%02d %02d:%02d:%02d.000] [info] [World Change] Flower Month event is active.", t.year, t.month, t.day, t.hour, t.min, t.sec))
+67: 	end
+68:
+69: 	return true
+70: end
+71:
+72: dryadRaid:register()

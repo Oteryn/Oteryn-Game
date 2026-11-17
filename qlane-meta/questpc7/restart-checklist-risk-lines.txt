@@ -1,0 +1,92 @@
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER AS $$
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++        EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',signature);
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++GRANT EXECUTE ON FUNCTION game_reward_claim_fluid_plan_valid(JSONB,JSONB),
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER AS $$
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++        EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',signature);
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++GRANT EXECUTE ON FUNCTION game_reward_claim_charges_plan_valid(JSONB,JSONB),
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++REVOKE ALL ON game_quest_npc_program_receipts FROM PUBLIC;
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++GRANT SELECT,INSERT ON game_quest_npc_program_receipts TO oteryn_game_runtime;
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++GRANT SELECT ON game_quest_npc_program_receipts TO oteryn_game_control;
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++REVOKE ALL ON FUNCTION game_quest_npc_program_response_guard() FROM PUBLIC;
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++REVOKE ALL ON game_character_falcon_chest_cycles FROM PUBLIC;
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++GRANT SELECT,INSERT,UPDATE ON game_character_falcon_chest_cycles TO oteryn_game_runtime;
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++GRANT SELECT ON game_character_falcon_chest_cycles TO oteryn_game_control;
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++CREATE TRIGGER game_falcon_cycles_no_truncate BEFORE TRUNCATE
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++REVOKE ALL ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA),game_falcon_cycle_guard(),game_falcon_receipt_guard() FROM PUBLIC;
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++GRANT EXECUTE ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA),game_falcon_cycle_guard(),game_falcon_receipt_guard() TO oteryn_game_runtime;
+diff --git a/apps/game-server/migrations/1200_quest_finish.sql b/apps/game-server/migrations/1200_quest_finish.sql
++GRANT EXECUTE ON FUNCTION game_falcon_now_ms(),game_falcon_draw_index(BYTEA) TO oteryn_game_control;
+diff --git a/apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs b/apps/game-server/tests/support/reward_claim_mint_postgres_cases/filled_fluid.rs
++                harness.tamper("DROP TRIGGER aa_quest_fluid_fault ON game_item_fluid_states").await?;
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs
++            sqlx::raw_sql(sqlx::AssertSqlSafe("DROP TRIGGER newhaven_reject_claim ON game_tutorial_corruptor_claims; DROP FUNCTION newhaven_reject_claim();".to_owned()))
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/newhaven_corruptor.rs
++        "DELETE FROM game_spell_field_temporal_schedules WHERE item_instance_id=encode($1,'hex')::uuid",
+diff --git a/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs b/crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/npc_program.rs
++    sqlx::query("DROP TRIGGER questpc_npc_fail ON game_character_quest_tracks")
+diff --git a/crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs b/crates/gameplay/durability/src/durability/character_revision_sequencer/npc_program.rs
++    pub async fn commit_npc_program(
+diff --git a/crates/gameplay/durability/src/durability/quest_state/npc_program.rs b/crates/gameplay/durability/src/durability/quest_state/npc_program.rs
++pub fn preview(
+diff --git a/crates/gameplay/durability/src/durability/quest_state/npc_program.rs b/crates/gameplay/durability/src/durability/quest_state/npc_program.rs
++    pub async fn reconcile_npc_program(
+diff --git a/crates/gameplay/durability/src/durability/quest_state/npc_program.rs b/crates/gameplay/durability/src/durability/quest_state/npc_program.rs
++    pub async fn commit_character_npc_program(
+diff --git a/crates/gameplay/durability/src/durability/quest_world_callback.rs b/crates/gameplay/durability/src/durability/quest_world_callback.rs
++    pub async fn check_character_world_callback(
+diff --git a/crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs b/crates/gameplay/durability/src/durability/reward_claim_mint/falcon.rs
++    pub async fn claim_falcon_chest(
+diff --git a/crates/gameplay/durability/src/durability/tutorial_corruptor.rs b/crates/gameplay/durability/src/durability/tutorial_corruptor.rs
++    pub fn items(&self) -> &[u32] {
+diff --git a/crates/gameplay/durability/src/durability/tutorial_corruptor.rs b/crates/gameplay/durability/src/durability/tutorial_corruptor.rs
++    pub fn bind_draw_ordinals(mut self, first: u32) -> Option<Self> {
+diff --git a/crates/gameplay/durability/src/durability/tutorial_corruptor.rs b/crates/gameplay/durability/src/durability/tutorial_corruptor.rs
++    pub fn source_outputs(&self) -> impl ExactSizeIterator<Item = (u32, u32)> + '_ {
+diff --git a/crates/gameplay/durability/src/durability/tutorial_corruptor.rs b/crates/gameplay/durability/src/durability/tutorial_corruptor.rs
++pub fn guarantee_purpose(item: u32) -> String {
+diff --git a/crates/gameplay/durability/src/durability/tutorial_corruptor.rs b/crates/gameplay/durability/src/durability/tutorial_corruptor.rs
++    pub async fn prepare_tutorial_corruptor(
+diff --git a/crates/gameplay/npc/src/npc_talk.rs b/crates/gameplay/npc/src/npc_talk.rs
++    pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
+diff --git a/crates/gameplay/quests/src/quest/falcon.rs b/crates/gameplay/quests/src/quest/falcon.rs
++    pub fn key(self) -> String {
+diff --git a/crates/gameplay/quests/src/quest/falcon.rs b/crates/gameplay/quests/src/quest/falcon.rs
++    pub fn source(self) -> String {
+diff --git a/crates/gameplay/quests/src/quest/falcon.rs b/crates/gameplay/quests/src/quest/falcon.rs
++pub fn claim_key(key: &str) -> Option<Chest> {
+diff --git a/crates/gameplay/quests/src/quest/falcon.rs b/crates/gameplay/quests/src/quest/falcon.rs
++pub fn repeat_ready(claimed_at: i64, now: i64) -> bool {
+diff --git a/crates/gameplay/quests/src/quest/falcon.rs b/crates/gameplay/quests/src/quest/falcon.rs
++pub fn draw_index(entropy: &[u8; 32]) -> usize {
+diff --git a/crates/gameplay/quests/src/quest/npc_rules.rs b/crates/gameplay/quests/src/quest/npc_rules.rs
++    pub fn with_native_bounds(
+diff --git a/crates/gameplay/quests/src/quest/npc_rules.rs b/crates/gameplay/quests/src/quest/npc_rules.rs
++    pub fn embedded() -> Result<&'static Self, NpcRuleError> {
+diff --git a/crates/gameplay/quests/src/quest/npc_rules.rs b/crates/gameplay/quests/src/quest/npc_rules.rs
++    pub fn runtime() -> Result<&'static Self, NpcRuleError> {
+diff --git a/crates/gameplay/quests/src/quest/npc_rules.rs b/crates/gameplay/quests/src/quest/npc_rules.rs
++    pub fn plan_storage(
+diff --git a/crates/gameplay/quests/src/quest/npc_rules.rs b/crates/gameplay/quests/src/quest/npc_rules.rs
++pub fn legacy_defaults<'a>(
+diff --git a/crates/gameplay/quests/src/quest/world_callbacks.rs b/crates/gameplay/quests/src/quest/world_callbacks.rs
++    pub fn is_read_only(&self) -> bool {

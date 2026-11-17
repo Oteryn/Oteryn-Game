@@ -325,6 +325,109 @@ impl ModificationReply {
     }
 }
 
+/// CL7: paged, read-only view of every admitted weapon and current session XP.
+pub const COMMAND_TYPE_PROFICIENCY_BROWSE: u32 = 641;
+pub const PROFICIENCY_PAGE_SIZE: usize = 20;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProficiencyRow {
+    pub definition: NonZeroU32,
+    pub name: String,
+    pub experience: u32,
+    pub level: u8,
+    pub selections: Vec<Option<u8>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProficiencyPage {
+    pub offset: u32,
+    pub total: u32,
+    pub rows: Vec<ProficiencyRow>,
+}
+impl ProficiencyPage {
+    pub fn encode(&self) -> Option<Vec<u8>> {
+        if self.rows.len() > PROFICIENCY_PAGE_SIZE
+            || self.offset > self.total
+            || self
+                .offset
+                .checked_add(u32::try_from(self.rows.len()).ok()?)?
+                > self.total
+        {
+            return None;
+        }
+        let mut bytes = self.offset.to_be_bytes().to_vec();
+        bytes.extend(self.total.to_be_bytes());
+        bytes.push(u8::try_from(self.rows.len()).ok()?);
+        for row in &self.rows {
+            if row.name.is_empty()
+                || row.name.len() > 128
+                || row.level > 9
+                || row.selections.len() > MAX_LEVELS
+            {
+                return None;
+            }
+            bytes.extend(row.definition.get().to_be_bytes());
+            bytes.push(u8::try_from(row.name.len()).ok()?);
+            bytes.extend(row.name.as_bytes());
+            bytes.extend(row.experience.to_be_bytes());
+            bytes.push(row.level);
+            bytes.push(u8::try_from(row.selections.len()).ok()?);
+            bytes.extend(row.selections.iter().map(|v| v.unwrap_or(CLEAR_PERK)));
+        }
+        Some(bytes)
+    }
+    pub fn decode(mut bytes: &[u8]) -> Option<Self> {
+        fn take<'a>(bytes: &mut &'a [u8], count: usize) -> Option<&'a [u8]> {
+            let (head, tail) = bytes.split_at_checked(count)?;
+            *bytes = tail;
+            Some(head)
+        }
+        fn number(bytes: &mut &[u8]) -> Option<u32> {
+            Some(u32::from_be_bytes(take(bytes, 4)?.try_into().ok()?))
+        }
+        let offset = number(&mut bytes)?;
+        let total = number(&mut bytes)?;
+        let count = usize::from(*take(&mut bytes, 1)?.first()?);
+        if count > PROFICIENCY_PAGE_SIZE {
+            return None;
+        }
+        let mut rows = Vec::with_capacity(count);
+        for _ in 0..count {
+            let definition = NonZeroU32::new(number(&mut bytes)?)?;
+            let length = usize::from(*take(&mut bytes, 1)?.first()?);
+            let name = std::str::from_utf8(take(&mut bytes, length)?)
+                .ok()?
+                .to_owned();
+            let experience = number(&mut bytes)?;
+            let level = *take(&mut bytes, 1)?.first()?;
+            let length = usize::from(*take(&mut bytes, 1)?.first()?);
+            if length > MAX_LEVELS {
+                return None;
+            }
+            let selections = take(&mut bytes, length)?
+                .iter()
+                .map(|v| (*v != CLEAR_PERK).then_some(*v))
+                .collect();
+            rows.push(ProficiencyRow {
+                definition,
+                name,
+                experience,
+                level,
+                selections,
+            });
+        }
+        let page = Self {
+            offset,
+            total,
+            rows,
+        };
+        if !bytes.is_empty() || page.encode().is_none() {
+            return None;
+        }
+        Some(page)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -483,5 +586,208 @@ mod tests {
         assert_eq!(ModificationReply::decode(&[20]), None);
         assert_eq!(ModificationReply::decode(&[0, 1, 2]), None);
         assert_eq!(ModificationReply::decode(&[0, 1, 2, 3, 4, 255, 255]), None);
+    }
+}
+
+/// NX-8/P08: a bounded, stable-key ordered page of all promoted weapon tracks.
+pub const COMMAND_TYPE_PROFICIENCY_CATALOGUE: u32 = 660;
+pub const PROFICIENCY_CATALOGUE_PAGE_SIZE: usize = 8;
+pub const MAX_PROFICIENCY_CATALOGUE_BYTES: usize = 65536;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProficiencyCatalogueEntry {
+    /// Zero when the catalogue weapon is absent from the selected Item generation.
+    pub definition: u32,
+    pub weapon: String,
+    pub name: String,
+    pub experience: u32,
+    pub thresholds: [u32; 9],
+    pub levels: Vec<ProficiencyCatalogueLevel>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProficiencyCatalogueLevel {
+    pub selected: Option<u8>,
+    /// Complete source-ordered perk descriptions, including exact values.
+    pub perks: Vec<String>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProficiencyCataloguePage {
+    pub offset: u32,
+    pub total: u32,
+    pub entries: Vec<ProficiencyCatalogueEntry>,
+}
+impl ProficiencyCataloguePage {
+    pub fn encode(&self) -> Option<Vec<u8>> {
+        if self.entries.len() > PROFICIENCY_CATALOGUE_PAGE_SIZE
+            || self
+                .offset
+                .checked_add(u32::try_from(self.entries.len()).ok()?)?
+                > self.total
+        {
+            return None;
+        }
+        let mut out = Vec::new();
+        out.extend_from_slice(&self.offset.to_be_bytes());
+        out.extend_from_slice(&self.total.to_be_bytes());
+        out.push(u8::try_from(self.entries.len()).ok()?);
+        for entry in &self.entries {
+            out.extend_from_slice(&entry.definition.to_be_bytes());
+            catalogue_text(&mut out, &entry.weapon)?;
+            catalogue_text(&mut out, &entry.name)?;
+            out.extend_from_slice(&entry.experience.to_be_bytes());
+            for threshold in entry.thresholds {
+                out.extend_from_slice(&threshold.to_be_bytes());
+            }
+            if entry.levels.is_empty() || entry.levels.len() > MAX_LEVELS {
+                return None;
+            }
+            out.push(u8::try_from(entry.levels.len()).ok()?);
+            for level in &entry.levels {
+                if level.perks.is_empty()
+                    || level.perks.len() > 3
+                    || level
+                        .selected
+                        .is_some_and(|index| usize::from(index) >= level.perks.len())
+                {
+                    return None;
+                }
+                out.push(level.selected.unwrap_or(CLEAR_PERK));
+                out.push(u8::try_from(level.perks.len()).ok()?);
+                for perk in &level.perks {
+                    catalogue_text(&mut out, perk)?;
+                }
+            }
+        }
+        (out.len() <= MAX_PROFICIENCY_CATALOGUE_BYTES).then_some(out)
+    }
+    pub fn decode(mut bytes: &[u8]) -> Option<Self> {
+        if bytes.len() > MAX_PROFICIENCY_CATALOGUE_BYTES {
+            return None;
+        }
+        fn word(bytes: &mut &[u8]) -> Option<u32> {
+            let (head, tail) = bytes.split_at_checked(4)?;
+            *bytes = tail;
+            Some(u32::from_be_bytes(head.try_into().ok()?))
+        }
+        fn byte(bytes: &mut &[u8]) -> Option<u8> {
+            let (head, tail) = bytes.split_first()?;
+            *bytes = tail;
+            Some(*head)
+        }
+        fn text(bytes: &mut &[u8]) -> Option<String> {
+            let (head, tail) = bytes.split_at_checked(2)?;
+            let length = usize::from(u16::from_be_bytes(head.try_into().ok()?));
+            if length == 0 || length > 512 {
+                return None;
+            }
+            let (text, tail) = tail.split_at_checked(length)?;
+            *bytes = tail;
+            Some(std::str::from_utf8(text).ok()?.to_owned())
+        }
+        let offset = word(&mut bytes)?;
+        let total = word(&mut bytes)?;
+        let count = byte(&mut bytes)?;
+        if usize::from(count) > PROFICIENCY_CATALOGUE_PAGE_SIZE {
+            return None;
+        }
+        let mut entries = Vec::new();
+        for _ in 0..count {
+            let definition = word(&mut bytes)?;
+            let weapon = text(&mut bytes)?;
+            let name = text(&mut bytes)?;
+            let experience = word(&mut bytes)?;
+            let mut thresholds = [0; 9];
+            for threshold in &mut thresholds {
+                *threshold = word(&mut bytes)?;
+            }
+            let count = byte(&mut bytes)?;
+            if count == 0 || usize::from(count) > MAX_LEVELS {
+                return None;
+            }
+            let mut levels = Vec::new();
+            for _ in 0..count {
+                let selected = byte(&mut bytes)?;
+                let count = byte(&mut bytes)?;
+                if !(1..=3).contains(&count) {
+                    return None;
+                }
+                let mut perks = Vec::new();
+                for _ in 0..count {
+                    perks.push(text(&mut bytes)?);
+                }
+                levels.push(ProficiencyCatalogueLevel {
+                    selected: (selected != CLEAR_PERK).then_some(selected),
+                    perks,
+                });
+            }
+            entries.push(ProficiencyCatalogueEntry {
+                definition,
+                weapon,
+                name,
+                experience,
+                thresholds,
+                levels,
+            });
+        }
+        let page = Self {
+            offset,
+            total,
+            entries,
+        };
+        (bytes.is_empty() && page.encode().is_some()).then_some(page)
+    }
+}
+fn catalogue_text(out: &mut Vec<u8>, text: &str) -> Option<()> {
+    if text.is_empty() || text.len() > 512 {
+        return None;
+    }
+    out.extend_from_slice(&u16::try_from(text.len()).ok()?.to_be_bytes());
+    out.extend_from_slice(text.as_bytes());
+    Some(())
+}
+
+#[cfg(test)]
+mod catalogue_tests {
+    use super::*;
+    #[test]
+    fn nx8_catalogue_codec_keeps_xp_every_perk_and_rejects_malformed_frames()
+    -> Result<(), &'static str> {
+        let page = ProficiencyCataloguePage {
+            offset: 8,
+            total: 9,
+            entries: vec![ProficiencyCatalogueEntry {
+                definition: 42,
+                weapon: "oteryn:item.sword".into(),
+                name: "Sword".into(),
+                experience: 12345,
+                thresholds: [500, 1500, 3000, 7000, 15000, 30000, 60000, 120000, 240000],
+                levels: vec![ProficiencyCatalogueLevel {
+                    selected: Some(2),
+                    perks: vec![
+                        "Attack damage: 1".into(),
+                        "Defence: 2".into(),
+                        "Sword: 1".into(),
+                    ],
+                }],
+            }],
+        };
+        let bytes = page.encode().ok_or("encode")?;
+        assert_eq!(ProficiencyCataloguePage::decode(&bytes), Some(page.clone()));
+        for end in 0..bytes.len() {
+            assert!(ProficiencyCataloguePage::decode(&bytes[..end]).is_none());
+        }
+        let mut trailing = bytes;
+        trailing.push(0);
+        assert!(ProficiencyCataloguePage::decode(&trailing).is_none());
+        let mut malformed = page.clone();
+        malformed.entries[0].levels[0].selected = Some(3);
+        assert!(malformed.encode().is_none());
+        malformed = page.clone();
+        malformed.entries[0].levels[0].perks = vec!["x".repeat(513)];
+        assert!(malformed.encode().is_none());
+        malformed = page;
+        malformed.offset = u32::MAX;
+        assert!(malformed.encode().is_none());
+        Ok(())
     }
 }

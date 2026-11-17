@@ -1,0 +1,9 @@
+present-exchange-durability-units	PASS
+present-exchange-npc-units	PASS
+present-exchange-pg-final	PASS
+present-exchange-yasir-regression	PASS
+present-exchange-check	PASS
+present-exchange-clippy	PASS
+present-exchange-fmt	PASS
+present-exchange-mounted-fmt	PASS
+present-exchange-whitespace	PASS

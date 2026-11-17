@@ -1,0 +1,13 @@
+{
+  "id": 489,
+  "name": "HOUSE_PODIUM_FLAGS_V1",
+  "owner_decision": "WU26 native-client mechanics batch package 2 (client PR #3098); parity rule: Crystal 201189f8 and current Tibia",
+  "owner": "Game named-House podium display store (migrations 0339 and 0561) through the W18 podium owner",
+  "requires": [
+    150
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Gated by BUNDLE_WORLD_OFFERED_CAPABILITIES. Bundle World only, with HOUSE_PODIUM_V1. Command 175 appends show_platform, show_outfit and show_mount (u8 0 or 1 each) and the command 174 and 176 projections of a shown display append the same three bytes. Flags persist in the existing display variant; a display without stored flags shows every part. Without selection payloads are unchanged."
+}

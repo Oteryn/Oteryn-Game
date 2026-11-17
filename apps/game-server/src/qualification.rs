@@ -60,8 +60,7 @@ use tokio_rustls::{TlsConnector, rustls};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-#[path = "qualification_spell_character.rs"]
-mod spell_character;
+use crate::qualification_spell_character as spell_character;
 
 #[path = "qualification_wild_spawn.rs"]
 mod wild_spawn;
@@ -73,12 +72,16 @@ mod spell_book_sweep_tests;
 const SOURCE_AUTHORITY: &str = "platform";
 const PLATFORM_SOURCE: &str = "3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
+/// Its content revision is also the served `readiness.content_revision`: the quest and Task Board
+/// owners refuse a Character whose stored progression content differs from the served one.
 const INTERPRETATION: [&str; 4] = [
     "s3b-profile-1",
     "s3b-ruleset-1",
     "s3b-content-1",
     "s3b-starter-1",
 ];
+/// The content revision the node serves (`readiness.content_revision`).
+const SERVED_CONTENT_REVISION: &str = INTERPRETATION[2];
 const RUNTIME_AUTHORITY: &str = "game:wp5-seam-runtime";
 /// First readiness publication of the served Channel.
 const RUNTIME_OBSERVATION: &str = "runtime-1";
@@ -88,7 +91,207 @@ fn required(name: &str) -> Result<String, io::Error> {
 }
 
 fn evidence(line: &str) {
-    println!("SEAM_EVIDENCE {line}");
+    if let Some(line) = client_world::verdict::indexed_evidence(e2e_result_line(line)) {
+        println!("SEAM_EVIDENCE {line}");
+    }
+}
+
+/// Domain 14 under the schema the session negotiated, as `oteryn_session::container_tree`
+/// decodes it: browse field (230), house capacity (446) and item appearances (499) each
+/// change the wire, so a fixed-schema decode refuses a valid delta as malformed.
+fn selected_container_views(
+    selected: &[u32],
+    payload: &[u8],
+) -> Result<oteryn_protocol_oteryn::container_tree::ContainerViews, impl std::fmt::Debug> {
+    oteryn_protocol_oteryn::container_tree::decode_container_views_with_appearances(
+        payload,
+        selected.contains(&oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1),
+        selected.contains(
+            &oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+        ),
+        selected.contains(&oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+    )
+}
+
+#[cfg(test)]
+mod selected_container_views_tests {
+    use super::selected_container_views;
+    use oteryn_protocol_oteryn::container_tree::{
+        ContainerView, ContainerViews, decode_container_views,
+        encode_container_views_with_appearances,
+    };
+    use oteryn_protocol_oteryn::item_view::{CAPABILITY_ITEM_APPEARANCE_V1, ItemEntry};
+    use std::num::{NonZeroU32, NonZeroU64};
+
+    fn views() -> Option<ContainerViews> {
+        Some(ContainerViews {
+            views: vec![ContainerView {
+                view_id: 0,
+                container_handle: NonZeroU64::new(1)?,
+                parent_handle: None,
+                capacity: 20,
+                entries: vec![ItemEntry {
+                    appearance_id: 2854,
+                    handle: NonZeroU64::new(2)?,
+                    item_definition_ref: NonZeroU32::new(2854)?,
+                    count: NonZeroU32::new(1)?,
+                    sub_type: 0,
+                }],
+                browse: None,
+            }],
+        })
+    }
+
+    /// Node boot run 72: the starter backpack delta under capability 499 failed the fixed
+    /// v1 decode with `Malformed`; the negotiated decode reads it back exactly.
+    #[test]
+    fn container_delta_decodes_under_the_negotiated_appearance_schema() -> Result<(), String> {
+        let views = views().ok_or("non-zero literals")?;
+        let payload = encode_container_views_with_appearances(&views, false, false, true)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(decode_container_views(&payload).is_err());
+        assert_eq!(
+            selected_container_views(&[14, CAPABILITY_ITEM_APPEARANCE_V1], &payload).ok(),
+            Some(views)
+        );
+        Ok(())
+    }
+}
+
+/// Row reporters write `e2e_all` lines in several shapes. `report.py` accepts
+/// one: `e2e_all scenario=<id> status=<verdict> seconds=<n>[ evidence=<token>]`
+/// followed by the harness's optional typed failure suffix.
+/// A capture line is not a verdict and becomes `e2e_capture`; a failed capture
+/// write, or a line without a verdict, is a FAIL. Other lines pass unchanged.
+fn e2e_result_line(line: &str) -> String {
+    let line = line.trim_start_matches("SEAM_EVIDENCE ").trim();
+    let Some(rest) = line.strip_prefix("e2e_all ") else {
+        return line.to_owned();
+    };
+    // Keep the harness suffix out of free-text evidence, including when that
+    // evidence has spaces. Preserve malformed suffixes for report.py to reject.
+    let (rest, cause) = rest
+        .rsplit_once(" cause=")
+        .map_or((rest, None), |(rest, cause)| (rest, Some(cause)));
+    let suffix = cause.map_or_else(String::new, |cause| format!(" cause={cause}"));
+    let mut scenario = None;
+    let mut status = None;
+    let mut seconds = None;
+    let mut detail: Vec<String> = Vec::new();
+    // The evidence value runs to the end of the line: its words join with '_'.
+    let mut evidence_value: Option<String> = None;
+    for token in rest.split_whitespace() {
+        if let Some(value) = evidence_value.as_mut() {
+            value.push('_');
+            value.push_str(token);
+        } else if let Some(value) = token.strip_prefix("evidence=") {
+            evidence_value = Some(value.to_owned());
+        } else if let Some(value) = token.strip_prefix("scenario=") {
+            scenario = Some(value);
+        } else if let Some(value) = token.strip_prefix("status=").filter(|_| status.is_none()) {
+            status = Some(value);
+        } else if let Some(value) = token
+            .strip_prefix("seconds=")
+            .filter(|value| seconds.is_none() && value.parse::<f64>().is_ok_and(f64::is_finite))
+        {
+            seconds = Some(value);
+        } else {
+            detail.push(token.to_owned());
+        }
+    }
+    detail.extend(evidence_value);
+    let Some(scenario) = scenario else {
+        return line.to_owned();
+    };
+    let verdict = match status {
+        Some("CAPTURED") => return format!("e2e_capture {rest}"),
+        Some(value @ ("PASS" | "FAIL" | "SKIPPED" | "MISSING-SERVER" | "MISSING-CLIENT")) => value,
+        Some(other) => {
+            detail.insert(0, other.to_owned());
+            "FAIL"
+        }
+        None => {
+            detail.insert(0, "no-verdict".to_owned());
+            "FAIL"
+        }
+    };
+    // A reporter that did not time its row reports zero seconds, not a guess.
+    let seconds = seconds.unwrap_or("0.000");
+    let detail: String = detail
+        .join(";")
+        .chars()
+        .map(|character| {
+            if character.is_whitespace() {
+                '_'
+            } else {
+                character
+            }
+        })
+        .collect();
+    if detail.is_empty() {
+        format!("e2e_all scenario={scenario} status={verdict} seconds={seconds}{suffix}")
+    } else {
+        format!(
+            "e2e_all scenario={scenario} status={verdict} seconds={seconds} evidence={detail}{suffix}"
+        )
+    }
+}
+
+#[cfg(test)]
+mod e2e_result_line_tests {
+    use super::e2e_result_line;
+
+    #[test]
+    fn row_results_preserve_typed_failure_suffix_after_evidence() {
+        for detail in ["", " evidence=timed out"] {
+            let input = format!(
+                "e2e_all scenario=M01.full status=FAIL seconds=3{detail} cause=transport root=M01/admission"
+            );
+            let expected_detail = if detail.is_empty() {
+                ""
+            } else {
+                " evidence=timed_out"
+            };
+            assert_eq!(
+                e2e_result_line(&input),
+                format!(
+                    "e2e_all scenario=M01.full status=FAIL seconds=3{expected_detail} cause=transport root=M01/admission"
+                ),
+            );
+        }
+    }
+
+    #[test]
+    fn row_results_take_the_one_shape_report_py_accepts() {
+        assert_eq!(
+            e2e_result_line("SEAM_EVIDENCE e2e_all scenario=C06.full status=PASS seconds=3.982"),
+            "e2e_all scenario=C06.full status=PASS seconds=3.982"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C01.client status=FAIL evidence=timed out"),
+            "e2e_all scenario=C01.client status=FAIL seconds=0.000 evidence=timed_out"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C03.client status=PASS payload=pages"),
+            "e2e_all scenario=C03.client status=PASS seconds=0.000 evidence=payload=pages"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C02.client status=CAPTURED attack=1"),
+            "e2e_capture scenario=C02.client status=CAPTURED attack=1"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C14.client status=CAPTURE-WRITE-ERROR evidence=x"),
+            "e2e_all scenario=C14.client status=FAIL seconds=0.000 evidence=CAPTURE-WRITE-ERROR;x"
+        );
+        assert_eq!(
+            e2e_result_line("e2e_all scenario=C02.client capture=a.bin error=disk"),
+            "e2e_all scenario=C02.client status=FAIL seconds=0.000 evidence=no-verdict;capture=a.bin;error=disk"
+        );
+        assert_eq!(
+            e2e_result_line("world_loader state=booted"),
+            "world_loader state=booted"
+        );
+    }
 }
 
 fn pem_der(path: &str, label: &str) -> TestResult<Vec<u8>> {
@@ -308,7 +511,7 @@ async fn publish_readiness(
             protocol_major: 1,
             transport_profile: 1,
             ruleset_revision: "rules-s3b-1".into(),
-            content_revision: "content-s3b-1".into(),
+            content_revision: SERVED_CONTENT_REVISION.into(),
             map_revision: "map-s3b-1".into(),
             world_policy_revision: "policy-s3b-1".into(),
             offer_revision: "offer-s3b-1".into(),
@@ -370,7 +573,7 @@ fn sign_grant(grant: &Grant<'_>, issued_at: i64) -> String {
         "protocol_major": 1,
         "transport_profile": 1,
         "ruleset_revision": "rules-s3b-1",
-        "content_revision": "content-s3b-1",
+        "content_revision": SERVED_CONTENT_REVISION,
         "map_revision": std::env::var("NODE_BOOT_MAP_REVISION").unwrap_or_else(|_| "map-s3b-1".into()),
         "world_policy_revision": "policy-s3b-1",
         "offer_revision": "offer-s3b-1",
@@ -1252,6 +1455,15 @@ fn node_boot_seam_against_running_node() -> TestResult {
         .build()?
         .block_on(async {
             let url = required("NODE_BOOT_DATABASE_URL")?;
+            let world_path = std::env::var_os("NODE_BOOT_WORLD_BUNDLE");
+            let packet_accounts = if world_path.is_some() {
+                Some([
+                    required("NODE_BOOT_PACKET_ACCOUNT_ID")?,
+                    required("NODE_BOOT_PACKET_SECOND_ACCOUNT_ID")?,
+                ])
+            } else {
+                None
+            };
             let world = crate::node::uuid_bytes(&required("NODE_BOOT_WORLD_ID")?)
                 .ok_or("invalid NODE_BOOT_WORLD_ID")?;
             let channel = crate::node::uuid_bytes(&required("NODE_BOOT_CHANNEL_ID")?)
@@ -1262,14 +1474,32 @@ fn node_boot_seam_against_running_node() -> TestResult {
             )?);
             let mut database = sqlx::PgConnection::connect(&url).await?;
             let mut characters = Vec::new();
-            for account in &accounts {
-                let character: Vec<u8> = sqlx::query_scalar(
+            let mut account_ids = std::collections::BTreeSet::new();
+            let mut character_ids = std::collections::BTreeSet::new();
+            for account in accounts.iter().chain(packet_accounts.iter().flatten()) {
+                let account_id = crate::node::uuid_bytes(account)
+                    .ok_or("invalid node-boot fixture AccountId")?;
+                if !account_ids.insert(account_id) {
+                    return Err("node-boot fixture Accounts must be distinct".into());
+                }
+                let found: Vec<Vec<u8>> = sqlx::query_scalar(
                     "SELECT uuid_send(character_id) FROM game_character_roots WHERE account_id = $1::uuid",
                 )
                 .bind(account)
-                .fetch_one(&mut database)
+                .fetch_all(&mut database)
                 .await?;
-                characters.push(<[u8; 16]>::try_from(character.as_slice())?);
+                let [character] = found.as_slice() else {
+                    return Err(format!(
+                        "node-boot fixture Account must own exactly one Character: account={account} count={}",
+                        found.len()
+                    )
+                    .into());
+                };
+                let character = <[u8; 16]>::try_from(character.as_slice())?;
+                if !character_ids.insert(character) {
+                    return Err("node-boot fixture Characters must be distinct".into());
+                }
+                characters.push(character);
             }
             let scope_generation: String = sqlx::query_scalar(
                 "SELECT ownership_generation::text FROM game_runtime_scope_assignments \
@@ -1280,14 +1510,17 @@ fn node_boot_seam_against_running_node() -> TestResult {
             .fetch_one(&mut database)
             .await?;
             database.close().await?;
-            evidence("node_boot characters=2 source=control_socket assignment=operator");
+            evidence(&format!(
+                "node_boot characters={} source=control_socket assignment=operator",
+                characters.len()
+            ));
             let clients = SeamClients {
                 address: required("NODE_BOOT_ADDRESS")?.parse()?,
                 certificate: &certificate,
                 signing: &signing,
                 key_id: &key_id,
                 accounts: &accounts,
-                characters: &characters,
+                characters: &characters[..accounts.len()],
                 world,
                 channel,
                 scope_generation: scope_generation.parse()?,
@@ -1300,10 +1533,30 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 runtime: None,
                 recovery: &recovery_key()?,
             };
-            if let Some(path) = std::env::var_os("NODE_BOOT_WORLD_BUNDLE") {
-                client_world::journeys(&clients, std::path::Path::new(&path)).await
+            if let Some(path) = world_path {
+                let packet_accounts = packet_accounts
+                    .as_ref()
+                    .ok_or("World packet Accounts are not configured")?;
+                let packet_clients = SeamClients {
+                    accounts: packet_accounts,
+                    characters: &characters[accounts.len()..],
+                    ..clients
+                };
+                for (role, pair) in [("core", &clients), ("packets", &packet_clients)] {
+                    evidence(&format!(
+                        "node_boot_fixture role={role} character_0={} character_1={} accounts=distinct characters=distinct",
+                        uuid_text(&pair.characters[0]),
+                        uuid_text(&pair.characters[1]),
+                    ));
+                }
+                Box::pin(client_world::journeys(
+                    &clients,
+                    &packet_clients,
+                    std::path::Path::new(&path),
+                ))
+                .await
             } else {
-                seam_clients(clients).await
+                Box::pin(seam_clients(clients)).await
             }
 
         })
@@ -1424,6 +1677,19 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         .execute(&mut owner)
         .await?;
     }
+    // Publish an explicit non-PvP policy through the granted control principal.
+    // Readiness's revision token alone cannot supply the expert-mode projection.
+    sqlx::query("INSERT INTO game_control_field_policy_grants VALUES ($1, encode($2, 'hex')::uuid, 'policy-s3b-1')")
+        .bind(&control_role)
+        .bind(world.as_bytes().as_slice())
+        .execute(&mut owner)
+        .await?;
+    let mut policy_control = sqlx::PgConnection::connect(&control_url).await?;
+    sqlx::query("INSERT INTO game_spell_field_world_policies (world_id, world_policy_revision, world_type, protection_level, in_fight_ms, source_pin, control_role, decision_identity) VALUES (encode($1, 'hex')::uuid, 'policy-s3b-1', 1, 8, 60000, '99902524e052f37574194466c2949c576e4ab269', session_user, 'seam-qualification')")
+        .bind(world.as_bytes().as_slice())
+        .execute(&mut policy_control)
+        .await?;
+    policy_control.close().await?;
     owner.close().await?;
     let writer = RuntimeScopeAssignmentWriter::open(control.clone(), "seam-writer")
         .await
@@ -1670,12 +1936,13 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let shutdown = CancellationToken::new();
     let (quest_catalogue, quest_log_content, _) = crate::node::serve::load_quest_catalogue(
         oteryn_gameplay_quests::quest::loader::load_embedded_quest_state,
-        "content-s3b-1",
+        SERVED_CONTENT_REVISION,
     )
     .map_err(|error| format!("quest catalogue: {error:?}"))?;
     let serve = serve_gameplay(
         &listener,
         GameplayListenerConfig {
+            bulletin_source: None,
             server_motd: String::new(),
             certificates: vec![certificate.clone()],
             private_key: key.into(),
@@ -1684,6 +1951,9 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             entry_deadline: Duration::from_secs(20),
         },
         GameplaySeamOwners {
+            platform_enforcement_enabled: false,
+            soulpit_template: None,
+        cast: None,
             gameplay_idle_policy: Default::default(),
             store_purchases: Default::default(),
             store: None,
@@ -2474,7 +2744,7 @@ fn sign_recovery(
         "protocol_major": 1,
         "transport_profile": 1,
         "ruleset_revision": "rules-s3b-1",
-        "content_revision": "content-s3b-1",
+        "content_revision": SERVED_CONTENT_REVISION,
         "map_revision": std::env::var("NODE_BOOT_MAP_REVISION").unwrap_or_else(|_| "map-s3b-1".into()),
         "world_policy_revision": "policy-s3b-1",
     });
@@ -2613,6 +2883,8 @@ mod client_negatives;
 mod client_admission;
 #[path = "qualification/client_phases/browse_field.rs"]
 mod client_browse_field;
+#[path = "qualification/client_phases/combat_journey.rs"]
+mod client_combat_journey;
 #[path = "qualification/client_phases/daily_boost.rs"]
 mod client_daily_boost;
 #[path = "qualification/client_phases/death.rs"]
@@ -2654,6 +2926,8 @@ mod client_party;
 mod client_player_trade;
 #[path = "qualification/client_phases/prey.rs"]
 mod client_prey;
+#[path = "qualification/client_phases/spell_journey.rs"]
+mod client_spell_journey;
 #[path = "qualification/client_phases/stash.rs"]
 mod client_stash;
 #[path = "qualification/client_phases/task_board.rs"]
@@ -2764,7 +3038,6 @@ async fn dev_client_door_events(
     session: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult<Vec<oteryn_dev_client::SessionEvent>> {
     session
-        .session_mut()
         .wait_for_events(std::time::Duration::from_secs(20))
         .await
         .map_err(|error| format!("dev client door delta never arrived: {error}").into())
@@ -2826,4 +3099,28 @@ fn seam_qualification_pins_are_closed() {
     assert_eq!(PLATFORM_SOURCE.len(), 40);
     assert!(PLATFORM_SOURCE.bytes().all(|byte| byte.is_ascii_hexdigit()));
     let _ = CharacterId::decode(&v7(1, 1));
+}
+
+/// The node serves the Character's content revision (D634): the quest and task board
+/// catalogues load under `readiness.content_revision` and refuse a Character root whose
+/// interpretation names another one (`ProgressionContextMismatch`, node boot run 73).
+#[test]
+fn node_boot_readiness_serves_the_interpreted_content_revision() {
+    let script = include_str!("../../../tools/qualification/node_boot/run.sh");
+    let interpretation = script
+        .lines()
+        .find_map(|line| line.strip_prefix("readonly INTERPRETATION=("))
+        .and_then(|rest| rest.split_whitespace().nth(2));
+    let readiness = script
+        .split("[readiness]")
+        .nth(1)
+        .and_then(|section| {
+            section
+                .lines()
+                .find_map(|line| line.strip_prefix("content_revision = "))
+        })
+        .map(|value| value.trim_matches('"'));
+    assert_eq!(interpretation, Some(INTERPRETATION[2]));
+    assert_eq!(readiness, Some(INTERPRETATION[2]));
+    assert_eq!(SERVED_CONTENT_REVISION, INTERPRETATION[2]);
 }

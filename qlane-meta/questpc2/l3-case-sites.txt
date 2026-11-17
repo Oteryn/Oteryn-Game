@@ -1,0 +1,1239 @@
+tools/architecture-check/tests/client_structure.rs:110:        match case {
+apps/game-server/src/lifted_tests/durability_guild_tests/found_tests.rs:222:            let req=found_request(1,1,"ALDRIC");let expected=match case {0=>GuildResult::NameTaken,1=>GuildResult::AlreadyInGuild,2=>GuildResult::AccountHasPosition,_=>GuildResult::Ok};
+apps/game-server/src/lifted_tests/durability_guild_tests/resign_tests.rs:112:            let (premium, consumer) = match case {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:59:fn raids_global_postgres_wave_placement_replay_identity() -> TestResult { global_case(GlobalCase::Wave) }
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:61:fn raids_global_postgres_broadcast_delivered_once() -> TestResult { global_case(GlobalCase::Announcement) }
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:63:fn raids_global_postgres_end_and_cleanup() -> TestResult { global_case(GlobalCase::Cleanup) }
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:65:fn raids_global_postgres_new_generation_is_lost() -> TestResult { global_case(GlobalCase::Lost) }
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:67:fn raids_global_postgres_badger_full_durable_run() -> TestResult { global_case(GlobalCase::Badger) }
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:69:fn raids_global_postgres_boss_death_full_durable_run() -> TestResult { global_case(GlobalCase::Boss) }
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:71:fn raids_global_postgres_persistent_boss_cleans_after_schedule_done() -> TestResult { global_case(GlobalCase::PersistentBoss) }
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:73:fn raids_global_postgres_late_channel_does_not_join() -> TestResult { global_case(GlobalCase::LateChannel) }
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:75:fn raids_global_postgres_failed_single_aborts_later_events() -> TestResult { global_case(GlobalCase::FailedSingle) }
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:77:fn raids_global_postgres_dead_boss_stops_new_wave_after_pending_ack() -> TestResult { global_case(GlobalCase::BossBeforeWave) }
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:88:    let badger = matches!(case, GlobalCase::Badger);
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:104:    if matches!(case, GlobalCase::Announcement | GlobalCase::Lost | GlobalCase::Boss | GlobalCase::PersistentBoss) {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:106:            delay_ms: if matches!(case, GlobalCase::Lost) { 20 } else { 0 },
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:110:    if matches!(case, GlobalCase::Boss | GlobalCase::PersistentBoss | GlobalCase::BossBeforeWave) {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:111:        definition.despawn_after_ms = if matches!(case, GlobalCase::PersistentBoss) { None } else { Some(60_000) };
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:117:    if matches!(case, GlobalCase::BossBeforeWave) {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:123:    if matches!(case, GlobalCase::FailedSingle) {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:199:    global_seed(h, &definition, firing, if matches!(case, GlobalCase::Badger) { "raid:badger" } else { "raid:qualification" }).await?;
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:200:    if matches!(case, GlobalCase::FailedSingle) {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:203:    if matches!(case, GlobalCase::BossBeforeWave) {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:207:    let first_at = if matches!(case, GlobalCase::Announcement | GlobalCase::Boss | GlobalCase::PersistentBoss) { 0 }
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:208:        else if matches!(case, GlobalCase::Badger) { 1_000 } else { 10 };
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:216:    if matches!(case, GlobalCase::Announcement) {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:226:    let wave = if matches!(case, GlobalCase::Boss | GlobalCase::PersistentBoss) {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:231:    if matches!(case, GlobalCase::Wave) {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:239:    match case {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:240:        GlobalCase::Wave => {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:246:        GlobalCase::Cleanup | GlobalCase::Badger => {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:247:            let end_at = if matches!(case, GlobalCase::Badger) { 1_000 } else { 30 };
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:249:            assert_eq!(end.action, CommittedRaidAction::Complete { cleanup: !matches!(case, GlobalCase::Badger) });
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:253:            assert_eq!(state.active_creatures, if matches!(case, GlobalCase::Badger) { 100 } else { 0 });
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:254:            if matches!(case, GlobalCase::Badger) {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:262:        GlobalCase::Lost => {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:291:        GlobalCase::Boss | GlobalCase::PersistentBoss => {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:293:            let persistent_cursor = if matches!(case, GlobalCase::PersistentBoss) {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:319:        GlobalCase::LateChannel => {
+apps/game-server/src/lifted_tests/auto/raid_runner_postgres_cases.rs:339:        GlobalCase::Announcement | GlobalCase::FailedSingle | GlobalCase::BossBeforeWave => return Err("special case returned too late".into()),
+crates/gameplay/encounters/src/bosses/seven_encounters/source_encounter_seven.rs:175:        let kind = match case.ability.as_str() {
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:476:    source_schedule_case(SourceScheduleCase::Lua)
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:481:    source_schedule_case(SourceScheduleCase::Calendar)
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:486:    source_schedule_case(SourceScheduleCase::LuaInstance)
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:536:    let name = match case { SourceScheduleCase::Lua => "raids_global_lua", SourceScheduleCase::LuaInstance => "raids_global_lua_instance", SourceScheduleCase::Calendar => "raids_global_calendar" };
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:581:            lua: match case {
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:582:                SourceScheduleCase::Lua | SourceScheduleCase::LuaInstance => Some(LuaRaidScheduleCandidate {
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:587:                        allowed_weekdays: Vec::new(), min_active_players: if matches!(case, SourceScheduleCase::LuaInstance) { 1 } else { 2 }, max_checks_per_day: None,
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:590:                SourceScheduleCase::Calendar => None,
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:592:            calendar_window: match case {
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:593:                SourceScheduleCase::Calendar => Some(CalendarRaidScheduleCandidate {
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:597:                SourceScheduleCase::Lua | SourceScheduleCase::LuaInstance => None,
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:603:    if matches!(case, SourceScheduleCase::Lua | SourceScheduleCase::LuaInstance) {
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:620:    match case {
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:621:        SourceScheduleCase::Lua => {
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:660:        SourceScheduleCase::LuaInstance => {
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:675:        SourceScheduleCase::Calendar => request.now_ms = 86_400_000,
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:681:    if matches!(case, SourceScheduleCase::Lua | SourceScheduleCase::LuaInstance) {
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:685:        assert_eq!(state.last_occurrence_ms, Some(if matches!(case, SourceScheduleCase::LuaInstance) { 120_000 } else { 180_000 }));
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:686:        assert_eq!(state.check_ordinal, if matches!(case, SourceScheduleCase::LuaInstance) { 2 } else { 3 });
+apps/game-server/src/lifted_tests/auto/raid_schedule_postgres_cases.rs:690:    assert_eq!(targets, if matches!(case, SourceScheduleCase::Lua) { 2 } else { 1 });
+apps/game-server/tests/support/authority_cases/character_promotion_postgres_cases.rs:36:            match case {
+crates/gameplay/spell/src/spell/part_b_tests.rs:400:/// Spoken words match case-insensitively, so words that differ only in case are one spell.
+apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs:1049:            let mismatch = match case {
+apps/game-server/tests/support/world_required_capabilities_postgres_cases.rs:86:                    match case {
+apps/game-server/tests/support/world_required_capabilities_postgres_cases.rs:548:                    match case {
+crates/gameplay/quests/src/quest/world_callbacks/batch4_tests.rs:167:        match case {
+crates/gameplay/quests/src/quest/world_callbacks.rs:427:            match case {
+crates/session/src/tests/appearance_session_tests/item_dictionary_tests.rs:46:            admission.appearance_items = match case {
+apps/game-server/tests/content_world_project_publication.rs:322:        match case {
+apps/game-server/examples/dur03_reference_one_item_resource_prototype.rs:3686:                match case {
+crates/gameplay/foundation/src/foundation/control_loss_durability_tests.rs:830:        match case {
+crates/gameplay/foundation/src/foundation/control_loss_reconnect_bridge_tests.rs:845:    match case {
+crates/gameplay/foundation/src/foundation/control_loss_reconnect_bridge_tests.rs:1369:            match case {
+crates/gameplay/foundation/src/foundation/control_loss_reconnect_bridge_tests.rs:1411:            match case {
+crates/gameplay/foundation/src/foundation/control_loss_reconnect_bridge_tests.rs:1440:            match case {
+crates/gameplay/foundation/src/foundation/control_loss_reconnect_bridge_tests.rs:1516:        match case {
+crates/gameplay/foundation/src/foundation/control_loss_reconnect_bridge_tests.rs:1767:        match case {
+crates/gameplay/foundation/src/foundation/control_loss_reconnect_bridge_tests.rs:1841:            match case {
+crates/gameplay/native-admission-source/src/store_tests.rs:229:            match case {
+crates/gameplay/durability/src/durability/item_fee_burn_audit/purchase_cause.rs:229:            match case {
+crates/gameplay/content/src/content/spell_data/mod.rs:244:                    // Spoken words match case-insensitively, so they are indexed and deduplicated
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:728:            .spawn(|| scenario(Case::Clean).map_err(|error| error.to_string()))?
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:743:            .spawn(|| scenario(Case::CommittedFenced).map_err(|error| error.to_string()))?
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:760:            .spawn(|| scenario(Case::ReleaseRejected).map_err(|error| error.to_string()))?
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:775:            .spawn(|| scenario(Case::LiveRejected).map_err(|error| error.to_string()))?
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:937:            let name = match case {
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:938:                Case::Clean => "death_ml_composed",
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:939:                Case::CommittedFenced => "death_ml_fenced",
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:940:                Case::ReleaseRejected => "death_ml_rejected",
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:941:                Case::LiveRejected => "death_ml_live_rejected",
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:1116:            if case != Case::Clean {
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:1133:                if case == Case::CommittedFenced {
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:1188:            if matches!(case, Case::ReleaseRejected | Case::LiveRejected) {
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:1193:                if case == Case::ReleaseRejected {
+crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:1227:                if case == Case::ReleaseRejected {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:29:    scenario(Case::Bound)
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:33:    scenario(Case::Concurrent)
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:37:    scenario(Case::Unbound)
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:41:    scenario(Case::FailedReceipt)
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:45:    scenario(Case::ReplacedGeneration)
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:49:    scenario(Case::Removed)
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:53:    scenario(Case::Terminal)
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:57:    scenario(Case::UnknownFence)
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:119:        if matches!(case, Case::RuntimeRole) {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:146:        let pending = if matches!(case, Case::Concurrent) {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:196:        if matches!(case, Case::Unbound | Case::Terminal | Case::UnknownFence) {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:212:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:213:            Case::Unbound => {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:217:            Case::Bound | Case::RuntimeRole | Case::Concurrent => {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:220:            Case::FailedReceipt => {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:254:            Case::Terminal => {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:276:            Case::UnknownFence => {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:286:            Case::ReplacedGeneration | Case::Removed => {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:304:                    if matches!(case, Case::Removed) {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:324:                if matches!(case, Case::Removed) {
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:351:            Case::Bound
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:352:                | Case::RuntimeRole
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:353:                | Case::Concurrent
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:354:                | Case::Unbound
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_postgres_tests.rs:355:                | Case::FailedReceipt
+crates/gameplay/dispatch/src/gameplay_transport/quest_admission_runtime_role_tests.rs:7:    scenario(Case::RuntimeRole)
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:117:    let tag = match case {
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:120:        Some(Case::LastCharge) => "bags_use_last",
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:121:        Some(Case::PotionFlask) => "bags_use_flask",
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:122:        Some(Case::ClosedBag) => "bags_use_closed",
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:123:        Some(Case::WithoutContainerCapability) => "bags_use_no_views",
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests.rs:306:        if matches!(case, Some(Case::WithoutContainerCapability)) {
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:21:    run_scenario(Some(Case::LastCharge))
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:26:    run_scenario(Some(Case::PotionFlask))
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:31:    run_scenario(Some(Case::ClosedBag))
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:36:    run_scenario(Some(Case::WithoutContainerCapability))
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:45:    let source = match case {
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:46:        Case::LastCharge | Case::ClosedBag | Case::WithoutContainerCapability => 100,
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:47:        Case::PotionFlask => 110,
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:49:    let hidden = matches!(case, Case::ClosedBag | Case::WithoutContainerCapability);
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:75:    if matches!(case, Case::WithoutContainerCapability) {
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:90:        payloads.push(use_handle(if matches!(case, Case::PotionFlask) {
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:147:        if matches!(case, Case::WithoutContainerCapability) {
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:166:    let (key, count, handle) = match case {
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:167:        Case::LastCharge => ("oteryn:item.tibia.i266", 2, 4),
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:168:        Case::PotionFlask => ("oteryn:item.tibia.i3577", 3, 5),
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:169:        Case::ClosedBag | Case::WithoutContainerCapability => unreachable!(),
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:182:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:183:        Case::LastCharge => assert_eq!(main.entries.len(), 1),
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:184:        Case::PotionFlask => {
+crates/gameplay/dispatch/src/gameplay_transport/item_use/item_use_postgres_tests/item_use_view_refresh_tests.rs:194:        Case::ClosedBag | Case::WithoutContainerCapability => unreachable!(),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vertical_move.rs:92:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vertical_move.rs:98:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vertical_move.rs:270:        let text = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vertical_move.rs:329:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vertical_move.rs:335:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/vertical_move.rs:359:            - match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:53:    run_case(Case::RedSkullDrop)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:58:    run_case(Case::Amulet)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:64:    run_case(Case::InterruptedDrop)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:70:    run_case(Case::DepartedProcessDrop)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:240:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:241:        Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:247:        Case::Amulet => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:345:    if matches!(case, Case::DepartedProcessDrop) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:376:    let departed = if matches!(case, Case::InterruptedDrop) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:541:        if matches!(case, Case::Amulet) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:729:        Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:812:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:813:        Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:822:        Case::Amulet => assert_eq!(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/activity_player_death.rs:854:        Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hunting_stamina.rs:13:    party_xp::run(Case::Stamina)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube.rs:59:    scenario(Case::FullRetry)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube.rs:64:    scenario(Case::HandleReplay)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube.rs:69:    scenario(Case::ExistingStack)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube.rs:74:    scenario(Case::ConcurrentLastUnit)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube.rs:79:    scenario(Case::KooldownAid)
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:204:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:205:        Case::ParalyzeMonster | Case::ParalyzePlayer => {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:206:            if case == Case::ParalyzePlayer {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:226:        Case::Replay => {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:305:        Case::Protection => {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:346:        Case::TooFar => {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:355:        Case::NoCapability => {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:364:        Case::UnqualifiedSource => {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:373:        Case::StaleSession => {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:384:        Case::LostContent => {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:389:        Case::BeforeCommit | Case::AfterCommit | Case::StaleRevision => {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:390:            test_faults::arm(if case == Case::AfterCommit {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:460:            Case::Replay,
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:461:            Case::Protection,
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:462:            Case::TooFar,
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:463:            Case::NoCapability,
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:464:            Case::UnqualifiedSource,
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:465:            Case::StaleSession,
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:466:            Case::LostContent,
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:467:            Case::BeforeCommit,
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:468:            Case::AfterCommit,
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:469:            Case::StaleRevision,
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:480:    let paralyze = matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer);
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:484:    if case == Case::ParalyzePlayer {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:505:    let start = if case == Case::Protection {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:514:    let target_position = if case == Case::Protection {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:520:    } else if case == Case::TooFar {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:580:        if case != Case::ParalyzePlayer {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:598:    if case == Case::ParalyzePlayer {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:645:    let druid = if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:679:                        level: if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:684:                        magic_level: if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer)
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:690:                        max_mana: if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:712:        if case == Case::NoCapability {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:723:    let source_key = if case == Case::UnqualifiedSource {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:725:    } else if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:734:    if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:744:        if case == Case::ParalyzePlayer {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:766:    if case == Case::LostContent {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:774:        Case::BeforeCommit | Case::AfterCommit | Case::StaleRevision
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:782:        assert_eq!(quantity, if case == Case::AfterCommit { 2 } else { 3 });
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:792:        if case == Case::StaleRevision {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:805:        if case == Case::BeforeCommit {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:847:        let expected = if case == Case::StaleRevision {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:857:        if case != Case::StaleRevision {
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:880:    let committed = matches!(case, Case::Replay | Case::BeforeCommit | Case::AfterCommit);
+crates/gameplay/dispatch/src/gameplay_transport/rune_use_bridge_postgres_tests.rs:887:        if committed || case == Case::StaleRevision {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:9:    party_xp::run(Case::ForgeReplay)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:13:    party_xp::run(Case::ForgeFree)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:17:    party_xp::run(Case::ForgeIdle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:21:    party_xp::run(Case::ForgeAllFree)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:25:    party_xp::run(Case::ForgeNoShared)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:29:    party_xp::run(Case::ForgeStale)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:33:    party_xp::run(Case::ForgeRollback)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:37:    party_xp::run(Case::ForgeFar)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:41:    party_xp::run(Case::ForgeForeign)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:64:                    !matches!(case, Case::ForgeAllFree)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:65:                        && (!matches!(case, Case::ForgeFree) || index == 0),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:101:    if matches!(case, Case::ForgeNoShared) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:127:    if matches!(case, Case::ForgeReplay) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:135:    let expected = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:136:        Case::ForgeAllFree => 0,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:137:        Case::ForgeFree | Case::ForgeIdle | Case::ForgeFar => 1,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/forge_creature.rs:138:        Case::ForgeForeign => 3,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field.rs:30:    run_case(Case::Backpack)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field.rs:35:    run_case(Case::Nested)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field.rs:40:    run_case(Case::Navigation)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field.rs:45:    run_case(Case::Paging)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field.rs:50:    run_case(Case::Autowalk)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:67:    scenario(Case::Convince)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:71:    scenario(Case::NotConvinceable)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:75:    scenario(Case::SummonLimit)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:79:    scenario(Case::Animate)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:83:    scenario(Case::NonCorpse)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:88:    scenario(Case::AnimateBlackSkull)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:108:        Case::Animate | Case::AnimateBlackSkull | Case::NonCorpse
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:110:    let committed = matches!(case, Case::Convince | Case::Animate);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:180:        if case == Case::NotConvinceable {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:236:        if case == Case::SummonLimit {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:381:        if case == Case::AnimateBlackSkull {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:412:        seed_target(&harness, native, &address, case != Case::NonCorpse).await?;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:526:            - if case == Case::Convince {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:546:        if case == Case::SummonLimit {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:650:    large_stack(|| run(async |admin| utility_case(admin, WorldItemCase::Chameleon).await))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:654:    large_stack(|| run(async |admin| utility_case(admin, WorldItemCase::Creature).await))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:660:            for case in [WorldItemCase::Empty, WorldItemCase::Immovable] {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:671:            for case in [WorldItemCase::Disintegrate, WorldItemCase::Pz] {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:680:    large_stack(|| run(async |admin| utility_case(admin, WorldItemCase::House).await))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:697:        WorldItemCase::Disintegrate | WorldItemCase::Pz | WorldItemCase::House
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:715:    let (controller, pin) = if case == WorldItemCase::House {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:723:    let map = if case == WorldItemCase::House {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:734:    let (start, target) = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:735:        WorldItemCase::House => ((2, 0, 7), (3, 0, 7)),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:736:        WorldItemCase::Empty => ((2, 11, -7), (3, 11, -7)),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:737:        WorldItemCase::Pz => ((2, 0, -7), (1, 0, -7)),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:738:        WorldItemCase::Immovable => ((2, 11, -7), (1, 11, -7)),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:798:        if case == WorldItemCase::Creature {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:826:    if case == WorldItemCase::House {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:917:    admitted.continuity.selected_capabilities = if case == WorldItemCase::House {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:927:    if case != WorldItemCase::House {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:946:    if case == WorldItemCase::Disintegrate {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:955:        WorldItemCase::Chameleon | WorldItemCase::Disintegrate | WorldItemCase::Pz
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:1034:        if case == WorldItemCase::Chameleon {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:1067:        if case == WorldItemCase::Disintegrate {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/utility_runes.rs:1082:    if case == WorldItemCase::Chameleon {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:57:    run_case(Case::Lifecycle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:61:    run_case(Case::InboxFull)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:65:    run_case(Case::LegacyConversion)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:69:    run_case(Case::Bank)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:73:    run_case(Case::GuestAcl)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:77:    run_case(Case::Wire)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:81:    run_case(Case::LegacyWire)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:85:    run_case(Case::Trader)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:89:    run_case(Case::Gourmet)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:93:    run_case(Case::Cook)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:97:    run_case(Case::CookBank)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:101:    run_case(Case::Steward)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:105:    run_case(Case::Furniture)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:109:    run_case(Case::LampPending)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:113:    run_case(Case::Store)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:117:    run_case(Case::PositionCapture)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:121:    run_case(Case::PositionRelog)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:125:    run_case(Case::PositionProcessLoss)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:129:    run_case(Case::PositionAcl)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:133:    run_case(Case::PositionOccupied)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:138:pub(super) fn bed_rest_case() -> TestResult { run_case(Case::BedRest) }
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:146:            let initialized = !matches!(case, Case::PositionRelog | Case::BedRest);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:178:    if matches!(case, Case::BedRest) { super::bed_sleep_fixture::bed_profiles(&mut input)?; }
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:179:    if matches!(case, Case::PositionCapture | Case::PositionRelog | Case::PositionProcessLoss
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:180:        | Case::PositionAcl | Case::PositionOccupied | Case::BedRest) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:221:    let bed_index = if matches!(case, Case::BedRest) { generation.native_gameplay().and_then(|n| n.item_index()) } else { None };
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:236:    let bed_premium = if matches!(case, Case::BedRest) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:246:    let house_store = matches!(case, Case::Store).then(||
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:286:    if matches!(case, Case::BedRest) { owner.admit_premium(id(40), deps.admitted.game_session_id); }
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:353:    if matches!(case, Case::PositionCapture | Case::PositionRelog | Case::PositionProcessLoss
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:354:        | Case::PositionAcl | Case::PositionOccupied | Case::BedRest) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:358:        if matches!(case, Case::PositionRelog | Case::BedRest) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:371:    let offers = if matches!(case, Case::Store) { OFFERS } else { owner.offered_capabilities() };
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:383:    if !matches!(case, Case::Wire) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:386:    if matches!(case, Case::Store) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:391:    if matches!(case, Case::BedRest) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:394:    if matches!(case, Case::PositionCapture) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:397:    if matches!(case, Case::PositionRelog) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:400:    if matches!(case, Case::PositionAcl) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:403:    if matches!(case, Case::PositionProcessLoss) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:424:    if matches!(case, Case::LegacyConversion) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:429:    if matches!(case, Case::GuestAcl) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:432:    if matches!(case, Case::Wire) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:444:    if matches!(case, Case::LegacyWire) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:471:    if matches!(case, Case::LampPending) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:498:    if matches!(case, Case::LampPending) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:539:    if matches!(case, Case::PositionOccupied) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:542:    if matches!(case, Case::Trader) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:545:    if matches!(case, Case::Gourmet) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:548:    if matches!(case, Case::Cook) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:551:    if matches!(case, Case::CookBank) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:554:    if matches!(case, Case::Steward) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:557:    if matches!(case, Case::Furniture) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:560:    if matches!(case, Case::Bank) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_lifecycle.rs:564:    if matches!(case, Case::InboxFull) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_npc.rs:65:    let runner: fn() -> TestResult = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:79:    run_case(Case::Costume)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:83:    run_case(Case::Dice)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:87:    run_case(Case::DiceStreak)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:91:    run_case(Case::Trumpet)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:95:    run_case(Case::Rocket)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:99:    run_case(Case::Hat)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:103:    run_case(Case::HatInBag)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:107:    run_case(Case::VoodooSuccess)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:111:    run_case(Case::VoodooFailure)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:115:    run_case(Case::VoodooWithoutTarget)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:119:    run_case(Case::Present)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:124:    run_case(Case::GroundDice)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:128:    run_case(Case::GroundRocket)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:132:    run_case(Case::GroundTrumpet)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:136:    run_case(Case::NestedCostume)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:140:    run_case(Case::NestedTrumpet)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:145:    run_case(Case::GroundCostume)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:149:    run_case(Case::GroundPresent)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:153:    run_case(Case::GroundVoodoo)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items.rs:159:    run_case(Case::PendingLifecycle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_boss/vacancy.rs:15:    run_case(Case::OtherPlayer)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_boss/vacancy.rs:19:    run_case(Case::OtherBoss)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_boss/vacancy.rs:23:    run_case(Case::OldDeadline)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_boss/vacancy.rs:27:    run_case(Case::RetirementReplay)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_boss/vacancy.rs:60:    if matches!(case, Case::OtherBoss) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_boss/vacancy.rs:147:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_boss/vacancy.rs:148:        Case::OldDeadline => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/grizzly_boss/vacancy.rs:163:        Case::RetirementReplay => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_death_items.rs:287:    scenario(Case::default())
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_death_items.rs:293:        ..Case::default()
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_death_items.rs:301:        ..Case::default()
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_death_items.rs:310:        ..Case::default()
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_death_items.rs:318:        ..Case::default()
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_death_items.rs:326:        ..Case::default()
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_death_items.rs:335:        ..Case::default()
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/player_death_items.rs:343:        ..Case::default()
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:54:    run_case(Case::Collection)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:59:    run_case(Case::Expiry)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:64:    run_case(Case::NativeDeath)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:69:    run_case(Case::OfflineReward)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:74:    run_case(Case::LivePrivacy)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:79:    run_case(Case::ConcurrentCollection)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:115:        let (controller, pin) = if matches!(case, Case::NativeDeath) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:246:        let existing = if matches!(case, Case::Collection) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:269:        if matches!(case, Case::NativeDeath) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:285:        let minted = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:286:            Case::Collection
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:287:            | Case::NativeDeath
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:288:            | Case::OfflineReward
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:289:            | Case::LivePrivacy
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:290:            | Case::ConcurrentCollection => now,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:291:            Case::Expiry => now - 604_800_000 + 1_000,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:299:        let item_count = if matches!(case, Case::ConcurrentCollection) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:349:        if matches!(case, Case::OfflineReward) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:412:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:413:            Case::Collection => collection(&h, &owner, &mut admitted, fence, death)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:416:            Case::Expiry => expiry(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:426:            Case::NativeDeath => return Err("native scenario already returned".into()),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:427:            Case::OfflineReward => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:438:            Case::LivePrivacy => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_rewards.rs:443:            Case::ConcurrentCollection => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:45:    let (required, offers): (&[u32], &'static [OfferedCapability]) = if case == Case::Placed {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:132:    let capabilities: &[u32] = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:133:        Case::Placed => &[4, 6, 15, 18, 49, 86],
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:134:        Case::Nested => &[4, 6, 12, 14, 15, 49, 86],
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:135:        Case::Carried | Case::Foreign => &[4, 6, 15, 49, 86],
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:140:    let contents = if case == Case::Nested {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:145:    if case == Case::Nested {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:212:    if matches!(case, Case::Placed | Case::Nested) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:220:    if case == Case::Placed {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:226:    } else if case == Case::Nested {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:231:    if case == Case::Foreign {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:260:    if case == Case::Nested {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:263:    let nested = (case == Case::Nested).then_some(inner_ref);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon/scenario.rs:296:    let at = if case == Case::Placed {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:52:    run_case(Case::OrdinaryDrop)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:56:    run_case(Case::IceDrop)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:60:    run_case(Case::IceUse)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:64:    run_case(Case::Preserve)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:68:    run_case(Case::IceUsePickup)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:72:    run_case(Case::IceUseGroundFirst)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:104:        let dropping = matches!(case, Case::OrdinaryDrop | Case::IceDrop);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:105:        let seed = if matches!(case, Case::OrdinaryDrop) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:110:        let before: u16 = if matches!(case, Case::Preserve) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:129:        let carried: u8 = if matches!(case, Case::OrdinaryDrop) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:134:        let count: u8 = if matches!(case, Case::OrdinaryDrop) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:466:        assert_eq!(preservation, matches!(case, Case::Preserve));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:467:        if matches!(case, Case::IceUsePickup | Case::IceUseGroundFirst) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/map_seed_planting.rs:471:            let ground_first = matches!(case, Case::IceUseGroundFirst);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:48:    let key = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:50:            positive::Case::Parts | positive::Case::OmittedGrant | positive::Case::ConcurrentGrant,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:52:        Some(positive::Case::Outfit) => "oteryn:item.tibia.i16252",
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:225:        let mut contents = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:227:                positive::Case::Parts
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:228:                | positive::Case::OmittedGrant
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:229:                | positive::Case::ConcurrentGrant,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics.rs:231:            Some(positive::Case::Outfit) => vec![
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:101:        let (dust, limit) = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:102:            Case::Items(_) | Case::Integrity | Case::CoreRefusal | Case::MixedFee => (1000, 1000),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:103:            Case::Refusals => (59, 100),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:104:            Case::DustCap => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:125:            Case::RevisionChanged | Case::DustStageChanged | Case::LegacyBudget
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:139:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:140:            Case::Conversions => super::conversions(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:141:            Case::DustLimit => super::dust_limit(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:142:            Case::DustCap => super::dust_cap(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:143:            Case::Refusals => super::refusals(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:144:            Case::Fences => super::fences(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:145:            Case::Concurrent => super::concurrent(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:146:            Case::NoRoom => super::no_room(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:147:            Case::Stash => super::materials_and_history::stash(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:148:            Case::Nested => super::materials_and_history::nested(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:149:            Case::HistoryBound => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:152:            Case::RevisionChanged => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:156:            Case::DustStageChanged => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:160:            Case::SqlGuards => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:163:            Case::LegacyBudget => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:166:            Case::Items(operation) => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:170:            Case::Integrity => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:173:            Case::CoreRefusal => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/support.rs:177:            Case::MixedFee => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m06q_quest_doors.rs:58:    player_ground_case(PlayerGroundCase::Move)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m06q_quest_doors.rs:63:    player_ground_case(PlayerGroundCase::Refused)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m06q_quest_doors.rs:68:    player_ground_case(PlayerGroundCase::Authored)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m06q_quest_doors.rs:356:            let item = if matches!(case, PlayerGroundCase::Authored) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m06q_quest_doors.rs:405:            match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m06q_quest_doors.rs:406:                PlayerGroundCase::Move => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m06q_quest_doors.rs:527:                PlayerGroundCase::Refused => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/m06q_quest_doors.rs:554:                PlayerGroundCase::Authored => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/revision_and_guards.rs:9:        support::scenario(Case::RevisionChanged)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/revision_and_guards.rs:16:        support::scenario(Case::SqlGuards)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/revision_and_guards.rs:23:        support::scenario(Case::DustStageChanged)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/materials_and_history.rs:7:        support::scenario(Case::Stash)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/materials_and_history.rs:14:        support::scenario(Case::Nested)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/materials_and_history.rs:21:        support::scenario(Case::HistoryBound)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge/legacy_budget.rs:12:        support::scenario(Case::LegacyBudget)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:57:        case: Case::Echo,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:63:    grenade(Case::Grenade, "delayed_grenade")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:67:    grenade(Case::Pz, "delayed_pz")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:71:    grenade(Case::StageZero, "delayed_stage_zero")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:98:        case: Case::Outburst(harmony),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:109:        case: Case::Logout,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:121:        case: Case::DepartedTarget,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:136:        case: Case::QueuedOrder,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:183:    let room = if plan.case == Case::Pz {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:202:    let start = if plan.case == Case::Pz {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:293:    if matches!(plan.case, Case::Grenade | Case::Pz | Case::Outburst(_)) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:488:        if let Case::Outburst(charges) = plan.case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:502:        if plan.case == Case::Echo {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:550:                    target: if matches!(plan.case, Case::Outburst(_)) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:564:        if matches!(plan.case, Case::Pz | Case::StageZero) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:608:        if plan.case == Case::Grenade {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:644:            let expected = if plan.case == Case::QueuedOrder {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:647:                usize::from(plan.case != Case::Outburst(4))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:653:            if let Case::Outburst(_) = plan.case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:669:        if plan.case == Case::QueuedOrder {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:720:        if plan.case == Case::Logout {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:751:        if plan.case == Case::DepartedTarget {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:802:        let expected_echo = if plan.case == Case::Echo {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:894:            usize::from(plan.case != Case::Outburst(4)),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:903:        if plan.case == Case::Outburst(4) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs:924:        let mana_leech = if matches!(plan.case, Case::Outburst(_)) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_podium_dispatch.rs:42:    postgres_case("house_podium_roundtrip", Case::Roundtrip)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_podium_dispatch.rs:47:    postgres_case("house_podium_refusals", Case::Refusals)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_podium_dispatch.rs:52:    postgres_case("house_podium_without_capability", Case::MissingCapability)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_podium_dispatch.rs:189:    let selected: &[u32] = if matches!(case, Case::MissingCapability) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_podium_dispatch.rs:240:    if matches!(case, Case::MissingCapability) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_podium_dispatch.rs:278:    if matches!(case, Case::Roundtrip) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:90:    run(Case::Shared)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:94:    run(Case::Modifiers)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:98:    run(Case::Inactive)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:102:    run(Case::Replay)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:107:    run(Case::Pz)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:111:    run(Case::Rollback)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:116:    run(Case::Concurrent)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:120:    run(Case::Exhausted)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:125:    run(Case::Foreign)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:130:    run(Case::Stale)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:135:    run(Case::OneHit)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:140:    run(Case::PzContention)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:145:    run(Case::TaskBoardParty)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:150:    run(Case::TaskBoardForeign)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:155:    run(Case::TaskBoardTalisman)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:160:    run(Case::TaskBoardUnbound)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:165:    run(Case::TaskBoardPrechange)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:171:    run(Case::TaskBoardOrdered)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:210:    let case = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:211:        Case::TaskBoardParty
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:212:        | Case::TaskBoardUnbound
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:213:        | Case::TaskBoardPrechange
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:214:        | Case::TaskBoardOrdered => Case::OneHit,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:215:        Case::TaskBoardForeign => Case::Foreign,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:216:        Case::TaskBoardTalisman => Case::Offence,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:229:    let third = if matches!(case, Case::Foreign | Case::ForgeForeign) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:245:    let (controller, pin) = if matches!(case, Case::Eqmod2) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:302:        if x == 2 && !matches!(task_board_case, Case::TaskBoardOrdered) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:305:        let key = if matches!(task_board_case, Case::TaskBoardOrdered) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:311:            && !matches!(case, Case::Concurrent | Case::OneHit | Case::Eqmod2)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:312:            && !matches!(task_board_case, Case::TaskBoardTalisman)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:526:            if index == 0 || matches!(case, Case::Modifiers | Case::Pz) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:548:        Case::TaskBoardParty
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:549:            | Case::TaskBoardForeign
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:550:            | Case::TaskBoardTalisman
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:551:            | Case::TaskBoardUnbound
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:552:            | Case::TaskBoardPrechange
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:553:            | Case::TaskBoardOrdered
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:557:    if matches!(task_board_case, Case::TaskBoardPrechange) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:560:    if matches!(task_board_case, Case::TaskBoardTalisman) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:563:    if matches!(case, Case::SoulWarTerminal) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:566:    if matches!(case, Case::Stamina) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:569:    if matches!(case, Case::Eqmod2) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:572:    if matches!(case, Case::Offence) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:653:    if matches!(task_board_case, Case::TaskBoardOrdered) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:659:    if matches!(case, Case::Shared) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:674:    if matches!(case, Case::Modifiers) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:751:    if matches!(case, Case::Exhausted) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:755:    if matches!(case, Case::Pz) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:777:    let staged_contributors: &[usize] = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:778:        Case::Foreign => &[2, 0],
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:779:        Case::ForgeForeign => &[2],
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:780:        Case::Pz | Case::Concurrent => &[0],
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:803:            let staged_mode = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:804:                Case::ForgeForeign => Some(oteryn_protocol_oteryn::attack::FightMode::Offensive),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:805:                Case::Foreign if index == 0 => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:853:            let contributed = if matches!(case, Case::ForgeForeign) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:855:            } else if index == 0 && matches!(case, Case::Concurrent | Case::Foreign) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:857:            } else if index == 2 && matches!(case, Case::Foreign) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:882:    let foreign_staged = if matches!(case, Case::Foreign) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:921:    if matches!(case, Case::Concurrent) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:946:    if matches!(case, Case::OneHit) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1017:            || (index == 0 && matches!(case, Case::Pz | Case::Concurrent | Case::Foreign))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1020:                    || matches!(case, Case::Inactive | Case::OneHit | Case::ForgeIdle)))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1025:        if case.forge() || matches!(case, Case::Inactive | Case::Foreign) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1060:        if matches!(case, Case::ForgeFar) && pass == 0 {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1097:    if matches!(case, Case::Concurrent) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1194:    if matches!(case, Case::Stale | Case::ForgeStale) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1218:    if matches!(case, Case::PzContention) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1243:        Case::TaskBoardParty
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1244:            | Case::TaskBoardForeign
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1245:            | Case::TaskBoardUnbound
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1246:            | Case::TaskBoardPrechange
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1252:    if matches!(task_board_case, Case::TaskBoardPrechange) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1261:    if matches!(task_board_case, Case::TaskBoardParty) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1270:    if matches!(task_board_case, Case::TaskBoardUnbound) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1286:    if matches!(case, Case::Replay) || (case.forge() && !matches!(case, Case::ForgeRollback)) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1332:    if matches!(case, Case::Rollback | Case::ForgeRollback) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1378:    if matches!(case, Case::Concurrent) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1415:                Case::TaskBoardParty | Case::TaskBoardUnbound
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1420:    if matches!(task_board_case, Case::TaskBoardUnbound) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1460:    if matches!(case, Case::Inactive) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1462:    } else if matches!(case, Case::Concurrent) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1464:    } else if matches!(case, Case::Foreign) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1494:    } else if matches!(case, Case::Exhausted) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1496:    } else if matches!(case, Case::Pz) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1509:            if matches!(case, Case::Modifiers) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1521:        if matches!(case, Case::Concurrent) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1532:        if matches!(case, Case::Concurrent) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1534:        } else if matches!(case, Case::Foreign) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1536:        } else if matches!(case, Case::Inactive | Case::Exhausted) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs:1542:    if matches!(case, Case::Modifiers) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/timed_item/authority.rs:40:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon.rs:114:    run_case(Case::Placed)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon.rs:118:    run_case(Case::Carried)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon.rs:122:    run_case(Case::Nested)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/house_balloon.rs:126:    run_case(Case::Foreign)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge_fusion.rs:28:        support::scenario(Case::Items(Operation::Fusion))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge_fusion.rs:36:        support::scenario(Case::Items(Operation::ConvergenceFusion))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge_fusion.rs:43:        support::scenario(Case::Items(Operation::Transfer))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge_fusion.rs:51:        support::scenario(Case::Items(Operation::ConvergenceTransfer))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge_fusion.rs:59:        support::scenario(Case::CoreRefusal)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge_fusion.rs:66:        support::scenario(Case::MixedFee)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/support.rs:302:    if case == Case::Logout {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/support.rs:321:    if case == Case::Logout {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/mount_taming/fixture.rs:5:    let tag = match cases {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/mount_taming/fixture.rs:179:    match cases {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:206:    let listing = if case == Case::Accept {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:254:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:255:        Case::Request => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:279:        Case::Cancel => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:339:        Case::Invite | Case::Deny => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:340:            let (action, expected) = if case == Case::Invite {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:362:            let changed = wire::encode_leader_action(if case == Case::Invite {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:406:        Case::Accept => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:595:        Case::Remove => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:616:        Case::Logout => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:649:        Case::Refusals => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members/cases.rs:729:    if case != Case::Logout {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_seed_planting.rs:33:    run_case(Case::GroundPlant)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_seed_planting.rs:37:    run_case(Case::GroundPreserve)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_seed_planting.rs:41:    run_case(Case::NestedCarriedPlant)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_seed_planting.rs:45:    run_case(Case::CarriedPreserve)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_seed_planting.rs:395:        if matches!(case, Case::GroundPlant) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity/state_continuity.rs:100:    // Case::Entry uses the existing isolated one-second room policy. Wait for
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:98:    check(Case::Reveal)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:103:    check(Case::Dismantle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:108:    check(Case::NestedDismantle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:113:    check(Case::SplitDismantle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:118:    check(Case::FullDismantle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:123:    check(Case::ManagedDismantle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:128:    check(Case::ManagedNestedDismantle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:133:    check(Case::ManagedFallbackDismantle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:138:    check(Case::ManagedMainFallbackDismantle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:143:    check(Case::Resources)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:148:    check(Case::ResourcesUnselected)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:153:    check(Case::FilteredManagedDismantle)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:158:    check(Case::SwitchDomain)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:163:    check(Case::GradeUp)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:168:    check(Case::NestedReveal)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:173:    check(Case::DeepNestedReveal)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:178:    check(Case::WholeNestedReveal)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:183:    check(Case::NestedRevealOrder)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:188:    check(Case::NestedGrade)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:193:    check(Case::NestedGold)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:198:    check(Case::WholeNestedGold)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:203:    check(Case::ManyNestedCoins)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:208:    check(Case::ManyBurnedCoins)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:213:    check(Case::StashGrade)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:218:    check(Case::SupremeStashGrade)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:223:    check(Case::MixedStashGrade)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:228:    check(Case::EmptyStashGrade)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:233:    check(Case::NoBackpackStashGrade)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:238:    check(Case::ThirtyFragments)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:243:    check(Case::InsufficientFragments)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:248:    check(Case::InsufficientGold)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:253:    check(Case::StashedReveal)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:258:    check(Case::ExAction)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:309:    let (input, key, count, weight): (u8, &str, i64, Option<u32>) = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:310:        Case::NestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:311:        | Case::DeepNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:312:        | Case::WholeNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:313:        | Case::NestedRevealOrder
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:314:        | Case::StashedReveal => (220, "oteryn:item.tibia.i44608", 2, Some(20)),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:315:        Case::NestedGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:316:        | Case::WholeNestedGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:317:        | Case::ManyNestedCoins
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:318:        | Case::ManyBurnedCoins => (235, "oteryn:item.tibia.i3043", 100, None),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:319:        Case::SupremeStashGrade => (232, "oteryn:item.tibia.i46626", 100, None),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:320:        Case::NestedGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:321:        | Case::StashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:322:        | Case::MixedStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:323:        | Case::EmptyStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:324:        | Case::NoBackpackStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:325:        | Case::ThirtyFragments
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:326:        | Case::InsufficientFragments
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:327:        | Case::InsufficientGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:328:        | Case::NestedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:329:        | Case::SplitDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:330:        | Case::FullDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:331:        | Case::ManagedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:332:        | Case::ManagedNestedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:333:        | Case::ManagedFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:334:        | Case::ManagedMainFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:335:        | Case::FilteredManagedDismantle => (229, "oteryn:item.tibia.i46625", 100, Some(5)),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:538:            if matches!(case, Case::Resources | Case::ResourcesUnselected) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:579:        if matches!(case, Case::ExAction | Case::Resources) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:638:        let capabilities: &[u32] = if matches!(case, Case::Resources) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:653:        if matches!(case, Case::Resources | Case::ResourcesUnselected) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:654:            if matches!(case, Case::Resources) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:669:        if matches!(case, Case::ThirtyFragments) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:683:        let grade_kind = u8::from(matches!(case, Case::SupremeStashGrade));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:689:        let target_grade = if matches!(case, Case::ThirtyFragments) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:694:        let mutation = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:695:            Case::Resources | Case::ResourcesUnselected => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:698:            Case::Reveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:699:            | Case::NestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:700:            | Case::DeepNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:701:            | Case::WholeNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:702:            | Case::NestedRevealOrder
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:703:            | Case::NestedGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:704:            | Case::WholeNestedGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:705:            | Case::StashedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:706:            | Case::ExAction => wire::Mutation::Reveal { quality: 0 },
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:707:            Case::Dismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:708:            | Case::NestedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:709:            | Case::SplitDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:710:            | Case::FullDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:711:            | Case::ManagedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:712:            | Case::ManagedNestedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:713:            | Case::ManagedFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:714:            | Case::ManagedMainFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:715:            | Case::FilteredManagedDismantle => wire::Mutation::Dismantle { gem: gem.id },
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:716:            Case::SwitchDomain | Case::ManyNestedCoins => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:719:            Case::GradeUp
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:720:            | Case::NestedGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:721:            | Case::StashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:722:            | Case::SupremeStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:723:            | Case::MixedStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:724:            | Case::EmptyStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:725:            | Case::NoBackpackStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:726:            | Case::ThirtyFragments
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:727:            | Case::ManyBurnedCoins
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:728:            | Case::InsufficientFragments
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:729:            | Case::InsufficientGold => wire::Mutation::GradeUp {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:750:            if !matches!(case, Case::InsufficientGold) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:809:        let expected_fee = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:810:            Case::Resources | Case::ResourcesUnselected => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:813:            Case::Reveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:814:            | Case::NestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:815:            | Case::DeepNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:816:            | Case::WholeNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:817:            | Case::NestedRevealOrder
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:818:            | Case::NestedGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:819:            | Case::WholeNestedGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:820:            | Case::StashedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:821:            | Case::ExAction => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:833:                    if matches!(case, Case::WholeNestedReveal) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:841:            Case::Dismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:842:            | Case::NestedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:843:            | Case::SplitDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:844:            | Case::FullDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:845:            | Case::ManagedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:846:            | Case::ManagedNestedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:847:            | Case::ManagedFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:848:            | Case::ManagedMainFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:849:            | Case::FilteredManagedDismantle => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:869:            Case::SwitchDomain | Case::ManyNestedCoins => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:881:            Case::GradeUp
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:882:            | Case::NestedGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:883:            | Case::StashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:884:            | Case::SupremeStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:885:            | Case::MixedStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:886:            | Case::EmptyStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:887:            | Case::NoBackpackStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:888:            | Case::ThirtyFragments
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:889:            | Case::ManyBurnedCoins
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:890:            | Case::InsufficientFragments
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:891:            | Case::InsufficientGold => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:897:                    Case::GradeUp | Case::NestedGrade | Case::ManyBurnedCoins
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:915:        let advertised_fee = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:916:            Case::Resources | Case::ResourcesUnselected => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:919:            Case::Reveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:920:            | Case::NestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:921:            | Case::DeepNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:922:            | Case::WholeNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:923:            | Case::NestedRevealOrder
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:924:            | Case::NestedGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:925:            | Case::WholeNestedGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:926:            | Case::StashedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:927:            | Case::ExAction => Some(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:935:            Case::Dismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:936:            | Case::NestedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:937:            | Case::SplitDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:938:            | Case::FullDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:939:            | Case::ManagedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:940:            | Case::ManagedNestedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:941:            | Case::ManagedFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:942:            | Case::ManagedMainFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:943:            | Case::FilteredManagedDismantle => None,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:944:            Case::SwitchDomain | Case::ManyNestedCoins => Some(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:952:            Case::GradeUp
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:953:            | Case::NestedGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:954:            | Case::StashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:955:            | Case::SupremeStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:956:            | Case::MixedStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:957:            | Case::EmptyStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:958:            | Case::NoBackpackStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:959:            | Case::ThirtyFragments
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:960:            | Case::ManyBurnedCoins
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:961:            | Case::InsufficientFragments
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:962:            | Case::InsufficientGold => Some(
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:977:        if matches!(case, Case::SplitDismantle) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid.rs:988:        if matches!(case, Case::ExAction) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/paralyze_rune.rs:17:        run(async |admin| run_case(admin, Case::ParalyzeMonster).await)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/paralyze_rune.rs:23:    super::item_look::large_stack(|| run(async |admin| run_case(admin, Case::ParalyzePlayer).await))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/paralyze_rune.rs:124:    if case == Case::ParalyzePlayer {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/paralyze_rune.rs:153:    if case == Case::ParalyzePlayer {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/paralyze_rune.rs:162:    if case == Case::ParalyzePlayer {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/paralyze_rune.rs:210:    if case == Case::ParalyzePlayer {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/appearance_change_postgres/native_admission_tests.rs:12:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/equipped_offence.rs:11:    party_xp::run(Case::Offence)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:130:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:131:        Case::NestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:132:        | Case::DeepNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:133:        | Case::WholeNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:134:        | Case::NestedRevealOrder => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:135:            let quantity = if matches!(case, Case::WholeNestedReveal) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:144:            if matches!(case, Case::DeepNestedReveal) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:146:            } else if matches!(case, Case::NestedRevealOrder) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:159:        Case::NestedGrade => nest_asset(h, 229, 100).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:160:        Case::NestedGold | Case::WholeNestedGold => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:161:            let quantity = if matches!(case, Case::WholeNestedGold) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:171:        Case::ManyNestedCoins | Case::ManyBurnedCoins => single_nested_stacks(h, 235, 75).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:172:        Case::StashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:173:        | Case::SupremeStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:174:        | Case::MixedStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:175:        | Case::EmptyStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:176:        | Case::NoBackpackStashGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:177:        | Case::InsufficientFragments
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:178:        | Case::InsufficientGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:179:        | Case::StashedReveal => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:180:            let input = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:181:                Case::SupremeStashGrade => 232,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:182:                Case::StashedReveal => 220,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:185:            let quantity = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:186:                Case::EmptyStashGrade => 5,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:187:                Case::InsufficientFragments | Case::StashedReveal => 2,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:190:            if matches!(case, Case::EmptyStashGrade | Case::InsufficientFragments) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:194:            if matches!(case, Case::MixedStashGrade | Case::InsufficientFragments) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:196:            } else if matches!(case, Case::NoBackpackStashGrade) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:209:            } else if matches!(case, Case::InsufficientGold) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:213:        Case::ThirtyFragments => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:403:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:404:        Case::NestedReveal | Case::NestedRevealOrder | Case::DeepNestedReveal => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:409:                Some(if matches!(case, Case::DeepNestedReveal) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:416:            if matches!(case, Case::NestedRevealOrder) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:420:        Case::WholeNestedReveal => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:424:        Case::NestedGrade => assert_nested(h, 229, Some(250)).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:425:        Case::NestedGold | Case::WholeNestedGold => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:426:            let whole = matches!(case, Case::WholeNestedGold);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:444:        Case::StashGrade | Case::EmptyStashGrade | Case::NoBackpackStashGrade => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:445:            let before = if matches!(case, Case::EmptyStashGrade) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:452:            if matches!(case, Case::NoBackpackStashGrade) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:456:        Case::SupremeStashGrade => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:461:        Case::MixedStashGrade => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:471:        Case::ThirtyFragments => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:480:        Case::ManyNestedCoins | Case::ManyBurnedCoins => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:481:            let all_burned = matches!(case, Case::ManyBurnedCoins);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:529:        Case::NestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:530:            | Case::DeepNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:531:            | Case::WholeNestedReveal
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:532:            | Case::NestedRevealOrder
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:533:            | Case::NestedGrade
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:534:            | Case::NestedGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:535:            | Case::WholeNestedGold
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:536:            | Case::ThirtyFragments
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:546:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:547:        Case::NestedReveal => reject_foreign_nested_proof(h).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:548:        Case::StashGrade => reject_historical_stash_debit(h).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/custody.rs:549:        Case::NestedGold => reject_historical_coin_proof(h).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:120:    run_wheel_case(Some(WheelExtensionCase::Socket))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:125:    run_wheel_case(Some(WheelExtensionCase::Unsocket))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:130:    run_wheel_case(Some(WheelExtensionCase::Gift))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:136:    run_wheel_case(Some(WheelExtensionCase::Capacity))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:157:    run_wheel_combat_case(WheelCombatCase::Unlocked)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:162:    run_wheel_combat_case(WheelCombatCase::Pve)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:167:    run_wheel_combat_case(WheelCombatCase::Pvp)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:172:    run_wheel_combat_case(WheelCombatCase::ProtectionZone)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:292:        if !matches!(transition, Some(WheelExtensionCase::Capacity)) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:344:        if matches!(transition, Some(WheelExtensionCase::Capacity)) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:436:            let gift_remaining = if matches!(transition, WheelExtensionCase::Gift) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:550:                WheelExtensionCase::Socket | WheelExtensionCase::Gift => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:553:                WheelExtensionCase::Unsocket => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:569:                WheelExtensionCase::Capacity => return Err("capacity case already handled".into()),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:586:                WheelExtensionCase::Socket => eprintln!("WHEEL_SOCKET POSTGRES_CASE_COMPLETED"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:587:                WheelExtensionCase::Unsocket => eprintln!("WHEEL_UNSOCKET POSTGRES_CASE_COMPLETED"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:588:                WheelExtensionCase::Gift => eprintln!("WHEEL_GIFT POSTGRES_CASE_COMPLETED"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:589:                WheelExtensionCase::Capacity => return Err("capacity case already handled".into()),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:619:            let in_pz = matches!(case, WheelCombatCase::ProtectionZone);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:639:                if matches!(case, WheelCombatCase::Pve | WheelCombatCase::ProtectionZone) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:645:            if matches!(case, WheelCombatCase::Pvp | WheelCombatCase::ProtectionZone) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:651:            assert_eq!(fact.pve_in_fight_until.is_some(), matches!(case, WheelCombatCase::Pve | WheelCombatCase::ProtectionZone));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:652:            assert_eq!(fact.pvp == crate::gameplay_transport::combat_lock_fact::PvpLockSource::LiveBlocked, matches!(case, WheelCombatCase::Pvp | WheelCombatCase::ProtectionZone));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/wheel_allocation.rs:661:            let blocked = matches!(case, WheelCombatCase::Pve | WheelCombatCase::Pvp);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:27:    if matches!(case, Case::ManagedMainFallbackDismantle) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:43:    } else if matches!(case, Case::ManagedNestedDismantle) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:49:    } else if matches!(case, Case::ManagedFallbackDismantle) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:65:        .bind(matches!(case, Case::ManagedMainFallbackDismantle)).execute(&mut *tx).await?;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:66:    if matches!(case, Case::FilteredManagedDismantle) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:75:        if matches!(case, Case::ManagedMainFallbackDismantle) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:113:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:114:        Case::NestedDismantle => full_containers(h, false).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:115:        Case::FullDismantle => full_containers(h, true).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:116:        Case::ManagedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:117:        | Case::ManagedNestedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:118:        | Case::ManagedFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:119:        | Case::ManagedMainFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:120:        | Case::FilteredManagedDismantle => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:123:        Case::SplitDismantle => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:175:        Case::ManagedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:176:            | Case::ManagedNestedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:177:            | Case::ManagedFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:178:            | Case::ManagedMainFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:179:            | Case::FilteredManagedDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:186:        let preferred = matches!(case, Case::ManagedDismantle | Case::ManagedNestedDismantle);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:187:        let main_subtree = matches!(case, Case::ManagedMainFallbackDismantle);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:191:        } else if matches!(case, Case::ManagedNestedDismantle) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:205:            Case::ManagedFallbackDismantle | Case::ManagedMainFallbackDismantle
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:225:    if !matches!(case, Case::NestedDismantle | Case::SplitDismantle) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/atelier/wire_paid/outputs.rs:236:    if matches!(case, Case::NestedDismantle) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:26:    postgres_case(Case::Water, "item_craft_carried_water")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:31:    postgres_case(Case::Milk, "item_craft_carried_milk")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:36:    postgres_case(Case::Empty, "item_craft_carried_empty")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:41:    postgres_case(Case::Full, "item_craft_carried_full")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:172:        if matches!(case, Case::Full) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:190:        if !matches!(case, Case::Empty) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:191:            let subtype = if matches!(case, Case::Milk) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:238:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:239:            Case::Water | Case::Milk => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:248:                let output = if matches!(case, Case::Water) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:261:            Case::Empty => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:279:            Case::Full => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_craft_carried_fluid.rs:294:        if matches!(case, Case::Water) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks/removal.rs:19:    let (deps, monster) = dependencies(active, &pin, AttackCase::TheMonster)?;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks/removal.rs:38:        .find(|record| record.profile.target.key == AttackCase::TheMonster.creature_key())
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/parameter_spell/exiva_settings.rs:84:    let modes = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/parameter_spell/exiva_settings.rs:98:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:238:fn hireling_store_purchase_lamp_once_and_replay()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-hire",||scenario(Case::Hire))}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:240:fn hireling_store_skill_once_and_duplicate_refusal()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-skill",||scenario(Case::Skill))}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:242:fn hireling_store_outfit_once_and_duplicate_refusal()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-outfit",||scenario(Case::Outfit))}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:244:fn hireling_store_rename_once_and_binding_refusal()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-rename",||scenario(Case::Rename))}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:246:fn hireling_store_sex_change_toggles_only_once()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-sex",||scenario(Case::Sex))}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:248:fn hireling_store_uncertain_debit_reserves_entitlement_until_retry()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-uncertain",||scenario(Case::Uncertain))}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:250:fn hireling_store_refusals_do_not_debit_and_release_reservation()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-refusals",||scenario(Case::Refusals))}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:252:fn hireling_store_full_inbox_refuses_before_debit_and_keeps_delivered_replay()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-inbox",||scenario(Case::FullInbox))}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:254:fn hireling_store_paid_lamp_retries_after_prepared_delivery_refusal()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-delivery-retry",||scenario(Case::DeliveryRetry))}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:256:fn hireling_store_uncertain_tenth_hire_reserves_character_limit()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-limit",||scenario(Case::Limit))}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:259:fn storefix_local_encode_refusal_releases_reservation_without_debit()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("storefix-local-encode",||scenario(Case::LocalEncode))}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:296:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:297:            Case::Hire=>{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:323:            Case::Skill|Case::Outfit=>{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:324:                let (offer,price)=if matches!(case,Case::Skill){(1001,250)}else{(2001,500)};
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:334:            Case::Rename=>{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:341:            Case::Sex=>{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:347:            Case::Uncertain=>{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:357:            Case::LocalEncode=>{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:366:            Case::Refusals=>{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:380:            Case::FullInbox=>{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:394:            Case::DeliveryRetry=>{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/hireling_store.rs:450:            Case::Limit=>{
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:22:    run_all(false, false, Some(Case::ConcurrentGrant))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:27:    run_all(false, false, Some(Case::Parts))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:31:    run_all(false, false, Some(Case::OmittedGrant))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:35:    run_all(false, false, Some(Case::Outfit))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:39:    run_all(true, true, Some(Case::Afflicted))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:115:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:116:        Case::Parts | Case::OmittedGrant | Case::ConcurrentGrant => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:128:                if command == 4 && matches!(case, Case::ConcurrentGrant) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:131:                if command == 4 && matches!(case, Case::OmittedGrant) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:199:        Case::Outfit => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_cosmetics/positive.rs:345:        Case::Afflicted => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:38:    run_case(Case::Reservation)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:43:    run_case(Case::Release)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:48:    run_case(Case::MalformedRelease)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:53:    run_case(Case::Replay)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:58:    run_case(Case::Binding)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:63:    run_case(Case::Atomicity)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:68:    run_case(Case::Reload)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:128:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:129:            Case::Reservation => reservation(&owner, &h, admitted, account).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:130:            Case::Release => release(&owner, &h, admitted, account).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:131:            Case::MalformedRelease => malformed_release(&owner, &h, admitted, account).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:132:            Case::Replay => replay(&owner, &h, admitted, delivery).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:133:            Case::Binding => binding(&owner, &h, admitted, delivery).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:134:            Case::Atomicity => atomicity(&owner, &h, admitted, delivery).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_expansion.rs:135:            Case::Reload => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/appearance_change_postgres/command_replay_tests.rs:35:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:156:        if matches!(case, Case::Hireling) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:179:        if !matches!(case, Case::Hireling) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:192:        if matches!(case, Case::Store) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:198:        let capability = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:199:            Case::BrowseField => 230,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:200:            Case::DailyBoost => 151,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:201:            Case::DepotSearch => 153,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:202:            Case::Hireling => 165,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:203:            Case::HotkeyEquip => 179,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:204:            Case::ItemForge => 152,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:205:            Case::Store => 154,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:231:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:232:            Case::BrowseField => super::browse_field::exercise(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:233:            Case::DailyBoost => super::daily_boost::exercise(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:234:            Case::DepotSearch => super::depot_search::exercise(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:235:            Case::Hireling => super::hireling::exercise(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:236:            Case::HotkeyEquip => super::hotkey_equip::exercise(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:237:            Case::ItemForge => super::item_forge::exercise(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/support.rs:238:            Case::Store => super::store::exercise(&h, &owner, &mut admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field/wire.rs:45:        let replay = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field/wire.rs:46:            Case::Backpack | Case::Nested => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field/wire.rs:49:            Case::Navigation => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field/wire.rs:53:            Case::Paging => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field/wire.rs:57:            Case::Autowalk => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field/wire.rs:98:    let destination = if case == Case::Nested {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field/wire.rs:108:    assert_eq!(custody(harness).await?, if case == Case::Nested { (0, 0, 1, 7) } else { (0, 1, 0, 7) });
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field/wire.rs:113:    if case == Case::Nested {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field/wire.rs:121:    let command_id = if case == Case::Nested { 5 } else { 4 };
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:63:    SoulWarEntry,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:64:    SoulWarFinalEntry,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:65:    RottenBloodEntry,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:70:    run_scenario(Case::Entry)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:75:    run_scenario(Case::AwardContinuity)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:80:    run_scenario(Case::Rewards)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:85:    run_scenario(Case::LateRewards)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:90:    run_scenario(Case::NonRewardDefeat)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:95:    run_scenario(Case::Recovery)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:100:    run_scenario(Case::RecoveryCancelled)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:105:    run_scenario(Case::RecoveryProtection)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:110:    run_scenario(Case::CapabilityMismatch)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:115:    run_scenario(Case::OfflineDeathMismatch)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:121:    run_scenario(Case::OfflineDeathDeadline)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:126:    run_scenario(Case::SoulWarEntry)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:131:    run_scenario(Case::SoulWarFinalEntry)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:136:    run_scenario(Case::RottenBloodEntry)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:157:            Case::Rewards | Case::LateRewards | Case::AwardContinuity
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:159:        let late = case == Case::LateRewards;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:162:            Case::OfflineDeathMismatch | Case::OfflineDeathDeadline
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:167:        let initialized = !with_death && case != Case::AwardContinuity;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:174:        let (controller, source_pin) = if case == Case::AwardContinuity {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:206:        let endgame_creature = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:207:            Case::SoulWarEntry => Some("oteryn:creature.goshnar_s_spite"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:208:            Case::SoulWarFinalEntry => Some("oteryn:creature.goshnar_s_megalomania_purple"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:209:            Case::RottenBloodEntry => Some("oteryn:creature.bakragore"),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:223:        } else if case == Case::NonRewardDefeat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:236:        let requested = if case == Case::CapabilityMismatch || with_death {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:274:        if case == Case::AwardContinuity {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:287:        let inherited_protection = if case == Case::RecoveryProtection {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:321:        let (_instance_controller, instance_pin) = if case == Case::AwardContinuity {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:406:            .bind(cell_json(source_cell)).bind(cell_json(boss_cell)).bind(if late || matches!(case, Case::Entry | Case::OfflineDeathDeadline) { 1_i32 } else if case == Case::NonRewardDefeat { 5 } else { 900 }).execute(&h.pool).await?;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:502:            if case == Case::RottenBloodEntry {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:512:            if case != Case::SoulWarEntry {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:518:                if case == Case::RottenBloodEntry {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:526:                if case == Case::SoulWarFinalEntry {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:547:        let attack_continuity = if case == Case::Entry {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:682:        if matches!(case, Case::Rewards | Case::LateRewards) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:690:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:691:            Case::Entry => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:702:            Case::AwardContinuity => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:712:            Case::NonRewardDefeat => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:716:            Case::Recovery => recovery::assert_recovery(&h, &owner, old, admitted).await?,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:717:            Case::RecoveryCancelled => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:720:            Case::RecoveryProtection => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:729:            Case::CapabilityMismatch => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:732:            Case::OfflineDeathMismatch | Case::OfflineDeathDeadline => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/boss_activity.rs:738:                    case == Case::OfflineDeathDeadline,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/browse_field.rs:9:    support::scenario(Case::BrowseField)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field/fixture.rs:40:        if case == Case::Paging {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/browse_field/fixture.rs:131:        if case == Case::Backpack {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:23:#[test] fn prey_diff_set_tier_preserves_list_and_refuses_locked_or_above_level() -> TestResult { run_case(Case::Tier) }
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:24:#[test] fn prey_diff_offers_survive_reload_exclude_three_slots_and_reset_without_charging_exhaustion() -> TestResult { run_case(Case::Daily) }
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:25:#[test] fn prey_diff_pick_again_debits_once_and_refuses_unoffered_occupied_locked_or_unfunded() -> TestResult { run_case(Case::PickAgain) }
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:26:#[test] fn prey_diff_chosen_race_checkpoint_is_independent_per_slot() -> TestResult { run_case(Case::Checkpoint) }
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:27:#[test] fn prey_diff_checkpoint_preserves_admitted_activity_after_premium_lapses() -> TestResult { run_case(Case::LapsedCheckpoint) }
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:28:#[test] fn prey_diff_end_history_commits_measured_counters_with_transition() -> TestResult { run_case(Case::History) }
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:121:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:122:            Case::Tier => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:149:            Case::Daily => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:201:            Case::PickAgain => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:238:            Case::Checkpoint => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:255:            Case::LapsedCheckpoint => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/prey_difficulty.rs:278:            Case::History => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge.rs:31:        support::scenario(Case::Conversions)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge.rs:38:        support::scenario(Case::DustLimit)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge.rs:44:    super::kill_reward_e2e::scenario_thread::run("forge-cap", || support::scenario(Case::DustCap))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge.rs:50:        support::scenario(Case::Refusals)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge.rs:56:    super::kill_reward_e2e::scenario_thread::run("forge-fences", || support::scenario(Case::Fences))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge.rs:62:        support::scenario(Case::Concurrent)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge.rs:69:        support::scenario(Case::NoRoom)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:17:    run_case("monster_attacks_rat", AttackCase::Rat)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:22:    run_case("monster_attacks_hunter", AttackCase::Hunter)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:27:    run_case("monster_attacks_fire_devil", AttackCase::FireDevil)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:32:    run_case("monster_attacks_invisible_area", AttackCase::FireDevilInvisibleBystander)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:37:    run_case("monster_attacks_fire_field", AttackCase::FireElemental)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:42:    run_case("monster_attacks_zero_range_field", AttackCase::Firestarter)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:47:    run_case("monster_attacks_wall_removal", AttackCase::TheMonster)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:92:                let result = if case == AttackCase::TheMonster {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:94:                } else if matches!(case, AttackCase::FireElemental | AttackCase::Firestarter) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:143:    let (chance, range) = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:144:        AttackCase::FireElemental => (250_000, 7),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:145:        AttackCase::Firestarter => (100_000, 0),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:283:    let area_case = matches!(case, AttackCase::FireDevil | AttackCase::FireDevilInvisibleBystander);
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:284:    let invisible_bystander = case == AttackCase::FireDevilInvisibleBystander;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:334:        if case != AttackCase::Rat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:344:        if case != AttackCase::Rat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:371:        if case != AttackCase::Rat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:398:    if case == AttackCase::Rat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:492:    if case == AttackCase::Rat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:503:    if case == AttackCase::Hunter {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs:586:            vec![((if matches!(case, AttackCase::Rat | AttackCase::TheMonster) { 2 } else { -1 }, 12, -7), 60_000, case.creature_key().into(), maximum_health, false)],
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/depot_search.rs:9:    support::scenario(Case::DepotSearch)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/soul_war.rs:18:    super::party_xp::run(super::party_xp::Case::SoulWarTerminal)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/hotkey_equip.rs:9:    support::scenario(Case::HotkeyEquip)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:14:    timed("s5-trade", || scenario(Case::Trade))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:18:    timed("s5-market", || scenario(Case::Market))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:22:    timed("s5-depot", || scenario(Case::Depot))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:26:    timed("s5-forge", || scenario(Case::Forge))
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:95:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:96:            Case::Trade => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:124:            Case::Market => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:159:            Case::Depot => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:198:            Case::Forge => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:244:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:245:            Case::Trade => {}
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:246:            Case::Market => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:257:            Case::Depot => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:269:            Case::Forge => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:287:        if !matches!(case, Case::Trade) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:305:        match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:306:            Case::Trade => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:325:            Case::Market => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:352:            Case::Depot => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/scenarios/s5_disconnect.rs:379:            Case::Forge => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/daily_boost.rs:9:    support::scenario(Case::DailyBoost)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:46:    execute(Case::Bear, "W15B_BEAR_CONTAINER")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:50:    execute(Case::Key, "W15B_KEY_CONTAINER")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:54:    execute(Case::Choice, "W15B_STORAGE_CHOICE")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:58:    execute(Case::Text, "W15B_TEXT_CONTAINER")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:62:    execute(Case::RootText, "W15B_LEAF_TEXT")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:66:    execute(Case::CrystalKey, "W15B_CRYSTAL_KEY")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:70:    execute(Case::FullCharge, "W15B_FULL_CHARGES")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:74:    execute(Case::Full, "W15B_CONTAINER_FULL")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:78:    execute(Case::Weight, "W15B_CONTAINER_WEIGHT")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:85:    execute(Case::DemonBoots, "QUESTS3_DEMON_BOOTS")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:89:    execute(Case::DemonHelmet, "QUESTS3_DEMON_HELMET")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:93:    execute(Case::DemonShield, "QUESTS3_DEMON_SHIELD")
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:105:    let (claim, chest, unique, root_key, expected) = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:106:        Case::DemonBoots => (
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:113:        Case::DemonHelmet => (
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:120:        Case::DemonShield => (
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:127:        Case::RootText => (
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:134:        Case::CrystalKey => (
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:141:        Case::FullCharge => (
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:148:        Case::Key => (
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:158:        Case::Choice => (
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:165:        Case::Text => (
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:206:        let world = if matches!(case, Case::Choice) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:213:            let appearance = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:214:                Case::Text | Case::RootText => 4240,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:215:                Case::CrystalKey => 2474,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:344:        if matches!(case, Case::Full | Case::Weight) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:350:            let burdens = if matches!(case, Case::Full) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:480:            let alternate = if matches!(case, Case::Choice) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:549:                if matches!(case, Case::CrystalKey) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:557:                if matches!(case, Case::FullCharge) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:574:                if matches!(case, Case::RootText) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:605:                if matches!(case, Case::Text) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:643:            assert_eq!(achievements, i64::from(matches!(case, Case::Choice)));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_container_chests.rs:644:            if matches!(case, Case::Text) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/hireling.rs:10:    support::scenario(Case::Hireling)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/equipment_mods.rs:15:    party_xp::run(Case::Eqmod2)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:149:        let wanted_voodoo = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:150:            Case::VoodooSuccess | Case::GroundVoodoo => Some(true),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:151:            Case::VoodooFailure => Some(false),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:154:        let source = if case == Case::DiceStreak {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:195:        if source != seeded || case == Case::Hat || case.ground() || case.nested() {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:204:            if case == Case::Hat {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:276:            Case::VoodooSuccess | Case::VoodooFailure | Case::GroundVoodoo
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:311:        if case == Case::PendingLifecycle {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:330:            if case == Case::VoodooWithoutTarget {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:439:        if case == Case::Rocket {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/novelty_items/scenario.rs:531:        if case == Case::DiceStreak {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/item_forge_integrity.rs:27:        support::scenario(Case::Integrity)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:51:        CASE.set(Some(Case::Large));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:58:        CASE.set(Some(Case::Nested));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:65:        CASE.set(Some(Case::ChargedSubtype));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:72:        CASE.set(Some(Case::FluidSubtype));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:79:        CASE.set(Some(Case::Gut));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:86:        CASE.set(Some(Case::DuplexOn));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:93:        CASE.set(Some(Case::DuplexOff));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:100:        CASE.set(Some(Case::DuplexOfflineIgnored));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:107:        CASE.set(Some(Case::DuplexOnlineSpent));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:114:        CASE.set(Some(Case::Outside));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:122:    CASE.set(Some(Case::BoostedBossUnique));
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:142:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:143:        Case::Large => table["entries"] = Value::Array(vec![entry(3031); 20]),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:144:        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:147:        Case::ChargedSubtype => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:154:        Case::FluidSubtype => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:177:        Case::BoostedBossUnique => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:182:        Case::Gut => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:188:        Case::Nested | Case::Outside => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:211:    if matches!(CASE.get(), Some(Case::DuplexOn)) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:214:    if let Some(case @ (Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent)) = CASE.get() {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:216:        return age_wealth_duplex(h, session, matches!(case, Case::DuplexOnlineSpent)).await;
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:218:    if !matches!(CASE.get(), Some(Case::Gut)) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:441:    match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:442:        Case::Gut => assert_eq!(nested, 0),
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:443:        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:446:            let rolls = if matches!(case, Case::DuplexOn | Case::DuplexOfflineIgnored) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:455:        Case::BoostedBossUnique => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:469:        Case::Large => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:473:        Case::ChargedSubtype => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:484:        Case::FluidSubtype => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:494:        Case::Nested | Case::Outside => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:511:    if matches!(case, Case::Gut) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/w22a_loot.rs:514:    if matches!(case, Case::Outside) {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/item_forge.rs:9:    support::scenario(Case::ItemForge)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/client_e2e/store.rs:9:    support::scenario(Case::Store)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/event_containers/ground.rs:21:    run_case(Case::Anniversary)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/event_containers/ground.rs:26:    run_case(Case::Special)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/event_containers/ground.rs:208:        for ordinal in 0..if case == Case::Special { 63 } else { 7 } {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/event_containers/ground.rs:212:            if case == Case::Special {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/event_containers/ground.rs:235:        if case == Case::Special {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/event_containers/ground.rs:275:        let removed = if case == Case::Special {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/event_containers/ground.rs:297:        if case == Case::Special {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:5:    let label = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:6:        Case::FullRetry => "drome_cube_full",
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:7:        Case::HandleReplay => "drome_cube_handle",
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:8:        Case::ExistingStack => "drome_cube_stack",
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:9:        Case::ConcurrentLastUnit => "drome_cube_concurrent",
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:10:        Case::KooldownAid => "kooldown_aid",
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:40:    let source_key = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:41:        Case::KooldownAid => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:155:    let result = match case {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:156:        Case::KooldownAid => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:159:        Case::FullRetry => super::run(&owner, &harness, actor, session, index).await,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:160:        Case::HandleReplay => super::cases::handle_replay(&owner, &harness, actor, session).await,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:161:        Case::ExistingStack => super::cases::stack(&owner, &harness, actor, session, index).await,
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/drome_cube/fixture.rs:162:        Case::ConcurrentLastUnit => {
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members.rs:68:    run_case(Case::Request)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members.rs:73:    run_case(Case::Cancel)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members.rs:78:    run_case(Case::Invite)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members.rs:83:    run_case(Case::Accept)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members.rs:88:    run_case(Case::Deny)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members.rs:93:    run_case(Case::Remove)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members.rs:98:    run_case(Case::Logout)
+crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/team_finder_members.rs:104:    run_case(Case::Refusals)

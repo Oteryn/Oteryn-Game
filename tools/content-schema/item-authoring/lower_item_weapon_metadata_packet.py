@@ -3,9 +3,11 @@
 import argparse
 import json
 import re
+import sys
 from collections import Counter
 
 import appearance_membership
+import historical_world_owner_context as world_context
 import lower_wiki_movable_packet as movable
 import lower_wiki_stack_default_packet as base
 from engine_items import decode_appearance_object, protobuf_fields
@@ -82,9 +84,18 @@ def check_parent_receipt(root, proof):
     # The full reference digest is an immutable actual-parent observation.
     # Current identity/class/name/whole-weapon guards below allow unrelated
     # NativeStack successors without rewriting that historical receipt.
-    packet = json.loads(
-        base.checked(root, receipt["hit_packet_path"], receipt["hit_packet_sha256"])
-    )
+    path, digest = receipt["hit_packet_path"], receipt["hit_packet_sha256"]
+    raw = (root / path).read_bytes()
+    if (
+        base.sha(raw) != digest
+        and path == world_context.HIT_PACKET
+        and digest == world_context.HIT_SHA
+    ):
+        # Only the hash-exact pre-W15c receipt may explain live World drift.
+        raw = world_context.original_hit_packet(root)
+    if base.sha(raw) != digest:
+        raise ValueError(f"source digest drift: {path}")
+    packet = json.loads(raw)
     hits = {
         r["target"]["key"]: r
         for r in packet["promotions"]
@@ -174,6 +185,14 @@ def pre_overlay_definitions(root, current):
         if row["identity"]["key"] in definitions:
             raise ValueError("duplicate pre-overlay Item identity")
         definitions[row["identity"]["key"]] = row
+    # Tree-first identity owners extend the frozen legacy promotion input.
+    # Reuse their exact source-qualified, nonmaterializable references.
+    sys.path.insert(0, str(root / "tools/content-migration"))
+    from tree_item_references import extend_records
+
+    qualified = list(definitions.values())
+    extend_records(qualified, root)
+    definitions = {row["identity"]["key"]: row for row in qualified}
     if set(definitions) != set(current):
         raise ValueError("pre-overlay/current Item identity set drift")
     return definitions

@@ -8,6 +8,8 @@ import copy
 import hashlib
 import json
 
+from native_profile_composition import encode_native_profile
+
 # I05 skill rings: power 3050 -> 3087 fist +4 (TibiaWiki overrides stale Crystal +6;
 # Monk Vocation Update 2025-04-08, TibiaWiki Power Ring history: +6 -> +4).
 # Crystal 201189f8 data/items/items.xml supplies the pairs and durations
@@ -103,7 +105,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             'production_binding': binding, 'production_binding_qualification': None,
         })
     document['records'].sort(key=order)
-    data = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+    data = encode_native_profile(document)
     generated[profile_path] = data
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(data).hexdigest()

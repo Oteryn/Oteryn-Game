@@ -6,8 +6,8 @@ impl PlayLink {
         lock(&self.mailbox).daily_boost.clone()
     }
 }
-#[cfg(windows)]
+#[cfg(all(windows, not(test)))]
 #[path = "native.rs"]
 mod native;
-#[cfg(windows)]
+#[cfg(all(windows, not(test)))]
 pub(in crate::play) use native::open_window;

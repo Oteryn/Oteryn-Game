@@ -1,0 +1,62 @@
+{
+  "task": "questpc6",
+  "state": "AUTHORING / PARTIAL",
+  "initial_head": "c74555edf",
+  "external_snapshot_head": "deeb77891d943de2cf616d51e485b12c54abaebc",
+  "agent_git_mutations": false,
+  "local_ledger_rows": 33,
+  "prompt_expected_blocked": 94,
+  "owner_decisions_file": "absent",
+  "counts": {
+    "UNFINISHED": 31,
+    "BLOCKED": 1,
+    "QUALIFIED": 1
+  },
+  "new_qualified_quests": 0,
+  "completed_5_to_10_quest_batches": 0,
+  "implemented_slice": "Devil Helmet source pressure-plate lifecycle and shared single callback-item removal",
+  "red_test_seconds": 41.72,
+  "pg_markers": [
+    {
+      "name": "devil-helmet-sewer",
+      "duration_seconds": 27.688224016
+    },
+    {
+      "name": "devil-helmet-sewer-unrelated",
+      "duration_seconds": 26.853649611
+    },
+    {
+      "name": "devil-helmet-sewer-existing",
+      "duration_seconds": 28.286451882
+    }
+  ],
+  "unit_tests_passed": 9,
+  "validation": ".questpc6/pressure-final-validation.json",
+  "post_cleanup_checks": {
+    "scoped_rustfmt": 0,
+    "workspace_cargo_fmt_all_check": 0,
+    "source_diff_whitespace": 0
+  },
+  "true_blockers": [
+    {
+      "quest": "Dawnport Quest",
+      "owner": "owner-excluded"
+    }
+  ],
+  "unfinished_owner": "questpc6",
+  "unfinished_groups": ".questpc6/MECHANISM-GROUPS.json",
+  "source_hashes": {
+    "crates/gameplay/dispatch/src/gameplay_transport/paced_movement/special_movement.rs": "220d45393270e4c43dbc71badadb9fec136671a5b7083d1f5ccfa49ad5486150",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/pressure_plate_sewer.rs": "21d8bbf4fd8f7c3376ccb7cb92f3b0fda26f77a8133ef4da500ce6cdead59a35",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks.rs": "f3a2621b7be0771dfcd2808e00cf9a56c0bbbb0a0895a0d7a47f6424cf00b9df",
+    "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs": "39cc8872d2101275e60236a17fc7af667d4f3f2c6efaab8451080b2a6aa3dd19",
+    "crates/gameplay/world/src/map/facts.rs": "0d0c626a05757689245be8bae918b93665013c26c3be6bfdcf12d5b547b4a906",
+    "crates/gameplay/world/src/map/facts/quest_callbacks.rs": "a2b427bc55d05ca9a5d6304b979a7c453245d47a1e85a7027d698801f64cfa29"
+  },
+  "unrelated_formatting_restored": [
+    "lions_rock.rs",
+    "literal_uses.rs",
+    "rotten_blood.rs",
+    "unnatural_selection.rs"
+  ]
+}

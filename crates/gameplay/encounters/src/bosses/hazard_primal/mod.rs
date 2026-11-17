@@ -2,3 +2,6 @@
 pub use oteryn_gameplay_encounter_rules::hazard::{
     HazardAreaEffects, HazardError, gnomprona_contains, provisional_effects,
 };
+pub mod primal_menace_think;
+
+pub mod primal_pod;

@@ -16,6 +16,8 @@ use serde_json::{Value, json};
 use sqlx::{Postgres, Row, Transaction};
 
 pub(crate) mod audit;
+mod browse;
+pub use browse::StashCatalogueEntry;
 
 #[derive(Debug, Clone)]
 pub struct StashRequest {
@@ -109,27 +111,54 @@ impl DurabilityRoot {
         content: &C,
         probe: bool,
     ) -> Result<Option<StashReceipt>, DurabilityError> {
-        self.stash_conversion_at(permit,recovery,node,fence,request,native,content,probe,None).await
+        self.stash_conversion_at(
+            permit, recovery, node, fence, request, native, content, probe, None,
+        )
+        .await
     }
 
     /// Steward service extends the native stash owner with a closed named-House admission.
     #[allow(clippy::too_many_arguments)]
     pub async fn hireling_stash_conversion<C: ItemLoopContent>(
-        &self, permit:&super::spell_owner_commit::SpellLanePermit,
-        recovery:&ReconciledCharacterAuthority<'_, '_>,node:&NodeIncarnationProof,
-        fence:CurrentCharacterItemFence,request:StashRequest,native:&NativeGameplayState,content:&C,
-        probe:bool,origin_channel:crate::foundation::ChannelId,hireling_id:[u8;16],
-    )->Result<Option<StashReceipt>,DurabilityError> {
-        self.stash_conversion_at(permit,recovery,node,fence,request,native,content,probe,Some((origin_channel,hireling_id))).await
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: StashRequest,
+        native: &NativeGameplayState,
+        content: &C,
+        probe: bool,
+        origin_channel: crate::foundation::ChannelId,
+        hireling_id: [u8; 16],
+    ) -> Result<Option<StashReceipt>, DurabilityError> {
+        self.stash_conversion_at(
+            permit,
+            recovery,
+            node,
+            fence,
+            request,
+            native,
+            content,
+            probe,
+            Some((origin_channel, hireling_id)),
+        )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
     async fn stash_conversion_at<C: ItemLoopContent>(
-        &self, permit:&super::spell_owner_commit::SpellLanePermit,
-        recovery:&ReconciledCharacterAuthority<'_, '_>,node:&NodeIncarnationProof,
-        fence:CurrentCharacterItemFence,request:StashRequest,native:&NativeGameplayState,content:&C,
-        probe:bool,hireling:Option<(crate::foundation::ChannelId,[u8;16])>,
-    )->Result<Option<StashReceipt>,DurabilityError> {
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: StashRequest,
+        native: &NativeGameplayState,
+        content: &C,
+        probe: bool,
+        hireling: Option<(crate::foundation::ChannelId, [u8; 16])>,
+    ) -> Result<Option<StashReceipt>, DurabilityError> {
         let intent =
             encode_stash_intent(request.intent).map_err(|_| DurabilityError::InvalidStoredState)?;
         if request.command.game_session_id() != fence.game_session_id
@@ -310,7 +339,8 @@ async fn plan<C: ItemLoopContent>(
             Err(super::item_loop_move::LoopError::Database(error)) => return Err(error.into()),
             Err(super::item_loop_move::LoopError::Durability(error)) => return Err(error),
         };
-        let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
+        let capacity =
+            read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
         if carried
             .checked_add(u64::from(weight) * u64::from(amount))
             .is_none_or(|total| total > capacity)
@@ -319,7 +349,8 @@ async fn plan<C: ItemLoopContent>(
         }
     }
     // The balance is last in the lock order, after root, items and backpack slot.
-    sqlx::query("SELECT item_instance_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE").bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    // Slot rows are INSERT/DELETE only and the runtime has no UPDATE on them: lock the slot's item row.
+    sqlx::query("SELECT s.item_instance_id FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid FOR UPDATE OF i").bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let balance=sqlx::query("SELECT quantity,last_entry_id::text AS previous FROM game_character_stash_balances WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND definition_key=$3 AND definition_revision=$4 FOR UPDATE")
         .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).fetch_optional(&mut **tx).await?;
     let (before, previous) = if let Some(balance) = balance {

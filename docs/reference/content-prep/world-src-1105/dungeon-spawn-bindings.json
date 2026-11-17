@@ -1,0 +1,358 @@
+{
+  "fury": {
+    "selection_bounds_note": "Compatibility investigation sample window around exact donor dungeon destination; counts are not claimed whole-dungeon totals.",
+    "sample_counts": {
+      "oteryn:creature.hellfire_fighter": 7
+    },
+    "examples": [
+      {
+        "path": "content/world/spawns/spawns-46000-47999.json",
+        "record_index": 161,
+        "key": "oteryn:spawn.x33230_y31701_z13",
+        "point": {
+          "cell": {
+            "floor": 13,
+            "x": 33231,
+            "y": 31701
+          },
+          "creature": "oteryn:creature.hellfire_fighter",
+          "direction": "north",
+          "respawn_ms": 90000
+        }
+      }
+    ]
+  },
+  "nightmare": {
+    "selection_bounds_note": "Compatibility investigation sample window around exact donor dungeon destination; counts are not claimed whole-dungeon totals.",
+    "sample_counts": {
+      "oteryn:creature.retching_horror": 69,
+      "oteryn:creature.choking_fear": 63,
+      "oteryn:creature.silencer": 13,
+      "oteryn:creature.terrorsleep": 8
+    },
+    "examples": [
+      {
+        "path": "content/world/spawns/spawns-20000-21999.json",
+        "record_index": 624,
+        "key": "oteryn:spawn.x33463_y32567_z8",
+        "point": {
+          "cell": {
+            "floor": 8,
+            "x": 33463,
+            "y": 32570
+          },
+          "creature": "oteryn:creature.retching_horror",
+          "direction": "north",
+          "respawn_ms": 90000
+        }
+      },
+      {
+        "path": "content/world/spawns/spawns-20000-21999.json",
+        "record_index": 666,
+        "key": "oteryn:spawn.x33463_y32574_z8",
+        "point": {
+          "cell": {
+            "floor": 8,
+            "x": 33466,
+            "y": 32574
+          },
+          "creature": "oteryn:creature.choking_fear",
+          "direction": "north",
+          "respawn_ms": 90000
+        }
+      },
+      {
+        "path": "content/world/spawns/spawns-34000-35999.json",
+        "record_index": 1485,
+        "key": "oteryn:spawn.x33442_y32595_z10",
+        "point": {
+          "cell": {
+            "floor": 10,
+            "x": 33444,
+            "y": 32596
+          },
+          "creature": "oteryn:creature.silencer",
+          "direction": "north",
+          "respawn_ms": 90000
+        }
+      },
+      {
+        "path": "content/world/spawns/spawns-40000-41999.json",
+        "record_index": 418,
+        "key": "oteryn:spawn.x33447_y32606_z11",
+        "point": {
+          "cell": {
+            "floor": 11,
+            "x": 33447,
+            "y": 32606
+          },
+          "creature": "oteryn:creature.terrorsleep",
+          "direction": "north",
+          "respawn_ms": 90000
+        }
+      }
+    ]
+  },
+  "native_policies": [
+    {
+      "path": "content/creatures/definitions/creatures-00000-00499.json",
+      "record_index": 228,
+      "key": "oteryn:creature.choking_fear",
+      "health": 5800,
+      "spawn_eligibility": {
+        "blocked_by_nearby_players": false,
+        "ignore_period_underground": false,
+        "period": "All"
+      },
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "magicals/choking_fear",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.choking_fear",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "donor_policy_locators": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "file": "data-otservbr-global/monster/magicals/choking_fear.lua",
+        "lines": [
+          {
+            "line": 29,
+            "text": "monster.health = 5800"
+          },
+          {
+            "line": 30,
+            "text": "monster.maxHealth = 5800"
+          },
+          {
+            "line": 48,
+            "text": "monster.flags = {"
+          }
+        ]
+      }
+    },
+    {
+      "path": "content/creatures/definitions/creatures-00500-00999.json",
+      "record_index": 243,
+      "key": "oteryn:creature.hellfire_fighter",
+      "health": 3800,
+      "spawn_eligibility": {
+        "blocked_by_nearby_players": false,
+        "ignore_period_underground": false,
+        "period": "All"
+      },
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "demons/hellfire_fighter",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.hellfire_fighter",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "donor_policy_locators": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "file": "data-otservbr-global/monster/demons/hellfire_fighter.lua",
+        "lines": [
+          {
+            "line": 29,
+            "text": "monster.health = 3800"
+          },
+          {
+            "line": 30,
+            "text": "monster.maxHealth = 3800"
+          },
+          {
+            "line": 46,
+            "text": "monster.flags = {"
+          }
+        ]
+      }
+    },
+    {
+      "path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record_index": 324,
+      "key": "oteryn:creature.retching_horror",
+      "health": 5300,
+      "spawn_eligibility": {
+        "blocked_by_nearby_players": false,
+        "ignore_period_underground": false,
+        "period": "All"
+      },
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "magicals/retching_horror",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.retching_horror",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "donor_policy_locators": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "file": "data-otservbr-global/monster/magicals/retching_horror.lua",
+        "lines": [
+          {
+            "line": 29,
+            "text": "monster.health = 5300"
+          },
+          {
+            "line": 30,
+            "text": "monster.maxHealth = 5300"
+          },
+          {
+            "line": 48,
+            "text": "monster.flags = {"
+          }
+        ]
+      }
+    },
+    {
+      "path": "content/creatures/definitions/creatures-01000-01499.json",
+      "record_index": 417,
+      "key": "oteryn:creature.silencer",
+      "health": 5400,
+      "spawn_eligibility": {
+        "blocked_by_nearby_players": false,
+        "ignore_period_underground": false,
+        "period": "All"
+      },
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "magicals/silencer",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.silencer",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "donor_policy_locators": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "file": "data-otservbr-global/monster/magicals/silencer.lua",
+        "lines": [
+          {
+            "line": 33,
+            "text": "monster.health = 5400"
+          },
+          {
+            "line": 34,
+            "text": "monster.maxHealth = 5400"
+          },
+          {
+            "line": 52,
+            "text": "monster.flags = {"
+          }
+        ]
+      }
+    },
+    {
+      "path": "content/creatures/definitions/creatures-01500-01862.json",
+      "record_index": 65,
+      "key": "oteryn:creature.terrorsleep",
+      "health": 7200,
+      "spawn_eligibility": {
+        "blocked_by_nearby_players": false,
+        "ignore_period_underground": false,
+        "period": "All"
+      },
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "magicals/terrorsleep",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.terrorsleep",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "donor_policy_locators": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "file": "data-otservbr-global/monster/magicals/terrorsleep.lua",
+        "lines": [
+          {
+            "line": 29,
+            "text": "monster.health = 7200"
+          },
+          {
+            "line": 30,
+            "text": "monster.maxHealth = 7200"
+          },
+          {
+            "line": 48,
+            "text": "monster.flags = {"
+          }
+        ]
+      }
+    }
+  ],
+  "flower_native_policy": {
+    "path": "content/creatures/definitions/creatures-00000-00499.json",
+    "record_index": 453,
+    "key": "oteryn:creature.dryad",
+    "health": 310,
+    "spawn_eligibility": {
+      "blocked_by_nearby_players": false,
+      "ignore_period_underground": false,
+      "period": "All"
+    },
+    "source_bindings": [
+      {
+        "disposition": "EXACT",
+        "external_id": "fey/dryad",
+        "identity_namespace": "canary/monster-file",
+        "source_key": "oteryn:source.canary",
+        "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.dryad",
+          "revision": "definition-r1"
+        }
+      }
+    ],
+    "donor_policy_locators": {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "file": "data-otservbr-global/monster/fey/dryad.lua",
+      "lines": [
+        {
+          "line": 30,
+          "text": "monster.health = 310"
+        },
+        {
+          "line": 31,
+          "text": "monster.maxHealth = 310"
+        }
+      ]
+    }
+  }
+}

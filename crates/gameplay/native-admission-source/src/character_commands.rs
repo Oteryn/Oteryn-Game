@@ -27,8 +27,19 @@ use std::{
 pub const PURPOSE: &str = "OTERYN_GAME_CHARACTER_COMMANDS";
 /// The only issuer Game accepts intents from (§3), sent on every read.
 pub const ISSUER_AUTHORITY: &str = "OTERYN_PLATFORM_CHARACTER_AUTHORITY";
-/// The one command this consumer decides; any other is `CHAR_CMD_UNSUPPORTED`.
+/// The v1 creation command; closure commands below use the configured v2 producer.
 pub const CREATE_COMMAND: &str = "CreateCharacter";
+/// PLAT3 v2 closure commands, routed to the configured durable producer.
+pub const CLOSE_ACCOUNT_COMMAND: &str = "CloseAccount";
+pub const RESOLVE_ACCOUNT_CLOSURE_COMMAND: &str = "ResolveAccountClosure";
+
+#[must_use]
+pub fn account_deletion_command(command: &str) -> bool {
+    matches!(
+        command,
+        CLOSE_ACCOUNT_COMMAND | RESOLVE_ACCOUNT_CLOSURE_COMMAND
+    )
+}
 pub const PENDING_PATH: &str = "/internal/v1/game-auth/character-commands/pending";
 pub const READ_PATH: &str = "/internal/v1/game-auth/character-commands/read";
 pub const RECEIPT_PATH: &str = "/internal/v1/game-auth/character-commands/receipt";
@@ -68,7 +79,11 @@ pub(super) const fn response_bytes(operation: Operation) -> Option<usize> {
     match operation {
         Operation::ListPendingCharacterCommandsV1 => Some(LIST_RESPONSE_BYTES),
         Operation::ReadCharacterCommandIntentV1 => Some(INTENT_RESPONSE_BYTES),
-        Operation::PublishCharacterCommandReceiptV1 => Some(RECEIPT_RESPONSE_BYTES),
+        Operation::ReadAccountClosureLifecycleV1 => Some(2048),
+        Operation::PublishCharacterCommandReceiptV1
+        | Operation::PublishAccountClosureCommandReceiptV2
+        | Operation::PublishAccountClosureV1
+        | Operation::PublishAccountClosureWatermarkV1 => Some(RECEIPT_RESPONSE_BYTES),
         _ => None,
     }
 }
@@ -346,9 +361,14 @@ pub fn classify(status: u16, raw: &[u8]) -> Failure {
 
 /// Character-command client identity (§3): its own certificate and key, never
 /// those of the evidence, runtime-status or projection purposes.
+#[derive(Clone)]
 pub struct CommandDescriptor(ProducerDescriptor);
 
 impl CommandDescriptor {
+    pub fn producer(&self) -> &ProducerDescriptor {
+        &self.0
+    }
+
     /// `other_purposes` are the certificate chains of every other Platform
     /// identity this host holds; none may share the command public key.
     pub fn new(
@@ -451,6 +471,72 @@ pub enum Decision {
 
 /// The Character Authority side of the consumer.
 pub trait Decider: Send {
+    /// Legacy implementations have no v2 receipt to stop.
+    fn stop_services_receipt(
+        &mut self,
+        _operation: &str,
+        _receipt: &[u8],
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
+    /// V2 has a separate decision entry: no downgrade through a v1 writer.
+    fn decide_services(
+        &mut self,
+        _command: &str,
+        _operation_id: &str,
+        _input: Input<'_>,
+    ) -> impl Future<Output = Decision> + Send {
+        async { Decision::Transient }
+    }
+    fn maintain_services(&mut self) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
+    fn begin_closure_lifecycle_read(
+        &mut self,
+        _request: &super::account_closure::LifecycleRequest,
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
+    fn quarantine_closure_publication(
+        &mut self,
+        _publication: &super::account_closure::Publication,
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
+    fn lifecycle_recovery_generation(&self) -> Option<u64> {
+        None
+    }
+    fn observe_closure_lifecycle(
+        &mut self,
+        _request: &super::account_closure::LifecycleRequest,
+        _raw: &[u8],
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
+    fn next_closure_publication(
+        &mut self,
+    ) -> impl Future<Output = Option<super::account_closure::Publication>> + Send {
+        async { None }
+    }
+    fn acknowledge_closure_publication(
+        &mut self,
+        _publication: &super::account_closure::Publication,
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+    fn acknowledge_receipt(
+        &mut self,
+        _command: &str,
+        _operation: &str,
+    ) -> impl Future<Output = ()> + Send {
+        async {}
+    }
+
     fn decide(
         &mut self,
         command: &str,
@@ -635,7 +721,12 @@ impl Cursor {
 }
 
 /// The consumer loop (§4.1): list, read, decide, publish, one exchange at a time.
+#[path = "character_services_consumer.rs"]
+mod services;
 pub struct Consumer<C, S, D> {
+    services_enabled: bool,
+    services_wire: bool,
+    other_cursor: Cursor,
     clock: C,
     source: S,
     decider: D,
@@ -655,6 +746,9 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
     pub fn new(clock: C, source: S, decider: D, source_authority: String, event: fn(&str)) -> Self {
         let cursor = Cursor::new(clock.elapsed());
         Self {
+            services_enabled: false,
+            services_wire: false,
+            other_cursor: cursor.clone(),
             clock,
             source,
             decider,
@@ -666,20 +760,35 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
 
     /// Runs until the source authority is outside the contract grammar.
     pub async fn run(mut self) {
-        let mut backoff = POLL;
+        let mut backoff = [POLL; 2];
+        let mut due = [self.clock.elapsed(); 2];
         loop {
+            self.next_wire();
+            let wire = usize::from(self.services_wire);
+            let now = self.clock.elapsed();
+            if self.services_enabled && now < due[wire] {
+                let next = due[0].min(due[1]);
+                if now < next {
+                    self.clock.sleep(next.saturating_sub(now)).await;
+                }
+                continue;
+            }
+            if self.services_wire {
+                self.decider.maintain_services().await;
+            }
             let after = self.cursor.next_request(self.clock.elapsed());
-            let Ok(body) = encode_list(&self.source_authority, after.as_ref()) else {
+            let Ok(body) = self.list_body(after.as_ref()) else {
                 (self.event)("event=character_commands state=refused reason=request");
                 return;
             };
             let started = self.clock.elapsed();
             let page = self
                 .source
-                .exchange(Operation::ListPendingCharacterCommandsV1, &body)
+                .exchange(self.list_operation(), &body)
                 .await
                 .and_then(|raw| {
-                    decode_pending(&raw, after.as_ref()).map_err(|_| Failure::InvalidResponse)
+                    self.pending_page(&raw, after.as_ref())
+                        .map_err(|_| Failure::InvalidResponse)
                 });
             let entries = match page {
                 Ok(entries) => entries,
@@ -690,12 +799,16 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
                         failure.label(),
                         started,
                     );
-                    backoff = if failure.backs_off() {
-                        backoff.saturating_mul(2).clamp(POLL, MAX_BACKOFF)
+                    backoff[wire] = if failure.backs_off() {
+                        backoff[wire].saturating_mul(2).clamp(POLL, MAX_BACKOFF)
                     } else {
                         POLL
                     };
-                    self.clock.sleep(backoff).await;
+                    if self.services_enabled {
+                        due[wire] = self.clock.elapsed().saturating_add(backoff[wire]);
+                    } else {
+                        self.clock.sleep(backoff[wire]).await;
+                    }
                     continue;
                 }
             };
@@ -719,20 +832,35 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
                 }
             }
             if throttled {
-                backoff = backoff.saturating_mul(2).clamp(POLL, MAX_BACKOFF);
-                self.clock.sleep(backoff).await;
+                backoff[wire] = backoff[wire].saturating_mul(2).clamp(POLL, MAX_BACKOFF);
+                if self.services_enabled {
+                    due[wire] = self.clock.elapsed().saturating_add(backoff[wire]);
+                } else {
+                    self.clock.sleep(backoff[wire]).await;
+                }
                 continue;
             }
-            backoff = POLL;
+            backoff[wire] = POLL;
             let short = entries.len() < MAX_ENTRIES;
             self.cursor.advance(&entries);
-            if short {
+            if self.services_enabled {
+                due[wire] =
+                    self.clock
+                        .elapsed()
+                        .saturating_add(if short { POLL } else { Duration::ZERO });
+            } else if short {
                 self.clock.sleep(POLL).await;
             }
         }
     }
 
     fn log(&self, operation: &str, command: Option<&str>, result: &str, started: Duration) {
+        let operation = match (self.services_wire, operation) {
+            (true, "ListPendingCharacterCommandsV1") => "ListPendingCharacterCommandsV2",
+            (true, "ReadCharacterCommandIntentV1") => "ReadCharacterCommandIntentV2",
+            (true, "PublishCharacterCommandReceiptV1") => "PublishCharacterCommandReceiptV2",
+            _ => operation,
+        };
         let elapsed = self.clock.elapsed().saturating_sub(started).as_millis();
         (self.event)(&format!(
             "event=character_commands operation={operation} command={} result={result} elapsed_ms={elapsed}",
@@ -745,15 +873,14 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
         let operation_id = entry.key.operation_id.as_str();
         let started = self.clock.elapsed();
         let intent;
-        let input = if command == CREATE_COMMAND {
-            let Ok(body) = encode_read(&self.source_authority, command, operation_id) else {
+        let input = if self.services_wire
+            || matches!(command, CREATE_COMMAND | "TransferCharacterOwnership")
+            || account_deletion_command(command)
+        {
+            let Ok(body) = self.read_body(command, operation_id) else {
                 return Step::Settled(Settle::Done);
             };
-            match self
-                .source
-                .exchange(Operation::ReadCharacterCommandIntentV1, &body)
-                .await
-            {
+            match self.source.exchange(self.read_operation(), &body).await {
                 Ok(raw) => {
                     intent = raw;
                     Input::Intent(&intent)
@@ -782,7 +909,34 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
         } else {
             Input::Unsupported
         };
-        let decision = self.decider.decide(command, operation_id, input).await;
+        if account_deletion_command(command)
+            && let Input::Intent(raw) = input
+            && let Some(recovery) = self.decider.lifecycle_recovery_generation()
+            && let Ok(request) = super::account_closure::LifecycleRequest::from_intent(
+                &self.source_authority,
+                raw,
+                recovery,
+            )
+        {
+            self.decider.begin_closure_lifecycle_read(&request).await;
+            if let Ok(body) = serde_json::to_string(&request)
+                && let Ok(response) = self
+                    .source
+                    .exchange(Operation::ReadAccountClosureLifecycleV1, &body)
+                    .await
+            {
+                self.decider
+                    .observe_closure_lifecycle(&request, &response)
+                    .await;
+            }
+        }
+        let decision = if self.services_wire {
+            self.decider
+                .decide_services(command, operation_id, input)
+                .await
+        } else {
+            self.decider.decide(command, operation_id, input).await
+        };
         let (receipt, result_code) = match decision {
             Decision::Publish {
                 receipt,
@@ -805,11 +959,37 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
         let Ok(body) = std::str::from_utf8(&receipt) else {
             return Step::Settled(Settle::Done);
         };
+        let publication_operation = if self.services_wire {
+            Operation::PublishCharacterCommandReceiptV2
+        } else if account_deletion_command(command) {
+            Operation::PublishAccountClosureCommandReceiptV2
+        } else {
+            Operation::PublishCharacterCommandReceiptV1
+        };
         let published = self
             .source
-            .exchange(Operation::PublishCharacterCommandReceiptV1, body)
+            .exchange(publication_operation, body)
             .await
-            .and_then(|raw| decode_receipt_response(&raw).map_err(|_| Failure::InvalidResponse));
+            .and_then(|raw| {
+                if self.services_wire {
+                    super::character_services_v2::ReceiptAcknowledgementV2::decode(&raw).map(|_| ())
+                } else if account_deletion_command(command) {
+                    super::account_closure::decode_receipt_ack(&raw)
+                } else {
+                    decode_receipt_response(&raw)
+                }
+                .map_err(|_| Failure::InvalidResponse)
+            });
+        if self.services_wire && matches!(published, Err(Failure::NotFound | Failure::Conflict)) {
+            self.decider
+                .stop_services_receipt(operation_id, &receipt)
+                .await;
+        }
+        if published.is_ok() {
+            self.decider
+                .acknowledge_receipt(command, operation_id)
+                .await;
+        }
         let result = match published {
             Ok(()) if result_code == "CHAR_CMD_OPERATION_CONFLICT" => {
                 format!("{result_code} receipt=accepted alarm=operation_conflict")
@@ -832,6 +1012,56 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
             Err(f) if f.backs_off() => Step::Throttled,
             Err(_) => Step::Settled(Settle::Retry),
         }
+    }
+}
+
+/// Independent private-feed cadence: an unavailable/slow pending-intent page
+/// cannot starve closure receipt replay, projections or freshness heartbeats.
+/// Each publisher retains one bounded exchange at a time under the CC identity.
+pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, D: Decider>(
+    clock: C,
+    mut source: S,
+    mut decider: D,
+    event: fn(&str),
+) {
+    let mut backoff = POLL;
+    loop {
+        let mut delay = POLL;
+        if let Some(publication) = decider.next_closure_publication().await {
+            match source
+                .exchange(publication.operation, &publication.body)
+                .await
+            {
+                Ok(raw) => {
+                    backoff = POLL;
+                    let acknowledged = if publication.operation
+                        == Operation::PublishAccountClosureCommandReceiptV2
+                    {
+                        super::account_closure::decode_receipt_ack(&raw)
+                    } else {
+                        super::account_closure::decode_ack(&raw)
+                    };
+                    if acknowledged.is_ok() {
+                        decider.acknowledge_closure_publication(&publication).await;
+                    }
+                }
+                Err(failure)
+                    if failure == Failure::Conflict
+                        || (failure == Failure::NotFound
+                            && publication.operation
+                                == Operation::PublishAccountClosureCommandReceiptV2) =>
+                {
+                    (event)("event=account_closure alarm=publication_refused");
+                    decider.quarantine_closure_publication(&publication).await;
+                }
+                Err(failure) if failure.backs_off() => {
+                    backoff = backoff.saturating_mul(2).min(MAX_BACKOFF);
+                    delay = backoff;
+                }
+                Err(_) => {}
+            }
+        }
+        clock.sleep(delay).await;
     }
 }
 

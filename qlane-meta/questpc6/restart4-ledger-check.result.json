@@ -1,0 +1,5 @@
+{
+  "command": "python3 tools/content-schema/quest-authoring/check_quest_claim_qualification.py --check",
+  "exit": 0,
+  "duration_seconds": 0.031
+}

@@ -19,15 +19,15 @@ fn atlas_slots_deduplicate_and_read_in_sprite_order() -> Result<(), String> {
         Ok(vec![sprite as u8; (CELL_PX * CELL_PX * 4) as usize])
     })?;
     assert_eq!(reads, [(2, 0, 0), (9, 0, 0), (9, 1, 0)]);
-    assert_eq!(atlas.slot(&cells[0]), Some(5));
-    assert_eq!(atlas.slot(&cells[1]), Some(3));
-    assert_eq!(atlas.slot(&cells[2]), Some(4));
-    assert_eq!(atlas.slot(&cells[3]), Some(5));
+    assert_eq!(atlas.slot(&cells[0]), Some(6));
+    assert_eq!(atlas.slot(&cells[1]), Some(4));
+    assert_eq!(atlas.slot(&cells[2]), Some(5));
+    assert_eq!(atlas.slot(&cells[3]), Some(6));
     assert_eq!(atlas.slot(&cell(10, 0)), None);
     let image = atlas.into_image();
-    assert_eq!(image.cell_count(), 6);
+    assert_eq!(image.cell_count(), 7);
     // Each source cell is copied into its assigned horizontal slot, line by line.
-    for (slot, value) in [(3, 2), (4, 9), (5, 9)] {
+    for (slot, value) in [(4, 2), (5, 9), (6, 9)] {
         for y in 0..CELL_PX as usize {
             let start = (y * image.width() as usize + slot * CELL_PX as usize) * 4;
             assert!(
@@ -121,13 +121,39 @@ fn scene_batch_propagates_visitor_and_invalid_cell_errors() -> Result<(), BatchE
             emit(
                 (0, 0),
                 Draw {
-                    cell: 3,
+                    cell: 4,
                     offset: [0, 0],
                 },
             )
         },
         None,
     );
-    assert_eq!(result.err(), Some(BatchError::CellOutOfRange { cell: 3 }));
+    assert_eq!(result.err(), Some(BatchError::CellOutOfRange { cell: 4 }));
+    Ok(())
+}
+
+#[test]
+fn frame_is_four_bars_inside_the_tile_and_culled_outside_the_view() -> Result<(), BatchError> {
+    let view = TileView::new(TileCoord::new(0, 0), 48, 2, 2)?;
+    let atlas = AtlasImage::new(CELL_PX, BUILTIN_CELLS as u32, 1, builtin_rgba())?;
+    let mut batch = SpriteBatch::new();
+    assert!(batch.push_frame(&view, &atlas, TileCoord::new(1, 1), BLACK_CELL, 3.0)?);
+    let quads = batch.instances();
+    assert_eq!(quads.len(), 4);
+    let sizes = [[48.0, 3.0], [48.0, 3.0], [3.0, 42.0], [3.0, 42.0]];
+    let positions = [[48.0, 48.0], [48.0, 93.0], [48.0, 51.0], [93.0, 51.0]];
+    for (index, quad) in quads.iter().enumerate() {
+        assert_eq!(quad.size, sizes[index]);
+        assert_eq!(quad.position, positions[index]);
+        assert_eq!(quad.uv, atlas.uv_rect(BLACK_CELL)?);
+    }
+    assert!(!batch.push_frame(&view, &atlas, TileCoord::new(5, 5), BLACK_CELL, 3.0)?);
+    assert_eq!(batch.len(), 4);
+    assert_eq!(
+        batch
+            .push_frame(&view, &atlas, TileCoord::new(0, 0), 99, 3.0)
+            .err(),
+        atlas.uv_rect(99).err()
+    );
     Ok(())
 }

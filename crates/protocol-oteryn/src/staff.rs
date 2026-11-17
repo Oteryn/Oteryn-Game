@@ -26,6 +26,8 @@ pub enum StaffCode {
     Stale = 6,
     AlreadyReleased = 7,
     RateLimited = 8,
+    /// Full tools capability330 only; legacy actions never emit this code.
+    AlreadyBanned = 9,
 }
 impl StaffCode {
     fn decode(value: u64) -> Result<Self> {
@@ -38,6 +40,7 @@ impl StaffCode {
             6 => Self::Stale,
             7 => Self::AlreadyReleased,
             8 => Self::RateLimited,
+            9 => Self::AlreadyBanned,
             _ => return Err(bad()),
         })
     }

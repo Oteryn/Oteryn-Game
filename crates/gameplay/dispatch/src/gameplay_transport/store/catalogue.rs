@@ -28,10 +28,18 @@ struct Offer {
     hireling: Option<HirelingOffer>,
     #[serde(default)]
     unlock_key: Option<String>,
+    #[serde(default)]
+    preview: Option<Preview>,
     #[serde(rename = "source_line")]
     _source_line: u32,
 }
 
+#[derive(Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+struct Preview {
+    kind: u8,
+    key: String,
+}
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Item {
@@ -44,7 +52,9 @@ struct Item {
 pub(super) const PREY_EXPANSION_UNLOCK: &str = "prey-list-expansion";
 pub(super) const CHARM_EXPANSION_UNLOCK: &str = "charm-expansion";
 
-fn enabled_by_default() -> bool { true }
+fn enabled_by_default() -> bool {
+    true
+}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -56,6 +66,8 @@ pub(super) struct HirelingOffer {
 pub(super) struct RuntimeCatalogue {
     pub(super) rules: rules::Catalogue,
     titles: BTreeMap<String, String>,
+    keys: Vec<String>,
+    previews: BTreeMap<String, (u8, String)>,
     item_revisions: BTreeMap<String, String>,
     hirelings: BTreeMap<String, HirelingOffer>,
 }
@@ -70,6 +82,8 @@ impl RuntimeCatalogue {
             return None;
         }
         let mut titles = BTreeMap::new();
+        let mut keys = Vec::new();
+        let mut previews = BTreeMap::new();
         let mut item_revisions = BTreeMap::new();
         let mut hirelings = BTreeMap::new();
         let mut offers = Vec::with_capacity(document.offers.len());
@@ -82,35 +96,81 @@ impl RuntimeCatalogue {
             if offer.currency != currency_text(rules::CurrencyKind::TibiaCoin) {
                 return None;
             }
-            let (kind, delivery, eligibility) = if let Some(hireling)=offer.hireling {
-                let valid=match hireling.effect.as_str() {
-                    "hire"=>hireling.source_id==25440 && offer.item.as_ref().is_some_and(|item|item.key=="oteryn:item.tibia.i29432" && item.revision=="definition-r1"),
-                    "unlock"=>(1001..=1004).contains(&hireling.source_id) || (2001..=2009).contains(&hireling.source_id),
-                    "rename"=>hireling.source_id==25438,
-                    "sex_change"=>hireling.source_id==25437,
-                    _=>false,
+            let (kind, delivery, eligibility) = if let Some(hireling) = offer.hireling {
+                let valid = match hireling.effect.as_str() {
+                    "hire" => {
+                        hireling.source_id == 25440
+                            && offer.item.as_ref().is_some_and(|item| {
+                                item.key == "oteryn:item.tibia.i29432"
+                                    && item.revision == "definition-r1"
+                            })
+                    }
+                    "unlock" => {
+                        (1001..=1004).contains(&hireling.source_id)
+                            || (2001..=2009).contains(&hireling.source_id)
+                    }
+                    "rename" => hireling.source_id == 25438,
+                    "sex_change" => hireling.source_id == 25437,
+                    _ => false,
                 };
-                if offer.unlock_key.is_some() || !valid || (hireling.effect!="hire" && offer.item.is_some()) {return None}
-                hirelings.insert(offer.key.clone(),hireling);
-                (rules::OfferKind::Service,rules::DeliveryKind::Service,rules::Eligibility::default())
+                if offer.unlock_key.is_some()
+                    || !valid
+                    || (hireling.effect != "hire" && offer.item.is_some())
+                {
+                    return None;
+                }
+                hirelings.insert(offer.key.clone(), hireling);
+                (
+                    rules::OfferKind::Service,
+                    rules::DeliveryKind::Service,
+                    rules::Eligibility::default(),
+                )
             } else {
                 match (offer.item.as_ref(), offer.unlock_key.as_ref()) {
-                (Some(item), None) => {
-                    (rules::OfferKind::Item, rules::DeliveryKind::Item { item_key: item.key.clone(), count: 1 }, rules::Eligibility::default())
+                    (Some(item), None) => (
+                        rules::OfferKind::Item,
+                        rules::DeliveryKind::Item {
+                            item_key: item.key.clone(),
+                            count: 1,
+                        },
+                        rules::Eligibility::default(),
+                    ),
+                    (None, Some(unlock_key))
+                        if matches!(
+                            unlock_key.as_str(),
+                            PREY_EXPANSION_UNLOCK | CHARM_EXPANSION_UNLOCK
+                        ) || crate::content::store_cosmetics::offers().is_some_and(|offers| offers.iter().any(|o| o.unlock_key == *unlock_key)) =>
+                    {
+                        let eligibility = rules::Eligibility {
+                            reject_if_unlock_owned: Some(unlock_key.clone()),
+                            per_character_limit: Some(1),
+                            ..rules::Eligibility::default()
+                        };
+                        (
+                            rules::OfferKind::Service,
+                            rules::DeliveryKind::Unlock {
+                                unlock_key: unlock_key.clone(),
+                            },
+                            eligibility,
+                        )
+                    }
+                    _ => return None,
                 }
-                (None, Some(unlock_key)) if matches!(unlock_key.as_str(), PREY_EXPANSION_UNLOCK | CHARM_EXPANSION_UNLOCK) => {
-                    let eligibility = rules::Eligibility {
-                        reject_if_unlock_owned: Some(unlock_key.clone()),
-                        per_character_limit: Some(1),
-                        ..rules::Eligibility::default()
-                    };
-                    (rules::OfferKind::Service, rules::DeliveryKind::Unlock { unlock_key: unlock_key.clone() }, eligibility)
-                }
-                _ => return None,
-            }
             };
+            if let Some(preview) = offer.preview {
+                if !(1..=3).contains(&preview.kind)
+                    || preview.key.is_empty()
+                    || preview.key.len() > 128
+                {
+                    return None;
+                }
+                previews.insert(offer.key.clone(), (preview.kind, preview.key));
+            }
+            keys.push(offer.key.clone());
             titles.insert(offer.key.clone(), offer.title);
-            if let Some(item) = offer.item.as_ref() { item_revisions.insert(offer.key.clone(),item.revision.clone()); }
+            if let Some(item) = offer.item.as_ref() {
+                item_revisions.insert(offer.key.clone(), item.revision.clone());
+            }
             offers.push(rules::AdmittedOffer {
                 key: offer.key,
                 category: offer.category,
@@ -124,11 +184,19 @@ impl RuntimeCatalogue {
         Some(Self {
             rules: rules::Catalogue::admit(revision, offers).ok()?,
             titles,
+            keys,
+            previews,
             item_revisions,
             hirelings,
         })
     }
 
+    pub(super) fn entries(&self) -> impl Iterator<Item = &rules::AdmittedOffer> {
+        self.keys.iter().filter_map(|key| self.rules.offer(key))
+    }
+    pub(super) fn preview(&self, key: &str) -> Option<&(u8, String)> {
+        self.previews.get(key)
+    }
     pub(super) fn hireling(&self, offer: &str) -> Option<&HirelingOffer> {
         self.hirelings.get(offer)
     }
@@ -155,9 +223,16 @@ fn catalogue_revision(value: &mut serde_json::Value) -> Option<String> {
             _ => true,
         }
     }
-    if !integers_only(value) { return None; }
+    if !integers_only(value) {
+        return None;
+    }
     value.sort_all_objects();
-    Some(Sha256::digest(serde_json::to_vec(value).ok()?).iter().map(|byte| format!("{byte:02x}")).collect())
+    Some(
+        Sha256::digest(serde_json::to_vec(value).ok()?)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect(),
+    )
 }
 
 /// The Platform and wire spelling of a currency.
@@ -171,7 +246,9 @@ pub(super) const fn currency_text(currency: rules::CurrencyKind) -> &'static str
 #[cfg(test)]
 mod tests {
     use super::*;
-    const UTF8: &[u8] = include_bytes!("../../../../../../tools/content-schema/store-authoring/samples/revision-utf8.json");
+    const UTF8: &[u8] = include_bytes!(
+        "../../../../../../tools/content-schema/store-authoring/samples/revision-utf8.json"
+    );
 
     #[test]
     fn storefix_revision_matches_python_utf8_fixture() -> Result<(), Box<dyn std::error::Error>> {
@@ -185,7 +262,10 @@ mod tests {
         for number in ["1.0", "1.5", "1e2"] {
             let mut value: serde_json::Value = serde_json::from_slice(UTF8)?;
             value["source"]["a"] = serde_json::from_str(number)?;
-            assert!(RuntimeCatalogue::from_json(&serde_json::to_vec(&value)?).is_none(), "{number}");
+            assert!(
+                RuntimeCatalogue::from_json(&serde_json::to_vec(&value)?).is_none(),
+                "{number}"
+            );
         }
         Ok(())
     }

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0057-cyclopedia-map",
+  "kind": "panels",
+  "id": "0057-cyclopedia-map-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

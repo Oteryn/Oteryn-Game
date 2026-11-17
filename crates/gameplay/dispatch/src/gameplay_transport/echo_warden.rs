@@ -6,7 +6,7 @@ use crate::map::overlay::{AddedItem, ChannelOverlay, TilePos, VolatileItem};
 use crate::map::view::{EntryFacts, appearance_id};
 use crate::monster_owner_cycle::respawn_job::RespawnExit;
 use oteryn_foundation::CancellationToken;
-use oteryn_gameplay_domain::domain::echo_warden::{PORTAL_ITEM_ID, SPAWN_STEP_MS};
+use oteryn_gameplay_domain::domain::echo_warden::{EchoRaidPlan, PORTAL_ITEM_ID, SPAWN_STEP_MS};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -75,29 +75,80 @@ fn has_ground(
 }
 
 /// Called inside the existing successful movement work item, never from item USE.
-pub(super) fn step_in(
+pub(super) async fn step_in(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
-    runtime: &mut ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,
     now_ms: u64,
 ) {
-    let Ok(position) = runtime.read_actor_position(actor) else {
+    let (occurrence, creature, character) = {
+        let runtime = admission.runtime.lock().await;
+        let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
+            return;
+        };
+        let Ok(position) = runtime.read_actor_position(actor) else {
+            return;
+        };
+        let Some(portal) = runtime
+            .echo_portals(now_ms)
+            .find(|portal| portal.position == position.position())
+        else {
+            return;
+        };
+        (
+            portal.occurrence,
+            portal.creature.clone(),
+            lease.character_id(),
+        )
+    };
+    let Ok(character) = crate::domain::CharacterId::from_bytes(*character.as_bytes()) else {
         return;
     };
-    let Some(occurrence) = runtime
-        .echo_portals(now_ms)
-        .find(|portal| portal.position == position.position())
-        .map(|portal| portal.occurrence)
-    else {
-        return;
+    // Read through the existing Bestiary owner without holding the Channel runtime lock.
+    let race = admission
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .and_then(|native| native.reward_table().row(&creature).ok())
+        .and_then(|row| row.race.clone());
+    let completed = if let Some(race) = race {
+        match admission
+            .root
+            .read_bestiary_progress(admission.character, character, race.key())
+            .await
+        {
+            Ok(progress) => {
+                progress.is_some_and(|progress| progress.kill_count >= race.final_kill_threshold())
+            }
+            Err(error) => {
+                operator_event(&format!("echo_bestiary_read_failed reason={error:?}"));
+                return;
+            }
+        }
+    } else {
+        false
     };
-    let Some(minions) = draw(runtime, occurrence, "ECHO_WARDEN_ADDS", 7, 12)
+    let mut runtime = admission.runtime.lock().await;
+    let now_ms = now_ms.max(admission.owner_now().get() / 1000);
+    let Some(minions) = draw(&runtime, occurrence, "ECHO_WARDEN_ADDS", 7, 12)
         .and_then(|count| u8::try_from(count).ok())
     else {
         return;
     };
-    if runtime.activate_echo_portal(actor, session, now_ms, minions) == Ok(true) {
+    let Some(warden_roll) = draw(&runtime, occurrence, "ECHO_WARDEN_OUTCOME", 1, 100)
+        .and_then(|roll| u8::try_from(roll).ok())
+    else {
+        return;
+    };
+    // Equal non-Warden family weights are an explicit SV16 assumption: the wiki
+    // documents both families and their counts, but does not publish their split.
+    let Some(family) = draw(&runtime, occurrence, "ECHO_RAID_FAMILY", 0, 1) else {
+        return;
+    };
+    let Ok(plan) = EchoRaidPlan::select(warden_roll, completed, family == 1, minions) else {
+        return;
+    };
+    if runtime.activate_echo_portal_with_plan(actor, session, occurrence, now_ms, plan) == Ok(true)
+    {
         admission.states.loop_ground.invalidate();
         if let Err(error) = runtime.drive_echo_wardens(now_ms, |at| has_ground(admission, at)) {
             operator_event(&format!("echo_warden_step_failed reason={error:?}"));
@@ -206,6 +257,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 pub(super) mod drops;
 pub(super) mod rewards;
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Bestiary mirrors the first-species Warden earning, independently of discovery kills.
+    pub(super) async fn echo_warden_bestiary_page(
+        &self,
+        admitted: super::connection::AdmittedSession,
+        mut page: oteryn_protocol_oteryn::charm_progression::catalogue::Page,
+    ) -> super::guild_intent::GuildReply {
+        use super::guild_intent::GuildReply;
+        use oteryn_protocol_oteryn::charm_progression::catalogue;
+        let Some(fence) = admitted.item_fence else {
+            return GuildReply::Rejected;
+        };
+        let Ok(completed) = self
+            .root
+            .read_current_echo_warden_completions(self.character, self.holder, fence)
+            .await
+        else {
+            return GuildReply::Unavailable;
+        };
+        let Some(races) = super::charm_progression::canonical_races() else {
+            return GuildReply::Rejected;
+        };
+        for card in &mut page.cards {
+            let Some(race) = card
+                .race
+                .checked_sub(1)
+                .and_then(|i| races.get(usize::from(i)))
+            else {
+                return GuildReply::Rejected;
+            };
+            card.echo_warden_completed = Some(
+                completed
+                    .binary_search_by(|key| key.as_str().cmp(race.key()))
+                    .is_ok(),
+            );
+        }
+        catalogue::encode_page(&page).map_or(GuildReply::Rejected, GuildReply::Payload)
+    }
+}
 
 #[cfg(test)]
 mod tests {

@@ -30,7 +30,7 @@ use oteryn_protocol_oteryn::browse_field::{
 };
 use oteryn_protocol_oteryn::container_tree::{
     ContainerView, ContainerViewIntent, ContainerViewOutcome, ContainerViews, MAX_CONTAINER_VIEWS,
-    encode_container_views_for,
+    encode_container_views_with_appearances,
 };
 use oteryn_protocol_oteryn::item_view::ItemEntry;
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
@@ -186,9 +186,19 @@ impl Default for ViewCommandWindow {
 pub struct ContainerViewState {
     views: BTreeMap<u8, OpenView>,
     browse_field: bool,
+    house_capacity_v2: bool,
 }
 
 impl ContainerViewState {
+    /// Authenticated supplementary capability446, not an intent field.
+    pub fn with_house_container_capacity(mut self) -> Self {
+        self.house_capacity_v2 = true;
+        self
+    }
+    pub(super) fn house_capacity_v2(&self) -> bool {
+        self.house_capacity_v2
+    }
+
     pub fn with_browse_field(mut self) -> Self {
         self.browse_field = true;
         self
@@ -483,13 +493,19 @@ impl ContainerViewState {
                     .chain(view.page_entries().iter().map(|e| e.key))
             })
             .collect();
+        let appearances = item_view.appearances();
         let encode = |table: &ItemHandleTable| {
             let views = next
                 .iter()
                 .map(|(id, view)| encode_view(table, *id, view))
                 .collect::<Result<_, _>>()?;
-            encode_container_views_for(&ContainerViews { views }, self.browse_field)
-                .map_err(|_| ItemViewError::Encode)
+            encode_container_views_with_appearances(
+                &ContainerViews { views },
+                self.browse_field,
+                self.house_capacity_v2,
+                appearances,
+            )
+            .map_err(|_| ItemViewError::Encode)
         };
         match item_view.tree_delta(&keys, encode) {
             Ok(delta) => {
@@ -518,6 +534,7 @@ fn encode_view(
             .iter()
             .map(|item| {
                 Ok(ItemEntry {
+                    appearance_id: item.appearance_id,
                     handle: table.handle(&item.key).ok_or(ItemViewError::Encode)?,
                     item_definition_ref: item.item_definition_ref,
                     count: item.count,

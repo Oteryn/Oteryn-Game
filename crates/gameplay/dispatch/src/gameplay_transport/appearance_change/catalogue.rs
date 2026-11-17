@@ -2,7 +2,7 @@
 use super::*;
 use crate::domain::appearance::{AccountUnlocks, EarnedCosmetics, UnlockFact};
 
-pub(super) fn catalogue(
+pub(in crate::gameplay_transport) fn catalogue(
     content: &NativeCosmeticsView,
     state: &CurrentCharacterAppearance,
     root_revision: u64,
@@ -11,7 +11,7 @@ pub(super) fn catalogue(
     let unlocks = EarnedCosmetics {
         content,
         facts: &state.earned,
-    };
+    }.with_sex(state.sex);
     let mut outfits = Vec::new();
     for key in content.outfit_keys() {
         let key = key.to_owned();
@@ -67,7 +67,7 @@ pub(super) fn base(
     let unlocks = EarnedCosmetics {
         content,
         facts: &state.earned,
-    };
+    }.with_sex(state.sex);
     if let Some(selected) = &state.selected
         && crate::domain::appearance::validate_selection(
             &selected.selection,

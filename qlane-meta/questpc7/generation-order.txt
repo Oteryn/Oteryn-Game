@@ -1,0 +1,21 @@
+python3 tools/content-migration/quest_reward_item_semantics.py --output-root .
+python3 tools/content-schema/reward-claim-authoring/reward_claim_authoring.py content
+python3 tools/content-schema/quest-authoring/amend_monk_source_receipt.py
+python3 tools/content-schema/quest-authoring/quest_tree_authoring.py content
+python3 tools/content-migration/register_spell_families.py
+python3 tools/content-schema/quest-authoring/quest_callback_coverage.py --canary .questpc/sources/canary --crystal .questpc/sources/crystal
+python3 tools/content-schema/quest-authoring/check_quest_claim_qualification.py
+python3 tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py
+python3 tools/content-schema/quest-authoring/quest_completion_matrix.py
+python3 tools/content-schema/quest-authoring/quest_binding_authoring.py
+python3 tools/content-schema/quest-authoring/quest_state_lowering.py
+python3 tools/content-schema/quest-authoring/source_lowered_binding_plan.py
+python3 tools/content-schema/quest-authoring/grizzly_rooms.py
+python3 tools/content-schema/quest-authoring/collect_claim_candidates.py
+python3 tools/content-schema/quest-authoring/use_trigger_candidates.py
+python3 tools/content-schema/quest-authoring/quest_v2_export.py
+python3 tools/content-schema/quest-authoring/quest_completion_import.py
+python3 tools/content-schema/quest-authoring/quest_native_binding_preflight.py
+python3 tools/content-schema/quest-authoring/quest_rollout_authoring.py
+python3 tools/content-schema/quest-authoring/quest_reward_only_binding_candidates.py
+python3 tools/content-schema/quest-authoring/quest_donor_source_authoring.py

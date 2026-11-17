@@ -1,0 +1,7 @@
+{
+  "command": "CARGO_BUILD_JOBS=4 /home/mole/oteryn-cache/codex-bin/cargo test --locked --offline -p oteryn-gameplay-dispatch --all-features --lib catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic -- --test-threads=1 --nocapture",
+  "exit": 101,
+  "test_seconds": 114.0,
+  "failure": "2603: hi: Rejected != Ok at classic_quests.rs:168",
+  "log": ".questpc/restart5-npc-scoped.log"
+}

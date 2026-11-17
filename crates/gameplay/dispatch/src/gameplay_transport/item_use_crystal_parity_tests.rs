@@ -247,10 +247,11 @@ fn i14_global_consumables_are_admitted() {
         .expect("native gameplay");
     use ReferenceRestoreResource::{Health, Mana};
     for (id, restores, level, allowed) in [
-        // Great Spirit Potion rev 1183259.
+        // Great Spirit Potion rev 1183259; mana measured on the Global client
+        // (owner 2026-11-16, docs/reference/parity/evidence/2026-11-15-global-client).
         (
             7642,
-            vec![(Health, 250, 350), (Mana, 125, 185)],
+            vec![(Health, 250, 350), (Mana, 100, 200)],
             80,
             vec![Vocation::Paladin, Vocation::Monk],
         ),
@@ -309,6 +310,26 @@ fn i14_global_consumables_are_admitted() {
             );
         }
     }
+    // Great Mana Potion rev 1190635 (2026-06-20): all vocations, level 80.
+    let great_mana = policy_of(state, 238).expect("item 238 is admitted");
+    for vocation in [
+        Vocation::None,
+        Vocation::Knight,
+        Vocation::Paladin,
+        Vocation::Monk,
+        Vocation::Druid,
+        Vocation::Sorcerer,
+    ] {
+        let requirements = &great_mana.record().semantics.use_requirements;
+        assert!(
+            requirements_met(requirements, facts_at(vocation, 80)),
+            "238 {vocation:?}"
+        );
+        assert!(
+            !requirements_met(requirements, facts_at(vocation, 79)),
+            "238 {vocation:?} below level"
+        );
+    }
     for (id, seconds) in [
         (3250, 96),   // The Carrot of Doom rev 1016926.
         (23535, 300), // Energy Bar rev 1011115.
@@ -324,16 +345,16 @@ fn i14_global_consumables_are_admitted() {
 }
 
 /// The hireling Trader and W15b chest rewards admit physical Great Mana with
-/// canonical potion facts. The condition-effect potion 7644 remains unadmitted.
+/// canonical potion facts. Crystal potions.lua:21-42,57,62 also admits antidote and shield
+/// through the reserved condition owner, never through invented HP/MP consumption facts.
 #[test]
-fn i14_unresolved_crystal_consumables_remain_unadmitted() {
+fn i14_crystal_consumables_have_source_qualified_owners() {
     let controller = native();
     let state = controller
         .active()
         .and_then(|active| active.native_gameplay())
         .expect("native gameplay");
     // W15b admits 238 as an exact chest child with its canonical potion facts.
-    // The condition-effect potion 7644 still has no native admission.
     assert!(matches!(
         &policy_of(state, 238)
             .expect("W15b chest child")
@@ -342,7 +363,22 @@ fn i14_unresolved_crystal_consumables_remain_unadmitted() {
             .consumption,
         ReferenceItemField::Known(ReferenceItemConsumption::Potion(_))
     ));
-    assert!(policy_of(state, 7644).is_none(), "item 7644");
+    for id in [7644, 35563] {
+        let policy = policy_of(state, id).expect("implemented condition potion");
+        assert!(
+            !matches!(
+                policy.record().semantics.consumption,
+                ReferenceItemField::Known(_)
+            ),
+            "condition potion {id} has no fabricated HP/MP restore"
+        );
+        assert!(
+            oteryn_gameplay_progression::condition_potions::PotionCondition::from_key(&format!(
+                "oteryn:item.tibia.i{id}"
+            ))
+            .is_some()
+        );
+    }
 }
 
 /// I03: Crystal `data/scripts/actions/items/spellbook.lua:55` registers these spellbook ids; using
@@ -373,8 +409,12 @@ fn i03_crystal_spellbook_has_vocation_filtered_spell_list() -> Result<(), &'stat
         }
     }
     // E12 admits the source Trader spellbooks, including the Task Board cohort;
-    // W15b additionally admits the basic spellbook 3059 as an exact chest reward.
-    assert_eq!(admitted, vec![3059, 6120, 8072, 8073, 8074, 8075, 25699]);
+    // W15b additionally admits the basic spellbook 3059 as an exact chest reward;
+    // the pinned Newhaven starter profiles admit spellbook 21400.
+    assert_eq!(
+        admitted,
+        vec![3059, 6120, 8072, 8073, 8074, 8075, 21400, 25699]
+    );
     let text = crate::gameplay_transport::item_look::spellbook_text(
         state.spell_book(),
         crate::spell::Vocation::Knight,

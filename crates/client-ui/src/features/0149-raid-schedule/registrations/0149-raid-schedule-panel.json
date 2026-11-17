@@ -1,0 +1,7 @@
+{
+  "mechanic": "0149-raid-schedule",
+  "kind": "panels",
+  "id": "0149-raid-schedule-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

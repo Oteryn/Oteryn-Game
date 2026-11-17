@@ -1,9 +1,12 @@
-//! BED-REGEN-1: production first-entry -> runtime-role transaction -> wire vitals.
+//! BED-REGEN-1: production first-entry -> fenced durable transaction -> wire vitals.
 use super::fixture::{Harness, debug, id, run};
 use super::tutorial_vitals_fixture::admit;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+use crate::gameplay_transport::spell_premium_coordinator::{
+    SpellPremiumCoordinator, purchase_fixture,
+};
 use oteryn_protocol_oteryn::actor_spell::{STATE_DOMAIN_ACTOR_VITALS, decode_actor_vitals};
 
 #[test]
@@ -16,7 +19,130 @@ fn bed_regen_freed_bed_limits_only_sleep_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("bed-regen-freed", || scenario(true))
 }
 
-async fn seed(h: &Harness, freed: bool) -> TestResult {
+#[test]
+fn gr_soul_001_bed_admission_uses_current_account_premium_postgres() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("bed-regen-soul", || {
+        run(async |admin| {
+            for (index, (promoted, account, delivered, slept, expected)) in [
+                (true, 40, true, 899, 150),
+                (true, 40, true, 900, 151),
+                (true, 41, true, 900, 100),
+                (false, 40, true, 900, 100),
+                (true, 40, false, 900, 100),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let h = Harness::create_with_admission_seed(
+                    admin.clone(),
+                    &format!("gr_soul_001_{index}"),
+                    true,
+                    false,
+                )
+                .await?;
+                let request = prepare_current_session(&h).await?;
+                if promoted {
+                    purchase_promotion_for_bed_fixture(&h)
+                        .await
+                        .map_err(|error| format!("case {index} historical promotion: {error}"))?;
+                }
+                // Historical input belongs to the previous sleeper's lease; this
+                // case qualifies native admission, not that previous session's writer.
+                seed(&h, false, 150).await?;
+                if slept == 899 {
+                    sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=slept_at+899000,freed_cause='owner_wake' WHERE character_id=encode($1,'hex')::uuid")
+                        .bind(id(41).as_slice()).execute(&h.pool).await?;
+                }
+                let (consumer, clock, activation, proof) = purchase_fixture::current(id(account));
+                h.root.accept_premium_evidence(&proof).await?;
+                let coordinator = SpellPremiumCoordinator::new(
+                    consumer,
+                    Some(clock),
+                    delivered.then_some(activation),
+                    Some(h.root.clone()),
+                );
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(|error| format!("case {index} reopen authority: {error:?}"))?;
+                let deps = Dependencies::new()?;
+                let mut owner = deps.owner(&h, &authority);
+                owner.premium_coordinator = Some(&coordinator);
+                // Ordinary first entry precedes the session's Premium registration.
+                assert_eq!(owner.session_account(deps.admitted.game_session_id), None);
+                admit(&owner, &deps, &request).await?;
+                {
+                    let runtime = owner.runtime.lock().await;
+                    let states = owner.states.spell_states.lock().await;
+                    let state = states
+                        .get(&runtime, deps.actor, deps.admitted.game_session_id)
+                        .ok_or("Soul actor")?;
+                    assert_eq!(state.vitals().soul, expected, "case {index}");
+                    assert_eq!(
+                        state.facts.max_soul, 100,
+                        "promotion projects after creation"
+                    );
+                }
+                admit(&owner, &deps, &request).await?;
+                let settled: (i32, i64) = sqlx::query_as("SELECT rest[1],(SELECT count(*) FROM game_bed_regen_receipts) FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(
+                    settled,
+                    (expected as i32, 1),
+                    "case {index} is consumed once"
+                );
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                h.cleanup().await?;
+            }
+            Ok(())
+        })
+    })
+}
+
+async fn purchase_promotion_for_bed_fixture(h: &Harness) -> TestResult {
+    // The existing initialized fixture is level 50. The shared fixture supplies
+    // its purse; the real purchase owner commits the fee, receipt and promotion.
+    let purchase = super::atelier::fixture::prepare(h).await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let deps = Dependencies::new()?;
+    let owner = deps.owner(h, &authority);
+    let fence = owner
+        .current_quest_fence(deps.admitted.game_session_id)
+        .await
+        .map_err(|_| "current promotion fence")?
+        .ok_or("active promotion session")?;
+    // The existing pre-delivery promotion exception grants no session Premium
+    // registration or activation. The later matrix still decides current Premium.
+    let gate = SpellPremiumCoordinator::new(Default::default(), None, None, Some(h.root.clone()));
+    let outcome = owner
+        .revision_sequencer
+        .acquire(fence.character_id)
+        .await
+        .commit_npc_purchase(&h.root, &authority, &h.node, fence, purchase, &gate)
+        .await
+        .map_err(debug)?;
+    assert!(
+        matches!(
+            outcome,
+            crate::durability::npc_purchase::PurchaseOutcome::Committed(_)
+        ),
+        "the historical promotion must have its paid receipt: {outcome:?}"
+    );
+    // The caller reopens authority after all historical sleep inputs are ready,
+    // so the same complete verifier checks this paid history before bed admission.
+    Ok(())
+}
+
+async fn seed(h: &Harness, freed: bool, initial_soul: i32) -> TestResult {
     let wake: i64 = sqlx::query_scalar("SELECT admitted_at FROM game_bed_admission_times WHERE game_session_id=encode($1,'hex')::uuid")
         .bind(id(50).as_slice()).fetch_one(&h.pool).await?;
     let slept = wake - 900_000;
@@ -38,8 +164,8 @@ async fn seed(h: &Harness, freed: bool) -> TestResult {
         sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=$1,freed_cause='owner_wake' WHERE character_id=encode($2,'hex')::uuid")
             .bind(slept+29_999).bind(id(41).as_slice()).execute(&h.pool).await?;
     }
-    sqlx::query("INSERT INTO game_character_last_positions(character_id,world_id,tile_x,tile_y,tile_floor,coordinate_frame_digest,map_revision_digest,server_artifact_digest,character_lease_generation,write_sequence,health,mana,rest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,100,200,7,$3,$3,$3,1,1,27,9,ARRAY[5,31567,1234,567])")
-        .bind(id(41).as_slice()).bind(id(42).as_slice()).bind([0u8;32].as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_character_last_positions(character_id,world_id,tile_x,tile_y,tile_floor,coordinate_frame_digest,map_revision_digest,server_artifact_digest,character_lease_generation,write_sequence,health,mana,rest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,100,200,7,$3,$3,$3,1,1,27,9,ARRAY[$4,31567,1234,567])")
+        .bind(id(41).as_slice()).bind(id(42).as_slice()).bind([0u8;32].as_slice()).bind(initial_soul).execute(&h.pool).await?;
     Ok(())
 }
 
@@ -56,7 +182,7 @@ fn scenario(freed: bool) -> TestResult {
         let request = prepare_current_session(&h)
             .await
             .map_err(|e| format!("prepare: {e}"))?;
-        seed(&h, freed).await.map_err(|e| format!("seed: {e}"))?;
+        seed(&h, freed, 5).await.map_err(|e| format!("seed: {e}"))?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -75,7 +201,7 @@ fn scenario(freed: bool) -> TestResult {
         stale.character_lease_generation += 1;
         assert!(
             h.root
-                .settle_bed_regen(&authority, &h.node, stale)
+                .settle_bed_regen(&authority, &h.node, stale, None)
                 .await
                 .is_err()
         );
@@ -92,7 +218,7 @@ fn scenario(freed: bool) -> TestResult {
             .await?;
         assert!(
             h.root
-                .settle_bed_regen(&authority, &h.node, fence)
+                .settle_bed_regen(&authority, &h.node, fence, None)
                 .await
                 .is_err()
         );

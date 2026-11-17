@@ -194,7 +194,7 @@ pub fn decode_response(raw: &[u8]) -> Result<Delivery, SourceError> {
 /// those of another purpose.
 pub struct RuntimeStatusDescriptor(ProducerDescriptor);
 
-fn leaf_spki(chain: &[CertificateDer<'_>]) -> Result<Vec<u8>, SourceError> {
+pub(crate) fn leaf_spki(chain: &[CertificateDer<'_>]) -> Result<Vec<u8>, SourceError> {
     let leaf = chain.first().ok_or(SourceError::InvalidDescriptor)?;
     let parsed = rustls::server::ParsedCertificate::try_from(leaf)
         .map_err(|_| SourceError::InvalidDescriptor)?;
@@ -509,13 +509,7 @@ fn log(publication: &Publication, what: &str, elapsed: Duration, failure: Option
     if let Some(not_delivered) = failure {
         line = line.code(not_delivered.code());
     }
-    // This file is also compiled into integration tests, so it writes the line itself.
-    if oteryn_error_codes::filter().allows(line.level, line.module, line.code.is_some()) {
-        eprintln!(
-            "{}",
-            line.render("oteryn-game-server", oteryn_error_codes::unix_ms())
-        );
-    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
 }
 
 /// Report loop (§8). Each new committed publication (including the one

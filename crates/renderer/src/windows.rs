@@ -4,11 +4,19 @@ use crate::{
     SurfaceState, TileBatch,
 };
 use oteryn_foundation::ProcessGeneration;
+#[path = "offscreen_capture.rs"]
+mod offscreen_capture;
 
 pub struct WindowsRenderer<T>
 where
     T: Clone + Into<wgpu::SurfaceTarget<'static>>,
 {
+    engine: crate::GraphicsEngine,
+    antialiasing: crate::Antialiasing,
+    multisample_view: Option<wgpu::TextureView>,
+    presentation: crate::PresentationMode,
+    capture_requested: bool,
+    captured: Option<Result<crate::CapturedFrame, RendererError>>,
     target: T,
     instance: wgpu::Instance,
     surface: wgpu::Surface<'static>,
@@ -38,8 +46,29 @@ where
         width: u32,
         height: u32,
     ) -> Result<Self, RendererError> {
+        Self::with_graphics(
+            target,
+            process_generation,
+            width,
+            height,
+            crate::GRAPHICS_ENGINE,
+            crate::ANTIALIASING,
+        )
+    }
+
+    pub fn with_graphics(
+        target: T,
+        process_generation: ProcessGeneration,
+        width: u32,
+        height: u32,
+        engine: crate::GraphicsEngine,
+        antialiasing: crate::Antialiasing,
+    ) -> Result<Self, RendererError> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::DX12,
+            backends: match engine {
+                crate::GraphicsEngine::Direct3D12 => wgpu::Backends::DX12,
+                crate::GraphicsEngine::Vulkan => wgpu::Backends::VULKAN,
+            },
             ..wgpu::InstanceDescriptor::new_without_display_handle()
         });
         let surface = instance
@@ -63,6 +92,12 @@ where
             Ok::<_, RendererError>((adapter, device, queue))
         })?;
         let mut renderer = Self {
+            engine,
+            antialiasing,
+            multisample_view: None,
+            presentation: crate::PresentationMode::Synchronized,
+            capture_requested: false,
+            captured: None,
             target,
             instance,
             surface,
@@ -78,9 +113,54 @@ where
         Ok(renderer)
     }
 
+    pub const fn graphics(&self) -> (crate::GraphicsEngine, crate::Antialiasing) {
+        (self.engine, self.antialiasing)
+    }
+
+    /// Reconfigure the live scene and resolve target together, retaining the working mode on failure.
+    pub fn set_antialiasing(
+        &mut self,
+        generation: ProcessGeneration,
+        antialiasing: crate::Antialiasing,
+    ) -> Result<(), RendererError> {
+        self.state.require_generation(generation)?;
+        if self.antialiasing == antialiasing {
+            return Ok(());
+        }
+        let size = self.state.size();
+        let old = self.antialiasing;
+        let state = self.state.clone();
+        self.antialiasing = antialiasing;
+        if let Err(error) = self.resize(generation, size.width(), size.height()) {
+            self.antialiasing = old;
+            self.state = state;
+            return Err(error);
+        }
+        self.scene = None;
+        Ok(())
+    }
+
     #[must_use]
     pub const fn state(&self) -> &SurfaceState {
         &self.state
+    }
+
+    pub fn set_presentation(
+        &mut self,
+        generation: ProcessGeneration,
+        mode: crate::PresentationMode,
+    ) -> Result<(), RendererError> {
+        if self.presentation == mode {
+            return Ok(());
+        }
+        let old = self.presentation;
+        self.presentation = mode;
+        let size = self.state.size();
+        if let Err(error) = self.resize(generation, size.width(), size.height()) {
+            self.presentation = old;
+            return Err(error);
+        }
+        Ok(())
     }
 
     pub fn resize(
@@ -120,6 +200,18 @@ where
     pub fn set_atlas(&mut self, atlas: AtlasImage) {
         self.atlas = Some(atlas);
         self.scene = None;
+    }
+
+    /// Capture only the next successfully drawn client frame.
+    pub fn request_capture(&mut self) {
+        self.capture_requested = true;
+    }
+    pub fn cancel_capture(&mut self) {
+        self.capture_requested = false;
+        self.captured = None;
+    }
+    pub fn take_capture(&mut self) -> Option<Result<crate::CapturedFrame, RendererError>> {
+        self.captured.take()
     }
 
     /// Clears the surface.
@@ -197,9 +289,9 @@ where
                 label: Some("oteryn-renderer-clear-encoder"),
             });
         let attachments = [Some(wgpu::RenderPassColorAttachment {
-            view: &view,
+            view: self.multisample_view.as_ref().unwrap_or(&view),
             depth_slice: None,
-            resolve_target: None,
+            resolve_target: self.multisample_view.as_ref().map(|_| &view),
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Clear(wgpu::Color {
                     r: 0.035,
@@ -220,8 +312,20 @@ where
                 scene.draw(&mut render_pass, batches.tiles, batches.sprites);
             }
         }
+        let readback = if std::mem::take(&mut self.capture_requested) {
+            Some(crate::capture::Readback::encode(
+                &self.device,
+                &mut encoder,
+                &frame.texture,
+            ))
+        } else {
+            None
+        };
         let _submission = self.queue.submit([encoder.finish()]);
         self.queue.present(frame);
+        if let Some(readback) = readback {
+            self.captured = Some(readback.and_then(|value| value.finish(&self.device)));
+        }
 
         let decision = self.state.apply(SurfaceEvent::Presented {
             generation,
@@ -249,6 +353,7 @@ where
                 &self.queue,
                 configuration.format,
                 atlas,
+                self.antialiasing,
             ));
         }
         if let Some(scene) = &self.scene {
@@ -281,6 +386,7 @@ where
             SurfaceDecision::PresentAndReconfigure(size) => self.configure(size, generation),
             SurfaceDecision::Suspend | SurfaceDecision::Close => {
                 self.configuration = None;
+                self.multisample_view = None;
                 Ok(())
             }
             SurfaceDecision::None
@@ -301,10 +407,53 @@ where
                 event: crate::SurfaceEventKind::Configured,
             });
         }
-        let configuration = self
+        let mut configuration = self
             .surface
             .get_default_config(&self.adapter, size.width(), size.height())
             .ok_or(RendererError::SurfaceUnsupported)?;
+        configuration.present_mode = match self.presentation {
+            crate::PresentationMode::Synchronized => wgpu::PresentMode::AutoVsync,
+            crate::PresentationMode::Unlocked => wgpu::PresentMode::AutoNoVsync,
+        };
+        if self
+            .surface
+            .get_capabilities(&self.adapter)
+            .usages
+            .contains(wgpu::TextureUsages::COPY_SRC)
+        {
+            configuration.usage |= wgpu::TextureUsages::COPY_SRC;
+        }
+        let features = self
+            .adapter
+            .get_texture_format_features(configuration.format);
+        if !features
+            .flags
+            .sample_count_supported(self.antialiasing.samples())
+            || (self.antialiasing != crate::Antialiasing::Off
+                && !features
+                    .flags
+                    .contains(wgpu::TextureFormatFeatureFlags::MULTISAMPLE_RESOLVE))
+        {
+            return Err(RendererError::SurfaceUnsupported);
+        }
+        self.multisample_view = (self.antialiasing != crate::Antialiasing::Off).then(|| {
+            self.device
+                .create_texture(&wgpu::TextureDescriptor {
+                    label: Some("oteryn-msaa"),
+                    size: wgpu::Extent3d {
+                        width: size.width(),
+                        height: size.height(),
+                        depth_or_array_layers: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count: self.antialiasing.samples(),
+                    dimension: wgpu::TextureDimension::D2,
+                    format: configuration.format,
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                    view_formats: &[],
+                })
+                .create_view(&wgpu::TextureViewDescriptor::default())
+        });
         self.surface.configure(&self.device, &configuration);
         self.configuration = Some(configuration);
         let decision = self.state.apply(SurfaceEvent::Configured { generation })?;

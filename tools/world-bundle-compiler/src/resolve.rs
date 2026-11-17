@@ -22,6 +22,12 @@ use crate::Error;
 use crate::bundle::{Family, MAX_GROUND_SPEED, Terrain, TerrainKind};
 use crate::compile::{KeyResolver, Resolution};
 
+mod static_surfaces;
+
+#[cfg(test)]
+#[path = "resolve/static_surfaces_tests.rs"]
+mod static_surfaces_tests;
+
 /// A typed definition reference `{family, key, revision}`.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 pub struct Reference {
@@ -59,6 +65,8 @@ struct CatalogueRecord {
     walkable: Option<Field>,
     #[serde(default)]
     ground_speed: Option<Field>,
+    #[serde(default)]
+    blocks_projectile: Option<Field>,
     // Both families; read for the spawn admission check (format v3).
     #[serde(default)]
     floor_change: Option<Field>,
@@ -85,6 +93,7 @@ struct Classified {
     kind: Option<Value>,
     walkable: Option<Value>,
     ground_speed: Option<Value>,
+    blocks_projectile: Option<Value>,
 }
 
 /// The parts of a native item profile the game server's bundle collision reads
@@ -128,6 +137,8 @@ struct Provenance {
 /// The Item registry and the Terrain and WorldObject catalogues of one content revision.
 #[derive(Debug, Default)]
 pub struct Registry {
+    /// Exact source static geometry, never inventory definitions.
+    static_surfaces: BTreeMap<String, static_surfaces::StaticSurface>,
     /// Item key to its full identity and its `routed_to`, if any.
     items: BTreeMap<String, (Reference, Option<Reference>)>,
     /// Terrain key to whether its record points at an Item.
@@ -187,6 +198,7 @@ impl Registry {
         if family != "Terrain" && family != "WorldObject" {
             return Err(format(format!("{family} is not a catalogue family")));
         }
+        let static_surfaces = static_surfaces::qualify(family, bytes)?;
         for record in shard::<CatalogueRecord>(bytes, family)? {
             let identity = record.identity;
             if identity.family != family {
@@ -197,6 +209,9 @@ impl Registry {
                 .insert((family.to_owned(), identity.key.clone()))
             {
                 return Err(format(format!("{family} key {} given twice", identity.key)));
+            }
+            if let Some(facts) = static_surfaces.get(&identity.key) {
+                self.static_surfaces.insert(identity.key.clone(), *facts);
             }
             let pointer = record.provenance.item_pointer;
             let changes = Field::known(record.floor_change)
@@ -211,6 +226,7 @@ impl Registry {
                         kind: Field::known(record.kind),
                         walkable: Field::known(record.walkable),
                         ground_speed: Field::known(record.ground_speed),
+                        blocks_projectile: Field::known(record.blocks_projectile),
                     },
                 );
             }
@@ -282,14 +298,21 @@ impl Registry {
             }
         }
         let too_many = || Error::Limit("more than 2^32 keys in one family".into());
+        let terrain_keys: BTreeSet<_> = self
+            .terrain
+            .keys()
+            .chain(self.static_surfaces.keys())
+            .collect();
         for (family, keys) in [
             (Family::Item, self.items.keys().collect::<Vec<_>>()),
-            (Family::Terrain, self.terrain.keys().collect()),
+            (Family::Terrain, terrain_keys.into_iter().collect()),
         ] {
             for (id, key) in keys.into_iter().enumerate() {
                 let id = u32::try_from(id).map_err(|_| too_many())?;
                 // A Terrain key whose record points at an Item keeps its id but never resolves.
-                if (family == Family::Item || self.terrain.get(key) == Some(&false))
+                if (family == Family::Item
+                    || self.terrain.get(key) == Some(&false)
+                    || self.static_surfaces.contains_key(key))
                     && self.ids.insert(key.clone(), (family, id)).is_some()
                 {
                     return Err(Error::Key(format!(
@@ -306,6 +329,14 @@ impl Registry {
     /// with an UNKNOWN `walkable` or `ground_speed`, a speed outside `0..=1000` and a walkable
     /// ground with speed 0. A WorldObject route and a plain Item are never read.
     pub fn terrain_of(&self, key: &str) -> Result<Option<Terrain>, Error> {
+        if let Some(facts) = self.static_surfaces.get(key).filter(|facts| !facts.ground) {
+            return Ok(Some(Terrain {
+                kind: TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: Some(facts.blocks_projectile),
+            }));
+        }
         let record = match self.ids.get(key) {
             Some((Family::Terrain, _)) => key,
             Some((Family::Item, _)) => match self.route(key) {
@@ -327,6 +358,15 @@ impl Registry {
             Some("common") => TerrainKind::Common,
             _ => return Err(unclassified("kind is UNKNOWN or not a Terrain kind")),
         };
+        let blocks_projectile = fields
+            .blocks_projectile
+            .as_ref()
+            .map(|value| {
+                value
+                    .as_bool()
+                    .ok_or_else(|| unclassified("KNOWN blocks_projectile is not boolean"))
+            })
+            .transpose()?;
         let terrain = if kind == TerrainKind::Ground {
             let walkable = fields
                 .walkable
@@ -347,12 +387,16 @@ impl Registry {
                 kind,
                 walkable: Some(walkable),
                 ground_speed: Some(speed),
+                blocks_projectile,
             }
         } else {
             Terrain {
                 kind,
-                walkable: None,
+                // Crystal 201189f src/items/items.cpp:233 loads unpass independently
+                // of the appearance's layer. Do not erase a static obstacle's fact.
+                walkable: fields.walkable.as_ref().and_then(Value::as_bool),
                 ground_speed: None,
+                blocks_projectile,
             }
         };
         Ok(Some(terrain))
@@ -427,6 +471,9 @@ pub struct TerrainCounts {
 }
 
 impl KeyResolver for Registry {
+    fn source_static_surface(&self, key: &str) -> bool {
+        self.static_surfaces.contains_key(key)
+    }
     fn resolve(&self, key: &str) -> Resolution {
         match self.ids.get(key) {
             Some((family, id)) => Resolution::Resolved(*family, *id),
@@ -444,11 +491,15 @@ impl KeyResolver for Registry {
     }
 
     fn solid(&self, key: &str) -> bool {
-        !self.open.contains(key)
+        self.static_surfaces
+            .get(key)
+            .map_or_else(|| !self.open.contains(key), |facts| facts.solid)
     }
 
     fn solid_stated(&self, key: &str) -> bool {
-        self.closed.contains(key)
+        self.static_surfaces
+            .get(key)
+            .map_or_else(|| self.closed.contains(key), |facts| facts.solid)
     }
 
     fn walkable_border(&self, key: &str) -> bool {

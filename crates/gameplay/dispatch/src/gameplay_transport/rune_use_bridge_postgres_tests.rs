@@ -48,6 +48,7 @@ pub(super) const VICTIM: MovementLocalPosition = MovementLocalPosition {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Case {
+    EngencTraining,
     ParalyzeMonster,
     ParalyzePlayer,
     Replay,
@@ -202,6 +203,16 @@ async fn client_cast(
         None => 0,
     };
     match case {
+        Case::EngencTraining => {
+            send_use(
+                client,
+                first_id,
+                &intent,
+                Expected::Result(UseDisposition::Committed),
+            )
+            .await?;
+            send_use(client, first_id, &intent, Expected::Replay).await?;
+        }
         Case::ParalyzeMonster | Case::ParalyzePlayer => {
             if case == Case::ParalyzePlayer {
                 let mut modes = oteryn_protocol_oteryn::pvp_expert::ExpertFightModes::default();
@@ -371,15 +382,53 @@ async fn client_cast(
             .await?
         }
         Case::StaleSession => {
-            sqlx::query("UPDATE game_durability_reconnect_sessions SET current_transport_ref=$1,current_generation=current_generation+1 WHERE game_session_id=encode($2,'hex')::uuid")
+            let changed = sqlx::query("UPDATE game_durability_reconnect_sessions SET current_transport_ref=$1,current_generation=current_generation+1 WHERE game_session_id=encode($2,'hex')::uuid")
                 .bind([11_u8;16].as_slice()).bind(id(50).as_slice()).execute(&harness.pool).await?;
-            send_use(
-                client,
-                first_id,
-                &intent,
-                Expected::Result(UseDisposition::Rejected),
-            )
-            .await?;
+            assert_eq!(changed.rows_affected(), 1);
+            // Capability 6's existing visibility timer wakes the idle serve loop.
+            // Its security refresh retires this transport without any USE input.
+            loop {
+                match read_frame(client).await {
+                    Ok(frame) => {
+                        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                        assert_ne!(envelope.message_type(), MessageType::CommandResult);
+                        assert_ne!(envelope.message_type(), MessageType::ProtocolError);
+                        if envelope.message_type() == MessageType::LivenessProbe {
+                            // Do not let missed-probe retirement substitute for the
+                            // stale transport proof. This peer applies no state deltas.
+                            let probe =
+                                oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())
+                                    .map_err(debug)?;
+                            let ack = oteryn_protocol_oteryn::encode_liveness_ack(
+                                envelope.connection_generation(),
+                                probe,
+                                0,
+                            )
+                            .map_err(debug)?;
+                            let length = u32::try_from(ack.len())?;
+                            let written = async {
+                                client.write_u32(length).await?;
+                                client.write_all(&ack).await
+                            }
+                            .await;
+                            if let Err(error) = written {
+                                // A concurrent security retirement may close the peer
+                                // before its ACK. Still require the actual EOF below.
+                                assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+                            }
+                        }
+                    }
+                    Err(error) => {
+                        assert_eq!(
+                            error
+                                .downcast_ref::<std::io::Error>()
+                                .map(std::io::Error::kind),
+                            Some(std::io::ErrorKind::UnexpectedEof)
+                        );
+                        break;
+                    }
+                }
+            }
         }
         Case::LostContent => {
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1,$3,$4,$5)")
@@ -407,6 +456,11 @@ async fn serve_cast(
     case: Case,
     original: Option<UseIntent>,
 ) -> TestResult<(AdmittedSession, UseIntent)> {
+    // The direct fixture has no node maintenance loop. A cancelled/expired pass
+    // may have retired the sole holder before this connection's snapshot reads.
+    if owner.root.has_ready_demand() {
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+    }
     let first_id = admitted.continuity.next_command_id;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     if let Some(intent) = &original {
@@ -438,6 +492,9 @@ async fn serve_cast(
         ),
     )
     .await;
+    if owner.root.has_ready_demand() {
+        owner.root.maintain_ready_once().await.map_err(debug)?;
+    }
     Ok((admitted?, cast?))
 }
 
@@ -533,6 +590,11 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         native.spell_book().clone(),
     )?;
     let (actor, session) = (dependencies.actor, dependencies.admitted.game_session_id);
+    let target_key = if case == Case::EngencTraining {
+        "oteryn:creature.party_skeleton"
+    } else {
+        "oteryn:creature.rat"
+    };
     let mut victim = None;
     {
         let mut runtime = dependencies.runtime.lock().await;
@@ -541,7 +603,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             .policies()
             .policies()
             .iter()
-            .find(|policy| policy.definition_key == "oteryn:creature.rat")
+            .find(|policy| policy.definition_key == target_key)
             .ok_or("target creature policy")?
             .as_ref()
             .clone();
@@ -571,11 +633,7 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?;
         if case != Case::ParalyzePlayer {
             runtime
-                .realize_native_qualification_spawn(
-                    channel_pin,
-                    "oteryn:creature.rat",
-                    target_position,
-                )
+                .realize_native_qualification_spawn(channel_pin, target_key, target_position)
                 .map_err(debug)?;
             let creature = runtime.visible_entities().creatures[0];
             victim = Some(EntityRef {
@@ -714,6 +772,8 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
     let source_key = if case == Case::UnqualifiedSource {
         "oteryn:item.tibia.i3607"
+    } else if case == Case::EngencTraining {
+        "oteryn:item.tibia.i17512"
     } else if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
         "oteryn:item.tibia.i3165"
     } else {
@@ -723,6 +783,19 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+    if case == Case::EngencTraining {
+        super::engenc_ordinary_hits::prepare_rune(&mut owner, session).await?;
+        tokio::time::timeout(
+            std::time::Duration::from_secs(30),
+            serve_cast(&owner, &harness, admitted, victim, case, None),
+        )
+        .await??;
+        super::engenc_ordinary_hits::assert_rune(&harness.pool).await?;
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return harness.cleanup().await;
+    }
     if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
         super::paralyze_rune::prepare_target(&owner, &harness, victim, case).await?;
         tokio::time::timeout(
@@ -755,6 +828,52 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
         serve_cast(&owner, &harness, admitted, victim, case, None),
     )
     .await??;
+    if case == Case::StaleSession {
+        assert_eq!(
+            resumed.continuity.next_command_id,
+            admitted.continuity.next_command_id
+        );
+        assert_eq!(
+            resumed.continuity.server_sequence,
+            admitted.continuity.server_sequence
+        );
+        let (current, _) = FreshAdmissionStore::from_root(harness.root.clone())
+            .current_session_at(session)
+            .await?;
+        assert_eq!(
+            current.session_state(),
+            crate::foundation::GameSessionState::Active
+        );
+        let current = item_fence_of(current).ok_or("current stale-session item fence")?;
+        let old = admitted.item_fence.ok_or("original admitted item fence")?;
+        assert_eq!(
+            current.connection_generation.get(),
+            old.connection_generation.get() + 1
+        );
+        assert_ne!(current, old);
+        // Independently exercise the real rune owner with the stale admitted fence.
+        // A valid persisted source key prevents a malformed-key refusal standing in
+        // for use_legacy_rune's first, current-session fence check.
+        let command = crate::gameplay_transport::connection::UseCommand {
+            game_session_id: session,
+            command_id: admitted.continuity.next_command_id,
+            item_fence: admitted.item_fence,
+        };
+        let refused = owner
+            .use_rune(
+                actor,
+                command,
+                original.clone(),
+                Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(
+                    71,
+                ))),
+                true,
+                false,
+            )
+            .await
+            .ok_or("stale rune owner returns a deterministic refusal")?;
+        assert_eq!(refused.disposition, UseDisposition::Rejected);
+    }
     if case == Case::LostContent {
         assert_eq!(
             resumed.continuity.next_command_id,
@@ -791,6 +910,16 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
             sqlx::query("UPDATE game_item_instances SET state_revision=state_revision+1 WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(id(71).as_slice()).execute(&mut *tx).await?;
             tx.commit().await?;
+        }
+        // A cancelled/expired pass can retire the sole holder before the next
+        // connection's inventory snapshot. Exercise that state deterministically.
+        if case == Case::BeforeCommit {
+            owner.root.request_ready();
+            assert!(owner.root.maintain_ready_once().await.map_err(debug)?);
+            let holder = owner.root.try_acquire_ready().map_err(debug)?;
+            holder.close().await?;
+            owner.root.request_ready();
+            assert!(!owner.root.is_ready());
         }
         let (refused, _) = tokio::time::timeout(
             std::time::Duration::from_secs(30),

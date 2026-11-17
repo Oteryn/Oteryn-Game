@@ -13,6 +13,34 @@ use serde_json::{Map, Value};
 use std::fmt::{self, Display, Formatter};
 use std::time::Duration;
 
+const PLATFORM_SLOW_OPERATION: Duration = Duration::from_secs(2);
+
+fn platform_error_code(error: PlatformClientError) -> oteryn_error_codes::ErrorCode {
+    use oteryn_error_codes::{Category, ErrorCode, Progression};
+    match error {
+        PlatformClientError::HttpStatus(429) => ErrorCode::new(
+            5005,
+            "PLATFORM_RATE_LIMITED",
+            Category::CapacityExceeded,
+            Progression::Retryable,
+        ),
+        PlatformClientError::HttpStatus(500..=599)
+        | PlatformClientError::Request
+        | PlatformClientError::Cancelled => ErrorCode::new(
+            5007,
+            "PLATFORM_UNAVAILABLE",
+            Category::DependencyUnavailable,
+            Progression::Retryable,
+        ),
+        _ => ErrorCode::new(
+            5006,
+            "PLATFORM_RESPONSE_INVALID",
+            Category::InternalUnavailable,
+            Progression::Terminal,
+        ),
+    }
+}
+
 pub const DEFAULT_MAX_RESPONSE_BYTES: usize = 1_048_576;
 pub const MAX_WORLDS: usize = 256;
 pub const MAX_CHANNELS_PER_WORLD: usize = 128;
@@ -112,6 +140,16 @@ impl PlatformClient {
             .base_url
             .join("v1/client/directory")
             .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
+        let mut span = oteryn_error_codes::Span::start(
+            oteryn_error_codes::Level::Info,
+            "platform",
+            "platform_call",
+            None,
+        )
+        .slow_after(PLATFORM_SLOW_OPERATION);
+        span.field("endpoint", "directory");
+        span.field("attempts", 1_u64);
+        let started = std::time::Instant::now();
         let request = async {
             let mut response = self
                 .client
@@ -145,9 +183,27 @@ impl PlatformClient {
             }
             parse_directory(&body)
         };
-        match cancellable(cancellation, request).await {
+        let result = match cancellable(cancellation, request).await {
             Cancellable::Completed(result) => result,
             Cancellable::Cancelled => Err(PlatformClientError::Cancelled),
+        };
+        oteryn_error_codes::metrics::Registry::global()
+            .histogram("platform_call_ms", &[("endpoint", "directory")])
+            .observe(u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX));
+        match result {
+            Ok(snapshot) => {
+                span.set_outcome("ok");
+                span.field("status", 200_u64);
+                Ok(snapshot)
+            }
+            Err(error) => {
+                span.set_outcome("failed");
+                span.set_code(platform_error_code(error));
+                if let PlatformClientError::HttpStatus(status) = error {
+                    span.field("status", u64::from(status));
+                }
+                Err(error)
+            }
         }
     }
 }
@@ -321,3 +377,7 @@ mod tests {
         }
     }
 }
+
+pub mod updates;
+
+pub mod device_sessions;

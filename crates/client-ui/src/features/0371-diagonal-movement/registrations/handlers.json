@@ -1,0 +1,20 @@
+{
+  "mechanic": "0371-diagonal-movement",
+  "kind": "handlers",
+  "id": "0371-diagonal-movement-core-step-extension",
+  "status": "supported",
+  "commands": [],
+  "shared_commands": [
+    1
+  ],
+  "direction": "client_to_server",
+  "capability": 371,
+  "entry": "input.rs::keypad_step",
+  "test": "tests.rs::negotiated_profile_exposes_only_native_keypad_diagonals",
+  "not_applicable": {
+    "state": "The existing world-spatial state remains authoritative.",
+    "protocol": "The shared session command1 codec applies the negotiated grammar and pacing bounds.",
+    "view": "The existing actor scene renders movement.",
+    "settings": "Bindings use the shared keyboard preferences."
+  }
+}

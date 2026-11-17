@@ -19,6 +19,9 @@ async fn maybe_upgrade<S: Socket>(
     mut socket: S,
     options: &PgConnectOptions,
 ) -> Result<Box<dyn Socket>, Error> {
+    // Oteryn: TCP_NODELAY before any message, as libpq does (RC5).
+    crate::net::set_tcp_nodelay(&socket)?;
+
     // https://www.postgresql.org/docs/12/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS
     match options.ssl_mode {
         // FIXME: Implement ALLOW

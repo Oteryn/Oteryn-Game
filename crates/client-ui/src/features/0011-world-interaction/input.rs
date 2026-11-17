@@ -7,10 +7,14 @@ use oteryn_input_actions::{
 use oteryn_renderer::{TileCoord, TileView};
 
 pub const CLICK_ACTION: &str = "client.click";
+pub const ATTACK_TOGGLE_ACTION: &str = "client.attack_toggle";
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ClickAction {
     pub x: f64,
     pub y: f64,
+    pub secondary: bool,
+    /// Alt+click on an opponent: toggles attacking it.
+    pub toggle_attack: bool,
 }
 #[must_use]
 pub fn click_tile(view: &TileView, x: f64, y: f64) -> Option<TileCoord> {
@@ -19,6 +23,8 @@ pub fn click_tile(view: &TileView, x: f64, y: f64) -> Option<TileCoord> {
 }
 /// Registration marker for the primary-pointer default.
 pub fn default_click_binding() {}
+/// Registration marker for the secondary-pointer menu.
+pub fn default_context_binding() {}
 #[derive(Debug)]
 pub struct MouseActions {
     router: InputRouter,
@@ -38,15 +44,35 @@ impl MouseActions {
                 ContextDefinition::new(text.clone(), ContextKind::Text, 10),
                 ContextDefinition::new(modal.clone(), ContextKind::Modal, 20),
             ],
-            vec![Binding::new(
-                gameplay.clone(),
-                InputChord::new(
-                    Modifiers::NONE,
-                    vec![InputAtom::Mouse(MouseButton::PRIMARY)],
-                )?,
-                ActionId::new(CLICK_ACTION.to_owned())?,
-                RepeatPolicy::Ignore,
-            )],
+            vec![
+                Binding::new(
+                    gameplay.clone(),
+                    InputChord::new(
+                        Modifiers::NONE,
+                        vec![InputAtom::Mouse(MouseButton::PRIMARY)],
+                    )?,
+                    ActionId::new(CLICK_ACTION.to_owned())?,
+                    RepeatPolicy::Ignore,
+                ),
+                Binding::new(
+                    gameplay.clone(),
+                    InputChord::new(
+                        Modifiers::one(oteryn_input_actions::Modifier::Alt),
+                        vec![InputAtom::Mouse(MouseButton::PRIMARY)],
+                    )?,
+                    ActionId::new(ATTACK_TOGGLE_ACTION.to_owned())?,
+                    RepeatPolicy::Ignore,
+                ),
+                Binding::new(
+                    gameplay.clone(),
+                    InputChord::new(
+                        Modifiers::NONE,
+                        vec![InputAtom::Mouse(MouseButton::SECONDARY)],
+                    )?,
+                    ActionId::new("client.context".to_owned())?,
+                    RepeatPolicy::Ignore,
+                ),
+            ],
             &[],
         )?;
         let mut router = InputRouter::new(map);
@@ -58,6 +84,14 @@ impl MouseActions {
             modal,
             pointer: None,
         })
+    }
+    /// Native popup loops can consume the release; clear the held secondary button on dismissal.
+    pub fn context_closed(&mut self) {
+        self.router.process(&NormalizedInputEvent::MouseButton {
+            button: MouseButton::SECONDARY,
+            state: oteryn_input_actions::ButtonState::Released,
+            modifiers: Modifiers::NONE,
+        });
     }
     pub fn set_text_active(&mut self, active: bool) -> Result<(), InputError> {
         self.router.set_context_active(&self.text, active).map(drop)
@@ -87,12 +121,19 @@ impl MouseActions {
                 _ => {}
             }
             for action in self.router.process(event) {
-                if action.action().as_str() == CLICK_ACTION
-                    && action.context() == &self.gameplay
+                if matches!(
+                    action.action().as_str(),
+                    CLICK_ACTION | ATTACK_TOGGLE_ACTION | "client.context"
+                ) && action.context() == &self.gameplay
                     && action.phase() == ActionPhase::Started
                     && let Some((x, y)) = self.pointer
                 {
-                    clicks.push(ClickAction { x, y });
+                    clicks.push(ClickAction {
+                        x,
+                        y,
+                        secondary: action.action().as_str() == "client.context",
+                        toggle_attack: action.action().as_str() == ATTACK_TOGGLE_ACTION,
+                    });
                 }
             }
         }

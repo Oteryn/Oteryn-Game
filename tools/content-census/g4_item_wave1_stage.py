@@ -25,6 +25,7 @@ LEGACY_REFERENCE = ROOT / "content/world/definitions/reference.json"
 ITEM_ALIASES = ROOT / "content/items/aliases.json"
 STAGED = ROOT / "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json"
 ITEM_STATS_V2 = ROOT / "docs/agents/evidence/OTV2-20260930-item-stats-promotion-v2.json"
+MARKET_PARITY = ROOT / "docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json"
 
 SCHEMA = "OTERYN_G4_ITEM_WAVE1_STAGED/v1"
 MAPPER = "OTERYN_G4_ITEM_WAVE1_STAGE/v1"
@@ -114,13 +115,21 @@ def alias_targets(table: dict[str, Any]) -> dict[str, str]:
     return {key: entry["target"] for key, entry in current.items() if entry["state"] == "ALIAS"}
 
 
-def superseding_values(packet: dict[str, Any]) -> dict[tuple[str, str], Any]:
+def superseding_values(packet: dict[str, Any], market_parity: dict[str, Any] | None = None) -> dict[tuple[str, str], Any]:
     """ITEM-SEM-2b: English TibiaWiki stat rows that supersede Wave 1 values in content."""
     content_path = {"weapon.range_cells": "weapon.range"}
-    return {
+    values = {
         (row["item_key"], content_path.get(row["field_path"], row["field_path"])): row["typed_value"]["value"]
         for row in packet["promotions"]
     }
+    # Retain the frozen observation while respecting the accepted later Market
+    # owner, which explicitly supersedes the Wave 1 false flag for this identity.
+    values.update({
+        (row["item_key"], "trade_restrictions.marketable"): row["marketable"]
+        for row in (market_parity or {}).get("promotions", [])
+        if row.get("supersedes") == "WAVE1_WIKI_MARKETABLE_FALSE"
+    })
+    return values
 
 
 def stage(snapshot: dict[str, Any], census: dict[str, Any], legacy: dict[str, Any], aliases: dict[str, str],
@@ -324,7 +333,7 @@ def main() -> int:
         json.loads(FIELD_CENSUS.read_bytes()),
         json.loads(LEGACY_REFERENCE.read_bytes()),
         alias_targets(json.loads(ITEM_ALIASES.read_bytes())),
-        superseding_values(json.loads(ITEM_STATS_V2.read_bytes())),
+        superseding_values(json.loads(ITEM_STATS_V2.read_bytes()), json.loads(MARKET_PARITY.read_bytes())),
     ))
     if args.check:
         if STAGED.read_bytes() != staged:

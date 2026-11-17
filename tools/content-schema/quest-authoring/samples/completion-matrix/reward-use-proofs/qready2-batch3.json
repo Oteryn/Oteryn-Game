@@ -1,0 +1,56 @@
+{
+  "schema": "OTERYN_QUEST_REWARD_USE_PROOF/v1",
+  "runtime_path": "bundle_chest::use_bundle_chest -> reward_claim_mint",
+  "test_file": "crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qready2_claims.rs",
+  "test_sha256": "d38da5f632c20232dabfa0283990485721d1eb74d17e04376e77f6740404b184",
+  "cases": [
+    {
+      "wiki_title": "Six Rubies Quest",
+      "claim_key": "oteryn:reward-claim.kv.sixrubies",
+      "test": "qready2_six_rubies_quest_1",
+      "marker": "QREADY2_SIX_RUBIES_QUEST_1",
+      "duration_seconds": 52.959,
+      "claim_sha256": "d5b57406f3d1701ae8a26734abd445e0ca7a1bf2d1878857db1c53d1843919ba"
+    },
+    {
+      "wiki_title": "Spike Sword Quest",
+      "claim_key": "oteryn:reward-claim.kv.spikesword",
+      "test": "qready2_spike_sword_quest_1",
+      "marker": "QREADY2_SPIKE_SWORD_QUEST_1",
+      "duration_seconds": 45.729,
+      "claim_sha256": "d82718875a6ee381f5c62c83dd645b02b9bdb0d7061d2d6c1ea9560df89a0e0d"
+    },
+    {
+      "wiki_title": "Studded Legs Quest",
+      "claim_key": "oteryn:reward-claim.kv.honeyflower",
+      "test": "qready2_studded_legs_quest_1",
+      "marker": "QREADY2_STUDDED_LEGS_QUEST_1",
+      "duration_seconds": 43.503,
+      "claim_sha256": "c99a32d9ced57b116b4d93e3a04351cfd90813c515645c65aee70a345ca2e266"
+    },
+    {
+      "wiki_title": "Studded Shield Quest",
+      "claim_key": "oteryn:reward-claim.kv.bananafree",
+      "test": "qready2_studded_shield_quest_1",
+      "marker": "QREADY2_STUDDED_SHIELD_QUEST_1",
+      "duration_seconds": 41.562,
+      "claim_sha256": "21fd6fa5343bfea13441061f084f1f41a96b74fa93d34c55ba70d362aa1f32b9"
+    },
+    {
+      "wiki_title": "Studded Shield Quest",
+      "claim_key": "oteryn:reward-claim.kv.bananapremium",
+      "test": "qready2_studded_shield_quest_2",
+      "marker": "QREADY2_STUDDED_SHIELD_QUEST_2",
+      "duration_seconds": 39.475,
+      "claim_sha256": "b148153d06d9f44a922dcd7def73eb4f7c629a0e9fae906253f3a774b57f46a7"
+    },
+    {
+      "wiki_title": "Throwing Star Quest",
+      "claim_key": "oteryn:reward-claim.kv.throwingstar",
+      "test": "qready2_throwing_star_quest_1",
+      "marker": "QREADY2_THROWING_STAR_QUEST_1",
+      "duration_seconds": 31.639,
+      "claim_sha256": "84b35f258dbec59240054a9035fc2d6c6028b7dbb2703cda840ef994985d40b4"
+    }
+  ]
+}

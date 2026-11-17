@@ -1,0 +1,9 @@
+{
+  "mechanic": "0054-training",
+  "kind": "keybindings",
+  "id": "0054-training-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+N",
+  "entry": "input.rs::open_key"
+}

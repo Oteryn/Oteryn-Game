@@ -1,0 +1,1213 @@
+{
+  "quest": "the_order_of_lion_quest",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "runtime_admission": false,
+  "entries": [
+    {
+      "npc_source_name": "evrard",
+      "source_blob_sha256": "7f3e69c24d533f12c3b53b2b408dfeccaf8fd6e5fefb2c12739ea0f00641404d",
+      "review_rows": [
+        "R4C100",
+        "R4C101",
+        "R4C102"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard.lua:53-117",
+          "line_start": 53,
+          "line_end": 117,
+          "source_sha256": "36384591baad2b4858ccd6a428576021e7dd7f4bbecea2ffdf68d2209a9cd187",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 0 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Alright, look. You already know that camp to the east, with the bad guys roaming around, right? Great. ...\",\n\t\t\t\t\"They have a ledger and a map there, and I want that. Both these items. The ledger is in a warehouse at the harbour. ...\",\n\t\t\t\t\"I don't know where that map is, though but I am sure they have one where they've marked all the locations they've been at. ...\",\n\t\t\t\t\"And most importantly: BE QUIET! Try not to be seen. Be a shadow. Got that?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif npcHandler:getTopic(playerId) == 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessEasternSide, 1)\n\t\t\tnpcHandler:say(\"Good, now go. Remember: be like a light summer breeze - quick, almost unnoticeable and most importantly QUIET!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif message:lower() == \"news\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 1 then\n\t\tnpcHandler:say(\"What about the small errand I mentioned? Did you get the stuff?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 1 then\n\t\tif npcHandler:getTopic(playerId) == 2 then\n\t\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Parchment) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.MapStorage) >= 1 and player:removeItem(635, 1) and player:removeItem(2822, 1) then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 2)\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"You did it! Let me just take a peek... ...\",\n\t\t\t\t\t\"What? No, no - keep them. I uhm, don't want to have anything to do with this. Just wanted to... take a quick look, you know. ...\",\n\t\t\t\t\t\"Have you been quiet as I asked you?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You haven't brought both items yet. I need the ledger AND the map from that camp.\", npc, creature)\n\t\t\tend\n\t\tend\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 2 then\n\t\tif npcHandler:getTopic(playerId) == 3 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 3)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, 0)\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Oh you have? Why did I hear screams of battle, fear and loathing from over there about the time you were gone? ...\",\n\t\t\t\t\"And I really hope yours were the screams of battle and not those of fear. ...\",\n\t\t\t\t\"Anyway, you did it and that's very good. I am thankful for that and I'll open up an underground route I sometimes use when I want to enter the city quickly. ...\",\n\t\t\t\t\"This way you can get past any guards and find out more about the situation. And one more thing: ...\",\n\t\t\t\t\"There's a passphrase: YSELDA. Remember that. Now go and the best of luck to you, traveller!\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings. Can I help you, traveller?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"Alright, look. You already know that camp to the east, with the bad guys roaming around, right? Great. ...\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"They have a ledger and a map there, and I want that. Both these items. The ledger is in a warehouse at the harbour. ...\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"I don't know where that map is, though but I am sure they have one where they've marked all the locations they've been at. ...\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"And most importantly: BE QUIET! Try not to be seen. Be a shadow. Got that?\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"Good, now go. Remember: be like a light summer breeze - quick, almost unnoticeable and most importantly QUIET!\""
+            },
+            {
+              "line": 79,
+              "lua_literal": "\"news\""
+            },
+            {
+              "line": 80,
+              "lua_literal": "\"What about the small errand I mentioned? Did you get the stuff?\""
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"You did it! Let me just take a peek... ...\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"What? No, no - keep them. I uhm, don't want to have anything to do with this. Just wanted to... take a quick look, you know. ...\""
+            },
+            {
+              "line": 89,
+              "lua_literal": "\"Have you been quiet as I asked you?\""
+            },
+            {
+              "line": 93,
+              "lua_literal": "\"You haven't brought both items yet. I need the ledger AND the map from that camp.\""
+            },
+            {
+              "line": 96,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 102,
+              "lua_literal": "\"Oh you have? Why did I hear screams of battle, fear and loathing from over there about the time you were gone? ...\""
+            },
+            {
+              "line": 103,
+              "lua_literal": "\"And I really hope yours were the screams of battle and not those of fear. ...\""
+            },
+            {
+              "line": 104,
+              "lua_literal": "\"Anyway, you did it and that's very good. I am thankful for that and I'll open up an underground route I sometimes use when I want to enter the city quickly. ...\""
+            },
+            {
+              "line": 105,
+              "lua_literal": "\"This way you can get past any guards and find out more about the situation. And one more thing: ...\""
+            },
+            {
+              "line": 106,
+              "lua_literal": "\"There's a passphrase: YSELDA. Remember that. Now go and the best of luck to you, traveller!\""
+            },
+            {
+              "line": 113,
+              "lua_literal": "\"Greetings. Can I help you, traveller?\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Evrard\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 128,\n\tlookHead = 21,\n\tlookBody = 19,\n\tlookLegs = 21,\n\tlookFeet = 95,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_NIGHT,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 0 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Alright, look. You already know that camp to the east, with the bad guys roaming around, right? Great. ...\",\n\t\t\t\t\"They have a ledger and a map there, and I want that. Both these items. The ledger is in a warehouse at the harbour. ...\",\n\t\t\t\t\"I don't know where that map is, though but I am sure they have one where they've marked all the locations they've been at. ...\",\n\t\t\t\t\"And most importantly: BE QUIET! Try not to be seen. Be a shadow. Got that?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif npcHandler:getTopic(playerId) == 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessEasternSide, 1)\n\t\t\tnpcHandler:say(\"Good, now go. Remember: be like a light summer breeze - quick, almost unnoticeable and most importantly QUIET!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif message:lower() == \"news\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 1 then\n\t\tnpcHandler:say(\"What about the small errand I mentioned? Did you get the stuff?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 1 then\n\t\tif npcHandler:getTopic(playerId) == 2 then\n\t\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Parchment) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.MapStorage) >= 1 and player:removeItem(635, 1) and player:removeItem(2822, 1) then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 2)\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"You did it! Let me just take a peek... ...\",\n\t\t\t\t\t\"What? No, no - keep them. I uhm, don't want to have anything to do with this. Just wanted to... take a quick look, you know. ...\",\n\t\t\t\t\t\"Have you been quiet as I asked you?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You haven't brought both items yet. I need the ledger AND the map from that camp.\", npc, creature)\n\t\t\tend\n\t\tend\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 2 then\n\t\tif npcHandler:getTopic(playerId) == 3 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 3)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, 0)\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Oh you have? Why did I hear screams of battle, fear and loathing from over there about the time you were gone? ...\",\n\t\t\t\t\"And I really hope yours were the screams of battle and not those of fear. ...\",\n\t\t\t\t\"Anyway, you did it and that's very good. I am thankful for that and I'll open up an underground route I sometimes use when I want to enter the city quickly. ...\",\n\t\t\t\t\"This way you can get past any guards and find out more about the situation. And one more thing: ...\",\n\t\t\t\t\"There's a passphrase: YSELDA. Remember that. Now go and the best of luck to you, traveller!\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings. Can I help you, traveller?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard.lua:1-117"
+    },
+    {
+      "npc_source_name": "evrard_the_miller",
+      "source_blob_sha256": "5fbe764c56eb95217c143818a09d3b12d3b3f1939b20980885f5bb4324776676",
+      "review_rows": [
+        "R4C100",
+        "R4C101",
+        "R4C102"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard_the_miller.lua:53-117",
+          "line_start": 53,
+          "line_end": 117,
+          "source_sha256": "36384591baad2b4858ccd6a428576021e7dd7f4bbecea2ffdf68d2209a9cd187",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 0 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Alright, look. You already know that camp to the east, with the bad guys roaming around, right? Great. ...\",\n\t\t\t\t\"They have a ledger and a map there, and I want that. Both these items. The ledger is in a warehouse at the harbour. ...\",\n\t\t\t\t\"I don't know where that map is, though but I am sure they have one where they've marked all the locations they've been at. ...\",\n\t\t\t\t\"And most importantly: BE QUIET! Try not to be seen. Be a shadow. Got that?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif npcHandler:getTopic(playerId) == 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessEasternSide, 1)\n\t\t\tnpcHandler:say(\"Good, now go. Remember: be like a light summer breeze - quick, almost unnoticeable and most importantly QUIET!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif message:lower() == \"news\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 1 then\n\t\tnpcHandler:say(\"What about the small errand I mentioned? Did you get the stuff?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 1 then\n\t\tif npcHandler:getTopic(playerId) == 2 then\n\t\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Parchment) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.MapStorage) >= 1 and player:removeItem(635, 1) and player:removeItem(2822, 1) then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 2)\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"You did it! Let me just take a peek... ...\",\n\t\t\t\t\t\"What? No, no - keep them. I uhm, don't want to have anything to do with this. Just wanted to... take a quick look, you know. ...\",\n\t\t\t\t\t\"Have you been quiet as I asked you?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You haven't brought both items yet. I need the ledger AND the map from that camp.\", npc, creature)\n\t\t\tend\n\t\tend\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 2 then\n\t\tif npcHandler:getTopic(playerId) == 3 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 3)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, 0)\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Oh you have? Why did I hear screams of battle, fear and loathing from over there about the time you were gone? ...\",\n\t\t\t\t\"And I really hope yours were the screams of battle and not those of fear. ...\",\n\t\t\t\t\"Anyway, you did it and that's very good. I am thankful for that and I'll open up an underground route I sometimes use when I want to enter the city quickly. ...\",\n\t\t\t\t\"This way you can get past any guards and find out more about the situation. And one more thing: ...\",\n\t\t\t\t\"There's a passphrase: YSELDA. Remember that. Now go and the best of luck to you, traveller!\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings. Can I help you, traveller?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"Alright, look. You already know that camp to the east, with the bad guys roaming around, right? Great. ...\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"They have a ledger and a map there, and I want that. Both these items. The ledger is in a warehouse at the harbour. ...\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"I don't know where that map is, though but I am sure they have one where they've marked all the locations they've been at. ...\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"And most importantly: BE QUIET! Try not to be seen. Be a shadow. Got that?\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"Good, now go. Remember: be like a light summer breeze - quick, almost unnoticeable and most importantly QUIET!\""
+            },
+            {
+              "line": 79,
+              "lua_literal": "\"news\""
+            },
+            {
+              "line": 80,
+              "lua_literal": "\"What about the small errand I mentioned? Did you get the stuff?\""
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"You did it! Let me just take a peek... ...\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"What? No, no - keep them. I uhm, don't want to have anything to do with this. Just wanted to... take a quick look, you know. ...\""
+            },
+            {
+              "line": 89,
+              "lua_literal": "\"Have you been quiet as I asked you?\""
+            },
+            {
+              "line": 93,
+              "lua_literal": "\"You haven't brought both items yet. I need the ledger AND the map from that camp.\""
+            },
+            {
+              "line": 96,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 102,
+              "lua_literal": "\"Oh you have? Why did I hear screams of battle, fear and loathing from over there about the time you were gone? ...\""
+            },
+            {
+              "line": 103,
+              "lua_literal": "\"And I really hope yours were the screams of battle and not those of fear. ...\""
+            },
+            {
+              "line": 104,
+              "lua_literal": "\"Anyway, you did it and that's very good. I am thankful for that and I'll open up an underground route I sometimes use when I want to enter the city quickly. ...\""
+            },
+            {
+              "line": 105,
+              "lua_literal": "\"This way you can get past any guards and find out more about the situation. And one more thing: ...\""
+            },
+            {
+              "line": 106,
+              "lua_literal": "\"There's a passphrase: YSELDA. Remember that. Now go and the best of luck to you, traveller!\""
+            },
+            {
+              "line": 113,
+              "lua_literal": "\"Greetings. Can I help you, traveller?\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Evrard the Miller\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 128,\n\tlookHead = 21,\n\tlookBody = 19,\n\tlookLegs = 21,\n\tlookFeet = 95,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_DAY,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 0 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Alright, look. You already know that camp to the east, with the bad guys roaming around, right? Great. ...\",\n\t\t\t\t\"They have a ledger and a map there, and I want that. Both these items. The ledger is in a warehouse at the harbour. ...\",\n\t\t\t\t\"I don't know where that map is, though but I am sure they have one where they've marked all the locations they've been at. ...\",\n\t\t\t\t\"And most importantly: BE QUIET! Try not to be seen. Be a shadow. Got that?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif npcHandler:getTopic(playerId) == 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessEasternSide, 1)\n\t\t\tnpcHandler:say(\"Good, now go. Remember: be like a light summer breeze - quick, almost unnoticeable and most importantly QUIET!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif message:lower() == \"news\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 1 then\n\t\tnpcHandler:say(\"What about the small errand I mentioned? Did you get the stuff?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 2)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 1 then\n\t\tif npcHandler:getTopic(playerId) == 2 then\n\t\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Parchment) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.MapStorage) >= 1 and player:removeItem(635, 1) and player:removeItem(2822, 1) then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 2)\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"You did it! Let me just take a peek... ...\",\n\t\t\t\t\t\"What? No, no - keep them. I uhm, don't want to have anything to do with this. Just wanted to... take a quick look, you know. ...\",\n\t\t\t\t\t\"Have you been quiet as I asked you?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You haven't brought both items yet. I need the ledger AND the map from that camp.\", npc, creature)\n\t\t\tend\n\t\tend\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard) == 2 then\n\t\tif npcHandler:getTopic(playerId) == 3 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.Evrard, 3)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, 0)\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Oh you have? Why did I hear screams of battle, fear and loathing from over there about the time you were gone? ...\",\n\t\t\t\t\"And I really hope yours were the screams of battle and not those of fear. ...\",\n\t\t\t\t\"Anyway, you did it and that's very good. I am thankful for that and I'll open up an underground route I sometimes use when I want to enter the city quickly. ...\",\n\t\t\t\t\"This way you can get past any guards and find out more about the situation. And one more thing: ...\",\n\t\t\t\t\"There's a passphrase: YSELDA. Remember that. Now go and the best of luck to you, traveller!\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Greetings. Can I help you, traveller?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/evrard_the_miller.lua:1-117"
+    },
+    {
+      "npc_source_name": "bounac_guard",
+      "source_blob_sha256": "2c5724fcef42d3f1719ae06461eea564841701a37b2cc207d42bfb3c2db450db",
+      "review_rows": [
+        "R4C109",
+        "R4C110"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bounac_guard.lua:53-112",
+          "line_start": 53,
+          "line_end": 112,
+          "source_sha256": "e592d7a777f98af2de6ddae130aba097ea3019f406c39f9528b6708c7d104b44",
+          "guarded_source_lua": "local destinationIn = Position(32397, 32480, 4)\nlocal destinationOut = Position(32401, 32480, 4)\n\nlocal function grantAccess(player, npc, creature)\n\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessEasternSide, 1)\n\tplayer:teleportTo(destinationIn)\n\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\tnpcHandler:say(\"The citizens have spoken in your favour. You may enter. Stay out of trouble.\", npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"pass\") or MsgContains(message, \"in\") then\n\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessEasternSide) >= 1 then\n\t\t\tplayer:teleportTo(destinationIn)\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tnpcHandler:say(\"Right this way.\", npc, creature)\n\t\telseif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) >= 5 then\n\t\t\tgrantAccess(player, npc, creature)\n\t\telse\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Pass? Not so fast, outsider. ...\",\n\t\t\t\t\"The people of Bounac are cautious during these troubled times. Earn our trust and I may let you pass.\",\n\t\t\t}, npc, creature)\n\t\tend\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"out\") then\n\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessEasternSide) >= 1 then\n\t\t\tplayer:teleportTo(destinationOut)\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tnpcHandler:say(\"Safe travels, traveller.\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"You are not even supposed to be in here.\", npc, creature)\n\t\tend\n\t\treturn true\n\tend\n\n\tif message:lower() == \"yes\" and npcHandler:getTopic(playerId) == 1 then\n\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) >= 5 then\n\t\t\tgrantAccess(player, npc, creature)\n\t\telse\n\t\t\tnpcHandler:say({\n\t\t\t\t\"I'm afraid not. The citizens haven't vouched for you yet. ...\",\n\t\t\t\t\"Earn their trust and come back.\",\n\t\t\t}, npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Halt! This area is restricted during the siege. State your business or turn back.\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 60,
+              "lua_literal": "\"The citizens have spoken in your favour. You may enter. Stay out of trouble.\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"pass\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"in\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"Right this way.\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"Pass? Not so fast, outsider. ...\""
+            },
+            {
+              "line": 77,
+              "lua_literal": "\"The people of Bounac are cautious during these troubled times. Earn our trust and I may let you pass.\""
+            },
+            {
+              "line": 83,
+              "lua_literal": "\"out\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"Safe travels, traveller.\""
+            },
+            {
+              "line": 89,
+              "lua_literal": "\"You are not even supposed to be in here.\""
+            },
+            {
+              "line": 94,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 99,
+              "lua_literal": "\"I'm afraid not. The citizens haven't vouched for you yet. ...\""
+            },
+            {
+              "line": 100,
+              "lua_literal": "\"Earn their trust and come back.\""
+            },
+            {
+              "line": 108,
+              "lua_literal": "\"Halt! This area is restricted during the siege. State your business or turn back.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Bounac Guard\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 1071,\n\tlookHead = 38,\n\tlookBody = 19,\n\tlookLegs = 38,\n\tlookFeet = 19,\n\tlookAddons = 0,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal destinationIn = Position(32397, 32480, 4)\nlocal destinationOut = Position(32401, 32480, 4)\n\nlocal function grantAccess(player, npc, creature)\n\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessEasternSide, 1)\n\tplayer:teleportTo(destinationIn)\n\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\tnpcHandler:say(\"The citizens have spoken in your favour. You may enter. Stay out of trouble.\", npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"pass\") or MsgContains(message, \"in\") then\n\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessEasternSide) >= 1 then\n\t\t\tplayer:teleportTo(destinationIn)\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tnpcHandler:say(\"Right this way.\", npc, creature)\n\t\telseif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) >= 5 then\n\t\t\tgrantAccess(player, npc, creature)\n\t\telse\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Pass? Not so fast, outsider. ...\",\n\t\t\t\t\"The people of Bounac are cautious during these troubled times. Earn our trust and I may let you pass.\",\n\t\t\t}, npc, creature)\n\t\tend\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"out\") then\n\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessEasternSide) >= 1 then\n\t\t\tplayer:teleportTo(destinationOut)\n\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_TELEPORT)\n\t\t\tnpcHandler:say(\"Safe travels, traveller.\", npc, creature)\n\t\telse\n\t\t\tnpcHandler:say(\"You are not even supposed to be in here.\", npc, creature)\n\t\tend\n\t\treturn true\n\tend\n\n\tif message:lower() == \"yes\" and npcHandler:getTopic(playerId) == 1 then\n\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) >= 5 then\n\t\t\tgrantAccess(player, npc, creature)\n\t\telse\n\t\t\tnpcHandler:say({\n\t\t\t\t\"I'm afraid not. The citizens haven't vouched for you yet. ...\",\n\t\t\t\t\"Earn their trust and come back.\",\n\t\t\t}, npc, creature)\n\t\tend\n\t\tnpcHandler:setTopic(playerId, 0)\n\t\treturn true\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Halt! This area is restricted during the siege. State your business or turn back.\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/bounac_guard.lua:1-112"
+    },
+    {
+      "npc_source_name": "kesar_the_younger_day",
+      "source_blob_sha256": "5e2f9ad788c3b985c82d2d33abb8a72d4e776b03659d6a6ebe69fbd8ceff1a65",
+      "review_rows": [
+        "R4C123",
+        "R4C124",
+        "R4C125",
+        "R4C126",
+        "R4C127"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:60-66",
+          "line_start": 60,
+          "line_end": 66,
+          "source_sha256": "7fd4bd611d1ba804e0a95cc2dd0fa4876ae073928dd07659ea8547bd93f72820",
+          "guarded_source_lua": "local TEN_MINUTES = 10 * 60\nlocal ONE_TIBIAN_DAY = 60 * 60\nlocal TWENTY_HOURS = 20 * 60 * 60\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n",
+          "string_literals_in_original_context": []
+        },
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:156-290",
+          "line_start": 156,
+          "line_end": 290,
+          "source_sha256": "ff2c5c47a0a5eea9f10d4544f477f5ec0f40d067872d09ea8721f0252a0015b7",
+          "guarded_source_lua": "\tif MsgContains(message, \"siege\") then\n\t\tlocal mission = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission)\n\t\tlocal timer = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarSiegeTimer)\n\t\tlocal now = os.time()\n\n\t\tif mission < 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarSiegeTimer, now)\n\t\t\tnpcHandler:say({\n\t\t\t\t\"You will have to wait until I have time to take care of your request. In the meantime, take a seat. ...\",\n\t\t\t\t\"Usually they're reserved for my council but they never seem to sit down... and somehow I doubt you will, either.\",\n\t\t\t}, npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif mission == 1 then\n\t\t\tif (now - timer) >= TEN_MINUTES then\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"So, I trust you're not here to join the usurpers besieging our humble enclave. Otherwise my men would've surely put you in your place before you even passed the gate. ...\",\n\t\t\t\t\t\"Sources are telling me that you helped our small community quite a bit. And you seem to know your way around the usurpers. ...\",\n\t\t\t\t\t\"I will trust you, as I trust my men who already put faith in you. What do you say, are you interested in a plan?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"I am still quite occupied, traveller. Please be patient and give me some time.\", npc, creature)\n\t\t\tend\n\t\t\treturn true\n\t\tend\n\n\t\tif mission == 2 then\n\t\t\tlocal lastSpawn = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FugueSpawnTime)\n\t\t\tlocal fugueSpawned = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FugueSpawned)\n\n\t\t\tif (now - timer) < ONE_TIBIAN_DAY then\n\t\t\t\tnpcHandler:say(\"I am still preparing. Give it some more time, traveller.\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\n\t\t\tif fugueSpawned == 1 and lastSpawn > 0 and (now - lastSpawn) >= TWENTY_HOURS then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FugueSpawned, 0)\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"I expected them to show up last night but nothing happened. Perhaps they are waiting for the right moment. ...\",\n\t\t\t\t\t\"Return to my chambers when night falls and stay alert. They will come.\",\n\t\t\t\t}, npc, creature)\n\t\t\telseif fugueSpawned == 1 then\n\t\t\t\tnpcHandler:say(\"I know they appeared last night. You need to deal with them - go back to my chambers when night comes.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"I am still preparing. Give it some more time, traveller.\", npc, creature)\n\t\t\tend\n\t\t\treturn true\n\t\tend\n\n\t\tif mission == 3 then\n\t\t\tlocal hasFalcon = player:getStorageValue(Storage.Quest.U11_80.TheSecretLibrary.FalconBastion.Access) >= 1\n\t\t\tlocal hasCobra = player:getStorageValue(Storage.Quest.U12_20.GraveDanger.CobraBastion.Access) >= 1\n\n\t\t\tif hasFalcon and hasCobra then\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Fugue... he attacked right away and had to be punished. You did the right thing. However, this will probably mean all out war if Drume does not come to his senses. ...\",\n\t\t\t\t\t\"I will have to arrange a meeting with him immediately to prevent the worst from happening. There is still another way. ...\",\n\t\t\t\t\t\"Will you escort me to the camp of the usurpers?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\telse\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Last night I had an idea. It came to my mind that we must not stand alone against this onslaught. There are other knights. Other orders who may sympathise with our cause ...\",\n\t\t\t\t\t\"As you might already know, I am a direct descendant of Kesar, leader of the knightly order of the Lion. ...\",\n\t\t\t\t\t\"He was one of three knights who once served King Xenom and left Edron in search of a greater purpose. ...\",\n\t\t\t\t\t\"Travel to the city of Edron and find out what you can about the order of the Falcon. ...\",\n\t\t\t\t\t\"And there is another order, I am not quite sure of its name but they travelled far south of Edron, into the desert.\",\n\t\t\t\t}, npc, creature)\n\t\t\tend\n\t\t\treturn true\n\t\tend\n\n\t\tif mission == 4 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"What news from the orders of the Falcon and the other successor order? ...\",\n\t\t\t\t\"The Order of the Cobra you say? Both destroyed...? The flame of virtue, the power of righteousness - diminished? In all of them? Oh... ...\",\n\t\t\t\t\"Far too long have I stayed silent and idle. Drume wants war. We will meet him in battle near the eastern coast of Bounac. ...\",\n\t\t\t\t\"Prepare yourself and I will see you on the battlefield. Good luck, my friend.\",\n\t\t\t}, npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif mission >= 5 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"It is done. Drume's forces lie broken on the battlefield. You witnessed the fall of a great enemy of the Order of the Lion. ...\",\n\t\t\t\t\"You stood tall against the enemy forces and helped our cause wherever you could. ...\",\n\t\t\t\t\"I will therefore announce you the 'Hero of Bounac'. You are an honourable citizen of this town now. ...\",\n\t\t\t\t\"Feel free to roam Bounac as you please. This also means certain benefits when trading with our court trader Augustin. ...\",\n\t\t\t\t\"Whenever you're here for a visit, the large house to the south of Bounac is now completely at your disposal. ...\",\n\t\t\t\t\"And if we can persuade you into a longer stay perhaps, there is a small house further to the south of the island which may pique your interest. ...\",\n\t\t\t\t\"Thank you for your service to Bounac, Hero.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AugustinDoor, 1)\n\t\t\tif not player:hasAchievement(\"Lionheart\") then\n\t\t\t\tplayer:addAchievement(\"Lionheart\")\n\t\t\tend\n\t\t\treturn true\n\t\tend\n\tend\n\n\tif message:lower() == \"yes\" then\n\t\tlocal mission = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission)\n\n\t\tif npcHandler:getTopic(playerId) == 1 and mission == 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission, 2)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarSiegeTimer, os.time())\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Excellent. Here is my plan. Either Fugue, Drume or both will appear here soon. If they try anything funny - defend yourself. ...\",\n\t\t\t\t\"If we can get them both at the right moment, they're done for. They will pay for what they have done. ...\",\n\t\t\t\t\"However, if only one of them appears and one of them is left... well, we shall not think of that now.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\n\t\tif npcHandler:getTopic(playerId) == 2 and mission == 3 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission, 4)\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Good, however, we have to wait until the recent skirmishes along the coast have settled down. ...\",\n\t\t\t\t\"We will venture down to the battlefield as soon as the other fights have died down.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, traveller. What brings you here during these dire times under {siege}? The fair Bounac is suffering greatly.\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 156,
+              "lua_literal": "\"siege\""
+            },
+            {
+              "line": 165,
+              "lua_literal": "\"You will have to wait until I have time to take care of your request. In the meantime, take a seat. ...\""
+            },
+            {
+              "line": 166,
+              "lua_literal": "\"Usually they're reserved for my council but they never seem to sit down... and somehow I doubt you will, either.\""
+            },
+            {
+              "line": 174,
+              "lua_literal": "\"So, I trust you're not here to join the usurpers besieging our humble enclave. Otherwise my men would've surely put you in your place before you even passed the gate. ...\""
+            },
+            {
+              "line": 175,
+              "lua_literal": "\"Sources are telling me that you helped our small community quite a bit. And you seem to know your way around the usurpers. ...\""
+            },
+            {
+              "line": 176,
+              "lua_literal": "\"I will trust you, as I trust my men who already put faith in you. What do you say, are you interested in a plan?\""
+            },
+            {
+              "line": 180,
+              "lua_literal": "\"I am still quite occupied, traveller. Please be patient and give me some time.\""
+            },
+            {
+              "line": 190,
+              "lua_literal": "\"I am still preparing. Give it some more time, traveller.\""
+            },
+            {
+              "line": 197,
+              "lua_literal": "\"I expected them to show up last night but nothing happened. Perhaps they are waiting for the right moment. ...\""
+            },
+            {
+              "line": 198,
+              "lua_literal": "\"Return to my chambers when night falls and stay alert. They will come.\""
+            },
+            {
+              "line": 201,
+              "lua_literal": "\"I know they appeared last night. You need to deal with them - go back to my chambers when night comes.\""
+            },
+            {
+              "line": 203,
+              "lua_literal": "\"I am still preparing. Give it some more time, traveller.\""
+            },
+            {
+              "line": 214,
+              "lua_literal": "\"Fugue... he attacked right away and had to be punished. You did the right thing. However, this will probably mean all out war if Drume does not come to his senses. ...\""
+            },
+            {
+              "line": 215,
+              "lua_literal": "\"I will have to arrange a meeting with him immediately to prevent the worst from happening. There is still another way. ...\""
+            },
+            {
+              "line": 216,
+              "lua_literal": "\"Will you escort me to the camp of the usurpers?\""
+            },
+            {
+              "line": 221,
+              "lua_literal": "\"Last night I had an idea. It came to my mind that we must not stand alone against this onslaught. There are other knights. Other orders who may sympathise with our cause ...\""
+            },
+            {
+              "line": 222,
+              "lua_literal": "\"As you might already know, I am a direct descendant of Kesar, leader of the knightly order of the Lion. ...\""
+            },
+            {
+              "line": 223,
+              "lua_literal": "\"He was one of three knights who once served King Xenom and left Edron in search of a greater purpose. ...\""
+            },
+            {
+              "line": 224,
+              "lua_literal": "\"Travel to the city of Edron and find out what you can about the order of the Falcon. ...\""
+            },
+            {
+              "line": 225,
+              "lua_literal": "\"And there is another order, I am not quite sure of its name but they travelled far south of Edron, into the desert.\""
+            },
+            {
+              "line": 233,
+              "lua_literal": "\"What news from the orders of the Falcon and the other successor order? ...\""
+            },
+            {
+              "line": 234,
+              "lua_literal": "\"The Order of the Cobra you say? Both destroyed...? The flame of virtue, the power of righteousness - diminished? In all of them? Oh... ...\""
+            },
+            {
+              "line": 235,
+              "lua_literal": "\"Far too long have I stayed silent and idle. Drume wants war. We will meet him in battle near the eastern coast of Bounac. ...\""
+            },
+            {
+              "line": 236,
+              "lua_literal": "\"Prepare yourself and I will see you on the battlefield. Good luck, my friend.\""
+            },
+            {
+              "line": 243,
+              "lua_literal": "\"It is done. Drume's forces lie broken on the battlefield. You witnessed the fall of a great enemy of the Order of the Lion. ...\""
+            },
+            {
+              "line": 244,
+              "lua_literal": "\"You stood tall against the enemy forces and helped our cause wherever you could. ...\""
+            },
+            {
+              "line": 245,
+              "lua_literal": "\"I will therefore announce you the 'Hero of Bounac'. You are an honourable citizen of this town now. ...\""
+            },
+            {
+              "line": 246,
+              "lua_literal": "\"Feel free to roam Bounac as you please. This also means certain benefits when trading with our court trader Augustin. ...\""
+            },
+            {
+              "line": 247,
+              "lua_literal": "\"Whenever you're here for a visit, the large house to the south of Bounac is now completely at your disposal. ...\""
+            },
+            {
+              "line": 248,
+              "lua_literal": "\"And if we can persuade you into a longer stay perhaps, there is a small house further to the south of the island which may pique your interest. ...\""
+            },
+            {
+              "line": 249,
+              "lua_literal": "\"Thank you for your service to Bounac, Hero.\""
+            },
+            {
+              "line": 252,
+              "lua_literal": "\"Lionheart\""
+            },
+            {
+              "line": 253,
+              "lua_literal": "\"Lionheart\""
+            },
+            {
+              "line": 259,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 266,
+              "lua_literal": "\"Excellent. Here is my plan. Either Fugue, Drume or both will appear here soon. If they try anything funny - defend yourself. ...\""
+            },
+            {
+              "line": 267,
+              "lua_literal": "\"If we can get them both at the right moment, they're done for. They will pay for what they have done. ...\""
+            },
+            {
+              "line": 268,
+              "lua_literal": "\"However, if only one of them appears and one of them is left... well, we shall not think of that now.\""
+            },
+            {
+              "line": 277,
+              "lua_literal": "\"Good, however, we have to wait until the recent skirmishes along the coast have settled down. ...\""
+            },
+            {
+              "line": 278,
+              "lua_literal": "\"We will venture down to the battlefield as soon as the other fights have died down.\""
+            },
+            {
+              "line": 286,
+              "lua_literal": "\"Hail, traveller. What brings you here during these dire times under {siege}? The fair Bounac is suffering greatly.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Kesar the Younger\"\nlocal npcType = Game.createNpcType(\"Kesar the Younger (Day)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 1317,\n\tlookHead = 38,\n\tlookBody = 76,\n\tlookLegs = 57,\n\tlookFeet = 114,\n\tlookAddons = 2,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_DAY,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal TEN_MINUTES = 10 * 60\nlocal ONE_TIBIAN_DAY = 60 * 60\nlocal TWENTY_HOURS = 20 * 60 * 60\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\t-- The Order of the Stag (W: Transcripts \"Etzel Writ\" and \"Isle of Ada\"; Optional 3: King's Council)\n\tif OrderOfTheStag.lionDone(player) then\n\t\tlocal stagStage = OrderOfTheStag.getStage(player)\n\t\tlocal Stage = OrderOfTheStag.Stage\n\n\t\tif MsgContains(message, \"problem\") and stagStage < Stage.WRIT then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"I have sent a party of my best men on a mission to a certain island to... investigate a royal matter. However, they have yet to send news from their quest. ...\",\n\t\t\t\t\"Hero of {Bounac} and royal advisor of the court, I am in need of your {help} once again.\",\n\t\t\t}, npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif MsgContains(message, \"banner\") then\n\t\t\tnpcHandler:say(\"Strong, resilient and completely trustworthy. Currently out on an expedition, it's been a while, actually...\", npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif MsgContains(message, \"help\") then\n\t\t\tif stagStage < Stage.WRIT then\n\t\t\t\tOrderOfTheStag.setStage(player, Stage.WRIT)\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"My knights embarked on the Emmanuelle, our flagship. They were to set sail for the Isle of Ada to retrieve word from an old order of... knights, residing there. ...\",\n\t\t\t\t\t\"There is, however, another twist to this tale, I fear I cannot keep from you. A long kept Bounacean secret is about to be lifted, all in due time. ...\",\n\t\t\t\t\t\"There is a room below the cathedral that was once the stage for quite the spectacle. By decree a guard was to be garrisoned there at all times, day as well as night, an armed magic wielder. ...\",\n\t\t\t\t\t\"The room was locked from the inside and there was no other direct access. All of this to protect a single chest. Its... precarious content was subject of several attacks, in hope to destabilise the then still struggling Bounaceans and their leader. ...\",\n\t\t\t\t\t\"During one of these attacks, a hired magician found a way to enter the room. The warlock down there managed to subdue the perpetrator but had to seal the room... and ultimately himself from the inside. ...\",\n\t\t\t\t\t\"The shift was never changed again, the room was kept unbreached until this day. The chest houses a writ that was quite important for Kesar Etzel, my ancestor. And it still is to the Etzels, in this case: me. ...\",\n\t\t\t\t\t\"I will not tell you what is written there but I want you to retrieve it and bring it to me. You will have to find a way from the sacred halls directly above it.\",\n\t\t\t\t}, npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\n\t\t\tif stagStage == Stage.WRIT then\n\t\t\t\t-- NOT CONFIRMED: reminder while the writ has not been brought\n\t\t\t\tnpcHandler:say(\"The writ is still sealed below the cathedral. Find a way down from the sacred halls directly above it.\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\n\t\t\tif stagStage == Stage.CERTIFICATE then\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Now that you know our family secret, I want you to take the writ with you and show it to Captain {Banner}, leader of this expedition. ...\",\n\t\t\t\t\t\"The Isle of Ada is uncharted and difficult to reach. Either you have a very strong ship or a very nimble boat. ...\",\n\t\t\t\t\t\"Since the port of Bounac is still in quite the turmoil, find a boat to the south near the old fisherman's hut. Say no word to anyone besides the captain and make utmost haste. Are you prepared?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 10)\n\t\t\t\treturn true\n\t\t\tend\n\n\t\t\tif stagStage >= Stage.DONE then\n\t\t\t\tif player:getStorageValue(Storage.Quest.U15_20.TheOrderOfTheStag.KingsCouncil) < 1 then\n\t\t\t\t\tplayer:setStorageValue(Storage.Quest.U15_20.TheOrderOfTheStag.KingsCouncil, 1)\n\t\t\t\t\tplayer:addOutfitAddon(1436, 2)\n\t\t\t\t\tplayer:addOutfitAddon(1437, 2)\n\t\t\t\t\tif not player:hasAchievement(\"King's Council\") then\n\t\t\t\t\t\tplayer:addAchievement(\"King's Council\")\n\t\t\t\t\tend\n\t\t\t\t\tplayer:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)\n\t\t\t\t\t-- NOT CONFIRMED: the Wiki only says that Kesar gives the achievement and addon 2\n\t\t\t\t\tnpcHandler:say(\"You have done Bounac and the Etzels a service that will not be forgotten. From this day on, you have a permanent place at my council.\", npc, creature)\n\t\t\t\telse\n\t\t\t\t\tnpcHandler:say(\"Your place at my council is secure, advisor.\", npc, creature)\n\t\t\t\tend\n\t\t\t\treturn true\n\t\t\tend\n\n\t\t\t-- NOT CONFIRMED: reminder during the journey\n\t\t\tnpcHandler:say(\"Find Captain Banner on the Isle of Ada, state the purpose of your mission, which is to support them as well as the Stags and bring word of the expedition.\", npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif message:lower() == \"yes\" and npcHandler:getTopic(playerId) == 10 then\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tif stagStage == Stage.CERTIFICATE then\n\t\t\t\tOrderOfTheStag.setStage(player, Stage.TO_ADA)\n\t\t\t\tnpcHandler:say(\"Then make it so. Find Captain Banner on the Isle of Ada, state the purpose of your mission, which is to support them as well as the Stags and bring word of the expedition.\", npc, creature)\n\t\t\tend\n\t\t\treturn true\n\t\tend\n\tend\n\n\t-- Without The Order of the Lion finished, Kesar does not talk about The Order of the Stag (W: requirement).\n\t-- Text NOT CONFIRMED (the Wiki has no transcript of the refusal); added so he does not stay silent.\n\tif not OrderOfTheStag.lionDone(player) and (MsgContains(message, \"problem\") or MsgContains(message, \"help\")) then\n\t\tnpcHandler:say(\"Talk to me again once you have proven yourself to Bounac.\", npc, creature)\n\t\treturn true\n\tend\n\n\tif MsgContains(message, \"siege\") then\n\t\tlocal mission = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission)\n\t\tlocal timer = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarSiegeTimer)\n\t\tlocal now = os.time()\n\n\t\tif mission < 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarSiegeTimer, now)\n\t\t\tnpcHandler:say({\n\t\t\t\t\"You will have to wait until I have time to take care of your request. In the meantime, take a seat. ...\",\n\t\t\t\t\"Usually they're reserved for my council but they never seem to sit down... and somehow I doubt you will, either.\",\n\t\t\t}, npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif mission == 1 then\n\t\t\tif (now - timer) >= TEN_MINUTES then\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"So, I trust you're not here to join the usurpers besieging our humble enclave. Otherwise my men would've surely put you in your place before you even passed the gate. ...\",\n\t\t\t\t\t\"Sources are telling me that you helped our small community quite a bit. And you seem to know your way around the usurpers. ...\",\n\t\t\t\t\t\"I will trust you, as I trust my men who already put faith in you. What do you say, are you interested in a plan?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"I am still quite occupied, traveller. Please be patient and give me some time.\", npc, creature)\n\t\t\tend\n\t\t\treturn true\n\t\tend\n\n\t\tif mission == 2 then\n\t\t\tlocal lastSpawn = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FugueSpawnTime)\n\t\t\tlocal fugueSpawned = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FugueSpawned)\n\n\t\t\tif (now - timer) < ONE_TIBIAN_DAY then\n\t\t\t\tnpcHandler:say(\"I am still preparing. Give it some more time, traveller.\", npc, creature)\n\t\t\t\treturn true\n\t\t\tend\n\n\t\t\tif fugueSpawned == 1 and lastSpawn > 0 and (now - lastSpawn) >= TWENTY_HOURS then\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FugueSpawned, 0)\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"I expected them to show up last night but nothing happened. Perhaps they are waiting for the right moment. ...\",\n\t\t\t\t\t\"Return to my chambers when night falls and stay alert. They will come.\",\n\t\t\t\t}, npc, creature)\n\t\t\telseif fugueSpawned == 1 then\n\t\t\t\tnpcHandler:say(\"I know they appeared last night. You need to deal with them - go back to my chambers when night comes.\", npc, creature)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"I am still preparing. Give it some more time, traveller.\", npc, creature)\n\t\t\tend\n\t\t\treturn true\n\t\tend\n\n\t\tif mission == 3 then\n\t\t\tlocal hasFalcon = player:getStorageValue(Storage.Quest.U11_80.TheSecretLibrary.FalconBastion.Access) >= 1\n\t\t\tlocal hasCobra = player:getStorageValue(Storage.Quest.U12_20.GraveDanger.CobraBastion.Access) >= 1\n\n\t\t\tif hasFalcon and hasCobra then\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Fugue... he attacked right away and had to be punished. You did the right thing. However, this will probably mean all out war if Drume does not come to his senses. ...\",\n\t\t\t\t\t\"I will have to arrange a meeting with him immediately to prevent the worst from happening. There is still another way. ...\",\n\t\t\t\t\t\"Will you escort me to the camp of the usurpers?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\t\telse\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Last night I had an idea. It came to my mind that we must not stand alone against this onslaught. There are other knights. Other orders who may sympathise with our cause ...\",\n\t\t\t\t\t\"As you might already know, I am a direct descendant of Kesar, leader of the knightly order of the Lion. ...\",\n\t\t\t\t\t\"He was one of three knights who once served King Xenom and left Edron in search of a greater purpose. ...\",\n\t\t\t\t\t\"Travel to the city of Edron and find out what you can about the order of the Falcon. ...\",\n\t\t\t\t\t\"And there is another order, I am not quite sure of its name but they travelled far south of Edron, into the desert.\",\n\t\t\t\t}, npc, creature)\n\t\t\tend\n\t\t\treturn true\n\t\tend\n\n\t\tif mission == 4 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"What news from the orders of the Falcon and the other successor order? ...\",\n\t\t\t\t\"The Order of the Cobra you say? Both destroyed...? The flame of virtue, the power of righteousness - diminished? In all of them? Oh... ...\",\n\t\t\t\t\"Far too long have I stayed silent and idle. Drume wants war. We will meet him in battle near the eastern coast of Bounac. ...\",\n\t\t\t\t\"Prepare yourself and I will see you on the battlefield. Good luck, my friend.\",\n\t\t\t}, npc, creature)\n\t\t\treturn true\n\t\tend\n\n\t\tif mission >= 5 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"It is done. Drume's forces lie broken on the battlefield. You witnessed the fall of a great enemy of the Order of the Lion. ...\",\n\t\t\t\t\"You stood tall against the enemy forces and helped our cause wherever you could. ...\",\n\t\t\t\t\"I will therefore announce you the 'Hero of Bounac'. You are an honourable citizen of this town now. ...\",\n\t\t\t\t\"Feel free to roam Bounac as you please. This also means certain benefits when trading with our court trader Augustin. ...\",\n\t\t\t\t\"Whenever you're here for a visit, the large house to the south of Bounac is now completely at your disposal. ...\",\n\t\t\t\t\"And if we can persuade you into a longer stay perhaps, there is a small house further to the south of the island which may pique your interest. ...\",\n\t\t\t\t\"Thank you for your service to Bounac, Hero.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AugustinDoor, 1)\n\t\t\tif not player:hasAchievement(\"Lionheart\") then\n\t\t\t\tplayer:addAchievement(\"Lionheart\")\n\t\t\tend\n\t\t\treturn true\n\t\tend\n\tend\n\n\tif message:lower() == \"yes\" then\n\t\tlocal mission = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission)\n\n\t\tif npcHandler:getTopic(playerId) == 1 and mission == 1 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission, 2)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarSiegeTimer, os.time())\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Excellent. Here is my plan. Either Fugue, Drume or both will appear here soon. If they try anything funny - defend yourself. ...\",\n\t\t\t\t\"If we can get them both at the right moment, they're done for. They will pay for what they have done. ...\",\n\t\t\t\t\"However, if only one of them appears and one of them is left... well, we shall not think of that now.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\n\t\tif npcHandler:getTopic(playerId) == 2 and mission == 3 then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission, 4)\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Good, however, we have to wait until the recent skirmishes along the coast have settled down. ...\",\n\t\t\t\t\"We will venture down to the battlefield as soon as the other fights have died down.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\treturn true\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, traveller. What brings you here during these dire times under {siege}? The fair Bounac is suffering greatly.\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_day.lua:1-290"
+    },
+    {
+      "npc_source_name": "kesar_the_younger_night",
+      "source_blob_sha256": "11ec4da5c34d024c7f47485d2d4b050c047924bbb788b714e7523a5d842540d5",
+      "review_rows": [
+        "R4C128"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_night.lua:53-85",
+          "line_start": 53,
+          "line_end": 85,
+          "source_sha256": "a87cb3244d551663f5bd8e6a5d0b50877dae3edfe6c82773372f92d59ffbdafd",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"siege\") then\n\t\tlocal mission = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission)\n\n\t\tif mission == 4 then\n\t\t\tnpcHandler:say(\"Will you escort me to the camp of the usurpers?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telse\n\t\t\tnpcHandler:say(\"The night is restless, traveller. Let us speak of this when the sun rises.\", npc, creature)\n\t\tend\n\telseif message:lower() == \"yes\" and npcHandler:getTopic(playerId) == 1 then\n\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission) == 4 then\n\t\t\tnpcHandler:say(\"Alright, let us go then. And thank you.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, traveller. The night holds many dangers. Stay close.\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"siege\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"Will you escort me to the camp of the usurpers?\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"The night is restless, traveller. Let us speak of this when the sun rises.\""
+            },
+            {
+              "line": 73,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"Alright, let us go then. And thank you.\""
+            },
+            {
+              "line": 81,
+              "lua_literal": "\"Hail, traveller. The night holds many dangers. Stay close.\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Kesar the Younger\"\nlocal npcType = Game.createNpcType(\"Kesar the Younger (Night)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 128,\n\tlookHead = 0,\n\tlookBody = 0,\n\tlookLegs = 0,\n\tlookFeet = 0,\n\tlookAddons = 2,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_NIGHT,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"siege\") then\n\t\tlocal mission = player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission)\n\n\t\tif mission == 4 then\n\t\t\tnpcHandler:say(\"Will you escort me to the camp of the usurpers?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telse\n\t\t\tnpcHandler:say(\"The night is restless, traveller. Let us speak of this when the sun rises.\", npc, creature)\n\t\tend\n\telseif message:lower() == \"yes\" and npcHandler:getTopic(playerId) == 1 then\n\t\tif player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.KesarMission) == 4 then\n\t\t\tnpcHandler:say(\"Alright, let us go then. And thank you.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, traveller. The night holds many dangers. Stay close.\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/kesar_the_younger_night.lua:1-85"
+    },
+    {
+      "npc_source_name": "wes_the_blacksmith_day",
+      "source_blob_sha256": "c73a300a89120d7f16413dd5525e4b8655a07eb35ea92ceba2e89df3b19951f9",
+      "review_rows": [
+        "R4C111",
+        "R4C112"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_day.lua:53-103",
+          "line_start": 53,
+          "line_end": 103,
+          "source_sha256": "d3f32629a80c7923c0b565add3158999c68b0758527a396c2629e4ad42420ef2",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 0 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Ah yes, right. You came to the right place, ahem. ...\",\n\t\t\t\t\"Well, for quite some time we are planning to help our king during this awful siege. As you know the passphrase, one of us already trusts you. ...\",\n\t\t\t\t\"Outsiders are not welcome here during the siege. If you want to get into the castle, you will have to earn all our trust. ...\",\n\t\t\t\t\"If you can do that, a member of the lion guard who is in contact with us, will let you in. ...\",\n\t\t\t\t\"Just ask any of us the passphrase and we will see what we can do for you.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask, 1)\n\t\telseif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Alright then, let's see if you are really trustworthy. I need more material to forge better equipment for our men. ...\",\n\t\t\t\t\"Bring me about 20 broken longbows from fallen usurpers and we will see.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) == 1 then\n\t\tnpcHandler:say({\n\t\t\t\"Alright then, let's see if you are really trustworthy. You have about 20 broken longbows there, this is exactly what I need to fulfill my next order from the king. ...\",\n\t\t\t\"Are you willing to hand them over to me?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) == 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(34161, 20) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask, 2)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Excellent, just what I needed. You have earned my trust, traveller. Good luck!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, customer! Welcome to Wes and son, blacksmith (and teacher). Can I do something for you?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"axe\", clientId = 3274, buy = 20, sell = 7 },\n\t{ itemName = \"battle axe\", clientId = 3266, buy = 235, sell = 80 },\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"Ah yes, right. You came to the right place, ahem. ...\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"Well, for quite some time we are planning to help our king during this awful siege. As you know the passphrase, one of us already trusts you. ...\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"Outsiders are not welcome here during the siege. If you want to get into the castle, you will have to earn all our trust. ...\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"If you can do that, a member of the lion guard who is in contact with us, will let you in. ...\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"Just ask any of us the passphrase and we will see what we can do for you.\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"Alright then, let's see if you are really trustworthy. I need more material to forge better equipment for our men. ...\""
+            },
+            {
+              "line": 77,
+              "lua_literal": "\"Bring me about 20 broken longbows from fallen usurpers and we will see.\""
+            },
+            {
+              "line": 81,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 83,
+              "lua_literal": "\"Alright then, let's see if you are really trustworthy. You have about 20 broken longbows there, this is exactly what I need to fulfill my next order from the king. ...\""
+            },
+            {
+              "line": 84,
+              "lua_literal": "\"Are you willing to hand them over to me?\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 91,
+              "lua_literal": "\"Excellent, just what I needed. You have earned my trust, traveller. Good luck!\""
+            },
+            {
+              "line": 97,
+              "lua_literal": "\"Hail, customer! Welcome to Wes and son, blacksmith (and teacher). Can I do something for you?\""
+            },
+            {
+              "line": 102,
+              "lua_literal": "\"axe\""
+            },
+            {
+              "line": 103,
+              "lua_literal": "\"battle axe\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Wes the Blacksmith\"\nlocal npcType = Game.createNpcType(\"Wes the Blacksmith (Day)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 134,\n\tlookHead = 19,\n\tlookBody = 21,\n\tlookLegs = 39,\n\tlookFeet = 116,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_DAY,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 0 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Ah yes, right. You came to the right place, ahem. ...\",\n\t\t\t\t\"Well, for quite some time we are planning to help our king during this awful siege. As you know the passphrase, one of us already trusts you. ...\",\n\t\t\t\t\"Outsiders are not welcome here during the siege. If you want to get into the castle, you will have to earn all our trust. ...\",\n\t\t\t\t\"If you can do that, a member of the lion guard who is in contact with us, will let you in. ...\",\n\t\t\t\t\"Just ask any of us the passphrase and we will see what we can do for you.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask, 1)\n\t\telseif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Alright then, let's see if you are really trustworthy. I need more material to forge better equipment for our men. ...\",\n\t\t\t\t\"Bring me about 20 broken longbows from fallen usurpers and we will see.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) == 1 then\n\t\tnpcHandler:say({\n\t\t\t\"Alright then, let's see if you are really trustworthy. You have about 20 broken longbows there, this is exactly what I need to fulfill my next order from the king. ...\",\n\t\t\t\"Are you willing to hand them over to me?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) == 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(34161, 20) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask, 2)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Excellent, just what I needed. You have earned my trust, traveller. Good luck!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, customer! Welcome to Wes and son, blacksmith (and teacher). Can I do something for you?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"axe\", clientId = 3274, buy = 20, sell = 7 },\n\t{ itemName = \"battle axe\", clientId = 3266, buy = 235, sell = 80 },\n\t{ itemName = \"battle hammer\", clientId = 3305, buy = 350, sell = 120 },\n\t{ itemName = \"battle shield\", clientId = 3413, sell = 95 },\n\t{ itemName = \"bone club\", clientId = 3337, sell = 5 },\n\t{ itemName = \"bone sword\", clientId = 3338, buy = 75, sell = 20 },\n\t{ itemName = \"brass armor\", clientId = 3359, buy = 450, sell = 150 },\n\t{ itemName = \"brass helmet\", clientId = 3354, buy = 120, sell = 30 },\n\t{ itemName = \"brass legs\", clientId = 3372, buy = 195, sell = 49 },\n\t{ itemName = \"brass shield\", clientId = 3411, buy = 65, sell = 25 },\n\t{ itemName = \"carlin sword\", clientId = 3283, buy = 473, sell = 118 },\n\t{ itemName = \"chain armor\", clientId = 3358, buy = 200, sell = 70 },\n\t{ itemName = \"chain helmet\", clientId = 3352, buy = 52, sell = 17 },\n\t{ itemName = \"chain legs\", clientId = 3558, buy = 80, sell = 25 },\n\t{ itemName = \"club\", clientId = 3270, buy = 5, sell = 1 },\n\t{ itemName = \"coat\", clientId = 3562, buy = 8, sell = 1 },\n\t{ itemName = \"copper shield\", clientId = 3430, sell = 50 },\n\t{ itemName = \"crowbar\", clientId = 3304, buy = 260, sell = 50 },\n\t{ itemName = \"dagger\", clientId = 3267, buy = 5, sell = 2 },\n\t{ itemName = \"double axe\", clientId = 3275, sell = 260 },\n\t{ itemName = \"doublet\", clientId = 3379, buy = 16, sell = 3 },\n\t{ itemName = \"dwarven shield\", clientId = 3425, buy = 500, sell = 100 },\n\t{ itemName = \"fire sword\", clientId = 3280, sell = 1000 },\n\t{ itemName = \"halberd\", clientId = 3269, sell = 400 },\n\t{ itemName = \"hand axe\", clientId = 3268, buy = 8, sell = 4 },\n\t{ itemName = \"hatchet\", clientId = 3276, sell = 25 },\n\t{ itemName = \"iron helmet\", clientId = 3353, buy = 390, sell = 150 },\n\t{ itemName = \"jacket\", clientId = 3561, buy = 12, sell = 1 },\n\t{ itemName = \"katana\", clientId = 3300, sell = 35 },\n\t{ itemName = \"leather armor\", clientId = 3361, buy = 35, sell = 12 },\n\t{ itemName = \"leather helmet\", clientId = 3355, buy = 12, sell = 4 },\n\t{ itemName = \"leather legs\", clientId = 3559, buy = 10, sell = 9 },\n\t{ itemName = \"legion helmet\", clientId = 3374, sell = 22 },\n\t{ itemName = \"longsword\", clientId = 3285, buy = 160, sell = 51 },\n\t{ itemName = \"mace\", clientId = 3286, buy = 90, sell = 30 },\n\t{ itemName = \"morning star\", clientId = 3282, buy = 430, sell = 100 },\n\t{ itemName = \"nunchaku\", clientId = 50182, buy = 405, sell = 135 },\n\t{ itemName = \"orcish axe\", clientId = 3316, sell = 350 },\n\t{ itemName = \"pair of monk fists\", clientId = 7423, buy = 270, sell = 90 },\n\t{ itemName = \"plate armor\", clientId = 3357, buy = 1200, sell = 400 },\n\t{ itemName = \"plate legs\", clientId = 3557, sell = 115 },\n\t{ itemName = \"plate shield\", clientId = 3410, buy = 125, sell = 45 },\n\t{ itemName = \"rapier\", clientId = 3272, buy = 15, sell = 5 },\n\t{ itemName = \"sabre\", clientId = 3273, buy = 35, sell = 12 },\n\t{ itemName = \"sai\", clientId = 50183, buy = 540, sell = 180 },\n\t{ itemName = \"scale armor\", clientId = 3377, buy = 260, sell = 75 },\n\t{ itemName = \"short sword\", clientId = 3294, buy = 26, sell = 10 },\n\t{ itemName = \"sickle\", clientId = 3293, buy = 7, sell = 3 },\n\t{ itemName = \"soldier helmet\", clientId = 3375, buy = 110, sell = 16 },\n\t{ itemName = \"spike sword\", clientId = 3271, buy = 8000, sell = 240 },\n\t{ itemName = \"steel helmet\", clientId = 3351, buy = 580, sell = 293 },\n\t{ itemName = \"steel shield\", clientId = 3409, buy = 240, sell = 80 },\n\t{ itemName = \"studded armor\", clientId = 3378, buy = 90, sell = 25 },\n\t{ itemName = \"studded club\", clientId = 3336, sell = 10 },\n\t{ itemName = \"studded helmet\", clientId = 3376, buy = 63, sell = 20 },\n\t{ itemName = \"studded legs\", clientId = 3362, buy = 50, sell = 15 },\n\t{ itemName = \"studded shield\", clientId = 3426, buy = 50, sell = 16 },\n\t{ itemName = \"swampling club\", clientId = 17824, sell = 40 },\n\t{ itemName = \"sword\", clientId = 3264, buy = 85, sell = 25 },\n\t{ itemName = \"throwing knife\", clientId = 3298, buy = 25, sell = 2 },\n\t{ itemName = \"two handed sword\", clientId = 3265, buy = 950, sell = 450 },\n\t{ itemName = \"viking helmet\", clientId = 3367, buy = 265, sell = 66 },\n\t{ itemName = \"viking shield\", clientId = 3431, buy = 260, sell = 85 },\n\t{ itemName = \"war hammer\", clientId = 3279, buy = 10000, sell = 470 },\n\t{ itemName = \"wooden shield\", clientId = 3412, buy = 15, sell = 5 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_day.lua:1-182"
+    },
+    {
+      "npc_source_name": "wes_the_blacksmith_night",
+      "source_blob_sha256": "998163e7872ddab55a2b8d787e609504ab38cb4a891c37892ee45233884f4064",
+      "review_rows": [
+        "R4C111",
+        "R4C112"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_night.lua:53-103",
+          "line_start": 53,
+          "line_end": 103,
+          "source_sha256": "d3f32629a80c7923c0b565add3158999c68b0758527a396c2629e4ad42420ef2",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 0 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Ah yes, right. You came to the right place, ahem. ...\",\n\t\t\t\t\"Well, for quite some time we are planning to help our king during this awful siege. As you know the passphrase, one of us already trusts you. ...\",\n\t\t\t\t\"Outsiders are not welcome here during the siege. If you want to get into the castle, you will have to earn all our trust. ...\",\n\t\t\t\t\"If you can do that, a member of the lion guard who is in contact with us, will let you in. ...\",\n\t\t\t\t\"Just ask any of us the passphrase and we will see what we can do for you.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask, 1)\n\t\telseif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Alright then, let's see if you are really trustworthy. I need more material to forge better equipment for our men. ...\",\n\t\t\t\t\"Bring me about 20 broken longbows from fallen usurpers and we will see.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) == 1 then\n\t\tnpcHandler:say({\n\t\t\t\"Alright then, let's see if you are really trustworthy. You have about 20 broken longbows there, this is exactly what I need to fulfill my next order from the king. ...\",\n\t\t\t\"Are you willing to hand them over to me?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) == 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(34161, 20) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask, 2)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Excellent, just what I needed. You have earned my trust, traveller. Good luck!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, customer! Welcome to Wes and son, blacksmith (and teacher). Can I do something for you?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"axe\", clientId = 3274, buy = 20, sell = 7 },\n\t{ itemName = \"battle axe\", clientId = 3266, buy = 235, sell = 80 },\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"Ah yes, right. You came to the right place, ahem. ...\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"Well, for quite some time we are planning to help our king during this awful siege. As you know the passphrase, one of us already trusts you. ...\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"Outsiders are not welcome here during the siege. If you want to get into the castle, you will have to earn all our trust. ...\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"If you can do that, a member of the lion guard who is in contact with us, will let you in. ...\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"Just ask any of us the passphrase and we will see what we can do for you.\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"Alright then, let's see if you are really trustworthy. I need more material to forge better equipment for our men. ...\""
+            },
+            {
+              "line": 77,
+              "lua_literal": "\"Bring me about 20 broken longbows from fallen usurpers and we will see.\""
+            },
+            {
+              "line": 81,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 83,
+              "lua_literal": "\"Alright then, let's see if you are really trustworthy. You have about 20 broken longbows there, this is exactly what I need to fulfill my next order from the king. ...\""
+            },
+            {
+              "line": 84,
+              "lua_literal": "\"Are you willing to hand them over to me?\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 91,
+              "lua_literal": "\"Excellent, just what I needed. You have earned my trust, traveller. Good luck!\""
+            },
+            {
+              "line": 97,
+              "lua_literal": "\"Hail, customer! Welcome to Wes and son, blacksmith (and teacher). Can I do something for you?\""
+            },
+            {
+              "line": 102,
+              "lua_literal": "\"axe\""
+            },
+            {
+              "line": 103,
+              "lua_literal": "\"battle axe\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Wes the Blacksmith\"\nlocal npcType = Game.createNpcType(\"Wes the Blacksmith (Night)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 134,\n\tlookHead = 19,\n\tlookBody = 21,\n\tlookLegs = 39,\n\tlookFeet = 116,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_NIGHT,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 0 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Ah yes, right. You came to the right place, ahem. ...\",\n\t\t\t\t\"Well, for quite some time we are planning to help our king during this awful siege. As you know the passphrase, one of us already trusts you. ...\",\n\t\t\t\t\"Outsiders are not welcome here during the siege. If you want to get into the castle, you will have to earn all our trust. ...\",\n\t\t\t\t\"If you can do that, a member of the lion guard who is in contact with us, will let you in. ...\",\n\t\t\t\t\"Just ask any of us the passphrase and we will see what we can do for you.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask, 1)\n\t\telseif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Alright then, let's see if you are really trustworthy. I need more material to forge better equipment for our men. ...\",\n\t\t\t\t\"Bring me about 20 broken longbows from fallen usurpers and we will see.\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) == 1 then\n\t\tnpcHandler:say({\n\t\t\t\"Alright then, let's see if you are really trustworthy. You have about 20 broken longbows there, this is exactly what I need to fulfill my next order from the king. ...\",\n\t\t\t\"Are you willing to hand them over to me?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask) == 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(34161, 20) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.WesTask, 2)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Excellent, just what I needed. You have earned my trust, traveller. Good luck!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, customer! Welcome to Wes and son, blacksmith (and teacher). Can I do something for you?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"axe\", clientId = 3274, buy = 20, sell = 7 },\n\t{ itemName = \"battle axe\", clientId = 3266, buy = 235, sell = 80 },\n\t{ itemName = \"battle hammer\", clientId = 3305, buy = 350, sell = 120 },\n\t{ itemName = \"battle shield\", clientId = 3413, sell = 95 },\n\t{ itemName = \"bone club\", clientId = 3337, sell = 5 },\n\t{ itemName = \"bone sword\", clientId = 3338, buy = 75, sell = 20 },\n\t{ itemName = \"brass armor\", clientId = 3359, buy = 450, sell = 150 },\n\t{ itemName = \"brass helmet\", clientId = 3354, buy = 120, sell = 30 },\n\t{ itemName = \"brass legs\", clientId = 3372, buy = 195, sell = 49 },\n\t{ itemName = \"brass shield\", clientId = 3411, buy = 65, sell = 25 },\n\t{ itemName = \"carlin sword\", clientId = 3283, buy = 473, sell = 118 },\n\t{ itemName = \"chain armor\", clientId = 3358, buy = 200, sell = 70 },\n\t{ itemName = \"chain helmet\", clientId = 3352, buy = 52, sell = 17 },\n\t{ itemName = \"chain legs\", clientId = 3558, buy = 80, sell = 25 },\n\t{ itemName = \"club\", clientId = 3270, buy = 5, sell = 1 },\n\t{ itemName = \"coat\", clientId = 3562, buy = 8, sell = 1 },\n\t{ itemName = \"copper shield\", clientId = 3430, sell = 50 },\n\t{ itemName = \"crowbar\", clientId = 3304, buy = 260, sell = 50 },\n\t{ itemName = \"dagger\", clientId = 3267, buy = 5, sell = 2 },\n\t{ itemName = \"double axe\", clientId = 3275, sell = 260 },\n\t{ itemName = \"doublet\", clientId = 3379, buy = 16, sell = 3 },\n\t{ itemName = \"dwarven shield\", clientId = 3425, buy = 500, sell = 100 },\n\t{ itemName = \"fire sword\", clientId = 3280, sell = 1000 },\n\t{ itemName = \"halberd\", clientId = 3269, sell = 400 },\n\t{ itemName = \"hand axe\", clientId = 3268, buy = 8, sell = 4 },\n\t{ itemName = \"hatchet\", clientId = 3276, sell = 25 },\n\t{ itemName = \"iron helmet\", clientId = 3353, buy = 390, sell = 150 },\n\t{ itemName = \"jacket\", clientId = 3561, buy = 12, sell = 1 },\n\t{ itemName = \"katana\", clientId = 3300, sell = 35 },\n\t{ itemName = \"leather armor\", clientId = 3361, buy = 35, sell = 12 },\n\t{ itemName = \"leather helmet\", clientId = 3355, buy = 12, sell = 4 },\n\t{ itemName = \"leather legs\", clientId = 3559, buy = 10, sell = 9 },\n\t{ itemName = \"legion helmet\", clientId = 3374, sell = 22 },\n\t{ itemName = \"longsword\", clientId = 3285, buy = 160, sell = 51 },\n\t{ itemName = \"mace\", clientId = 3286, buy = 90, sell = 30 },\n\t{ itemName = \"morning star\", clientId = 3282, buy = 430, sell = 100 },\n\t{ itemName = \"nunchaku\", clientId = 50182, buy = 405, sell = 135 },\n\t{ itemName = \"orcish axe\", clientId = 3316, sell = 350 },\n\t{ itemName = \"pair of monk fists\", clientId = 7423, buy = 270, sell = 90 },\n\t{ itemName = \"plate armor\", clientId = 3357, buy = 1200, sell = 400 },\n\t{ itemName = \"plate legs\", clientId = 3557, sell = 115 },\n\t{ itemName = \"plate shield\", clientId = 3410, buy = 125, sell = 45 },\n\t{ itemName = \"rapier\", clientId = 3272, buy = 15, sell = 5 },\n\t{ itemName = \"sabre\", clientId = 3273, buy = 35, sell = 12 },\n\t{ itemName = \"sai\", clientId = 50183, buy = 540, sell = 180 },\n\t{ itemName = \"scale armor\", clientId = 3377, buy = 260, sell = 75 },\n\t{ itemName = \"short sword\", clientId = 3294, buy = 26, sell = 10 },\n\t{ itemName = \"sickle\", clientId = 3293, buy = 7, sell = 3 },\n\t{ itemName = \"soldier helmet\", clientId = 3375, buy = 110, sell = 16 },\n\t{ itemName = \"spike sword\", clientId = 3271, buy = 8000, sell = 240 },\n\t{ itemName = \"steel helmet\", clientId = 3351, buy = 580, sell = 293 },\n\t{ itemName = \"steel shield\", clientId = 3409, buy = 240, sell = 80 },\n\t{ itemName = \"studded armor\", clientId = 3378, buy = 90, sell = 25 },\n\t{ itemName = \"studded club\", clientId = 3336, sell = 10 },\n\t{ itemName = \"studded helmet\", clientId = 3376, buy = 63, sell = 20 },\n\t{ itemName = \"studded legs\", clientId = 3362, buy = 50, sell = 15 },\n\t{ itemName = \"studded shield\", clientId = 3426, buy = 50, sell = 16 },\n\t{ itemName = \"swampling club\", clientId = 17824, sell = 40 },\n\t{ itemName = \"sword\", clientId = 3264, buy = 85, sell = 25 },\n\t{ itemName = \"throwing knife\", clientId = 3298, buy = 25, sell = 2 },\n\t{ itemName = \"two handed sword\", clientId = 3265, buy = 950, sell = 450 },\n\t{ itemName = \"viking helmet\", clientId = 3367, buy = 265, sell = 66 },\n\t{ itemName = \"viking shield\", clientId = 3431, buy = 260, sell = 85 },\n\t{ itemName = \"war hammer\", clientId = 3279, buy = 10000, sell = 470 },\n\t{ itemName = \"wooden shield\", clientId = 3412, buy = 15, sell = 5 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wes_the_blacksmith_night.lua:1-182"
+    },
+    {
+      "npc_source_name": "jehan_the_baker_day",
+      "source_blob_sha256": "63b883916fafd1e676295594fcb5883f708d4eae5a0f16904ff4ef117db470e7",
+      "review_rows": [
+        "R4C113"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jehan_the_baker_day.lua:53-85",
+          "line_start": 53,
+          "line_end": 85,
+          "source_sha256": "aee95f617851f52bd0d71875c9c96973563ef6f6571b4ee29532323729c57869",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 and player:getItemCount(3600) >= 10 then\n\t\tnpcHandler:say(\"Ten loafs of bread! Colour me impressed. Will you hand those over to me?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 then\n\t\tnpcHandler:say(\"To prove trustworthy to me... hm, well, you could... oh, yes! Of course, we have a severe shortage of bread! If I knew someone who could organise about ten loafs of bread, I'd be saved for today!\", npc, creature)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(3600, 10) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Thanks, you saved my day and most certainly earned my trust!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to the Bread & Butter! Do you want to buy pastries or butter? Because we're all out of bread.\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"bread\", clientId = 3600, sell = 1, buy = 10 },\n\t{ itemName = \"roll\", clientId = 3601, sell = 1, buy = 8 },\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"Ten loafs of bread! Colour me impressed. Will you hand those over to me?\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"To prove trustworthy to me... hm, well, you could... oh, yes! Of course, we have a severe shortage of bread! If I knew someone who could organise about ten loafs of bread, I'd be saved for today!\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 73,
+              "lua_literal": "\"Thanks, you saved my day and most certainly earned my trust!\""
+            },
+            {
+              "line": 79,
+              "lua_literal": "\"Welcome to the Bread & Butter! Do you want to buy pastries or butter? Because we're all out of bread.\""
+            },
+            {
+              "line": 84,
+              "lua_literal": "\"bread\""
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"roll\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Jehan The Baker\"\nlocal npcType = Game.createNpcType(\"Jehan The Baker (Day)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 128,\n\tlookHead = 19,\n\tlookBody = 21,\n\tlookLegs = 39,\n\tlookFeet = 116,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_DAY,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 and player:getItemCount(3600) >= 10 then\n\t\tnpcHandler:say(\"Ten loafs of bread! Colour me impressed. Will you hand those over to me?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 then\n\t\tnpcHandler:say(\"To prove trustworthy to me... hm, well, you could... oh, yes! Of course, we have a severe shortage of bread! If I knew someone who could organise about ten loafs of bread, I'd be saved for today!\", npc, creature)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(3600, 10) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Thanks, you saved my day and most certainly earned my trust!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to the Bread & Butter! Do you want to buy pastries or butter? Because we're all out of bread.\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"bread\", clientId = 3600, sell = 1, buy = 10 },\n\t{ itemName = \"roll\", clientId = 3601, sell = 1, buy = 8 },\n\t{ itemName = \"cake\", clientId = 6277, buy = 50 },\n\t{ itemName = \"cookie\", clientId = 3598, buy = 2 },\n\t{ itemName = \"egg\", clientId = 3606, buy = 2 },\n\t{ itemName = \"red apple\", clientId = 3585, buy = 3 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jehan_the_baker_day.lua:1-105"
+    },
+    {
+      "npc_source_name": "jehan_the_baker_night",
+      "source_blob_sha256": "71ef72618004d7b381a0fec674e5af1c296d7b50aadee35f25746fb58ae62fb3",
+      "review_rows": [
+        "R4C113"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jehan_the_baker_night.lua:53-85",
+          "line_start": 53,
+          "line_end": 85,
+          "source_sha256": "aee95f617851f52bd0d71875c9c96973563ef6f6571b4ee29532323729c57869",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 and player:getItemCount(3600) >= 10 then\n\t\tnpcHandler:say(\"Ten loafs of bread! Colour me impressed. Will you hand those over to me?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 then\n\t\tnpcHandler:say(\"To prove trustworthy to me... hm, well, you could... oh, yes! Of course, we have a severe shortage of bread! If I knew someone who could organise about ten loafs of bread, I'd be saved for today!\", npc, creature)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(3600, 10) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Thanks, you saved my day and most certainly earned my trust!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to the Bread & Butter! Do you want to buy pastries or butter? Because we're all out of bread.\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"bread\", clientId = 3600, sell = 1, buy = 10 },\n\t{ itemName = \"roll\", clientId = 3601, sell = 1, buy = 8 },\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"Ten loafs of bread! Colour me impressed. Will you hand those over to me?\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"To prove trustworthy to me... hm, well, you could... oh, yes! Of course, we have a severe shortage of bread! If I knew someone who could organise about ten loafs of bread, I'd be saved for today!\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 73,
+              "lua_literal": "\"Thanks, you saved my day and most certainly earned my trust!\""
+            },
+            {
+              "line": 79,
+              "lua_literal": "\"Welcome to the Bread & Butter! Do you want to buy pastries or butter? Because we're all out of bread.\""
+            },
+            {
+              "line": 84,
+              "lua_literal": "\"bread\""
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"roll\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Jehan The Baker\"\nlocal npcType = Game.createNpcType(\"Jehan The Baker (Night)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 128,\n\tlookHead = 19,\n\tlookBody = 21,\n\tlookLegs = 39,\n\tlookFeet = 116,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_NIGHT,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 and player:getItemCount(3600) >= 10 then\n\t\tnpcHandler:say(\"Ten loafs of bread! Colour me impressed. Will you hand those over to me?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 then\n\t\tnpcHandler:say(\"To prove trustworthy to me... hm, well, you could... oh, yes! Of course, we have a severe shortage of bread! If I knew someone who could organise about ten loafs of bread, I'd be saved for today!\", npc, creature)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(3600, 10) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.JehanTask, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Thanks, you saved my day and most certainly earned my trust!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome to the Bread & Butter! Do you want to buy pastries or butter? Because we're all out of bread.\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"bread\", clientId = 3600, sell = 1, buy = 10 },\n\t{ itemName = \"roll\", clientId = 3601, sell = 1, buy = 8 },\n\t{ itemName = \"cake\", clientId = 6277, buy = 50 },\n\t{ itemName = \"cookie\", clientId = 3598, buy = 2 },\n\t{ itemName = \"egg\", clientId = 3606, buy = 2 },\n\t{ itemName = \"red apple\", clientId = 3585, buy = 3 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jehan_the_baker_night.lua:1-105"
+    },
+    {
+      "npc_source_name": "fral_the_butcher_day",
+      "source_blob_sha256": "90eb0a58a8760aeced4a541b2f08c0f30d192a8317b9d618bd41dee962766e3d",
+      "review_rows": [
+        "R4C114"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/fral_the_butcher_day.lua:53-88",
+          "line_start": 53,
+          "line_end": 88,
+          "source_sha256": "29a420c02efb01a1430b0d49b65332cc2bfcfe09c504931a84529e7c1789aac5",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 and player:getItemCount(3582) >= 20 then\n\t\tnpcHandler:say({\n\t\t\t\"Good, I can smell about 20 pieces of raw ham there in your pockets. ...\",\n\t\t\t\"Will you hand those over to me?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 then\n\t\tnpcHandler:say(\"If you want to prove trustworthy to me, I need you to bring me some raw ham, about 20 chunks if you can. Then we'll see.\", npc, creature)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(3582, 20) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Great, thanks. And? Oh, yes. Consider my trust... earned.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome! Looking to buy or sell some meat?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"meat\", clientId = 3577, sell = 2, buy = 15 },\n}\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 66,
+              "lua_literal": "\"Good, I can smell about 20 pieces of raw ham there in your pockets. ...\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"Will you hand those over to me?\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"If you want to prove trustworthy to me, I need you to bring me some raw ham, about 20 chunks if you can. Then we'll see.\""
+            },
+            {
+              "line": 72,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"Great, thanks. And? Oh, yes. Consider my trust... earned.\""
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"Welcome! Looking to buy or sell some meat?\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"meat\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Fral the Butcher\"\nlocal npcType = Game.createNpcType(\"Fral the Butcher (Day)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 159,\n\tlookHead = 19,\n\tlookBody = 21,\n\tlookLegs = 39,\n\tlookFeet = 116,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_DAY,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 and player:getItemCount(3582) >= 20 then\n\t\tnpcHandler:say({\n\t\t\t\"Good, I can smell about 20 pieces of raw ham there in your pockets. ...\",\n\t\t\t\"Will you hand those over to me?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 then\n\t\tnpcHandler:say(\"If you want to prove trustworthy to me, I need you to bring me some raw ham, about 20 chunks if you can. Then we'll see.\", npc, creature)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(3582, 20) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Great, thanks. And? Oh, yes. Consider my trust... earned.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome! Looking to buy or sell some meat?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"meat\", clientId = 3577, sell = 2, buy = 15 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/fral_the_butcher_day.lua:1-103"
+    },
+    {
+      "npc_source_name": "fral_the_butcher_night",
+      "source_blob_sha256": "09f56bdb8592faf04a5e341cdeac53a96ae719163cab80742f069bc6ea6931ef",
+      "review_rows": [
+        "R4C114"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/fral_the_butcher_night.lua:53-88",
+          "line_start": 53,
+          "line_end": 88,
+          "source_sha256": "29a420c02efb01a1430b0d49b65332cc2bfcfe09c504931a84529e7c1789aac5",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 and player:getItemCount(3582) >= 20 then\n\t\tnpcHandler:say({\n\t\t\t\"Good, I can smell about 20 pieces of raw ham there in your pockets. ...\",\n\t\t\t\"Will you hand those over to me?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 then\n\t\tnpcHandler:say(\"If you want to prove trustworthy to me, I need you to bring me some raw ham, about 20 chunks if you can. Then we'll see.\", npc, creature)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(3582, 20) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Great, thanks. And? Oh, yes. Consider my trust... earned.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome! Looking to buy or sell some meat?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"meat\", clientId = 3577, sell = 2, buy = 15 },\n}\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 66,
+              "lua_literal": "\"Good, I can smell about 20 pieces of raw ham there in your pockets. ...\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"Will you hand those over to me?\""
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"If you want to prove trustworthy to me, I need you to bring me some raw ham, about 20 chunks if you can. Then we'll see.\""
+            },
+            {
+              "line": 72,
+              "lua_literal": "\"yes\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"Great, thanks. And? Oh, yes. Consider my trust... earned.\""
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"Welcome! Looking to buy or sell some meat?\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"meat\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Fral the Butcher\"\nlocal npcType = Game.createNpcType(\"Fral the Butcher (Night)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 159,\n\tlookHead = 19,\n\tlookBody = 21,\n\tlookLegs = 39,\n\tlookFeet = 116,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_NIGHT,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 and player:getItemCount(3582) >= 20 then\n\t\tnpcHandler:say({\n\t\t\t\"Good, I can smell about 20 pieces of raw ham there in your pockets. ...\",\n\t\t\t\"Will you hand those over to me?\",\n\t\t}, npc, creature)\n\t\tnpcHandler:setTopic(playerId, 1)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 then\n\t\tnpcHandler:say(\"If you want to prove trustworthy to me, I need you to bring me some raw ham, about 20 chunks if you can. Then we'll see.\", npc, creature)\n\telseif message:lower() == \"yes\" and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask) < 1 then\n\t\tif npcHandler:getTopic(playerId) == 1 and player:removeItem(3582, 20) then\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.FralTask, 1)\n\t\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\t\tnpcHandler:say(\"Great, thanks. And? Oh, yes. Consider my trust... earned.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Welcome! Looking to buy or sell some meat?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"meat\", clientId = 3577, sell = 2, buy = 15 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/fral_the_butcher_night.lua:1-103"
+    },
+    {
+      "npc_source_name": "onfroi_day",
+      "source_blob_sha256": "a414d60ad7383f66420f5ae785e244ea2ea1ced8702b065b4a01731e27e4660b",
+      "review_rows": [
+        "R4C115",
+        "R4C117"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_day.lua:53-89",
+          "line_start": 53,
+          "line_end": 89,
+          "source_sha256": "b7ad9314c141aa0dcebc81046443aa18532f4fea22626094f752660eb15c63d0",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask) == 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiKills) >= 20 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask, 2)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\tnpcHandler:say(\"You did it, excellent! Most respectable, you did great! That took a load of my mind. And you've earned my trust!\", npc, creature)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask) < 1 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask, 1)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiKills, 0)\n\t\tnpcHandler:say({\n\t\t\t\"You mean it, right? Where did you got that from, actually?. ...\",\n\t\t\t\"Now, I have indeed a favour to ask. If you can accomplish that, you've earned my trust surely. ...\",\n\t\t\t\"There is a crypt down below the town. It is old and seismic activity has stirred up some bad energies down there. ...\",\n\t\t\t\"I want you to venture exactly to that crypt and see if there are any powerful creatures down there. ...\",\n\t\t\t\"And if there are... please... remove them. Rest assured that I have nothing to do with the rise of any mortally-depleted entities down there ...\",\n\t\t\t\"At least not this time. You see, the locals are starting to suspect me. But I'm not much of a fighter or warlock. ...\",\n\t\t\t\"So if there is indeed something below us and you can destroy let's say 20 of it, I'd be in your debt.\",\n\t\t}, npc, creature)\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Oh, a customer! Welcome to my magic shop. What can I do for you?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nlocal itemsTable = {\n\t[\"potions\"] = {\n\t\t{ itemName = \"empty potion flask\", clientId = 283, sell = 5 },\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"You did it, excellent! Most respectable, you did great! That took a load of my mind. And you've earned my trust!\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 72,
+              "lua_literal": "\"You mean it, right? Where did you got that from, actually?. ...\""
+            },
+            {
+              "line": 73,
+              "lua_literal": "\"Now, I have indeed a favour to ask. If you can accomplish that, you've earned my trust surely. ...\""
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"There is a crypt down below the town. It is old and seismic activity has stirred up some bad energies down there. ...\""
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"I want you to venture exactly to that crypt and see if there are any powerful creatures down there. ...\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"And if there are... please... remove them. Rest assured that I have nothing to do with the rise of any mortally-depleted entities down there ...\""
+            },
+            {
+              "line": 77,
+              "lua_literal": "\"At least not this time. You see, the locals are starting to suspect me. But I'm not much of a fighter or warlock. ...\""
+            },
+            {
+              "line": 78,
+              "lua_literal": "\"So if there is indeed something below us and you can destroy let's say 20 of it, I'd be in your debt.\""
+            },
+            {
+              "line": 83,
+              "lua_literal": "\"Oh, a customer! Welcome to my magic shop. What can I do for you?\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"potions\""
+            },
+            {
+              "line": 89,
+              "lua_literal": "\"empty potion flask\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Onfroi\"\nlocal npcType = Game.createNpcType(\"Onfroi (Day)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 130,\n\tlookHead = 0,\n\tlookBody = 50,\n\tlookLegs = 50,\n\tlookFeet = 50,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_DAY,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask) == 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiKills) >= 20 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask, 2)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\tnpcHandler:say(\"You did it, excellent! Most respectable, you did great! That took a load of my mind. And you've earned my trust!\", npc, creature)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask) < 1 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask, 1)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiKills, 0)\n\t\tnpcHandler:say({\n\t\t\t\"You mean it, right? Where did you got that from, actually?. ...\",\n\t\t\t\"Now, I have indeed a favour to ask. If you can accomplish that, you've earned my trust surely. ...\",\n\t\t\t\"There is a crypt down below the town. It is old and seismic activity has stirred up some bad energies down there. ...\",\n\t\t\t\"I want you to venture exactly to that crypt and see if there are any powerful creatures down there. ...\",\n\t\t\t\"And if there are... please... remove them. Rest assured that I have nothing to do with the rise of any mortally-depleted entities down there ...\",\n\t\t\t\"At least not this time. You see, the locals are starting to suspect me. But I'm not much of a fighter or warlock. ...\",\n\t\t\t\"So if there is indeed something below us and you can destroy let's say 20 of it, I'd be in your debt.\",\n\t\t}, npc, creature)\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Oh, a customer! Welcome to my magic shop. What can I do for you?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nlocal itemsTable = {\n\t[\"potions\"] = {\n\t\t{ itemName = \"empty potion flask\", clientId = 283, sell = 5 },\n\t\t{ itemName = \"empty potion flask\", clientId = 284, sell = 5 },\n\t\t{ itemName = \"empty potion flask\", clientId = 285, sell = 5 },\n\t\t{ itemName = \"great health potion\", clientId = 239, buy = 225 },\n\t\t{ itemid = 238, clientId = 238, buy = 158 },\n\t\t{ itemName = \"great spirit potion\", clientId = 7642, buy = 254 },\n\t\t{ itemName = \"health potion\", clientId = 266, buy = 50 },\n\t\t{ itemName = \"mana potion\", clientId = 268, buy = 56 },\n\t\t{ itemName = \"strong health potion\", clientId = 236, buy = 115 },\n\t\t{ itemName = \"strong mana potion\", clientId = 237, buy = 108 },\n\t\t{ itemName = \"ultimate health potion\", clientId = 7643, buy = 379 },\n\t\t{ itemName = \"vial\", clientId = 2874, sell = 5 },\n\t},\n\t[\"runes\"] = {\n\t\t{ itemName = \"blank rune\", clientId = 3147, buy = 10 },\n\t},\n\t[\"wands\"] = {\n\t\t{ itemName = \"moonlight rod\", clientId = 3070, buy = 1000 },\n\t\t{ itemName = \"necrotic rod\", clientId = 3069, buy = 5000 },\n\t\t{ itemName = \"snakebite rod\", clientId = 3066, buy = 500 },\n\t\t{ itemName = \"springsprout rod\", clientId = 8084, buy = 18000 },\n\t\t{ itemName = \"terra rod\", clientId = 3065, buy = 10000 },\n\t\t{ itemName = \"wand of cosmic energy\", clientId = 3073, buy = 10000 },\n\t\t{ itemName = \"wand of decay\", clientId = 3072, buy = 5000 },\n\t\t{ itemName = \"wand of dragonbreath\", clientId = 3075, buy = 1000 },\n\t\t{ itemName = \"wand of vortex\", clientId = 3074, buy = 500 },\n\t},\n\t[\"exercise weapons\"] = {\n\t\t{ itemName = \"durable exercise rod\", clientId = 35283, buy = 1250000, count = 1800 },\n\t\t{ itemName = \"durable exercise wand\", clientId = 35284, buy = 1250000, count = 1800 },\n\t\t{ itemName = \"exercise rod\", clientId = 28556, buy = 347222, count = 500 },\n\t\t{ itemName = \"exercise wand\", clientId = 28557, buy = 347222, count = 500 },\n\t\t{ itemName = \"lasting exercise rod\", clientId = 35289, buy = 10000000, count = 14400 },\n\t\t{ itemName = \"lasting exercise wand\", clientId = 35290, buy = 10000000, count = 14400 },\n\t},\n\t[\"others\"] = {\n\t\t{ itemName = \"spellwand\", clientId = 651, sell = 299 },\n\t},\n\t[\"shields\"] = {\n\t\t{ itemName = \"spellbook\", clientId = 3059, buy = 150 },\n\t},\n}\n\nnpcConfig.shop = {}\nfor _, categoryTable in pairs(itemsTable) do\n\tfor _, itemTable in ipairs(categoryTable) do\n\t\ttable.insert(npcConfig.shop, itemTable)\n\tend\nend\n\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_day.lua:1-153"
+    },
+    {
+      "npc_source_name": "onfroi_night",
+      "source_blob_sha256": "181138e8516671d98db245de3f2c5e1ebfd9496468e62c35711239421d0ea2ed",
+      "review_rows": [
+        "R4C115",
+        "R4C117"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_night.lua:53-89",
+          "line_start": 53,
+          "line_end": 89,
+          "source_sha256": "b7ad9314c141aa0dcebc81046443aa18532f4fea22626094f752660eb15c63d0",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask) == 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiKills) >= 20 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask, 2)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\tnpcHandler:say(\"You did it, excellent! Most respectable, you did great! That took a load of my mind. And you've earned my trust!\", npc, creature)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask) < 1 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask, 1)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiKills, 0)\n\t\tnpcHandler:say({\n\t\t\t\"You mean it, right? Where did you got that from, actually?. ...\",\n\t\t\t\"Now, I have indeed a favour to ask. If you can accomplish that, you've earned my trust surely. ...\",\n\t\t\t\"There is a crypt down below the town. It is old and seismic activity has stirred up some bad energies down there. ...\",\n\t\t\t\"I want you to venture exactly to that crypt and see if there are any powerful creatures down there. ...\",\n\t\t\t\"And if there are... please... remove them. Rest assured that I have nothing to do with the rise of any mortally-depleted entities down there ...\",\n\t\t\t\"At least not this time. You see, the locals are starting to suspect me. But I'm not much of a fighter or warlock. ...\",\n\t\t\t\"So if there is indeed something below us and you can destroy let's say 20 of it, I'd be in your debt.\",\n\t\t}, npc, creature)\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Oh, a customer! Welcome to my magic shop. What can I do for you?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nlocal itemsTable = {\n\t[\"potions\"] = {\n\t\t{ itemName = \"empty potion flask\", clientId = 283, sell = 5 },\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 67,
+              "lua_literal": "\"You did it, excellent! Most respectable, you did great! That took a load of my mind. And you've earned my trust!\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 72,
+              "lua_literal": "\"You mean it, right? Where did you got that from, actually?. ...\""
+            },
+            {
+              "line": 73,
+              "lua_literal": "\"Now, I have indeed a favour to ask. If you can accomplish that, you've earned my trust surely. ...\""
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"There is a crypt down below the town. It is old and seismic activity has stirred up some bad energies down there. ...\""
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"I want you to venture exactly to that crypt and see if there are any powerful creatures down there. ...\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"And if there are... please... remove them. Rest assured that I have nothing to do with the rise of any mortally-depleted entities down there ...\""
+            },
+            {
+              "line": 77,
+              "lua_literal": "\"At least not this time. You see, the locals are starting to suspect me. But I'm not much of a fighter or warlock. ...\""
+            },
+            {
+              "line": 78,
+              "lua_literal": "\"So if there is indeed something below us and you can destroy let's say 20 of it, I'd be in your debt.\""
+            },
+            {
+              "line": 83,
+              "lua_literal": "\"Oh, a customer! Welcome to my magic shop. What can I do for you?\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"potions\""
+            },
+            {
+              "line": 89,
+              "lua_literal": "\"empty potion flask\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Onfroi\"\nlocal npcType = Game.createNpcType(\"Onfroi (Night)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 130,\n\tlookHead = 0,\n\tlookBody = 50,\n\tlookLegs = 50,\n\tlookFeet = 50,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_NIGHT,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask) == 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiKills) >= 20 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask, 2)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\tnpcHandler:say(\"You did it, excellent! Most respectable, you did great! That took a load of my mind. And you've earned my trust!\", npc, creature)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask) < 1 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiTask, 1)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.OnfroiKills, 0)\n\t\tnpcHandler:say({\n\t\t\t\"You mean it, right? Where did you got that from, actually?. ...\",\n\t\t\t\"Now, I have indeed a favour to ask. If you can accomplish that, you've earned my trust surely. ...\",\n\t\t\t\"There is a crypt down below the town. It is old and seismic activity has stirred up some bad energies down there. ...\",\n\t\t\t\"I want you to venture exactly to that crypt and see if there are any powerful creatures down there. ...\",\n\t\t\t\"And if there are... please... remove them. Rest assured that I have nothing to do with the rise of any mortally-depleted entities down there ...\",\n\t\t\t\"At least not this time. You see, the locals are starting to suspect me. But I'm not much of a fighter or warlock. ...\",\n\t\t\t\"So if there is indeed something below us and you can destroy let's say 20 of it, I'd be in your debt.\",\n\t\t}, npc, creature)\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Oh, a customer! Welcome to my magic shop. What can I do for you?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nlocal itemsTable = {\n\t[\"potions\"] = {\n\t\t{ itemName = \"empty potion flask\", clientId = 283, sell = 5 },\n\t\t{ itemName = \"empty potion flask\", clientId = 284, sell = 5 },\n\t\t{ itemName = \"empty potion flask\", clientId = 285, sell = 5 },\n\t\t{ itemName = \"great health potion\", clientId = 239, buy = 225 },\n\t\t{ itemid = 238, clientId = 238, buy = 158 },\n\t\t{ itemName = \"great spirit potion\", clientId = 7642, buy = 254 },\n\t\t{ itemName = \"health potion\", clientId = 266, buy = 50 },\n\t\t{ itemName = \"mana potion\", clientId = 268, buy = 56 },\n\t\t{ itemName = \"strong health potion\", clientId = 236, buy = 115 },\n\t\t{ itemName = \"strong mana potion\", clientId = 237, buy = 108 },\n\t\t{ itemName = \"ultimate health potion\", clientId = 7643, buy = 379 },\n\t\t{ itemName = \"vial\", clientId = 2874, sell = 5 },\n\t},\n\t[\"runes\"] = {\n\t\t{ itemName = \"blank rune\", clientId = 3147, buy = 10 },\n\t},\n\t[\"wands\"] = {\n\t\t{ itemName = \"moonlight rod\", clientId = 3070, buy = 1000 },\n\t\t{ itemName = \"necrotic rod\", clientId = 3069, buy = 5000 },\n\t\t{ itemName = \"snakebite rod\", clientId = 3066, buy = 500 },\n\t\t{ itemName = \"springsprout rod\", clientId = 8084, buy = 18000 },\n\t\t{ itemName = \"terra rod\", clientId = 3065, buy = 10000 },\n\t\t{ itemName = \"wand of cosmic energy\", clientId = 3073, buy = 10000 },\n\t\t{ itemName = \"wand of decay\", clientId = 3072, buy = 5000 },\n\t\t{ itemName = \"wand of dragonbreath\", clientId = 3075, buy = 1000 },\n\t\t{ itemName = \"wand of vortex\", clientId = 3074, buy = 500 },\n\t},\n\t[\"exercise weapons\"] = {\n\t\t{ itemName = \"durable exercise rod\", clientId = 35283, buy = 1250000, count = 1800 },\n\t\t{ itemName = \"durable exercise wand\", clientId = 35284, buy = 1250000, count = 1800 },\n\t\t{ itemName = \"exercise rod\", clientId = 28556, buy = 347222, count = 500 },\n\t\t{ itemName = \"exercise wand\", clientId = 28557, buy = 347222, count = 500 },\n\t\t{ itemName = \"lasting exercise rod\", clientId = 35289, buy = 10000000, count = 14400 },\n\t\t{ itemName = \"lasting exercise wand\", clientId = 35290, buy = 10000000, count = 14400 },\n\t},\n\t[\"others\"] = {\n\t\t{ itemName = \"spellwand\", clientId = 651, sell = 299 },\n\t},\n\t[\"shields\"] = {\n\t\t{ itemName = \"spellbook\", clientId = 3059, buy = 150 },\n\t},\n}\n\nnpcConfig.shop = {}\nfor _, categoryTable in pairs(itemsTable) do\n\tfor _, itemTable in ipairs(categoryTable) do\n\t\ttable.insert(npcConfig.shop, itemTable)\n\tend\nend\n\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/onfroi_night.lua:1-153"
+    },
+    {
+      "npc_source_name": "dal_the_huntress_day",
+      "source_blob_sha256": "78898127de1afa56fd00ca348b599eecfbbaf10f909f9b143e40d13099520dc3",
+      "review_rows": [
+        "R4C118",
+        "R4C120"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_day.lua:53-88",
+          "line_start": 53,
+          "line_end": 88,
+          "source_sha256": "1756d5b6f4952cd89c52e5e430dbc1335d1138d39f9830e096c8874893dc57be",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask) == 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalKills) >= 20 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask, 2)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\tnpcHandler:say({\n\t\t\t\"Twenty deer! You have done our forest a great service, traveller. ...\",\n\t\t\t\"The hunting grounds will be in much better shape now. You have earned my trust and my respect. Well done!\",\n\t\t}, npc, creature)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask) < 1 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask, 1)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalKills, 0)\n\t\tnpcHandler:say({\n\t\t\t\"So, you truly want to prove your worth to us... well, I'd like to ask for a favour then. ...\",\n\t\t\t\"There are plenty of deer in the woods of Bounac. However, with the siege going on and the strict regulations, I can't hunt. ...\",\n\t\t\t\"Hunt 20 deer for me to protect our forest and keep our hunting grounds in good order.\",\n\t\t}, npc, creature)\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, hunter! What brings you to my post?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"ape fur\", clientId = 5883, sell = 120 },\n\t{ itemName = \"badger fur\", clientId = 903, sell = 15 },\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"Twenty deer! You have done our forest a great service, traveller. ...\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"The hunting grounds will be in much better shape now. You have earned my trust and my respect. Well done!\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"So, you truly want to prove your worth to us... well, I'd like to ask for a favour then. ...\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"There are plenty of deer in the woods of Bounac. However, with the siege going on and the strict regulations, I can't hunt. ...\""
+            },
+            {
+              "line": 77,
+              "lua_literal": "\"Hunt 20 deer for me to protect our forest and keep our hunting grounds in good order.\""
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"Hail, hunter! What brings you to my post?\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"ape fur\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"badger fur\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Dal the Huntress\"\nlocal npcType = Game.createNpcType(\"Dal the Huntress (Day)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 137,\n\tlookHead = 23,\n\tlookBody = 121,\n\tlookLegs = 118,\n\tlookFeet = 95,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_DAY,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask) == 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalKills) >= 20 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask, 2)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\tnpcHandler:say({\n\t\t\t\"Twenty deer! You have done our forest a great service, traveller. ...\",\n\t\t\t\"The hunting grounds will be in much better shape now. You have earned my trust and my respect. Well done!\",\n\t\t}, npc, creature)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask) < 1 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask, 1)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalKills, 0)\n\t\tnpcHandler:say({\n\t\t\t\"So, you truly want to prove your worth to us... well, I'd like to ask for a favour then. ...\",\n\t\t\t\"There are plenty of deer in the woods of Bounac. However, with the siege going on and the strict regulations, I can't hunt. ...\",\n\t\t\t\"Hunt 20 deer for me to protect our forest and keep our hunting grounds in good order.\",\n\t\t}, npc, creature)\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, hunter! What brings you to my post?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"ape fur\", clientId = 5883, sell = 120 },\n\t{ itemName = \"badger fur\", clientId = 903, sell = 15 },\n\t{ itemName = \"black wool\", clientId = 11448, sell = 300 },\n\t{ itemName = \"blue piece of cloth\", clientId = 5912, sell = 200 },\n\t{ itemName = \"brown piece of cloth\", clientId = 5913, sell = 100 },\n\t{ itemName = \"bunch of troll hair\", clientId = 9689, sell = 30 },\n\t{ itemName = \"downy feather\", clientId = 11684, sell = 20 },\n\t{ itemName = \"earflap\", clientId = 17819, sell = 40 },\n\t{ itemName = \"frost giant pelt\", clientId = 9658, sell = 160 },\n\t{ itemName = \"ghostly tissue\", clientId = 9690, sell = 90 },\n\t{ itemName = \"gloom wolf fur\", clientId = 22007, sell = 70 },\n\t{ itemName = \"green dragon leather\", clientId = 5877, sell = 100 },\n\t{ itemName = \"green piece of cloth\", clientId = 5910, sell = 200 },\n\t{ itemName = \"lion's mane\", clientId = 9691, sell = 60 },\n\t{ itemName = \"lizard leather\", clientId = 5876, sell = 150 },\n\t{ itemName = \"minotaur leather\", clientId = 5878, sell = 80 },\n\t{ itemName = \"piece of crocodile leather\", clientId = 10279, sell = 15 },\n\t{ itemName = \"red dragon leather\", clientId = 5948, sell = 200 },\n\t{ itemName = \"red piece of cloth\", clientId = 5911, sell = 300 },\n\t{ itemName = \"shaggy tail\", clientId = 10407, sell = 25 },\n\t{ itemName = \"silky fur\", clientId = 10292, sell = 35 },\n\t{ itemName = \"skunk tail\", clientId = 10274, sell = 50 },\n\t{ itemName = \"snake skin\", clientId = 9694, sell = 400 },\n\t{ itemName = \"spool of yarn\", clientId = 5886, sell = 1000 },\n\t{ itemName = \"striped fur\", clientId = 10293, sell = 50 },\n\t{ itemName = \"thick fur\", clientId = 10307, sell = 150 },\n\t{ itemName = \"warwolf fur\", clientId = 10318, sell = 30 },\n\t{ itemName = \"werewolf fur\", clientId = 10317, sell = 380 },\n\t{ itemName = \"white piece of cloth\", clientId = 5909, sell = 100 },\n\t{ itemName = \"winter wolf fur\", clientId = 10295, sell = 20 },\n\t{ itemName = \"wool\", clientId = 10319, sell = 15 },\n\t{ itemName = \"yellow piece of cloth\", clientId = 5914, sell = 150 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_day.lua:1-134"
+    },
+    {
+      "npc_source_name": "dal_the_huntress_night",
+      "source_blob_sha256": "7213aff9e8f36fa82eb20caca90965e964ff42aa0d3d8b6e6e640c0f390f89b5",
+      "review_rows": [
+        "R4C118",
+        "R4C120"
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_night.lua:53-88",
+          "line_start": 53,
+          "line_end": 88,
+          "source_sha256": "1756d5b6f4952cd89c52e5e430dbc1335d1138d39f9830e096c8874893dc57be",
+          "guarded_source_lua": "\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask) == 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalKills) >= 20 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask, 2)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\tnpcHandler:say({\n\t\t\t\"Twenty deer! You have done our forest a great service, traveller. ...\",\n\t\t\t\"The hunting grounds will be in much better shape now. You have earned my trust and my respect. Well done!\",\n\t\t}, npc, creature)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask) < 1 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask, 1)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalKills, 0)\n\t\tnpcHandler:say({\n\t\t\t\"So, you truly want to prove your worth to us... well, I'd like to ask for a favour then. ...\",\n\t\t\t\"There are plenty of deer in the woods of Bounac. However, with the siege going on and the strict regulations, I can't hunt. ...\",\n\t\t\t\"Hunt 20 deer for me to protect our forest and keep our hunting grounds in good order.\",\n\t\t}, npc, creature)\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, hunter! What brings you to my post?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"ape fur\", clientId = 5883, sell = 120 },\n\t{ itemName = \"badger fur\", clientId = 903, sell = 15 },\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 64,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 68,
+              "lua_literal": "\"Twenty deer! You have done our forest a great service, traveller. ...\""
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"The hunting grounds will be in much better shape now. You have earned my trust and my respect. Well done!\""
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"yselda\""
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"So, you truly want to prove your worth to us... well, I'd like to ask for a favour then. ...\""
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"There are plenty of deer in the woods of Bounac. However, with the siege going on and the strict regulations, I can't hunt. ...\""
+            },
+            {
+              "line": 77,
+              "lua_literal": "\"Hunt 20 deer for me to protect our forest and keep our hunting grounds in good order.\""
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"Hail, hunter! What brings you to my post?\""
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"ape fur\""
+            },
+            {
+              "line": 88,
+              "lua_literal": "\"badger fur\""
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "admission_reason": "Full source strings retained with their condition/topic/effect context. This is a source-backed authoring input, not an installed dialogue or ungated keyword table.",
+      "full_source_lua": "local internalNpcName = \"Dal the Huntress\"\nlocal npcType = Game.createNpcType(\"Dal the Huntress (Night)\")\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 137,\n\tlookHead = 23,\n\tlookBody = 121,\n\tlookLegs = 118,\n\tlookFeet = 95,\n\tlookAddons = 0,\n}\n\nnpcConfig.respawnType = {\n\tperiod = RESPAWNPERIOD_NIGHT,\n\tunderground = false,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nnpcConfig.voices = {}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask) == 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalKills) >= 20 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask, 2)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust, player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.BounacTrust) + 1)\n\t\tnpcHandler:say({\n\t\t\t\"Twenty deer! You have done our forest a great service, traveller. ...\",\n\t\t\t\"The hunting grounds will be in much better shape now. You have earned my trust and my respect. Well done!\",\n\t\t}, npc, creature)\n\telseif MsgContains(message, \"yselda\") and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.AccessSouthernSide) >= 1 and player:getStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask) < 1 then\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalTask, 1)\n\t\tplayer:setStorageValue(Storage.Quest.U12_40.TheOrderOfTheLion.DalKills, 0)\n\t\tnpcHandler:say({\n\t\t\t\"So, you truly want to prove your worth to us... well, I'd like to ask for a favour then. ...\",\n\t\t\t\"There are plenty of deer in the woods of Bounac. However, with the siege going on and the strict regulations, I can't hunt. ...\",\n\t\t\t\"Hunt 20 deer for me to protect our forest and keep our hunting grounds in good order.\",\n\t\t}, npc, creature)\n\tend\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Hail, hunter! What brings you to my post?\")\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\nnpcConfig.shop = {\n\t{ itemName = \"ape fur\", clientId = 5883, sell = 120 },\n\t{ itemName = \"badger fur\", clientId = 903, sell = 15 },\n\t{ itemName = \"black wool\", clientId = 11448, sell = 300 },\n\t{ itemName = \"blue piece of cloth\", clientId = 5912, sell = 200 },\n\t{ itemName = \"brown piece of cloth\", clientId = 5913, sell = 100 },\n\t{ itemName = \"bunch of troll hair\", clientId = 9689, sell = 30 },\n\t{ itemName = \"downy feather\", clientId = 11684, sell = 20 },\n\t{ itemName = \"earflap\", clientId = 17819, sell = 40 },\n\t{ itemName = \"frost giant pelt\", clientId = 9658, sell = 160 },\n\t{ itemName = \"ghostly tissue\", clientId = 9690, sell = 90 },\n\t{ itemName = \"gloom wolf fur\", clientId = 22007, sell = 70 },\n\t{ itemName = \"green dragon leather\", clientId = 5877, sell = 100 },\n\t{ itemName = \"green piece of cloth\", clientId = 5910, sell = 200 },\n\t{ itemName = \"lion's mane\", clientId = 9691, sell = 60 },\n\t{ itemName = \"lizard leather\", clientId = 5876, sell = 150 },\n\t{ itemName = \"minotaur leather\", clientId = 5878, sell = 80 },\n\t{ itemName = \"piece of crocodile leather\", clientId = 10279, sell = 15 },\n\t{ itemName = \"red dragon leather\", clientId = 5948, sell = 200 },\n\t{ itemName = \"red piece of cloth\", clientId = 5911, sell = 300 },\n\t{ itemName = \"shaggy tail\", clientId = 10407, sell = 25 },\n\t{ itemName = \"silky fur\", clientId = 10292, sell = 35 },\n\t{ itemName = \"skunk tail\", clientId = 10274, sell = 50 },\n\t{ itemName = \"snake skin\", clientId = 9694, sell = 400 },\n\t{ itemName = \"spool of yarn\", clientId = 5886, sell = 1000 },\n\t{ itemName = \"striped fur\", clientId = 10293, sell = 50 },\n\t{ itemName = \"thick fur\", clientId = 10307, sell = 150 },\n\t{ itemName = \"warwolf fur\", clientId = 10318, sell = 30 },\n\t{ itemName = \"werewolf fur\", clientId = 10317, sell = 380 },\n\t{ itemName = \"white piece of cloth\", clientId = 5909, sell = 100 },\n\t{ itemName = \"winter wolf fur\", clientId = 10295, sell = 20 },\n\t{ itemName = \"wool\", clientId = 10319, sell = 15 },\n\t{ itemName = \"yellow piece of cloth\", clientId = 5914, sell = 150 },\n}\n-- On buy npc shop message\nnpcType.onBuyItem = function(npc, player, itemId, subType, amount, ignore, inBackpacks, totalCost)\n\tnpc:sellItem(player, itemId, amount, subType, 0, ignore, inBackpacks)\nend\n-- On sell npc shop message\nnpcType.onSellItem = function(npc, player, itemId, subtype, amount, ignore, name, totalCost)\n\tplayer:sendTextMessage(MESSAGE_TRADE, string.format(\"Sold %ix %s for %i gold.\", amount, name, totalCost))\nend\n-- On check npc shop message (look item)\nnpcType.onCheckItem = function(npc, player, clientId, subType) end\n\n-- Dialog options (interactive icons in the NPC conversation window)\nnpcType:addDialogOptions(\"trade\", \"bye\")\n\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/dal_the_huntress_night.lua:1-134"
+    }
+  ],
+  "policy": "Existing Rotten Blood owner ANSWERs and Newhaven native travel design remain authoritative; do not activate superseded raw branches. Kesar Order of Stag branches excluded."
+}

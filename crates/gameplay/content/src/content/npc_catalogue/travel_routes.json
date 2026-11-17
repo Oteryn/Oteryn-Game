@@ -1,5 +1,18 @@
 [
   {
+    "key": "oteryn:service.travel.a_ghostly_sage/help",
+    "keyword": "help",
+    "price": 0,
+    "premium": false,
+    "x": 32834,
+    "y": 32275,
+    "floor": 9,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.anderson/folda",
     "keyword": "folda",
     "price": 10,
@@ -2295,6 +2308,71 @@
     "carpet": true
   },
   {
+    "key": "oteryn:service.travel.rapanaio_isle_of_evil/kazordoon",
+    "keyword": "kazordoon",
+    "price": 0,
+    "premium": false,
+    "x": 32700,
+    "y": 31990,
+    "floor": 15,
+    "postman": true,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.scrutinon/ab_dendriel",
+    "keyword": "ab'dendriel",
+    "price": 0,
+    "premium": false,
+    "x": 32734,
+    "y": 31668,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.scrutinon/darashia",
+    "keyword": "darashia",
+    "price": 0,
+    "premium": false,
+    "x": 33289,
+    "y": 32480,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.scrutinon/edron",
+    "keyword": "edron",
+    "price": 0,
+    "premium": false,
+    "x": 33175,
+    "y": 31764,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
+    "key": "oteryn:service.travel.scrutinon/venore",
+    "keyword": "venore",
+    "price": 0,
+    "premium": false,
+    "x": 32954,
+    "y": 32022,
+    "floor": 6,
+    "postman": false,
+    "carpet": false,
+    "held": false,
+    "native_addition": true
+  },
+  {
     "key": "oteryn:service.travel.sebastian/liberty_bay",
     "keyword": "liberty_bay",
     "price": 50,
@@ -2773,5 +2851,19 @@
     "postman": true,
     "held": false,
     "carpet": true
+  },
+  {
+    "key": "oteryn:service.travel.dalbrect/isle_of_kings",
+    "keyword": "passage",
+    "price": 10,
+    "premium": false,
+    "x": 32190,
+    "y": 31957,
+    "floor": 6,
+    "postman": false,
+    "held": false,
+    "carpet": false,
+    "native_addition": true,
+    "quest_gate": "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery/quest_log"
   }
 ]

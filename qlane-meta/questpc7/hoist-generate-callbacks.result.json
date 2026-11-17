@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python3",
+    "tools/content-schema/quest-authoring/quest_batch4.py",
+    "--available"
+  ],
+  "exit_code": 0,
+  "seconds": 0.071,
+  "log": ".questpc7/hoist-generate-callbacks.log"
+}

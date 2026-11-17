@@ -1,0 +1,71 @@
+{
+  "schema": "OTERYN_QUESTS3_WORLD_INDEX/v1",
+  "sources": [
+    {
+      "path": "content/quests/world-callbacks-held/batch3-a-the_way_of_the_monk.json",
+      "keys": [
+        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-2",
+        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-3",
+        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-4",
+        "oteryn:quest-callback/batch3/the_way_of_the_monk/blue-valley-5"
+      ]
+    },
+    {
+      "path": "content/quests/world-callbacks-held/batch3-b-a_pirates_tail_quest.json",
+      "keys": [
+        "oteryn:quest-callback/pirates-tail-cheesy-exit"
+      ]
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-a-bigfoot_burden.json",
+      "keys": []
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-a-in_service_of_yalahar.json",
+      "keys": []
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-a-the_cursed_crystal.json",
+      "keys": []
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-a-the_hidden_city_of_beregar.json",
+      "keys": []
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-a-the_way_of_the_monk.json",
+      "keys": []
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-b-a_pirates_tail_quest.json",
+      "keys": []
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-b-hero_of_rathleton.json",
+      "keys": []
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-b-marapur.json",
+      "keys": []
+    },
+    {
+      "path": "content/quests/world-callbacks/batch3-b-the_shattered_isles_quest.json",
+      "keys": []
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/held-world/the_order_of_the_stag.json",
+      "keys": [
+        "oteryn:quest-callback/order-of-the-stag-boat-return",
+        "oteryn:quest-callback/order-of-the-stag-boat-to-ada",
+        "oteryn:quest-callback/order-of-the-stag-crypt-exit",
+        "oteryn:quest-callback/order-of-the-stag-mark-wall"
+      ]
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/batch3_c/world/the_primal_ordeal.json",
+      "keys": [
+        "oteryn:quest-callback/primal-ordeal-travel-33558-32754-14"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "batch": "albinius-main3209-completed-validation",
+  "source_head": "42a707818866a6c76cca48bac03008d5de643ed2",
+  "main": "3209d3d61",
+  "state": "OWN INITIAL CONTRIBUTION QUALIFIED; whole quest IN_PROGRESS",
+  "postgres_version_num": 180006,
+  "post_main_pg": {
+    "passed": 3,
+    "seconds": [
+      63.050059344,
+      66.816094652,
+      48.273847874
+    ],
+    "total_seconds": 111.32
+  },
+  "units": {
+    "quests": {
+      "passed": 322,
+      "seconds": 15.24,
+      "context": "Own source before last Rust-only main merge; quest crate unchanged by that main."
+    },
+    "dispatch": {
+      "passed": 1613,
+      "seconds": 850.809,
+      "context": "Complete non-PostgreSQL selection before last main; fresh Soulpit retry assertion also run below."
+    },
+    "durability": {
+      "passed": 635,
+      "seconds": 70.463,
+      "context": "Post-main non-PostgreSQL selection."
+    },
+    "durability_error_classification": {
+      "passed": 4,
+      "context": "Correct module filter; pure units, not PostgreSQL."
+    },
+    "service_model": {
+      "passed": 1,
+      "seconds": 22.37
+    },
+    "fresh_soulpit_read_retry": {
+      "passed": 1
+    }
+  },
+  "checks": {
+    "workspace_all_targets": "PASS4m09s merged tree; final42a prepush repeatPASS2m13s",
+    "clippy": "quests+dispatch+durability alltargets/allfeatures-DwarningsPASS6m36s including queue",
+    "fmt": "PASS",
+    "generation_and_pins": "Previously regenerated; no runtime content changed through final main merge or tests.",
+    "duplicates": "PASS; own migrations1240-1244 unchanged"
+  },
+  "logs": {
+    "/tmp/questpc2b-albinius-postmain3209-pg.log": "40125e7b242a5cdb8e8cbf0f1f7063f3781423a9df7f604b4eaaff95945fb829",
+    "/tmp/questpc2b-albinius-dispatch-units.log": "fa77b3a648284384b99d0726b02e838cea1b530603e46d7434cf68042f3fbce8",
+    "/tmp/questpc2b-main3209-durability-units.log": "b13ad20838bd59b044acca981beed28850d82d993db016db135ffe1438ed930d",
+    "/tmp/questpc2b-main3209-durability-focused-actual.log": "3e04cf77bafb83fe3c80dd6c3618d024ec6672740ccc0d2129e44bfb3e3c65a4",
+    "/tmp/questpc2b-main3209-service-model.log": "535c792ad440d4227602c98a37358a3fc292f30f4532a191eba82fa1d5d50c85",
+    "/tmp/questpc2b-albinius-main3209-clippy.log": "4de12354a8ce580f931dd8ac3e73f33ed564148a363f0d5bebfde00ef3dff328",
+    "/tmp/questpc2b-main3209-soulpit-retry-unit.log": "4cc8aadba2b9d45343ab6d7146ce491eb064a9c29a27be87a7d22f7952a1e88a",
+    "/tmp/questpc2b-albinius-green-receipt-workspace-check.log": "c6518fd789401e1dcf8b9693d83b22d31e8c4c33585d187bc7c5b36c56e66778"
+  },
+  "binary_sha256": "b974d6b185cfbf50b96261c5368674843c1d09ed556ece8a7033ef95fd705a15",
+  "program_sha256": "d83b3a8c149e6dca60c26b29ead12aeccc3d363802420be7209e820ba2ff72f2",
+  "whole_quest_qualified": false
+}

@@ -1,0 +1,157 @@
+[
+  {
+    "path": "content/quests/definitions/index.json",
+    "changed_values": 3,
+    "non_hash_changes": []
+  },
+  {
+    "path": "content/quests/definitions/quests-00000-00099.json",
+    "changed_values": 3,
+    "non_hash_changes": []
+  },
+  {
+    "path": "content/quests/definitions/quests-00100-00199.json",
+    "changed_values": 16,
+    "non_hash_changes": []
+  },
+  {
+    "path": "content/quests/definitions/quests-00200-00299.json",
+    "changed_values": 9,
+    "non_hash_changes": []
+  },
+  {
+    "path": "content/quests/missions/completion-candidate.json",
+    "changed_values": 4,
+    "non_hash_changes": []
+  },
+  {
+    "path": "content/quests/missions/quest-state-completion-candidate.json",
+    "changed_values": 2061,
+    "non_hash_changes": []
+  },
+  {
+    "path": "content/quests/missions/quest-state.json",
+    "changed_values": 4,
+    "non_hash_changes": []
+  },
+  {
+    "path": "content/quests/world-callbacks.json",
+    "changed_values": 1,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/binding_packets/index.json",
+    "changed_values": 307,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/binding_packets/npc/quest-npc-dialogue-links.json",
+    "changed_values": 4,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/binding_packets/recipes/supplementary-index.json",
+    "changed_values": 3,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/chosen-reward-item-candidates.json",
+    "changed_values": 548,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/perquest-352.json",
+    "changed_values": 1148,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/requirement-choices.json",
+    "changed_values": 26,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/reward-only-105.json",
+    "changed_values": 105,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json",
+    "changed_values": 4,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-approval.json",
+    "changed_values": 1,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-receipt.json",
+    "changed_values": 2,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/donor-source/components248/crosswalk.json",
+    "changed_values": 4,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/donor-source/components248/dialogue.json.gz",
+    "changed_values": 4,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/donor-source/components248/summary.json",
+    "changed_values": 2,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/donor-source/coverage.json",
+    "changed_values": 6,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/donor-source/npc-dependencies.json",
+    "changed_values": 1,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/donor-source/npc-index.json",
+    "changed_values": 1,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/donor-source/npc.json.gz",
+    "changed_values": 4,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/rollout/quest-rollout.json",
+    "changed_values": 4,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/server-completion/collect-claim-candidates.json",
+    "changed_values": 1,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/server-completion/reward-only-completion/candidates.json",
+    "changed_values": 6,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/server-completion/use-trigger-candidates.json",
+    "changed_values": 1,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/v2-export/declarations.json",
+    "changed_values": 612,
+    "non_hash_changes": []
+  },
+  {
+    "path": "tools/content-schema/quest-authoring/samples/v2-export/report.json",
+    "changed_values": 332,
+    "non_hash_changes": []
+  }
+]

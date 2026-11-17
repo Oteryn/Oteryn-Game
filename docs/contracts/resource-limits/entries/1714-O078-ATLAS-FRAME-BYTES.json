@@ -1,0 +1,23 @@
+{
+  "id": "O078-ATLAS-FRAME-BYTES",
+  "owner_contract": "protocol-oteryn/v1/cyclopedia-basic-v1.md",
+  "resource": "public atlas reply bytes",
+  "unit": "bytes per reply",
+  "hard_maximum": 10264,
+  "configurable_range": {
+    "minimum": 10264,
+    "maximum": 10264
+  },
+  "failure_category": "LIMIT_EXCEEDED",
+  "allocation_impact": "The codec bounds the complete frame and variable counts before allocation; the client checks total and contiguous page offsets before extending its retained geometry. No truncation or gameplay authority is granted.",
+  "client_visible": true,
+  "boundary_tests": [
+    "atlas_wire_bounds_roundtrip_and_truncation",
+    "atlas_geometry_pages_layers_and_floor_filters_use_real_queue"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/cyclopedia_atlas.rs",
+    "crates/client-ui/src/features/0057-cyclopedia-map/state/atlas.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/cyclopedia/atlas.rs"
+  ]
+}

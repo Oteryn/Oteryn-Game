@@ -2,13 +2,16 @@
 //! pending ordinary action. Keep CommandIds ordered: a superseded press receives
 //! the existing rejection result before its successor enters command ingress.
 use super::*;
-use oteryn_protocol_oteryn::hotkey_equip::{COMMAND_TYPE_HOTKEY_EQUIP, Request};
+use oteryn_protocol_oteryn::hotkey_equip::{
+    CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1, COMMAND_TYPE_HOTKEY_EQUIP, TieredRequest,
+};
 
 pub(super) async fn replaced<S, A>(
     stream: &mut S,
     authority: &A,
     session: &mut ServeState,
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
+    queued_for: std::time::Duration,
 ) -> Result<bool, ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -22,7 +25,12 @@ where
     {
         return Ok(false);
     }
-    let Some(request) = Request::decode(command.payload) else {
+    let tiered = session
+        .selected_capabilities
+        .contains(CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1);
+    let Some(TieredRequest { request, .. }) =
+        TieredRequest::decode_selected(tiered, command.payload)
+    else {
         return Ok(false);
     };
     let Some(delay) = authority
@@ -30,6 +38,7 @@ where
             session.actor,
             use_command(session, command.command_id),
             request,
+            queued_for,
         )
         .await
     else {
@@ -38,7 +47,7 @@ where
     if delay.is_zero() {
         return Ok(false);
     }
-    let due = tokio::time::Instant::now() + delay;
+    let due = tokio::time::Instant::now() + delay.saturating_sub(queued_for);
     // A recovered command may already have committed. Never replace durable truth.
     if !matches!(
         authority
@@ -59,7 +68,16 @@ where
         return Ok(false);
     }
     loop {
-        if let Some((frame, _)) = session.held.front() {
+        if let Some((frame, _, _)) = session.held.front() {
+            match command_session_matches(frame, session.admitted, session.require_session_binding)
+            {
+                Ok(false) => {
+                    session.held.pop_front();
+                    continue;
+                }
+                Ok(true) => {}
+                Err(error) => return Err(close(stream, session.admitted, error).await),
+            }
             let replaced = tokio::time::Instant::now() < due
                 && is_replacement(authority, session, command.command_id, frame).await;
             if !replaced {
@@ -75,6 +93,11 @@ where
             tokio::time::sleep_until(due).await;
             return Ok(false);
         };
+        match command_session_matches(&frame, session.admitted, session.require_session_binding) {
+            Ok(false) => continue,
+            Ok(true) => {}
+            Err(error) => return Err(close(stream, session.admitted, error).await),
+        }
         if let Ok(envelope) = decode_wire_envelope(&frame)
             && envelope.connection_generation() == session.generation
             && envelope.message_type() == MessageType::LivenessAck
@@ -87,11 +110,12 @@ where
             }
             continue;
         }
-        let replaced = tokio::time::Instant::now() < due
+        let received_at = tokio::time::Instant::now();
+        let replaced = received_at < due
             && is_replacement(authority, session, command.command_id, &frame).await;
         // One lookahead, using the existing bounded held-frame queue. Other commands,
         // invalid frames and jewelry retain their order and cannot replace this action.
-        session.held.push_back((frame, false));
+        session.held.push_back((frame, false, received_at));
         if !replaced {
             tokio::time::sleep_until(due).await;
         }
@@ -113,6 +137,12 @@ async fn is_replacement<A: FreshAdmissionAuthority>(
     current: u64,
     frame: &[u8],
 ) -> bool {
+    if !matches!(
+        command_session_matches(frame, session.admitted, session.require_session_binding),
+        Ok(true)
+    ) {
+        return false;
+    }
     let Ok(envelope) = decode_wire_envelope(frame) else {
         return false;
     };
@@ -124,7 +154,12 @@ async fn is_replacement<A: FreshAdmissionAuthority>(
     {
         return false;
     }
-    let Some(request) = Request::decode(command.payload) else {
+    let tiered = session
+        .selected_capabilities
+        .contains(CAPABILITY_HOTKEY_EQUIP_UPGRADE_TIER_V1);
+    let Some(TieredRequest { request, .. }) =
+        TieredRequest::decode_selected(tiered, command.payload)
+    else {
         return false;
     };
     authority
@@ -132,6 +167,7 @@ async fn is_replacement<A: FreshAdmissionAuthority>(
             session.actor,
             use_command(session, command.command_id),
             request,
+            std::time::Duration::ZERO,
         )
         .await
         .is_some()

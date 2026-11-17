@@ -11,6 +11,8 @@ use sqlx::Row;
 
 mod purchased_kit;
 pub(crate) use purchased_kit::record_purchased_kit;
+mod catalogue;
+pub use catalogue::{HouseFurnitureCandidate, HouseFurnitureCatalogue};
 
 pub struct HouseWrapCommand {
     pub house: HouseId,
@@ -40,6 +42,14 @@ impl DurabilityRoot {
         } = input;
         if fence.runtime_scope != house.runtime_scope()? {
             return Ok(Reply::Refused(Refusal::NotInHouse));
+        }
+        // Crystal src/items/decay/decay.cpp:29-54 runs deadlines independently
+        // of map observers. Resolve the current phase before choosing wrapability.
+        if !self
+            .settle_house_timed_decorations(node, fence, house.clone())
+            .await?
+        {
+            return Ok(Reply::Refused(Refusal::Stale));
         }
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {

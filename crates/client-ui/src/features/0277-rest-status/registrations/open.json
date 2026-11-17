@@ -1,0 +1,9 @@
+{
+  "mechanic": "0277-rest-status",
+  "kind": "keybindings",
+  "id": "0277-rest-status-open",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "CTRL+ALT+SHIFT+R",
+  "entry": "input.rs::open_key"
+}

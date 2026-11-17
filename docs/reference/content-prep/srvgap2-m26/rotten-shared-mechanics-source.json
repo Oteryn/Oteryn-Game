@@ -1,0 +1,27 @@
+{
+  "reference_scope": "OTS_HYPOTHESIS_ONLY",
+  "repository": "https://github.com/zimbadev/crystalserver",
+  "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "path": "data-global/scripts/quests/rotten_blood_quest/rotten_blood_boss_mechanics.lua",
+  "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/rotten_blood_quest/rotten_blood_boss_mechanics.lua",
+  "sha256": "1743fdb5bc1ea75932af6dcfe8ebd13e0f6e4529d8af09dc34e47c289183773d",
+  "checked_facts": [
+    {
+      "lines": "3-24",
+      "fact": "Source configurations include separate Ichgahal and Murcion centres and spectator rectangles."
+    },
+    {
+      "lines": "28-37,53-83",
+      "fact": "Bloodjaw target uses max(persisted taints or zero, active CONDITION_BAKRAGORE subid or zero) over same-floor players within 15 of the configured centre; target thresholds are 5, 8 and 9, capped at five bloodjaws."
+    },
+    {
+      "lines": "85-112,323-336",
+      "fact": "Current bloodjaw population is counted within 15 of the current boss; paused Game storage equal to one suppresses spawning."
+    },
+    {
+      "lines": "174-194",
+      "fact": "Mechanics-disabled state is a per-boss script table flag; an absent state returns false."
+    }
+  ],
+  "implementation_note": "This retained source is evidence for the remaining native room integration. The existing Quest model regular-taint counter is not assumed to equal an active Bakragore-condition subid."
+}

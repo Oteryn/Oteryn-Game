@@ -262,6 +262,67 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
     stack_count: bool,
     view: &mut SessionItemView,
 ) -> ItemMoveStep {
+    item_move_inner(
+        authority,
+        actor,
+        command,
+        payload,
+        selection,
+        stack_count,
+        false,
+        view,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) async fn item_move_with_house_capacity<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    command: UseCommand,
+    payload: &[u8],
+    selection: ItemMoveSelection,
+    stack_count: bool,
+    house_capacity_v2: bool,
+    view: &mut SessionItemView,
+) -> ItemMoveStep {
+    if house_capacity_v2 {
+        item_move_inner(
+            authority,
+            actor,
+            command,
+            payload,
+            selection,
+            stack_count,
+            true,
+            view,
+        )
+        .await
+    } else {
+        item_move(
+            authority,
+            actor,
+            command,
+            payload,
+            selection,
+            stack_count,
+            view,
+        )
+        .await
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn item_move_inner<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    command: UseCommand,
+    payload: &[u8],
+    selection: ItemMoveSelection,
+    stack_count: bool,
+    house_capacity_v2: bool,
+    view: &mut SessionItemView,
+) -> ItemMoveStep {
     let decoded = if stack_count {
         decode_item_move_intent_with_count_for(payload, selection)
     } else {
@@ -323,7 +384,15 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
             None => {
                 let target = LoopTarget::MainBackpack;
                 return loop_move(
-                    authority, actor, command, selection, source, target, count, view,
+                    authority,
+                    actor,
+                    command,
+                    selection,
+                    source,
+                    target,
+                    count,
+                    house_capacity_v2,
+                    view,
                 )
                 .await;
             }
@@ -338,14 +407,30 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
                 LoopTarget::Container(container)
             };
             return loop_move(
-                authority, actor, command, selection, source, target, count, view,
+                authority,
+                actor,
+                command,
+                selection,
+                source,
+                target,
+                count,
+                house_capacity_v2,
+                view,
             )
             .await;
         }
         ItemMoveDestination::Ground(at) => {
             let target = LoopTarget::Ground(at);
             return loop_move(
-                authority, actor, command, selection, source, target, count, view,
+                authority,
+                actor,
+                command,
+                selection,
+                source,
+                target,
+                count,
+                house_capacity_v2,
+                view,
             )
             .await;
         }
@@ -375,8 +460,8 @@ fn admitted(outcome: ItemMoveOutcome, selection: ItemMoveSelection) -> ItemMoveO
 }
 
 /// ITEM-LOOP-1 / MAP-PICKUP-1: a durable item or eligible base-map entry into the carried
-/// tree through the loop owner. Base-to-Ground, equipped sources and the main
-/// backpack itself remain unsupported.
+/// tree or Ground through the loop owner. The map owner rechecks each base source;
+/// equipped sources and the main backpack itself remain unsupported.
 #[allow(clippy::too_many_arguments)]
 async fn loop_move<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -386,6 +471,7 @@ async fn loop_move<A: FreshAdmissionAuthority>(
     source: ItemKey,
     target: LoopTarget,
     count: Option<u32>,
+    house_capacity_v2: bool,
     view: &mut SessionItemView,
 ) -> ItemMoveStep {
     let supported = matches!(source, ItemKey::Instance(_))
@@ -400,7 +486,9 @@ async fn loop_move<A: FreshAdmissionAuthority>(
             (source, target),
             (
                 ItemKey::MapBase { .. },
-                LoopTarget::MainBackpack | LoopTarget::Container(ItemKey::Instance(_))
+                LoopTarget::MainBackpack
+                    | LoopTarget::Container(ItemKey::Instance(_))
+                    | LoopTarget::Ground(_)
             )
         );
     if !supported || view.is_main_backpack(&source) || view.equipped_slot(&source).is_some() {
@@ -411,7 +499,10 @@ async fn loop_move<A: FreshAdmissionAuthority>(
         count,
         target,
     };
-    match authority.move_loop_item(actor, command, request).await {
+    match authority
+        .move_loop_item_with_house_capacity(actor, command, request, house_capacity_v2)
+        .await
+    {
         LoopMoveResult::Committed => moved(authority, actor, command, view).await,
         LoopMoveResult::TooFar => ItemMoveStep::Result(ItemMoveOutcome::TooFar, Vec::new()),
         LoopMoveResult::Unknown => ItemMoveStep::Disconnect,

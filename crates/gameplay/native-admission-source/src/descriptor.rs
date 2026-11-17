@@ -16,6 +16,13 @@ pub const PEER_CERT_DER_MAX: usize = 4096;
 pub const PEER_CERT_DER_AGGREGATE_MAX: usize = 16384;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Operation {
+    ListPendingCharacterCommandsV2,
+    ReadCharacterCommandIntentV2,
+    PublishCharacterCommandReceiptV2,
+    PublishCharacterServiceStateV2,
+    PublishCharacterServiceWatermarkV2,
+    PublishGameJournalRecordV1,
+    ReadGameJournalCursorV1,
     ReadAccountSecurityV1,
     ReadFreshSigningTrustV1,
     ReadRecoveryAccountSecurityV2,
@@ -40,6 +47,11 @@ pub enum Operation {
     ReadCharacterCommandIntentV1,
     /// Character command receipt publication (same contract, §4.3).
     PublishCharacterCommandReceiptV1,
+    /// Internal CC v2 closure receipt bound; the wire path and operation stay CC v1.
+    PublishAccountClosureCommandReceiptV2,
+    ReadAccountClosureLifecycleV1,
+    PublishAccountClosureV1,
+    PublishAccountClosureWatermarkV1,
     ListPendingStoreOperationsV1,
     ReadStoreOperationIntentV1,
     PublishStoreDeliveryReceiptV1,
@@ -53,12 +65,46 @@ pub enum Operation {
     PublishCharacterProfileV1,
     /// World online snapshot (same contract, §4.6).
     PublishWorldOnlineV1,
+    PublishWorldTotalsV1,
+    PublishCharacterDeathsV2,
+    PublishGuildV2,
+    PublishHouseV2,
+    PublishCharacterSkillsV2,
+    PublishCharacterAchievementsV2,
+    PublishCharacterEquipmentV2,
+    PublishCharacterOutfitV2,
+    PublishCharacterOnlineSessionV2,
+    PublishWorldDailyKillsV2,
+    PublishPublicProjectionWatermarkV2,
     /// Public projection liveness watermark (same contract, §5.1).
     PublishPublicProjectionWatermarkV1,
+    PublishGameRestoreNoticeV1,
+    ListPendingBazaarCommandsV1,
+    ReadBazaarCommandIntentV1,
+    ListBazaarCommandStatesV1,
+    PublishBazaarTransferabilityV1,
+    PublishBazaarListingStatusV1,
+    PublishBazaarWatermarkV1,
+    /// Internal transport bound for the accepted CC v2 extension. Same path,
+    /// authenticated Character receipt identity and wire operation as CC v1.
+    PublishBazaarCharacterCommandReceiptV2,
+    PublishWorldEventOutcomeV1,
+    PublishGuildSeasonV1,
+    PublishLeagueWatermarkV1,
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
         match self {
+            Self::PublishGameJournalRecordV1 => "/internal/v1/playerdata/journal/records",
+            Self::ReadGameJournalCursorV1 => "/internal/v1/playerdata/journal/cursor",
+            Self::ListPendingCharacterCommandsV2 => super::character_services_v2::PENDING_PATH,
+            Self::ReadCharacterCommandIntentV2 => super::character_services_v2::READ_PATH,
+            Self::PublishCharacterCommandReceiptV2 => super::character_services_v2::RECEIPT_PATH,
+            Self::PublishCharacterServiceStateV2 => super::character_services_v2::STATE_PATH,
+            Self::PublishCharacterServiceWatermarkV2 => {
+                super::character_services_v2::WATERMARK_PATH
+            }
+
             // The four closed evidence tags share the accepted Platform endpoint.
             // Operation identity remains bound by the existing request/response codec.
             Self::ReadAccountSecurityV1
@@ -78,7 +124,13 @@ impl Operation {
             Self::ReportScopeRevocationV1 => super::scope_assignment::REVOCATION_PATH,
             Self::ListPendingCharacterCommandsV1 => super::character_commands::PENDING_PATH,
             Self::ReadCharacterCommandIntentV1 => super::character_commands::READ_PATH,
-            Self::PublishCharacterCommandReceiptV1 => super::character_commands::RECEIPT_PATH,
+            Self::PublishCharacterCommandReceiptV1
+            | Self::PublishAccountClosureCommandReceiptV2 => {
+                super::character_commands::RECEIPT_PATH
+            }
+            Self::ReadAccountClosureLifecycleV1 => super::account_closure::LIFECYCLE_PATH,
+            Self::PublishAccountClosureV1 => super::account_closure::PATH,
+            Self::PublishAccountClosureWatermarkV1 => super::account_closure::WATERMARK_PATH,
             Self::ListPendingStoreOperationsV1 => super::store::PENDING_PATH,
             Self::ReadStoreOperationIntentV1 => super::store::READ_PATH,
             Self::PublishStoreDeliveryReceiptV1 => super::store::RECEIPT_PATH,
@@ -89,7 +141,33 @@ impl Operation {
             Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_PATH,
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_PATH,
             Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_PATH,
+            Self::PublishWorldTotalsV1 => super::public_projections::world_totals::PATH,
+            Self::PublishCharacterDeathsV2 => "/internal/v2/game-public/character-deaths",
+            Self::PublishGuildV2 => "/internal/v2/game-public/guild",
+            Self::PublishHouseV2 => "/internal/v2/game-public/house",
+            Self::PublishCharacterSkillsV2 => "/internal/v2/game-public/character-skills",
+            Self::PublishCharacterAchievementsV2 => {
+                "/internal/v2/game-public/character-achievements"
+            }
+            Self::PublishCharacterEquipmentV2 => "/internal/v2/game-public/character-equipment",
+            Self::PublishCharacterOutfitV2 => "/internal/v2/game-public/character-outfit",
+            Self::PublishWorldDailyKillsV2 => "/internal/v2/game-public/world-daily-kills",
+            Self::PublishCharacterOnlineSessionV2 => {
+                "/internal/v2/game-public/character-online-session"
+            }
+            Self::PublishPublicProjectionWatermarkV2 => "/internal/v2/game-public/watermark",
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_PATH,
+            Self::PublishGameRestoreNoticeV1 => super::restore_notice::PATH,
+            Self::ListPendingBazaarCommandsV1 => "/internal/v1/bazaar/commands/pending",
+            Self::ReadBazaarCommandIntentV1 => "/internal/v1/bazaar/commands/read",
+            Self::ListBazaarCommandStatesV1 => "/internal/v1/bazaar/commands/reconcile",
+            Self::PublishBazaarTransferabilityV1 => "/internal/v1/bazaar/transferability",
+            Self::PublishBazaarListingStatusV1 => "/internal/v1/bazaar/status",
+            Self::PublishBazaarWatermarkV1 => "/internal/v1/bazaar/watermark",
+            Self::PublishBazaarCharacterCommandReceiptV2 => super::character_commands::RECEIPT_PATH,
+            Self::PublishWorldEventOutcomeV1 => "/internal/v1/game-public/world-event-outcome",
+            Self::PublishGuildSeasonV1 => "/internal/v1/game-public/guild-season",
+            Self::PublishLeagueWatermarkV1 => "/internal/v1/game-public/league-watermark",
         }
     }
     /// Request body cap: `NSRC-HTTP-REQUEST-BODY-BYTES`, or `NRS-REPORT-BYTES`
@@ -100,7 +178,16 @@ impl Operation {
     /// public projections.
     pub const fn request_bytes_max(self) -> usize {
         match self {
+            Self::PublishGameJournalRecordV1 => 65536,
+            Self::ReadGameJournalCursorV1 => 1024,
             Self::ReadPremiumSnapshotV1 => 256,
+            Self::ListPendingBazaarCommandsV1
+            | Self::ReadBazaarCommandIntentV1
+            | Self::ListBazaarCommandStatesV1
+            | Self::PublishBazaarWatermarkV1 => 512,
+            Self::PublishBazaarTransferabilityV1 => super::bazaar::transport::TRANSFERABILITY_BYTES,
+            Self::PublishBazaarListingStatusV1 => super::bazaar::transport::STATUS_BYTES,
+            Self::PublishBazaarCharacterCommandReceiptV2 => super::bazaar::transport::RECEIPT_BYTES,
             Self::ReportRuntimeStatusV1 => super::runtime_status::REPORT_BYTES,
             Self::PublishAccountCharactersV1 => super::account_characters::SNAPSHOT_BYTES,
             Self::PublishProjectionWatermarkV1 => super::account_characters::WATERMARK_BYTES,
@@ -112,6 +199,10 @@ impl Operation {
             Self::PublishCharacterCommandReceiptV1 => {
                 super::character_commands::RECEIPT_REQUEST_BYTES
             }
+            Self::PublishAccountClosureCommandReceiptV2 => super::account_closure::RECEIPT_BYTES,
+            Self::ReadAccountClosureLifecycleV1 => 512,
+            Self::PublishAccountClosureV1 => super::account_closure::SNAPSHOT_BYTES,
+            Self::PublishAccountClosureWatermarkV1 => super::account_closure::WATERMARK_BYTES,
             Self::ListPendingStoreOperationsV1
             | Self::ReadStoreOperationIntentV1
             | Self::ReadStoreBalanceV1
@@ -122,7 +213,27 @@ impl Operation {
             Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_BYTES,
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_BYTES,
             Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_BYTES,
+            Self::PublishWorldTotalsV1 => super::public_projections::world_totals::REQUEST_BYTES,
+            Self::PublishCharacterDeathsV2 => 32_768,
+            Self::PublishGuildV2 => 393_216,
+            Self::PublishHouseV2 => 2_048,
+            Self::PublishCharacterSkillsV2 => 4_096,
+            Self::PublishCharacterAchievementsV2 => 262_144,
+            Self::PublishCharacterEquipmentV2 => 8_192,
+            Self::PublishCharacterOutfitV2 => 2_048,
+            Self::PublishWorldDailyKillsV2 => 2_048,
+            Self::PublishCharacterOnlineSessionV2 => 2_048,
+            Self::PublishPublicProjectionWatermarkV2 => 512,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_BYTES,
+            Self::PublishGameRestoreNoticeV1 => super::restore_notice::NOTICE_BYTES,
+            Self::ListPendingCharacterCommandsV2 => 512,
+            Self::ReadCharacterCommandIntentV2 => 512,
+            Self::PublishCharacterCommandReceiptV2 => 1024,
+            Self::PublishCharacterServiceStateV2 => 2048,
+            Self::PublishCharacterServiceWatermarkV2 => 512,
+            Self::PublishWorldEventOutcomeV1 => super::world_event_outcomes::EVENT_BYTES,
+            Self::PublishGuildSeasonV1 => super::world_event_outcomes::SEASON_BYTES,
+            Self::PublishLeagueWatermarkV1 => super::world_event_outcomes::WATERMARK_BYTES,
             Self::ReadAccountSecurityV1
             | Self::ReadFreshSigningTrustV1
             | Self::ReadRecoveryAccountSecurityV2

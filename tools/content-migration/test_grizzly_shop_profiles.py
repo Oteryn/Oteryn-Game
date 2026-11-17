@@ -2,13 +2,109 @@
 import copy
 import hashlib
 import json
+from pathlib import Path
+import subprocess
+import tempfile
 import unittest
+from unittest import mock
 import xml.etree.ElementTree as ET
 
 import grizzly_shop_profiles as tool
 
 
 class GrizzlyShopProfiles(unittest.TestCase):
+    def test_custody_qualification_requires_exact_retained_profile_and_preserves_other_facts(self):
+        key = 'oteryn:item.tibia.i7393'
+        profile = next(r for r in self.packet['records']
+                       if r['production_definition']['production_key'] == key)
+        definition = {'identity': {'key': key}, 'materializable': False,
+                      'stack_class': 'Unknown', 'semantics': {
+                          'physical': copy.deepcopy(profile['semantics']['physical']),
+                          'stack': {'state': 'UNKNOWN'}, 'container': {'state': 'UNKNOWN'}}}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            relative = 'content/items/definitions/items-00000-00499.json'
+            shard = root / relative
+            shard.parent.mkdir(parents=True)
+            shard.write_text(json.dumps({'records': [{'definition': definition}]}))
+            packet = {'catalogue': {'path': tool.CATALOGUE, 'sha256': 'catalogue'},
+                      'canonical_inputs': [{'path': relative,
+                                            'sha256': hashlib.sha256(shard.read_bytes()).hexdigest()}],
+                      'records': [profile], 'rejected': []}
+            path = root / tool.PATH
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps(packet))
+            git = ['git', '-C', str(root)]
+            subprocess.run(git + ['init', '-q'], check=True, capture_output=True)
+            subprocess.run(git + ['add', '.'], check=True, capture_output=True)
+            subprocess.run(git + ['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid',
+                                 '-c', 'commit.gpgsign=false', 'commit', '-qm', 'source base'],
+                           check=True, capture_output=True)
+            definition['materializable'] = profile['admission']['materializable']
+            definition['stack_class'] = profile['admission']['stack_class']
+            for group in ('stack', 'container'):
+                definition['semantics'][group] = copy.deepcopy(profile['semantics'][group])
+            with mock.patch.object(tool, 'selected', return_value=({key}, 'catalogue')):
+                shard.write_text(json.dumps({'records': [{'definition': definition}]}))
+                with self.assertRaisesRegex(ValueError, 'SELECTED_CANONICAL_DRIFT'):
+                    tool.refresh_canonical_inputs(root=root)
+                refreshed = tool.refresh_canonical_inputs(root=root, qualify_custody=True)
+                self.assertEqual(refreshed['records'], packet['records'])
+                definition['semantics']['physical']['value']['weight']['value'] += 1
+                shard.write_text(json.dumps({'records': [{'definition': definition}]}))
+                with self.assertRaisesRegex(ValueError, 'SELECTED_CANONICAL_DRIFT'):
+                    tool.refresh_canonical_inputs(root=root, qualify_custody=True)
+
+    def test_hash_refresh_requires_unchanged_shop_facts_and_an_exact_git_base(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            relative = 'content/items/definitions/items-00000-00499.json'
+            shard = root / relative
+            shard.parent.mkdir(parents=True)
+            shop = {'definition': {'identity': {'key': 'oteryn:item.tibia.i5907'}, 'weight': 200}}
+            other = {'definition': {'identity': {'key': 'oteryn:item.tibia.i33867'}, 'capacity': None}}
+            original = {'records': [shop, other]}
+            shard.write_text(json.dumps(original))
+            git = ['git', '-C', str(root)]
+            subprocess.run(git + ['init', '-q'], check=True, capture_output=True)
+            packet = {'catalogue': {'path': tool.CATALOGUE, 'sha256': 'catalogue'},
+                      'canonical_inputs': [{'path': relative,
+                                            'sha256': hashlib.sha256(shard.read_bytes()).hexdigest()}],
+                      'records': ['retained source evidence'], 'rejected': ['retained refusals']}
+            path = root / tool.PATH
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps(packet))
+            subprocess.run(git + ['add', relative, tool.PATH], check=True, capture_output=True)
+            commit = git + ['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid',
+                            '-c', 'commit.gpgsign=false', 'commit', '-qm']
+            subprocess.run(commit + ['canonical base'], check=True, capture_output=True)
+            other['definition']['capacity'] = 48
+            shard.write_text(json.dumps(original))
+            with mock.patch.object(tool, 'selected', return_value=({'oteryn:item.tibia.i5907'}, 'catalogue')):
+                refreshed = tool.refresh_canonical_inputs(root=root)
+                self.assertEqual(refreshed['records'], packet['records'])
+                self.assertEqual(refreshed['rejected'], packet['rejected'])
+                self.assertEqual(refreshed['canonical_inputs'][0]['sha256'],
+                                 hashlib.sha256(shard.read_bytes()).hexdigest())
+                path.write_text(json.dumps(refreshed))
+                self.assertEqual(tool.refresh_canonical_inputs(root=root), refreshed)
+                changed_capture = copy.deepcopy(refreshed)
+                changed_capture['records'] = ['unreviewed source evidence']
+                path.write_text(json.dumps(changed_capture))
+                with self.assertRaisesRegex(ValueError, 'SOURCE_CAPTURE_DRIFT'):
+                    tool.refresh_canonical_inputs(root=root)
+                path.write_text(json.dumps(packet))
+                shop['definition']['weight'] = 201
+                shard.write_text(json.dumps(original))
+                with self.assertRaisesRegex(ValueError, 'SELECTED_CANONICAL_DRIFT'):
+                    tool.refresh_canonical_inputs(root=root)
+                packet['canonical_inputs'][0]['sha256'] = '0' * 64
+                path.write_text(json.dumps(packet))
+                subprocess.run(git + ['add', tool.PATH], check=True, capture_output=True)
+                subprocess.run(commit + ['invalid baseline descriptor'], check=True, capture_output=True)
+                with self.assertRaisesRegex(ValueError, 'CANONICAL_BASE_DRIFT'):
+                    tool.refresh_canonical_inputs(root=root)
+
     def setUp(self):
         self.packet = json.loads((tool.ROOT / tool.PATH).read_bytes())
         self.bindings = tool.source.binding_index(tool.source.BINDINGS.read_bytes())

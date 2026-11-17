@@ -359,6 +359,14 @@ impl ScopeRuntimeV1 {
         reservation: &mut ActivityTransferReservation,
     ) -> Result<Vec<ActivityTransferredActor>, CarrierError> {
         self.validate_activity_reservation(destination, reservation)?;
+        destination
+            .carrier
+            .tile_entry_counter
+            .checked_add(
+                u64::try_from(reservation.members.len())
+                    .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
+            )
+            .ok_or(CarrierError::PositionRevisionExhausted)?;
         // Remove owned companions in their original scope, through their existing
         // owner, without manufacturing combat deaths or transporting familiars.
         self.carrier
@@ -406,12 +414,15 @@ impl ScopeRuntimeV1 {
                 *game_session_id = Some(member.member.destination_session);
                 *committed = true;
                 *position = destination_position;
-                lifecycle.control_loss = None;
+                lifecycle.clear_control_loss()?;
                 spell_combat.reset_for_scope_handoff();
             } else {
                 unreachable!("exclusive transfer preflight proved every source player slot");
             }
             destination.carrier.slots[member.destination_index] = payload;
+            destination
+                .carrier
+                .install_next_tile_entry_order(member.destination_index);
             destination.carrier.attackers.push(PlayerAttackerEntry {
                 index: member.destination_index,
                 generation: fresh_actor.0.actor_local_generation.0,

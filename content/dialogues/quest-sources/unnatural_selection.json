@@ -1,0 +1,446 @@
+{
+  "quest": "unnatural_selection",
+  "source_repository_revision": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8",
+  "runtime_admission": false,
+  "entries": [
+    {
+      "npc_source_name": "lazaran",
+      "source_blob_sha256": "d8db5cea049607eba1f6b5dedcbdcc4e048a28c6184ad57dd8e739d96f8f2402",
+      "source_lua": "local internalNpcName = \"Lazaran\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 143,\n\tlookHead = 57,\n\tlookBody = 57,\n\tlookLegs = 57,\n\tlookFeet = 57,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal TheNewFrontier = Storage.Quest.U8_54.TheNewFrontier\n\tlocal UnnaturalSelection = Storage.Quest.U8_54.UnnaturalSelection\n\n\tif MsgContains(message, \"mission\") then\n\t\tif npcHandler:getTopic(playerId) == 0 and player:getStorageValue(TheNewFrontier.Questline) == 8 then\n\t\t\tnpcHandler:say(\"Me people wanting {peace}. No war with others. No war with {little men}. We few. We weak. Need {help}. We not wanting make {war}. No hurt.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 10)\n\t\telseif npcHandler:getTopic(playerId) == 12 then\n\t\t\tif player:getStorageValue(TheNewFrontier.Mission03) == 3 and player:getStorageValue(UnnaturalSelection.Questline) < 0 then\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Big problem we have! Skull of first leader gone. He ancestor of whole tribe but died long ago in war. We have keep his skull on our sacred place. ...\",\n\t\t\t\t\t\"Then one night, green men came with wolves... and one of wolves took skull and ran off chewing on it! We need back - many wisdom and power is in skull. Maybe they took to north fortress. But can be hard getting in. You try get our holy skull back?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tend\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 1 then\n\t\t\tnpcHandler:say(\"Oh! You found holy skull? In bone pile you found?! Thank Pandor you brought! Me can have it back?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"You brought back skull of first leader. Hero of tribe! But we more missions to do. ...\",\n\t\t\t\t\"Me and Ulala talk about land outside. We wanting to see more of land! Land over big water! But us no can leave tribe. No can cross water. Only way is skull of first leader. ...\",\n\t\t\t\t\"What holy skull sees, tribe sees. That we believe. Can you bring holy skull over big water and show places?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 3 then\n\t\t\tnpcHandler:say(\"You say you was to where sun is hot and burning? And where trees grow as high as mountain? And where Fasuon cries white tears? Me can't wait to see!! Can have holy skull back?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 4 then\n\t\t\tnpcHandler:say(\"We been weak for too long! We prepare for great hunt. But still need many doings! You can help us?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 13 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"You well did! Great hunt is under best signs now. We prepare weapons and paint faces and then go! ...\",\n\t\t\t\t\"No no, you no need to help us. But can prepare afterparty! Little men sent us stuff some time ago. Was strange water in there. Brown and stinky! But when we tried all tribe became veeeeeeery happy. ...\",\n\t\t\t\t\"Now brown water is gone and we sad! Can you bring POT of brown water for party after great hunt? Just bring to me and me trade for shiny treasure.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 14)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission06, 2) -- Questlog, Unnatural Selection Quest \"Mission 6: Firewater Burn\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 14 then\n\t\t\tnpcHandler:say(\"You bring us big pot of strange water from little men?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\tend\n\telseif MsgContains(message, \"peace\") then\n\t\tif npcHandler:getTopic(playerId) == 10 and player:getStorageValue(TheNewFrontier.Questline) == 8 then\n\t\t\tnpcHandler:say(\"Me people wanting peace. No war with others. No war with little men.\", npc, creature)\n\t\t\tplayer:setStorageValue(TheNewFrontier.Questline, 9)\n\t\t\tplayer:setStorageValue(TheNewFrontier.Mission03, 2) -- Questlog, The New Frontier Quest \"Mission 03: Strangers in the Night\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"help\") then\n\t\tnpcHandler:say(\"You mean you want help us?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 11)\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"You hero of our tribe if bring back holy skull!\", npc, creature)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 1)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission01, 1) -- Questlog, Unnatural Selection Quest \"Mission 1: Skulled\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tif player:removeItem(10159, 1) then\n\t\t\t\tnpcHandler:say(\"Me thank you much! All wisdom safe again now.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 2)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission01, 3) -- Questlog, Unnatural Selection Quest \"Mission 1: Skulled\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You do not have it!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\telseif npcHandler:getTopic(playerId) == 3 then\n\t\t\tnpcHandler:say(\"Here take holy skull. You bring where you think is good. See as much as possible! See where other people live!\", npc, creature)\n\t\t\tplayer:addItem(10159, 1)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 3)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission02, 1) -- Questlog, Unnatural Selection Quest \"Mission 2: All Around the World\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 4 then\n\t\t\tif player:getStorageValue(UnnaturalSelection.Mission02) == 12 and player:getItemCount(10159) >= 1 then\n\t\t\t\tnpcHandler:say(\"We make big ritual soon and learn much about world outside. Me thank you many times for teaching us world. Very wise and adventurous you are!\", npc, creature)\n\t\t\t\tplayer:removeItem(10159, 1)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 4)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission02, 13) -- Questlog, Unnatural Selection Quest \"Mission 2: All Around the World\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"The skull have not seen all yet!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\telseif npcHandler:getTopic(playerId) == 5 then\n\t\t\tnpcHandler:say(\"We need to calm and make happy gods. Best go to Ulala. She is priest of us and can tell what needs doing.\", npc, creature)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 5)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission03, 1) -- Questlog, Unnatural Selection Quest \"Mission 3: Dance Dance Evolution\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 6 then\n\t\t\tif player:removeItem(3465, 1, 3) then\n\t\t\t\tnpcHandler:say(\"We make big ritual soon and learn much about world outside. Me thank you many times for teaching us world. Very wise and adventurous you are!\", npc, creature)\n\t\t\t\tplayer:addItem(10198, 1)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 15)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission06, 3) -- Questlog, Unnatural Selection Quest \"Mission 6: Firewater Burn\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You do not have the brown strange water!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\telseif npcHandler:getTopic(playerId) == 11 then\n\t\t\tnpcHandler:say(\"Me have many small task, but also big {mission}. You say what want.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 12)\n\t\tend\n\telseif MsgContains(message, \"war\") then\n\t\tnpcHandler:say(\"Many mighty monster rule land. We fight. We lose. We flee to mountain to hide.\", npc, creature)\n\telseif MsgContains(message, \"little men\") then\n\t\tnpcHandler:say(\"We come and see little men. They like us, only very little. They having good weapon and armor, like the greens.\", npc, creature)\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Me greet. You no enemy of tribe.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source_lua_scope": "Complete original context for auditing only; scoped sections below are the quest-specific authoring input. Foreign branches remain excluded.",
+      "review_rows": [
+        {
+          "row_index": 164,
+          "step": "M1 Skulled: start"
+        },
+        {
+          "row_index": 166,
+          "step": "M1 Skulled: zwrot"
+        },
+        {
+          "row_index": 167,
+          "step": "M2 All Around the World: start"
+        },
+        {
+          "row_index": 179,
+          "step": "M2: zwrot czaszki"
+        },
+        {
+          "row_index": 180,
+          "step": "M3: skierowanie do Ulala"
+        },
+        {
+          "row_index": 205,
+          "step": "M6: zamówienie piwa"
+        },
+        {
+          "row_index": 206,
+          "step": "M6: nagroda"
+        }
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:52-178",
+          "line_start": 52,
+          "line_end": 178,
+          "source_sha256": "65af8bce2e9dbd9a38d74f27afff089ed4fcd770063d43a62de03164a1978ffe",
+          "guarded_source_lua": "local function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal TheNewFrontier = Storage.Quest.U8_54.TheNewFrontier\n\tlocal UnnaturalSelection = Storage.Quest.U8_54.UnnaturalSelection\n\n\tif MsgContains(message, \"mission\") then\n\t\tif npcHandler:getTopic(playerId) == 0 and player:getStorageValue(TheNewFrontier.Questline) == 8 then\n\t\t\tnpcHandler:say(\"Me people wanting {peace}. No war with others. No war with {little men}. We few. We weak. Need {help}. We not wanting make {war}. No hurt.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 10)\n\t\telseif npcHandler:getTopic(playerId) == 12 then\n\t\t\tif player:getStorageValue(TheNewFrontier.Mission03) == 3 and player:getStorageValue(UnnaturalSelection.Questline) < 0 then\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Big problem we have! Skull of first leader gone. He ancestor of whole tribe but died long ago in war. We have keep his skull on our sacred place. ...\",\n\t\t\t\t\t\"Then one night, green men came with wolves... and one of wolves took skull and ran off chewing on it! We need back - many wisdom and power is in skull. Maybe they took to north fortress. But can be hard getting in. You try get our holy skull back?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tend\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 1 then\n\t\t\tnpcHandler:say(\"Oh! You found holy skull? In bone pile you found?! Thank Pandor you brought! Me can have it back?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"You brought back skull of first leader. Hero of tribe! But we more missions to do. ...\",\n\t\t\t\t\"Me and Ulala talk about land outside. We wanting to see more of land! Land over big water! But us no can leave tribe. No can cross water. Only way is skull of first leader. ...\",\n\t\t\t\t\"What holy skull sees, tribe sees. That we believe. Can you bring holy skull over big water and show places?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 3 then\n\t\t\tnpcHandler:say(\"You say you was to where sun is hot and burning? And where trees grow as high as mountain? And where Fasuon cries white tears? Me can't wait to see!! Can have holy skull back?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 4 then\n\t\t\tnpcHandler:say(\"We been weak for too long! We prepare for great hunt. But still need many doings! You can help us?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 13 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"You well did! Great hunt is under best signs now. We prepare weapons and paint faces and then go! ...\",\n\t\t\t\t\"No no, you no need to help us. But can prepare afterparty! Little men sent us stuff some time ago. Was strange water in there. Brown and stinky! But when we tried all tribe became veeeeeeery happy. ...\",\n\t\t\t\t\"Now brown water is gone and we sad! Can you bring POT of brown water for party after great hunt? Just bring to me and me trade for shiny treasure.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 14)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission06, 2) -- Questlog, Unnatural Selection Quest \"Mission 6: Firewater Burn\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 14 then\n\t\t\tnpcHandler:say(\"You bring us big pot of strange water from little men?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\tend\n\telseif MsgContains(message, \"peace\") then\n\t\tif npcHandler:getTopic(playerId) == 10 and player:getStorageValue(TheNewFrontier.Questline) == 8 then\n\t\t\tnpcHandler:say(\"Me people wanting peace. No war with others. No war with little men.\", npc, creature)\n\t\t\tplayer:setStorageValue(TheNewFrontier.Questline, 9)\n\t\t\tplayer:setStorageValue(TheNewFrontier.Mission03, 2) -- Questlog, The New Frontier Quest \"Mission 03: Strangers in the Night\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"help\") then\n\t\tnpcHandler:say(\"You mean you want help us?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 11)\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"You hero of our tribe if bring back holy skull!\", npc, creature)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 1)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission01, 1) -- Questlog, Unnatural Selection Quest \"Mission 1: Skulled\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tif player:removeItem(10159, 1) then\n\t\t\t\tnpcHandler:say(\"Me thank you much! All wisdom safe again now.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 2)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission01, 3) -- Questlog, Unnatural Selection Quest \"Mission 1: Skulled\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You do not have it!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\telseif npcHandler:getTopic(playerId) == 3 then\n\t\t\tnpcHandler:say(\"Here take holy skull. You bring where you think is good. See as much as possible! See where other people live!\", npc, creature)\n\t\t\tplayer:addItem(10159, 1)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 3)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission02, 1) -- Questlog, Unnatural Selection Quest \"Mission 2: All Around the World\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 4 then\n\t\t\tif player:getStorageValue(UnnaturalSelection.Mission02) == 12 and player:getItemCount(10159) >= 1 then\n\t\t\t\tnpcHandler:say(\"We make big ritual soon and learn much about world outside. Me thank you many times for teaching us world. Very wise and adventurous you are!\", npc, creature)\n\t\t\t\tplayer:removeItem(10159, 1)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 4)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission02, 13) -- Questlog, Unnatural Selection Quest \"Mission 2: All Around the World\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"The skull have not seen all yet!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\telseif npcHandler:getTopic(playerId) == 5 then\n\t\t\tnpcHandler:say(\"We need to calm and make happy gods. Best go to Ulala. She is priest of us and can tell what needs doing.\", npc, creature)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 5)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission03, 1) -- Questlog, Unnatural Selection Quest \"Mission 3: Dance Dance Evolution\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 6 then\n\t\t\tif player:removeItem(3465, 1, 3) then\n\t\t\t\tnpcHandler:say(\"We make big ritual soon and learn much about world outside. Me thank you many times for teaching us world. Very wise and adventurous you are!\", npc, creature)\n\t\t\t\tplayer:addItem(10198, 1)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 15)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission06, 3) -- Questlog, Unnatural Selection Quest \"Mission 6: Firewater Burn\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You do not have the brown strange water!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\telseif npcHandler:getTopic(playerId) == 11 then\n\t\t\tnpcHandler:say(\"Me have many small task, but also big {mission}. You say what want.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 12)\n\t\tend\n\telseif MsgContains(message, \"war\") then\n\t\tnpcHandler:say(\"Many mighty monster rule land. We fight. We lose. We flee to mountain to hide.\", npc, creature)\n\telseif MsgContains(message, \"little men\") then\n\t\tnpcHandler:say(\"We come and see little men. They like us, only very little. They having good weapon and armor, like the greens.\", npc, creature)\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Me greet. You no enemy of tribe.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 63,
+              "lua_literal": "\"mission\"",
+              "decoded_text": "mission",
+              "text_sha256": "ceb00a91525da64fb171b103ae30ef3b817fa3bc78ecde99b884eedbe9131003"
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"Me people wanting {peace}. No war with others. No war with {little men}. We few. We weak. Need {help}. We not wanting make {war}. No hurt.\"",
+              "decoded_text": "Me people wanting {peace}. No war with others. No war with {little men}. We few. We weak. Need {help}. We not wanting make {war}. No hurt.",
+              "text_sha256": "c20772cf0b013a7eb9eefc0e697b74eaee9869659346d676c843e47d8601f1ad"
+            },
+            {
+              "line": 70,
+              "lua_literal": "\"Big problem we have! Skull of first leader gone. He ancestor of whole tribe but died long ago in war. We have keep his skull on our sacred place. ...\"",
+              "decoded_text": "Big problem we have! Skull of first leader gone. He ancestor of whole tribe but died long ago in war. We have keep his skull on our sacred place. ...",
+              "text_sha256": "5e04a9757930601d874e4ecf6a13b9b197ad5fcce1b981eb4f4531e3795e707d"
+            },
+            {
+              "line": 71,
+              "lua_literal": "\"Then one night, green men came with wolves... and one of wolves took skull and ran off chewing on it! We need back - many wisdom and power is in skull. Maybe they took to north fortress. But can be hard getting in. You try get our holy skull back?\"",
+              "decoded_text": "Then one night, green men came with wolves... and one of wolves took skull and ran off chewing on it! We need back - many wisdom and power is in skull. Maybe they took to north fortress. But can be hard getting in. You try get our holy skull back?",
+              "text_sha256": "f5e84076512bfd82f264758074ff7064ee8a0c4f6cbf6ae00c0dceb84a6ca91c"
+            },
+            {
+              "line": 76,
+              "lua_literal": "\"Oh! You found holy skull? In bone pile you found?! Thank Pandor you brought! Me can have it back?\"",
+              "decoded_text": "Oh! You found holy skull? In bone pile you found?! Thank Pandor you brought! Me can have it back?",
+              "text_sha256": "9b9d6956e551c3b53d0740dba8fcbf368287f7360499d578278228cb979a5699"
+            },
+            {
+              "line": 80,
+              "lua_literal": "\"You brought back skull of first leader. Hero of tribe! But we more missions to do. ...\"",
+              "decoded_text": "You brought back skull of first leader. Hero of tribe! But we more missions to do. ...",
+              "text_sha256": "d2adc0f5de6378a17570ccd68131fd53de210544be9873fb8fed57a030b62cf4"
+            },
+            {
+              "line": 81,
+              "lua_literal": "\"Me and Ulala talk about land outside. We wanting to see more of land! Land over big water! But us no can leave tribe. No can cross water. Only way is skull of first leader. ...\"",
+              "decoded_text": "Me and Ulala talk about land outside. We wanting to see more of land! Land over big water! But us no can leave tribe. No can cross water. Only way is skull of first leader. ...",
+              "text_sha256": "dc66de1902898101508da482b90b2790794aa9b32eb0ce154f19aea37f3a6ddb"
+            },
+            {
+              "line": 82,
+              "lua_literal": "\"What holy skull sees, tribe sees. That we believe. Can you bring holy skull over big water and show places?\"",
+              "decoded_text": "What holy skull sees, tribe sees. That we believe. Can you bring holy skull over big water and show places?",
+              "text_sha256": "c7d1312dc241b17b1fbc384b937741d728bfb9e8b3c63cd9999e3b5458dfa0c9"
+            },
+            {
+              "line": 86,
+              "lua_literal": "\"You say you was to where sun is hot and burning? And where trees grow as high as mountain? And where Fasuon cries white tears? Me can't wait to see!! Can have holy skull back?\"",
+              "decoded_text": "You say you was to where sun is hot and burning? And where trees grow as high as mountain? And where Fasuon cries white tears? Me can't wait to see!! Can have holy skull back?",
+              "text_sha256": "5d36b225a01fc66572f37163ed3f6ea3f1580b93d3a3293c778e5161d4c8dd83"
+            },
+            {
+              "line": 89,
+              "lua_literal": "\"We been weak for too long! We prepare for great hunt. But still need many doings! You can help us?\"",
+              "decoded_text": "We been weak for too long! We prepare for great hunt. But still need many doings! You can help us?",
+              "text_sha256": "d1f5a694982fb8ca0b537f08cf9bbde7bb30f56cca6ee790aba73b0cefd28c62"
+            },
+            {
+              "line": 93,
+              "lua_literal": "\"You well did! Great hunt is under best signs now. We prepare weapons and paint faces and then go! ...\"",
+              "decoded_text": "You well did! Great hunt is under best signs now. We prepare weapons and paint faces and then go! ...",
+              "text_sha256": "317d74a32822bed66ddd830c151871f9f96d1e6b52e8b62fd1081cc0edde8543"
+            },
+            {
+              "line": 94,
+              "lua_literal": "\"No no, you no need to help us. But can prepare afterparty! Little men sent us stuff some time ago. Was strange water in there. Brown and stinky! But when we tried all tribe became veeeeeeery happy. ...\"",
+              "decoded_text": "No no, you no need to help us. But can prepare afterparty! Little men sent us stuff some time ago. Was strange water in there. Brown and stinky! But when we tried all tribe became veeeeeeery happy. ...",
+              "text_sha256": "496fc8ae20f22451b3f72967a731e0b659f6a12c6e44ae369586c49a2acba3fc"
+            },
+            {
+              "line": 95,
+              "lua_literal": "\"Now brown water is gone and we sad! Can you bring POT of brown water for party after great hunt? Just bring to me and me trade for shiny treasure.\"",
+              "decoded_text": "Now brown water is gone and we sad! Can you bring POT of brown water for party after great hunt? Just bring to me and me trade for shiny treasure.",
+              "text_sha256": "f49ce54eccd9a0acce6f61ca15640c58cb96e05c8927e4467efbb273a55e06a0"
+            },
+            {
+              "line": 101,
+              "lua_literal": "\"You bring us big pot of strange water from little men?\"",
+              "decoded_text": "You bring us big pot of strange water from little men?",
+              "text_sha256": "4a4479c4cde882eaa6cfad47271af2903252c98ff7527b53ea13ad2ac78d4ea6"
+            },
+            {
+              "line": 104,
+              "lua_literal": "\"peace\"",
+              "decoded_text": "peace",
+              "text_sha256": "c2e10c20bf46daf0ba03f725218b012544a3d0d3b37334eeb1d4d81e5406e478"
+            },
+            {
+              "line": 106,
+              "lua_literal": "\"Me people wanting peace. No war with others. No war with little men.\"",
+              "decoded_text": "Me people wanting peace. No war with others. No war with little men.",
+              "text_sha256": "6dbc9210cbb82364b5480a088c59242515380483d514a227b3cb0c8ba6af784a"
+            },
+            {
+              "line": 111,
+              "lua_literal": "\"help\"",
+              "decoded_text": "help",
+              "text_sha256": "106a5842fc5fce6f663176285ed1516dbb1e3d15c05abab12fdca46d60b539b7"
+            },
+            {
+              "line": 112,
+              "lua_literal": "\"You mean you want help us?\"",
+              "decoded_text": "You mean you want help us?",
+              "text_sha256": "b958ccbb31cef23eb3b35d3a7af8679c9b3eff0a835de9d2ec21c976ea3ee695"
+            },
+            {
+              "line": 114,
+              "lua_literal": "\"yes\"",
+              "decoded_text": "yes",
+              "text_sha256": "8a798890fe93817163b10b5f7bd2ca4d25d84c52739a645a889c173eee7d9d3d"
+            },
+            {
+              "line": 116,
+              "lua_literal": "\"You hero of our tribe if bring back holy skull!\"",
+              "decoded_text": "You hero of our tribe if bring back holy skull!",
+              "text_sha256": "1f4ea26f78c9d29f9e98cad9864445733ed941b71553548b466df2eb0f486b39"
+            },
+            {
+              "line": 122,
+              "lua_literal": "\"Me thank you much! All wisdom safe again now.\"",
+              "decoded_text": "Me thank you much! All wisdom safe again now.",
+              "text_sha256": "fd5671114a66f2cb79df5c3cc877ff83022e41dfba98e54d7c3454e9b4071c95"
+            },
+            {
+              "line": 127,
+              "lua_literal": "\"You do not have it!\"",
+              "decoded_text": "You do not have it!",
+              "text_sha256": "2e6850283ff282b29ed1a748eb3dd3e96275466c8374d54335950619465e0b7b"
+            },
+            {
+              "line": 131,
+              "lua_literal": "\"Here take holy skull. You bring where you think is good. See as much as possible! See where other people live!\"",
+              "decoded_text": "Here take holy skull. You bring where you think is good. See as much as possible! See where other people live!",
+              "text_sha256": "7adb8c1753c48e8fac99a0c1d351dc08b73d7dfa4c4480d4fc1d732fa233b40d"
+            },
+            {
+              "line": 138,
+              "lua_literal": "\"We make big ritual soon and learn much about world outside. Me thank you many times for teaching us world. Very wise and adventurous you are!\"",
+              "decoded_text": "We make big ritual soon and learn much about world outside. Me thank you many times for teaching us world. Very wise and adventurous you are!",
+              "text_sha256": "b3363057abff3ef5f226fa6b0d2ce32b3111aa1828fd3bf659a3f532c0b851f9"
+            },
+            {
+              "line": 144,
+              "lua_literal": "\"The skull have not seen all yet!\"",
+              "decoded_text": "The skull have not seen all yet!",
+              "text_sha256": "ea427fb4de6ea9f690278c74b0ca6b3c577d9c9d4f6c7f3431eda1707332a7f8"
+            },
+            {
+              "line": 148,
+              "lua_literal": "\"We need to calm and make happy gods. Best go to Ulala. She is priest of us and can tell what needs doing.\"",
+              "decoded_text": "We need to calm and make happy gods. Best go to Ulala. She is priest of us and can tell what needs doing.",
+              "text_sha256": "494d7fe9c1c939da7b5850ec5057e4c238f579228fee507f2ddfce7a430b1d28"
+            },
+            {
+              "line": 154,
+              "lua_literal": "\"We make big ritual soon and learn much about world outside. Me thank you many times for teaching us world. Very wise and adventurous you are!\"",
+              "decoded_text": "We make big ritual soon and learn much about world outside. Me thank you many times for teaching us world. Very wise and adventurous you are!",
+              "text_sha256": "b3363057abff3ef5f226fa6b0d2ce32b3111aa1828fd3bf659a3f532c0b851f9"
+            },
+            {
+              "line": 160,
+              "lua_literal": "\"You do not have the brown strange water!\"",
+              "decoded_text": "You do not have the brown strange water!",
+              "text_sha256": "eb618712ed59a2156a343c0d9de00b9f62b9369e451b281c354246fb02ae36a5"
+            },
+            {
+              "line": 164,
+              "lua_literal": "\"Me have many small task, but also big {mission}. You say what want.\"",
+              "decoded_text": "Me have many small task, but also big {mission}. You say what want.",
+              "text_sha256": "7f720bf6d51a10017c307a3628f825ef5751caf0dd514063b0c642dd7f023753"
+            },
+            {
+              "line": 167,
+              "lua_literal": "\"war\"",
+              "decoded_text": "war",
+              "text_sha256": "a2d8daa4281b886508f0abfe6e8f736e34f4dcaae4374e390ebf699f83d2b44f"
+            },
+            {
+              "line": 168,
+              "lua_literal": "\"Many mighty monster rule land. We fight. We lose. We flee to mountain to hide.\"",
+              "decoded_text": "Many mighty monster rule land. We fight. We lose. We flee to mountain to hide.",
+              "text_sha256": "f1e240a8e5d1758de38973155353b48fc68f2a3e276b19d35c3891d489ff2f94"
+            },
+            {
+              "line": 169,
+              "lua_literal": "\"little men\"",
+              "decoded_text": "little men",
+              "text_sha256": "85d5fa9091280a54fd8c0ddbe30a6a32a8dba8d22f4250c10129de31261eff2f"
+            },
+            {
+              "line": 170,
+              "lua_literal": "\"We come and see little men. They like us, only very little. They having good weapon and armor, like the greens.\"",
+              "decoded_text": "We come and see little men. They like us, only very little. They having good weapon and armor, like the greens.",
+              "text_sha256": "870a2eeb04bde6a5d1fcf68d35852f550f94dd4a38700719dbeeddc9c4c2b424"
+            },
+            {
+              "line": 176,
+              "lua_literal": "\"Me greet. You no enemy of tribe.\"",
+              "decoded_text": "Me greet. You no enemy of tribe.",
+              "text_sha256": "2ba6ae2e44c67a11ecc0679ffd0234be436d2ee474a47fcd6cc3f0110ceed639"
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "dependency_only": false,
+      "scope_note": "NewFrontierMission03 is the explicit source prerequisite; retaining that read does not import The New Frontier quest.",
+      "admission_reason": "Source-backed authoring input only; callbacks remain guarded source and are not converted into ungated keywords. Native NPC placement and the real conversation owner still need admission.",
+      "full_source_lua": "local internalNpcName = \"Lazaran\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 143,\n\tlookHead = 57,\n\tlookBody = 57,\n\tlookLegs = 57,\n\tlookFeet = 57,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tlocal TheNewFrontier = Storage.Quest.U8_54.TheNewFrontier\n\tlocal UnnaturalSelection = Storage.Quest.U8_54.UnnaturalSelection\n\n\tif MsgContains(message, \"mission\") then\n\t\tif npcHandler:getTopic(playerId) == 0 and player:getStorageValue(TheNewFrontier.Questline) == 8 then\n\t\t\tnpcHandler:say(\"Me people wanting {peace}. No war with others. No war with {little men}. We few. We weak. Need {help}. We not wanting make {war}. No hurt.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 10)\n\t\telseif npcHandler:getTopic(playerId) == 12 then\n\t\t\tif player:getStorageValue(TheNewFrontier.Mission03) == 3 and player:getStorageValue(UnnaturalSelection.Questline) < 0 then\n\t\t\t\tnpcHandler:say({\n\t\t\t\t\t\"Big problem we have! Skull of first leader gone. He ancestor of whole tribe but died long ago in war. We have keep his skull on our sacred place. ...\",\n\t\t\t\t\t\"Then one night, green men came with wolves... and one of wolves took skull and ran off chewing on it! We need back - many wisdom and power is in skull. Maybe they took to north fortress. But can be hard getting in. You try get our holy skull back?\",\n\t\t\t\t}, npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\t\tend\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 1 then\n\t\t\tnpcHandler:say(\"Oh! You found holy skull? In bone pile you found?! Thank Pandor you brought! Me can have it back?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 2 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"You brought back skull of first leader. Hero of tribe! But we more missions to do. ...\",\n\t\t\t\t\"Me and Ulala talk about land outside. We wanting to see more of land! Land over big water! But us no can leave tribe. No can cross water. Only way is skull of first leader. ...\",\n\t\t\t\t\"What holy skull sees, tribe sees. That we believe. Can you bring holy skull over big water and show places?\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 3)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 3 then\n\t\t\tnpcHandler:say(\"You say you was to where sun is hot and burning? And where trees grow as high as mountain? And where Fasuon cries white tears? Me can't wait to see!! Can have holy skull back?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 4)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 4 then\n\t\t\tnpcHandler:say(\"We been weak for too long! We prepare for great hunt. But still need many doings! You can help us?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 5)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 13 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"You well did! Great hunt is under best signs now. We prepare weapons and paint faces and then go! ...\",\n\t\t\t\t\"No no, you no need to help us. But can prepare afterparty! Little men sent us stuff some time ago. Was strange water in there. Brown and stinky! But when we tried all tribe became veeeeeeery happy. ...\",\n\t\t\t\t\"Now brown water is gone and we sad! Can you bring POT of brown water for party after great hunt? Just bring to me and me trade for shiny treasure.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 14)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission06, 2) -- Questlog, Unnatural Selection Quest \"Mission 6: Firewater Burn\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(UnnaturalSelection.Questline) == 14 then\n\t\t\tnpcHandler:say(\"You bring us big pot of strange water from little men?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 6)\n\t\tend\n\telseif MsgContains(message, \"peace\") then\n\t\tif npcHandler:getTopic(playerId) == 10 and player:getStorageValue(TheNewFrontier.Questline) == 8 then\n\t\t\tnpcHandler:say(\"Me people wanting peace. No war with others. No war with little men.\", npc, creature)\n\t\t\tplayer:setStorageValue(TheNewFrontier.Questline, 9)\n\t\t\tplayer:setStorageValue(TheNewFrontier.Mission03, 2) -- Questlog, The New Frontier Quest \"Mission 03: Strangers in the Night\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"help\") then\n\t\tnpcHandler:say(\"You mean you want help us?\", npc, creature)\n\t\tnpcHandler:setTopic(playerId, 11)\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"You hero of our tribe if bring back holy skull!\", npc, creature)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 1)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission01, 1) -- Questlog, Unnatural Selection Quest \"Mission 1: Skulled\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 2 then\n\t\t\tif player:removeItem(10159, 1) then\n\t\t\t\tnpcHandler:say(\"Me thank you much! All wisdom safe again now.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 2)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission01, 3) -- Questlog, Unnatural Selection Quest \"Mission 1: Skulled\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You do not have it!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\telseif npcHandler:getTopic(playerId) == 3 then\n\t\t\tnpcHandler:say(\"Here take holy skull. You bring where you think is good. See as much as possible! See where other people live!\", npc, creature)\n\t\t\tplayer:addItem(10159, 1)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 3)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission02, 1) -- Questlog, Unnatural Selection Quest \"Mission 2: All Around the World\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 4 then\n\t\t\tif player:getStorageValue(UnnaturalSelection.Mission02) == 12 and player:getItemCount(10159) >= 1 then\n\t\t\t\tnpcHandler:say(\"We make big ritual soon and learn much about world outside. Me thank you many times for teaching us world. Very wise and adventurous you are!\", npc, creature)\n\t\t\t\tplayer:removeItem(10159, 1)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 4)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission02, 13) -- Questlog, Unnatural Selection Quest \"Mission 2: All Around the World\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"The skull have not seen all yet!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\telseif npcHandler:getTopic(playerId) == 5 then\n\t\t\tnpcHandler:say(\"We need to calm and make happy gods. Best go to Ulala. She is priest of us and can tell what needs doing.\", npc, creature)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 5)\n\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission03, 1) -- Questlog, Unnatural Selection Quest \"Mission 3: Dance Dance Evolution\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif npcHandler:getTopic(playerId) == 6 then\n\t\t\tif player:removeItem(3465, 1, 3) then\n\t\t\t\tnpcHandler:say(\"We make big ritual soon and learn much about world outside. Me thank you many times for teaching us world. Very wise and adventurous you are!\", npc, creature)\n\t\t\t\tplayer:addItem(10198, 1)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Questline, 15)\n\t\t\t\tplayer:setStorageValue(UnnaturalSelection.Mission06, 3) -- Questlog, Unnatural Selection Quest \"Mission 6: Firewater Burn\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You do not have the brown strange water!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\telseif npcHandler:getTopic(playerId) == 11 then\n\t\t\tnpcHandler:say(\"Me have many small task, but also big {mission}. You say what want.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 12)\n\t\tend\n\telseif MsgContains(message, \"war\") then\n\t\tnpcHandler:say(\"Many mighty monster rule land. We fight. We lose. We flee to mountain to hide.\", npc, creature)\n\telseif MsgContains(message, \"little men\") then\n\t\tnpcHandler:say(\"We come and see little men. They like us, only very little. They having good weapon and armor, like the greens.\", npc, creature)\n\tend\n\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Me greet. You no enemy of tribe.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lazaran.lua:1-182"
+    },
+    {
+      "npc_source_name": "ulala",
+      "source_blob_sha256": "1f66ef3a2a1541e21f95f123f6a8d6a936c67f613f35f6c25d4bfb25f8716c36",
+      "source_lua": "local internalNpcName = \"Ulala\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 154,\n\tlookHead = 57,\n\tlookBody = 57,\n\tlookLegs = 57,\n\tlookFeet = 57,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") then\n\t\tif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 5 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The great hunt! About to begin, but gods are not in favour of us yet. We need all help we get. We please Krunus with special nature dance. ...\",\n\t\t\t\t\"You seen Krunus altar south in camp, on mountain top? This is where dance is. If you do right steps Krunus will give you sign. If wrong, he not pleased. ...\",\n\t\t\t\t\"Do Krunus dance for us! Step and dance and turn around! You will know when you do good. Make {Krunus} happy and support our great hunt!\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 6 then\n\t\t\tnpcHandler:say(\"Come back if you finished the dance.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 7 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"You born dancer! Krunus is pleased and support the great hunt. But he easy to please! Pandor much harder. We weak, so he sad about us. ...\",\n\t\t\t\t\"Maybe we can please with sacrifice of body parts of our enemies. But you need help us get it! We much too weak. ...\",\n\t\t\t\t\"If you bring us 5 teeth of green men, 5 skin of horned ones and 5 skin of snakemen that already be good. Please help tribe make Pandor happy!\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 8)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission04, 1) --Questlog, Unnatural Selection Quest \"Mission 4: Bits and Pieces\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 8 then\n\t\t\tnpcHandler:say(\"Please help tribe make Pandor happy! Did you bring us what I asked?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 9 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"We need make sure Fasuon is on our side. There is laaaaaaaarge crystal on top of mountain. Don't know where come from, was there before us. Problem is - way is infested with creatures! ...\",\n\t\t\t\t\"Creatures from the other side of mountain. Bony! Scary! We too weak to go through there, can just run and hope to survive.. but you do better! ...\",\n\t\t\t\t\"Please find great crystal of Fasuon and pray there for his support!\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 10)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission05, 1) --Questlog, Unnatural Selection Quest \"Mission 5: Ray of Light\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 10 then\n\t\t\tnpcHandler:say(\"Please find great crystal of Fasuon and pray there for his support!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 11 then\n\t\t\tnpcHandler:say(\"You prayed to Fasuon! Me saw ray of lights on mountain top! Beautiful it was. Me thank you for your help. Great hunt almost can't go wrong now!\", npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 12)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission05, 3) --Questlog, Unnatural Selection Quest \"Mission 5: Ray of Light\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 12 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Uzroth very easy to anger. You been great help so far but me think that need to pray to Uzroth meself. Only me understand what he wants at time and he is veeeeeery moody. Cannot risk to make angry! ...\",\n\t\t\t\t\"So me will do when you gone. But me thank you very much. Go speak Lazaran and tell the gods are pleased now.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 13)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission06, 1) --Questlog, Unnatural Selection Quest \"Mission 6: Firewater Burn\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"krunus\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"Krunus is God for plants and birth. He hidden in all that grows.\", npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 6)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission03, 2) --Questlog, Unnatural Selection Quest \"Mission 3: Dance Dance Evolution\"\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.DanceStatus, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 2 then\n\t\t\tif player:getItemCount(10196) >= 5 and player:getItemCount(5878) >= 5 and player:getItemCount(5876) >= 5 then\n\t\t\t\tplayer:removeItem(10196, 5)\n\t\t\t\tplayer:removeItem(5878, 5)\n\t\t\t\tplayer:removeItem(5876, 5)\n\t\t\t\tnpcHandler:say(\"Me thank you! Me will bring sacrifice for Pandor. He surely be pleased with our work. Well your work, but me won't tell him. Teehee.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 9)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission04, 2) --Questlog, Unnatural Selection Quest \"Mission 4: Bits and Pieces\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You do not have these things!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Spirits welcome you.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source_lua_scope": "Complete original context for auditing only; scoped sections below are the quest-specific authoring input. Foreign branches remain excluded.",
+      "review_rows": [
+        {
+          "row_index": 181,
+          "step": "M3: nauka tańca"
+        },
+        {
+          "row_index": 199,
+          "step": "M4 Bits and Pieces: start"
+        },
+        {
+          "row_index": 200,
+          "step": "M4: trzy materiały"
+        },
+        {
+          "row_index": 201,
+          "step": "M5 Ray of Light: start"
+        },
+        {
+          "row_index": 203,
+          "step": "M5: rozliczenie"
+        },
+        {
+          "row_index": 204,
+          "step": "M6 Firewater Burn: skierowanie"
+        }
+      ],
+      "sections": [
+        {
+          "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:52-138",
+          "line_start": 52,
+          "line_end": 138,
+          "source_sha256": "f97dbf082e8dd77b3bcee9f7a74345284d9a83ce162035f20484f793775e9400",
+          "guarded_source_lua": "local function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") then\n\t\tif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 5 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The great hunt! About to begin, but gods are not in favour of us yet. We need all help we get. We please Krunus with special nature dance. ...\",\n\t\t\t\t\"You seen Krunus altar south in camp, on mountain top? This is where dance is. If you do right steps Krunus will give you sign. If wrong, he not pleased. ...\",\n\t\t\t\t\"Do Krunus dance for us! Step and dance and turn around! You will know when you do good. Make {Krunus} happy and support our great hunt!\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 6 then\n\t\t\tnpcHandler:say(\"Come back if you finished the dance.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 7 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"You born dancer! Krunus is pleased and support the great hunt. But he easy to please! Pandor much harder. We weak, so he sad about us. ...\",\n\t\t\t\t\"Maybe we can please with sacrifice of body parts of our enemies. But you need help us get it! We much too weak. ...\",\n\t\t\t\t\"If you bring us 5 teeth of green men, 5 skin of horned ones and 5 skin of snakemen that already be good. Please help tribe make Pandor happy!\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 8)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission04, 1) --Questlog, Unnatural Selection Quest \"Mission 4: Bits and Pieces\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 8 then\n\t\t\tnpcHandler:say(\"Please help tribe make Pandor happy! Did you bring us what I asked?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 9 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"We need make sure Fasuon is on our side. There is laaaaaaaarge crystal on top of mountain. Don't know where come from, was there before us. Problem is - way is infested with creatures! ...\",\n\t\t\t\t\"Creatures from the other side of mountain. Bony! Scary! We too weak to go through there, can just run and hope to survive.. but you do better! ...\",\n\t\t\t\t\"Please find great crystal of Fasuon and pray there for his support!\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 10)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission05, 1) --Questlog, Unnatural Selection Quest \"Mission 5: Ray of Light\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 10 then\n\t\t\tnpcHandler:say(\"Please find great crystal of Fasuon and pray there for his support!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 11 then\n\t\t\tnpcHandler:say(\"You prayed to Fasuon! Me saw ray of lights on mountain top! Beautiful it was. Me thank you for your help. Great hunt almost can't go wrong now!\", npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 12)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission05, 3) --Questlog, Unnatural Selection Quest \"Mission 5: Ray of Light\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 12 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Uzroth very easy to anger. You been great help so far but me think that need to pray to Uzroth meself. Only me understand what he wants at time and he is veeeeeery moody. Cannot risk to make angry! ...\",\n\t\t\t\t\"So me will do when you gone. But me thank you very much. Go speak Lazaran and tell the gods are pleased now.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 13)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission06, 1) --Questlog, Unnatural Selection Quest \"Mission 6: Firewater Burn\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"krunus\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"Krunus is God for plants and birth. He hidden in all that grows.\", npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 6)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission03, 2) --Questlog, Unnatural Selection Quest \"Mission 3: Dance Dance Evolution\"\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.DanceStatus, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 2 then\n\t\t\tif player:getItemCount(10196) >= 5 and player:getItemCount(5878) >= 5 and player:getItemCount(5876) >= 5 then\n\t\t\t\tplayer:removeItem(10196, 5)\n\t\t\t\tplayer:removeItem(5878, 5)\n\t\t\t\tplayer:removeItem(5876, 5)\n\t\t\t\tnpcHandler:say(\"Me thank you! Me will bring sacrifice for Pandor. He surely be pleased with our work. Well your work, but me won't tell him. Teehee.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 9)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission04, 2) --Questlog, Unnatural Selection Quest \"Mission 4: Bits and Pieces\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You do not have these things!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Spirits welcome you.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\n",
+          "string_literals_in_original_context": [
+            {
+              "line": 60,
+              "lua_literal": "\"mission\"",
+              "decoded_text": "mission",
+              "text_sha256": "ceb00a91525da64fb171b103ae30ef3b817fa3bc78ecde99b884eedbe9131003"
+            },
+            {
+              "line": 63,
+              "lua_literal": "\"The great hunt! About to begin, but gods are not in favour of us yet. We need all help we get. We please Krunus with special nature dance. ...\"",
+              "decoded_text": "The great hunt! About to begin, but gods are not in favour of us yet. We need all help we get. We please Krunus with special nature dance. ...",
+              "text_sha256": "81c69a4cde5dea0c293b86785f33272e742be0aab708895a412c6f8d0b342d86"
+            },
+            {
+              "line": 64,
+              "lua_literal": "\"You seen Krunus altar south in camp, on mountain top? This is where dance is. If you do right steps Krunus will give you sign. If wrong, he not pleased. ...\"",
+              "decoded_text": "You seen Krunus altar south in camp, on mountain top? This is where dance is. If you do right steps Krunus will give you sign. If wrong, he not pleased. ...",
+              "text_sha256": "adbf2c7a7e27612d7a6d3524271ef2dd41448cd8ede24168d62bb56a967978c7"
+            },
+            {
+              "line": 65,
+              "lua_literal": "\"Do Krunus dance for us! Step and dance and turn around! You will know when you do good. Make {Krunus} happy and support our great hunt!\"",
+              "decoded_text": "Do Krunus dance for us! Step and dance and turn around! You will know when you do good. Make {Krunus} happy and support our great hunt!",
+              "text_sha256": "ed7a97fa56057fb68e72fbfd75dc4ae6a7f5d5c542c769af3dd89b41afbc48c9"
+            },
+            {
+              "line": 69,
+              "lua_literal": "\"Come back if you finished the dance.\"",
+              "decoded_text": "Come back if you finished the dance.",
+              "text_sha256": "61e6cde51bab637da712bfcfaad310884a4b5417c9bef5e906c3f21c2b099bdb"
+            },
+            {
+              "line": 73,
+              "lua_literal": "\"You born dancer! Krunus is pleased and support the great hunt. But he easy to please! Pandor much harder. We weak, so he sad about us. ...\"",
+              "decoded_text": "You born dancer! Krunus is pleased and support the great hunt. But he easy to please! Pandor much harder. We weak, so he sad about us. ...",
+              "text_sha256": "3b0f301aa0df9a14162963848c6314f7ceeb6010e633f71670ab3e8426f03f89"
+            },
+            {
+              "line": 74,
+              "lua_literal": "\"Maybe we can please with sacrifice of body parts of our enemies. But you need help us get it! We much too weak. ...\"",
+              "decoded_text": "Maybe we can please with sacrifice of body parts of our enemies. But you need help us get it! We much too weak. ...",
+              "text_sha256": "c8f85382742470e9e3b1f9156e25632e0d2e7f6d047ee61b87e3ce270d243971"
+            },
+            {
+              "line": 75,
+              "lua_literal": "\"If you bring us 5 teeth of green men, 5 skin of horned ones and 5 skin of snakemen that already be good. Please help tribe make Pandor happy!\"",
+              "decoded_text": "If you bring us 5 teeth of green men, 5 skin of horned ones and 5 skin of snakemen that already be good. Please help tribe make Pandor happy!",
+              "text_sha256": "c24ed5b358167ffdf9605f4bfdbe0a28e4972c38eebcf8e85f02b979e381a38b"
+            },
+            {
+              "line": 81,
+              "lua_literal": "\"Please help tribe make Pandor happy! Did you bring us what I asked?\"",
+              "decoded_text": "Please help tribe make Pandor happy! Did you bring us what I asked?",
+              "text_sha256": "0c537f3ecfeaad27651e44a3a762f19b720f2cb83b84d5342e66a01e3b52a2d9"
+            },
+            {
+              "line": 85,
+              "lua_literal": "\"We need make sure Fasuon is on our side. There is laaaaaaaarge crystal on top of mountain. Don't know where come from, was there before us. Problem is - way is infested with creatures! ...\"",
+              "decoded_text": "We need make sure Fasuon is on our side. There is laaaaaaaarge crystal on top of mountain. Don't know where come from, was there before us. Problem is - way is infested with creatures! ...",
+              "text_sha256": "c911060f6b61cc7a0e2366c54d97462a525a315d642abc5022280b6766aafc5e"
+            },
+            {
+              "line": 86,
+              "lua_literal": "\"Creatures from the other side of mountain. Bony! Scary! We too weak to go through there, can just run and hope to survive.. but you do better! ...\"",
+              "decoded_text": "Creatures from the other side of mountain. Bony! Scary! We too weak to go through there, can just run and hope to survive.. but you do better! ...",
+              "text_sha256": "26819acc549111c9f16699914176314c52d611d0b12feb62a6fb9de63afa9aa4"
+            },
+            {
+              "line": 87,
+              "lua_literal": "\"Please find great crystal of Fasuon and pray there for his support!\"",
+              "decoded_text": "Please find great crystal of Fasuon and pray there for his support!",
+              "text_sha256": "104be11465eb3458371cfda7c9d067ef582106550c5baf327997128a3839e88b"
+            },
+            {
+              "line": 93,
+              "lua_literal": "\"Please find great crystal of Fasuon and pray there for his support!\"",
+              "decoded_text": "Please find great crystal of Fasuon and pray there for his support!",
+              "text_sha256": "104be11465eb3458371cfda7c9d067ef582106550c5baf327997128a3839e88b"
+            },
+            {
+              "line": 96,
+              "lua_literal": "\"You prayed to Fasuon! Me saw ray of lights on mountain top! Beautiful it was. Me thank you for your help. Great hunt almost can't go wrong now!\"",
+              "decoded_text": "You prayed to Fasuon! Me saw ray of lights on mountain top! Beautiful it was. Me thank you for your help. Great hunt almost can't go wrong now!",
+              "text_sha256": "8b55bd55ab19734b65d960cc45d1cf911614de3759c09721edacbad219505808"
+            },
+            {
+              "line": 102,
+              "lua_literal": "\"Uzroth very easy to anger. You been great help so far but me think that need to pray to Uzroth meself. Only me understand what he wants at time and he is veeeeeery moody. Cannot risk to make angry! ...\"",
+              "decoded_text": "Uzroth very easy to anger. You been great help so far but me think that need to pray to Uzroth meself. Only me understand what he wants at time and he is veeeeeery moody. Cannot risk to make angry! ...",
+              "text_sha256": "0c3aed9d4157c2d316a98d22b057056df19d6c626c62f0d44c8aee718312b8a6"
+            },
+            {
+              "line": 103,
+              "lua_literal": "\"So me will do when you gone. But me thank you very much. Go speak Lazaran and tell the gods are pleased now.\"",
+              "decoded_text": "So me will do when you gone. But me thank you very much. Go speak Lazaran and tell the gods are pleased now.",
+              "text_sha256": "1b2f58228472b501620edc2d6c6f209c493999f0962850eb8cf55724cb3683b5"
+            },
+            {
+              "line": 109,
+              "lua_literal": "\"krunus\"",
+              "decoded_text": "krunus",
+              "text_sha256": "30e833e7835aa61c500e4e2d7216a8ed7f8bdb608a365b2536c4d7f3553367dc"
+            },
+            {
+              "line": 111,
+              "lua_literal": "\"Krunus is God for plants and birth. He hidden in all that grows.\"",
+              "decoded_text": "Krunus is God for plants and birth. He hidden in all that grows.",
+              "text_sha256": "612f66685b0f46fc2a94268e463cdd01d0259ddd8c2d47f8dcf38ed855d01b9f"
+            },
+            {
+              "line": 117,
+              "lua_literal": "\"yes\"",
+              "decoded_text": "yes",
+              "text_sha256": "8a798890fe93817163b10b5f7bd2ca4d25d84c52739a645a889c173eee7d9d3d"
+            },
+            {
+              "line": 123,
+              "lua_literal": "\"Me thank you! Me will bring sacrifice for Pandor. He surely be pleased with our work. Well your work, but me won't tell him. Teehee.\"",
+              "decoded_text": "Me thank you! Me will bring sacrifice for Pandor. He surely be pleased with our work. Well your work, but me won't tell him. Teehee.",
+              "text_sha256": "83b2d0a9b6fc4c52297035574c53b839cd8a8e05f78d99cfb060f485a33d4c5c"
+            },
+            {
+              "line": 128,
+              "lua_literal": "\"You do not have these things!\"",
+              "decoded_text": "You do not have these things!",
+              "text_sha256": "78ac34fd8a5541d87c74e81f66b60b662bc3bf3504141b047c00e9eb127fc002"
+            },
+            {
+              "line": 136,
+              "lua_literal": "\"Spirits welcome you.\"",
+              "decoded_text": "Spirits welcome you.",
+              "text_sha256": "b0303b94d8afd289261539529309751cf4e4699c93a2c74270f04d6a9838b427"
+            }
+          ]
+        }
+      ],
+      "runtime_admission": false,
+      "dependency_only": false,
+      "scope_note": "Preserve literal source guards, topics, effect order and complete dialogue.",
+      "admission_reason": "Source-backed authoring input only; callbacks remain guarded source and are not converted into ungated keywords. Native NPC placement and the real conversation owner still need admission.",
+      "full_source_lua": "local internalNpcName = \"Ulala\"\nlocal npcType = Game.createNpcType(internalNpcName)\nlocal npcConfig = {}\n\nnpcConfig.name = internalNpcName\nnpcConfig.description = internalNpcName\n\nnpcConfig.health = 100\nnpcConfig.maxHealth = npcConfig.health\nnpcConfig.walkInterval = 2000\nnpcConfig.walkRadius = 2\n\nnpcConfig.outfit = {\n\tlookType = 154,\n\tlookHead = 57,\n\tlookBody = 57,\n\tlookLegs = 57,\n\tlookFeet = 57,\n}\n\nnpcConfig.flags = {\n\tfloorchange = false,\n}\n\nlocal keywordHandler = KeywordHandler:new()\nlocal npcHandler = NpcHandler:new(keywordHandler)\n\nnpcType.onThink = function(npc, interval)\n\tnpcHandler:onThink(npc, interval)\nend\n\nnpcType.onAppear = function(npc, creature)\n\tnpcHandler:onAppear(npc, creature)\nend\n\nnpcType.onDisappear = function(npc, creature)\n\tnpcHandler:onDisappear(npc, creature)\nend\n\nnpcType.onMove = function(npc, creature, fromPosition, toPosition)\n\tnpcHandler:onMove(npc, creature, fromPosition, toPosition)\nend\n\nnpcType.onSay = function(npc, creature, type, message)\n\tnpcHandler:onSay(npc, creature, type, message)\nend\n\nnpcType.onCloseChannel = function(npc, creature)\n\tnpcHandler:onCloseChannel(npc, creature)\nend\n\nlocal function creatureSayCallback(npc, creature, type, message)\n\tlocal player = Player(creature)\n\tlocal playerId = player:getId()\n\n\tif not npcHandler:checkInteraction(npc, creature) then\n\t\treturn false\n\tend\n\n\tif MsgContains(message, \"mission\") then\n\t\tif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 5 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"The great hunt! About to begin, but gods are not in favour of us yet. We need all help we get. We please Krunus with special nature dance. ...\",\n\t\t\t\t\"You seen Krunus altar south in camp, on mountain top? This is where dance is. If you do right steps Krunus will give you sign. If wrong, he not pleased. ...\",\n\t\t\t\t\"Do Krunus dance for us! Step and dance and turn around! You will know when you do good. Make {Krunus} happy and support our great hunt!\",\n\t\t\t}, npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 1)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 6 then\n\t\t\tnpcHandler:say(\"Come back if you finished the dance.\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 7 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"You born dancer! Krunus is pleased and support the great hunt. But he easy to please! Pandor much harder. We weak, so he sad about us. ...\",\n\t\t\t\t\"Maybe we can please with sacrifice of body parts of our enemies. But you need help us get it! We much too weak. ...\",\n\t\t\t\t\"If you bring us 5 teeth of green men, 5 skin of horned ones and 5 skin of snakemen that already be good. Please help tribe make Pandor happy!\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 8)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission04, 1) --Questlog, Unnatural Selection Quest \"Mission 4: Bits and Pieces\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 8 then\n\t\t\tnpcHandler:say(\"Please help tribe make Pandor happy! Did you bring us what I asked?\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 2)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 9 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"We need make sure Fasuon is on our side. There is laaaaaaaarge crystal on top of mountain. Don't know where come from, was there before us. Problem is - way is infested with creatures! ...\",\n\t\t\t\t\"Creatures from the other side of mountain. Bony! Scary! We too weak to go through there, can just run and hope to survive.. but you do better! ...\",\n\t\t\t\t\"Please find great crystal of Fasuon and pray there for his support!\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 10)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission05, 1) --Questlog, Unnatural Selection Quest \"Mission 5: Ray of Light\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 10 then\n\t\t\tnpcHandler:say(\"Please find great crystal of Fasuon and pray there for his support!\", npc, creature)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 11 then\n\t\t\tnpcHandler:say(\"You prayed to Fasuon! Me saw ray of lights on mountain top! Beautiful it was. Me thank you for your help. Great hunt almost can't go wrong now!\", npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 12)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission05, 3) --Questlog, Unnatural Selection Quest \"Mission 5: Ray of Light\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\telseif player:getStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline) == 12 then\n\t\t\tnpcHandler:say({\n\t\t\t\t\"Uzroth very easy to anger. You been great help so far but me think that need to pray to Uzroth meself. Only me understand what he wants at time and he is veeeeeery moody. Cannot risk to make angry! ...\",\n\t\t\t\t\"So me will do when you gone. But me thank you very much. Go speak Lazaran and tell the gods are pleased now.\",\n\t\t\t}, npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 13)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission06, 1) --Questlog, Unnatural Selection Quest \"Mission 6: Firewater Burn\"\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"krunus\") then\n\t\tif npcHandler:getTopic(playerId) == 1 then\n\t\t\tnpcHandler:say(\"Krunus is God for plants and birth. He hidden in all that grows.\", npc, creature)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 6)\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission03, 2) --Questlog, Unnatural Selection Quest \"Mission 3: Dance Dance Evolution\"\n\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.DanceStatus, 1)\n\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\tend\n\telseif MsgContains(message, \"yes\") then\n\t\tif npcHandler:getTopic(playerId) == 2 then\n\t\t\tif player:getItemCount(10196) >= 5 and player:getItemCount(5878) >= 5 and player:getItemCount(5876) >= 5 then\n\t\t\t\tplayer:removeItem(10196, 5)\n\t\t\t\tplayer:removeItem(5878, 5)\n\t\t\t\tplayer:removeItem(5876, 5)\n\t\t\t\tnpcHandler:say(\"Me thank you! Me will bring sacrifice for Pandor. He surely be pleased with our work. Well your work, but me won't tell him. Teehee.\", npc, creature)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Questline, 9)\n\t\t\t\tplayer:setStorageValue(Storage.Quest.U8_54.UnnaturalSelection.Mission04, 2) --Questlog, Unnatural Selection Quest \"Mission 4: Bits and Pieces\"\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\telse\n\t\t\t\tnpcHandler:say(\"You do not have these things!\", npc, creature)\n\t\t\t\tnpcHandler:setTopic(playerId, 0)\n\t\t\tend\n\t\tend\n\tend\n\treturn true\nend\n\nnpcHandler:setMessage(MESSAGE_GREET, \"Spirits welcome you.\")\n\nnpcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)\nnpcHandler:addModule(FocusModule:new(), npcConfig.name, true, true, true)\n\n-- npcType registering the npcConfig table\nnpcType:register(npcConfig)\n",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/ulala.lua:1-142"
+    }
+  ],
+  "policy": "Crystal201189 exact source. No keyword flattening, invented dialogue, new engine or inferred runtime admission. Scope follows the five assigned quest directories; grouped Tibia Tales expansion awaits QUESTION."
+}

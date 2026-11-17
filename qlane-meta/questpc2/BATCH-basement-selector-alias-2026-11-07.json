@@ -1,0 +1,41 @@
+{
+  "batch_id": "basement-selector-alias-2026-11-07",
+  "state": "GREEN_SELECTOR_AND_ACTIVATION_SLICE",
+  "lifecycle": "AUTHORING",
+  "source_head": "1327ef861",
+  "red_pg_seconds": 75.36,
+  "rejected_noncanonical_attempt_seconds": 75.39,
+  "green": {
+    "postgres_version": 180006,
+    "source_seconds": 85.6,
+    "source_marker_ms": 10615,
+    "atomic_cases": 2,
+    "atomic_seconds": 166.36,
+    "goal_cases": 2,
+    "goal_seconds": 99.3,
+    "focused_pg_cases": 5,
+    "check_seconds": 78,
+    "clippy_seconds": 185,
+    "clippy_scope": "quests+dispatch all-targets all-features -D warnings",
+    "fmt": "PASS",
+    "alias_unit_cases": 6,
+    "closed_goal_tests": 2,
+    "scoped_native_generation": "43write+43check PASS",
+    "qengine_access": "write/check PASS",
+    "pin_refresh": "PASS isolated",
+    "pin_check": "PASS isolated",
+    "pin_digest": "32170e60e0f946dd1ba74dc68e45399579b85e66e819259a7adfef3bc5ad8502",
+    "pin_inputs_digest": "53806f56d1ee04d4b4ba877e419fd8c3be1ff83d9b58c03505a4906382d5ac5c"
+  },
+  "logs": {
+    "source": "/tmp/questpc2-basement-selector-alias-cold-green-pg.log",
+    "goals": "/tmp/questpc2-basement-selector-alias-goals-regression-pg.log",
+    "atomic": "/tmp/questpc2-basement-selector-alias-atomic-regression-pg.log",
+    "clippy": "/tmp/questpc2-basement-selector-alias-clippy.log",
+    "pin_refresh": "/tmp/questpc2-basement-selector-alias-isolated-pin-refresh.log",
+    "pin_check": "/tmp/questpc2-basement-selector-alias-isolated-pin-check.log"
+  },
+  "implementation": "One canonical once-only activation with bounded step position aliases at original41 and actual53 basement entries; ownphase1+nativephase0 same xmin/revision. All old source ladder/poison/Dragon, origin/cap/authority/replay and atomic assertions retained. Native closed-run guard unchanged. Fixture early return database cleanup exercised by three actual PG cases.",
+  "pending": "Whole Elvenbane: real wire native-source six-defender combat, atomic seven-item physical treasure, exit/journal. Continue remaining27.",
+  "resource_recovery": "Initial overlapping pin process killed137/OOM21kill10. Current native READY, executable and inactive caches archived with verified backup; isolated repository pin tools passed, no guard/test/profile changes."
+}

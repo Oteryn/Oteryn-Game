@@ -1,0 +1,120 @@
+{
+  "claim": "oteryn:reward-claim.quest.key.id3620",
+  "quest": "unlinked",
+  "coverage_record": {
+    "claim": "oteryn:reward-claim.quest.key.id3620",
+    "placements": [
+      {
+        "position": {
+          "x": 32411,
+          "y": 32155,
+          "z": 15
+        },
+        "sources": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:163",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5009
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:445",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5009
+          }
+        ]
+      }
+    ],
+    "reason": "requires exact World binding and native Item admission",
+    "status": "supported_unqualified"
+  },
+  "coverage_counts": {
+    "dispatch_pg_qualified": 127,
+    "not_playable": 2,
+    "supported_unqualified": 207
+  },
+  "coverage_sha256": "ccacabc63d46adbaa3105e18b656113f9b1710d51686c7b9a47eb7fdf3d68ca0",
+  "ledger_sha256": "8d823d4d459b9ba6d34ba779c01cfe5042778a2499692fc792acbaf40a8dd76a",
+  "ledger_record": {
+    "current_inventory_status": "supported_unqualified",
+    "dependency": "QUEST-QUAL-1",
+    "disposition": "blocked",
+    "evidence": {
+      "blocked_on": "QUEST-QUAL-1",
+      "blocker_type": "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING",
+      "kind": "blocked",
+      "missing_prerequisite": "No named production Use-route PostgreSQL test or retained scenario proves this exact World selector, native reward mint, durable once-only receipt, reconnect replay, and a second new-command refusal."
+    },
+    "placements": [
+      {
+        "expected_reward": {
+          "items": [
+            {
+              "count": 1,
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2969",
+                "revision": "definition-r1"
+              }
+            }
+          ],
+          "key_binding": "canary:door-key/3620"
+        },
+        "selector": {
+          "appearance_tibia_id": 2434,
+          "position": {
+            "x": 32411,
+            "y": 32155,
+            "z": 15
+          },
+          "source_unique_ids": [
+            {
+              "server": "canary",
+              "unique_id": 5009
+            },
+            {
+              "server": "crystalserver",
+              "unique_id": 5009
+            }
+          ]
+        },
+        "source_witnesses": [
+          {
+            "citation": "canary:data-otservbr-global/startup/tables/chest.lua:163",
+            "reward_matches_current_source": true,
+            "server": "canary",
+            "unique_id": 5009
+          },
+          {
+            "citation": "crystal:data-global/startup/tables/chest.lua:445",
+            "reward_matches_current_source": true,
+            "server": "crystalserver",
+            "unique_id": 5009
+          }
+        ]
+      }
+    ],
+    "quest": "unlinked"
+  },
+  "ledger_headers": {
+    "denominator": 207,
+    "disposition_totals": {
+      "blocked": {
+        "WORLD_BINDING_AND_E2E_EVIDENCE_MISSING": 207
+      },
+      "scenario": 0,
+      "test": 0
+    },
+    "schema_version": 1,
+    "source_revisions": {
+      "canary": "47dfd51f",
+      "crystalserver": "201189f871d23597b82caf88fd611454a2ddefb8"
+    },
+    "source_sha256": {
+      "canary": "2b130d4196afc9700eb0b7c2f5594e331edee4d25811a0d2020fb9d8757d6cda",
+      "crystalserver": "7c3ac1280196923e0bf5ca6f2ea932c19065bb9ac22d1559150a184f3cf06df4"
+    },
+    "task": "QUEST-QUAL-1"
+  }
+}

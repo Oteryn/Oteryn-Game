@@ -8,6 +8,7 @@ pub(super) struct Input {
     pub(super) frame: Vec<u8>,
     pub(super) arrived_while_buffered: bool,
     pub(super) buffered_original: bool,
+    pub(super) received_at: tokio::time::Instant,
 }
 
 pub(super) async fn receive<S, A>(
@@ -20,15 +21,51 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if matches!(
+        next,
+        Next::Serene | Next::QuestLog | Next::Chat | Next::Visibility | Next::Combat | Next::Npc
+    ) {
+        crate::durability::DurabilityRoot::with_background_holder(
+            authority.background_operation(receive_inner(stream, authority, session, next)),
+        )
+        .await
+    } else {
+        receive_inner(stream, authority, session, next).await
+    }
+}
+
+async fn receive_inner<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    next: Next,
+) -> Result<Option<Input>, ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    // Filter before a held queue or item-walk/hotkey retransmission peek can
+    // treat old source-session bytes as a current successor operation.
+    let incoming = match &next {
+        Next::Frame(Ok(frame)) | Next::Held(frame, _, _) => Some(frame),
+        _ => None,
+    };
+    if let Some(frame) = incoming {
+        match command_session_matches(frame, session.admitted, session.require_session_binding) {
+            Ok(false) => return Ok(None),
+            Ok(true) => {}
+            Err(error) => return Err(close(stream, session.admitted, error).await),
+        }
+    }
     let buffered_original = matches!(&next, Next::StepDue);
-    let (frame, arrived_while_buffered) = match next {
+    let (frame, arrived_while_buffered, received_at) = match next {
         // SPEED-1: the buffered step is due; its frame runs now, before any frame held
         // behind it.
         Next::StepDue => match session.buffered.take() {
-            Some(step) => (step.frame, false),
+            Some(step) => (step.frame, false, tokio::time::Instant::now()),
             None => return Ok(None),
         },
-        Next::Held(frame, behind_step) => (frame, behind_step),
+        Next::Held(frame, behind_step, received_at) => (frame, behind_step, received_at),
         Next::ServerMessage => {
             return match tokio::time::timeout(
                 session.policy.interval,
@@ -43,7 +80,7 @@ where
             {
                 Ok(Some(())) => Ok(None),
                 Ok(None) => Err(ServeEnd::Disconnected),
-                Err(_) => Err(ServeEnd::ControlLost),
+                Err(_) => Err(ServeEnd::ControlLost("server_message_timeout")),
             };
         }
         Next::Serene => {
@@ -97,7 +134,9 @@ where
                     && envelope.message_type() == MessageType::LivenessAck
             );
             if !ack {
-                session.held.push_back((frame, true));
+                session
+                    .held
+                    .push_back((frame, true, tokio::time::Instant::now()));
                 return Ok(None);
             }
             match decode_wire_envelope(&frame)
@@ -108,17 +147,19 @@ where
                 Err(error) => return Err(close(stream, session.admitted, error).await),
             }
         }
-        Next::Frame(Ok(frame)) => (frame, false),
+        Next::Frame(Ok(frame)) => (frame, false, tokio::time::Instant::now()),
         Next::Frame(Err(_)) => {
             return Err(ServeEnd::Disconnected);
         }
         Next::Probe => {
             // Idle work (including the durable logout) stays within the existing database
             // pass deadline. Timeout follows ordinary control-loss reconciliation.
-            match tokio::time::timeout(
-                crate::durability::DB_PASS_DEADLINE,
-                idle::tick(stream, authority, session),
-            )
+            match tokio::time::timeout(crate::durability::DB_PASS_DEADLINE, async {
+                if authority.account_closure_check(session.admitted).await {
+                    return Err(ServeEnd::Disconnected);
+                }
+                idle::tick(stream, authority, session).await
+            })
             .await
             {
                 Ok(result) => result?,
@@ -127,7 +168,7 @@ where
             let probe = match session.liveness.tick() {
                 Ok(probe_id) => encode_liveness_probe(session.generation, probe_id),
                 Err(LivenessEnd::ControlLost) => {
-                    return Err(ServeEnd::ControlLost);
+                    return Err(ServeEnd::ControlLost("liveness_missed"));
                 }
                 Err(LivenessEnd::ProbesExhausted) => {
                     return Err(ServeEnd::Disconnected);
@@ -143,7 +184,7 @@ where
                 Ok(Err(_)) => {
                     return Err(ServeEnd::Disconnected);
                 }
-                Err(_) => return Err(ServeEnd::ControlLost),
+                Err(_) => return Err(ServeEnd::ControlLost("probe_write_timeout")),
             }
             // Existing periodic display work shares the liveness cadence. No independent
             // achievement timer or timestamp cursor is needed for committed kill/event facts.
@@ -157,12 +198,13 @@ where
                 )
                 .await
                 .ok_or(ServeEnd::Disconnected)?;
+                super::native_cues::refresh(stream, authority, session).await?;
                 achievement_notices::refresh(stream, authority, session).await
             };
             return match tokio::time::timeout(interval, updates).await {
                 Ok(Ok(())) => Ok(None),
                 Ok(Err(end)) => Err(end),
-                Err(_) => Err(ServeEnd::ControlLost),
+                Err(_) => Err(ServeEnd::ControlLost("updates_timeout")),
             };
         }
     };
@@ -170,6 +212,7 @@ where
         frame,
         arrived_while_buffered,
         buffered_original,
+        received_at,
     }))
 }
 

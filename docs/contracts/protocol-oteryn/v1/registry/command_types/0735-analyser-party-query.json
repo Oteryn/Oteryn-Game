@@ -1,0 +1,10 @@
+{
+  "id": 735,
+  "name": "ANALYSER_PARTY_QUERY",
+  "owner_decision": "CLIENTGAP-ANALYTICS",
+  "capability": 10,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/analyser-party-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/analyser-party-v1.md#reply",
+  "max_payload_bytes": 43010,
+  "max_result_payload_bytes": 16551
+}

@@ -1,0 +1,7 @@
+{
+  "mechanic": "0288-ambient-sound",
+  "kind": "panels",
+  "id": "0288-ambient-sound-status",
+  "status": "supported",
+  "entry": "view.rs::status"
+}
