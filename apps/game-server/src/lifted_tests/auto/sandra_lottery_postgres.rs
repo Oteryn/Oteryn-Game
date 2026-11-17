@@ -142,19 +142,38 @@ async fn exercise(h: &f::Harness, case: Case) -> f::TestResult {
         );
     let generation = controller.active().ok_or("active generation")?;
     let native = generation.native_gameplay().ok_or("native generation")?;
-    let premium = SpellPremiumCoordinator::new(Default::default(), None, None, Some(h.root.clone()));
-    let content = Content { native, premium: &premium };
+    let premium =
+        SpellPremiumCoordinator::new(Default::default(), None, None, Some(h.root.clone()));
+    let content = Content {
+        native,
+        premium: &premium,
+    };
     let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
         .map_err(f::debug)?;
     let catalogue = Arc::new(lowered.catalogue().clone());
     let source = NpcRuleCatalog::runtime()?
         .admitted_for_npc("oteryn:npc.sandra", &catalogue)?
         .ok_or("Sandra programme admission")?;
-    assert!(source.programs().iter().flat_map(|p| &p.document.rules)
-        .any(|rule| rule.key == "oteryn:quest-npc/sandra/lottery"));
+    assert!(
+        source
+            .programs()
+            .iter()
+            .flat_map(|p| &p.document.rules)
+            .any(|rule| rule.key == "oteryn:quest-npc/sandra/lottery")
+    );
     assert_eq!(SANDRA_LOTTERY.total_weight(), Some(98));
-    assert_eq!(SANDRA_LOTTERY.outcomes.iter().map(|o| o.weight).collect::<Vec<_>>(), [1, 97]);
-    assert_eq!(SANDRA_LOTTERY.outcomes[0].item, Some("oteryn:item.tibia.i5958"));
+    assert_eq!(
+        SANDRA_LOTTERY
+            .outcomes
+            .iter()
+            .map(|o| o.weight)
+            .collect::<Vec<_>>(),
+        [1, 97]
+    );
+    assert_eq!(
+        SANDRA_LOTTERY.outcomes[0].item,
+        Some("oteryn:item.tibia.i5958")
+    );
     assert_eq!(SANDRA_LOTTERY.outcomes[1].item, None);
     let has_ticket = !matches!(case, Case::Missing | Case::Odds);
     let full = matches!(case, Case::Full);
@@ -172,15 +191,28 @@ async fn exercise(h: &f::Harness, case: Case) -> f::TestResult {
         .bind(identity.client_artifact_digest().as_slice())
         .bind(identity.frame_binding_digest().as_slice()).execute(&h.pool).await?;
     let seal = h.recovery.seal_current().map_err(f::debug)?;
-    let authority = h.root.open_character_authority(&seal).await.map_err(f::debug)?;
-    let permit = SpellLanePermit::of_fresh_scope(fence.runtime_scope).await.map_err(f::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(f::debug)?;
+    let permit = SpellLanePermit::of_fresh_scope(fence.runtime_scope)
+        .await
+        .map_err(f::debug)?;
     let before = snapshot(h).await?;
-    let draws: &[bool] = if full { &[true, false] } else { &[!matches!(case, Case::Blank)] };
+    let draws: &[bool] = if full {
+        &[true, false]
+    } else {
+        &[!matches!(case, Case::Blank)]
+    };
     for &win in draws {
         let mut selected = None;
         for ordinal in 6275..16275 {
             let request = NpcProgramRequest {
-                command: CommandRef::new(fence.game_session_id, CommandId::new(ordinal).map_err(f::debug)?),
+                command: CommandRef::new(
+                    fence.game_session_id,
+                    CommandId::new(ordinal).map_err(f::debug)?,
+                ),
                 npc: "oteryn:npc.sandra".into(),
                 trigger: NpcRuleTrigger::Say,
                 message: "lottery".into(),
@@ -188,50 +220,115 @@ async fn exercise(h: &f::Harness, case: Case) -> f::TestResult {
                 transition_key: "oteryn:quest-npc/sandra/lottery".into(),
             };
             if draw_for_request(content.loop_content_digest(), &request, fence.character_id)
-                .is_some_and(|draw| (draw == 0) == win) {
+                .is_some_and(|draw| (draw == 0) == win)
+            {
                 selected = Some(request);
                 break;
             }
         }
         let request = selected.ok_or("seeded outcome occurrence")?;
-        let result = h.root.commit_character_npc_program(&authority, &h.node, &permit, fence,
-            request.clone(), catalogue.clone(), &content, &premium).await.map_err(f::debug)?;
+        let result = h
+            .root
+            .commit_character_npc_program(
+                &authority,
+                &h.node,
+                &permit,
+                fence,
+                request.clone(),
+                catalogue.clone(),
+                &content,
+                &premium,
+            )
+            .await
+            .map_err(f::debug)?;
         if full || !has_ticket {
-            assert!(matches!(result.transition, QuestTransitionOutcome::Refused(_)), "{result:?}");
+            assert!(
+                matches!(result.transition, QuestTransitionOutcome::Refused(_)),
+                "{result:?}"
+            );
             if full {
-                assert_eq!(result.transition, QuestTransitionOutcome::Refused(QuestRefusal::CapacityExceeded));
+                assert_eq!(
+                    result.transition,
+                    QuestTransitionOutcome::Refused(QuestRefusal::CapacityExceeded)
+                );
             }
             assert!(!result.inventory_changed);
             assert_eq!(snapshot(h).await?, before);
             continue;
         }
-        assert!(matches!(result.transition, QuestTransitionOutcome::Committed(_)), "{result:?}");
+        assert!(
+            matches!(result.transition, QuestTransitionOutcome::Committed(_)),
+            "{result:?}"
+        );
         assert!(result.inventory_changed);
         let live: Vec<(String, i64)> = sqlx::query_as("SELECT definition_production_key,sum(quantity)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key IN ('oteryn:item.tibia.i5957','oteryn:item.tibia.i5958') GROUP BY definition_production_key ORDER BY definition_production_key")
             .fetch_all(&h.pool).await?;
-        assert_eq!(live, if win { vec![("oteryn:item.tibia.i5958".into(), 1)] } else { vec![] });
+        assert_eq!(
+            live,
+            if win {
+                vec![("oteryn:item.tibia.i5958".into(), 1)]
+            } else {
+                vec![]
+            }
+        );
         let committed = snapshot(h).await?;
-        let replay = h.root.commit_character_npc_program(&authority, &h.node, &permit, fence,
-            request, catalogue.clone(), &content, &premium).await.map_err(f::debug)?;
-        assert!(matches!(replay.transition, QuestTransitionOutcome::AlreadyCommitted(_)), "{replay:?}");
+        let replay = h
+            .root
+            .commit_character_npc_program(
+                &authority,
+                &h.node,
+                &permit,
+                fence,
+                request,
+                catalogue.clone(),
+                &content,
+                &premium,
+            )
+            .await
+            .map_err(f::debug)?;
+        assert!(
+            matches!(
+                replay.transition,
+                QuestTransitionOutcome::AlreadyCommitted(_)
+            ),
+            "{replay:?}"
+        );
         assert_eq!(snapshot(h).await?, committed);
     }
     Ok(())
 }
 
-async fn seed_inventory(h: &f::Harness, content: &Content<'_>, ticket: bool, full: bool) -> f::TestResult {
-    let bag = TypedDefinitionRef { family: "Item".into(), production_key: "oteryn:item.tibia.i2854".into(), revision_ref: "definition-r1".into() };
-    let capacity = content.loop_facts(&bag).and_then(|facts| facts.container_capacity).ok_or("native backpack capacity")?;
+async fn seed_inventory(
+    h: &f::Harness,
+    content: &Content<'_>,
+    ticket: bool,
+    full: bool,
+) -> f::TestResult {
+    let bag = TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: "oteryn:item.tibia.i2854".into(),
+        revision_ref: "definition-r1".into(),
+    };
+    let capacity = content
+        .loop_facts(&bag)
+        .and_then(|facts| facts.container_capacity)
+        .ok_or("native backpack capacity")?;
     let mut tx = h.pool.begin().await?;
     // Historical fixture rows only; all production-command triggers remain enabled.
-    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
         .bind(f::id(90).as_slice()).bind(f::id(f::WORLD).as_slice()).bind(&bag.production_key).bind(f::id(180).as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_item_container_slots VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
         .bind(f::id(f::CHARACTER).as_slice()).bind(f::id(90).as_slice()).bind(f::id(f::WORLD).as_slice()).bind(f::id(180).as_slice()).execute(&mut *tx).await?;
     let count = if full { capacity } else { u32::from(ticket) };
     for ordinal in 0..count {
-        let key = if ordinal == 0 && ticket { SANDRA_LOTTERY.input } else { "oteryn:item.tibia.i3052" };
+        let key = if ordinal == 0 && ticket {
+            SANDRA_LOTTERY.input
+        } else {
+            "oteryn:item.tibia.i3052"
+        };
         let item = f::id(100 + u8::try_from(ordinal)?);
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
             .bind(item.as_slice()).bind(f::id(f::WORLD).as_slice()).bind(key).bind(f::id(180).as_slice()).execute(&mut *tx).await?;
@@ -239,7 +336,9 @@ async fn seed_inventory(h: &f::Harness, content: &Content<'_>, ticket: bool, ful
             .bind(f::id(f::CHARACTER).as_slice()).bind(f::id(90).as_slice()).bind(item.as_slice()).bind(f::id(f::WORLD).as_slice()).bind(i64::from(ordinal)).bind(f::id(180).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
-    let entries: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries").fetch_one(&h.pool).await?;
+    let entries: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries")
+        .fetch_one(&h.pool)
+        .await?;
     assert_eq!(entries, i64::from(count));
     Ok(())
 }
