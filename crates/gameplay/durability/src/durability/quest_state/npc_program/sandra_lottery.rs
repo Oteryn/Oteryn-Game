@@ -24,6 +24,15 @@ pub fn draw(seed: [u8; 32], binding: [u8; 33]) -> Option<u32> {
     None
 }
 
+/// Evaluate the same seeded decision used by the receipt owner.
+pub fn draw_for_request(
+    seed: [u8; 32],
+    request: &NpcProgramRequest,
+    character: CharacterId,
+) -> Option<u32> {
+    draw(seed, request.binding(character))
+}
+
 pub(super) fn resolve(
     request: &NpcProgramRequest,
     plan: &NpcRulePlan,
@@ -43,7 +52,8 @@ pub(super) fn resolve(
     }) {
         return Err(DurabilityError::InvalidStoredState);
     }
-    let draw = draw(seed, request.binding(character)).ok_or(DurabilityError::InvalidStoredState)?;
+    let draw =
+        draw_for_request(seed, request, character).ok_or(DurabilityError::InvalidStoredState)?;
     let outcome = SANDRA_LOTTERY
         .draw(draw)
         .ok_or(DurabilityError::InvalidStoredState)?;

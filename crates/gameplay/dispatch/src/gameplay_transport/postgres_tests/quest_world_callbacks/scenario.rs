@@ -23,7 +23,8 @@ fn scenario_case(
     lever_fixture: bool,
     stateless_destination: Option<Position>,
 ) -> TestResult {
-    let sandra_lottery = name == "sandra-lottery-missing";
+    let sandra_win = name == "sandra-lottery-win";
+    let sandra_lottery = sandra_win || name == "sandra-lottery-missing";
     let name = if sandra_lottery { "npc-item-exchanges" } else { name };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
@@ -2458,6 +2459,10 @@ fn scenario_case(
                 &authority,
             ))
             .await?;
+        } else if sandra_win {
+            Box::pin(super::super::sandra_lottery::exercise_win(
+                &mut owner, &mut admitted, &h, &authority,
+            )).await?;
         } else if sandra_lottery {
             Box::pin(super::super::sandra_lottery::exercise_missing(
                 &mut owner, &mut admitted, &h, &authority,
