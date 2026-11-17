@@ -346,7 +346,9 @@ fn scenario_case(
     let sewer = name.starts_with("devil-helmet-sewer");
     let failure_landing = name.starts_with("conditional-failure-");
     let draconia_escape = name.starts_with("draconia-escape-");
-    let mut callback = if m03_use {
+    let mut callback = if name.starts_with("actmark-") {
+        super::super::actmark::callback()?
+    } else if m03_use {
         super::super::qengine_m03_use::callback()?
     } else if engenc_asura {
         super::super::engenc_asura_dispatch::callback(name)?
@@ -640,7 +642,9 @@ fn scenario_case(
     if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::require_bindings()?;
     }
-    let world = if name == "authored-wrath-crystals" {
+    let world = if name.starts_with("actmark-") {
+        super::super::actmark::world(&callback, trigger, name)?
+    } else if name == "authored-wrath-crystals" {
         super::super::questpc8_wrath_crystals::world()?
     } else if name == "nx6-wayfarer" {
         super::super::questpc8_wrath_source_dragon::world()?
@@ -2863,6 +2867,8 @@ fn scenario_case(
                 trigger,
             ))
             .await?;
+        } else if name.starts_with("actmark-") {
+            Box::pin(super::super::actmark::exercise(&owner, &mut admitted, name, deps.actor)).await?;
         } else if let Some(expected_destination) = stateless_destination {
             Box::pin(super::stateless::exercise(
                 &owner,

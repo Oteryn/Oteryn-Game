@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
+pub mod action_markers;
 #[cfg(test)]
 mod m39_sample_tests;
 mod published_markers;
@@ -766,6 +767,7 @@ pub fn load() -> Result<Vec<Callback>, String> {
     )?);
     callbacks.retain(|callback| super::in_runtime_scope(&callback.quest));
     bindings::apply(&mut callbacks)?;
+    callbacks.extend(action_markers::load(action_markers::EMBEDDED)?);
     let mut native_callbacks = vec![
         super::rotten_blood::altar_callback(),
         super::schrodinger_island::callback(),
