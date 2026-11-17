@@ -2451,6 +2451,60 @@
       ]
     },
     {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_hat",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Pretty, isn't it? My friend Amber taught me how to make it, but I could help you with one if you like. What do you say?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.hanna",
+      "keywords": [
+        "addon",
+        "outfit",
+        "hat"
+      ],
+      "topic": 0,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_hat",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_hat",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 0
+        }
+      ],
+      "reply": [
+        "Oh, you're back already? Did you bring a legion helmet, 100 chicken feathers and 50 honeycombs?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.hjaern",
       "keywords": [
         "shard"
@@ -3277,6 +3331,87 @@
       ]
     },
     {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Sorry, the backpack I wear is not for sale. It's handmade from rare minotaur leather."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "addon",
+        "outfit",
+        "backpack",
+        "leather"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "Ah, right, almost forgot about the backpack! Have you brought me 100 pieces of minotaur leather as requested?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.lubo",
+      "keywords": [
+        "backpack",
+        "minotaur",
+        "leather"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/addon_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/citizen_outfits/mission_backpack",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Well, if you really like this backpack, I could make one for you, but minotaur leather is hard to come by these days. Are you willing to put some work into this?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.lugri",
       "keywords": [
         "legs",
@@ -3734,6 +3869,26 @@
           "set": 1,
           "preserve": true
         }
+      ]
+    },
+    {
+      "npc": "oteryn:npc.morgan",
+      "keywords": [
+        "forge"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_sword_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "What would you like me to forge for you? A knight's sword or a warrior's sword?"
       ]
     },
     {
@@ -5383,6 +5538,132 @@
       ],
       "reply": [
         "Have you brought 50 bear paws and 50 wolf paws?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "dragon claw"
+      ],
+      "topic": 0,
+      "next_topic": 6,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "reply": [
+        "Have you actually managed to obtain the red dragon claw I asked for?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "earn"
+      ],
+      "topic": 0,
+      "next_topic": 1,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "I'm not sure if you are enough of a hero to earn them. You could try, though. What do you think?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "fighting spirit"
+      ],
+      "topic": 0,
+      "next_topic": 5,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "reply": [
+        "So, can you show me your fighting spirit?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "hardened bones"
+      ],
+      "topic": 0,
+      "next_topic": 3,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "reply": [
+        "How are you faring with your mission? Have you collected all 100 hardened bones?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "turtle shells"
+      ],
+      "topic": 0,
+      "next_topic": 4,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "reply": [
+        "Did you get us 100 turtle shells so we can make new shields?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.trisha",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/warrior_outfits/warrior_shoulder_addon",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "reply": [
+        "Bring me 100 hardened bones, 100 turtle shells, fighting spirit and a claw from a mighty dragon king. Did you understand everything I told you and are willing to handle this task?"
       ]
     },
     {

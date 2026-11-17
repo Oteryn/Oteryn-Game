@@ -60,6 +60,50 @@ Tests (red before the placement change, green after):
     routed legs are left to CI.
   - The placement assertions run route-less.
 
+## QB-2 — further outfit and reward-use hand-in placements
+
+The callbacks and stories existed; their NPCs were not placed. Each NPC is placed
+at its single agreeing promotion-candidate cell, as in QB-1. One Eyed Joe
+(Cursed Crystal) is not in this lane.
+
+| Quest | TibiaWiki | NPCs placed (x, y, z) |
+|---|---|---|
+| Brotherhood / Nightmare Outfits | `Brotherhood_Outfits`, `Nightmare_Outfits` | The Bone Master 32793,32225,14; The Dream Master 32844,32228,14 |
+| Cave Explorer Outfits | `Cave_Explorer_Outfits` | Gnommander 32248,32604,8 |
+| Crystal Warlord / Soil Guardian Outfits | `Crystal_Warlord_Outfits`, `Soil_Guardian_Outfits` | Gnomally 32795,31746,10 |
+| Decaying Defender / Revenant Outfits | `Decaying_Defender_Outfits`, `Revenant_Outfits` | Bloodshade (Rotten) 34069,31982,14; Flickering Soul 33621,31419,10 |
+| Dream Warden / Dream Warrior Outfits | `Dream_Warden_Outfits`, `Dream_Warrior_Outfits` | Eruaran 33618,32372,5; Vanys 33685,32180,8 |
+| Druid Outfits | `Druid_Outfits_Quest/Spoiler` | A Majestic Warwolf 33355,31991,8; Ceiron 32665,31717,7; Ustan 32580,32757,6 |
+| Knight Outfits | `Knight_Outfits_Quest/Spoiler` | Gregor 32406,32201,6 |
+| Hand of the Inquisition (mission 1 guards) | `The_Inquisition_Quest/Spoiler` | Grof 32372,32182,7; Kulag 32287,32264,7; Miles 32429,32173,5; Tim 32425,32223,6; Walter 32338,32277,7 |
+| To Outfox a Fox | `To_Outfox_a_Fox_Quest/Spoiler` | Budrik 32525,31905,8 |
+
+## QB-3 — mainland Citizen and Warrior addons
+
+Gap: only the Rookgaard Citizen route (Amber, Norma) existed, and the Warrior
+addons had no conversation at all. New generator module
+`tools/content-schema/quest-authoring/qb_citizen_warrior.py`, registered in
+`qengine_rewards.py`, writes the conversations from the Lubo, Hanna, Trisha and
+Cornelia donors. Global wins over the donors:
+
+| Addon | TibiaWiki | Global mechanic |
+|---|---|---|
+| Citizen backpack | `Citizen_Outfits_Quest/Spoiler` | Lubo 32489,32119,7 takes 100 minotaur leathers, then the backpack is ready two hours later |
+| Citizen feather hat | `Citizen_Outfits_Quest/Spoiler` | Hanna 32408,32220,7 takes a legion helmet, 100 chicken feathers and 50 honeycombs |
+| Warrior shoulder spikes | `Warrior_Outfits_Quest/Spoiler` | Trisha 32346,31749,7 takes 100 hardened bones, 100 turtle shells, fighting spirit and a dragon claw; Cornelia 32335,31794,7 adorns the armour two hours later, for everyone (the Crystal donor's one hour for women is not global) |
+| Warrior sword | `Warrior_Outfits_Quest/Spoiler` | Morgan takes a piece of royal steel and 100 iron ore |
+
+- Both Citizen routes share the catalogue tracks `u7_8/citizen_outfits/*`, so
+  each addon is earned once, by either route.
+- The full-outfit achievement is granted by the server lane's generic table
+  (FULLOUT), not by these callbacks.
+
+Tests: QB-3 cells in the Python and compiler placement tests;
+`qb_citizen_hand_ins_are_placed_and_story_completes` and
+`qb_warrior_hand_ins_are_placed_and_story_completes` assert the global two-hour
+waits and run the whole story (`qengine-rewards-qb-citizen-story`,
+`qengine-rewards-qb-warrior-story`) on PostgreSQL in CI.
+
 Known global-parity gaps (later batches or the server lane):
 
 - Sandra's lottery (100 empty vials for a random winning ticket) needs a

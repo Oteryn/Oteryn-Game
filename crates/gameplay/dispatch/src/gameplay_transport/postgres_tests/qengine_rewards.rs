@@ -218,6 +218,15 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "m09-rookie-mission11" => &["yes"],
         "m09-tower" => &["mission"],
         "knight-sword" => &["forge"],
+        "qb-citizen-backpack-start" => &["addon", "backpack"],
+        "qb-citizen-backpack-materials" => &["addon"],
+        "qb-citizen-hat-start" | "qb-citizen-hat" => &["hat"],
+        "qb-warrior-shoulder-start" => &["earn", "yes"],
+        "qb-warrior-shoulder-bones" => &["hardened bones"],
+        "qb-warrior-shoulder-claw" => &["dragon claw"],
+        "qb-warrior-shoulder-shells" => &["turtle shells"],
+        "qb-warrior-shoulder-spirit" => &["fighting spirit"],
+        "qb-warrior-sword" => &["forge"],
         "questpc7-golden-base" => &["base outfit"],
         "questpc7-golden-gloves" => &["boots and gloves"],
         "questpc7-golden-helmet" => &["golden helmet"],
@@ -1182,6 +1191,7 @@ pub(super) async fn exercise(
         || name.starts_with("qengine-rewards-l4-")
         || name.starts_with("qengine-rewards-l5-")
         || name.starts_with("qengine-rewards-l6-")
+        || name.starts_with("qengine-rewards-qb-")
     {
         return Box::pin(super::qengine_outfit_stories::exercise(
             owner, admitted, h, authority, name,

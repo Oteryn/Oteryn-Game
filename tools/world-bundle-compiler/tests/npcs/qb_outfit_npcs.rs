@@ -24,6 +24,47 @@ const QB_OUTFIT_NPCS: &[(&str, u16, u16, u8)] = &[
     ("oteryn:npc.zoltan", 33266, 31847, 4),
 ];
 
+/// QB-2: further outfit, addon and reward-use hand-in contacts.
+const QB2_OUTFIT_NPCS: &[(&str, u16, u16, u8)] = &[
+    // Druid Outfits Quest (A Majestic Warwolf, Ceiron, Ustan).
+    ("oteryn:npc.a_majestic_warwolf", 33355, 31991, 8),
+    // Decaying Defender Outfits.
+    ("oteryn:npc.bloodshade_rotten", 34069, 31982, 14),
+    // To Outfox a Fox Quest.
+    ("oteryn:npc.budrik", 32525, 31905, 8),
+    ("oteryn:npc.ceiron", 32665, 31717, 7),
+    // Dream Warden and Dream Warrior Outfits.
+    ("oteryn:npc.eruaran", 33618, 32372, 5),
+    // Revenant Outfits.
+    ("oteryn:npc.flickering_soul", 33621, 31419, 10),
+    // Crystal Warlord and Soil Guardian Outfits.
+    ("oteryn:npc.gnomally", 32795, 31746, 10),
+    // Cave Explorer Outfits.
+    ("oteryn:npc.gnommander", 32248, 32604, 8),
+    // Knight Outfits Quest.
+    ("oteryn:npc.gregor", 32406, 32201, 6),
+    // The Inquisition (Hand of the Inquisition Outfits): the guards of mission 1.
+    ("oteryn:npc.grof_the_guard", 32372, 32182, 7),
+    ("oteryn:npc.kulag_the_guard", 32287, 32264, 7),
+    ("oteryn:npc.miles_the_guard", 32429, 32173, 5),
+    // Brotherhood Outfits.
+    ("oteryn:npc.the_bone_master", 32793, 32225, 14),
+    // Nightmare Outfits.
+    ("oteryn:npc.the_dream_master", 32844, 32228, 14),
+    ("oteryn:npc.tim_the_guard", 32425, 32223, 6),
+    ("oteryn:npc.ustan", 32580, 32757, 6),
+    ("oteryn:npc.vanys", 33685, 32180, 8),
+    ("oteryn:npc.walter_the_guard", 32338, 32277, 7),
+];
+
+/// QB-3: mainland Citizen (Lubo, Hanna) and Warrior (Trisha, Cornelia) addon contacts.
+const QB3_OUTFIT_NPCS: &[(&str, u16, u16, u8)] = &[
+    ("oteryn:npc.cornelia", 32335, 31794, 7),
+    ("oteryn:npc.hanna", 32408, 32220, 7),
+    ("oteryn:npc.lubo", 32489, 32119, 7),
+    ("oteryn:npc.trisha", 32346, 31749, 7),
+];
+
 fn admitted_at(key: &str, x: u16, y: u16, z: u8) -> TestResult {
     let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
     let project =
@@ -71,6 +112,22 @@ fn admitted_at(key: &str, x: u16, y: u16, z: u8) -> TestResult {
 #[test]
 fn qb_outfit_hand_in_npcs_are_admitted_at_their_source_cells() -> TestResult {
     for (key, x, y, z) in QB_OUTFIT_NPCS {
+        admitted_at(key, *x, *y, *z)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn qb2_outfit_hand_in_npcs_are_admitted_at_their_source_cells() -> TestResult {
+    for (key, x, y, z) in QB2_OUTFIT_NPCS {
+        admitted_at(key, *x, *y, *z)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn qb3_outfit_hand_in_npcs_are_admitted_at_their_source_cells() -> TestResult {
+    for (key, x, y, z) in QB3_OUTFIT_NPCS {
         admitted_at(key, *x, *y, *z)?;
     }
     Ok(())
