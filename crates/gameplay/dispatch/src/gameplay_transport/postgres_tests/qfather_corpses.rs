@@ -7,7 +7,7 @@ use oteryn_protocol_oteryn::world_object::{
 };
 
 #[test]
-fn qfather_plain_use_grants_each_corpse_material_once() -> TestResult {
+fn qfather_plain_use_grants_each_material_from_another_players_kill_once() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -38,7 +38,38 @@ pub(super) async fn exercise(
             selected,
         )
         .ok_or("corpse-use capabilities")?;
-    super::questpc7_native_deaths::prepare_native_hunter(owner, admitted).await?;
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    let killer =
+        crate::world_party_runtime_postgres_cases::committed_fresh_player(h, 60, 62, 70, now)
+            .await?;
+    let killer_session = killer.current_game_session_id();
+    let killer_character = *killer.current_character_lease().character_id().as_bytes();
+    let killer_actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime
+            .reserve_fresh_session(killer_session)
+            .map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .bind_attacker_lease(actor, killer_session, killer.current_character_lease())
+            .map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(actor, super::quest_world_callbacks::local(at))
+            .map_err(debug)?;
+        actor
+    };
+    let mut killer = AdmittedSession {
+        game_session_id: killer_session,
+        runtime_actor: Some(killer_actor),
+        controller: None,
+        item_fence: crate::gameplay_transport::item_fence_of(killer),
+        ..*admitted
+    };
+    Box::pin(owner.admit_progression_session(&mut killer)).await;
+    super::questpc7_native_deaths::prepare_native_hunter(owner, &killer).await?;
     let intent = encode_item_use_intent(&UseIntent {
         target: UseTarget::Item(std::num::NonZeroU64::MIN),
         use_with: None,
@@ -60,7 +91,18 @@ pub(super) async fn exercise(
             11302,
         ),
     ] {
-        super::questpc7_goblin::stalker_death(owner, admitted, creature, at, command).await?;
+        super::questpc7_goblin::stalker_death(owner, &mut killer, creature, at, command).await?;
+        let top_damage: Vec<u8> = sqlx::query_scalar(
+            "SELECT uuid_send(r.corpse_top_damage_character_id)
+             FROM game_item_mint_receipts r JOIN game_item_instances i USING(item_instance_id)
+             WHERE i.definition_production_key=$1 AND r.materialized_at IS NOT NULL",
+        )
+        .bind(corpse)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(top_damage, killer_character, "{creature}");
+        assert_ne!(top_damage, id(41), "the user did not kill {creature}");
+
         let index = owner
             .active_generation
             .and_then(|active| active.native_gameplay())
