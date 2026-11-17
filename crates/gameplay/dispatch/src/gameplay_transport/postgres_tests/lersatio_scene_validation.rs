@@ -220,3 +220,30 @@ fn lersatio_mirrors_are_registered_with_both_counter_transitions() -> Result<(),
     }
     Ok(())
 }
+
+#[test]
+fn lersatio_counter_phases_share_selector_only_with_disjoint_guards() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::world_callbacks::{load, phase};
+    let callbacks = load()?;
+    let first = callbacks
+        .iter()
+        .find(|callback| callback.key.ends_with("lersatio-mirror-1-first"))
+        .ok_or("first mirror phase")?;
+    let second = callbacks
+        .iter()
+        .find(|callback| callback.key.ends_with("lersatio-mirror-1-second"))
+        .ok_or("second mirror phase")?;
+    assert!(phase::exclusive(first, second));
+    let mut overlapping = second.clone();
+    let guard = overlapping
+        .storage
+        .iter_mut()
+        .find(|storage| storage.track.ends_with("/mirror_counter"))
+        .ok_or("counter guard")?;
+    guard.minimum = 0;
+    assert!(!phase::exclusive(first, &overlapping));
+    let mut different_reset = second.clone();
+    different_reset.effects.reset_after_ms = Some(1);
+    assert!(!phase::exclusive(first, &different_reset));
+    Ok(())
+}

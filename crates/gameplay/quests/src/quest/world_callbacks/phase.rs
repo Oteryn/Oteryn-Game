@@ -35,7 +35,7 @@ pub fn select_storage_phase<'a>(
     for (index, left) in candidates.iter().enumerate() {
         if candidates[index + 1..]
             .iter()
-            .any(|right| !disjoint(left, right))
+            .any(|right| !disjoint(left, right) && !exclusive(left, right))
         {
             return Err("overlapping physical callback phases".into());
         }
@@ -61,10 +61,22 @@ pub fn select_storage_phase<'a>(
 // STEP alternatives share geometry only when preserved personal phases are disjoint.
 
 pub fn exclusive(left: &Callback, right: &Callback) -> bool {
+    let timed_source = left.requires_world_admission
+        && right.requires_world_admission
+        && left.lever.is_none()
+        && right.lever.is_none()
+        && left.item_on_target.is_none()
+        && right.item_on_target.is_none()
+        && left.effects.transform.is_some()
+        && left.effects.transform == right.effects.transform
+        && left.effects.reset_after_ms.is_some()
+        && left.effects.reset_after_ms == right.effects.reset_after_ms
+        && left.effects.scene == right.effects.scene;
     let source_trial = left.trigger == Trigger::Use
-        && left.effects.target_transform.is_some()
-        && left.effects.target_transform == right.effects.target_transform
-        && left.item_on_target == right.item_on_target;
+        && ((left.effects.target_transform.is_some()
+            && left.effects.target_transform == right.effects.target_transform
+            && left.item_on_target == right.item_on_target)
+            || timed_source);
     left.actor_kind == ActorKind::Player
         && right.actor_kind == ActorKind::Player
         && (source_trial || matches!(left.trigger, Trigger::StepIn | Trigger::StepOut))
