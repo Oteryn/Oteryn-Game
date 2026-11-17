@@ -49,18 +49,26 @@ pub(super) async fn exercise(
         )
         .await?;
     }
+    sqlx::raw_sql(
+        "CREATE TABLE repeatcd_test_clock (now timestamptz NOT NULL);
+         INSERT INTO repeatcd_test_clock VALUES (statement_timestamp());
+         GRANT SELECT ON repeatcd_test_clock TO oteryn_game_runtime;
+         CREATE OR REPLACE FUNCTION game_native_daily_reward_clock() RETURNS timestamptz
+         LANGUAGE sql STABLE SET search_path = pg_catalog AS
+         $$ SELECT now FROM public.repeatcd_test_clock $$;",
+    )
+    .execute(&h.pool)
+    .await?;
     let before = experience(h).await?;
     for (clock, expected, reports) in [
         ("2026-01-10 05:01:00+00", NpcIntentDisposition::Ok, 1),
         ("2026-01-11 04:59:59+00", NpcIntentDisposition::Rejected, 1),
         ("2026-01-11 05:00:00+00", NpcIntentDisposition::Ok, 2),
     ] {
-        sqlx::query(&format!(
-            "CREATE OR REPLACE FUNCTION game_native_daily_reward_clock() RETURNS timestamptz
-             LANGUAGE sql STABLE SET search_path = pg_catalog AS $$ SELECT timestamptz '{clock}' $$"
-        ))
-        .execute(&h.pool)
-        .await?;
+        sqlx::query("UPDATE repeatcd_test_clock SET now=$1::text::timestamptz")
+            .bind(clock)
+            .execute(&h.pool)
+            .await?;
         let (result, _, _) = wire_conversation(
             owner,
             admitted,
