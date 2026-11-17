@@ -82,7 +82,7 @@ pub fn text(panel: &Panel, seconds: u64) -> String {
                 text,
                 " · {} confirmed items\r\n{}\r\n",
                 row.count,
-                row.history.chart(seconds)
+                super::view::report_chart(panel, &row.history, seconds, super::Tool::LootTracker)
             );
         } else {
             text.push_str(tr!(" · no confirmed drops\r\n"));

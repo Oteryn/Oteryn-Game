@@ -139,3 +139,34 @@ fn authoritative_queue_can_be_cancelled_after_sixteen_retries()
     assert_eq!(queued.waits.len(), 18);
     Ok(())
 }
+
+#[test]
+fn expired_while_waiting_does_not_admit_again() -> Result<(), Box<dyn std::error::Error>> {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()?;
+    runtime.block_on(async {
+        let until = Instant::now() + Duration::from_millis(100);
+        let mut queued = Queued {
+            calls: 0,
+            succeed: 2,
+            until,
+            waits: vec![],
+            cancel_after: None,
+        };
+        {
+            let mut pending =
+                std::pin::pin!(enter(&mut queued, Duration::ZERO, CancellationToken::new()));
+            std::future::poll_fn(|cx| {
+                assert!(pending.as_mut().poll(cx).is_pending());
+                std::task::Poll::Ready(())
+            })
+            .await;
+            tokio::time::sleep_until(until.into()).await;
+            assert!(pending.await.is_err());
+        }
+        assert_eq!(queued.calls, 1);
+        assert_eq!(queued.waits.len(), 1);
+    });
+    Ok(())
+}

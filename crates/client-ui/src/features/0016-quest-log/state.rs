@@ -17,7 +17,7 @@ impl QuestPanel {
         self.titles
             .get(&index)
             .cloned()
-            .unwrap_or_else(|| format!("Quest {index}"))
+            .unwrap_or_else(|| lfmt!("Quest {}", index))
     }
 
     pub fn set_list_options(&mut self, search: &str, sort: QuestSort) {

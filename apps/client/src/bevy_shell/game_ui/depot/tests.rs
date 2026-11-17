@@ -296,5 +296,21 @@ fn turning_manual_sort_off_drops_the_held_depot_deposit() -> TestResult {
         "no held deposit after the mode is off"
     );
     assert!(rows(&mut app, "Item 9 ×3 — withdraw stack"));
+    assert!(toggle(&app)?);
+    app.update();
+    click(&mut app, Kind::Request(Intent::Deposit(handle)))?;
+    let mut far = reply();
+    far.page = 16;
+    far.total = 513;
+    outbox.bevy_depot_result(Some(far));
+    app.update();
+    assert!(!rows(&mut app, "place here"));
+    outbox.bevy_depot_items(Default::default());
+    app.update();
+    assert!(rows(&mut app, "Item 9 ×3 — withdraw stack"));
+    click(&mut app, Kind::Request(Intent::Withdraw(0)))?;
+    assert!(
+        matches!(commands.try_recv()?, PlayCommand::Depot(intent, None) if matches!(intent.action, DepotAction::Withdraw(_)))
+    );
     Ok(())
 }
