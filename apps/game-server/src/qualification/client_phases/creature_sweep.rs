@@ -667,8 +667,9 @@ async fn hunt(
         .collect();
     let mut last_position = target.position;
     let mut last_health = match target.detail {
-        EntityDetail::Actor { health_percent, .. } => health_percent,
-        EntityDetail::Object { .. } => 100,
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => health_percent,
+        EntityDetail::Object { .. } | EntityDetail::ObjectWithAppearance { .. } => 100,
     };
     let mut damaged = false;
     client.take_events();
