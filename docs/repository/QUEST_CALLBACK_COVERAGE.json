@@ -1,8 +1,8 @@
 {
   "counts": {
-    "dispatch_pg_qualified": 189,
+    "dispatch_pg_qualified": 195,
     "not_playable": 2,
-    "supported_unqualified": 145
+    "supported_unqualified": 139
   },
   "native_authored_claims": [
     {
@@ -6569,8 +6569,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "qready2_six_rubies_quest_1",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/six_rubies_quest"
@@ -6602,8 +6602,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "qready2_spike_sword_quest_1",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/spike_sword_quest"
@@ -6847,8 +6847,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "qready2_studded_shield_quest_1",
+          "status": "dispatch_pg_qualified"
         },
         {
           "claim": "oteryn:reward-claim.kv.bananapremium",
@@ -6875,8 +6875,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "qready2_studded_shield_quest_2",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/studded_shield_quest"
@@ -9527,8 +9527,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "qready2_throwing_star_quest_1",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "canary:quest/throwing_star_quest"
@@ -10569,8 +10569,8 @@
               ]
             }
           ],
-          "reason": "requires exact World binding and native Item admission",
-          "status": "supported_unqualified"
+          "reason": "qready2_studded_legs_quest_1",
+          "status": "dispatch_pg_qualified"
         }
       ],
       "quest": "crystalserver:quest/studded_legs_quest"

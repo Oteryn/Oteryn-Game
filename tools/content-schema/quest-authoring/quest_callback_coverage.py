@@ -16,8 +16,11 @@ import lua_tables
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = ROOT / "docs/repository/QUEST_CALLBACK_COVERAGE.json"
 QUALIFIED = {
+    "oteryn:reward-claim.kv.bananafree": "qready2_studded_shield_quest_1",
+    "oteryn:reward-claim.kv.bananapremium": "qready2_studded_shield_quest_2",
     "oteryn:reward-claim.kv.bear_chest1": "quest_container_chests_bear_bag_once_and_replay",
     "oteryn:reward-claim.kv.desert2": "source_quest_rewards::the_desert_dungeon_rewards",
+    "oteryn:reward-claim.kv.honeyflower": "qready2_studded_legs_quest_1",
     "oteryn:reward-claim.kv.madmageroom3": "quest_container_chests_full_definition_charges_mint_one_instance",
     "oteryn:reward-claim.kv.naginata": "quest_reward_claims_naginata_use_once_and_replay",
     "oteryn:reward-claim.kv.nightmare_teddy_quest": "quest_reward_claims_nightmare_teddy_use_once_and_replay",
@@ -35,7 +38,10 @@ QUALIFIED = {
     "oteryn:reward-claim.kv.purpletome1": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
     "oteryn:reward-claim.kv.purpletome2": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
     "oteryn:reward-claim.kv.purpletome3": "quest_reward_claims_batch_one_purple_tome_all_three_bookcases",
+    "oteryn:reward-claim.kv.sixrubies": "qready2_six_rubies_quest_1",
+    "oteryn:reward-claim.kv.spikesword": "qready2_spike_sword_quest_1",
     "oteryn:reward-claim.kv.steelhelmet1": "quest_callbacks_source_chest_use_once_replay_and_second_use_refused",
+    "oteryn:reward-claim.kv.throwingstar": "qready2_throwing_star_quest_1",
     "oteryn:reward-claim.kv.timering3": "source_quest_rewards::time_ring_rewards",
     "oteryn:reward-claim.kv.triangletower": "source_quest_rewards::triangle_tower_rewards",
     "oteryn:reward-claim.kv.trollcave1": "source_quest_rewards::troll_cave_rewards",

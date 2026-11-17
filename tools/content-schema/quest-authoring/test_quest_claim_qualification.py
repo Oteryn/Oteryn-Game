@@ -31,20 +31,26 @@ class QualificationTests(unittest.TestCase):
         self.assertEqual(errors, [])
         # Keep the exact outstanding denominator; qualified and not-playable
         # source claims remain in their separate coverage categories.
-        self.assertEqual(sum(counts.values()), 145)
+        self.assertEqual(sum(counts.values()), 139)
 
-        # 189 source claims have focused dispatch PG proof; only the
+        # 195 source claims have focused dispatch PG proof; only the
         # two Dawnport claims are excluded. Keep exact denominator detection.
         self.assertEqual(sum(counts.values()), qualification.EXPECTED_DENOMINATOR)
         coverage = qualification.read_json(qualification.COVERAGE)
         self.assertEqual(coverage['counts'], {
-            'dispatch_pg_qualified': 189, 'not_playable': 2, 'supported_unqualified': 145})
+            'dispatch_pg_qualified': 195, 'not_playable': 2, 'supported_unqualified': 139})
         self.assertEqual(sum(coverage['counts'].values()), 336)
         selected = {
+            'oteryn:reward-claim.kv.bananafree',
+            'oteryn:reward-claim.kv.bananapremium',
+            'oteryn:reward-claim.kv.honeyflower',
             'oteryn:reward-claim.kv.nightmare_teddy_quest',
             'oteryn:reward-claim.kv.purpletome1',
             'oteryn:reward-claim.kv.purpletome2',
             'oteryn:reward-claim.kv.purpletome3',
+            'oteryn:reward-claim.kv.sixrubies',
+            'oteryn:reward-claim.kv.spikesword',
+            'oteryn:reward-claim.kv.throwingstar',
             'oteryn:reward-claim.quest.key.id4055',
         }
         claims = {c['claim']: c for q in coverage['quests'] for c in q['chests']}
