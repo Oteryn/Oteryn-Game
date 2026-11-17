@@ -137,6 +137,9 @@ def complete_native_stack(root, record, definition, binding):
 def grant_semantics(root, definition):
     """Carry source text facts without inventing an unqualified player-write policy."""
     semantics = copy.deepcopy(definition['semantics'])
+    # MP01: the native owner completes the equip level and vocations of 91 weapons.
+    import weapon_equip_requirements
+    semantics = weapon_equip_requirements.complete_semantics(root, definition['identity']['key'], semantics)
     # Canary04b83b5:data/items/items.xml:16088-16091. The admitted poem
     # scroll has an unknown canonical weight, but this exact donor explicitly
     # supplies 120 centi-oz. Preserve the canonical record and known native facts.
