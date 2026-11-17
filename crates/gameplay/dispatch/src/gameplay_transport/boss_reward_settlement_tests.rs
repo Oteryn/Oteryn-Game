@@ -42,8 +42,12 @@ fn frozen() -> FrozenBossDeath {
         died_at_unix_ms: 1_000_000,
         reward: Arc::new(CreatureRewardRow {
             xp_amount: oteryn_simulation_determinism::ExactI64::new(100),
-            corpse_item: LootDefinitionRef::new("Item", "oteryn:item.tibia.i3058", "definition-r1"),
-            loot_table_ref: table_reference(),
+            corpse_item: Some(LootDefinitionRef::new(
+                "Item",
+                "oteryn:item.tibia.i3058",
+                "definition-r1",
+            )),
+            loot_table_ref: Some(table_reference()),
             loot_table: LootTableDefinition {
                 algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
                 entries: vec![LootTableEntry {
@@ -112,8 +116,8 @@ fn boss_reward_settlement_retains_full_census_and_replays_independently_of_input
     );
     assert_eq!(
         first.chests.len(),
-        1,
-        "accepted anti-leech gate remains separate from donor loot scaling"
+        3,
+        "Crystal 201189f reward_chest.lua:54-69 rewards every nonzero score"
     );
     assert_eq!(
         first.chests[0].character_id.as_bytes(),
@@ -332,3 +336,6 @@ fn pity_bonus_reaches_the_personal_roll_and_only_adds_drops() {
     }
     assert!(pity_drops > base_drops, "{pity_drops} > {base_drops}");
 }
+
+#[path = "boss_reward_settlement_tests/soul_war_literal.rs"]
+mod soul_war_literal;

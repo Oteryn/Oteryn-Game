@@ -19,7 +19,16 @@ pub async fn schedule_minted_item_in_transaction(
     occurred_at: i64,
 ) -> Result<(), SpellItemError> {
     if !definition.decay_chain.is_empty() {
-        return schedule_field_chain_in_transaction(tx, authority, request, definition, item, ordinal, occurred_at).await;
+        return schedule_field_chain_in_transaction(
+            tx,
+            authority,
+            request,
+            definition,
+            item,
+            ordinal,
+            occurred_at,
+        )
+        .await;
     }
     let Some(decay) = &definition.decay else {
         return Ok(());
@@ -59,14 +68,25 @@ pub(super) async fn schedule_action_item_in_transaction(
     occurred_at: i64,
 ) -> Result<(), super::DurabilityError> {
     use super::DurabilityError;
-    let Some(decay) = output.get("decay").filter(|value| !value.is_null()) else { return Ok(()); };
-    let duration = decay.get("duration_millis").and_then(serde_json::Value::as_u64)
+    let Some(decay) = output.get("decay").filter(|value| !value.is_null()) else {
+        return Ok(());
+    };
+    let duration = decay
+        .get("duration_millis")
+        .and_then(serde_json::Value::as_u64)
         .filter(|value| (1..=u64::from(u32::MAX)).contains(value))
         .ok_or(DurabilityError::InvalidStoredState)?;
     let duration = i64::try_from(duration).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let expires = occurred_at.checked_add(duration).ok_or(DurabilityError::InvalidStoredState)?;
-    let target = decay.get("target").ok_or(DurabilityError::InvalidStoredState)?;
-    if output.get("count").and_then(serde_json::Value::as_u64) != Some(1) || ordinal == 0 || content_digest == [0; 32] {
+    let expires = occurred_at
+        .checked_add(duration)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let target = decay
+        .get("target")
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    if output.get("count").and_then(serde_json::Value::as_u64) != Some(1)
+        || ordinal == 0
+        || content_digest == [0; 32]
+    {
         return Err(DurabilityError::InvalidStoredState);
     }
     sqlx::query("INSERT INTO game_spell_item_temporal_schedules(item_instance_id,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,target_family,target_production_key,target_revision,content_digest) VALUES(($1->>'item')::uuid,$2::uuid,$3,$4,$5,'Item',$1->>'key',$1->>'revision',$6->>'family',$6->>'key',$6->>'revision',$7)")
@@ -220,8 +240,11 @@ pub async fn drain_due_items_in_transaction(
         .bind(world.as_slice()).bind(channel.as_slice()).bind(authority.generation().to_string())
         .bind(i32::try_from(limit - changed).map_err(|_| SpellItemError::Rejected("Item timer batch bound"))?)
         .fetch_one(&mut **tx).await?;
-    let changed = changed + usize::try_from(scrolls).map_err(|_| SpellItemError::Rejected("Item timer batch bound"))?;
-    let floor = super::item_loop_move::floor_transform::drain_due(tx, authority, limit - changed).await?;
+    let changed = changed
+        + usize::try_from(scrolls)
+            .map_err(|_| SpellItemError::Rejected("Item timer batch bound"))?;
+    let floor =
+        super::item_loop_move::floor_transform::drain_due(tx, authority, limit - changed).await?;
     Ok(changed + floor)
 }
 
@@ -260,9 +283,8 @@ pub async fn drain_due_field_chains_in_transaction(
     }
     check_scope_transaction(tx, authority).await?;
     let world = authority.world_bytes();
-    let channel = authority.channel_bytes().ok_or(SpellItemError::Rejected(
-        "Channel Item timer scope required",
-    ))?;
+    let channel = authority.channel_bytes();
+    let instance = authority.runtime_scope().instance_id();
     let mut changed = 0;
     while changed < limit {
         let rows=sqlx::query(r#"SELECT i.item_instance_id::text,i.state_revision::text,i.quantity,p.source_stage,
@@ -291,12 +313,13 @@ pub async fn drain_due_field_chains_in_transaction(
        AND p.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint
        AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id AND done.source_stage=p.source_stage)
        AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND ((g.runtime_scope_ownership_generation=$3::text::numeric OR game_event_item_timer_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)) OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
+         OR (g.world_id=i.world_id AND game_instance_corpse_stage_current(i.item_instance_id,i.world_id,encode($5,'hex')::uuid,$3::text::numeric,g.stack_ordinal))
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
           AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state IN(1,2)
           AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id
           AND sess.runtime_scope_channel_id=encode($2,'hex')::uuid AND sess.scope_ownership_generation=$3::text::numeric))
       ORDER BY p.expires_at_unix_ms,i.item_instance_id,p.source_stage LIMIT $4 FOR UPDATE OF i,p"#)
-        .bind(world.as_slice()).bind(channel.as_slice()).bind(authority.generation().to_string()).bind(1_i64).fetch_all(&mut **tx).await?;
+        .bind(world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(authority.generation().to_string()).bind(1_i64).bind(instance.map(|id| id.to_vec())).fetch_all(&mut **tx).await?;
         if rows.is_empty() {
             break;
         }
@@ -344,9 +367,9 @@ pub async fn drain_due_field_chains_in_transaction(
             };
             let ordinal: Option<String> = row.try_get("ordinal")?;
             let equipment_revision: Option<String> = row.try_get("equipment_revision")?;
-            sqlx::query("INSERT INTO game_spell_field_temporal_receipts(source_stage,transaction_id,event_id,item_instance_id,world_id,channel_id,ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,game_session_id,character_lease_generation,connection_generation,source_parent,source_ordinal,source_slot,equipment_revision_before,source_stack_ordinal) VALUES($18,$1::uuid,$2::uuid,$3::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7::text::numeric,1,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$8,$9::uuid,$10::uuid,$11::text::numeric,$12::text::numeric,$13::uuid,$14::text::numeric,$15,$16::text::numeric,$17)")
-            .bind(&transaction).bind(&event).bind(&item).bind(world.as_slice()).bind(channel.as_slice()).bind(authority.generation().to_string())
-            .bind(&revision).bind(kind).bind(&character).bind(&session).bind(&lease).bind(&connection).bind(&parent).bind(&ordinal).bind(slot).bind(&equipment_revision).bind(stack).bind(stage)
+            sqlx::query("INSERT INTO game_spell_field_temporal_receipts(source_stage,transaction_id,event_id,item_instance_id,world_id,channel_id,ownership_generation,state_revision_before,quantity_before,occurred_at_unix_ms,custody_kind,character_id,game_session_id,character_lease_generation,connection_generation,source_parent,source_ordinal,source_slot,equipment_revision_before,source_stack_ordinal,instance_id) VALUES($18,$1::uuid,$2::uuid,$3::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7::text::numeric,1,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$8,$9::uuid,$10::uuid,$11::text::numeric,$12::text::numeric,$13::uuid,$14::text::numeric,$15,$16::text::numeric,$17,encode($19,'hex')::uuid)")
+            .bind(&transaction).bind(&event).bind(&item).bind(world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(authority.generation().to_string())
+            .bind(&revision).bind(kind).bind(&character).bind(&session).bind(&lease).bind(&connection).bind(&parent).bind(&ordinal).bind(slot).bind(&equipment_revision).bind(stack).bind(stage).bind(instance.map(|id| id.to_vec()))
             .execute(&mut **tx).await?;
             let target: Option<String> = row.try_get("target_production_key")?;
             let affected = if let Some(target) = target {
@@ -379,7 +402,7 @@ pub async fn drain_due_field_chains_in_transaction(
                     return Err(SpellItemError::Rejected("Item timer equipment epoch"));
                 }
             }
-            let envelope:serde_json::Value=sqlx::query_scalar("SELECT jsonb_build_object('receipt',to_jsonb(r),'schedule',to_jsonb(p)) FROM game_spell_field_temporal_receipts r JOIN game_spell_field_temporal_schedules p ON p.item_instance_id=r.item_instance_id AND p.source_stage=r.source_stage WHERE r.transaction_id=$1::uuid")
+            let envelope:serde_json::Value=sqlx::query_scalar("SELECT jsonb_build_object('receipt',game_spell_field_temporal_receipt_json(r),'schedule',to_jsonb(p)) FROM game_spell_field_temporal_receipts r JOIN game_spell_field_temporal_schedules p ON p.item_instance_id=r.item_instance_id AND p.source_stage=r.source_stage WHERE r.transaction_id=$1::uuid")
             .bind(&transaction).fetch_one(&mut **tx).await?;
             let bytes = serde_json::to_vec(&envelope)
                 .map_err(|_| SpellItemError::Rejected("Item timer audit encoding"))?;
@@ -398,6 +421,53 @@ pub async fn drain_due_field_chains_in_transaction(
         }
     }
     Ok(changed)
+}
+
+/// Item::transform starts the authentic target ItemType decay. This closed
+/// source edge uses the existing scoped temporal owner, including Instances.
+pub(super) async fn schedule_source_scope_intrinsic_transform_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    transaction_id: [u8; 16],
+    definition: &QualifiedItemDefinition,
+    item: [u8; 16],
+    ordinal: u32,
+    original_execution_unix_ms: i64,
+) -> Result<(), SpellItemError> {
+    check_scope_transaction(tx, authority).await?;
+    let decay = definition
+        .decay
+        .as_ref()
+        .ok_or(SpellItemError::Rejected("source transform decay missing"))?;
+    if definition.definition.family != "Item"
+        || definition.definition.production_key != "oteryn:item.tibia.i43297"
+        || definition.definition.revision_ref != "definition-r1"
+        || decay.duration_millis != 248_000
+        || decay.target.is_some()
+        || !definition.decay_chain.is_empty()
+        || !definition.materializable
+        || !definition.ground_destination
+        || definition.stack_maximum != 1
+        || definition.container_capacity.is_some()
+        || ordinal == 0
+        || original_execution_unix_ms <= 0
+    {
+        return Err(SpellItemError::Rejected(
+            "closed source transform decay policy",
+        ));
+    }
+    let deadline =
+        original_execution_unix_ms
+            .checked_add(248_000)
+            .ok_or(SpellItemError::Rejected(
+                "source transform deadline overflow",
+            ))?;
+    sqlx::query("INSERT INTO game_spell_field_temporal_schedules(item_instance_id,source_stage,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,target_family,target_production_key,target_revision,content_digest,blocks_movement,blocks_projectile,immovable_block_solid) VALUES(encode($1,'hex')::uuid,1,encode($2,'hex')::uuid,$3,248000,$4,'Item','oteryn:item.tibia.i43297','definition-r1',NULL,NULL,NULL,$5,false,false,false)")
+        .bind(item.as_slice()).bind(transaction_id.as_slice())
+        .bind(i32::try_from(ordinal).map_err(|_|SpellItemError::Rejected("source transform ordinal"))?)
+        .bind(deadline).bind(definition.content_generation_digest.as_slice())
+        .execute(&mut **tx).await?;
+    Ok(())
 }
 
 pub(super) async fn schedule_source_scope_field_chain_in_transaction(

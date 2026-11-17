@@ -80,6 +80,23 @@ pub(in crate::gameplay_transport) struct PlayerBiteVitals<'a> {
 }
 
 impl CreatureBiteVitals for PlayerBiteVitals<'_> {
+    fn source_combat_component_damage(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        target: ExactActorRef,
+        magnitude: u32,
+        now: u64,
+    ) -> Option<u32> {
+        super::super::soul_war_callbacks::source_third_taint_policy(
+            self.states,
+            runtime,
+            issuer,
+            target,
+            now,
+        )?
+        .apply(runtime, issuer, target, now, magnitude)
+    }
     fn melee_damage_taken(
         &self,
         runtime: &ChannelRuntimeV1,

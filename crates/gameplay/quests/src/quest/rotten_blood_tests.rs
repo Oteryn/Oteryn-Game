@@ -316,3 +316,50 @@ fn catalogue_mission_and_altar_keep_existing_quest_receipt_owner() -> TestResult
     }
     Ok(())
 }
+
+#[test]
+fn srx3_bakragore_four_literal_flame_uses_consume_existing_essence_flags() -> Result<(), String> {
+    let callbacks = crate::quest::world_callbacks::load()
+        .map_err(|error| format!("source callback catalogue: {error:?}"))?;
+    for (flavor, appearance, flag) in [
+        ("murcion", 43983, "oteryn:quest-progress/storage/52280"),
+        ("ichgahal", 43497, "oteryn:quest-progress/storage/52281"),
+        ("chagorz", 43987, "oteryn:quest-progress/storage/52282"),
+        ("vemiath", 43985, "oteryn:quest-progress/storage/52283"),
+    ] {
+        let key = format!("oteryn:quest-callback/rotten-blood/prepare-{flavor}");
+        let callback = callbacks
+            .iter()
+            .find(|c| c.key == key)
+            .ok_or_else(|| format!("missing actual source flame USE: {key}"))?;
+        assert_eq!(
+            callback.trigger,
+            crate::quest::world_callbacks::Trigger::Use
+        );
+        assert_eq!(callback.selector.appearance, Some(appearance));
+        assert_eq!(callback.quest, QUEST);
+        assert_eq!(
+            callback.storage.len(),
+            1,
+            "no redundant mutable preparation state"
+        );
+        let storage = &callback.storage[0];
+        assert_eq!(
+            (
+                &*storage.track,
+                storage.minimum,
+                storage.maximum,
+                storage.set,
+                storage.preserve
+            ),
+            (flag, 1, 1, 0, false)
+        );
+        assert!(
+            callback
+                .sources
+                .iter()
+                .any(|source| source.contains("rottenEssences.lua:70-111"))
+        );
+    }
+    Ok(())
+}

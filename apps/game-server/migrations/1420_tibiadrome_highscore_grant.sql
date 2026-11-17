@@ -1,0 +1,3 @@
+-- Reserved SRX-3 migration, intentionally no-op. The obsolete category-13
+-- reader was removed before this migration was merged. Main already grants
+-- the canonical job access to game_tibiadrome_scores; do not add legacy access.

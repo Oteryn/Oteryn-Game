@@ -16,6 +16,7 @@ import subprocess
 from pathlib import Path
 
 import build_source_item_profiles as native
+from build_spell_item_identities import PRE_CAKE_BINDINGS_SHA, historical_binding_bytes
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = "tools/content-schema/native-gameplay/hireling-item-profiles.json"
@@ -122,7 +123,7 @@ def build(checkout):
             "catalogue": {"path": CATALOGUE, "sha256": hashlib.sha256(rendered).hexdigest(), **counts},
             "source_files": [{"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
                              for path, raw in captured.items()],
-            "binding_table_sha256": hashlib.sha256(native.BINDINGS.read_bytes()).hexdigest(),
+            "binding_table_sha256": hashlib.sha256(historical_binding_bytes(native.BINDINGS.read_bytes(), PRE_CAKE_BINDINGS_SHA)).hexdigest(),
             "required_ids": sorted(required), "nonportable_ids": nonportable,
             "wrapped_trade_items": wrapped, "source_lines": lines, "records": bound["records"]}
 

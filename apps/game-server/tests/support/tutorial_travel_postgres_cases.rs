@@ -12,11 +12,12 @@ fn tutorial_free_travel_departure_receipt_arrival_and_cooldown_are_atomic() -> T
         let result=async {
             let seal=h.recovery.seal_current().map_err(debug)?;
             let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
-            let current=fence(1)?;
+            let mut current=fence(1)?;
             let progress=TutorialProgress {step:TutorialStep::Island,hunting:true,corruptor:true};
             h.root.character_tutorial_progress(&authority,&h.node,current,Some((0,progress))).await.map_err(debug)?;
             let route=NewhavenRoute::Anna;
             let (x,y,floor)=route.destination();
+            assert_eq!((x,y,floor),(31938,31928,7));
             let arrival=PendingArrival {occurrence:occurrence(70)?,world_id:current.runtime_scope.world_id(),destination:LastPositionCell {x,y,floor}};
             let command=CommandRef::new(current.game_session_id,CommandId::new(1).map_err(debug)?);
             assert_eq!(h.root.commit_newhaven_travel(&authority,&h.node,current,command,arrival,route).await.map_err(debug)?,Some(arrival));
@@ -29,16 +30,32 @@ fn tutorial_free_travel_departure_receipt_arrival_and_cooldown_are_atomic() -> T
             assert_eq!(h.root.write_character_last_position(&authority,&h.node,current,record.write_sequence,record.record).await.map_err(debug)?,LastPositionWrite::PendingObligation);
             assert_eq!(h.root.consume_npc_pending_arrival_placed(&authority,&h.node,current,arrival.occurrence,record).await.map_err(debug)?,ArrivalConsume::Consumed);
             assert_eq!(h.root.consume_npc_pending_arrival_placed(&authority,&h.node,current,arrival.occurrence,record).await.map_err(debug)?,ArrivalConsume::NoOp);
+            current=fence(2)?;
             assert_eq!(h.root.commit_newhaven_travel(&authority,&h.node,current,command,arrival,route).await.map_err(debug)?,None);
             let progress: (i16,bool,bool)=sqlx::query_as("SELECT step,hunting,corruptor FROM game_character_tutorial WHERE character_id=encode($1,'hex')::uuid")
                 .bind(current.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(progress,(3,false,false));
             let again=CommandRef::new(current.game_session_id,CommandId::new(2).map_err(debug)?);
-            let again_arrival=PendingArrival {occurrence:occurrence(71)?,..arrival};
-            assert!(matches!(h.root.commit_newhaven_travel(&authority,&h.node,current,again,again_arrival,route).await,Err(CharacterProgressionError::InvalidInput)));
+            let again_route=NewhavenRoute::Seagull;
+            let (x,y,floor)=again_route.destination();
+            let again_arrival=PendingArrival {occurrence:occurrence(71)?,destination:LastPositionCell{x,y,floor},..arrival};
+            assert!(matches!(h.root.commit_newhaven_travel(&authority,&h.node,current,again,again_arrival,again_route).await,Err(CharacterProgressionError::InvalidInput)));
             assert_eq!(h.count("game_newhaven_travel_receipts").await?,1);
             assert_eq!(h.count("game_character_pending_arrivals").await?,0);
-            assert_eq!(h.root_revision().await?,"1");
+            assert_eq!(h.root_revision().await?,"2");
+            let town:i32=sqlx::query_scalar("SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid")
+                .bind(current.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(town,34);
+            // Crystal Anna has no three-second travel cooldown or storage prerequisite.
+            let retry=PendingArrival {occurrence:occurrence(71)?,..arrival};
+            assert_eq!(h.root.commit_newhaven_travel(&authority,&h.node,current,again,retry,route).await.map_err(debug)?,Some(retry));
+            let mut record=placed(21,retry.destination.x)?;
+            record.record.cell=retry.destination;
+            assert_eq!(h.root.consume_npc_pending_arrival_placed(&authority,&h.node,current,retry.occurrence,record).await.map_err(debug)?,ArrivalConsume::Consumed);
+            assert_eq!(h.count("game_newhaven_travel_receipts").await?,2);
+            assert_eq!(h.count("game_character_pending_arrivals").await?,0);
+            assert_eq!(h.count("game_character_home_town_receipts").await?,1);
+            assert_eq!(h.root_revision().await?,"2");
             Ok(())
         }.await;
         h.cleanup().await?;

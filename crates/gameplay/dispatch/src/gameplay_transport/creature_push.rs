@@ -26,15 +26,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Rejected;
         }
-        let destination = MovementLocalPosition {
-            x: intent.destination.x,
-            y: intent.destination.y,
-            floor: intent.destination.floor,
-        };
         let Some(_permit) = self.spell_lane_permit().await else {
             return Rejected;
         };
         let mut runtime = self.runtime.lock().await;
+        let Some(destination) = self
+            .wire_position_frame(&runtime)
+            .and_then(|frame| frame.unproject(intent.destination))
+        else {
+            return Rejected;
+        };
         let states = self.states.spell_states.lock().await;
         let context = runtime.pinned_movement_context();
         let pusher = match runtime.borrow_movement_position().read(actor) {
@@ -81,16 +82,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .into_iter()
                 .find(|(entry, _, _)| *entry == player.actor)
             else {
+                #[cfg(test)]
+                eprintln!("M25 physical PUSH refusal at {}", line!());
                 return NotPossible;
             };
             if states.is_dead(player.actor) || snapshot.context() != context {
+                #[cfg(test)]
+                eprintln!("M25 physical PUSH refusal at {}", line!());
                 return NotPossible;
             }
             (player.actor, Target::Player(target_session, snapshot))
         } else {
+            #[cfg(test)]
+            eprintln!("M25 physical PUSH refusal at {}", line!());
             return NotPossible;
         };
         if target == actor {
+            #[cfg(test)]
+            eprintln!("M25 physical PUSH refusal at {}", line!());
             return NotPossible;
         }
         let from = match at {
@@ -108,14 +117,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Canary game.cpp:1856: the pushed creature stands next to the pusher.
         if here.floor != from.floor || (here.x - from.x).abs() > 1 || (here.y - from.y).abs() > 1 {
+            #[cfg(test)]
+            eprintln!("M25 physical PUSH refusal at {}", line!());
             return NotPossible;
         }
         // Canary game.cpp:1865: no push out of a protection or no-PvP zone into a weaker one.
         let (Some(origin), Some(landing)) = (self.push_zones(from), self.push_zones(destination))
         else {
+            #[cfg(test)]
+            eprintln!("M25 physical PUSH refusal at {}", line!());
             return NotPossible;
         };
         if (origin.0 && !landing.0) || (origin.1 && !landing.1) {
+            #[cfg(test)]
+            eprintln!("M25 physical PUSH refusal at {}", line!());
             return NotPossible;
         }
         // Canary game.cpp:1869: any creature on the destination refuses the push.
@@ -128,7 +143,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match at {
             Target::Creature(_) => {
                 let (none, bundle_doors, legacy);
-                let blocking: &dyn crate::map::floor::CellBlocker = if self.rooms()
+                let blocking: &dyn crate::map::floor::CellBlocker = if self
+                    .rooms()
                     .gate_source_world()
                     .is_some_and(|room| room.source_world().is_some())
                 {
@@ -178,6 +194,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
             Target::Player(target_session, snapshot) => {
+                let Ok(_physical_push) = runtime.prepare_player_push(
+                    (actor, session, pusher),
+                    (target, target_session, snapshot),
+                    destination,
+                ) else {
+                    #[cfg(test)]
+                    eprintln!("M25 physical PUSH refusal at {}", line!());
+                    return NotPossible;
+                };
                 let direction = match (destination.x - from.x, destination.y - from.y) {
                     (0, -1) => StepDirection::North,
                     (1, 0) => StepDirection::East,
@@ -203,6 +228,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Some((actor, pusher)),
                     )
                     .await;
+                #[cfg(test)]
+                eprintln!(
+                    "M25 physical PUSH movement outcome={:?}",
+                    outcome.disposition
+                );
                 let (disposition, due) = match outcome.disposition {
                     StepDisposition::Moved => (
                         Moved,
@@ -213,6 +243,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 self.record_actor_step_deadline_now(target, &holder, due)
                     .await;
+                if outcome.disposition == StepDisposition::Moved {
+                    self.source_boss_exit_after_movement(target, target_session, outcome.moved_to)
+                        .await;
+                }
                 disposition
             }
         }

@@ -11,30 +11,47 @@ pub(crate) fn decorate_output(
     native: &NativeGameplayState,
     output: &mut Value,
 ) -> Result<(), DurabilityError> {
-    let id = output["key"].as_str()
+    let id = output["key"]
+        .as_str()
         .and_then(|key| key.strip_prefix("oteryn:item.tibia.i"))
         .and_then(|id| id.parse::<u32>().ok());
-    let Some(id) = id else { return Ok(()); };
+    let Some(id) = id else {
+        return Ok(());
+    };
     // This receipt admits only the exact ice-flower planting output. Map pickup
     // preserves other pot chains separately; trumpet uses the single-stage owner.
-    if id != 14031 { return Ok(()); }
+    if id != 14031 {
+        return Ok(());
+    }
     let steps = decay_steps(id);
-    if steps.is_empty() { return Ok(()); }
+    if steps.is_empty() {
+        return Ok(());
+    }
     if output["count"].as_u64() != Some(1) {
         return Err(DurabilityError::InvalidStoredState);
     }
     let mut current = id;
     let mut stages = Vec::with_capacity(steps.len());
     for step in steps {
-        let before = native.item_policy_for_source_id(current)
-            .ok_or(DurabilityError::InvalidStoredState)?.record();
-        let after = native.item_policy_for_source_id(step.target)
-            .ok_or(DurabilityError::InvalidStoredState)?.record();
+        let before = native
+            .item_policy_for_source_id(current)
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .record();
+        let after = native
+            .item_policy_for_source_id(step.target)
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .record();
         let ReferenceItemField::Known(physical) = &before.semantics.physical else {
             return Err(DurabilityError::InvalidStoredState);
         };
-        let blocks = before.attributes.blocks_movement.ok_or(DurabilityError::InvalidStoredState)?;
-        let projectile = before.attributes.blocks_projectile.ok_or(DurabilityError::InvalidStoredState)?;
+        let blocks = before
+            .attributes
+            .blocks_movement
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let projectile = before
+            .attributes
+            .blocks_projectile
+            .ok_or(DurabilityError::InvalidStoredState)?;
         let movable = match physical.movable {
             ReferenceItemField::Known(value) => value,
             _ => return Err(DurabilityError::InvalidStoredState),
@@ -70,13 +87,23 @@ pub(crate) async fn schedule_consume_output(
     source_ordinal: i32,
     occurred: i64,
 ) -> Result<(), DurabilityError> {
-    let Some(stages) = output.get("event_decay").and_then(Value::as_array) else { return Ok(()); };
-    let item = output["item"].as_str().ok_or(DurabilityError::InvalidStoredState)?;
-    let digest = output["event_content_digest"].as_str().ok_or(DurabilityError::InvalidStoredState)?;
+    let Some(stages) = output.get("event_decay").and_then(Value::as_array) else {
+        return Ok(());
+    };
+    let item = output["item"]
+        .as_str()
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let digest = output["event_content_digest"]
+        .as_str()
+        .ok_or(DurabilityError::InvalidStoredState)?;
     let mut deadline = occurred;
     for (index, stage) in stages.iter().enumerate() {
-        let duration = stage["duration_millis"].as_i64().ok_or(DurabilityError::InvalidStoredState)?;
-        deadline = deadline.checked_add(duration).ok_or(DurabilityError::InvalidStoredState)?;
+        let duration = stage["duration_millis"]
+            .as_i64()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        deadline = deadline
+            .checked_add(duration)
+            .ok_or(DurabilityError::InvalidStoredState)?;
         let definition = &stage["definition"];
         let target = &stage["target"];
 

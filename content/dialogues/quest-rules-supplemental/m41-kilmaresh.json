@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "program_key": "oteryn:quest-npc-program.m41_kilmaresh_finale",
+  "quest": "oteryn:quest.kilmaresh_quest",
+  "source_files": [
+    {
+      "path": "data-global/npc/alyxo.lua",
+      "sha256": "86f3cf5aa793d5ccffd14bdf35bda841bb00f8c3ce3352826b088f4f25c4b008",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ],
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/fafnar",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 301,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/alyxo.lua:190-204"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/crystalserver/kilmaresh/fourteen/remains",
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/alyxo.lua:190-204"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "npc": "oteryn:npc.alyxo",
+      "trigger": "say",
+      "key": "oteryn:quest-npc/m41-kilmaresh/alyxo/mission-offer",
+      "keywords": [
+        "mission"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/fafnar",
+          "op": "eq",
+          "value": 301
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 13
+        }
+      ],
+      "reply": [
+        "Did you finish the 3 jobs I gave you?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/alyxo.lua:190-194"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.kilmaresh_quest",
+      "npc": "oteryn:npc.alyxo",
+      "trigger": "say",
+      "key": "oteryn:quest-npc/m41-kilmaresh/alyxo/sculptor-reward",
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        13
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/thirteen/fafnar",
+          "op": "eq",
+          "value": 301
+        }
+      ],
+      "effects": [
+        {
+          "kind": "achievement",
+          "name": "Sculptor Apprentice"
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i31574",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/crystalserver/kilmaresh/fourteen/remains",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 14
+        }
+      ],
+      "reply": [
+        "Congratulations, you have completed the 3 jobs I gave you."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/alyxo.lua:195-204"
+      ]
+    }
+  ]
+}

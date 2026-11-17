@@ -11,7 +11,7 @@
 use super::connection::{EarnedNotice, UseOutcome};
 use super::world_map::{MapTargetRefusal, MapViewSource, resolve_map_target};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
-use crate::map::door::DoorUse;
+use crate::map::door::{DoorUse, KeyDoorOpening};
 use crate::map::facts::BundleFacts;
 use crate::map::overlay::ChannelOverlay;
 use crate::map::overlay::TilePos;
@@ -228,14 +228,14 @@ pub(super) fn use_door(
 }
 
 /// Uses a source-authored key action id on a door target.
-pub(super) fn use_key(
+pub(super) fn use_key_observed(
     overlay: &ChannelOverlay,
     facts: &BundleFacts,
     content_generation: [u8; 32],
     actor: TilePos,
     key_action: u16,
     target: &WorldObjectTarget,
-) -> UseOutcome {
+) -> (UseOutcome, Option<KeyDoorOpening>) {
     let source = MapViewSource {
         overlay,
         facts,
@@ -245,22 +245,25 @@ pub(super) fn use_key(
     let resolved = match resolve_map_target(&source, target, |_| None::<()>) {
         Ok(resolved) => resolved,
         Err(MapTargetRefusal::StateRevisionMismatch) => {
-            return outcome(UseDisposition::StaleState);
+            return (outcome(UseDisposition::StaleState), None);
         }
-        Err(MapTargetRefusal::Use(disposition)) => return outcome(disposition),
+        Err(MapTargetRefusal::Use(disposition)) => return (outcome(disposition), None),
     };
     if !reachable(actor, resolved.pos) {
-        return outcome(UseDisposition::TooFar);
+        return (outcome(UseDisposition::TooFar), None);
     }
-    match facts
-        .doors()
-        .use_key(resolved.placement_key, target.expected_revision, key_action)
-    {
+    let (used, opening) = facts.doors().use_key_observed(
+        resolved.placement_key,
+        target.expected_revision,
+        key_action,
+    );
+    let result = match used {
         Some(DoorUse::Toggled { .. }) => outcome(UseDisposition::Committed),
         Some(DoorUse::Locked) => outcome(UseDisposition::KeyMismatch),
         Some(DoorUse::Stale) => outcome(UseDisposition::StaleState),
         _ => outcome(UseDisposition::NothingToUse),
-    }
+    };
+    (result, opening)
 }
 
 #[cfg(test)]
@@ -307,6 +310,47 @@ mod tests {
             true,
             t,
         )
+    }
+
+    #[test]
+    fn key_opening_source_stays_behind_native_target_admission()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let world = door_world()?;
+        let key = door_key();
+        for (actor, target, expected) in [
+            (at(5), target([7; 32], key, 0), UseDisposition::StaleState),
+            (
+                at(4),
+                target(world.base().digest(), key, 0),
+                UseDisposition::TooFar,
+            ),
+            (
+                at(5),
+                target(world.base().digest(), key, 1),
+                UseDisposition::StaleState,
+            ),
+            (
+                at(5),
+                target(world.base().digest(), key, 0),
+                UseDisposition::KeyMismatch,
+            ),
+        ] {
+            let (outcome, opening) = use_key_observed(
+                world.overlay(),
+                world.facts(),
+                GENERATION,
+                actor,
+                3520,
+                &target,
+            );
+            assert_eq!(outcome.disposition, expected);
+            assert!(
+                opening.is_none(),
+                "refused target cannot manufacture a door opening"
+            );
+            assert_eq!(world.facts().doors().revision(key), 0);
+        }
+        Ok(())
     }
 
     #[test]

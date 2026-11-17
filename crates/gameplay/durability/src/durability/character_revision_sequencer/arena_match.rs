@@ -25,3 +25,23 @@ impl RevisionSlot {
             .await
     }
 }
+
+
+impl RevisionSlot {
+    /// Keep the native Premium participant on the ordinary Quest revision path.
+    #[allow(clippy::too_many_arguments, reason = "the ordinary fenced Quest writer also receives its native Premium participant")]
+    pub async fn commit_arena_quest_completion<G: super::super::quest_state::grizzly::GrizzlyPremiumGate>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: crate::foundation::CommandRef,
+        catalogue: std::sync::Arc<oteryn_gameplay_quests::quest::QuestStateCatalogue>,
+        gate: &G,
+    ) -> Result<super::super::quest_state::QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(root_revision(root, authority), fence, Expect::Cursor(OnMismatch::RetryOnce), |fence| {
+            root.commit_arena_quest_completion(authority, node, fence, command, std::sync::Arc::clone(&catalogue), gate)
+        }).await
+    }
+}

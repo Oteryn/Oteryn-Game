@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.sterling",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "any_topic": true,
+      "next_topic": 2,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/mission",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Oh, would you look at that, you really helped us out here. I'm glad to see you alive and well!",
+        "Did Morla hand you anything for your service?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.sterling",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/morla_done",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "It seems Morla hasn't handed you anything yet. Make sure to speak with her first."
+      ]
+    }
+  ]
+}

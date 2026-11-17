@@ -12,10 +12,14 @@ impl ItemWeightLookup for TestWeights {
         GENERATION_DIGEST
     }
     fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
-        FIXTURE_WEIGHTS.iter().find_map(|&(family, key, revision, weight)| {
-            (definition.family == family
-                && definition.production_key == key
-                && definition.revision_ref == revision).then_some(weight)
-        }).ok_or(ItemWeightRefused::Unknown)
+        FIXTURE_WEIGHTS
+            .iter()
+            .find_map(|&(family, key, revision, weight)| {
+                (definition.family == family
+                    && definition.production_key == key
+                    && definition.revision_ref == revision)
+                    .then_some(weight)
+            })
+            .ok_or(ItemWeightRefused::Unknown)
     }
 }

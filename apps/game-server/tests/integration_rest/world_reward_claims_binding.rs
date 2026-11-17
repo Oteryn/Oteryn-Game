@@ -474,15 +474,48 @@ fn world_reward_claims_variants_and_other_records_are_filtered_out() -> TestResu
     let two = plain
         .replace("oteryn:reward-claim.kv.a", "oteryn:reward-claim.kv.two")
         .replacen(r#"{"count":1,"item":"#, r#"{"count":1,"item":{"family":"Item","key":"oteryn:item.tibia.i3031","revision":"definition-r1"}},{"count":1,"item":"#, 1);
+    // Plain rewards encode up to twenty top-level items; twenty-one must stay excluded.
+    let mut over_limit: serde_json::Value = serde_json::from_str(&plain)?;
+    over_limit["definition"]["identity"]["key"] = "oteryn:reward-claim.kv.over_limit".into();
+    let entry = over_limit["definition"]["placements"][0]["reward"]["items"][0].clone();
+    over_limit["definition"]["placements"][0]["reward"]["items"] =
+        serde_json::Value::Array(vec![entry; 21]);
     let mut grant = plain.replace("oteryn:reward-claim.kv.a", "oteryn:reward-claim.kv.grant");
     grant = grant.replacen(
         r#""appearance_tibia_id""#,
         r#""written_text":"x","appearance_tibia_id""#,
         1,
     );
-    let records = [plain, variant, waiting, hours, container, two, grant];
+    let records = [
+        plain,
+        variant,
+        waiting,
+        hours,
+        container,
+        two,
+        over_limit.to_string(),
+        grant,
+    ];
     let report = bind(&base, &records)?;
-    assert_eq!(report.served.len(), 1);
+    assert_eq!(
+        report
+            .served
+            .iter()
+            .map(|claim| claim.key.as_str())
+            .collect::<Vec<_>>(),
+        ["oteryn:reward-claim.kv.a", "oteryn:reward-claim.kv.two"]
+    );
+    assert!(report.unbound.is_empty());
+    assert_eq!(report.served[0].placements.len(), 1);
+    assert_eq!(report.served[1].placements.len(), 1);
+    let single = &report.served[0].placements[0].placement.items;
+    assert_eq!(single.len(), 1);
+    assert_eq!(single[0].item.key().as_str(), REWARD);
+    assert_eq!(single[0].count, 1);
+    assert_eq!(
+        report.served[1].placements[0].placement.items,
+        vec![single[0].clone(); 2]
+    );
     let left: Vec<_> = report
         .left_out
         .iter()
@@ -495,7 +528,7 @@ fn world_reward_claims_variants_and_other_records_are_filtered_out() -> TestResu
             ("oteryn:reward-claim.kv.waiting", LeftOut::NotReady),
             ("oteryn:reward-claim.kv.hours", LeftOut::UnencodedField),
             ("oteryn:reward-claim.kv.container", LeftOut::UnencodedField),
-            ("oteryn:reward-claim.kv.two", LeftOut::UnencodedField),
+            ("oteryn:reward-claim.kv.over_limit", LeftOut::UnencodedField),
             ("oteryn:reward-claim.kv.grant", LeftOut::UnencodedField),
         ]
     );
@@ -665,8 +698,48 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
     // does not bind. QUEST-FINISH admits all plain records through exact source
     // charge/fluid projections and excludes both Dawnport records
     // while preserving their source data. Falcon uses its separate cycle owner.
+    let mut source_keys = BTreeSet::new();
+    let mut native_keys = BTreeSet::new();
+    for shard in oteryn_game_server::content::world_reward_claims::REWARD_CLAIM_SHARDS {
+        let shard: serde_json::Value = serde_json::from_str(shard)?;
+        for record in shard["records"]
+            .as_array()
+            .ok_or("embedded claim records")?
+        {
+            let definition = &record["definition"];
+            let key = definition["identity"]["key"]
+                .as_str()
+                .ok_or("embedded claim key")?;
+            assert!(
+                source_keys.insert(key.to_owned()),
+                "duplicate embedded claim: {key}"
+            );
+            if definition["definition_profile"].as_str() == Some("native_authored_v1") {
+                native_keys.insert(key.to_owned());
+            }
+        }
+    }
+    assert_eq!(
+        native_keys,
+        BTreeSet::from(
+            [
+                "oteryn:reward-claim.authored.kingdom_of_kormarak.corpse",
+                "oteryn:reward-claim.authored.magic_sword.north",
+                "oteryn:reward-claim.authored.magic_sword.south",
+                "oteryn:reward-claim.authored.mastermind_potion.wall",
+                "oteryn:reward-claim.authored.mastermind_potion.fire",
+                "oteryn:reward-claim.authored.mystery_of_the_valley.fragment1",
+                "oteryn:reward-claim.authored.mystery_of_the_valley.fragment2",
+                "oteryn:reward-claim.authored.mystery_of_the_valley.fragment3",
+                "oteryn:reward-claim.authored.mystery_of_the_valley.guardian",
+            ]
+            .map(str::to_owned)
+        )
+    );
+    // The five retained shards contain 336 records; ENGCLAIM adds the nine exact native keys.
+    assert_eq!(source_keys.len(), 336 + native_keys.len());
     let candidates = report.unbound_claims_by_reason().values().sum::<usize>();
-    assert_eq!(candidates, 328);
+    assert_eq!(candidates, 328 + native_keys.len());
     for key in [
         "oteryn:reward-claim.kv.ornamentedshield",
         "oteryn:reward-claim.kv.triangletower",
@@ -706,6 +779,38 @@ fn world_reward_claims_the_embedded_shards_decode() -> TestResult {
         report.left_out.len(),
         8,
         "every remaining record has its exact owner"
+    );
+
+    let expected_left_out: std::collections::BTreeMap<_, _> = [
+        ("oteryn:reward-claim.quest.u10_55.dawnport.torn_log_book", LeftOut::OwnerExcluded),
+        ("oteryn:reward-claim.quest.key.id0010", LeftOut::OwnerExcluded),
+        ("oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.coast", LeftOut::Variant),
+        ("oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.island", LeftOut::Variant),
+        ("oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.lower_bastion", LeftOut::Variant),
+        ("oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.shortcut", LeftOut::Variant),
+        ("oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.throne_hall", LeftOut::Variant),
+        ("oteryn:reward-claim.quest.u11_80.the_secret_library.falcon_bastion.chests_timer.underground_bastion", LeftOut::Variant),
+    ].into_iter().map(|(key, reason)| (key.to_owned(), reason)).collect();
+    assert_eq!(
+        report
+            .left_out
+            .iter()
+            .cloned()
+            .collect::<std::collections::BTreeMap<_, _>>(),
+        expected_left_out
+    );
+    let expected_unbound: BTreeSet<_> = source_keys
+        .into_iter()
+        .filter(|key| !expected_left_out.contains_key(key))
+        .collect();
+    let actual_unbound: BTreeSet<_> = report
+        .unbound
+        .iter()
+        .map(|placement| placement.claim.clone())
+        .collect();
+    assert_eq!(
+        actual_unbound, expected_unbound,
+        "every canonical claim is accounted for"
     );
     Ok(())
 }

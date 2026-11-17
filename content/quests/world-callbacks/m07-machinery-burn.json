@@ -1,0 +1,813 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/m07/machinery-ballista-01",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32824,
+          "y": 31708,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5697,
+        "native": {
+          "position": {
+            "x": 32824,
+            "y": 31708,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 5697
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32824,
+            "y": 31708,
+            "floor": -7
+          },
+          "appearance": 5697
+        },
+        {
+          "position": {
+            "x": 32824,
+            "y": 31707,
+            "floor": -7
+          },
+          "appearance": 5695
+        },
+        {
+          "position": {
+            "x": 32823,
+            "y": 31708,
+            "floor": -7
+          },
+          "appearance": 5696
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballista_01",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballistae_burned",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 7
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i5467",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You set this ballista alight and record it for the war report.",
+      "effects": {
+        "transform": 2113,
+        "reset_after_ms": 60000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-machinery-burn.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-crystal/scripts/actions/tools/fire_bug.lua:15-18,35-36 (tool5467 and fire2113 only; native sites/timing are chosen)",
+        "native-b3:content/world/placements/region-z07-x128-y123.b3#sha256:865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+        "OTERYN_CHOSEN_MACHINERY_BURN:retained tool; personal credit once per actual machine; shared fire overlay60s; no recovered donor action-id or original schedule claim"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-ballista-02",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32828,
+          "y": 31709,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5697,
+        "native": {
+          "position": {
+            "x": 32828,
+            "y": 31709,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 5697
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32828,
+            "y": 31709,
+            "floor": -7
+          },
+          "appearance": 5697
+        },
+        {
+          "position": {
+            "x": 32828,
+            "y": 31708,
+            "floor": -7
+          },
+          "appearance": 5695
+        },
+        {
+          "position": {
+            "x": 32827,
+            "y": 31709,
+            "floor": -7
+          },
+          "appearance": 5696
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballista_02",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballistae_burned",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 7
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i5467",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You set this ballista alight and record it for the war report.",
+      "effects": {
+        "transform": 2113,
+        "reset_after_ms": 60000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-machinery-burn.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-crystal/scripts/actions/tools/fire_bug.lua:15-18,35-36 (tool5467 and fire2113 only; native sites/timing are chosen)",
+        "native-b3:content/world/placements/region-z07-x128-y123.b3#sha256:865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+        "OTERYN_CHOSEN_MACHINERY_BURN:retained tool; personal credit once per actual machine; shared fire overlay60s; no recovered donor action-id or original schedule claim"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-ballista-03",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32832,
+          "y": 31709,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5697,
+        "native": {
+          "position": {
+            "x": 32832,
+            "y": 31709,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 5697
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32832,
+            "y": 31709,
+            "floor": -7
+          },
+          "appearance": 5697
+        },
+        {
+          "position": {
+            "x": 32832,
+            "y": 31708,
+            "floor": -7
+          },
+          "appearance": 5695
+        },
+        {
+          "position": {
+            "x": 32831,
+            "y": 31709,
+            "floor": -7
+          },
+          "appearance": 5696
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballista_03",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballistae_burned",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 7
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i5467",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You set this ballista alight and record it for the war report.",
+      "effects": {
+        "transform": 2113,
+        "reset_after_ms": 60000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-machinery-burn.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-crystal/scripts/actions/tools/fire_bug.lua:15-18,35-36 (tool5467 and fire2113 only; native sites/timing are chosen)",
+        "native-b3:content/world/placements/region-z07-x128-y123.b3#sha256:865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+        "OTERYN_CHOSEN_MACHINERY_BURN:retained tool; personal credit once per actual machine; shared fire overlay60s; no recovered donor action-id or original schedule claim"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-ballista-04",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32836,
+          "y": 31709,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5697,
+        "native": {
+          "position": {
+            "x": 32836,
+            "y": 31709,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 5697
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32836,
+            "y": 31709,
+            "floor": -7
+          },
+          "appearance": 5697
+        },
+        {
+          "position": {
+            "x": 32836,
+            "y": 31708,
+            "floor": -7
+          },
+          "appearance": 5695
+        },
+        {
+          "position": {
+            "x": 32835,
+            "y": 31709,
+            "floor": -7
+          },
+          "appearance": 5696
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballista_04",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballistae_burned",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 7
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i5467",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You set this ballista alight and record it for the war report.",
+      "effects": {
+        "transform": 2113,
+        "reset_after_ms": 60000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-machinery-burn.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-crystal/scripts/actions/tools/fire_bug.lua:15-18,35-36 (tool5467 and fire2113 only; native sites/timing are chosen)",
+        "native-b3:content/world/placements/region-z07-x128-y123.b3#sha256:865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+        "OTERYN_CHOSEN_MACHINERY_BURN:retained tool; personal credit once per actual machine; shared fire overlay60s; no recovered donor action-id or original schedule claim"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-ballista-05",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32827,
+          "y": 31713,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5697,
+        "native": {
+          "position": {
+            "x": 32827,
+            "y": 31713,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 5697
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32827,
+            "y": 31713,
+            "floor": -7
+          },
+          "appearance": 5697
+        },
+        {
+          "position": {
+            "x": 32827,
+            "y": 31712,
+            "floor": -7
+          },
+          "appearance": 5695
+        },
+        {
+          "position": {
+            "x": 32826,
+            "y": 31713,
+            "floor": -7
+          },
+          "appearance": 5696
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballista_05",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballistae_burned",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 7
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i5467",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You set this ballista alight and record it for the war report.",
+      "effects": {
+        "transform": 2113,
+        "reset_after_ms": 60000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-machinery-burn.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-crystal/scripts/actions/tools/fire_bug.lua:15-18,35-36 (tool5467 and fire2113 only; native sites/timing are chosen)",
+        "native-b3:content/world/placements/region-z07-x128-y123.b3#sha256:865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+        "OTERYN_CHOSEN_MACHINERY_BURN:retained tool; personal credit once per actual machine; shared fire overlay60s; no recovered donor action-id or original schedule claim"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-ballista-06",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32830,
+          "y": 31713,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5697,
+        "native": {
+          "position": {
+            "x": 32830,
+            "y": 31713,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 5697
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32830,
+            "y": 31713,
+            "floor": -7
+          },
+          "appearance": 5697
+        },
+        {
+          "position": {
+            "x": 32830,
+            "y": 31712,
+            "floor": -7
+          },
+          "appearance": 5695
+        },
+        {
+          "position": {
+            "x": 32829,
+            "y": 31713,
+            "floor": -7
+          },
+          "appearance": 5696
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballista_06",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballistae_burned",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 7
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i5467",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You set this ballista alight and record it for the war report.",
+      "effects": {
+        "transform": 2113,
+        "reset_after_ms": 60000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-machinery-burn.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-crystal/scripts/actions/tools/fire_bug.lua:15-18,35-36 (tool5467 and fire2113 only; native sites/timing are chosen)",
+        "native-b3:content/world/placements/region-z07-x128-y123.b3#sha256:865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+        "OTERYN_CHOSEN_MACHINERY_BURN:retained tool; personal credit once per actual machine; shared fire overlay60s; no recovered donor action-id or original schedule claim"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-ballista-07",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32833,
+          "y": 31712,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5697,
+        "native": {
+          "position": {
+            "x": 32833,
+            "y": 31712,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 5697
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32833,
+            "y": 31712,
+            "floor": -7
+          },
+          "appearance": 5697
+        },
+        {
+          "position": {
+            "x": 32833,
+            "y": 31711,
+            "floor": -7
+          },
+          "appearance": 5695
+        },
+        {
+          "position": {
+            "x": 32832,
+            "y": 31712,
+            "floor": -7
+          },
+          "appearance": 5696
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballista_07",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballistae_burned",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 7
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i5467",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You set this ballista alight and record it for the war report.",
+      "effects": {
+        "transform": 2113,
+        "reset_after_ms": 60000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-machinery-burn.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-crystal/scripts/actions/tools/fire_bug.lua:15-18,35-36 (tool5467 and fire2113 only; native sites/timing are chosen)",
+        "native-b3:content/world/placements/region-z07-x128-y123.b3#sha256:865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+        "OTERYN_CHOSEN_MACHINERY_BURN:retained tool; personal credit once per actual machine; shared fire overlay60s; no recovered donor action-id or original schedule claim"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/m07/machinery-ballista-08",
+      "quest": "oteryn:quest.machinery_of_war_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32836,
+          "y": 31712,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 5697,
+        "native": {
+          "position": {
+            "x": 32836,
+            "y": 31712,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 5697
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32836,
+            "y": 31712,
+            "floor": -7
+          },
+          "appearance": 5697
+        },
+        {
+          "position": {
+            "x": 32836,
+            "y": 31711,
+            "floor": -7
+          },
+          "appearance": 5695
+        },
+        {
+          "position": {
+            "x": 32835,
+            "y": 31712,
+            "floor": -7
+          },
+          "appearance": 5696
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballista_08",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/machinery_of_war/ballistae_burned",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 7
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i5467",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "requires_world_admission": true,
+      "minimum_level": 50,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You set this ballista alight and record it for the war report.",
+      "effects": {
+        "transform": 2113,
+        "reset_after_ms": 60000
+      },
+      "sources": [
+        "docs/reference/content-prep/questpc4-M07-machinery-burn.md",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-crystal/scripts/actions/tools/fire_bug.lua:15-18,35-36 (tool5467 and fire2113 only; native sites/timing are chosen)",
+        "native-b3:content/world/placements/region-z07-x128-y123.b3#sha256:865ee3aa9e0c4d592571b40b72c137a8b05a19f850e0b570974276ebbeb9a22d",
+        "OTERYN_CHOSEN_MACHINERY_BURN:retained tool; personal credit once per actual machine; shared fire overlay60s; no recovered donor action-id or original schedule claim"
+      ]
+    }
+  ]
+}

@@ -692,6 +692,12 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
         };
         let world = super::quest_world_callbacks::world(
             &Callback {
+                track_initials: Default::default(),
+                character_requirements: None,
+                required_completed_quests: Vec::new(),
+                admission: None,
+                requires_premium: false,
+                state_ops: Vec::new(),
                 use_range: 1,
                 disguise: None,
                 completes: false,
@@ -766,6 +772,19 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
         let frame = world.frame_binding_digest(deps.admitted.world_id);
+        let room = activated
+            .qualified_room()
+            .bundle_view(
+                cells.clone(),
+                frame,
+                world.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: 33619,
+                    y: 31400,
+                    floor: 10,
+                },
+            )
+            .ok_or("Soul War bundle view")?;
         let pin = crate::content::channel_content_pin::ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -802,6 +821,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
             )
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
+        deps.room = room.clone();
         let premium = if qualify_outfit {
             Some(super::qengine_endgame_stories::current_premium(&h).await?)
         } else {
@@ -811,6 +831,7 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
         owner.premium_coordinator = premium.as_ref().map(|premium| premium as _);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
         owner.quest_catalogue = Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?
@@ -1421,6 +1442,7 @@ async fn reward_delivery(
     let backpack = generation_item_facts(native, &bag_definition).map_err(debug)?;
     let mut request = RewardClaimMintRequest {
         backpack_outputs: false,
+        additional_items: Vec::new(),
         command: CommandRef::new(session, CommandId::new(601).map_err(debug)?),
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),

@@ -21,14 +21,23 @@ pub(in crate::durability) async fn read_capacity_bonus_in_transaction(
     let stored = read_wheel_state(tx, character, false).await?;
     let allocation = allocation_from_stored(tx, stored, &ruleset).await?;
     let mut effects = oteryn_gameplay_progression::wheel_effects::derive_runtime_effects(
-        data.wheel(), &allocation, vocation, level, true, true,
-    ).ok_or(DurabilityError::InvalidStoredState)?;
+        data.wheel(),
+        &allocation,
+        vocation,
+        level,
+        true,
+        true,
+    )
+    .ok_or(DurabilityError::InvalidStoredState)?;
     if allocation.current
-        && let Some(atelier) = super::super::character_atelier::load_in_transaction(tx, character).await?
+        && let Some(atelier) =
+            super::super::character_atelier::load_in_transaction(tx, character).await?
     {
-        effects.contribute_gems(&atelier, &data, &allocation)
+        effects
+            .contribute_gems(&atelier, &data, &allocation)
             .ok_or(DurabilityError::InvalidStoredState)?;
     }
-    u64::from(effects.capacity).checked_mul(100)
+    u64::from(effects.capacity)
+        .checked_mul(100)
         .ok_or(DurabilityError::InvalidStoredState)
 }

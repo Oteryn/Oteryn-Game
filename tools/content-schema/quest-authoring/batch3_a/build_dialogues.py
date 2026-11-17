@@ -12,10 +12,14 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
 PIN = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:"
 QUESTS = {
+    "djinn_war_efreet": "oteryn:quest.the_djinn_war_efreet_faction",
+    "djinn_war_marid": "oteryn:quest.the_djinn_war_marid_faction",
+    "white_raven_monastery": "oteryn:quest.the_white_raven_monastery_quest",
     "bigfoot_burden": "oteryn:quest.bigfoot_s_burden_quest",
     "fathers_burden": "oteryn:quest.a_father_s_burden_quest",
     "hot_cuisine": "oteryn:quest.hot_cuisine_quest",
     "in_service_of_yalahar": "oteryn:quest.in_service_of_yalahar_quest",
+    "the_paradox_tower": "oteryn:quest.the_paradox_tower_quest",
     "the_hidden_city_of_beregar": "oteryn:quest.the_hidden_city_of_beregar_quest",
     "the_cursed_crystal": "oteryn:quest.tibia_tales",
     "the_way_of_the_monk": "oteryn:quest.the_way_of_the_monk_quest",
