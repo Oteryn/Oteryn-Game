@@ -54,6 +54,7 @@ Validation recorded so far:
 | Focused retry | Fixed a test calling a private parser by using the public binding validator; corrected build running with `CARGO_BUILD_JOBS=1` and normal profiles |
 | Quest-authoring checks | Passed: full `--part checks` runner, including source lowering, binding and final content-tree authoring check |
 | Quest-authoring unit-tests runner | Passed: 1464 tests, 8 existing skips |
+| Quest item-profile unit tests | Passed: all 24 tests in 535.43 seconds, including stimulated brain portable admission |
 | Direct donor/data comparison | Passed: both inputs, output item/count/tile, storage gates, AID, native control stacks and literal feedback |
 | Clippy: quests | Passed, all targets, warnings denied |
 | Clippy: durability | Passed, all targets, warnings denied |
