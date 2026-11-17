@@ -613,8 +613,8 @@ impl KillSettlementQueue {
         }
     }
 
-    pub(super) fn next_mage_tower_hit(&self) -> Option<MageTowerHit> {
-        self.state().mage_tower_hits.first().copied()
+    pub(super) fn pending_mage_tower_hits(&self) -> Vec<MageTowerHit> {
+        self.state().mage_tower_hits.clone()
     }
 
     pub(super) fn acknowledge_mage_tower_hit(&self, hit: MageTowerHit) {

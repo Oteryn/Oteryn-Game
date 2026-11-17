@@ -9,7 +9,7 @@ use std::sync::Arc;
 impl ComposedFreshAdmission<'_, '_, '_> {
     async fn drain_mage_tower_hits(&self) -> bool {
         let queue = self.states.attack.lock().await.kills().clone();
-        while let Some(hit) = queue.next_mage_tower_hit() {
+        for hit in queue.pending_mage_tower_hits() {
             let Ok(current) = self.current_quest_fence(hit.session).await else {
                 return false;
             };
