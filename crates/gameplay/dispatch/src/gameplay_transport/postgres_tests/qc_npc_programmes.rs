@@ -252,6 +252,23 @@ async fn sinatuki(
         .bind(id(41).as_slice())
         .fetch_all(&h.pool)
         .await?;
+        let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
+        let session: Vec<(String, i64)> = owner
+            .states
+            .quest_sessions
+            .lock()
+            .map_err(debug)?
+            .get(&admitted.game_session_id)
+            .and_then(|entry| entry.copy.as_ref())
+            .and_then(|copy| copy.read_tracks(catalogue))
+            .map(|tracks| {
+                tracks
+                    .into_iter()
+                    .filter(|(key, _)| key.ends_with("questline") || key.contains("sinatuki"))
+                    .collect()
+            })
+            .unwrap_or_default();
+        eprintln!("QC_SINATUKI_DIAG session={session:?}");
         eprintln!(
             "QC_SINATUKI_DIAG tracks={rows:?} trout={} perch={}",
             count(h, 7158).await?,
