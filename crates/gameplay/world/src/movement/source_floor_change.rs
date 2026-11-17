@@ -939,6 +939,7 @@ mod tests {
         .find(|to| to.floor == from.floor && safe(*to))
         .expect("native walkable neighbour");
         let source = SceneEvacuation {
+            players_only: false,
             from,
             players_to: to,
             creatures_to: to,

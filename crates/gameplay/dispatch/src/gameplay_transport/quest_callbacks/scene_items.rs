@@ -81,6 +81,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .evacuate_close
                     .iter()
                     .map(|m| crate::map::floor::SceneEvacuation {
+                        players_only: false,
                         from: local(m.from),
                         players_to: local(m.players_to),
                         creatures_to: local(m.creatures_to),

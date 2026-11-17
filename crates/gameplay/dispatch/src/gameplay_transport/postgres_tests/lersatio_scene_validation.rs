@@ -9,9 +9,12 @@ fn lersatio_scene_cross_floor_requires_explicit_admission() -> Result<(), serde_
     });
     let mut explicit = legacy.clone();
     explicit["cross_floor"] = true.into();
+    explicit["players_only"] = true.into();
     let admitted: SceneRelocation = serde_json::from_value(explicit)?;
     assert!(admitted.cross_floor);
+    assert!(admitted.players_only);
     let unchanged: SceneRelocation = serde_json::from_value(legacy)?;
     assert!(!unchanged.cross_floor);
+    assert!(!unchanged.players_only);
     Ok(())
 }

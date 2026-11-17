@@ -19,6 +19,9 @@ pub struct SceneEdit {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct SceneRelocation {
+    /// Census and transfer only current player occupants.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub players_only: bool,
     /// Explicit source-script transport across floors; legacy scenes stay on one floor.
     #[serde(default, skip_serializing_if = "is_false")]
     pub cross_floor: bool,

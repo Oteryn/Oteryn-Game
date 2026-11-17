@@ -18,6 +18,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .flat_map(|m| {
                 m.from.iter().map(|from| SceneEvacuation {
+                    players_only: m.players_only,
                     from: local(*from),
                     players_to: local(m.to),
                     creatures_to: local(m.to),
@@ -33,6 +34,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .iter()
             .map(|m| SceneEvacuation {
+                players_only: false,
                 from: local(m.from),
                 players_to: local(m.players_to),
                 creatures_to: local(m.creatures_to),

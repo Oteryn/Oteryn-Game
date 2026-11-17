@@ -8,6 +8,7 @@ use oteryn_gameplay_entities::{
 
 #[derive(Clone, Copy, Debug)]
 pub struct SceneEvacuation {
+    pub players_only: bool,
     pub from: MovementLocalPosition,
     pub players_to: MovementLocalPosition,
     pub creatures_to: MovementLocalPosition,
@@ -85,7 +86,12 @@ fn current_census(
         .scene_actor_census()
         .map_err(MovementError::Actor)?
         .into_iter()
-        .filter(|entry| sources.iter().any(|s| s.from == entry.position.position()))
+        .filter(|entry| {
+            sources.iter().any(|s| {
+                s.from == entry.position.position()
+                    && (!s.players_only || matches!(entry.kind, SceneActorKind::Player(_)))
+            })
+        })
         .collect())
 }
 impl SourceSceneRelocation<'_> {
