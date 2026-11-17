@@ -206,15 +206,10 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    let (result, _, _) = super::qengine_rewards::wire_reward_with_prefix_refusal(
-        owner,
-        admitted,
-        storkus,
-        &callbacks[0],
-        false,
-        Some(1),
-    )
-    .await?;
+    // An offer whose requirement fails is plain talk; the confirming "yes" then refuses.
+    let (result, _, _) =
+        super::qengine_rewards::wire_reward(owner, admitted, storkus, &callbacks[0], false)
+            .await?;
     assert_eq!(result, NpcIntentDisposition::Rejected, "questline 10 refuses");
     assert_eq!(stage(h, &rank).await?, None);
     assert_eq!(quantity(h, TOKEN).await?, 1);
@@ -296,15 +291,10 @@ pub(super) async fn exercise(
     )
     .await?;
     let before = xp(h).await?;
-    let (result, _, _) = super::qengine_rewards::wire_reward_with_prefix_refusal(
-        owner,
-        admitted,
-        storkus,
-        &callbacks[0],
-        false,
-        Some(1),
-    )
-    .await?;
+    // An offer whose requirement fails is plain talk; the confirming "yes" then refuses.
+    let (result, _, _) =
+        super::qengine_rewards::wire_reward(owner, admitted, storkus, &callbacks[0], false)
+            .await?;
     assert_eq!(result, NpcIntentDisposition::Rejected, "no seventh rank");
     assert_eq!(quantity(h, TOKEN).await?, 1);
     assert_eq!(xp(h).await?, before);
