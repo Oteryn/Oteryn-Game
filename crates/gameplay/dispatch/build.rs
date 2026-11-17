@@ -1,6 +1,7 @@
 mod build_mechanics;
 #[path = "../../../apps/game-server/build_mounts.rs"]
 mod build_mounts;
+mod build_pg_shard;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR")?);
@@ -22,5 +23,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "src/gameplay_transport/postgres_tests",
         "postgres_tests_mounts.rs",
         "",
-    )
+    )?;
+    build_pg_shard::filter(&out.join("postgres_tests_mounts.rs"))
 }
