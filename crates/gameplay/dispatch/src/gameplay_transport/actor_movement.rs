@@ -4,6 +4,8 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+mod observer_eye;
+
 use super::ChannelSpellStates;
 use crate::content::{LogicalCell, NativeEntryMovementCells};
 use crate::foundation::{
@@ -293,6 +295,9 @@ pub fn step_in_channel_with_source_step(
     {
         state.cooldowns = cooldowns;
     }
+    observer_eye::mirror_step(
+        runtime, states, cells, actor, expected.position(), result.0.position(), now_us, blocking,
+    );
     Ok(result)
 }
 
@@ -1631,3 +1636,6 @@ mod creature_field_step_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod observer_eye_tests;
