@@ -60,18 +60,14 @@ impl DurabilityRoot {
                     let retry: Option<i64> = sqlx::query_scalar("SELECT retry_at FROM game_mummys_curse_retries WHERE world_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND action_id=$3")
                         .bind(world).bind(character).bind(i32::from(action)).fetch_optional(&mut *tx).await?;
                     let outcome = use_jar(action, progress, now.max(0) as u64, retry.unwrap_or_default() as u64, roll);
-                    match &outcome {
-                        JarOutcome::Failed { retry_at } => {
-                            sqlx::query("INSERT INTO game_mummys_curse_retries(world_id,character_id,action_id,retry_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4) ON CONFLICT (world_id,character_id,action_id) DO UPDATE SET retry_at=excluded.retry_at")
-                                .bind(world).bind(character).bind(i32::from(action)).bind(i64::try_from(*retry_at).map_err(|_| DurabilityError::InvalidStoredState)?)
-                                .execute(&mut *tx).await?;
-                        }
-                        JarOutcome::Broken { .. } | JarOutcome::FinalJar => {
-                            progress += 1;
-                            sqlx::query("UPDATE game_mummys_curse_progress SET broken_jars=$2 WHERE world_id=encode($1,'hex')::uuid")
-                                .bind(world).bind(i16::from(progress)).execute(&mut *tx).await?;
-                        }
-                        _ => {}
+                    if let JarOutcome::Failed { retry_at } = &outcome {
+                        sqlx::query("INSERT INTO game_mummys_curse_retries(world_id,character_id,action_id,retry_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4) ON CONFLICT (world_id,character_id,action_id) DO UPDATE SET retry_at=excluded.retry_at")
+                            .bind(world).bind(character).bind(i32::from(action)).bind(i64::try_from(*retry_at).map_err(|_| DurabilityError::InvalidStoredState)?)
+                            .execute(&mut *tx).await?;
+                    } else if matches!(&outcome, JarOutcome::Broken { .. } | JarOutcome::FinalJar) {
+                        progress += 1;
+                        sqlx::query("UPDATE game_mummys_curse_progress SET broken_jars=$2 WHERE world_id=encode($1,'hex')::uuid")
+                            .bind(world).bind(i16::from(progress)).execute(&mut *tx).await?;
                     }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok((outcome, progress))
