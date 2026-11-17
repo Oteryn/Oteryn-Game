@@ -155,3 +155,45 @@ mod tests {
         );
     }
 }
+
+/// Crystal bosses_reward.lua:2-32,50-58. One roll in ten awards one of two items.
+pub fn chest_bonus(callback: &str, draw: u64) -> Option<&'static str> {
+    let items = match callback {
+        "oteryn:quest-callback/deeplings-chest-9302" => {
+            ["oteryn:item.tibia.i13990", "oteryn:item.tibia.i14021"]
+        }
+        "oteryn:quest-callback/deeplings-chest-9303" => {
+            ["oteryn:item.tibia.i14022", "oteryn:item.tibia.i3027"]
+        }
+        "oteryn:quest-callback/deeplings-chest-9304" => {
+            ["oteryn:item.tibia.i14023", "oteryn:item.tibia.i281"]
+        }
+        _ => return None,
+    };
+    match draw % 20 {
+        0 => Some(items[0]),
+        1 => Some(items[1]),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod bonus_tests {
+    #[test]
+    fn crystal_deepling_chest_bonus_has_two_winning_draws_in_twenty() {
+        for (uid, items) in [
+            (9302, [13990, 14021]),
+            (9303, [14022, 3027]),
+            (9304, [14023, 281]),
+        ] {
+            let key = format!("oteryn:quest-callback/deeplings-chest-{uid}");
+            let results: Vec<_> = (0..20)
+                .filter_map(|draw| super::chest_bonus(&key, draw))
+                .collect();
+            assert_eq!(
+                results,
+                items.map(|item| format!("oteryn:item.tibia.i{item}"))
+            );
+        }
+    }
+}

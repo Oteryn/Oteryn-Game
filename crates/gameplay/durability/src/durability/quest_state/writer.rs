@@ -1946,6 +1946,30 @@ impl DurabilityRoot {
                         // occurrence. Historical receipts returned before this check.
                         let revision = format!("sha256:{}", admission.native.source_digest().iter()
                             .map(|byte| format!("{byte:02x}")).collect::<String>());
+                        let chest_bonus = oteryn_gameplay_quests::quest::deepling_boss_access::chest_bonus;
+                        let chest = chest_bonus(&world.key, 0).is_some();
+                        let mut resolved_bonus = None;
+                        if chest {
+                            use sha2::Digest;
+                            let digest = sha2::Sha256::new()
+                                .chain_update(b"oteryn.deeplings.chest.v1")
+                                .chain_update(fence.character_id.as_bytes())
+                                .chain_update(committed.as_bytes())
+                                .chain_update(world.key.as_bytes())
+                                .finalize();
+                            let draw = u64::from_be_bytes(digest[..8].try_into()
+                                .map_err(|_| DurabilityError::InvalidStoredState)?);
+                            if let Some(item) = chest_bonus(&world.key, draw) {
+                                let mut resolved = reward.clone();
+                                resolved.additional.push(oteryn_gameplay_quests::quest::reward_callbacks::ItemAmount {
+                                    item: item.into(),
+                                    count: 1,
+                                    fluid_subtype: None,
+                                });
+                                resolved_bonus = Some(resolved);
+                            }
+                        }
+                        let reward = resolved_bonus.as_ref().unwrap_or(reward);
                         let claim = if world.has_fenced_regrowth_reward() {
                             super::super::reward_claim_mint::quest::QuestMintClaim::SourceUse
                         } else if let Some(track) = world.effects.item_reward_cycle.as_deref() {
@@ -1956,7 +1980,7 @@ impl DurabilityRoot {
                                         .ok_or(DurabilityError::InvalidStoredState)?.after
                                 } else { stored.get(track).copied().unwrap_or(initial) },
                             }
-                        } else if world.effects.item_reward_per_use {
+                        } else if chest || world.effects.item_reward_per_use {
                             super::super::reward_claim_mint::quest::QuestMintClaim::WorldUse
                         } else { super::super::reward_claim_mint::quest::QuestMintClaim::Once };
                         if context.as_ref().is_none_or(|(_, world, _)| world.content_revision != revision)
