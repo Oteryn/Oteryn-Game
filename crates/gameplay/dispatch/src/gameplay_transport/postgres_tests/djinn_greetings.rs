@@ -1,10 +1,11 @@
 use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session};
+use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
 use oteryn_gameplay_foundation::foundation::condition::{TickFacts, TickKind};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
-use oteryn_simulation_determinism::{DecisionOccurrenceId, SemanticTimeMicros};
+use oteryn_simulation_determinism::DecisionOccurrenceId;
 
 #[test]
 fn baa_leal_soulfire_postgres_npc_talk() -> TestResult {
