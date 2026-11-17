@@ -310,6 +310,9 @@ def summarize(shards: list[dict], directory: Path, prefix: str) -> tuple[str, li
     for item in shards:
         validate_shard(item)
         path = directory / f"{prefix}{item['name']}" / "result.json"
+        if len(shards) == 1 and not path.exists():
+            # download-artifact extracts a lone matching artifact straight into its path.
+            path = directory / "result.json"
         try:
             result = json.loads(path.read_text(encoding="utf-8"))
             if result.get("shard") != item["name"]:

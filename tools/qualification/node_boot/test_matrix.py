@@ -185,6 +185,24 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(problems, [])
         self.assertIn("I01.full (g-core, g-f4)", markdown)
 
+    def test_summary_reads_a_lone_artifact_extracted_without_its_directory(self):
+        # download-artifact puts a single pattern match straight into its path (the reference set).
+        shards = matrix.plan("reference")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "shards"
+            root.mkdir()
+            log = self.write(tmp, "log", "SEAM_EVIDENCE e2e_all scenario=I01.full status=PASS seconds=1\n"
+                                         "NODE_BOOT_RESULT=NODE_BOOT_PASS\n")
+            result = matrix.extract(log, name="reference", entry="node_boot", exit_code=0, seconds=60)
+            (root / "result.json").write_text(json.dumps(result))
+            markdown, problems = matrix.summarize(shards, root, "node-boot-1-1-")
+            self.assertEqual(problems, [])
+            self.assertIn("| reference | NODE_BOOT_PASS | 0 | 1.0 | 1 | 1 | 0 | 0 | 0 |", markdown)
+            result["shard"] = "other"
+            (root / "result.json").write_text(json.dumps(result))
+            _, problems = matrix.summarize(shards, root, "node-boot-1-1-")
+            self.assertEqual(problems, ["reference: no result evidence"])
+
     def test_redact_drops_secret_bearing_lines(self):
         with tempfile.TemporaryDirectory() as tmp:
             source = self.write(tmp, "in", "keep\nPASSWORD=x\npostgres://u@h\nmysql://a\nSecret\nauth token\n"
