@@ -245,34 +245,29 @@ fn native_composer_mode_button_cycles_the_existing_console_owner()
         ))
         .observe(widgets::activate)
         .id();
-    app.world_mut().trigger(Activate { entity: button });
-    let owner = app.world().non_send::<HostOwner>();
-    assert_eq!(
-        owner
+    let mode = |app: &App| -> Result<ComposerMode, Box<dyn std::error::Error>> {
+        Ok(app
+            .world()
+            .non_send::<HostOwner>()
             .play
             .as_ref()
             .ok_or("play")?
             .link
             .chat_panel()
             .console
-            .mode,
-        ComposerMode::Off
-    );
-    assert_eq!(app.world().resource::<InputFocus>().get(), None);
-    app.world_mut().trigger(Activate { entity: button });
-    let owner = app.world().non_send::<HostOwner>();
-    assert_eq!(
-        owner
-            .play
-            .as_ref()
-            .ok_or("play")?
-            .link
-            .chat_panel()
-            .console
-            .mode,
-        ComposerMode::Temporary
-    );
-    assert_eq!(app.world().resource::<InputFocus>().get(), Some(editor));
+            .mode)
+    };
+    // The button cycles Chat On, Chat Auto, Chat Off; Auto leaves the keys with the game
+    // until the player clicks into the input.
+    for (expected, focused) in [
+        (ComposerMode::Auto, None),
+        (ComposerMode::Off, None),
+        (ComposerMode::On, Some(editor)),
+    ] {
+        app.world_mut().trigger(Activate { entity: button });
+        assert_eq!(mode(&app)?, expected);
+        assert_eq!(app.world().resource::<InputFocus>().get(), focused);
+    }
     assert_eq!(
         app.world()
             .get::<EditableText>(editor)

@@ -659,9 +659,53 @@ mod channels {
     }
 
     #[test]
+    fn guild_members_open_the_guild_channel_from_the_dialog_and_write_in_it() {
+        use oteryn_client_runtime::chat_guild_room::{GuildChatLine, GuildRoomState};
+        let (mut chat, mut public, mut private) = selected();
+        let entry = ChannelEntry::Local(ChannelTab::Guild);
+        assert!(!dialog_entries(None, ChatRoomSet::default(), false).contains(&entry));
+        chat.guild_selected = true;
+        chat.guild = GuildRoomState::Member {
+            guild_id: [1; 16],
+            rank: 1,
+            motd: "".into(),
+        };
+        assert!(crate::chat_guild_room::available(&chat));
+        let entries = dialog_entries(None, ChatRoomSet::default(), true);
+        assert!(entries.contains(&entry));
+        assert_eq!(
+            open_entry(&mut chat, &mut public, &mut private, &entry),
+            None
+        );
+        assert_eq!(chat.console.current, Some(ChannelTab::Guild));
+        assert_eq!(chat.console.tab_labels(), ["Local Chat", "Guild"]);
+        chat.lines = vec![
+            ChatLine::Private {
+                speaker_name: "Bob".into(),
+                text: "local hello".into(),
+            },
+            ChatLine::Guild(GuildChatLine {
+                guild_id: [1; 16],
+                rank: 1,
+                speaker_name: "Alice".into(),
+                text: "guild hello".into(),
+            }),
+        ];
+        let text = panel_text(&chat);
+        assert!(text.contains("guild hello") && !text.contains("local hello"));
+        chat.text = "for the guild".into();
+        assert_eq!(
+            crate::chat::channel_request(&mut chat),
+            Some(ChatIntent::Guild {
+                text: "for the guild".into()
+            })
+        );
+    }
+
+    #[test]
     fn chat_local_tabs_open_from_the_dialog_rows_and_close_without_wire() {
         let (mut chat, mut public, mut private) = selected();
-        let entries = dialog_entries(Some(&list(None, &[])), ChatRoomSet::default());
+        let entries = dialog_entries(Some(&list(None, &[])), ChatRoomSet::default(), false);
         let local: Vec<_> = entries
             .iter()
             .filter(|entry| matches!(entry, ChannelEntry::Local(_)))
@@ -739,7 +783,7 @@ mod channels {
     #[test]
     fn chat_dialog_selects_steps_and_confirms_rows_or_a_typed_name() {
         let channels = list(Some(100), &[(205, "Ana")]);
-        let entries = dialog_entries(Some(&channels), ChatRoomSet::default());
+        let entries = dialog_entries(Some(&channels), ChatRoomSet::default(), false);
         let console = Console::default();
         let rows = dialog_rows(&entries, &console);
         assert_eq!(rows.len(), entries.len());

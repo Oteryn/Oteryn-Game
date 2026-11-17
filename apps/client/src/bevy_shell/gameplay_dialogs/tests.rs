@@ -121,7 +121,7 @@ fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
         browse: Some((tile, 0)),
         npc: None,
         player: Some("Bryn".into()),
-        attack: Some(tile),
+        attack: Some((tile, false)),
     };
     let items = projection::context_items(&content, true, false);
     let rows: Vec<String> = items
@@ -140,6 +140,7 @@ fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
             "Look\tShift",
             "Use\tCtrl",
             "Open",
+            "Bed",
             "-",
             "Rotate",
             "Browse Field",
@@ -151,8 +152,28 @@ fn context_menu_follows_tibia_order_with_shortcuts_and_uses_a_bed() -> Result {
             "Copy Name",
         ]
     );
-    // The bed is used like any item: its Use entry runs the bed owner action.
-    assert!(matches!(items[2].1, Choice::Context(3)));
+    // Plain Use stays reachable on a bed, and the bed action keeps its own row.
+    assert!(matches!(items[2].1, Choice::Context(1)));
+    assert!(matches!(items[4].1, Choice::Context(3)));
     assert!(matches!(items[0].1, Choice::Attack));
+    let Content::Context { menu, .. } = &content else {
+        return Err("context".into());
+    };
+    let current = Content::Context {
+        menu: menu.clone(),
+        party: None,
+        inspection: None,
+        report: None,
+        trade: None,
+        browse: None,
+        npc: None,
+        player: None,
+        attack: Some((tile, true)),
+    };
+    let rows = projection::context_items(&current, false, false);
+    assert!(matches!(
+        &rows[0].0,
+        super::popup::Item::Entry { label, .. } if label == "Stop Attack"
+    ));
     Ok(())
 }

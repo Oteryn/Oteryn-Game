@@ -604,7 +604,7 @@ fn empty_unfocused_input_shows_the_placeholder() -> TestResult {
     let (mut app, editor, _) = app()?;
     let hint = app
         .world_mut()
-        .spawn((widgets::Placeholder, Visibility::Inherited))
+        .spawn((widgets::Placeholder, Visibility::Inherited, Text::default()))
         .id();
     let visibility = |app: &mut App| -> Result<Visibility, Box<dyn std::error::Error>> {
         app.world_mut()
@@ -626,7 +626,27 @@ fn empty_unfocused_input_shows_the_placeholder() -> TestResult {
     app.update();
     app.world_mut().resource_mut::<InputFocus>().clear();
     assert_eq!(visibility(&mut app)?, Visibility::Inherited);
-    assert_eq!(widgets::PLACEHOLDER, "Type here to chat");
+    let caption = |app: &App| app.world().get::<Text>(hint).map(|text| text.0.clone());
+    assert_eq!(caption(&app).as_deref(), Some("Type here to chat"));
+    let set = |app: &App, mode| -> TestResult {
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_set_mode(mode);
+        Ok(())
+    };
+    set(&app, oteryn_client_ui::chat::ComposerMode::Auto)?;
+    assert_eq!(visibility(&mut app)?, Visibility::Inherited);
+    assert_eq!(caption(&app).as_deref(), Some("Click here to chat"));
+    set(&app, oteryn_client_ui::chat::ComposerMode::Off)?;
+    assert_eq!(
+        visibility(&mut app)?,
+        Visibility::Hidden,
+        "chat Off shows no hint"
+    );
     Ok(())
 }
 #[test]
@@ -656,5 +676,59 @@ fn selected_tab_caption_is_white_and_the_others_grey() -> TestResult {
     let color = |entity| app.world().get::<TextColor>(entity).map(|color| color.0);
     assert_eq!(color(active), Some(widgets::ACTIVE_TAB));
     assert_eq!(color(inactive), Some(widgets::INACTIVE_TAB));
+    Ok(())
+}
+#[test]
+fn chat_auto_enter_sends_and_returns_the_keys_to_the_game() -> TestResult {
+    let (mut app, _editor, mut commands) = app()?;
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        link.chat_set_mode(oteryn_client_ui::chat::ComposerMode::Auto);
+        link.chat_auto_focus(true);
+    }
+    key(&mut app, KeyCode::Enter, Key::Enter, None);
+    app.update();
+    assert!(matches!(sent(&mut commands), Some(ChatIntent::Say { text, .. }) if text == "hell"));
+    assert_eq!(app.world().resource::<InputFocus>().get(), None);
+    Ok(())
+}
+#[test]
+fn chat_auto_click_outside_the_input_releases_the_keyboard() -> TestResult {
+    use bevy::{ecs::system::RunSystemOnce, picking::hover::Hovered};
+    let (mut app, editor, _) = app()?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .chat_set_mode(oteryn_client_ui::chat::ComposerMode::Auto);
+    let area = app
+        .world_mut()
+        .spawn((widgets::InputArea, Hovered(true)))
+        .id();
+    let mut buttons = ButtonInput::<MouseButton>::default();
+    buttons.press(MouseButton::Left);
+    app.insert_resource(buttons);
+    let release = |app: &mut App| -> TestResult {
+        app.world_mut()
+            .run_system_once(widgets::auto_release)
+            .map_err(|error| format!("{error:?}"))?;
+        Ok(())
+    };
+    release(&mut app)?;
+    assert_eq!(
+        app.world().resource::<InputFocus>().get(),
+        Some(editor),
+        "a click into the input keeps it"
+    );
+    app.world_mut().entity_mut(area).insert(Hovered(false));
+    release(&mut app)?;
+    assert_eq!(
+        app.world().resource::<InputFocus>().get(),
+        None,
+        "a click on the map gives the keys back"
+    );
     Ok(())
 }

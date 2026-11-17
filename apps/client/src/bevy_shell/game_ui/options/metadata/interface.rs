@@ -173,7 +173,7 @@ pub(super) const GAME_WINDOW: [Row; 8] = [
     ),
     check!("game_window.banner", "Show Banner", game_window.banner),
 ];
-pub(super) const ACTION_BARS: [Row; 8] = [
+pub(super) const ACTION_BARS: [Row; 17] = [
     check!(
         "action_bars.visible",
         "Show Action Bars",
@@ -213,5 +213,50 @@ pub(super) const ACTION_BARS: [Row; 8] = [
         "action_bars.auto_insert",
         "Automatically Insert New Actions",
         action_bar.auto_insert
+    ),
+    check!(
+        "action_bars.bottom_1",
+        "Show Bottom Action Bar 1",
+        bar_layout.rows[0].enabled
+    ),
+    check!(
+        "action_bars.bottom_2",
+        "Show Bottom Action Bar 2",
+        bar_layout.rows[3].enabled
+    ),
+    check!(
+        "action_bars.bottom_3",
+        "Show Bottom Action Bar 3",
+        bar_layout.rows[4].enabled
+    ),
+    check!(
+        "action_bars.left_1",
+        "Show Left Action Bar 1",
+        bar_layout.rows[1].enabled
+    ),
+    check!(
+        "action_bars.left_2",
+        "Show Left Action Bar 2",
+        bar_layout.rows[5].enabled
+    ),
+    check!(
+        "action_bars.left_3",
+        "Show Left Action Bar 3",
+        bar_layout.rows[6].enabled
+    ),
+    check!(
+        "action_bars.right_1",
+        "Show Right Action Bar 1",
+        bar_layout.rows[2].enabled
+    ),
+    check!(
+        "action_bars.right_2",
+        "Show Right Action Bar 2",
+        bar_layout.rows[7].enabled
+    ),
+    check!(
+        "action_bars.right_3",
+        "Show Right Action Bar 3",
+        bar_layout.rows[8].enabled
     ),
 ];

@@ -14,7 +14,6 @@ use bevy::{
 mod assign;
 mod catalog;
 mod objects;
-#[cfg(test)]
 use assign::REFUSED;
 use assign::{add_to_multi, apply, toggle_multi};
 #[cfg(test)]
@@ -42,6 +41,16 @@ impl EditorState {
         self.page = 0;
         self.catalog_key = None;
         self.multi = None;
+    }
+    /// Opens the editor of `slot` showing that the slot cannot be changed, as an edit of it
+    /// would be refused.
+    pub(super) fn refuse(&mut self, slot: usize, generation: u64) {
+        self.open(slot, generation);
+        REFUSED.clone_into(&mut self.message);
+    }
+    #[cfg(test)]
+    pub(super) fn message(&self) -> &str {
+        &self.message
     }
 }
 #[derive(Component)]

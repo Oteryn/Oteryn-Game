@@ -604,3 +604,38 @@ fn slots_show_their_bound_hotkey_and_follow_a_150_percent_bar_zoom() -> TestResu
     assert_eq!((node.width, node.height), (px(51.), px(51.)));
     Ok(())
 }
+
+#[test]
+fn clear_on_a_bar_without_assignments_is_refused_visibly() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    let generation = {
+        let owner = app.world().non_send::<HostOwner>();
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .bar_gesture(BarGesture::Configure {
+                bar: 3,
+                dock: crate::play::BarDock::Bottom,
+                enabled: true,
+                locked: false,
+            });
+        owner.generation()
+    };
+    let entry = app
+        .world_mut()
+        .spawn(MenuEntry {
+            slot: 3 * ROW_SLOTS,
+            generation,
+            choice: MenuChoice::Clear,
+        })
+        .observe(menu_action)
+        .id();
+    app.world_mut().trigger(Activate { entity: entry });
+    let editor = app.world().resource::<editor::EditorState>();
+    assert!(editor.active(), "the refusal is shown in the slot editor");
+    assert!(editor.message().starts_with("Choose a valid"));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

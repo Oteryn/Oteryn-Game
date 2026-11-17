@@ -282,13 +282,19 @@ fn combined_menu_preserves_base_look_and_real_name_and_old_choices_cannot_replac
                 trade: None,
                 browse: None,
                 npc: None,
-                player: None,
+                player: Some("Visible player".into()),
                 attack: None,
             },
         );
     }
     app.update();
-    // Tibia Global names no header row; the party entry is the plain "Invite to Party".
+    // Tibia Global names no header row: the real name rides on the player entries.
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Message to Visible player")
+    );
     assert!(
         app.world_mut()
             .query::<&Text>()

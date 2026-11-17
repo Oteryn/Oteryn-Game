@@ -12,14 +12,19 @@ impl crate::play::PlayView {
             || crate::play::feature_0450_server_modal::view::active()
     }
 
-    /// Alt+click on an opponent: stops the attack when it is the current target, else attacks it.
-    pub fn attack_toggle_click(&self, tile: TileCoord, link: &PlayLink) -> bool {
-        // Same guard as `PlayView::click`: no world input while dead or under a server modal.
-        if self.gameplay_input_blocked(link) {
-            return false;
-        }
+    /// The attackable player or monster on `tile` (never the own character or an NPC), and
+    /// whether it is the current attack target.
+    #[must_use]
+    pub fn attack_context(&self, tile: TileCoord, link: &PlayLink) -> Option<bool> {
+        self.attack_target(tile, link).map(|(_, attacking)| attacking)
+    }
+    fn attack_target(
+        &self,
+        tile: TileCoord,
+        link: &PlayLink,
+    ) -> Option<(oteryn_session::EntityRef, bool)> {
         let own = self.scene.own_identity();
-        let Some(target) = self
+        let target = self
             .scene
             .target_at(tile)
             .and_then(|target| target.entity)
@@ -33,14 +38,23 @@ impl crate::play::PlayView {
                                     | oteryn_session::EntityKind::Creature
                             )
                     })
-            })
-        else {
-            return false;
-        };
+            })?;
         let attacking = lock(&link.mailbox)
             .battle
             .combat
             .is_some_and(|state| state.target == Some(target));
+        Some((target, attacking))
+    }
+
+    /// Alt+click on an opponent: stops the attack when it is the current target, else attacks it.
+    pub fn attack_toggle_click(&self, tile: TileCoord, link: &PlayLink) -> bool {
+        // Same guard as `PlayView::click`: no world input while dead or under a server modal.
+        if self.gameplay_input_blocked(link) {
+            return false;
+        }
+        let Some((target, attacking)) = self.attack_target(tile, link) else {
+            return false;
+        };
         link.request_combat(if attacking {
             crate::combat_input::CombatCommand::Stop
         } else {

@@ -183,6 +183,7 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
     commands.entity(mode).add_child(icon);
     let frame = commands
         .spawn((
+            InputArea,
             source::frame(skins.inset.clone(), [1.; 4]),
             chat_size(0., INPUT_HEIGHT),
             Node {
@@ -207,7 +208,7 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
                 ..default()
             },
         ))
-        .insert(TextColor(INACTIVE_TAB))
+        .insert((TextColor(INACTIVE_TAB), Pickable::IGNORE))
         .id();
     commands.entity(frame).add_children(&[input, hint]);
     let chat_mode = sized_button(
@@ -259,6 +260,8 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
 
 /// The empty input's hint, shown until the player focuses it or types.
 pub(super) const PLACEHOLDER: &str = "Type here to chat";
+/// The hint of Chat Auto, where keys reach the chat only after a click into the input.
+pub(super) const AUTO_PLACEHOLDER: &str = "Click here to chat";
 pub(super) const ACTIVE_TAB: Color = Color::WHITE;
 pub(super) const INACTIVE_TAB: Color = Color::srgb(0.56, 0.56, 0.56);
 #[derive(Component)]
@@ -309,21 +312,67 @@ pub(super) fn tab_colors(
 /// Shows the input hint while the message field is empty and unfocused.
 pub(super) fn placeholder(
     focus: Res<InputFocus>,
+    owner: NonSend<HostOwner>,
     fields: Query<(Entity, &Field, &EditableText)>,
-    mut hints: Query<&mut Visibility, With<Placeholder>>,
+    mut hints: Query<(&mut Visibility, &mut Text), With<Placeholder>>,
 ) {
-    let shown = fields.iter().any(|(entity, field, text)| {
-        *field == Field::Message && focus.get() != Some(entity) && text.value() == ""
-    });
+    use oteryn_client_ui::chat::ComposerMode;
+    let mode = owner
+        .play
+        .as_ref()
+        .map_or(ComposerMode::On, |play| play.link.chat_panel().console.mode);
+    let hint = if mode == ComposerMode::Auto {
+        AUTO_PLACEHOLDER
+    } else {
+        PLACEHOLDER
+    };
+    let shown = mode != ComposerMode::Off
+        && fields.iter().any(|(entity, field, text)| {
+            *field == Field::Message && focus.get() != Some(entity) && text.value() == ""
+        });
     let wanted = if shown {
         Visibility::Inherited
     } else {
         Visibility::Hidden
     };
-    for mut visibility in &mut hints {
+    for (mut visibility, mut text) in &mut hints {
         if *visibility != wanted {
             *visibility = wanted;
         }
+        if text.0 != hint {
+            hint.clone_into(&mut text.0);
+        }
+    }
+}
+
+/// The input frame of the chat; in Chat Auto a press anywhere else gives the keyboard back
+/// to the game.
+#[derive(Component)]
+#[require(bevy::picking::hover::Hovered)]
+pub(super) struct InputArea;
+
+/// Chat Auto: a mouse press outside the input (on the map or any other UI) ends typing.
+pub(super) fn auto_release(
+    owner: NonSend<HostOwner>,
+    buttons: Option<Res<ButtonInput<MouseButton>>>,
+    mut focus: ResMut<InputFocus>,
+    fields: Query<&Field>,
+    areas: Query<&bevy::picking::hover::Hovered, With<InputArea>>,
+) {
+    let Some(play) = &owner.play else {
+        return;
+    };
+    if play.link.chat_panel().console.mode != oteryn_client_ui::chat::ComposerMode::Auto
+        || !buttons.is_some_and(|buttons| buttons.get_just_pressed().next().is_some())
+        || areas.iter().any(|hovered| hovered.get())
+    {
+        return;
+    }
+    if focus
+        .get()
+        .is_some_and(|entity| fields.get(entity) == Ok(&Field::Message))
+    {
+        focus.clear();
     }
 }
 

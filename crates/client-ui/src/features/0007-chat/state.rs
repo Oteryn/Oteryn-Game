@@ -23,6 +23,8 @@ pub enum ChannelTab {
     Room(oteryn_client_runtime::chat_public_channels::ChatRoom),
     Private(u16),
     Conversation(String),
+    /// The guild channel, offered in the channel list to guild members.
+    Guild,
     /// Client-local views over messages the client already receives; they take no input.
     Loot,
     ServerLog,
@@ -33,11 +35,12 @@ impl ChannelTab {
     pub fn label(&self) -> String {
         match self {
             ChannelTab::Room(room) => crate::chat_public_channels::room_name(*room).to_owned(),
-            ChannelTab::Private(id) => format!("Channel {id}"),
+            ChannelTab::Private(id) => lfmt!("Channel {id}", id = id),
             ChannelTab::Conversation(name) => name.clone(),
-            ChannelTab::Loot => "Loot".to_owned(),
-            ChannelTab::ServerLog => "Server Log".to_owned(),
-            ChannelTab::Npc => "NPC".to_owned(),
+            ChannelTab::Guild => tr!("Guild").to_owned(),
+            ChannelTab::Loot => tr!("Loot").to_owned(),
+            ChannelTab::ServerLog => tr!("Server Log").to_owned(),
+            ChannelTab::Npc => tr!("NPC").to_owned(),
         }
     }
     /// Loot, Server Log and NPC are receive-only: typed text goes to local chat instead.
@@ -58,8 +61,23 @@ const FIXED_TABS: [ConsoleTab; 1] = [ConsoleTab::All];
 pub enum ComposerMode {
     #[default]
     On,
+    /// Keys go to the game until the player clicks into the chat input.
+    Auto,
     Off,
+    /// Chat Off opened for one message (Enter); it closes again after sending.
     Temporary,
+}
+impl ComposerMode {
+    /// The toggle order of the chat mode button: On, Auto, Off. A one-message composer
+    /// counts as Off.
+    #[must_use]
+    pub fn next(self) -> Self {
+        match self {
+            Self::On => Self::Auto,
+            Self::Auto => Self::Off,
+            Self::Off | Self::Temporary => Self::On,
+        }
+    }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Console {
@@ -73,6 +91,8 @@ pub struct Console {
     /// it closes with that channel.
     pub mirror_channel: Option<ChannelTab>,
     pub mode: ComposerMode,
+    /// Chat Auto: the player clicked into the input and it still holds the keyboard.
+    pub auto_focus: bool,
     pub show_messages: bool,
     /// Server notices have a separate utility switch from the player transcript filter.
     pub show_server_messages: bool,
@@ -111,6 +131,7 @@ impl Default for Console {
             mirror: None,
             mirror_channel: None,
             mode: ComposerMode::On,
+            auto_focus: false,
             show_messages: true,
             show_server_messages: true,
             filters: Default::default(),
@@ -217,8 +238,7 @@ impl Console {
     }
     /// Tab captions in tab order: the fixed tabs, then the opened channels.
     pub fn tab_labels(&self) -> Vec<String> {
-        // One English locale for the console tabs until the catalog carries these captions.
-        let mut labels = vec!["Local Chat".to_owned()];
+        let mut labels = vec![tr!("Local Chat").to_owned()];
         labels.extend(self.channels.iter().map(|tab| self.tab_label(tab)));
         labels
     }
@@ -317,7 +337,16 @@ impl Console {
     pub fn temporary_on(&mut self) {
         self.mode = ComposerMode::Temporary;
     }
+    /// Whether typed keys belong to the chat input rather than to game hotkeys.
     pub fn can_send(&self) -> bool {
+        match self.mode {
+            ComposerMode::On | ComposerMode::Temporary => true,
+            ComposerMode::Auto => self.auto_focus,
+            ComposerMode::Off => false,
+        }
+    }
+    /// Whether the input accepts a click: every mode except Off.
+    pub fn accepts_input(&self) -> bool {
         self.mode != ComposerMode::Off
     }
     pub fn sent(&mut self) {

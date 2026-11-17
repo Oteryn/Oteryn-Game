@@ -35,7 +35,9 @@ enum Content {
         /// The name of the clicked player other than the own character.
         player: Option<String>,
         /// The clicked creature or player Alt+click would attack.
-        attack: Option<TileCoord>,
+        /// The clicked player or monster Alt+click would attack (never the own character or
+        /// an NPC), and whether it is the current target.
+        attack: Option<(TileCoord, bool)>,
     },
 }
 #[derive(Clone, Copy, Component)]
@@ -134,15 +136,19 @@ impl HostOwner {
             .play
             .as_ref()
             .and_then(|play| play.view.party_context_target(tile)?.1);
-        let attack = menu
+        let attack = self
+            .play
             .as_ref()
-            .filter(|menu| {
-                matches!(
-                    menu.target,
-                    oteryn_client_ui::world_interaction::menu::Target::Creature(_)
-                )
+            .filter(|_| {
+                menu.as_ref().is_some_and(|menu| {
+                    matches!(
+                        menu.target,
+                        oteryn_client_ui::world_interaction::menu::Target::Creature(_)
+                    )
+                })
             })
-            .map(|_| tile);
+            .and_then(|play| play.view.attack_context(tile, &play.link))
+            .map(|attacking| (tile, attacking));
         if self.phase == Phase::Playing
             && (menu.is_some()
                 || npc.is_some()
@@ -287,7 +293,8 @@ impl HostOwner {
             (_, Choice::Cancel | Choice::CopyName) => true,
             (
                 Content::Context {
-                    attack: Some(tile), ..
+                    attack: Some((tile, _)),
+                    ..
                 },
                 Choice::Attack,
             ) => self

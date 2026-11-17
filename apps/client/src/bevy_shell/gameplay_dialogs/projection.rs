@@ -203,14 +203,16 @@ pub(super) fn context_items(
     };
     let mut groups: Vec<Vec<(Item, Choice)>> = Vec::new();
     let mut first = Vec::new();
-    if attack.is_some() {
-        first.push((Item::shortcut("Attack", ATTACK), Choice::Attack));
+    if let Some((_, attacking)) = attack {
+        let label = if *attacking { "Stop Attack" } else { "Attack" };
+        first.push((Item::shortcut(label, ATTACK), Choice::Attack));
     }
     if let Some(choice) = find(Action::Look) {
         first.push((Item::shortcut("Look", LOOK), choice));
     }
-    // A bed is used like any item: its Use entry is the bed action, not a separate "Bed" row.
-    if let Some(choice) = find(Action::BedInteract).or_else(|| find(Action::Use)) {
+    // Plain Use stays reachable on a bed; a bed without one is used through its bed action.
+    let bed_as_use = find(Action::Use).is_none();
+    if let Some(choice) = find(Action::Use).or_else(|| find(Action::BedInteract)) {
         first.push((Item::shortcut("Use", USE), choice));
     }
     if let Some(choice) = find(Action::UseWith) {
@@ -226,13 +228,9 @@ pub(super) fn context_items(
     for (index, action, label) in &entries {
         if !matches!(
             action,
-            Action::Look
-                | Action::Use
-                | Action::UseWith
-                | Action::UseRune
-                | Action::Open
-                | Action::BedInteract
-        ) {
+            Action::Look | Action::Use | Action::UseWith | Action::UseRune | Action::Open
+        ) && !(bed_as_use && *action == Action::BedInteract)
+        {
             first.push((Item::entry(*label), Choice::Context(*index)));
         }
     }

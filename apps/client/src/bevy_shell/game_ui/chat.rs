@@ -220,6 +220,7 @@ pub(super) fn install(app: &mut App) {
                 mirror,
                 widgets::tab_colors,
                 widgets::placeholder,
+                widgets::auto_release,
             )
                 .chain(),
         )
@@ -291,6 +292,13 @@ fn keyboard(
                 if let Some(entity) = focused {
                     if let Ok((_, field, mut text)) = fields.get_mut(entity) {
                         request(&owner, &mut state, entity, *field, &mut text, false);
+                        // Chat Auto: sending hands the keyboard back to the game.
+                        if *field == Field::Message
+                            && play.link.chat_panel().console.mode
+                                == oteryn_client_ui::chat::ComposerMode::Auto
+                        {
+                            focus.clear();
+                        }
                     }
                 } else if play.link.chat_panel().console.can_send() {
                     for (entity, field, _) in &fields {
@@ -478,8 +486,9 @@ fn project(
     }
     let composer_mode = match panel.console.mode {
         oteryn_client_ui::chat::ComposerMode::On => "Chat On",
-        oteryn_client_ui::chat::ComposerMode::Off => "Chat Off",
-        oteryn_client_ui::chat::ComposerMode::Temporary => "Chat Once",
+        oteryn_client_ui::chat::ComposerMode::Auto => "Chat Auto",
+        oteryn_client_ui::chat::ComposerMode::Off
+        | oteryn_client_ui::chat::ComposerMode::Temporary => "Chat Off",
     };
     for children in &chat_mode_buttons {
         for child in children {
@@ -555,7 +564,7 @@ fn project(
     }
     for (entity, field, text) in &mut fields {
         let disabled = owner.modal_active()
-            || (*field == Field::Message && !panel.console.can_send())
+            || (*field == Field::Message && !panel.console.accepts_input())
             || (*field == Field::Recipient && !panel.console.dialog.open);
         if disabled {
             commands
@@ -571,6 +580,12 @@ fn project(
         }
         if *field == Field::Message {
             let focused = focus.get() == Some(entity) && !disabled && guard.allows(entity);
+            // Chat Auto hands the keyboard to the chat only while the input holds the focus.
+            if panel.console.mode == oteryn_client_ui::chat::ComposerMode::Auto
+                && panel.console.auto_focus != focused
+            {
+                play.link.chat_auto_focus(focused);
+            }
             if text.value() != state.value.as_str() || state.focus != focused {
                 state.value = text.value().to_string();
                 state.focus = focused;

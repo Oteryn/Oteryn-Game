@@ -575,6 +575,9 @@ fn menu_action(
             if entry.slot < ROW_SLOTS * 3 {
                 play.link.clear_bar_action(entry.slot);
                 play.link.assign_spell_slot(entry.slot, None);
+            } else {
+                // Bars 4 to 9 keep no assignments yet; say so as the editor does.
+                editor.refuse(entry.slot, owner.generation());
             }
         }
     }
