@@ -105,9 +105,91 @@ async fn wait_release(
     .map_err(|_| "previous journey character was not terminally released after loss/grace")?
 }
 
+// Retry release/admission on the running node; none of these attempts restarts it.
+async fn recover_character_with<T>(
+    deadline: tokio::time::Instant,
+    backoff: [Duration; 4],
+    mut attempt: impl AsyncFnMut() -> Result<T, String>,
+) -> Result<T, String> {
+    let mut failures = 0usize;
+    let mut last = "deadline".to_owned();
+    loop {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(last);
+        }
+        verdict::Harness::global().progress("sweep-recover");
+        match tokio::time::timeout_at(deadline, attempt()).await {
+            Ok(Ok(value)) => return Ok(value),
+            Ok(Err(error)) => last = error,
+            Err(_) => return Err(format!("deadline;last={last}")),
+        }
+        let now = tokio::time::Instant::now();
+        if now >= deadline {
+            return Err(last);
+        }
+        let pause = backoff[failures.min(backoff.len() - 1)];
+        failures = failures.saturating_add(1);
+        verdict::Harness::global().progress("sweep-recover-backoff");
+        tokio::time::sleep(pause.min(deadline - now)).await;
+    }
+}
+
 #[cfg(test)]
 mod character_release_tests {
     use super::*;
+
+    #[test]
+    fn character_recovery_retries_refused_admission_without_restarting_node() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .start_paused(true)
+            .build()?
+            .block_on(async {
+                let started = tokio::time::Instant::now();
+                let mut attempts = 0;
+                recover_character_with(
+                    started + Duration::from_secs(300),
+                    [1, 2, 4, 8].map(Duration::from_secs),
+                    async || {
+                        attempts += 1;
+                        if attempts < 4 {
+                            Err("admission:temporarily unavailable".to_owned())
+                        } else {
+                            Ok(())
+                        }
+                    },
+                )
+                .await?;
+                assert_eq!(attempts, 4);
+                assert_eq!(started.elapsed(), Duration::from_secs(7));
+                Ok(())
+            })
+    }
+
+    #[test]
+    fn character_recovery_stops_at_deadline_without_a_late_attempt() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .start_paused(true)
+            .build()?
+            .block_on(async {
+                let started = tokio::time::Instant::now();
+                let mut attempts = 0;
+                let result = recover_character_with(
+                    started + Duration::from_secs(10),
+                    [1, 2, 4, 8].map(Duration::from_secs),
+                    async || {
+                        attempts += 1;
+                        Err::<(), _>("admission unavailable".to_owned())
+                    },
+                )
+                .await;
+                assert_eq!(result, Err("admission unavailable".to_owned()));
+                assert_eq!(attempts, 4);
+                assert_eq!(started.elapsed(), Duration::from_secs(10));
+                Ok(())
+            })
+    }
 
     #[test]
     fn character_release_waits_through_active_loss_and_grace() -> TestResult {

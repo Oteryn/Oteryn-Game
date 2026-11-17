@@ -840,10 +840,7 @@ async fn reconnect(
     clients: &SeamClients<'_>,
     session: &mut Option<DevClientSession>,
 ) -> TestResult {
-    *session = None;
-    wait_character_released(clients, CORE_CHARACTER).await?;
-    *session = Some(connect_character(clients, 0x80, CORE_CHARACTER).await?);
-    Ok(())
+    recover(clients, session).await.map_err(Into::into)
 }
 
 /// The recover evidence cause: the setup error, with the meaning of a server close by code 1200.
@@ -866,27 +863,15 @@ async fn recover(
 ) -> Result<(), String> {
     *session = None;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(RECOVER_SECONDS);
-    let mut attempt = 0usize;
-    loop {
-        verdict::Harness::global().progress("sweep-recover");
-        let error = match tokio::time::timeout_at(deadline, recover_once(clients)).await {
-            Ok(Ok(client)) => {
-                *session = Some(client);
-                return Ok(());
-            }
-            Ok(Err(error)) => error,
-            Err(_) => return Err(format!("recovery-{RECOVER_SECONDS}s:deadline")),
-        };
-        let now = tokio::time::Instant::now();
-        if now >= deadline {
-            return Err(format!("recovery-{RECOVER_SECONDS}s:{error}"));
-        }
-        let pause = Duration::from_millis(
-            RECOVER_BACKOFF_MILLIS[attempt.min(RECOVER_BACKOFF_MILLIS.len() - 1)],
-        );
-        attempt += 1;
-        tokio::time::sleep(pause.min(deadline - now)).await;
-    }
+    let client = recover_character_with(
+        deadline,
+        RECOVER_BACKOFF_MILLIS.map(Duration::from_millis),
+        async || recover_once(clients).await,
+    )
+    .await
+    .map_err(|error| format!("recovery-{RECOVER_SECONDS}s:{error}"))?;
+    *session = Some(client);
+    Ok(())
 }
 
 async fn recover_once(clients: &SeamClients<'_>) -> Result<DevClientSession, String> {

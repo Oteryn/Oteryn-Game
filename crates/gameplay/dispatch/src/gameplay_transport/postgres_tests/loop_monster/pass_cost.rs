@@ -222,20 +222,25 @@ fn live_join_visibility_projects_only_the_observers_interest_area_postgres() -> 
 
 #[test]
 fn monster_pass_cost_idle_channel_does_not_query_every_empty_tile() -> TestResult {
-    pass_cost(false, false)
+    pass_cost(false, false, false)
 }
 
 #[test]
 fn monster_pass_cost_spread_channel_batches_exact_empty_tiles() -> TestResult {
-    pass_cost(true, false)
+    pass_cost(true, false, false)
 }
 
 #[test]
 fn monster_pass_cost_spread_passive_census_batches_field_reads() -> TestResult {
-    pass_cost(true, true)
+    pass_cost(true, true, false)
 }
 
-fn pass_cost(spread: bool, passive: bool) -> TestResult {
+#[test]
+fn monster_profile_yields_holder_between_retained_consumers_postgres() -> TestResult {
+    pass_cost(false, false, true)
+}
+
+fn pass_cost(spread: bool, passive: bool, bounded: bool) -> TestResult {
     run_case(async move |harness| {
         prepare_current_session(harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -395,6 +400,25 @@ fn pass_cost(spread: bool, passive: bool) -> TestResult {
                 )
                 .await
                 .map_err(debug)?;
+            if bounded {
+                assert!(
+                    states.native_profile_pass.pending().is_some(),
+                    "one profile pass must retain its remaining consumers instead of draining the entire batch"
+                );
+                owner
+                    .root
+                    .try_issue_semantic_pass()
+                    .map_err(debug)?
+                    .run(|holder, _| {
+                        Box::pin(async move {
+                            sqlx::query("SELECT 1").execute(&mut **holder).await?;
+                            Ok(())
+                        })
+                    })
+                    .await
+                    .map_err(debug)?;
+                return Ok(());
+            }
             let elapsed = started.elapsed();
             let scans = ground_scans(owner.root).await? - before;
             eprintln!(
