@@ -51,6 +51,9 @@ pub(super) fn resolve(
     resolved.inventory_after = SANDRA_LOTTERY
         .inventory_after(&plan.inventory_before, draw)
         .ok_or(DurabilityError::InvalidStoredState)?;
+    resolved.inventory_after = SANDRA_LOTTERY
+        .inventory_after(&plan.inventory_before, draw)
+        .ok_or(DurabilityError::InvalidStoredState)?;
     resolved
         .effects
         .retain(|effect| !matches!(effect, NpcRuleEffect::GiveItem { .. }));
