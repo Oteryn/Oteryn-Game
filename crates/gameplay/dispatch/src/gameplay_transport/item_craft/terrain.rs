@@ -494,6 +494,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn refresh_terrain_tools_inner(&self) {
+        self.refresh_krailos_lake().await;
         if !self.refresh_cake_world_map().await {
             return;
         }

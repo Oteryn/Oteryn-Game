@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.ghorza",
+      "keywords": [
+        "water"
+      ],
+      "topic": 0,
+      "next_topic": 7,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/krailos-water/started",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": []
+    }
+  ]
+}

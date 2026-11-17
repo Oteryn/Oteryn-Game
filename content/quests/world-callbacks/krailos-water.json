@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/krailos-water-pour",
+      "quest": "oteryn:quest.krailos_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33642,
+            "y": 31645,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 22420
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/krailos-water/souls",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i22692",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Krailos_Quest#Catching_Spirits",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/krailos-water-purify",
+      "quest": "oteryn:quest.krailos_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": null,
+        "native": {
+          "position": {
+            "x": 33643,
+            "y": 31645,
+            "floor": -7
+          },
+          "ordinal": 0,
+          "appearance": 22414
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/krailos-water/powders",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i22708",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false,
+        "selected_instance": true
+      },
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Krailos_Quest#Detoxifying_the_Water",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ],
+      "track_initials": {
+        "oteryn:quest-progress/krailos-water/powders": 0
+      }
+    }
+  ]
+}

@@ -64,16 +64,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Ok(Some(result));
             }
         }
+        if let Some(result) = self
+            .use_quest_tool_object(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(result));
+        }
         if intent.use_with_map_item.is_some()
             && let Some(result) = self
                 .use_carried_quest_item_with_target(actor, command, &intent, source, item_target)
                 .await?
-        {
-            return Ok(Some(result));
-        }
-        if let Some(result) = self
-            .use_quest_tool_object(actor, command, &intent, source)
-            .await?
         {
             return Ok(Some(result));
         }

@@ -1251,6 +1251,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .await
         .unwrap_or(UseDisposition::Rejected);
+        if result == UseDisposition::Committed
+            && matches!(
+                callback.key.as_str(),
+                oteryn_gameplay_quests::quest::krailos_lake::POUR
+                    | oteryn_gameplay_quests::quest::krailos_lake::PURIFY
+            )
+        {
+            self.refresh_krailos_lake().await;
+        }
         Some(UseOutcome {
             disposition: result,
             ..UseOutcome::rejected()

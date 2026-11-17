@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/krailos-water/souls",
+      "quest": "oteryn:quest.krailos_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 5,
+      "writable": true,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Krailos_Quest#Catching_Spirits"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/krailos-water/started",
+      "quest": "oteryn:quest.krailos_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "https://tibia.fandom.com/wiki/Krailos_Quest#Catching_Spirits"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/krailos-water-capture",
+      "quest": "oteryn:quest.krailos_quest",
+      "npc": "oteryn:npc.ghorza",
+      "keywords": [
+        "water"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/krailos-water/started",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "requires": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i22692",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i22692",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Krailos_Quest#Catching_Spirits"
+      ],
+      "carried_item": "oteryn:item.tibia.i22692",
+      "creature_target": "oteryn:creature.water_elemental",
+      "fresh_corpse": true,
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/krailos-water/souls",
+          "from": {
+            "kind": "between",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "effect": {
+            "kind": "add",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/krailos-water-start",
+      "quest": "oteryn:quest.krailos_quest",
+      "npc": "oteryn:npc.ghorza",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 7,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/krailos-water/started",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i22692",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Here you are."
+      ],
+      "sources": [
+        "https://tibia.fandom.com/wiki/Krailos_Quest#Catching_Spirits"
+      ]
+    }
+  ]
+}

@@ -466,6 +466,7 @@ struct Document {
 const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/shared-reward-callbacks.json"),
     include_str!("../../../../../content/quests/npc-callbacks/fibula.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/krailos-water.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/l13-outfits.json"),
@@ -1057,7 +1058,7 @@ fn validate_document_with_capacity(
             || c.failure_reply.iter().any(|line| {
                 line.is_empty() || line.len() > 512 || line.chars().any(char::is_control)
             })
-            || c.reply.is_empty()
+            || (c.reply.is_empty() && !(c.key == super::krailos_lake::CAPTURE && c.fresh_corpse))
             || c.achievement_progress.len() > 8
             || c.achievement_progress
                 .iter()
