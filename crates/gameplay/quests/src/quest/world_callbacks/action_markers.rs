@@ -48,7 +48,8 @@ pub fn load(source: &str) -> Result<Vec<Callback>, String> {
                 binding.action
             ));
         }
-        callbacks.extend(binding.callbacks);
+        let source = serde_json::json!({"schema": 1, "callbacks": binding.callbacks});
+        callbacks.extend(super::parse(&source.to_string())?);
     }
     Ok(callbacks)
 }
