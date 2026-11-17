@@ -190,7 +190,21 @@ async fn ownership(bots: &mut [Bot<'_, '_>]) -> TestResult<Property> {
             cursor = Some(next);
         }
     }
-    let property = candidate.ok_or_else(|| format!("free-house-unavailable; pages={pages} rows={rows}; last_catalogue={last_reply};source:crates/gameplay/durability/src/durability/house_ownership/bid.rs:74"))?;
+    let Some(property) = candidate else {
+        // Read-only evidence on the failure path: the catalogue lists only materialised
+        // game_house_properties rows (house_management/query.rs PAGE_SQL), so record
+        // whether this World holds any. Nothing is written or seeded here.
+        let census = match sqlx::PgConnection::connect(bots[0].pair.url).await {
+            Ok(mut database) => {
+                let counts: std::result::Result<String, sqlx::Error> = sqlx::query_scalar("SELECT coalesce(string_agg(kind||':'||state::text||'='||n::text,',' ORDER BY kind,state),'none') FROM (SELECT kind,state,count(*) AS n FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid GROUP BY kind,state) c")
+                    .bind(bots[0].pair.world.as_slice()).fetch_one(&mut database).await;
+                let closed = database.close().await;
+                format!("{counts:?} close={closed:?}")
+            }
+            Err(error) => format!("census-connect-error={error}"),
+        };
+        return Err(format!("free-house-unavailable SERVER_GAP; pages={pages} rows={rows}; world_house_properties_by_kind_state={census}; last_catalogue={last_reply}; source: no shipped producer materialises a private house or shop property or opens its auction (only the guildhall bid, apps/game-server/migrations/0228_guildhall_classification.sql:326,335); crates/gameplay/durability/src/durability/house_ownership/bid.rs:74 refuses a missing row, bid.rs:94 refuses state 1; full-bundle House production is out of scope (D1246, apps/game-server/src/node/serve/world_reset.rs:78)").into());
+    };
     let mut database = sqlx::PgConnection::connect(bots[0].pair.url).await?;
     let house = &property.row.house;
     let bank_before: i64 = sqlx::query_scalar("SELECT coalesce((SELECT balance FROM game_account_bank_balances WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid),0)")
