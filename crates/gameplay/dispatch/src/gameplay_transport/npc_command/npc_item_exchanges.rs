@@ -200,14 +200,16 @@ pub(super) async fn talk(
     drop(runtime);
     let step = step?;
     if recipe.npc == bored::WYDA && !confirmed {
-        match admission
+        let available = match admission
             .root
             .wyda_exchange_available(admission.world_id)
             .await
         {
-            Ok(true) => (),
-            Ok(false) => return Some(rejected()),
+            Ok(available) => available,
             Err(_) => return Some(unknown()),
+        };
+        if !available {
+            return Some(rejected());
         }
     }
     if !confirmed {
