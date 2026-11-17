@@ -30,6 +30,7 @@
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.sandra",
       "trigger": "say",
+      "keyword_mode": "exact",
       "keywords": [
         "vial",
         "ticket",
@@ -122,6 +123,7 @@
       "quest": "oteryn:quest.outfit_and_addon_quests",
       "npc": "oteryn:npc.sandra",
       "trigger": "say",
+      "keyword_mode": "exact",
       "keywords": [
         "vial",
         "ticket",
