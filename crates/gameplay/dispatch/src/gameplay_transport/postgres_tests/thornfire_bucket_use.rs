@@ -188,10 +188,11 @@ fn scenario(admin: String) -> TestResult {
                 Some(UseDisposition::Committed),
                 "Prepared Bucket must refill through USE on bog water"
             );
-            let read_bucket = |expected: &'static str| async {
-                let backpack = h
-                    .root
-                    .read_character_backpack(&authority, fence.character_id)
+            let root = &h.root;
+            let lease = &authority;
+            let read_bucket = |expected: &'static str| async move {
+                let backpack = root
+                    .read_character_backpack(lease, fence.character_id)
                     .await?
                     .ok_or("backpack")?;
                 assert_eq!(backpack.entries.len(), 1);
@@ -222,6 +223,10 @@ fn scenario(admin: String) -> TestResult {
                     map_state.facts.object_revision(fire_key),
                     1,
                     "one committed fire mutation"
+                );
+                assert!(
+                    map_state.facts.base_hidden(fire_key),
+                    "the fire leaves the native map"
                 );
                 super::achievement_granters::assert_progress(
                     &h,
