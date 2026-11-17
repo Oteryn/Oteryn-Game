@@ -133,3 +133,23 @@ fn travel_search_prefers_an_open_way_round_to_a_closed_door() -> TestResult {
     assert!(route.iter().all(|&(_, tile)| tile != door));
     Ok(())
 }
+
+/// Not run in this change (no cargo): a passage is one costed edge and one evidence line.
+#[test]
+fn travel_describes_an_npc_passage_with_its_fare() {
+    let offer: &'static Offer = Box::leak(Box::new(Offer {
+        npc: "oteryn:npc.charles".into(),
+        at: at(5, 5, -6),
+        keyword: "edron".into(),
+        price: 150,
+        premium: true,
+        dest: at(50, 50, -6),
+    }));
+    let lines = describe(at(5, 6, -6), &[(Leg::Travel(offer), offer.dest)], |_| None);
+    assert_eq!(
+        lines,
+        [
+            "passage[cost=450](oteryn:npc.charles@5,5,6 says 'edron' for 150 gold (premium) -> 50,50,6)"
+        ]
+    );
+}

@@ -114,9 +114,11 @@ async fn journey(clients: &SeamClients<'_>, chest: &Chest) -> TestResult {
     }
     let reference = provisioning::item_reference(&provisioning::item_index()?, chest.item)?;
     from_town(planner, chest, &label);
-    let client = connect_character(clients, chest.tag, chest.character).await?;
-    let mut client = setup(clients, planner, chest, &label, client).await?;
-    let result = claim(&mut client, planner, chest, &label, ordinal, reference).await;
+    let mut client = connect_character(clients, chest.tag, chest.character).await?;
+    let result = match setup(clients, planner, chest, &label, &mut client).await {
+        Ok(()) => claim(&mut client, planner, chest, &label, ordinal, reference).await,
+        Err(error) => Err(error),
+    };
     let _ = client.session_mut().logout().await;
     result
 }
@@ -153,9 +155,10 @@ async fn below_level_check(
     label: &str,
     level: u32,
 ) -> TestResult {
-    let Some(&(door, action)) = planner.level_doors(chest.at, 12).first() else {
+    let action = u16::try_from(1000 + DOOR_LEVEL)?;
+    let Some(&door) = planner.level_doors(chest.at, 12, action).first() else {
         evidence(&format!(
-            "Q01_CHECK {label} below_level not_run: no level door within 12 tiles of the chest"
+            "Q01_CHECK {label} below_level not_run: no level-{DOOR_LEVEL} door within 12 tiles of the chest"
         ));
         return Ok(());
     };
@@ -195,17 +198,17 @@ async fn setup(
     planner: &travel::Planner<'_>,
     chest: &Chest,
     label: &str,
-    mut client: oteryn_dev_client::DevClientSession,
-) -> TestResult<oteryn_dev_client::DevClientSession> {
-    let before = level(&mut client).await?;
+    client: &mut oteryn_dev_client::DevClientSession,
+) -> TestResult {
+    let before = level(client).await?;
     if before >= DOOR_LEVEL {
         evidence(&format!(
             "Q01_CHECK {label} setup:fixture_level={before} (raised by an earlier row)"
         ));
-        return Ok(client);
+        return Ok(());
     }
     if chest.quest == "noble_armor" {
-        below_level_check(&mut client, planner, chest, label, before).await?;
+        below_level_check(client, planner, chest, label, before).await?;
     }
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
@@ -230,13 +233,13 @@ async fn setup(
         return Err(format!("{label} node-boot fenced build provisioning failed").into());
     }
     let (result, logout, attempts, busy_timed_out) =
-        client_world::logout_retrying_busy(&mut client).await?;
+        client_world::logout_retrying_busy(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("{label} fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
     }
-    drop(client);
-    let mut client = connect_character(clients, chest.tag, chest.character).await?;
-    let after = level(&mut client).await?;
+    // The old session is logged out; the fresh admission replaces it and is logged out by the row.
+    *client = connect_character(clients, chest.tag, chest.character).await?;
+    let after = level(client).await?;
     evidence(&format!(
         "Q01_CHECK {label} setup:fixture_level={after} profile=knight level_before={before} reload=fresh_admission"
     ));
@@ -246,7 +249,7 @@ async fn setup(
         )
         .into());
     }
-    Ok(client)
+    Ok(())
 }
 
 /// Evidence only: the route a fresh character would take from the start town, without a rope.

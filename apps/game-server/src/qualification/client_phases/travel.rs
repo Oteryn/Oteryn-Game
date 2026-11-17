@@ -23,7 +23,7 @@
 //! world copy never sees that callback, so a lever cannot be discovered by the search. A scenario
 //! that knows its lever from the quest source calls `pull_lever` with the tiles it opens.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef};
+use oteryn_dev_client::{DevClientSession, EntityKind, EntityRef, SessionEvent};
 use oteryn_protocol_oteryn::npc_service as service;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::cmp::Reverse;
@@ -378,13 +378,8 @@ impl<'a> Planner<'a> {
         // whose port lies outside the plain start-to-target box can still be walked to.
         let mut points = vec![from, target];
         for offer in &self.offers {
-            if offer
-                .at
-                .x
-                .abs_diff(target.x)
-                .max(offer.at.y.abs_diff(target.y))
-                <= OFFER_REACH
-            {
+            let gap = |at: TilePos| at.x.abs_diff(target.x).max(at.y.abs_diff(target.y));
+            if gap(offer.at) <= OFFER_REACH && gap(offer.dest) < gap(from) {
                 points.extend([offer.at, offer.dest]);
             }
         }
@@ -417,19 +412,19 @@ impl<'a> Planner<'a> {
         self.doors.get(&at).copied()
     }
 
-    /// Level doors (authored action above 1000) on `near`'s floor within `reach` tiles of it.
-    pub(super) fn level_doors(&self, near: TilePos, reach: u16) -> Vec<(TilePos, u16)> {
+    /// Doors of one authored action (1000 + level for a level door) on `near`'s floor within `reach` tiles of it.
+    pub(super) fn level_doors(&self, near: TilePos, reach: u16, wanted: u16) -> Vec<TilePos> {
         let mut doors: Vec<_> = self
             .doors
             .iter()
             .filter(|(at, (_, action))| {
-                *action > 1000
+                *action == wanted
                     && at.floor == near.floor
                     && at.x.abs_diff(near.x).max(at.y.abs_diff(near.y)) <= reach
             })
-            .map(|(at, (_, action))| (*at, *action))
+            .map(|(at, _)| *at)
             .collect();
-        doors.sort_by_key(|(at, _)| (at.x, at.y));
+        doors.sort_by_key(|at| (at.x, at.y));
         doors
     }
 
@@ -449,13 +444,12 @@ impl<'a> Planner<'a> {
             .offers
             .iter()
             .filter(|offer| {
-                offer.dest.floor == target.floor
-                    && offer
-                        .dest
-                        .x
-                        .abs_diff(target.x)
-                        .max(offer.dest.y.abs_diff(target.y))
-                        <= reach
+                offer
+                    .dest
+                    .x
+                    .abs_diff(target.x)
+                    .max(offer.dest.y.abs_diff(target.y))
+                    <= reach
             })
             .map(|offer| describe_offer(offer))
             .collect::<Vec<_>>();
@@ -835,29 +829,43 @@ async fn converse(
     npc: EntityRef,
     text: &str,
 ) -> TestResult<Vec<String>> {
-    tokio::time::sleep(Duration::from_millis(260)).await;
-    let disposition = oteryn_dev_client::client_runtime::npc_shop::talk(
-        client.session_mut(),
-        &service::NpcTalkIntent {
-            npc_actor: npc,
-            text: text.into(),
-        },
-    )
-    .await?;
-    if disposition != service::NpcIntentDisposition::Ok {
-        return Err(format!("NPC talk '{text}' refused: {disposition:?}").into());
+    client.take_events();
+    let payload = service::encode_npc_talk_intent(&service::NpcTalkIntent {
+        npc_actor: npc,
+        text: text.into(),
+    })
+    .map_err(|error| format!("NPC talk '{text}' encode: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            service::CAPABILITY_NPC_SERVICE_V1,
+            service::COMMAND_TYPE_NPC_TALK_INTENT,
+            &payload,
+        )
+        .await?;
+    let disposition = service::decode_npc_intent_result(&reply.payload)
+        .map_err(|error| format!("NPC talk '{text}' reply: {error:?}"))?;
+    if reply.status != CommandStatus::Accepted || disposition != service::NpcIntentDisposition::Ok {
+        return Err(format!(
+            "NPC talk '{text}' status={:?} disposition={disposition:?}",
+            reply.status
+        )
+        .into());
     }
-    let delta = tokio::time::timeout(
-        Duration::from_secs(5),
-        client
-            .session_mut()
-            .read_gated_delta(service::STATE_DOMAIN_NPC_CONVERSATION, 1),
-    )
-    .await
-    .map_err(|_| format!("NPC talk '{text}' got no conversation delta"))??;
-    Ok(service::decode_npc_conversation(&delta.payload)
-        .map_err(|error| format!("conversation payload: {error:?}"))?
-        .lines)
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::NpcConversation(delta) = event
+                && delta.server_sequence > reply.server_sequence
+            {
+                return Ok(delta.value.lines);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("NPC talk '{text}' got no conversation delta").into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
 }
 
 /// Buy a passage as a player does: say "hi", the destination and "yes" to the captain next to
