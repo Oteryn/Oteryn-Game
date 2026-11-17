@@ -221,6 +221,18 @@ fn manual_sort_deposit_holds_the_item_until_a_box_slot_is_chosen() {
         request_in_mode(&mut p, Intent::Deposit(item.handle), true),
         None
     );
+    let mut far = reply(DepotOutcome::Opened);
+    far.page = 15;
+    far.total = 513;
+    far.entries.resize(32, far.entries[0].clone());
+    apply_result(&mut p, Some(far));
+    assert_eq!(p.placement_slot(19), Some(499));
+    assert!(request_in_mode(&mut p, Intent::Withdraw(20), true).is_none());
+    assert_eq!(p.held, Some(item.handle));
+    assert!(!p.pending);
+    let mut page = reply(DepotOutcome::Opened);
+    page.page = 1;
+    apply_result(&mut p, Some(page));
     // Turning the mode off drops the held item; a deposit goes out at once.
     assert_eq!(
         request_in_mode(&mut p, Intent::Deposit(item.handle), false),

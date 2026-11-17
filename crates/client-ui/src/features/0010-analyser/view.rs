@@ -21,7 +21,12 @@ pub fn panel_text(panel: &Panel) -> String {
                 panel.kills,
                 report_elapsed(panel, panel.clock.seconds(), super::Tool::Hunting)
             ),
-            panel.kill_chart.chart(panel.clock.seconds())
+            report_chart(
+                panel,
+                &panel.kill_chart,
+                panel.clock.seconds(),
+                super::Tool::Hunting
+            )
         ),
         tool @ (super::Tool::Damage | super::Tool::Healing) => {
             outgoing_text(panel, panel.clock.seconds(), tool)
@@ -53,6 +58,18 @@ fn report_elapsed(panel: &Panel, seconds: u64, tool: super::Tool) -> u64 {
         .position(|candidate| *candidate == tool)
         .unwrap_or(0);
     seconds.saturating_sub(panel.reset_at[index])
+}
+pub(super) fn report_chart(
+    panel: &Panel,
+    series: &super::state::Series,
+    seconds: u64,
+    tool: super::Tool,
+) -> String {
+    interval_chart(
+        &series.values(seconds),
+        seconds,
+        report_elapsed(panel, seconds, tool),
+    )
 }
 fn interval_chart(values: &[u64], seconds: u64, elapsed: u64) -> String {
     let start_minute = seconds.saturating_sub(elapsed) / 60;
@@ -436,8 +453,16 @@ pub(super) fn session_text_at(panel: &Panel, seconds: u64) -> String {
         "\r\n\r\n{}\r\n\r\n{}\r\nSession gained XP per minute\r\n{}\r\nSession raw XP per minute\r\n{}",
         loot_text_at(panel, chart_seconds, seconds),
         supply_text_at(panel, chart_seconds, seconds),
-        panel.xp_chart.chart(chart_seconds),
-        panel.raw_xp_chart.chart(chart_seconds)
+        interval_chart(
+            &panel.xp_chart.values(chart_seconds),
+            chart_seconds,
+            seconds
+        ),
+        interval_chart(
+            &panel.raw_xp_chart.values(chart_seconds),
+            chart_seconds,
+            seconds
+        )
     );
     text
 }

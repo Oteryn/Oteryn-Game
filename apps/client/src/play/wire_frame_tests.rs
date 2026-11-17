@@ -383,3 +383,47 @@ fn a_ground_drop_on_an_ordinary_bundle_keeps_the_native_map_floor() -> Result<()
         .join()
         .map_err(|_| "ground drop thread failed".to_owned())?
 }
+
+#[test]
+fn picked_ground_item_look_reaches_dispatch_with_its_native_tile_and_raw_frame()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, outbox) = play_channel();
+    let native = at(100, 200, -7);
+    outbox.push(vec![spatial(at(100, 200, 7)), map_snapshot(native)]);
+    outbox.world_context_initialize(true, false);
+    let handle = std::num::NonZeroU64::new(5).ok_or("handle")?;
+    let mut ground = entity(at(100, 200, 7));
+    ground.entity.generation = 0;
+    ground.kind = EntityKind::GroundItem;
+    ground.detail = EntityDetail::Object {
+        item_definition_ref: 1,
+        quantity: 1,
+        item_handle: Some(handle),
+    };
+    let mut view = crate::play::tests::view()?;
+    outbox.entities(vec![ground]);
+    view.tick(&link).map_err(|error| format!("{error:?}"))?;
+    let menu = view
+        .world_context(oteryn_renderer::TileCoord::new(native.x, native.y), &link)
+        .ok_or("ground menu")?;
+    assert!(view.world_context_choose(&link, &menu, Action::Look));
+    let crate::combat_input::PlayCommand::WorldContext(command) = commands.try_recv()? else {
+        return Err("expected world context".into());
+    };
+    let contexts = Arc::new(Mutex::new(Vec::new()));
+    let mut session = Recorder {
+        walks: Arc::default(),
+        combats: Arc::default(),
+        contexts: Arc::clone(&contexts),
+    };
+    let runtime = oteryn_client_runtime::ClientRuntime::new()?;
+    runtime.block_on(outbox.world_context_run(&mut session, &command))??;
+    let recorded = contexts.lock().map_err(|_| "contexts")?;
+    let [(command, true)] = recorded.as_slice() else {
+        return Err("expected raw frame".into());
+    };
+    assert_eq!(command.target, Target::Item(handle));
+    assert_eq!(command.action, Action::Look);
+    assert_eq!(command.selection.as_ref().map(|s| s.position), Some(native));
+    Ok(())
+}

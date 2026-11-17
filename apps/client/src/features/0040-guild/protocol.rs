@@ -55,7 +55,8 @@ impl Outbox {
         for reply in &replies {
             oteryn_client_ui::guild::apply_result(&mut mailbox.guild, reply);
             if matches!(reply, GuildReply::Query { result: Some(guild::GuildQueryResult::Own(None)), .. }) {
-                mailbox.chat.guild = oteryn_session::GuildRoomState::Absent;
+                let selected = mailbox.chat.guild_selected;
+                oteryn_client_ui::chat_guild_room::replace_state(&mut mailbox.chat, selected, oteryn_session::GuildRoomState::Absent);
             }
             if matches!(reply, GuildReply::Query { result: None, .. }) {
                 refusal.clone_from(&mailbox.guild.feedback);

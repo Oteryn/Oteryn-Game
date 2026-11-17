@@ -15,15 +15,37 @@ fn outgoing_views_show_own_rates_types_and_charts_without_mixing_metrics()
     };
     apply_at(&mut panel, &facts, 0);
     let damage = super::view::outgoing_text(&panel, 60, Tool::Damage);
-    for expected in ["DPS: 2.00", "Damage per minute", "Fire: 120", "100.00%"] {
+    assert!(damage.lines().any(|line| line == "DPS: 0.00"));
+    assert!(
+        damage
+            .lines()
+            .any(|line| line == "Session average DPS: 2.00")
+    );
+    for expected in ["Damage per minute", "Fire: 120", "100.00%"] {
         assert!(damage.contains(expected), "{damage}");
     }
     assert!(!damage.contains("HPS:"));
     let healing = super::view::outgoing_text(&panel, 60, Tool::Healing);
-    for expected in ["HPS: 1.00", "Healing per minute", "Healing: 60"] {
+    assert!(healing.lines().any(|line| line == "HPS: 0.00"));
+    assert!(
+        healing
+            .lines()
+            .any(|line| line == "Session average HPS: 1.00")
+    );
+    for expected in ["Healing per minute", "Healing: 60"] {
         assert!(healing.contains(expected), "{healing}");
     }
     assert!(!healing.contains("DPS:") && !healing.contains("Fire:"));
+    for second in 1..=20 {
+        apply_at(&mut panel, &facts, second);
+    }
+    let steady = super::view::impact_text(&panel, 20);
+    assert!(
+        steady
+            .lines()
+            .any(|line| line == "DPS: 120.00 | HPS: 60.00"),
+        "{steady}"
+    );
     reset(&mut panel);
     assert!(
         super::view::outgoing_text(&panel, 0, Tool::Healing)

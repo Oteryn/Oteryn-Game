@@ -26,4 +26,8 @@ pub fn request(panel: &mut ChatPanel) -> Option<ChatIntent> {
 pub fn replace_state(panel: &mut ChatPanel, selected: bool, guild: GuildRoomState) {
     panel.guild_selected = selected;
     panel.guild = guild;
+    if !available(panel) {
+        panel.guild_open = false;
+        panel.console.drop_channel(&crate::chat::ChannelTab::Guild);
+    }
 }

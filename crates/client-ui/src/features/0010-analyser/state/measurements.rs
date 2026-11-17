@@ -3,6 +3,11 @@ use std::{collections::VecDeque, time::Instant};
 
 #[derive(Debug, Clone)]
 pub struct Clock(Instant);
+impl From<Instant> for Clock {
+    fn from(start: Instant) -> Self {
+        Self(start)
+    }
+}
 impl Default for Clock {
     fn default() -> Self {
         Self(Instant::now())
@@ -106,13 +111,19 @@ impl Recent {
     pub(crate) fn rate(&self, seconds: u64, window: u64) -> String {
         let mut first = seconds;
         let mut total = 0u128;
+        let mut current_bucket = false;
         for (at, value) in &self.0 {
-            if *at <= seconds && seconds - at <= window {
-                first = first.min(*at);
+            first = first.min(*at);
+            if *at <= seconds && seconds - at < window {
+                current_bucket |= *at == seconds;
                 total += u128::from(*value);
             }
         }
-        let hundredths = total * 100 / u128::from(seconds.saturating_sub(first).max(1));
+        // Include the current second when it already contributed a bucket.
+        let duration = (seconds - first)
+            .saturating_add(u64::from(current_bucket))
+            .clamp(1, window);
+        let hundredths = total * 100 / u128::from(duration);
         format!("{}.{:02}", hundredths / 100, hundredths % 100)
     }
 }

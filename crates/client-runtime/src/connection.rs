@@ -94,6 +94,9 @@ pub async fn enter<A: AdmissionAttempt>(
             queue_position: queue.map(|queue| queue.position),
         });
         match cancellable(cancellation.clone(), tokio::time::sleep(delay)).await {
+            Cancellable::Completed(()) if Instant::now() >= attempt.usable_until() => {
+                return Err(A::rejected(class));
+            }
             Cancellable::Completed(()) => {}
             Cancellable::Cancelled => return Err(A::rejected(class)),
         }

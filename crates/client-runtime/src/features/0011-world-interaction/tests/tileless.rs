@@ -58,7 +58,15 @@ async fn exchange_carried() -> Result<(), BoxError> {
         admit_peer_with_carried(&mut server, Some(carried)).await?;
         for index in 0..13 {
             let frame = read_frame(&mut server).await?;
-            assert!(!frame.is_empty());
+            if index == 12 {
+                let mut command = vec![8, 19];
+                scalar(&mut command, 2, 30);
+                // Field 1 of the LOOK payload is the server-issued item handle.
+                bytes(&mut command, 4, &[8, 5]);
+                assert_eq!(frame, envelope(7, 1, 0, &command));
+            } else {
+                assert!(!frame.is_empty());
+            }
             let payload = if index % 3 == 0 {
                 look.as_slice()
             } else {
