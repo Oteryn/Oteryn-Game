@@ -9,7 +9,7 @@ use oteryn_protocol_oteryn::world_object::{
     COMMAND_TYPE_USE_INTENT, MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
     decode_use_result, encode_item_use_intent,
 };
-use std::{num::NonZeroU64, sync::Arc};
+use std::sync::Arc;
 
 const CREATURE: &str = "oteryn:creature.squidgy_slime";
 const TRACK: &str = "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use";
@@ -232,7 +232,12 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
                 let mut placement = map.overlay.base().digest().to_vec();
                 placement.extend_from_slice(&key.to_be_bytes());
                 encode_item_use_intent(&UseIntent {
-                    target: UseTarget::Item(NonZeroU64::new(3).ok_or("tool handle")?),
+                    target: UseTarget::ItemByDefinition(
+                        native
+                            .item_index()
+                            .and_then(|index| index.definition_ref("Item", TOOL, "definition-r1"))
+                            .ok_or("tool definition")?,
+                    ),
                     use_with: None,
                     use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
                         placement,
