@@ -85,8 +85,8 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("cwarlock", move || {
         run(async |admin| {
             reset();
-            let h = Harness::create_with_admission_seed(admin, "cwarlock", true, false).await?;
-            prepare_current_session(&h).await?;
+            let h = Harness::create_with_admission_seed(admin, "cwarlock", false, false).await?;
+            let fresh = prepare_current_session(&h).await?;
             let callback = oteryn_gameplay_quests::quest::world_callbacks::load()?
                 .into_iter()
                 .find(|c| c.key == source::KEY)
@@ -191,22 +191,29 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice())
             .bind(generation.identity().client_artifact_digest().as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
-            let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
-            h.root
-                .initialize_admission_equipment(
-                    &authority,
-                    &h.node,
-                    &fence.item_fence(),
-                    generation.identity().server_artifact_digest(),
+            // Bind native progression at root revision one, before starter or build writes.
+            // The generic historical seed carries incompatible policy/evidence revisions.
+            Box::pin(
+                super::srx3_activity_source_fixture::prepare_player_with_operation(
+                    &h,
+                    &owner,
+                    &mut admitted,
+                    50,
+                    "monk",
                     fresh.operation(),
-                )
-                .await
-                .map_err(debug)?;
+                ),
+            )
+            .await?;
+            assert!(
+                owner
+                    .progression_binding(admitted.game_session_id)
+                    .is_some()
+            );
             h.root
                 .grant_starter_items(
                     &authority,
                     &h.node,
-                    &fence.item_fence(),
+                    &admitted.item_fence.ok_or("native starter fence")?,
                     &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
                     &crate::durability::starter_grant::StarterTemplate {
                         definition: crate::durability::item_mint::TypedDefinitionRef {
@@ -219,24 +226,6 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                 )
                 .await
                 .map_err(debug)?;
-            // Replacing the fixture runtime does not transfer the admitted Character lease.
-            owner
-                .runtime
-                .lock()
-                .await
-                .bind_attacker_lease(
-                    deps.actor,
-                    admitted.game_session_id,
-                    crate::foundation::CharacterLease::new(
-                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
-                            .map_err(debug)?,
-                        fence.character_lease_generation,
-                    )
-                    .map_err(debug)?,
-                )
-                .map_err(debug)?;
-            owner.admit_progression_session(&mut admitted).await;
-            deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
             assert!(
                 owner
@@ -749,56 +738,13 @@ async fn prepare_peer(
         continuity,
         item_fence: Some(fence),
     };
-    let native = owner
-        .active_generation
-        .and_then(|active| active.native_gameplay())
-        .ok_or("peer native generation")?;
-    h.root
-        .initialize_admission_equipment(
-            owner.character,
-            owner.holder,
-            &fence,
-            native.source_digest(),
-            &operation,
-        )
-        .await
-        .map_err(debug)?;
-    Box::pin(owner.admit_progression_session(&mut peer)).await;
-    let facts = match crate::gameplay_transport::spell_character_facts::load_character_cast_facts(
-        &h.root,
-        owner.character,
-        fence.character_id,
+    Box::pin(
+        super::srx3_activity_source_fixture::prepare_player_with_operation(
+            h, owner, &mut peer, 50, "monk", &operation,
+        ),
     )
-    .await
-    {
-        crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready {
-            facts, ..
-        } => facts,
-        _ => return Err("peer Character facts".into()),
-    };
-    let monk = owner
-        .load_monk_state(fence.character_id)
-        .await
-        .ok_or("peer monk defaults")?;
-    {
-        let runtime = owner.runtime.lock().await;
-        owner
-            .states
-            .spell_states
-            .try_lock()
-            .map_err(|_| "peer spell states unavailable")?
-            .initialize_admitted(
-                &runtime,
-                actor,
-                peer.game_session_id,
-                facts,
-                monk,
-                owner.owner_now(),
-                None,
-                None,
-            )
-            .ok_or("peer native admission")?;
-    }
+    .await?;
+    assert!(owner.progression_binding(peer.game_session_id).is_some());
     owner.admit_quest_session(&peer).await;
     super::qengine_outfit_stories::seed_quest_prerequisites(
         h,
