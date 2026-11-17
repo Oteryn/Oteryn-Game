@@ -172,6 +172,20 @@ impl DurabilityRoot {
             };
             let result = write(&mut tx, permit, fence, &request, context.0, context.1).await?;
             if result == UseDisposition::Committed {
+                if awash_station(&request) {
+                    use super::world_event::changes::{self, ContributionWrite};
+                    use oteryn_gameplay_world_change::owner::ContributionKind;
+                    let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let epoch: Option<String> = sqlx::query_scalar("SELECT reset_epoch::text FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid")
+                        .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+                    let Some(epoch) = epoch.and_then(|value| value.parse().ok()) else {
+                        return Ok(Some(UseDisposition::Rejected));
+                    };
+                    let operation = super::house_hireling::command_identity(request.command, b"world-change/awash/coal");
+                    if !matches!(changes::contribute(&mut tx, &record, world, epoch, operation, ContributionKind::Coal, 1).await?, ContributionWrite::Applied(_)) {
+                        return Ok(Some(UseDisposition::Rejected));
+                    }
+                }
                 if let Some(window) = context.2.as_mut() {
                     super::pvp_live::commit_live_pvp_transaction(tx.into_inner(), deadline, window).await?;
                 } else { tx.commit(deadline).await?; }
@@ -179,6 +193,17 @@ impl DurabilityRoot {
             Ok(Some(result))
         })).await
     }
+}
+
+fn awash_station(request: &ItemCraftRequest) -> bool {
+    request.ingredient.is_none()
+        && request.tool.is_none()
+        && request.gathering.is_none()
+        && request.enchanting.is_none()
+        && request.station.as_ref().is_some_and(|station| {
+            station.family == "Item"
+                && oteryn_gameplay_world_change::awash::is_pump_item(&station.production_key)
+        })
 }
 
 async fn write<C: ItemLoopContent>(
@@ -425,6 +450,13 @@ async fn write_with_skinning<C: ItemLoopContent>(
                         ingredient_consumed = Some((target.clone(), quantity == ingredient_debit));
                         Some(resolved.conversion)
                     })
+                } else if awash_station(request) {
+                    (definition.production_key == oteryn_gameplay_world_change::awash::COAL).then(
+                        || oteryn_gameplay_items::item_craft::CookingConversion {
+                            recipe: oteryn_gameplay_world_change::awash::PUMP_RECIPE.into(),
+                            outputs: Vec::new(),
+                        },
+                    )
                 } else {
                     cooking_conversion(native, &definition, station)
                 }

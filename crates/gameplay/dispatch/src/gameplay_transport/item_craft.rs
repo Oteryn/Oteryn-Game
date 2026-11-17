@@ -266,8 +266,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let tile = view::compose_tile(&at.map.overlay, &facts, pos).ok()??;
                 let entry = tile.entries.iter().find(|e| e.source.key() == key)?;
-                let MapDefinition::Item(reference) = entry.facts.definition else {
-                    return disposition(UseDisposition::NothingToUse);
+                let station = match entry.facts.definition {
+                    MapDefinition::Item(reference) => {
+                        super::item_look::typed_definition(index, reference)?
+                    }
+                    MapDefinition::Terrain(_) => {
+                        use oteryn_gameplay_world_change::awash::is_dronk_pump;
+                        let appearance = entry.facts.appearance_id;
+                        let Some(pump) = native.item_policy_for_source_id(u32::from(appearance))
+                        else {
+                            return disposition(UseDisposition::NothingToUse);
+                        };
+                        let definition = &pump.record().production_definition;
+                        if !is_dronk_pump(&definition.production_key, pos.x, pos.y, pos.floor) {
+                            return disposition(UseDisposition::NothingToUse);
+                        }
+                        TypedDefinitionRef {
+                            family: definition.family.clone(),
+                            production_key: definition.production_key.clone(),
+                            revision_ref: definition.revision_ref.clone(),
+                        }
+                    }
                 };
                 let map_target = (
                     key,
@@ -281,12 +300,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         || entry.facts.sub_type != 0,
                     pos,
                 );
-                (
-                    super::item_look::typed_definition(index, reference)?,
-                    map_target,
-                )
+                (station, map_target)
             }
         };
+        if oteryn_gameplay_world_change::awash::is_pump_item(&station.production_key) {
+            let (key, _, invalid, pos) = map_target;
+            if invalid
+                || !matches!(key, MapEntryKey::Base(key) if key != 0)
+                || !oteryn_gameplay_world_change::awash::is_dronk_pump(
+                    &station.production_key,
+                    pos.x,
+                    pos.y,
+                    pos.floor,
+                )
+            {
+                return disposition(UseDisposition::NothingToUse);
+            }
+        }
         request.station = Some(station);
         let mut catch_roll = 1;
         let mut fishing_skill = 10;
