@@ -100,8 +100,6 @@ pub(super) struct Sidebar {
     /// The optional left sidebar and the optional second right sidebar (hidden by default).
     pub left: Entity,
     pub extra: Entity,
-    /// The fixed upper part of the right sidebar: minimap, status, inventory, control buttons.
-    pub panel: Entity,
     /// The dockable widget pane of each column, top to bottom, ending in a fill pane.
     pub left_widgets: Entity,
     pub extra_widgets: Entity,
@@ -220,6 +218,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let left = column(&mut commands, false);
     let extra = column(&mut commands, false);
     let right = column(&mut commands, true);
+    // The fixed upper part of the right sidebar: minimap, status, inventory, control buttons.
     let panel = commands
         .spawn(Node {
             width: percent(100.),
@@ -274,6 +273,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
             },
         ))
         .id();
+    super::ui::toolbar::grid::spawn(&mut commands, &skins, toolbar);
     let minimap = region(&mut commands);
     let equipment = region(&mut commands);
     let containers = region(&mut commands);
@@ -339,7 +339,6 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     commands.insert_resource(Sidebar {
         left,
         extra,
-        panel,
         left_widgets,
         extra_widgets,
         right_widgets,

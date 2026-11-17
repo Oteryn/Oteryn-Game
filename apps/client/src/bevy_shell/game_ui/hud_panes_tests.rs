@@ -119,7 +119,12 @@ fn one_fixed_right_sidebar_holds_the_panel_then_the_default_widgets() -> TestRes
     ];
     let panel: Vec<Entity> = app
         .world()
-        .get::<Children>(sidebar.panel)
+        .get::<Children>(
+            app.world()
+                .get::<ChildOf>(regions.minimap)
+                .ok_or("panel")?
+                .parent(),
+        )
         .ok_or("panel children")?
         .iter()
         .collect();
@@ -158,6 +163,35 @@ fn one_fixed_right_sidebar_holds_the_panel_then_the_default_widgets() -> TestRes
     );
     let state = app.world().resource::<SidebarWidgets>();
     assert!(state.entry(Widget::Vip).is_some_and(|entry| entry.open));
+    // The control buttons: Store over the grid of the default set, Options, Logout and the
+    // button manager on the right; no text toolbar while playing.
+    let mut shown: Vec<String> = app
+        .world_mut()
+        .query::<(&crate::bevy_shell::ui::toolbar::grid::ControlButton, &art::ArtSlot, &Node)>()
+        .iter(app.world())
+        .filter(|(_, _, node)| node.display == Display::Flex)
+        .map(|(_, slot, _)| slot.key.clone())
+        .collect();
+    shown.sort();
+    assert_eq!(
+        shown,
+        [
+            "control-analysers",
+            "control-battle",
+            "control-cyclopedia",
+            "control-highscores",
+            "control-logout",
+            "control-manage",
+            "control-options",
+            "control-prey",
+            "control-quest-log",
+            "control-skills",
+            "control-spellbook",
+            "control-store",
+            "control-vip",
+        ]
+    );
+
     let titles: Vec<&str> = Widget::ALL.iter().map(|widget| widget.title()).collect();
     assert_eq!(
         titles,
@@ -339,6 +373,39 @@ fn the_bottom_edge_resizes_the_content_within_bounds() -> TestResult {
             px(height)
         );
     }
+    let _ = std::fs::remove_file(path);
+    Ok(())
+}
+
+#[test]
+fn control_buttons_toggle_the_sidebar_widgets() -> TestResult {
+    use crate::bevy_shell::ui::{Control, toolbar::grid::ControlButton};
+    let path = preferences("controls");
+    let _ = std::fs::remove_file(&path);
+    let mut app = playing_app(path.clone())?;
+    let skills = entity_with::<ControlButton>(&mut app, |button| {
+        matches!(button, ControlButton::Grid(Control::Skills))
+    })?;
+    activate(&mut app, skills);
+    assert_eq!(frame_node(&mut app, Widget::Skills)?.display, Display::None);
+    activate(&mut app, skills);
+    assert_eq!(frame_node(&mut app, Widget::Skills)?.display, Display::Flex);
+    let analytics = entity_with::<ControlButton>(&mut app, |button| {
+        matches!(button, ControlButton::Grid(Control::Analysers))
+    })?;
+    activate(&mut app, analytics);
+    assert_eq!(
+        frame_node(&mut app, Widget::AnalyticsSelector)?.display,
+        Display::Flex
+    );
+    let battle = entity_with::<ControlButton>(&mut app, |button| {
+        matches!(button, ControlButton::Grid(Control::Panel("battle")))
+    })?;
+    activate(&mut app, battle);
+    assert_eq!(
+        frame_node(&mut app, Widget::BattleList)?.display,
+        Display::None
+    );
     let _ = std::fs::remove_file(path);
     Ok(())
 }

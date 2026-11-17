@@ -2,6 +2,7 @@
 use super::{Control, ShellToolbar, Status};
 use crate::bevy_shell::owner::HostOwner;
 use bevy::prelude::*;
+pub(in crate::bevy_shell) mod grid;
 mod manager;
 mod shortcuts;
 pub(super) use manager::Manager;
@@ -221,17 +222,9 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     .unwrap_or(usize::MAX);
                 ordered.push((rank, entity, parent.parent()));
             }
-            let shown = control.is_some_and(|control| {
-                matches!(control, Control::ManageButtons)
-                    || owner
-                        .settings
-                        .preferences
-                        .toolbar_order
-                        .as_ref()
-                        .is_none_or(|ids| ids.iter().any(|id| id == control.id()))
-            });
+            // While playing, the sidebar control buttons replace the text buttons.
             node.display =
-                if (playing && shown) || (!playing && matches!(control, Some(Control::Options))) {
+                if !playing && matches!(control, Some(Control::Options)) {
                     Display::Flex
                 } else {
                     Display::None

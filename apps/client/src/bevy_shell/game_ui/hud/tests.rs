@@ -91,7 +91,6 @@ fn app_with(overlay: bool, vitals: Option<ActorVitals>) -> AppResult {
     app.insert_resource(super::super::Sidebar {
         left: sidebar[0],
         extra: sidebar[1],
-        panel: sidebar[2],
         left_widgets: sidebar[3],
         extra_widgets: sidebar[4],
         right_widgets: sidebar[5],

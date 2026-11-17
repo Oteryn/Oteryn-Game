@@ -226,7 +226,7 @@ pub(super) struct SidebarArrow {
 pub(super) fn install(app: &mut App) {
     art::install(app);
     app.init_resource::<SidebarWidgets>()
-        .add_systems(Update, project)
+        .add_systems(Update, (project, super::super::ui::toolbar::grid::project))
         .add_observer(activate)
         .add_observer(cancel);
 }
