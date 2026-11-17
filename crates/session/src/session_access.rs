@@ -278,6 +278,14 @@ impl<S: SessionStream> Session<S> {
 
     /// Returns (and clears) the pushed deltas applied since the last call, in order.
     pub fn take_events(&mut self) -> Vec<SessionEvent> {
+        self.take_timed_events()
+            .into_iter()
+            .map(|(_, event)| event)
+            .collect()
+    }
+
+    /// Drains pushed events in wire order with the local receipt time of each frame.
+    pub fn take_timed_events(&mut self) -> Vec<(tokio::time::Instant, SessionEvent)> {
         std::mem::take(&mut self.events)
     }
 

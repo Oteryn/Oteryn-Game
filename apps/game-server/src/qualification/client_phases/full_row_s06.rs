@@ -279,12 +279,13 @@ fn taming_requires_step(here: ActorPosition, target: ActorPosition) -> bool {
     here.floor != target.floor || here.x.abs_diff(target.x).max(here.y.abs_diff(target.y)) > 1
 }
 
-async fn approach_taming_target(
+async fn approach_and_use_taming_target(
     client: &mut DevClientSession,
     world: &BundleWorld,
     target: oteryn_dev_client::EntityRef,
-) -> TestResult {
-    for _ in 0..32 {
+    source: oteryn_dev_client::ItemHandle,
+) -> TestResult<(u64, CommandStatus, world_object::UseDisposition, u64)> {
+    for steps in 0..=32 {
         let here = client.world_spatial().actor_position;
         let target_position = client
             .world_entities()
@@ -292,7 +293,27 @@ async fn approach_taming_target(
             .map(|entry| entry.position)
             .ok_or("step=taming-attempt observed=named-target-left-view")?;
         if !taming_requires_step(here, target_position) {
-            return Ok(());
+            client.take_events();
+            let before_use_sequence = client.last_server_sequence();
+            let payload = world_object::encode_item_use_intent(&world_object::UseIntent {
+                target: world_object::UseTarget::Item(source),
+                use_with: Some(target),
+                use_with_map_item: None,
+                use_with_position: None,
+            })
+            .map_err(|error| format!("taming USE encode: {error:?}"))?;
+            let reply = client.session_mut().world_context_use(&payload).await?;
+            let (result, _) = world_object::decode_use_result_with_gate(&reply.payload)
+                .map_err(|error| format!("step=taming-attempt observed=reply-decode-{error:?}"))?;
+            return Ok((
+                before_use_sequence,
+                reply.status,
+                result,
+                reply.server_sequence,
+            ));
+        }
+        if steps == 32 {
+            break;
         }
         let path = route(world, tile(here)?, |at| {
             !taming_requires_step(
@@ -350,26 +371,13 @@ async fn taming_attempt(
     let target = full_row_w02::named_creature(client, "modified gnarlhound")
         .await?
         .ok_or("step=taming-attempt observed=no-visible-modified-gnarlhound")?;
-    approach_taming_target(client, world, target).await?;
-    client.take_events();
-    let before_use_sequence = client.last_server_sequence();
-    let payload = world_object::encode_item_use_intent(&world_object::UseIntent {
-        target: world_object::UseTarget::Item(source),
-        use_with: Some(target),
-        use_with_map_item: None,
-        use_with_position: None,
+    let before_use_sequence = use_taming_with_retry(async |retry| {
+        if retry {
+            client.service_liveness(Duration::from_millis(150)).await?;
+        }
+        approach_and_use_taming_target(client, world, target, source).await
     })
-    .map_err(|error| format!("taming USE encode: {error:?}"))?;
-    let reply = client.session_mut().world_context_use(&payload).await?;
-    let (result, _) = world_object::decode_use_result_with_gate(&reply.payload)
-        .map_err(|error| format!("step=taming-attempt observed=reply-decode-{error:?}"))?;
-    if !taming_committed(reply.status, result) {
-        return Err(format!(
-            "step=taming-attempt observed=status-{:?}-disposition-{result:?}-sequence-{}",
-            reply.status, reply.server_sequence
-        )
-        .into());
-    }
+    .await?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let mut feedback = false;
     loop {
@@ -520,4 +528,51 @@ mod delta_review_tests {
             }
         ));
     }
+}
+
+fn retry_taming_use(status: CommandStatus, result: world_object::UseDisposition) -> bool {
+    status == CommandStatus::Accepted && result == world_object::UseDisposition::TooFar
+}
+
+async fn use_taming_with_retry(
+    mut attempt: impl AsyncFnMut(
+        bool,
+    )
+        -> TestResult<(u64, CommandStatus, world_object::UseDisposition, u64)>,
+) -> TestResult<u64> {
+    for retry in 0..=3 {
+        let (before, status, disposition, sequence) = attempt(retry > 0).await?;
+        if taming_committed(status, disposition) {
+            return Ok(before);
+        }
+        if retry == 3 || !retry_taming_use(status, disposition) {
+            return Err(format!("step=taming-attempt observed=status-{status:?}-disposition-{disposition:?}-sequence-{sequence}").into());
+        }
+    }
+    Err("step=taming-attempt exhausted USE attempts".into())
+}
+
+#[tokio::test]
+async fn typed_too_far_reapproaches_the_same_taming_target() -> TestResult {
+    use world_object::UseDisposition;
+    let mut replies = [
+        (10, CommandStatus::Accepted, UseDisposition::TooFar, 11),
+        (15, CommandStatus::Accepted, UseDisposition::Committed, 16),
+    ]
+    .into_iter();
+    let mut retries = Vec::new();
+    let sequence = use_taming_with_retry(async |retry| {
+        retries.push(retry);
+        replies
+            .next()
+            .ok_or_else(|| "unexpected extra taming attempt".into())
+    })
+    .await?;
+    assert_eq!(sequence, 15);
+    assert_eq!(retries, [false, true]);
+    assert!(!retry_taming_use(
+        CommandStatus::Rejected,
+        UseDisposition::TooFar
+    ));
+    Ok(())
 }

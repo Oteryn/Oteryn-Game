@@ -293,18 +293,19 @@ pub(super) async fn named_creature(
         .map(|entry| entry.entity)
         .collect();
     for target in candidates {
-        if actor_has_name(client, target, name).await? {
+        use oteryn_protocol_oteryn::item_look::ItemLookResult;
+        let look = actor_look(client, target).await?;
+        if matches!(look, ItemLookResult::Text(_)) && classify_actor_name(look, name)? {
             return Ok(Some(target));
         }
     }
     Ok(None)
 }
 
-pub(super) async fn actor_has_name(
+pub(super) async fn actor_look(
     client: &mut DevClientSession,
     target: oteryn_dev_client::EntityRef,
-    name: &str,
-) -> TestResult<bool> {
+) -> TestResult<oteryn_protocol_oteryn::item_look::ItemLookResult> {
     use oteryn_protocol_oteryn::item_look as look;
     let selection = look::ItemLookSelection { extended: true };
     let payload = look::encode_item_look_intent_for(
@@ -318,22 +319,32 @@ pub(super) async fn actor_has_name(
     if reply.status != CommandStatus::Accepted {
         return Err(format!("creature LOOK refused: {reply:?}").into());
     }
-    let result = look::decode_item_look_result_for(&reply.payload, selection)
-        .map_err(|error| format!("creature LOOK decode: {error:?}"))?;
-    if let look::ItemLookResult::Text(text) = result
-        && let Some(observed) = text
-            .strip_prefix("You see ")
-            .and_then(|text| text.strip_suffix('.'))
+    look::decode_item_look_result_for(&reply.payload, selection)
+        .map_err(|error| format!("actor LOOK decode: {error:?}").into())
+}
+
+pub(super) fn classify_actor_name(
+    result: oteryn_protocol_oteryn::item_look::ItemLookResult,
+    name: &str,
+) -> TestResult<bool> {
+    use oteryn_protocol_oteryn::item_look::ItemLookResult;
+    let text = match result {
+        ItemLookResult::Text(text) => text,
+        ItemLookResult::Refused(reason) => {
+            return Err(format!("actor LOOK identity indeterminate: {reason:?}").into());
+        }
+    };
+    if let Some(observed) = text
+        .strip_prefix("You see ")
+        .and_then(|text| text.strip_suffix('.'))
     {
         let observed = ["the ", "an ", "a "]
             .iter()
             .find_map(|article| observed.strip_prefix(article))
             .unwrap_or(observed);
-        if observed.eq_ignore_ascii_case(name) {
-            return Ok(true);
-        }
+        return Ok(observed.eq_ignore_ascii_case(name));
     }
-    Ok(false)
+    Err("actor LOOK did not return a recognizable actor description".into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -554,5 +565,14 @@ mod delta_review_tests {
         let (budget, goal) = return_expectation(exit, Duration::from_secs(60));
         assert_eq!(goal, exit);
         assert!(budget > Duration::from_secs(60));
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn look_refusal_does_not_establish_actor_absence() {
+    use oteryn_protocol_oteryn::item_look::{ItemLookRefusal, ItemLookResult};
+    for refusal in [ItemLookRefusal::RateLimited, ItemLookRefusal::NotAvailable] {
+        assert!(classify_actor_name(ItemLookResult::Refused(refusal), "Rashid").is_err());
     }
 }

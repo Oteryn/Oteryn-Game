@@ -340,28 +340,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .iter()
         .find(|npc| npc.key == "oteryn:npc.rashid")
         .ok_or("step rashid-gate: compiled world omitted Rashid")?;
-    let expected_rashid = utc_rashid_destination()?;
-    let (_, expected_rashid_position) = weekday_rashid(authored_rashid, expected_rashid)?;
-    for anchor in &authored_rashid.placements {
-        let coordinates = (anchor.x, anchor.y, anchor.floor);
-        if coordinates != expected_rashid_position
-            && inspect_rashid_anchor(&mut client, world, coordinates)
-                .await?
-                .is_some()
-        {
-            return Err(
-                format!("step rashid-gate: live Rashid at off-day anchor {coordinates:?}").into(),
-            );
-        }
-    }
-    let rashid_actor = inspect_rashid_anchor(&mut client, world, expected_rashid_position)
-        .await?
-        .ok_or("step rashid-gate: no live Rashid at today's anchor")?;
-    let _ = talk(&mut client, rashid_actor, "hi").await?;
-    let (trade, _, shop_opened) = talk(&mut client, rashid_actor, "trade").await?;
-    if trade.is_empty() || !shop_opened {
-        return Err("step rashid-gate: trade command returned no conversation/shop delta; need weekday destination shop availability".into());
-    }
+    let (expected_rashid, (expected_rashid_position, trade)) =
+        observe_consistent_weekday(utc_rashid_destination, async |day| {
+            verify_rashid_trade(&mut client, world, authored_rashid, day, None).await
+        })
+        .await?;
     row.step(
         "rashid-gate",
         (
@@ -384,20 +367,76 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     {
         return Err(format!("step fresh-admission: durable state mismatch position={:?}/{saved_position:?} gold={}/{}", fresh.world_spatial().actor_position, carried_gold(&fresh)?, saved_gold).into());
     }
-    let fresh_rashid = inspect_rashid_anchor(&mut fresh, world, expected_rashid_position)
-        .await?
-        .ok_or("step fresh-admission: no live Rashid at today's anchor")?;
-    let _ = talk(&mut fresh, fresh_rashid, "hi").await?;
-    let (fresh_trade, _, fresh_shop) = talk(&mut fresh, fresh_rashid, "trade").await?;
-    if fresh_trade.is_empty() || !fresh_shop {
-        return Err(format!("step fresh-admission: Rashid shop was not restored; observed reply={fresh_trade:?} shop_delta={fresh_shop}").into());
-    }
+    let (_, (_, fresh_trade)) = observe_consistent_weekday(utc_rashid_destination, async |day| {
+        verify_rashid_trade(
+            &mut fresh,
+            world,
+            authored_rashid,
+            day,
+            Some(expected_rashid),
+        )
+        .await
+    })
+    .await?;
     row.step("fresh-admission", (saved_position, saved_gold, fresh_trade));
     let _ = fresh.session_mut().logout().await?;
     Ok(())
 }
 
 type PlacementCoordinates = (u16, u16, i8);
+
+async fn observe_consistent_weekday<T>(
+    mut clock: impl FnMut() -> TestResult<RashidDestination>,
+    mut observe: impl AsyncFnMut(RashidDestination) -> TestResult<T>,
+) -> TestResult<(RashidDestination, T)> {
+    for _ in 0..2 {
+        let day = clock()?;
+        let observation = observe(day).await;
+        if day == clock()? {
+            return Ok((day, observation?));
+        }
+    }
+    Err("step rashid-gate: weekday changed during both observations".into())
+}
+
+async fn verify_rashid_trade(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+    authored: &oteryn_world_bundle::npc::Npc,
+    day: RashidDestination,
+    audited: Option<RashidDestination>,
+) -> TestResult<(PlacementCoordinates, Vec<String>)> {
+    let (_, expected) = weekday_rashid(authored, day)?;
+    if audited != Some(day) {
+        for anchor in &authored.placements {
+            let coordinates = (anchor.x, anchor.y, anchor.floor);
+            if coordinates == expected {
+                continue;
+            }
+            let found = inspect_rashid_anchor(client, world, coordinates).await?;
+            if utc_rashid_destination()? != day {
+                return Err("step rashid-gate: UTC weekday changed during anchor tour".into());
+            }
+            if found.is_some() {
+                return Err(format!(
+                    "step rashid-gate: live Rashid at off-day anchor {coordinates:?}"
+                )
+                .into());
+            }
+        }
+    }
+    let found = inspect_rashid_anchor(client, world, expected).await?;
+    if utc_rashid_destination()? != day {
+        return Err("step rashid-gate: UTC weekday changed before dialogue".into());
+    }
+    let actor = found.ok_or("step rashid-gate: no live Rashid at today's anchor")?;
+    talk(client, actor, "hi").await?;
+    let (trade, _, shop_opened) = talk(client, actor, "trade").await?;
+    if trade.is_empty() || !shop_opened {
+        return Err("step rashid-gate: trade returned no conversation/shop delta".into());
+    }
+    Ok((expected, trade))
+}
 
 async fn inspect_rashid_anchor(
     client: &mut DevClientSession,
@@ -432,7 +471,17 @@ async fn inspect_rashid_anchor(
             client.service_liveness(Duration::from_millis(110)).await?;
             client.take_events();
         }
-        if full_row_w02::actor_has_name(client, candidate, "Rashid").await?
+        use oteryn_protocol_oteryn::item_look::{ItemLookRefusal, ItemLookResult};
+        let mut identity = full_row_w02::actor_look(client, candidate).await?;
+        for _ in 0..2 {
+            if identity != ItemLookResult::Refused(ItemLookRefusal::RateLimited) {
+                break;
+            }
+            client.service_liveness(Duration::from_millis(1100)).await?;
+            client.take_events();
+            identity = full_row_w02::actor_look(client, candidate).await?;
+        }
+        if full_row_w02::classify_actor_name(identity, "Rashid")?
             && rashid.replace(candidate).is_some()
         {
             return Err(
@@ -443,7 +492,7 @@ async fn inspect_rashid_anchor(
     let Some(actor) = rashid else {
         return Ok(None);
     };
-    for _ in 0..8 {
+    for steps in 0..=8 {
         let here = client.world_spatial().actor_position;
         let position = client
             .world_entities()
@@ -452,6 +501,9 @@ async fn inspect_rashid_anchor(
             .ok_or("step rashid-gate: identified Rashid left view")?;
         if travel_contact_is_nearby(here, position) {
             return Ok(Some(actor));
+        }
+        if steps == 8 {
+            break;
         }
         let path = route(world, tile(here)?, |at| {
             travel_contact_is_nearby(
@@ -572,4 +624,28 @@ mod delta_review_tests {
             anchor
         ));
     }
+}
+
+#[tokio::test]
+async fn rashid_observation_restarts_after_utc_rollover() -> TestResult {
+    use oteryn_gameplay_entities::rashid_schedule::destination_at;
+    let before = destination_at(86_399_999);
+    let after = destination_at(86_400_000);
+    assert_ne!(before, after);
+    let mut clock = [before, after, after, after].into_iter();
+    let mut observations = Vec::new();
+    let (day, result) = observe_consistent_weekday(
+        || clock.next().ok_or_else(|| "fixture clock exhausted".into()),
+        async |day| {
+            observations.push(day);
+            if day == before {
+                return Err("old anchor saw a live actor after rollover".into());
+            }
+            Ok("fresh trade")
+        },
+    )
+    .await?;
+    assert_eq!(observations, [before, after]);
+    assert_eq!((day, result), (after, "fresh trade"));
+    Ok(())
 }

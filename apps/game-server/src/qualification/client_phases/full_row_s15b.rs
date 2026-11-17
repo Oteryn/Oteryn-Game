@@ -318,12 +318,28 @@ impl ProtectionWindow {
     }
 
     pub(super) fn check(&self, client: &mut DevClientSession) -> TestResult {
+        let events = client.session_mut().take_timed_events();
+        let current = if tokio::time::Instant::now() < self.deadline {
+            Some(
+                client
+                    .actor_vitals()
+                    .ok_or("own vitals disappeared during protection")?
+                    .health,
+            )
+        } else {
+            None
+        };
+        self.check_observations(events, current)
+    }
+
+    fn check_observations(
+        &self,
+        events: Vec<(tokio::time::Instant, SessionEvent)>,
+        current: Option<u32>,
+    ) -> TestResult {
         use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationValueKind};
-        if tokio::time::Instant::now() >= self.deadline {
-            return Ok(());
-        }
-        let events = client.take_events();
-        let damage = events.iter().any(|event| match event {
+        let damage = events.iter().filter(|(received, _)| received_during_protection(self.deadline, *received))
+            .any(|(_, event)| match event {
             SessionEvent::ActorVitals(delta) => delta.value.health < self.health,
             SessionEvent::Presentation(delta) => delta.value.iter().any(|event| {
                 matches!(&event.kind, PresentationEventKind::ValueText { kind: PresentationValueKind::DamageReceived | PresentationValueKind::DamageDealt | PresentationValueKind::DamageOthers, target, attacker: Some(_), primary, .. }
@@ -331,11 +347,7 @@ impl ProtectionWindow {
             }),
             _ => false,
         });
-        let current = client
-            .actor_vitals()
-            .ok_or("own vitals disappeared during protection")?
-            .health;
-        if !protected_observation_is_quiet(self.health, current, damage) {
+        if !protected_observation_is_quiet(self.health, current.unwrap_or(self.health), damage) {
             return Err(format!(
                 "{} observed=damage-or-hp-loss-inside-protection-window",
                 self.step
@@ -457,4 +469,85 @@ mod delta_review_tests {
         assert_eq!(latest, joined + duration);
         assert!(first_possible_legal_hit >= earliest && first_possible_legal_hit < latest);
     }
+}
+
+fn received_during_protection(
+    deadline: tokio::time::Instant,
+    received: tokio::time::Instant,
+) -> bool {
+    received < deadline
+}
+
+#[cfg(test)]
+#[test]
+fn final_poll_preserves_damage_received_before_expiry() {
+    use oteryn_dev_client::AppliedDelta;
+    use oteryn_protocol_oteryn::actor_spell::ActorVitals;
+
+    let expiry = tokio::time::Instant::now();
+    let window = ProtectionWindow {
+        deadline: expiry,
+        latest_expiry: expiry + Duration::from_millis(450),
+        own: [1; 16],
+        health: 100,
+        step: "final poll",
+    };
+    let hit = SessionEvent::ActorVitals(AppliedDelta {
+        value: ActorVitals {
+            health: 99,
+            ..ActorVitals::default()
+        },
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+    });
+    let before_expiry = expiry - Duration::from_millis(1);
+    assert!(
+        window
+            .check_observations(vec![(before_expiry, hit.clone())], None)
+            .is_err()
+    );
+    assert!(window.check_observations(vec![(expiry, hit)], None).is_ok());
+
+    use oteryn_protocol_oteryn::presentation::{
+        PresentationColor, PresentationEvent, PresentationEventKind, PresentationValue,
+        PresentationValueKind,
+    };
+    let own = EntityRef {
+        identity: window.own,
+        generation: 1,
+    };
+    let healer = EntityRef {
+        identity: [2; 16],
+        generation: 1,
+    };
+    let healed = SessionEvent::Presentation(AppliedDelta {
+        value: vec![PresentationEvent {
+            decision_ordinal: 1,
+            emission_ordinal: 1,
+            kind: PresentationEventKind::ValueText {
+                kind: PresentationValueKind::Healed,
+                position: ActorPosition {
+                    x: 1,
+                    y: 1,
+                    floor: 7,
+                },
+                target: own,
+                attacker: Some(healer),
+                primary: PresentationValue {
+                    value: 5,
+                    color: PresentationColor::LightGreen,
+                },
+                secondary: None,
+            },
+        }],
+        server_sequence: 2,
+        base_revision: 0,
+        new_revision: 1,
+    });
+    assert!(
+        window
+            .check_observations(vec![(before_expiry, healed)], Some(105))
+            .is_ok()
+    );
 }
