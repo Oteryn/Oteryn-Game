@@ -192,6 +192,7 @@ fn scenario() -> TestResult {
             assert_eq!(outcome.inventory_changed, changed);
             assert_inventory(&h, expected).await?;
         }
+        drop(seal);
         h.cleanup().await
     })
 }
