@@ -2823,6 +2823,11 @@ pub(super) async fn journeys(
             clients.accounts.len()
         ));
     }
+    if groups.runs("creature_sweep") {
+        #[path = "creature_sweep.rs"]
+        mod creature_sweep;
+        creature_sweep::run(clients, world, &metadata.spawns).await?;
+    }
     if groups.runs("mp") {
         #[path = "mp/mount.rs"]
         mod mp;
