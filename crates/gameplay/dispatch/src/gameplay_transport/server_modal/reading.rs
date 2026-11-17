@@ -18,7 +18,7 @@ fn reading_dialog(text: Option<String>) -> Dialog {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) async fn offer_carried_book(
+    pub(in crate::gameplay_transport) async fn offer_carried_book(
         &self,
         admitted: AdmittedSession,
         instance: [u8; 16],
