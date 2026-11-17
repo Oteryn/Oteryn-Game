@@ -713,7 +713,13 @@ impl NpcRuleCatalog {
                             | NpcRuleEffect::GiveItem { .. }
                             | NpcRuleEffect::Experience { .. }
                     ) && !(plan.completes
-                        && matches!(effect, NpcRuleEffect::GiveMoney { amount: 8000, include_bank: false }))
+                        && matches!(
+                            effect,
+                            NpcRuleEffect::GiveMoney {
+                                amount: 8000,
+                                include_bank: false
+                            }
+                        ))
                 })
         }) {
             return Err(NpcRuleError::MissingNativeResolution(
