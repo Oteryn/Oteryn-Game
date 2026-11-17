@@ -98,46 +98,41 @@ pub(super) async fn run(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
-) {
+) -> (Vec<(Row, TestResult)>, TestResult) {
+    let mut rows = Vec::new();
     // Each row reports even when another row has missing content or a refused command.
     // Socket waits are bounded; a timed-out session is not evidence of server absence.
     macro_rules! row {
         ($secs:literal, $id:literal, $actions:ident, $journey:ident $(, $arg:expr)*) => {{
             let mut row = Row::new("E2EF4", $id, $actions).evidence(PASS, FAIL);
             let watch = row.watch();
-            let result: TestResult = async {
-                // An interrupted or poisoned exchange cannot be resumed by another row.
-                let active = match &mut *client {
-                    Some(active) => active,
-                    slot => {
-                        let _admission = watch.enter();
-                        slot.insert(connect_character(clients, 0x89, 1).await?)
+            let mut reusable = false;
+            let result = watch.bound(
+                Duration::from_secs($secs),
+                "native-journey-deadline;remaining-assertions-unproven",
+                async {
+                    let active = match &mut *client {
+                        Some(active) => active,
+                        slot => slot.insert(connect_character(clients, 0x89, 1).await?),
+                    };
+                    let result = $journey(&mut row, active $(, $arg)*).await;
+                    // A cancelled or poisoned frame exchange cannot be used by the next row.
+                    if let Err(error) = active.service_liveness(Duration::from_millis(1)).await {
+                        if result.as_ref().err().is_none_or(|error|
+                            error.is::<verdict::MissingServerRoute>())
+                        {
+                            return Err(error.into());
+                        }
+                        return result;
                     }
-                };
-                let mut completed = false;
-                let result = watch.bound(
-                    Duration::from_secs($secs),
-                    "native-journey-deadline;remaining-assertions-unproven",
-                    async {
-                        let result = $journey(&mut row, active $(, $arg)*).await;
-                        completed = true;
-                        result
-                    },
-                ).await;
-                if !completed {
-                    *client = None;
-                    return result;
-                }
-                // This checks the actual session even when cleanup wrapped the original error
-                // or a successful logout was followed by a failed re-admission.
-                if let Err(error) = active.service_liveness(Duration::from_millis(1)).await {
-                    *client = None;
-                    result?;
-                    return Err(error.into());
-                }
-                result
-            }.await;
-            row.finish(&result);
+                    reusable = true;
+                    result
+                },
+            ).await;
+            if !reusable {
+                *client = None;
+            }
+            rows.push((row, result));
         }};
     }
     row!(600, "E01", E01, shop, clients, world, npcs);
@@ -150,20 +145,27 @@ pub(super) async fn run(
     row!(1500, "S09", S09, logout, clients, world);
     row!(240, "S18", S18, speech, clients, world);
     let Some(client) = client.as_mut() else {
-        return;
+        return (rows, Err("E2EF4 lost its final session".into()));
     };
     // Restore the entry position expected by the pre-existing world phases.
-    let restore: TestResult = async {
-        let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-            at == TOWN
+    let watch = verdict::Watch::new("E2EF4-return", verdict::Harness::global());
+    let restore: TestResult = watch
+        .bound(Duration::from_secs(120), "E2EF4 return deadline", async {
+            let path = reach_route(
+                client,
+                world,
+                tile(client.world_spatial().actor_position)?,
+                |at| at == TOWN,
+            )
+            .await?
+            .map_err(|error| format!("E2EF4 return route unavailable: {error}"))?;
+            walk(client, world, &path).await
         })
-        .ok_or("E2EF4 return route unavailable")?;
-        walk(client, world, &path).await
-    }
-    .await;
-    if let Err(error) = restore {
+        .await;
+    if let Err(error) = &restore {
         evidence(&format!("E2EF4_GAP return {error}"));
     }
+    (rows, restore)
 }
 
 // Adapt native command errors to the existing observer-liveness driver.
@@ -1482,6 +1484,10 @@ async fn logout_idle(
                     stepped = true;
                 }
                 anchored = true;
+                verdict::Harness::global().bounded_wait(
+                    start + Duration::from_secs(1000),
+                    "observe-idle-warning-and-removal",
+                );
             }
             let (silent_liveness, client_liveness) = tokio::join!(
                 silent.service_liveness(Duration::from_secs(1)),
@@ -1498,7 +1504,20 @@ async fn logout_idle(
                         warned_at = Some(start.elapsed());
                     }
                 }
-                Err(_) => removed_at = Some(start.elapsed()),
+                Err(error) => {
+                    let chain = std::iter::successors(Some(&error as &(dyn std::error::Error + 'static)), |cause| cause.source());
+                    let eof = chain.filter_map(|cause| cause.downcast_ref::<io::Error>())
+                        .any(|source| source.kind() == io::ErrorKind::UnexpectedEof);
+                    let elapsed = start.elapsed();
+                    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+                    let durable = while_serving(client, session_loss_row(clients.url, *silent_session.as_bytes(), deadline)).await?;
+                    if warned_at.is_none_or(|warning: Duration| !(895..=955).contains(&warning.as_secs()))
+                        || !idle_removal_proven(elapsed, eof, durable.as_ref())
+                    {
+                        return Err(format!("idle removal at {elapsed:?} lacked owner-release evidence: {error}; durable={durable:?}").into());
+                    }
+                    removed_at = Some(elapsed);
+                }
             }
             if notices(client)
                 .iter()
@@ -1506,7 +1525,6 @@ async fn logout_idle(
             {
                 warned_actor = true;
             }
-            beat(row);
         }
         if removed_at.is_none() {
             let (done, text, ..) =

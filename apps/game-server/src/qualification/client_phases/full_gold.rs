@@ -328,6 +328,7 @@ pub(super) async fn earn(
     needed: u64,
 ) -> TestResult<u64> {
     let started = tokio::time::Instant::now();
+    let url = required("NODE_BOOT_DATABASE_URL")?;
     let start_gold = coin_value(client)?;
     let level = level(client).await?;
     let ranked = candidates(spawns, level)?;
@@ -344,23 +345,32 @@ pub(super) async fn earn(
             observed.saturating_sub(start_gold),
             started.elapsed().as_secs()
         ));
-        if observed >= needed {
-            return Ok(observed);
-        }
         if deadline.is_some_and(|limit| tokio::time::Instant::now() >= limit) {
             return Err(format!(
                 "{row}: gold-earning-budget observed={observed} needed={needed} kills={kills} level={level}"
             )
             .into());
         }
+        if observed >= needed {
+            return Ok(observed);
+        }
         let mut picked = None;
         for (index, candidate) in ranked.iter().enumerate() {
             if unreachable.contains(&index) {
                 continue;
             }
-            match travel_to_spawn(client, world, spawns, &candidate.key).await {
-                Ok(()) => {
-                    picked = Some(candidate);
+            let budget = candidate.budget(needed.saturating_sub(start_gold));
+            let limit = deadline.unwrap_or(started + budget);
+            let travel = tokio::time::timeout_at(
+                limit,
+                travel_to_spawn_target(client, world, spawns, &candidate.key),
+            ).await?;
+            if tokio::time::Instant::now() >= limit {
+                return Err(format!("{row}: gold-earning-budget expired during travel").into());
+            }
+            match travel {
+                Ok(target) => {
+                    picked = Some((candidate, limit, budget, target));
                     break;
                 }
                 Err(error) => {
@@ -372,11 +382,10 @@ pub(super) async fn earn(
                 }
             }
         }
-        let candidate =
+        let (candidate, limit, budget, target) =
             picked.ok_or_else(|| format!("{row}: no reachable gold creature at level {level}"))?;
         if deadline.is_none() {
-            let budget = candidate.budget(needed.saturating_sub(observed));
-            deadline = Some(tokio::time::Instant::now() + budget);
+            deadline = Some(limit);
             evidence(&format!(
                 "{row}_GOLD target creature={} health={} expected_milli_gold_per_kill={} kill_s={} level={level} budget_s={}",
                 candidate.key,
@@ -386,11 +395,15 @@ pub(super) async fn earn(
                 budget.as_secs()
             ));
         }
-        let hunted = async {
-            client_hunt::hunt(client).await?;
-            loot_coins(client).await
-        }
-        .await;
+        let hunted = client_readmission::within_retry_budget(limit, async {
+            match client_hunt::hunt_target(client, Some(target), &url).await {
+                Err(error) if error.is::<client_hunt::EmptyLoot>() => Ok(()),
+                result => {
+                    result?;
+                    loot_coins(client).await
+                }
+            }
+        }).await;
         hunted.map_err(|error| {
             verdict::record_error(verdict::IndexedError::as_error(&error));
             verdict::context(
@@ -547,21 +560,24 @@ pub(super) async fn equip(
     key: NonZeroU32,
     slot: EquipmentSlot,
 ) -> TestResult {
-    let reply = client
-        .move_item(&items::ItemMoveIntent {
-            source: carried(client, key)?,
-            destination: items::ItemMoveDestination::Equipment(slot),
-        })
-        .await?;
-    if reply.outcome != items::ItemMoveOutcome::Moved
-        || client.inventory().is_none_or(|view| {
-            !view
-                .equipment
-                .iter()
-                .any(|entry| entry.slot == slot && entry.item.item_definition_ref == key)
-        })
-    {
+    let source = carried(client, key)?;
+    let before = client.inventory().cloned().ok_or("equipment prior inventory absent")?;
+    let reply = client.move_item(&items::ItemMoveIntent {
+        source,
+        destination: items::ItemMoveDestination::Equipment(slot),
+    }).await?;
+    if reply.status != CommandStatus::Accepted || reply.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("equip:item={key}:slot={slot:?}:reply={reply:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !client.inventory().is_some_and(|after| client_hotkey_equip::moved_to_equipment(
+        &before, after, key.get(), Some(source), Some(slot),
+    ).is_some()) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("equip:item={key}:slot={slot:?}:handle={source}:delta-absent").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
     }
     Ok(())
 }

@@ -16,8 +16,8 @@ pub(super) async fn recover(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     loop {
         if matches!(
-            session_loss_row(clients.url, session).await?,
-            Some((1, _, _))
+            session_loss_row(clients.url, session, deadline).await?,
+            Some((1, _, _, _))
         ) {
             break;
         }

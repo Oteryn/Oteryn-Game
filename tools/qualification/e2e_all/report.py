@@ -7,8 +7,9 @@ from pathlib import Path
 import re
 
 
+CREATURE_SCENARIO = r"CS\.[a-z0-9_-]+\.[a-z0-9-]+"
 RESULT = re.compile(
-    r"^SEAM_EVIDENCE e2e_all scenario=([A-Z]\d\d[a-z]?\.[a-z0-9-]+) "
+    rf"^SEAM_EVIDENCE e2e_all scenario=([A-Z]\d\d[a-z]?\.[a-z0-9-]+|{CREATURE_SCENARIO}) "
     r"status=(PASS|FAIL|SKIPPED|MISSING-SERVER|MISSING-CLIENT) seconds=([0-9]+(?:\.[0-9]+)?)"
     r"(?: evidence=(\S+))?"
     # A failing scenario names its own cause and the first failing row/check.
@@ -141,6 +142,8 @@ def results(text):
         if not match:
             raise ValueError("malformed E2E-ALL result")
         scenario, status, seconds, evidence, cause, _root = match.groups()
+        if scenario.startswith("CS.") and status == "FAIL" and not cause:
+            raise ValueError(f"missing failure cause and root: {scenario}")
         if cause and status != "FAIL":
             raise ValueError(f"cause on a non-failing result: {scenario}")
         seconds = float(seconds)
@@ -194,7 +197,8 @@ def summary(rows, found, node_status=0, client_status=0, map_evidence=None,
     clients = {f"{key}.client" for key, _ in client_rows}
     if len(known) != len(rows) or any(key.split(".")[0] in known for key in clients):
         raise ValueError("duplicate mechanic in the row registries")
-    if any(scenario.split(".")[0] not in known and scenario not in clients for scenario in found):
+    if any(scenario.split(".")[0] not in known and scenario not in clients
+           and not re.fullmatch(CREATURE_SCENARIO, scenario) for scenario in found):
         raise ValueError("result is not a mechanic in the matrix")
     output = ["mechanic | status | seconds | evidence / gap"]
     complete = True
@@ -205,7 +209,7 @@ def summary(rows, found, node_status=0, client_status=0, map_evidence=None,
         complete &= status == "PASS"
         output.append(f"{row_id} {name} | {status} | {seconds:.3f} | {evidence or ''}")
     for scenario, (status, seconds, evidence) in sorted(found.items()):
-        if not scenario.endswith(".full"):
+        if scenario.startswith("CS.") or not scenario.endswith(".full"):
             output.append(f"slice {scenario} | {status} | {seconds:.3f} | {evidence or 'bounded assertion only'}")
             complete &= status == "PASS"
     for name, status in [("node_boot", node_status), ("client_tests", client_status)]:

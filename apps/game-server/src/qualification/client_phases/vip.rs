@@ -35,10 +35,10 @@ pub(super) async fn add(
     let reply = vip::send(client.session_mut(), &command).await?;
     ui::apply_result(&mut panel, &reply);
     if reply.result.code == 9 {
-        evidence(
-            "mechanic=vip skipped=write_service_unavailable_code_9_root_or_presence_relay source=crates/gameplay/dispatch/src/gameplay_transport/vip.rs:111",
+        return client_imbue::mutation_verdict(
+            false,
+            "mechanic=vip status=FAIL refused=write_service_unavailable_code_9_root_or_presence_relay source=crates/gameplay/dispatch/src/gameplay_transport/vip.rs:111",
         );
-        return Ok(());
     }
     if reply.result.code != 1 {
         return Err(format!("VIP add refused: {:?}", reply.result).into());

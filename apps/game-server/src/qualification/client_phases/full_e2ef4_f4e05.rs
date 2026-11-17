@@ -30,7 +30,6 @@ async fn with_liveness<T>(
             biased;
             result = &mut step => return result,
             _ = tick.tick() => {
-                progress();
                 idle.service_liveness(Duration::from_millis(20)).await?;
                 idle.take_events();
             }

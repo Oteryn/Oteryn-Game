@@ -2,6 +2,11 @@
 use super::*;
 
 impl Watch {
+    async fn run_indexed(&self, journey: impl Future<Output = TestResult>) -> TestResult {
+        self.bound(Duration::from_secs(2400), "indexed row deadline", journey)
+            .await
+    }
+
     pub(super) fn remember(&self, error: &(dyn Error + 'static)) {
         let cause = classify(error);
         let mut state = self.state();
@@ -9,7 +14,11 @@ impl Watch {
             state.root = Some(match &cause {
                 Cause::BlockedBy { root } => root.clone(),
                 Cause::Precondition { name } => format!("{}/{name}", self.row),
-                _ => format!("{}/{}", self.row, state.phase),
+                _ => format!(
+                    "{}/{}",
+                    self.row,
+                    state.phase.replace(char::is_whitespace, "-")
+                ),
             });
             state.stall = Some(cause);
         }
@@ -21,7 +30,11 @@ impl Watch {
         let root = state.root.clone().unwrap_or_else(|| match &cause {
             Cause::BlockedBy { root } => root.clone(),
             Cause::Precondition { name } => format!("{}/{name}", self.row),
-            _ => format!("{}/{}", self.row, state.phase),
+            _ => format!(
+                "{}/{}",
+                self.row,
+                state.phase.replace(char::is_whitespace, "-")
+            ),
         });
         (cause, root)
     }
@@ -32,6 +45,13 @@ impl Watch {
             let scenario = self.scenario.unwrap_or(self.row);
             state.pending.push(format!(
                 "e2e_all scenario={scenario} status=FAIL seconds=0.000 evidence=observed-error-without-verdict"
+            ));
+        }
+        if state.pending.is_empty() {
+            let scenario = self.scenario.unwrap_or(self.row);
+            state.stall = Some(Cause::Assertion);
+            state.pending.push(format!(
+                "e2e_all scenario={scenario} status=FAIL seconds=0.000 evidence=missing-final-verdict"
             ));
         }
     }
@@ -71,13 +91,13 @@ impl Watch {
 pub(crate) fn indexed(
     scenario: &'static str,
     journey: impl Future<Output = TestResult>,
-) -> impl Future<Output = ()> {
+) -> impl Future<Output = bool> {
     // Each row owns its future on the heap; hundreds of inline row temporaries
     // otherwise accumulate in journeys' debug-build poll frame.
     Box::pin(async move {
         let mut watch = Watch::new(scenario, Harness::global());
         watch.scenario = Some(scenario);
-        let result = watch.run(None, "indexed row", journey).await;
+        let result = watch.run_indexed(journey).await;
         if let Err(error) = result {
             watch.remember(error.as_ref());
             watch.state().failed_exit = true;
@@ -90,9 +110,12 @@ pub(crate) fn indexed(
         }
         watch.ensure_failure_verdict();
         // `run` restored the previous active Watch, so flushing cannot recapture itself.
-        for line in watch.take_verdicts() {
+        let lines = watch.take_verdicts();
+        let passed = lines.iter().all(|line| line.contains(" status=PASS "));
+        for line in lines {
             evidence(&line);
         }
+        passed
     })
 }
 
@@ -169,6 +192,49 @@ mod tests {
         let mut watch = Watch::new("C03.full", harness);
         watch.scenario = Some("C03.full");
         watch
+    }
+
+    #[test]
+    fn indexed_wall_clock_bounds_a_journey_reporting_progress() -> TestResult {
+        runtime()?.block_on(async {
+            let harness = Box::leak(Box::new(Harness::new(true, Some(Duration::from_secs(90)))));
+            let watch = new_watch(harness);
+            let outcome = tokio::time::timeout(
+                Duration::from_secs(2401),
+                watch.run_indexed(async {
+                    loop {
+                        tokio::time::sleep(Duration::from_secs(30)).await;
+                        watch.touch("periodic-observation");
+                    }
+                }),
+            )
+            .await?;
+            let error = outcome
+                .err()
+                .ok_or("indexed journey expired without a failure")?;
+            assert!(matches!(classify(error.as_ref()), Cause::Deadline { .. }));
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn indexed_success_without_verdict_fails_closed() {
+        let harness = Box::leak(Box::new(Harness::new(true, None)));
+        let watch = new_watch(harness);
+        watch.ensure_failure_verdict();
+        let lines = watch.take_verdicts();
+        assert_eq!(lines.len(), 1);
+        assert!(lines[0].contains("status=FAIL"));
+        assert!(lines[0].contains("missing-final-verdict"));
+    }
+
+    #[test]
+    fn indexed_failure_root_is_one_token() {
+        let harness = Box::leak(Box::new(Harness::new(true, None)));
+        let watch = new_watch(harness);
+        watch.touch("fixture provisioning liveness");
+        watch.remember(&std::io::Error::other("fixture connection closed"));
+        assert_eq!(watch.failure().1, "C03.full/fixture-provisioning-liveness");
     }
 
     #[test]

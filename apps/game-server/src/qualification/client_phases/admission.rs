@@ -1,5 +1,54 @@
 use super::*;
 
+fn consumed_grant_refused(reply: &Reply) -> TestResult<bool> {
+    Ok(*reply
+        == Reply::Frames(vec![encode_protocol_error(
+            FoundationProtocolError::AdmissionGrantReplayed,
+            0,
+        )?]))
+}
+
+#[test]
+fn fresh_replay_requires_the_consumed_grant_refusal() -> TestResult {
+    let reply = |error| {
+        Ok::<_, Box<dyn std::error::Error>>(Reply::Frames(vec![encode_protocol_error(error, 0)?]))
+    };
+    assert!(consumed_grant_refused(&reply(
+        FoundationProtocolError::AdmissionGrantReplayed
+    )?)?);
+    assert!(!consumed_grant_refused(&reply(
+        FoundationProtocolError::AdmissionAccountCharacterConflict
+    )?)?);
+    Ok(())
+}
+
+fn silent_close_proven(probes: &[u64], elapsed: Duration, interval: Duration, misses: u32) -> bool {
+    probes.iter().copied().eq(1..=u64::from(misses)) && elapsed >= interval.saturating_mul(misses)
+}
+
+#[test]
+fn silent_transport_requires_unanswered_server_probes_and_elapsed_cadence() {
+    let cadence = Duration::from_secs(5);
+    assert!(!silent_close_proven(
+        &[1, 2],
+        Duration::from_secs(20),
+        cadence,
+        3
+    ));
+    assert!(!silent_close_proven(
+        &[1, 2, 3],
+        Duration::from_secs(10),
+        cadence,
+        3
+    ));
+    assert!(silent_close_proven(
+        &[1, 2, 3],
+        Duration::from_secs(20),
+        cadence,
+        3
+    ));
+}
+
 pub(super) async fn admission(
     clients: &SeamClients<'_>,
     exact: &TlsConnector,
@@ -131,25 +180,34 @@ pub(super) async fn admission(
         evidence("resume committed_players=1 pending_reservations=0");
     }
 
-    // Replay of the consumed grant on a fresh connection.
-    let reply = exchange(
-        address,
+    Ok(session)
+}
+
+pub(super) async fn replay_released_grant(
+    clients: &SeamClients<'_>,
+    exact: &TlsConnector,
+    grant: &OwnedGrant<'_>,
+) -> TestResult {
+    // The original claim has been terminally released. Renew only the validity
+    // window/current security evidence; the consumed nonce and attempt stay fixed.
+    let mut grant = grant.borrowed();
+    grant.security_generation =
+        platform_generation(clients.descriptor, &clients.accounts[0]).await?;
+    let token = sign_grant(&grant, now_seconds()?);
+    let reply = exchange_must_close(
+        clients.address,
         exact,
-        &framed(&bootstrap(1, 1, &characters[0], &admitted_token)),
+        &framed(&bootstrap(1, 1, &clients.characters[0], &token)),
     )
     .await?;
-    // N8: the committed session already holds the character, so the fresh verifier refuses the
-    // replay as an account/character conflict before the durable replay key is reached.
-    let replayed = Reply::Frames(vec![encode_protocol_error(
-        FoundationProtocolError::AdmissionAccountCharacterConflict,
-        0,
-    )?]);
-    if reply != replayed || committed_admissions(url).await? != 1 {
-        return Err(format!("replayed grant admitted: {reply:?}").into());
+    if !consumed_grant_refused(&reply)? || committed_admissions(clients.url).await? != 2 {
+        return Err(format!(
+            "released character did not reject the consumed grant nonce: {reply:?}"
+        )
+        .into());
     }
-    evidence("replayed_grant=refused admissions=1");
-
-    Ok(session)
+    evidence("replayed_grant=refused reason=consumed_nonce admissions=2");
+    Ok(())
 }
 
 pub(super) async fn concurrent_and_control_loss<'a>(
@@ -182,15 +240,58 @@ pub(super) async fn concurrent_and_control_loss<'a>(
     )
     .await;
     let replies = [first?, second?, third?];
-    let concurrent: Vec<[u8; 16]> = replies.iter().filter_map(accepted_session).collect();
-    let accepted = concurrent.len();
-    let committed = committed_admissions(url).await?;
-    if accepted != 1 || committed != 2 {
-        return Err(format!(
-            "concurrent same-grant admission accepted {accepted}, committed {committed}, replies={replies:?}"
-        ).into());
+    let mut concurrent = Vec::new();
+    let mut refusals = Vec::new();
+    for (reply, elapsed) in &replies {
+        if let Some(id) = accepted_session(reply) {
+            let Reply::Frames(frames) = reply else {
+                return Err("silent transport has no frames".into());
+            };
+            let mut probes = Vec::new();
+            for frame in frames {
+                let envelope = decode_wire_envelope(frame)?;
+                match envelope.message_type() {
+                    MessageType::LivenessProbe => probes.push(
+                        oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())?,
+                    ),
+                    MessageType::ProtocolError => {
+                        return Err("silent transport ended with a protocol error".into());
+                    }
+                    _ => {}
+                }
+            }
+            let liveness = crate::gameplay_transport::IDLE_LIVENESS;
+            if !silent_close_proven(&probes, *elapsed, liveness.interval, liveness.missed_limit) {
+                return Err(format!("server close did not follow the unanswered-probe cadence: {probes:?} elapsed={elapsed:?}").into());
+            }
+            concurrent.push(id);
+        } else {
+            let mut reason = None;
+            for error in [
+                FoundationProtocolError::AdmissionGrantReplayed,
+                FoundationProtocolError::AdmissionAccountCharacterConflict,
+                FoundationProtocolError::AdmissionIncumbentProtected,
+                FoundationProtocolError::AdmissionGrantRuntimeGenerationStale,
+                FoundationProtocolError::AdmissionGrantSecurityEvidenceStale,
+            ] {
+                if *reply == Reply::Frames(vec![encode_protocol_error(error, 0)?]) {
+                    reason = Some(error);
+                    break;
+                }
+            }
+            refusals.push(
+                reason.ok_or_else(|| {
+                    format!("unclassified concurrent admission refusal: {reply:?}")
+                })?,
+            );
+        }
     }
-    evidence("concurrent_same_grant attempts=3 accepted=1 admissions=2");
+    if concurrent.len() != 1 || refusals.len() != 2 || committed_admissions(url).await? != 2 {
+        return Err(format!("concurrent same-grant admission diverged: {replies:?}").into());
+    }
+    evidence(&format!(
+        "concurrent_same_grant attempts=3 accepted=1 admissions=2 refusals={refusals:?}"
+    ));
 
     evidence("stage=control_loss");
     // DISCONNECT-PROTECTION-V1: the admission-stage transport closed on a command gap and the
@@ -199,7 +300,7 @@ pub(super) async fn concurrent_and_control_loss<'a>(
     for (label, id) in [("closed", session), ("silent", concurrent[0])] {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
         loop {
-            if let Some((1, epoch, grace)) = session_loss_row(url, id).await? {
+            if let Some((1, epoch, grace, _)) = session_loss_row(url, id, deadline).await? {
                 if epoch != "1" || !(58..=62).contains(&grace) {
                     return Err(format!("{label} loss epoch={epoch} grace={grace}").into());
                 }

@@ -122,8 +122,8 @@ class KnobTests(unittest.TestCase):
 
     def test_export_env_writes_only_validated_lines(self):
         text = matrix.export_env(matrix.plan("pr")[4])
-        self.assertEqual(text, "SHARD_NAME=rows-000-005\nSHARD_ENTRY=node_boot\nSHARD_WORLD=1\n"
-                               "NODE_BOOT_E2E_ONLY=rows\nNODE_BOOT_SKIP_BASIC=1\nOTERYN_E2E_ROW_BATCH=0:5\n")
+        self.assertEqual(text, "SHARD_NAME=rows-001-006\nSHARD_ENTRY=node_boot\nSHARD_WORLD=1\n"
+                               "NODE_BOOT_E2E_ONLY=rows\nNODE_BOOT_SKIP_BASIC=1\nOTERYN_E2E_ROW_BATCH=1:5\n")
 
 
 class EvidenceTests(unittest.TestCase):
@@ -170,7 +170,7 @@ class EvidenceTests(unittest.TestCase):
         self.assertIn(f"- `{core}` W20a.full FAIL", markdown)
         self.assertIn(f"{core}: 1 MISSING scenario(s)", problems)
         self.assertIn("g-f4-f5-f6: World shard ran no scenario", problems)
-        self.assertIn("rows-010-015: no result evidence", problems)
+        self.assertIn("rows-011-016: no result evidence", problems)
         self.assertNotIn("basic: World shard ran no scenario", problems)
         # The gates report MISSING rows without failing on them; the rest stays fatal.
         with tempfile.TemporaryDirectory() as tmp:
@@ -183,7 +183,7 @@ class EvidenceTests(unittest.TestCase):
             markdown, problems = matrix.summarize(shards, root, prefix, missing_fatal=False)
         self.assertNotIn(f"{core}: 1 MISSING scenario(s)", problems)
         self.assertIn("g-f4-f5-f6: World shard ran no scenario", problems)
-        self.assertIn("rows-010-015: no result evidence", problems)
+        self.assertIn("rows-011-016: no result evidence", problems)
 
     def test_summary_passes_complete_evidence_and_reports_overlap(self):
         shards = matrix.plan("custom", groups="core;f4")

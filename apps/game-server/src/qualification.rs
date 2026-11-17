@@ -204,7 +204,6 @@ fn e2e_result_line(line: &str) -> String {
     };
     let verdict = match status {
         Some("CAPTURED") => return format!("e2e_capture {rest}"),
-        Some("MISSING") => "MISSING-SERVER",
         Some(value @ ("PASS" | "FAIL" | "SKIPPED" | "MISSING-SERVER" | "MISSING-CLIENT")) => value,
         Some(other) => {
             detail.insert(0, other.to_owned());
@@ -262,12 +261,12 @@ mod e2e_result_line_tests {
     }
 
     #[test]
-    fn qualification_missing_q_row_keeps_the_canonical_missing_status() {
+    fn qualification_missing_q_row_without_source_is_failure() {
         assert_eq!(
             e2e_result_line(
                 "e2e_all scenario=Q03a.full status=MISSING seconds=0 evidence=no-confirmed-descent"
             ),
-            "e2e_all scenario=Q03a.full status=MISSING-SERVER seconds=0 evidence=no-confirmed-descent",
+            "e2e_all scenario=Q03a.full status=FAIL seconds=0 evidence=MISSING;no-confirmed-descent",
         );
     }
 
@@ -641,14 +640,46 @@ async fn database() -> TestResult<(String, String)> {
     Ok((url, version))
 }
 
+async fn within_database_deadline<T>(
+    deadline: tokio::time::Instant,
+    operation: impl Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    tokio::time::timeout_at(deadline, operation).await?
+}
+
+#[test]
+fn qualification_database_deadline_interrupts_an_in_flight_read() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+            let result = within_database_deadline(deadline, async {
+                tokio::time::sleep(Duration::from_secs(3)).await;
+                Ok(42)
+            })
+            .await;
+            assert!(result.is_err(), "late database response was accepted");
+            assert_eq!(tokio::time::Instant::now(), deadline);
+            Ok(())
+        })
+}
+
 async fn committed_admissions(url: &str) -> TestResult<i64> {
-    let mut connection = sqlx::PgConnection::connect(url).await?;
-    let count: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM game_durability_fresh_admission_receipts")
-            .fetch_one(&mut connection)
-            .await?;
-    connection.close().await?;
-    Ok(count)
+    within_database_deadline(
+        tokio::time::Instant::now() + Duration::from_secs(20),
+        async {
+            let mut connection = sqlx::PgConnection::connect(url).await?;
+            let count: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_durability_fresh_admission_receipts")
+                    .fetch_one(&mut connection)
+                    .await?;
+            connection.close().await?;
+            Ok(count)
+        },
+    )
+    .await
 }
 
 /// One LOGIN member of a migration group role (OPS-NODE-BOOT-01 D2): the
@@ -830,49 +861,120 @@ fn framed(body: &[u8]) -> Vec<u8> {
 /// What the server returned to one client case.
 #[derive(Debug, PartialEq, Eq)]
 enum Reply {
-    /// TLS negotiation failed; nothing reached the frame layer.
-    TlsRefused,
     /// Closed without any frame.
     Closed,
     /// One or more frames, then close.
     Frames(Vec<Vec<u8>>),
 }
 
-async fn exchange(address: SocketAddr, connector: &TlsConnector, raw: &[u8]) -> TestResult<Reply> {
-    let tcp = TcpStream::connect(address).await?;
-    let connect = connector.connect(ServerName::try_from("localhost")?, tcp);
-    let Ok(mut stream) = tokio::time::timeout(Duration::from_secs(30), connect)
-        .await
-        .map_err(|_| "TLS connect did not complete")?
-    else {
-        return Ok(Reply::TlsRefused);
-    };
-    let _ = stream.write_all(raw).await;
-    let _ = stream.flush().await;
-    let mut output = Vec::new();
-    // Keep a deliberately silent admitted socket open past the server's loss decision. The
-    // previous 20 s bound was exactly the production cadence's fourth tick (three missed probes),
-    // so under load this client could win the deadline race, close first, and turn the case into
-    // the slower transport-close path instead of the liveness path it qualifies. One additional
-    // configured cadence leaves the server tick unambiguous without guessing a wall-clock bound.
-    let liveness = crate::gameplay_transport::IDLE_LIVENESS;
-    let server_loss_ticks = liveness.missed_limit.saturating_add(1);
-    let silent_read_deadline = liveness
-        .interval
-        .saturating_mul(server_loss_ticks.saturating_add(1));
-    let _ = tokio::time::timeout(silent_read_deadline, stream.read_to_end(&mut output)).await;
-    Ok(frames(&output))
+async fn exchange(
+    address: SocketAddr,
+    connector: &TlsConnector,
+    raw: &[u8],
+) -> TestResult<(Reply, Duration)> {
+    exchange_with_write_end(address, connector, raw, false).await
 }
 
-/// For continuity cases, require the serving node to actually end the
-/// connection within the bounded deadline. `exchange` deliberately tolerates
-/// a still-open admitted socket for other cases.
+async fn exchange_with_write_end(
+    address: SocketAddr,
+    connector: &TlsConnector,
+    raw: &[u8],
+    finish_write: bool,
+) -> TestResult<(Reply, Duration)> {
+    // Allow the configured missed-probe decision plus one cadence for the remote close.
+    let liveness = crate::gameplay_transport::IDLE_LIVENESS;
+    let read_budget = liveness
+        .interval
+        .saturating_mul(liveness.missed_limit.saturating_add(2));
+    let mut stream = tokio::time::timeout(Duration::from_secs(30), async {
+        let tcp = TcpStream::connect(address).await?;
+        let mut stream = connector
+            .connect(ServerName::try_from("localhost")?, tcp)
+            .await?;
+        stream.write_all(raw).await?;
+        stream.flush().await?;
+        if finish_write {
+            stream.shutdown().await?;
+        }
+        Ok::<_, Box<dyn std::error::Error>>(stream)
+    })
+    .await??;
+    let mut output = Vec::new();
+    let read_started = tokio::time::Instant::now();
+    tokio::time::timeout(read_budget, async {
+        while read_exchange_chunk(&mut stream, &mut output).await? {}
+        Ok((frames(&output)?, read_started.elapsed()))
+    })
+    .await?
+}
+
+async fn run_seam_client_cases<T: std::fmt::Debug>(
+    serve: impl Future<Output = TestResult<T>>,
+    clients: impl Future<Output = TestResult>,
+    shutdown: impl FnOnce(),
+) -> TestResult<T> {
+    let mut serve = pin!(serve);
+    let clients = tokio::select! {
+        biased;
+        early = &mut serve => return Err(format!("listener ended before the client cases: {early:?}").into()),
+        result = tokio::time::timeout(Duration::from_secs(900), clients) => result,
+    };
+    shutdown();
+    let served = tokio::time::timeout(Duration::from_secs(30), serve).await;
+    clients??;
+    served?
+}
+
+#[test]
+fn qualification_listener_drain_has_its_own_deadline() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let cancelled = std::cell::Cell::new(false);
+            let drained = tokio::time::timeout(
+                Duration::from_secs(31),
+                run_seam_client_cases(
+                    std::future::pending::<TestResult>(),
+                    async { Ok(()) },
+                    || cancelled.set(true),
+                ),
+            )
+            .await?;
+            assert!(drained.is_err());
+            assert!(cancelled.get());
+            Ok(())
+        })
+}
+
 async fn exchange_must_close(
     address: SocketAddr,
     connector: &TlsConnector,
     raw: &[u8],
 ) -> TestResult<Reply> {
     exchange_must_close_paced(address, connector, &[(0, raw.to_vec())]).await
+}
+
+const MAX_EXCHANGE_RESPONSE_BYTES: usize = 64 * 1024 * 1024;
+
+async fn read_exchange_chunk(
+    stream: &mut (impl tokio::io::AsyncRead + Unpin),
+    output: &mut Vec<u8>,
+) -> TestResult<bool> {
+    let mut chunk = [0; 4096];
+    let read = match stream.read(&mut chunk).await {
+        Ok(read) => read,
+        // The serving listener drops the TLS stream on close; rustls reports a missing
+        // close_notify as EOF. The frame decoder still rejects any partial reply.
+        Err(error) if error.kind() == io::ErrorKind::UnexpectedEof => 0,
+        Err(error) => return Err(error.into()),
+    };
+    if output.len() + read > MAX_EXCHANGE_RESPONSE_BYTES {
+        return Err("qualification response exceeds byte budget".into());
+    }
+    output.extend_from_slice(&chunk[..read]);
+    Ok(read != 0)
 }
 
 /// SPEED-1: more than a player step duration (550 ms at level 1 on default ground), so a step
@@ -905,76 +1007,38 @@ async fn exchange_must_close_paced(
     connector: &TlsConnector,
     segments: &[(usize, Vec<u8>)],
 ) -> TestResult<Reply> {
-    let tcp = TcpStream::connect(address).await?;
-    let mut stream = tokio::time::timeout(
-        Duration::from_secs(30),
-        connector.connect(ServerName::try_from("localhost")?, tcp),
-    )
-    .await
-    .map_err(|_| "TLS connect did not complete")??;
-    let mut output = Vec::new();
-    for (after, segment) in segments {
-        if *after > 0 {
-            let mut chunk = [0_u8; 4096];
-            while complete_frames(&output) < *after {
-                // A close (or reset) here ends the stream as `read_to_end` below treats it, so
-                // the caller's frame assertion reports what the server sent before closing.
-                let read =
-                    match tokio::time::timeout(Duration::from_secs(20), stream.read(&mut chunk))
-                        .await
-                        .map_err(|_| "server did not answer a paced segment")?
-                    {
-                        Ok(read) => read,
-                        Err(error)
-                            if matches!(
-                                error.kind(),
-                                io::ErrorKind::UnexpectedEof
-                                    | io::ErrorKind::ConnectionReset
-                                    | io::ErrorKind::BrokenPipe
-                            ) =>
-                        {
-                            0
-                        }
-                        Err(error) => return Err(error.into()),
-                    };
-                if read == 0 {
-                    break;
+    tokio::time::timeout(Duration::from_secs(45), async {
+        let tcp = TcpStream::connect(address).await?;
+        let mut stream = connector
+            .connect(ServerName::try_from("localhost")?, tcp)
+            .await?;
+        let mut output = Vec::new();
+        for (after, segment) in segments {
+            if *after > 0 {
+                while complete_frames(&output) < *after {
+                    if !read_exchange_chunk(&mut stream, &mut output).await? {
+                        return frames(&output);
+                    }
                 }
-                output.extend_from_slice(&chunk[..read]);
+                tokio::time::sleep(STEP_PACE).await;
             }
-            if complete_frames(&output) < *after {
-                break;
-            }
-            tokio::time::sleep(STEP_PACE).await;
+            stream.write_all(segment).await?;
+            stream.flush().await?;
         }
-        stream.write_all(segment).await?;
-        stream.flush().await?;
-    }
-    match tokio::time::timeout(Duration::from_secs(20), stream.read_to_end(&mut output)).await {
-        Ok(Ok(_)) => {}
-        Ok(Err(error))
-            if matches!(
-                error.kind(),
-                io::ErrorKind::UnexpectedEof
-                    | io::ErrorKind::ConnectionReset
-                    | io::ErrorKind::BrokenPipe
-            ) => {}
-        Ok(Err(error)) => return Err(error.into()),
-        Err(_) => return Err("server did not close the connection".into()),
-    }
-    let reply = frames(&output);
-    let complete_bytes = match &reply {
-        Reply::Closed => 0,
-        Reply::Frames(frames) => frames.iter().map(|frame| frame.len() + 4).sum(),
-        Reply::TlsRefused => return Err("TLS refusal after a completed handshake".into()),
-    };
-    if complete_bytes != output.len() {
-        return Err("partial or trailing server frame".into());
-    }
-    Ok(reply)
+        while read_exchange_chunk(&mut stream, &mut output).await? {}
+        frames(&output)
+    })
+    .await?
 }
 
-fn frames(output: &[u8]) -> Reply {
+#[test]
+fn qualification_raw_reply_rejects_partial_frame_after_a_complete_reply() {
+    let mut output = framed(&[1, 2, 3]);
+    output.extend([0, 0, 0, 4, 5]);
+    assert!(frames(&output).is_err());
+}
+
+fn frames(output: &[u8]) -> TestResult<Reply> {
     let mut frames = Vec::new();
     let mut cursor = 0;
     while cursor + 4 <= output.len() {
@@ -984,16 +1048,19 @@ fn frames(output: &[u8]) -> Reply {
             output[cursor + 2],
             output[cursor + 3],
         ]) as usize;
-        let Some(body) = output.get(cursor + 4..cursor + 4 + length) else {
-            break;
-        };
+        let body = output
+            .get(cursor + 4..cursor + 4 + length)
+            .ok_or("partial server frame body")?;
         frames.push(body.to_vec());
         cursor += 4 + length;
     }
+    if cursor != output.len() {
+        return Err("partial server frame prefix".into());
+    }
     if frames.is_empty() {
-        Reply::Closed
+        Ok(Reply::Closed)
     } else {
-        Reply::Frames(frames)
+        Ok(Reply::Frames(frames))
     }
 }
 
@@ -1441,13 +1508,16 @@ fn node_boot_spells_against_running_node() -> TestResult {
                 book.source_len(),
                 book.source_len(),
             ));
-            if !owned_vitals {
-                return Err("spell execution blocked: bootstrap produced no Character-owned vocation/progression cast facts; transport refusals are not successful spell execution".into());
-            }
-            if cast == 0 {
-                return Err("no spell executed: inspect Character-owned level, vocation, resources and spell_probe dispositions".into());
-            }
-            Ok(())
+            let result = if !owned_vitals {
+                Err("spell execution blocked: bootstrap produced no Character-owned vocation/progression cast facts; transport refusals are not successful spell execution".into())
+            } else if cast == 0 {
+                Err("no spell executed: inspect Character-owned level, vocation, resources and spell_probe dispositions".into())
+            } else {
+                Ok(())
+            };
+            let session = client.join_snapshot().game_session_id;
+            drop(client);
+            finish_after_terminal_release(result, wait_spell_fixture_release(&url, session)).await
         })
 }
 
@@ -2057,31 +2127,10 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             seam_clients(client_config).await
         }
     };
-    // The listener must outlive every client case: an early listener exit is a
-    // failure, never a hang on an unaccepted connection.
-    let mut serve = pin!(serve);
-    let mut clients = pin!(clients);
-    let mut client_result = None;
-    let served = poll_fn(|context| {
-        if client_result.is_none()
-            && let Poll::Ready(result) = clients.as_mut().poll(context)
-        {
-            // Success or failure, the client cases are over: drain the listener
-            // so a client error surfaces instead of waiting forever.
-            shutdown.cancel();
-            client_result = Some(result);
-        }
-        match serve.as_mut().poll(context) {
-            Poll::Ready(result) => Poll::Ready(result),
-            Poll::Pending => Poll::Pending,
-        }
+    run_seam_client_cases(async { Ok(serve.await?) }, clients, || {
+        shutdown.cancel();
     })
-    .await;
-    match client_result {
-        Some(result) => result?,
-        None => return Err(format!("listener ended before the client cases: {served:?}").into()),
-    }
-    served?;
+    .await?;
     if spell_input.is_some() {
         evidence("spell_seam shutdown=drained scope=real_owner_tcp_tls gameplay_complete=false");
         return Ok(());
@@ -2197,10 +2246,8 @@ async fn seam_spell_clients(
     // Let the ordinary control-loss and grace-release owners remove the old actor.
     // Re-admission, rather than overwriting runtime resources, installs new cast facts.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(170);
-    while !matches!(
-        session_loss_row(config.url, *session.as_bytes()).await?,
-        Some((3, _, _))
-    ) {
+    while !terminal_after_grace(session_loss_row(config.url, *session.as_bytes(), deadline).await?)?
+    {
         if tokio::time::Instant::now() >= deadline {
             return Err("spell setup session did not release through ordinary grace".into());
         }
@@ -2474,16 +2521,15 @@ async fn seam_spell_clients(
             if !runtime_reader {
                 return Err("wild spawn collision proof requires actual runtime role".into());
             }
-            let mut tx = sql.begin().await?;
-            let mut current = live_runtime.lock().await;
+            let tx = sql.begin().await?;
             let rat = wild_spawn::realize_rat_in_transaction(
-                &mut tx,
+                tx,
                 root,
                 authority,
                 holder,
                 room,
                 native,
-                &mut current,
+                live_runtime,
             )
             .await?;
             if rat.state.master.is_some()
@@ -2493,12 +2539,6 @@ async fn seam_spell_clients(
             {
                 return Err("native qualification spawn did not produce an actual wild Rat".into());
             }
-            // The spawn is ephemeral runtime state, not a SQL mutation. A failed
-            // read-only COMMIT aborts this disposable fixture before any PASS claim;
-            // fixture shutdown discards its scope, rather than claiming SQL rollback
-            // undoes an already-realized in-memory actor.
-            tx.commit().await?;
-            drop(current);
             evidence(&format!(
                 "spell_seam native_test_spawn={} public_source_spawn=false policy={} revision={} actual_health={} position=(1,11,-7) master=none authority=current_channel_assignment dynamic_collision=actual_item_owner",
                 wild_spawn::DECLARATION,
@@ -2683,10 +2723,7 @@ async fn wait_spell_fixture_release(
     session: crate::foundation::GameSessionId,
 ) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(170);
-    while !matches!(
-        session_loss_row(url, *session.as_bytes()).await?,
-        Some((3, _, _))
-    ) {
+    while !terminal_after_grace(session_loss_row(url, *session.as_bytes(), deadline).await?)? {
         if tokio::time::Instant::now() >= deadline {
             return Err(
                 "spell fixture session did not release through ordinary grace and training save"
@@ -2987,6 +3024,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             .await?;
     client_recovery::resume_session(&clients, &exact, session).await?;
     client_recovery::resumed_loss_and_expiry(&clients, &exact, session, concurrent).await?;
+    client_admission::replay_released_grant(&clients, &exact, &grant).await?;
     client_use_wire::use_wire(&clients, &exact, &mut next_grant).await?;
     client_dev_client::dev_client(&clients, &mut next_grant).await?;
     client_readmission::readmit_after_release(&clients, &exact, &mut next_grant).await?;
@@ -3053,23 +3091,88 @@ async fn dev_client_door_events(
         .map_err(|error| format!("dev client door delta never arrived: {error}").into())
 }
 
+async fn finish_after_terminal_release<T>(
+    result: TestResult<T>,
+    release: impl Future<Output = TestResult>,
+) -> TestResult<T> {
+    let released = release.await;
+    result.and_then(|value| released.map(|()| value))
+}
+
+#[test]
+fn qualification_final_release_failure_fails_a_successful_journey() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let result = finish_after_terminal_release(Ok(()), async {
+                Err("session ownership was retained".into())
+            })
+            .await;
+            assert!(result.is_err());
+            Ok(())
+        })
+}
+
+type SessionLossRow = (i16, String, i64, Option<i64>);
+
+fn terminal_after_grace(row: Option<SessionLossRow>) -> TestResult<bool> {
+    let Some((3, epoch, grace, offset)) = row else {
+        return Ok(false);
+    };
+    if !(58..=62).contains(&grace) || offset.is_none_or(|seconds| seconds < 0) {
+        return Err(format!(
+            "invalid terminal release: epoch={epoch} grace={grace} release_offset={offset:?}"
+        )
+        .into());
+    }
+    Ok(true)
+}
+
+#[test]
+fn qualification_grace_expiry_requires_a_nonpremature_release_receipt() -> TestResult {
+    assert!(!terminal_after_grace(Some((1, "2".into(), 60, None)))?);
+    assert!(terminal_after_grace(Some((3, "2".into(), 60, None))).is_err());
+    assert!(terminal_after_grace(Some((3, "2".into(), 60, Some(-59)))).is_err());
+    assert!(terminal_after_grace(Some((3, "2".into(), 60, Some(0))))?);
+    Ok(())
+}
+
 /// Durable session state, current loss epoch and grace seconds counted from that loss's decision.
-async fn session_loss_row(url: &str, session: [u8; 16]) -> TestResult<Option<(i16, String, i64)>> {
-    let mut connection = sqlx::PgConnection::connect(url).await?;
-    let row: Option<(i16, Option<String>, Option<i64>)> = sqlx::query_as(
-        "SELECT s.session_state, s.control_loss_epoch::text, \
-         s.original_grace_deadline - r.decided_at \
+async fn session_loss_row(
+    url: &str,
+    session: [u8; 16],
+    deadline: tokio::time::Instant,
+) -> TestResult<Option<SessionLossRow>> {
+    within_database_deadline(deadline, async {
+        let mut connection = sqlx::PgConnection::connect(url).await?;
+        type RawLossRow = (i16, Option<String>, Option<i64>, Option<i64>);
+        let row: Option<RawLossRow> = sqlx::query_as(
+            "SELECT s.session_state, s.control_loss_epoch::text, \
+         s.original_grace_deadline - r.decided_at, release.decided_at - s.original_grace_deadline \
          FROM game_durability_reconnect_sessions s \
          LEFT JOIN game_durability_admission_lifecycle_receipts r \
            ON r.operation_key = 'owning-loss-v1'::bytea || uuid_send(s.game_session_id) \
               || int8send(s.control_loss_epoch::bigint) \
+         LEFT JOIN game_durability_admission_lifecycle_receipts release \
+           ON release.operation_key = 'claim-lifecycle-v1'::bytea || uuid_send(s.game_session_id) \
+              || decode('01','hex') \
          WHERE s.game_session_id = encode($1, 'hex')::uuid",
-    )
-    .bind(session.as_slice())
-    .fetch_optional(&mut connection)
-    .await?;
-    connection.close().await?;
-    Ok(row.map(|(state, epoch, grace)| (state, epoch.unwrap_or_default(), grace.unwrap_or(-1))))
+        )
+        .bind(session.as_slice())
+        .fetch_optional(&mut connection)
+        .await?;
+        connection.close().await?;
+        Ok(row.map(|(state, epoch, grace, offset)| {
+            (
+                state,
+                epoch.unwrap_or_default(),
+                grace.unwrap_or(-1),
+                offset,
+            )
+        }))
+    })
+    .await
 }
 
 /// Owned account for a grant built inside a closure.

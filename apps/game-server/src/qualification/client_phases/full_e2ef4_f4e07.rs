@@ -17,7 +17,6 @@ async fn with_recipient<T>(
             biased;
             result = &mut step => return result,
             _ = tick.tick() => {
-                verdict::Harness::global().progress("E07-parcel");
                 recipient.service_liveness(Duration::from_millis(20)).await?;
                 recipient.take_events();
             }
@@ -303,15 +302,7 @@ pub(super) async fn storage(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
 ) -> TestResult {
-    let mut journey = std::pin::pin!(storage_journey(row, client, clients, world));
-    let mut heartbeat = tokio::time::interval(Duration::from_secs(10));
-    heartbeat.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
-    loop {
-        tokio::select! {
-            result = &mut journey => return result,
-            _ = heartbeat.tick() => verdict::Harness::global().progress("E07-wait"),
-        }
-    }
+    storage_journey(row, client, clients, world).await
 }
 
 async fn storage_journey(

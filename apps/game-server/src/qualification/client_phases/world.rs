@@ -2,6 +2,9 @@
 use super::*;
 use crate::map::boot::BundleWorld;
 use crate::map::overlay::TilePos;
+#[path = "creature_sweep.rs"]
+mod creature_sweep;
+
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::Path;
 
@@ -323,7 +326,7 @@ include!("full_e2ef5_mount.rs");
 mod map_journey;
 include!("native_content.rs");
 #[path = "full_e2ef1.rs"]
-mod provisioning;
+pub(super) mod provisioning;
 include!("quest_journal.rs");
 #[path = "spatial_basis.rs"]
 mod spatial_basis;
@@ -2041,6 +2044,35 @@ fn route(
 const REACH_SEARCH_NODES: usize = 3_000_000;
 const REACH_CHUNK: usize = 20_000;
 
+struct ReachBudget {
+    remaining: usize,
+}
+
+impl ReachBudget {
+    fn take(&mut self) -> bool {
+        let available = self.remaining > 0;
+        self.remaining = self.remaining.saturating_sub(1);
+        available
+    }
+}
+
+impl Default for ReachBudget {
+    fn default() -> Self {
+        Self {
+            remaining: REACH_SEARCH_NODES,
+        }
+    }
+}
+
+#[test]
+fn route_replans_share_one_expansion_budget() {
+    let mut budget = ReachBudget { remaining: 2 };
+    let mut plan = || budget.take();
+    assert!(plan());
+    assert!(plan());
+    assert!(!plan());
+}
+
 #[derive(Clone, Copy, Debug)]
 pub(super) struct ReachFailure {
     searched: usize,
@@ -2145,6 +2177,7 @@ pub(super) async fn reach_route(
     goal: impl Fn(TilePos) -> bool,
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
     let mut origin = from;
+    let mut budget = ReachBudget::default();
     loop {
         client.service_liveness(Duration::from_millis(1)).await?;
         client.take_events(); // Canonical session stores retain the applied observations.
@@ -2152,7 +2185,7 @@ pub(super) async fn reach_route(
         if observed != origin {
             origin = observed;
         }
-        let path = reach_route_serviced(world, origin, &goal, async || {
+        let path = reach_route_serviced(world, origin, &goal, &mut budget, async || {
             verdict::Harness::global().progress("route-search");
             client.service_liveness(Duration::from_millis(1)).await?;
             client.take_events();
@@ -2164,6 +2197,9 @@ pub(super) async fn reach_route(
         let observed = tile(client.world_spatial().actor_position)?;
         if observed == origin {
             return Ok(path);
+        }
+        if budget.remaining == 0 {
+            return Err(format!("actor moved during final route search from={origin:?} observed={observed:?} search_cap={REACH_SEARCH_NODES}").into());
         }
         evidence(&format!(
             "route_search replan=true from={origin:?} observed={observed:?}"
@@ -2178,12 +2214,16 @@ async fn reach_route_serviced(
     world: &BundleWorld,
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
+    budget: &mut ReachBudget,
     mut service: impl AsyncFnMut() -> TestResult,
 ) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
     let mut queue = VecDeque::from([from]);
     let mut parents = BTreeMap::from([(from, None)]);
     let mut expanded = 0usize;
     while let Some(at) = queue.pop_front() {
+        if !budget.take() {
+            break;
+        }
         if goal(at) {
             let mut path = Vec::new();
             let mut cursor = at;
@@ -2231,60 +2271,6 @@ async fn reach_route_serviced(
         searched: parents.len(),
         component: (low, high),
     }))
-}
-
-const REACH_SEARCH_NODES: usize = 3_000_000;
-const REACH_CHUNK: usize = 20_000;
-
-/// Like `route` without its 160-tile and two-floor window: it searches the whole bundle (stairs,
-/// ladders and floor changes included) up to `REACH_SEARCH_NODES` tiles. The search yields to the
-/// connection every `REACH_CHUNK` expansions so liveness is served and the harness sees progress.
-/// `Ok(Err(searched))` means the goal is not reachable (or the cap was hit) after `searched` tiles.
-pub(super) async fn reach_route(
-    client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    from: TilePos,
-    goal: impl Fn(TilePos) -> bool,
-) -> TestResult<Result<Vec<StepDirection>, usize>> {
-    let mut queue = VecDeque::from([from]);
-    let mut parents = BTreeMap::from([(from, None)]);
-    let mut expanded = 0usize;
-    while let Some(at) = queue.pop_front() {
-        if goal(at) {
-            let mut path = Vec::new();
-            let mut cursor = at;
-            while let Some(Some((previous, direction))) = parents.get(&cursor) {
-                path.push(*direction);
-                cursor = *previous;
-            }
-            path.reverse();
-            return Ok(Ok(path));
-        }
-        if parents.len() > REACH_SEARCH_NODES {
-            break;
-        }
-        expanded += 1;
-        if expanded.is_multiple_of(REACH_CHUNK) {
-            verdict::Harness::global().progress("route-search");
-            client.service_liveness(Duration::from_millis(1)).await?;
-        }
-        for direction in [
-            StepDirection::North,
-            StepDirection::East,
-            StepDirection::South,
-            StepDirection::West,
-        ] {
-            let Some(next) = destination(world, at, direction) else {
-                continue;
-            };
-            if parents.contains_key(&next) {
-                continue;
-            }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
-        }
-    }
-    Ok(Err(parents.len()))
 }
 
 /// Use the production floor resolver over the production bundle's collision facts.
@@ -2362,18 +2348,12 @@ fn town_route_retry_delay(
 /// Shared by `creature_sweep` and MP09 (both reach it through `use super::*`).
 async fn request_spawn(session: String, key: String) -> Result<String, String> {
     let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
-    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../tools/qualification/node_boot/provision.py");
-    let output = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
-            .arg(script)
-            .args(["--socket", &socket, "--session", &session, "--spawn", &key])
-            .output()
-    })
-    .await
-    .map_err(|error| error.to_string())?
-    .map_err(|error| error.to_string())?;
+    let mut command = fixture_command();
+    command.args(["--socket", &socket, "--session", &session, "--spawn", &key]);
+    let output = tokio::time::timeout(FIXTURE_COMMAND_DEADLINE, command.output())
+        .await
+        .map_err(|error| error.to_string())?
+        .map_err(|error| error.to_string())?;
     if output.status.success() {
         return Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned());
     }
@@ -2477,11 +2457,15 @@ pub(super) async fn logout_retrying_busy_observed(
     let mut attempts = 0;
     loop {
         attempts += 1;
-        let outcome = client.session_mut().logout().await.map_err(|error| {
+        let outcome = client_readmission::within_retry_budget(deadline, async {
+            Ok(client.session_mut().logout().await?)
+        })
+        .await
+        .map_err(|error| {
             if let Some(observe) = observe.as_mut() {
                 observe(attempts, &format!("command_error={error}"));
             }
-            format!("logout attempt {attempts} failed: {error}")
+            verdict::context(format!("logout attempt {attempts} failed: {error}"), error)
         })?;
         if let Some(observe) = observe.as_mut() {
             observe(attempts, &format!("reply={outcome:?}"));
@@ -2492,12 +2476,15 @@ pub(super) async fn logout_retrying_busy_observed(
         if tokio::time::Instant::now() >= deadline {
             return Ok((outcome.result, format!("{outcome:?}"), attempts, true));
         }
-        client.service_liveness(Duration::from_millis(250)).await
+        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+        client_readmission::within_retry_budget(deadline, async {
+            Ok(client.service_liveness(remaining.min(Duration::from_millis(250))).await?)
+        }).await
             .map_err(|error| {
                 if let Some(observe) = observe.as_mut() {
                     observe(attempts, &format!("busy_liveness_error={error}"));
                 }
-                format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}")
+                verdict::context(format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}"), error)
             })?;
     }
 }
@@ -2544,6 +2531,24 @@ pub(super) async fn journeys(
         // Default runs retain the ordinary packets alongside the indexed rows.
         // Explicit groups can isolate those packets from the row batch.
         include!("full_e2ef6_mount.rs");
+        let batch = groups
+            .runs("rows")
+            .then(|| {
+                let value = std::env::var("OTERYN_E2E_ROW_BATCH");
+                match value.as_ref() {
+                    Ok(value) => e2e_row_batch(Some(value)),
+                    Err(std::env::VarError::NotPresent) => e2e_row_batch(None),
+                    Err(std::env::VarError::NotUnicode(_)) => None,
+                }
+                .ok_or("invalid OTERYN_E2E_ROW_BATCH (expected all or start:positive-length)")
+            })
+            .transpose()?;
+        let mut selected = false;
+        let mut e2e_row_selected = |index: usize| {
+            let matches = batch.is_some_and(|(start, len)| index >= start && index - start < len);
+            selected |= matches;
+            matches
+        };
         if groups.runs("rows") {
             release_row_characters(clients).await?;
             if e2e_row_selected(1) {
@@ -3135,16 +3140,13 @@ pub(super) async fn journeys(
                 .await;
             }
             if e2e_row_selected(85) {
-                full_e2ef19::run_packet(clients).await;
-                release_row_characters(clients).await?;
+                full_e2ef19::run_packet(clients).await?;
             }
             if e2e_row_selected(86) {
-                full_e2ef18::run_packet(clients).await;
-                release_row_characters(clients).await?;
+                full_e2ef18::run_packet(clients).await?;
             }
             if e2e_row_selected(87) {
-                full_e2ef20::run_packet(clients).await;
-                release_row_characters(clients).await?;
+                full_e2ef20::run_packet(clients).await?;
             }
             if e2e_row_selected(88) {
                 verdict::indexed("C01.client", async {
@@ -4783,6 +4785,11 @@ pub(super) async fn journeys(
                 .await;
             }
         }
+        if let Some((start, len)) = batch
+            && !selected
+        {
+            return Err(format!("OTERYN_E2E_ROW_BATCH={start}:{len} selects no live rows").into());
+        }
         for index in 0..clients.accounts.len() {
             wait_character_released(clients, index).await?;
         }
@@ -4792,8 +4799,6 @@ pub(super) async fn journeys(
         ));
     }
     if groups.runs("creature_sweep") {
-        #[path = "creature_sweep.rs"]
-        mod creature_sweep;
         creature_sweep::run(clients, world, &metadata.spawns).await?;
     }
     if groups.runs("mp") {
@@ -4859,24 +4864,24 @@ pub(super) async fn journeys(
     .bind(clients.characters[0].as_slice())
     .fetch_one(&mut connection)
     .await?;
-    client_vip::add(&mut client, &buddy).await?;
+    let mut coverage = client_vip::add(&mut client, &buddy).await;
     client_player_trade::pair(&mut client, clients).await?;
-    client_prey::prey(&mut client).await?;
-    client_task_board::task_board(&mut client).await?;
-    client_imbue::imbue(&mut client).await?;
-    client_hireling::hireling(&mut client).await?;
+    coverage = coverage.and(client_prey::prey(&mut client).await);
+    coverage = coverage.and(client_task_board::task_board(&mut client).await);
+    coverage = coverage.and(client_imbue::imbue(&mut client).await);
+    coverage = coverage.and(client_hireling::hireling(&mut client).await);
     client_browse_field::browse_field(&mut client).await?;
     client_daily_boost::daily_boost(&mut client).await?;
     let path = route(world, TOWN, |at| near_locker(world, at))
         .ok_or("town has no reachable authored depot locker")?;
     walk(&mut client, world, &path).await?;
     client_depot_search::depot_search(&mut client).await?;
-    client_stash::stash(&mut client).await?;
-    client_market::market(&mut client).await?;
-    shop_journey(&mut client, world, &metadata.npcs, clients).await?;
+    coverage = coverage.and(client_stash::stash(&mut client).await);
+    coverage = coverage.and(client_market::market(&mut client, clients).await);
+    coverage = coverage.and(shop_journey(&mut client, world, &metadata.npcs, clients).await);
     client_hotkey_equip::hotkey_equip(&mut client).await?;
-    client_item_forge::item_forge(&mut client).await?;
-    client_store::store(&mut client).await?;
+    coverage = coverage.and(client_item_forge::item_forge(&mut client).await);
+    coverage = coverage.and(client_store::store(&mut client).await);
     let after = destination(
         world,
         tile(client.world_spatial().actor_position)?,
@@ -4888,8 +4893,19 @@ pub(super) async fn journeys(
         floor: -i16::from(at.floor),
     });
     client = client_disconnect_resume::recover(client, clients, after).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    client_hunt::hunt(&mut client).await?;
+    let loot_deadline = tokio::time::Instant::now() + Duration::from_secs(180);
+    client_readmission::within_retry_budget(loot_deadline, async {
+        loop {
+            let rat =
+                travel_to_spawn_target(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
+                    .await?;
+            match client_hunt::hunt_target(&mut client, Some(rat), clients.url).await {
+                Err(error) if error.is::<client_hunt::EmptyLoot>() => {}
+                result => break result,
+            }
+        }
+    })
+    .await?;
     travel_to_spawn(
         &mut client,
         world,
@@ -4897,19 +4913,25 @@ pub(super) async fn journeys(
         "oteryn:creature.poison_spider",
     )
     .await?;
-    client_death::death(&mut client, clients).await?;
+    client_death::death_by(&mut client, clients, Some("oteryn:creature.poison_spider")).await?;
     let respawn = client.world_spatial().actor_position;
     let old_session = client.join_snapshot().game_session_id;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        let logout = client.session_mut().logout().await?;
+        let logout = client_readmission::within_retry_budget(deadline, async {
+            Ok(client.session_mut().logout().await?)
+        })
+        .await?;
         if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!("death relog logout was not accepted: {logout:?}").into());
         }
-        client.service_liveness(Duration::from_millis(100)).await?;
+        client_readmission::within_retry_budget(deadline, async {
+            Ok(client.service_liveness(Duration::from_millis(100)).await?)
+        })
+        .await?;
         client.take_events();
     }
     drop(client);
@@ -4927,8 +4949,51 @@ pub(super) async fn journeys(
         client.actor_vitals().ok_or("death relog vitals")?.health
     ));
 
+    let logout_result: TestResult = async {
+        let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+        if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+            return Err(format!("final core logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}").into());
+        }
+        Ok(())
+    }.await;
     drop(client);
-    profile_result
+    finish_after_terminal_release(
+        profile_result.and(coverage).and(logout_result),
+        wait_character_released(clients, 1),
+    )
+    .await
+}
+
+fn idle_removal_proven(elapsed: Duration, eof: bool, row: Option<&SessionLossRow>) -> bool {
+    eof && (955..=1000).contains(&elapsed.as_secs())
+        && row
+            .is_some_and(|(state, epoch, grace, _)| *state == 3 && epoch.is_empty() && *grace == -1)
+}
+
+#[test]
+fn idle_removal_requires_on_time_owner_release_without_a_loss_epoch() {
+    let terminal = (3, String::new(), -1, None);
+    let disconnect = (3, String::from("1"), 60, Some(0));
+    assert!(!idle_removal_proven(
+        Duration::from_secs(902),
+        true,
+        Some(&terminal)
+    ));
+    assert!(!idle_removal_proven(
+        Duration::from_secs(962),
+        false,
+        Some(&terminal)
+    ));
+    assert!(!idle_removal_proven(
+        Duration::from_secs(962),
+        true,
+        Some(&disconnect)
+    ));
+    assert!(idle_removal_proven(
+        Duration::from_secs(962),
+        true,
+        Some(&terminal)
+    ));
 }
 
 async fn profile_journey(
@@ -4943,44 +5008,71 @@ async fn profile_journey(
     let model = map_journey::MapModel::load(world, bytes, &root)?;
     let client = connect_character(clients, 0x6e, 0).await?;
     let mut client = provisioning::provision(client, clients, 0).await?;
+    use client_spell_journey::ProtectionProbe;
+    use oteryn_protocol_oteryn::{actor_spell::SpellTarget, attack::AttackIntentDisposition};
+    let (words, target_intent) = client_spell_journey::fixture_protection_spell()?;
+    let targeted = target_intent == SpellTarget::AttackTarget;
     let pz = if world
         .base()
         .tile(TOWN.x, TOWN.y, TOWN.floor)
         .is_some_and(|tile| tile.protection_zone())
     {
-        client_spell_journey::protection_zone_probe(&mut client, true).await
+        client_spell_journey::protection_zone_probe(
+            &mut client,
+            ProtectionProbe::Inside,
+            words,
+            target_intent,
+        )
+        .await
     } else {
         Err("configured town start is not a bundle PZ".into())
     };
+    let map = map_journey::run(&mut client, world, &model).await;
+    let combat =
+        match travel_to_spawn_target(&mut client, world, spawns, "oteryn:creature.rat").await {
+            Ok(rat) => client_combat_journey::combat_journey(&mut client, Some(rat)).await,
+            Err(error) => Err(error),
+        };
     let outside: TestResult = async {
-        let path = route(world, TOWN, |at| {
-            world
-                .base()
-                .tile(at.x, at.y, at.floor)
-                .is_some_and(|tile| !tile.protection_zone())
-        })
-        .ok_or("no reachable outside-PZ comparison tile")?;
-        walk(&mut client, world, &path).await?;
-        client_spell_journey::protection_zone_probe(&mut client, false).await
+        let rat = travel_to_spawn_target(&mut client, world, spawns, "oteryn:creature.rat").await?;
+        if !targeted {
+            return client_spell_journey::protection_zone_probe(
+                &mut client,
+                ProtectionProbe::Outside,
+                words,
+                target_intent,
+            )
+            .await;
+        }
+        let reply = client.session_mut().attack_target(Some(&rat)).await?;
+        if reply.disposition != AttackIntentDisposition::Ok {
+            return Err(format!("outside-PZ attack target refused: {reply:?}").into());
+        }
+        let cast = client_spell_journey::protection_zone_probe(
+            &mut client,
+            ProtectionProbe::Outside,
+            words,
+            target_intent,
+        )
+        .await;
+        let stopped = client.session_mut().attack_target(None).await;
+        cast?;
+        if stopped?.disposition != AttackIntentDisposition::Ok {
+            return Err("outside-PZ attack cleanup refused".into());
+        }
+        Ok(())
     }
     .await;
     let pz = pz.and(outside);
-    let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        at == TOWN
-    })
-    .ok_or("PZ comparison has no return route")?;
-    walk(&mut client, world, &back).await?;
-    let map = map_journey::run(&mut client, world, &model).await;
-    let combat = match travel_to_spawn(&mut client, world, spawns, "oteryn:creature.rat").await {
-        Ok(()) => client_combat_journey::combat_journey(&mut client).await,
-        Err(error) => Err(error),
-    };
     let spells = client_spell_journey::spell_journey(&mut client, pz).await;
     // Combat may still hold the logout/PZ lock. Settle it outside the temple
     // before restoring the peer that main's trade/party phases use.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
     loop {
-        let logout = client.session_mut().logout().await?;
+        let logout = client_readmission::within_retry_budget(deadline, async {
+            Ok(client.session_mut().logout().await?)
+        })
+        .await?;
         if logout.result == Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
             break;
         }
@@ -4989,7 +5081,10 @@ async fn profile_journey(
                 format!("profile combat lock did not settle before logout: {logout:?}").into(),
             );
         }
-        client.service_liveness(Duration::from_millis(100)).await?;
+        client_readmission::within_retry_budget(deadline, async {
+            Ok(client.service_liveness(Duration::from_millis(100)).await?)
+        })
+        .await?;
         client.take_events();
     }
     drop(client);
@@ -5033,20 +5128,68 @@ fn fresh_grant_material(tag: u8) -> TestResult<([u8; 32], [u8; 16])> {
     Ok((nonce, attempt))
 }
 
-async fn wait_fixture_command<T: Send + 'static>(
-    task: tokio::task::JoinHandle<Result<T, String>>,
+const FIXTURE_COMMAND_DEADLINE: Duration = Duration::from_secs(30);
+
+fn fixture_command() -> tokio::process::Command {
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let mut command = tokio::process::Command::new("sudo");
+    command.kill_on_drop(true).stdin(std::process::Stdio::null())
+        // Run the inner timeout with the same credentials as Python so its
+        // signal reaches the privileged child even if the outer probe drops.
+        .args(["-n", "timeout", "--kill-after=2s", "25s", "python3"])
+        .arg(script);
+    command
+}
+
+async fn wait_fixture_command<T>(
+    task: impl Future<Output = TestResult<T>>,
     mut service: impl AsyncFnMut() -> TestResult,
 ) -> TestResult<T> {
-    let mut live = Ok(());
-    while !task.is_finished() && live.is_ok() {
-        verdict::Harness::global().progress("fixture provisioning liveness");
-        live = service().await;
-    }
-    // Even after transport loss, retain the fenced operation until its bounded
-    // control request completes; never detach a writer into the next row.
-    let result = task.await?;
-    live?;
-    result.map_err(Into::into)
+    tokio::time::timeout(FIXTURE_COMMAND_DEADLINE, async {
+        let mut task = pin!(task);
+        loop {
+            // Poll the process between complete liveness operations. A process
+            // exit cannot cancel a frame that the liveness read already started.
+            let result = poll_fn(|context| {
+                Poll::Ready(match task.as_mut().poll(context) {
+                    Poll::Ready(result) => Some(result),
+                    Poll::Pending => None,
+                })
+            })
+            .await;
+            if let Some(result) = result {
+                return result;
+            }
+            if let Err(error) = service().await {
+                // Wait for the fenced request while the same total timer still runs.
+                task.await?;
+                return Err(error);
+            }
+        }
+    })
+    .await?
+}
+
+#[test]
+fn qualification_fixture_command_stops_waiting_for_a_hung_child_after_loss() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let task = async {
+                tokio::time::sleep(Duration::from_secs(60)).await;
+                Ok(())
+            };
+            let result = tokio::time::timeout(
+                Duration::from_secs(31),
+                wait_fixture_command(task, async || Err("transport lost".into())),
+            )
+            .await?;
+            assert!(result.is_err());
+            Ok(())
+        })
 }
 
 #[cfg(test)]
@@ -5065,7 +5208,7 @@ fn qualification_fixture_command_services_liveness_and_joins_after_loss() -> Tes
                 Ok(())
             });
             let mut serviced = 0;
-            let result = wait_fixture_command(task, async || {
+            let result = wait_fixture_command(async { Ok(task.await??) }, async || {
                 serviced += 1;
                 release.send(())?;
                 Err("transport lost".into())
@@ -5131,6 +5274,18 @@ async fn travel_to_spawn(
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
 ) -> TestResult {
+    travel_to_spawn_target(client, world, spawns, creature)
+        .await
+        .map(|_| ())
+}
+
+async fn travel_to_spawn_target(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    let name = creature_display_name(creature)?;
     let from = tile(client.world_spatial().actor_position)?;
     let points: Vec<_> = spawns
         .sources
@@ -5182,38 +5337,141 @@ async fn travel_to_spawn(
         )
     })?;
     walk(client, world, &path).await?;
+    let live_deadline = tokio::time::Instant::now() + Duration::from_secs(65);
     for _ in 0..32 {
+        let target = loop {
+            let here = client.world_spatial().actor_position;
+            let target = client
+                .world_entities()
+                .and_then(|entities| {
+                    entities
+                        .iter()
+                        .filter(|entry| {
+                            client_hunt::matches_species(
+                                entry.kind,
+                                entry
+                                    .display_name
+                                    .as_ref()
+                                    .and_then(|name| name.as_str().ok()),
+                                &name,
+                            ) && entry.position.floor == here.floor
+                        })
+                        .min_by_key(|entry| {
+                            entry
+                                .position
+                                .x
+                                .abs_diff(here.x)
+                                .max(entry.position.y.abs_diff(here.y))
+                        })
+                })
+                .copied();
+            if let Some(target) = target {
+                break target;
+            }
+            if tokio::time::Instant::now() >= live_deadline {
+                return Err(format!("spawn route has no visible {name} before deadline").into());
+            }
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+        };
         let here = client.world_spatial().actor_position;
-        let target = client
-            .world_entities()
-            .and_then(|entities| {
-                entities
-                    .iter()
-                    .filter(|entry| {
-                        entry.kind == oteryn_dev_client::EntityKind::Creature
-                            && entry.position.floor == here.floor
-                    })
-                    .min_by_key(|entry| {
-                        entry
-                            .position
-                            .x
-                            .abs_diff(here.x)
-                            .max(entry.position.y.abs_diff(here.y))
-                    })
-            })
-            .copied()
-            .ok_or("spawn route has no visible creature")?;
+        let identity = target.entity;
         let target = tile(target.position)?;
         let path = route(world, tile(here)?, |at| {
             at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
         })
         .ok_or("visible creature unreachable")?;
         let Some(direction) = path.first() else {
-            return Ok(());
+            return Ok(identity);
         };
         walk(client, world, &[*direction]).await?;
     }
     Err("could not approach a live creature within the route budget".into())
+}
+
+fn npc_display_name(key: &str) -> TestResult<String> {
+    static NAMES: std::sync::OnceLock<Result<BTreeMap<String, String>, String>> =
+        std::sync::OnceLock::new();
+    let names = NAMES
+        .get_or_init(|| {
+            let load = || -> TestResult<BTreeMap<String, String>> {
+                let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content");
+                let index: serde_json::Value =
+                    serde_json::from_slice(&fs::read(root.join("npcs/definitions/index.json"))?)?;
+                let mut names = BTreeMap::new();
+                for shard in index["shards"]
+                    .as_array()
+                    .ok_or("NPC definition index has no shards")?
+                {
+                    let path = shard
+                        .as_str()
+                        .ok_or("invalid NPC shard")?
+                        .strip_prefix("content/")
+                        .ok_or("NPC shard leaves content")?;
+                    let shard: serde_json::Value =
+                        serde_json::from_slice(&fs::read(root.join(path))?)?;
+                    for record in shard["records"]
+                        .as_array()
+                        .ok_or("NPC shard has no records")?
+                    {
+                        let declaration = &record["declaration"];
+                        let Some(key) = declaration["identity"]["key"].as_str() else {
+                            continue;
+                        };
+                        let Some(fields) = declaration["fields"].as_array() else {
+                            continue;
+                        };
+                        if let Some(name) = fields
+                            .iter()
+                            .filter(|field| field["field_path"] == "oteryn:source.npc.display_name")
+                            .find_map(|field| field["value"]["value"].as_str())
+                        {
+                            names.insert(key.to_owned(), name.to_owned());
+                        }
+                    }
+                }
+                Ok(names)
+            };
+            load().map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(|error| error.clone())?;
+    names
+        .get(key)
+        .cloned()
+        .ok_or_else(|| format!("{key} has no authored display name").into())
+}
+
+pub(super) fn creature_display_name(key: &str) -> TestResult<String> {
+    static NAMES: std::sync::OnceLock<Result<BTreeMap<String, String>, String>> =
+        std::sync::OnceLock::new();
+    let names = NAMES
+        .get_or_init(|| {
+            let load = || -> TestResult<BTreeMap<String, String>> {
+                let bytes = &native_input()?.creature_profiles.bytes;
+                let content: serde_json::Value = serde_json::from_slice(bytes)?;
+                let records = content["records"]
+                    .as_array()
+                    .ok_or("no pinned creature profile records")?;
+                Ok(records
+                    .iter()
+                    .filter_map(|record| {
+                        let profile = &record["profile"];
+                        let key = profile["target"]["key"].as_str()?;
+                        let name =
+                            profile["data"]["profile"]["details"]["display_name"].as_str()?;
+                        Some((key.to_owned(), name.to_owned()))
+                    })
+                    .collect())
+            };
+            load().map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(|error| error.clone())?;
+    names
+        .get(key)
+        .cloned()
+        .ok_or_else(|| format!("{key} has no pinned display name").into())
 }
 
 pub(crate) fn smoke() -> TestResult {
@@ -5328,9 +5586,9 @@ async fn shop_journey(
     let basis = spatial_basis::current(client)?;
     let Some(npc) = npcs.npcs.iter().find(|npc| npc.key == "oteryn:npc.sam") else {
         evidence(
-            "mechanic=npc_shop skipped=authored_shop_npc_missing content_id=oteryn:npc.sam source=content/npcs/definitions/index.json:1",
+            "mechanic=npc_shop status=FAIL unproven=authored_shop_npc_missing content_id=oteryn:npc.sam source=content/npcs/definitions/index.json:1",
         );
-        return Ok(());
+        return Err("authored shop NPC absent".into());
     };
     let from = tile(client.world_spatial().actor_position)?;
     let Some(path) = route(world, from, |at| {
@@ -5340,9 +5598,9 @@ async fn shop_journey(
         })
     }) else {
         evidence(
-            "mechanic=npc_shop skipped=no_route_to_authored_shop_within_town_budget content_id=oteryn:npc.sam source=apps/game-server/src/qualification/client_phases/world.rs:126",
+            "mechanic=npc_shop status=FAIL unproven=no_route_to_authored_shop_within_town_budget content_id=oteryn:npc.sam source=apps/game-server/src/qualification/client_phases/world.rs:126",
         );
-        return Ok(());
+        return Err("authored shop NPC unreachable".into());
     };
     walk(client, world, &path).await?;
     let target = client
@@ -5360,9 +5618,9 @@ async fn shop_journey(
         .copied();
     let Some(target) = target else {
         evidence(
-            "mechanic=npc_shop skipped=authored_shop_has_no_visible_actor_at_placement content_id=oteryn:npc.sam source=crates/protocol-oteryn/src/world_spatial_entities.rs:105",
+            "mechanic=npc_shop status=FAIL unproven=authored_shop_has_no_visible_actor_at_placement content_id=oteryn:npc.sam source=crates/protocol-oteryn/src/world_spatial_entities.rs:105",
         );
-        return Ok(());
+        return Err("authored shop NPC not visible".into());
     };
     client_npc_shop::transact(client, target.entity, clients).await
 }
@@ -5463,6 +5721,7 @@ fn qualification_profile_return_reaches_home_temple_after_m04_respawn() -> TestR
                         world,
                         from,
                         |at| return_protection_zone(world, at),
+                        &mut ReachBudget::default(),
                         async || {
                             tokio::task::yield_now().await;
                             Ok(())
@@ -5487,6 +5746,7 @@ fn qualification_profile_return_reaches_home_temple_after_m04_respawn() -> TestR
                         world,
                         at,
                         |at| at == TOWN,
+                        &mut ReachBudget::default(),
                         async || Ok(()),
                     ))?
                     .err()
@@ -5501,6 +5761,7 @@ fn qualification_profile_return_reaches_home_temple_after_m04_respawn() -> TestR
                         world,
                         TOWN,
                         |at| return_protection_zone(world, at),
+                        &mut ReachBudget::default(),
                         async || Ok(()),
                     ))?
                     .map_err(|failure| {
@@ -5513,6 +5774,7 @@ fn qualification_profile_return_reaches_home_temple_after_m04_respawn() -> TestR
                     world,
                     TOWN,
                     |_| false,
+                    &mut ReachBudget::default(),
                     async || {
                         services += 1;
                         Err("route service failed".into())

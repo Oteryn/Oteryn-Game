@@ -2,7 +2,7 @@
 // needs about 80 s), so CI runs one batch per head. `OTERYN_E2E_ROW_BATCH` is
 // `start:len` over the row indices passed to `e2e_row_selected` in `journeys`;
 // `all` runs every row.
-const E2E_ROW_BATCH_DEFAULT: (usize, usize) = (0, 15);
+const E2E_ROW_BATCH_DEFAULT: (usize, usize) = (1, 15);
 
 fn e2e_row_batch(value: Option<&str>) -> Option<(usize, usize)> {
     match value {
@@ -10,18 +10,10 @@ fn e2e_row_batch(value: Option<&str>) -> Option<(usize, usize)> {
         Some("all") => Some((0, usize::MAX)),
         Some(text) => {
             let (start, len) = text.split_once(':')?;
-            Some((start.parse().ok()?, len.parse().ok()?))
+            let len = len.parse().ok()?;
+            (len > 0).then_some((start.parse().ok()?, len))
         }
     }
-}
-
-fn e2e_row_selected(index: usize) -> bool {
-    let value = std::env::var("OTERYN_E2E_ROW_BATCH").ok();
-    let Some((start, len)) = e2e_row_batch(value.as_deref()) else {
-        evidence("e2e_row_batch invalid OTERYN_E2E_ROW_BATCH; running no rows");
-        return false;
-    };
-    index >= start && index - start < len
 }
 
 // A failed row can leave its socket open or its session in loss/grace; the
@@ -45,6 +37,12 @@ async fn release_row_characters(clients: &SeamClients<'_>) -> TestResult {
 #[cfg(test)]
 mod e2e_row_batch_tests {
     use super::*;
+
+    #[test]
+    fn e2e_row_batch_starts_at_first_live_index_and_rejects_zero_length() {
+        assert_eq!(e2e_row_batch(None), Some((1, 15)));
+        assert_eq!(e2e_row_batch(Some("1:0")), None);
+    }
 
     #[test]
     fn e2e_row_batch_parses_default_all_and_ranges() {

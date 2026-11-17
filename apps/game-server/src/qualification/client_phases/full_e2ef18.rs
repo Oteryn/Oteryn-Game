@@ -1,6 +1,6 @@
 //! E2EF18 C14: ordinary combat progression, skill training, spell learning and reload.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind};
+use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::{
     attack::AttackIntentDisposition,
     cyclopedia_character::{self as character, CharacterTab, GeneralStats},
@@ -48,8 +48,10 @@ impl Row {
                 error.to_string().replace(['\n', '\r'], " ")
             ));
         }
+        let suffix = result.as_ref().err().map_or_else(String::new, |error|
+            verdict::classify(error.as_ref()).suffix("C14.full/journey"));
         evidence(&format!(
-            "e2e_all scenario=C14.full status={} seconds={:.3}",
+            "e2e_all scenario=C14.full status={} seconds={:.3}{suffix}",
             if result.is_ok() && self.passed.len() == ACTIONS.len() {
                 "PASS"
             } else {
@@ -67,12 +69,13 @@ struct Progress {
     vitals: oteryn_protocol_oteryn::actor_spell::ActorVitals,
 }
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+pub(super) async fn run_packet(clients: &SeamClients<'_>) -> TestResult {
     let mut row = Row::new();
     let result = tokio::time::timeout(Duration::from_secs(600), journey(&mut row, clients))
-        .await
-        .unwrap_or_else(|_| Err("step=journey observed=timeout-600s need=responsive-combat-progression".into()));
-    row.finish(&result);
+        .await.unwrap_or_else(|elapsed| Err(elapsed.into()));
+    let released = release_row_characters(clients).await;
+    row.finish(verdict::release_affects_verdict(&result, &released));
+    released
 }
 
 async fn stats(client: &mut DevClientSession) -> TestResult<GeneralStats> {
@@ -202,7 +205,8 @@ async fn approach_rat(
         let here = client.world_spatial().actor_position;
         if let Some(target) = client.world_entities().and_then(|entities| {
             entities.iter().find(|entry| {
-                entry.kind == EntityKind::Creature
+                client_hunt::matches_species(entry.kind,
+                    entry.display_name.as_ref().and_then(|name| name.as_str().ok()), "Rat")
                     && entry.position.floor == here.floor
                     && entry.position.x.abs_diff(here.x).max(entry.position.y.abs_diff(here.y)) <= 1
             })
@@ -215,44 +219,6 @@ async fn approach_rat(
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
     }
-}
-
-async fn kill(
-    client: &mut DevClientSession,
-    target: oteryn_dev_client::WorldSpatialEntity,
-) -> TestResult {
-    let reply = client.session_mut().attack_target(Some(&target.entity)).await?;
-    if reply.disposition != AttackIntentDisposition::Ok {
-        return Err(format!("step=melee-attack observed={reply:?} need=accepted-adjacent-attack").into());
-    }
-    let before_health = match target.detail {
-        EntityDetail::Actor { health_percent, .. } => health_percent,
-        _ => return Err("step=melee-attack observed=target-without-health need=actor-frame".into()),
-    };
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
-    let mut damaged = false;
-    loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        for event in client.take_events() {
-            if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event {
-                damaged |= delta.value.update.iter().any(|entry| {
-                    entry.entity == target.entity
-                        && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } if health_percent < before_health)
-                });
-            }
-        }
-        if client.world_entities().is_some_and(|entities| entities.get(&target.entity).is_none()) {
-            break;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=melee-kill observed=timeout damage-frame={damaged} need=creature-death").into());
-        }
-    }
-    let stopped = client.session_mut().attack_target(None).await?;
-    if !damaged || stopped.disposition != AttackIntentDisposition::Ok {
-        return Err(format!("step=melee-kill observed=damage-{damaged}/stop-{stopped:?} need=damage-and-stop").into());
-    }
-    Ok(())
 }
 
 fn melee_progress(before: &SkillProgressSnapshot, after: &SkillProgressSnapshot) -> bool {
@@ -316,7 +282,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     while levelled.is_none() {
         let target = approach_rat(&mut client, world, &positions).await?;
         row.pass("walk-to-weak-spawn", format!("target={:?}", target.entity));
-        kill(&mut client, target).await?;
+        client_hunt::kill(&mut client, target, clients.url, Duration::from_secs(60)).await?;
         let after = progress(&mut client).await?;
         let delta = after.stats.experience.checked_sub(previous.stats.experience).ok_or(
             "step=exact-kill-experience observed=experience-regressed need=positive-delta",

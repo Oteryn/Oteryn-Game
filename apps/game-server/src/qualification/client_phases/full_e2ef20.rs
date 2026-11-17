@@ -43,8 +43,8 @@ impl Row {
         }
     }
 
-    fn finish(self, result: TestResult) {
-        if let Err(error) = &result {
+    fn finish(self, result: &TestResult) {
+        if let Err(error) = result {
             evidence(&format!("E2EF20_GAP E02 step=journey observed={error}"));
         }
         for (step, passed) in &self.steps {
@@ -52,8 +52,10 @@ impl Row {
                 evidence(&format!("E2EF20_GAP E02 step={step} observed=not-reached"));
             }
         }
+        let suffix = result.as_ref().err().map_or_else(String::new, |error|
+            verdict::classify(error.as_ref()).suffix("E02.full/journey"));
         evidence(&format!(
-            "e2e_all scenario=E02.full status={} seconds={:.3}",
+            "e2e_all scenario=E02.full status={} seconds={:.3}{suffix}",
             if result.is_ok() && self.steps.values().all(|passed| *passed) {
                 "PASS"
             } else {
@@ -64,13 +66,13 @@ impl Row {
     }
 }
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+pub(super) async fn run_packet(clients: &SeamClients<'_>) -> TestResult {
     let mut row = Row::new();
-    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients)).await;
-    row.finish(match result {
-        Ok(result) => result,
-        Err(_) => Err("step=deadline observed=180s-timeout".into()),
-    });
+    let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients))
+        .await.unwrap_or_else(|elapsed| Err(elapsed.into()));
+    let released = release_row_characters(clients).await;
+    row.finish(verdict::release_affects_verdict(&result, &released));
+    released
 }
 
 fn coin_refs() -> TestResult<[std::num::NonZeroU32; 3]> {
@@ -194,6 +196,32 @@ async fn exchange(
     last.ok_or_else(|| "step=exchange observed=empty-command-sequence".into())
 }
 
+async fn optional_shop_window<T>(
+    mut observe: impl AsyncFnMut(Duration) -> TestResult<Option<T>>,
+) -> TestResult<Option<T>> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    while let Some(remaining) = deadline.checked_duration_since(tokio::time::Instant::now()) {
+        if let Some(window) = observe(remaining.min(Duration::from_millis(50))).await? {
+            return Ok(Some(window));
+        }
+    }
+    Ok(None)
+}
+
+#[test]
+fn optional_shop_window_propagates_a_session_failure() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let result = optional_shop_window::<()>(async |_| {
+                Err(std::io::Error::from(std::io::ErrorKind::UnexpectedEof).into())
+            }).await;
+            assert!(result.is_err(), "the shop wait reused a failed session");
+            Ok(())
+        })
+}
+
 async fn earn_gold(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -213,17 +241,23 @@ async fn earn_gold(
         }
         let actor = approach(client, world, npc).await?;
         let greeting = talk(client, actor, "hi").await?;
+        let before_trade = client.last_server_sequence();
         let trade = talk(client, actor, "trade").await?;
         attempts.push(format!("{}:hi={:?}:trade={:?}", npc.key, greeting.lines, trade.lines));
-        let delta = match tokio::time::timeout(
-            Duration::from_secs(2),
-            client.session_mut().read_gated_delta(wire::STATE_DOMAIN_NPC_TRADE_WINDOW, 1),
-        ).await {
-            Ok(Ok(delta)) => delta,
-            _ => continue,
-        };
-        let window = wire::decode_npc_trade_window(&delta.payload)
-            .map_err(|error| format!("step=earn-gold observed=malformed-trade-window:{error:?}"))?;
+        let window = optional_shop_window(async |duration| {
+            let window = client.take_events().into_iter().find_map(|event| match event {
+                oteryn_dev_client::SessionEvent::NpcTradeWindow(delta)
+                    if delta.server_sequence > before_trade => Some(delta.value),
+                _ => None,
+            });
+            if window.is_none() {
+                // A quiet interval may finish before a frame starts. Once a
+                // frame starts, the session finishes its read or reports failure.
+                client.service_liveness(duration).await?;
+            }
+            Ok(window)
+        }).await?;
+        let Some(window) = window else { continue };
         let Some((_, revision)) = window.open else { continue };
         let carried: BTreeMap<_, _> = client.inventory()
             .ok_or("step=earn-gold observed=inventory-absent")?
@@ -271,6 +305,21 @@ async fn earn_gold(
     Ok(observed)
 }
 
+fn insufficient_gold_amount(gold: u64) -> TestResult<String> {
+    let amount = u32::try_from(gold / 100 + 1)?;
+    Ok(amount.to_string())
+}
+
+#[test]
+fn insufficient_gold_probe_costs_more_than_the_backpack_balance() -> TestResult {
+    for gold in [100, 199, 200, 1_000, 42_000] {
+        let amount: u64 = insufficient_gold_amount(gold)?.parse()?;
+        assert!((1..=u64::from(u32::MAX)).contains(&amount));
+        assert!(amount * 100 > gold, "gold={gold} amount={amount}");
+    }
+    Ok(())
+}
+
 fn exact_delta(before: [u64; 3], after: [u64; 3], delta: [i64; 3]) -> bool {
     before.into_iter().zip(after).zip(delta).all(|((before, after), delta)| {
         i128::from(after) - i128::from(before) == i128::from(delta)
@@ -305,7 +354,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("platinum-to-gold", (platinum, initial, reply.lines));
 
-    let reply = exchange(&mut client, actor, &["change gold", "2", "yes"]).await?;
+    let amount = insufficient_gold_amount(initial[0])?;
+    let reply = exchange(&mut client, actor, &["change gold", &amount, "yes"]).await?;
     let after_refusal = backpack_coins(&client, refs)?;
     if after_refusal != initial || !reply.lines.iter().any(|line| line.contains("enough")) {
         return Err(format!("step=insufficient-refusal observed=reply:{:?},coins:{after_refusal:?}", reply.lines).into());

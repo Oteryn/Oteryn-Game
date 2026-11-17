@@ -17,17 +17,25 @@ impl Checks {
     }
 
     pub(super) fn record(&mut self, row: &'static str, case: &str, result: TestResult) {
-        let (status, reason, index) = match result {
-            Ok(()) => ("PASS", "observed_in_protocol".to_owned(), 0),
-            Err(error) => {
-                let cause = super::client_world::verdict::classify(error.as_ref())
-                    .suffix(&format!("{row}/{case}"));
-                let reason = error.to_string().replace(['\n', '\r'], " ");
-                ("FAIL", format!("{reason}{cause}"), 1)
+        match result {
+            Ok(()) => {
+                self.rows.entry(row).or_default()[0] += 1;
+                println!("COMBAT_CHECK {row} {case} PASS observed_in_protocol");
             }
-        };
-        self.rows.entry(row).or_default()[index] += 1;
-        println!("COMBAT_CHECK {row} {case} {status} {reason}");
+            Err(error) => self.record_failure(row, case, error.as_ref()),
+        }
+    }
+
+    pub(super) fn record_failure(
+        &mut self,
+        row: &'static str,
+        case: &str,
+        error: &(dyn std::error::Error + 'static),
+    ) {
+        let cause = super::client_world::verdict::classify(error).suffix(&format!("{row}/{case}"));
+        let reason = error.to_string().replace(['\n', '\r'], " ");
+        self.rows.entry(row).or_default()[1] += 1;
+        println!("COMBAT_CHECK {row} {case} FAIL {reason}{cause}");
     }
 
     pub(super) fn finish(self) -> TestResult {
@@ -44,7 +52,10 @@ impl Checks {
     }
 }
 
-pub(super) async fn combat_journey(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn combat_journey(
+    client: &mut DevClientSession,
+    wanted: Option<oteryn_dev_client::EntityRef>,
+) -> TestResult {
     let mut checks = Checks::default();
     for (name, fight_mode) in [
         ("offensive", FightMode::Offensive),
@@ -62,6 +73,7 @@ pub(super) async fn combat_journey(client: &mut DevClientSession) -> TestResult 
                         chase,
                         secure: true,
                     },
+                    wanted,
                 )
                 .await,
             );
@@ -70,7 +82,11 @@ pub(super) async fn combat_journey(client: &mut DevClientSession) -> TestResult 
     checks.finish()
 }
 
-async fn melee_damage(client: &mut DevClientSession, modes: FightModes) -> TestResult {
+async fn melee_damage(
+    client: &mut DevClientSession,
+    modes: FightModes,
+    wanted: Option<oteryn_dev_client::EntityRef>,
+) -> TestResult {
     use oteryn_protocol_oteryn::item_view::EquipmentSlot;
     if client.inventory().is_none_or(|inventory| {
         !inventory.equipment.iter().any(|entry| {
@@ -92,6 +108,7 @@ async fn melee_damage(client: &mut DevClientSession, modes: FightModes) -> TestR
         .and_then(|entities| {
             entities.iter().find(|entity| {
                 entity.kind == EntityKind::Creature
+                    && wanted.is_none_or(|identity| entity.entity == identity)
                     && entity.position.floor == here.floor
                     && entity
                         .position

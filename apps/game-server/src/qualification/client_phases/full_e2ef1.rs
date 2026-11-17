@@ -9,7 +9,8 @@ pub(super) async fn e2ef1_logout_for_return(
 ) -> TestResult {
     e2ef1::logout(client).await
 }
-pub(super) fn item_index() -> TestResult<crate::content::item_ref::ItemDefinitionIndex> {
+pub(in crate::qualification) fn item_index()
+-> TestResult<crate::content::item_ref::ItemDefinitionIndex> {
     original::item_index()
 }
 pub(super) fn item_reference(
@@ -1670,34 +1671,8 @@ mod e2ef1 {
             if durable && required.contains(&"relogin") {
                 checks.pass("relogin", saved);
             }
-            let passed = result.is_ok() && durable && checks.complete(required);
-            failed |= !passed;
-            let gaps: Vec<_> = required
-                .iter()
-                .filter(|case| !checks.passed.contains(**case))
-                .copied()
-                .collect();
-            evidence(&format!(
-                "E2EF1_ROW row={row} missing={gaps:?} result={result:?} durable={durable}"
-            ));
-            verdicts.done.insert(row);
-            let suffix = if passed {
-                String::new()
-            } else {
-                let cause = match &result {
-                    Err(error) => verdict::classify(error.as_ref()),
-                    Ok(()) => verdict::Cause::Assertion,
-                };
-                cause.suffix(&format!(
-                    "{row}/{}",
-                    gaps.first().copied().unwrap_or("durable")
-                ))
-            };
-            evidence(&format!(
-                "e2e_all scenario={row}.full status={} seconds={:.3} evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{suffix}",
-                if passed { "PASS" } else { "FAIL" },
-                started.elapsed().as_secs_f64()
-            ));
+            let mut recovered = false;
+            let restored: TestResult = async {
             let from = tile(client.world_spatial().actor_position)?;
             let back = match reach_route(&mut client, world, from, |at| at == origin).await? {
                 Ok(back) => back,
@@ -1711,10 +1686,47 @@ mod e2ef1 {
                     evidence(&format!(
                         "E2EF1_ROW_RETURN row={row} status=FAIL next_origin={at:?} evidence={detail}"
                     ));
-                    continue;
+                    recovered = true;
+                    return Err(detail.into());
                 }
             };
-            walk(&mut client, world, &back).await?;
+            walk(&mut client, world, &back).await
+            }.await;
+            let passed = result.is_ok() && restored.is_ok() && durable && checks.complete(required);
+            failed |= !passed;
+            let gaps: Vec<_> = required
+                .iter()
+                .filter(|case| !checks.passed.contains(**case))
+                .copied()
+                .collect();
+            evidence(&format!(
+                "E2EF1_ROW row={row} missing={gaps:?} result={result:?} durable={durable}"
+            ));
+            verdicts.done.insert(row);
+            let suffix = if passed {
+                String::new()
+            } else {
+                let cause = match verdict::release_affects_verdict(&result, &restored) {
+                    Err(error) => verdict::classify(error.as_ref()),
+                    Ok(()) => verdict::Cause::Assertion,
+                };
+                cause.suffix(&format!(
+                    "{row}/{}",
+                    gaps.first().copied().unwrap_or(if restored.is_err() {
+                        "return"
+                    } else {
+                        "durable"
+                    })
+                ))
+            };
+            evidence(&format!(
+                "e2e_all scenario={row}.full status={} seconds={:.3} evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{suffix}",
+                if passed { "PASS" } else { "FAIL" },
+                started.elapsed().as_secs_f64()
+            ));
+            if !recovered {
+                restored?;
+            }
         }
         if failed {
             evidence("E2EF1_INCOMPLETE full_row_failures_reported_to_e2e_all");

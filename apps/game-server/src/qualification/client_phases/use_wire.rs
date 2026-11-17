@@ -48,64 +48,70 @@ pub(super) async fn use_wire<'a>(
             client_command(id, step_type, &encode_step_intent(direction))
         };
         let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
-        loop {
-            let generation = platform_generation(descriptor, &accounts[1]).await?;
-            let again = next_grant(&accounts[1], characters[1], generation);
-            let token = sign_grant(&again.borrowed(), now_seconds()?);
-            // SPEED-1: the client paces its steps: each step after the first follows the
-            // previous segment's results by a step duration.
-            let snapshot = 1 + use_wire_frames(WorldId::decode(&world)?)?.len() - 15;
-            let segment = |frames: Vec<Vec<u8>>| -> Vec<u8> {
-                frames.iter().flat_map(|frame| framed(frame)).collect()
-            };
-            let mut first = framed(&bootstrap(1, 1, &characters[1], &token));
-            first.extend(segment(vec![
-                step_frame(1, StepDirection::East),
-                use_frame(2, door_key, 0)?,
-            ]));
-            let segments = [
-                (0, first),
-                (
-                    snapshot + 4,
-                    segment(vec![
-                        step_frame(3, StepDirection::North),
-                        use_frame(4, door_key, 1)?,
-                    ]),
-                ),
-                (
-                    snapshot + 7,
-                    segment(vec![
-                        step_frame(5, StepDirection::South),
-                        use_frame(6, door_key, 1)?,
-                    ]),
-                ),
-                (
-                    snapshot + 11,
-                    segment(vec![
-                        step_frame(7, StepDirection::North),
-                        use_frame(8, door_key, 0)?,
-                        use_frame(9, "oteryn:cell/unknown", 2)?,
-                        // Replays the already-consumed CommandId 6.
-                        use_frame(6, door_key, 1)?,
-                    ]),
-                ),
-            ];
-            let reply = exchange_must_close_paced(address, exact, &segments).await?;
-            if let Some(session) = accepted_session(&reply) {
-                let Reply::Frames(frames) = &reply else {
-                    return Err("missing frames".into());
+        client_readmission::within_retry_budget(deadline, async {
+            loop {
+                let generation = platform_generation(descriptor, &accounts[1]).await?;
+                let again = next_grant(&accounts[1], characters[1], generation);
+                let token = sign_grant(&again.borrowed(), now_seconds()?);
+                // SPEED-1: the client paces its steps: each step after the first follows the
+                // previous segment's results by a step duration.
+                let snapshot = 1 + use_wire_frames(WorldId::decode(&world)?)?.len() - 15;
+                let segment = |frames: Vec<Vec<u8>>| -> Vec<u8> {
+                    frames.iter().flat_map(|frame| framed(frame)).collect()
                 };
-                let expected = use_wire_frames(WorldId::decode(&world)?)?;
-                if frames.get(1..) != Some(expected.as_slice()) {
-                    return Err(format!("use-wire scenario diverged: {reply:?}").into());
+                let mut first = framed(&bootstrap(1, 1, &characters[1], &token));
+                first.extend(segment(vec![
+                    step_frame(1, StepDirection::East),
+                    use_frame(2, door_key, 0)?,
+                ]));
+                let segments = [
+                    (0, first),
+                    (
+                        snapshot + 4,
+                        segment(vec![
+                            step_frame(3, StepDirection::North),
+                            use_frame(4, door_key, 1)?,
+                        ]),
+                    ),
+                    (
+                        snapshot + 7,
+                        segment(vec![
+                            step_frame(5, StepDirection::South),
+                            use_frame(6, door_key, 1)?,
+                        ]),
+                    ),
+                    (
+                        snapshot + 11,
+                        segment(vec![
+                            step_frame(7, StepDirection::North),
+                            use_frame(8, door_key, 0)?,
+                            use_frame(9, "oteryn:cell/unknown", 2)?,
+                            // Replays the already-consumed CommandId 6.
+                            use_frame(6, door_key, 1)?,
+                        ]),
+                    ),
+                ];
+                let reply = exchange_must_close_paced(address, exact, &segments).await?;
+                if let Some(session) = accepted_session(&reply) {
+                    let Reply::Frames(frames) = &reply else {
+                        return Err("missing frames".into());
+                    };
+                    let expected = use_wire_frames(WorldId::decode(&world)?)?;
+                    if frames.get(1..) != Some(expected.as_slice()) {
+                        return Err(format!("use-wire scenario diverged: {reply:?}").into());
+                    }
+                    break Ok(session);
                 }
-                break session;
+                tokio::time::sleep(Duration::from_millis(500)).await;
             }
-            if tokio::time::Instant::now() >= deadline {
-                return Err(format!("use-wire character was not admitted again: {reply:?}").into());
-            }
-            tokio::time::sleep(Duration::from_millis(500)).await;
-        }
+        })
+        .await
+        .map_err(|error| {
+            client_world::verdict::context(
+                format!("use-wire character was not admitted again: {error}"),
+                error,
+            )
+        })?
     };
     if committed_admissions(url).await? != 3 {
         return Err("use-wire admission did not commit exactly one GameSession".into());
@@ -120,7 +126,7 @@ pub(super) async fn use_wire<'a>(
     // before character[0]'s own final re-admission below is even attempted.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     loop {
-        if let Some((1, epoch, grace)) = session_loss_row(url, use_session).await? {
+        if let Some((1, epoch, grace, _)) = session_loss_row(url, use_session, deadline).await? {
             if epoch != "1" || !(58..=62).contains(&grace) {
                 return Err(format!("use-wire loss epoch={epoch} grace={grace}").into());
             }
@@ -132,7 +138,7 @@ pub(super) async fn use_wire<'a>(
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
-    while !matches!(session_loss_row(url, use_session).await?, Some((3, _, _))) {
+    while !terminal_after_grace(session_loss_row(url, use_session, deadline).await?)? {
         if tokio::time::Instant::now() >= deadline {
             return Err("use-wire session was not released after grace".into());
         }

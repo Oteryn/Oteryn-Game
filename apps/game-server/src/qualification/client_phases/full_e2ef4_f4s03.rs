@@ -19,25 +19,9 @@ async fn with_liveness<T>(
             biased;
             result = &mut operation => return result,
             _ = tick.tick() => {
-                progress();
                 idle.service_liveness(Duration::from_millis(20)).await?;
                 idle.take_events();
             }
-        }
-    }
-}
-
-/// Also feed progress during a single-session admission or a long hunt.
-async fn progressing<T>(
-    operation: impl std::future::Future<Output = TestResult<T>>,
-) -> TestResult<T> {
-    let mut operation = std::pin::pin!(operation);
-    let mut tick = tokio::time::interval(Duration::from_secs(10));
-    loop {
-        tokio::select! {
-            biased;
-            result = &mut operation => return result,
-            _ = tick.tick() => progress(),
         }
     }
 }
@@ -182,7 +166,7 @@ pub(super) async fn run(
     evidence(
         "E2EF4_MISSING S03 motd source:crates/protocol-oteryn/src/guild.rs:17 native-GuildIntent-has-no-MOTD-write",
     );
-    progressing(async {
+    async {
         // Always earn new coins, even if earlier rows left money in the backpack or bank.
         let before = full_gold::coin_value(client)?;
         let target = before.checked_add(4).ok_or("S03 gold target overflow")?;
@@ -224,9 +208,11 @@ pub(super) async fn run(
         if bank_balance(client, actor).await? != deposited - 2 {
             return Err("S03 personal bank differs from guild ledger settlement".into());
         }
-        row.missing_server = Some("source:crates/protocol-oteryn/src/guild.rs:17");
-        Err("MOTD-write-unavailable;source:crates/protocol-oteryn/src/guild.rs:17".into())
-    })
+        Err(super::super::verdict::MissingServerRoute(
+            "source:crates/protocol-oteryn/src/guild.rs:17",
+        )
+        .into())
+    }
     .await
 }
 

@@ -193,6 +193,43 @@ pub(super) async fn prepare_character_with_policy<const N: usize>(
     .await
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum PreparationStage {
+    Initial,
+    VocationPending,
+    Complete,
+}
+
+fn preparation_stage(
+    vocation_set: bool,
+    xp_committed: bool,
+    build_committed: bool,
+) -> TestResult<PreparationStage> {
+    match (vocation_set, xp_committed, build_committed) {
+        (true, true, true) => Ok(PreparationStage::Complete),
+        (true, _, _) => Err("spell fixture vocation is set".into()),
+        (false, true, false) => Ok(PreparationStage::VocationPending),
+        (false, false, false) => Ok(PreparationStage::Initial),
+        _ => {
+            Err("spell fixture progression and vocation do not match its committed receipts".into())
+        }
+    }
+}
+
+#[test]
+fn qualification_build_resumes_at_the_matching_durable_receipts() -> TestResult {
+    assert_eq!(
+        preparation_stage(false, true, false)?,
+        PreparationStage::VocationPending
+    );
+    assert_eq!(
+        preparation_stage(true, true, true)?,
+        PreparationStage::Complete
+    );
+    assert!(preparation_stage(true, true, false).is_err());
+    Ok(())
+}
+
 pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -231,20 +268,16 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     })
     .await
     .map_err(debug)?;
-    if before.vocation() != NO_VOCATION {
-        return Err("spell fixture vocation is set".into());
+    if policy.context != context {
+        return Err("qualification policy context mismatch".into());
     }
-    if before != DurableBuildState::default() {
-        return Err("spell fixture build is not initial".into());
-    }
+    let experience = policy
+        .thresholds
+        .iter()
+        .find(|threshold| threshold.level == level)
+        .ok_or("qualification level absent from the served progression policy")?
+        .minimum_experience;
     if let Some(state) = &progression {
-        if state.level != 1
-            || !policy.thresholds.first().is_some_and(|first| {
-                first.level == 1 && state.total_experience == first.minimum_experience
-            })
-        {
-            return Err("spell fixture progression level or XP is not initial".into());
-        }
         if state.context != policy.context {
             return Err("spell fixture progression context mismatch".into());
         }
@@ -253,6 +286,61 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         }
         if state.reward_revision != policy.reward_revision {
             return Err("spell fixture progression reward revision mismatch".into());
+        }
+    }
+    let vocation_set = before.vocation() != NO_VOCATION;
+    let xp_committed = if progression
+        .as_ref()
+        .is_some_and(|state| state.level == level && state.total_experience == experience)
+    {
+        if level == 1 {
+            vocation_set
+        } else {
+            retry_holder(Some(root), deadline, progression_busy, async || {
+                root.reconcile_character_experience(authority, xp_occurrence)
+                    .await
+            })
+            .await
+            .map_err(debug)?
+            .is_some_and(|receipt| {
+                receipt.character_id == character
+                    && receipt.level_after == level
+                    && receipt.experience_after == experience
+                    && receipt.experience_awarded == experience
+            })
+        }
+    } else {
+        false
+    };
+    let build_committed = vocation_set
+        && before.vocation() == vocation
+        && retry_holder(Some(root), deadline, progression_busy, async || {
+            root.reconcile_character_build(authority, build_occurrence)
+                .await
+        })
+        .await
+        .map_err(debug)?
+        .is_some_and(|receipt| {
+            receipt.character_id == character
+                && receipt.cause == BuildCause::VocationChoice
+                && receipt.after == before
+        });
+    let stage = preparation_stage(vocation_set, xp_committed, build_committed)?;
+    if stage == PreparationStage::Complete {
+        return Ok(());
+    }
+    if before != DurableBuildState::default() {
+        return Err("spell fixture build is not initial".into());
+    }
+    if stage == PreparationStage::Initial
+        && let Some(state) = &progression
+    {
+        if state.level != 1
+            || !policy.thresholds.first().is_some_and(|first| {
+                first.level == 1 && state.total_experience == first.minimum_experience
+            })
+        {
+            return Err("spell fixture progression level or XP is not initial".into());
         }
         // Admission/offline settlement and logout advance revisions even with an
         // unchanged build. Retained XP/death receipts distinguish earned history
@@ -270,15 +358,6 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
             );
         }
     }
-    if policy.context != context {
-        return Err("qualification policy context mismatch".into());
-    }
-    let experience = policy
-        .thresholds
-        .iter()
-        .find(|threshold| threshold.level == level)
-        .ok_or("qualification level absent from the served progression policy")?
-        .minimum_experience;
     let mut fence = CurrentCharacterGameplayFence {
         character_id: character,
         game_session_id: current.current_game_session_id(),
@@ -320,7 +399,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .await
         .map_err(debug)?;
     }
-    if level > 1 {
+    if level > 1 && stage == PreparationStage::Initial {
         retry_holder(Some(root), deadline, progression_busy, async || {
             slot.commit_experience(
                 root,

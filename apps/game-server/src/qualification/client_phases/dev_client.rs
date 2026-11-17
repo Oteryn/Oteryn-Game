@@ -70,7 +70,7 @@ pub(super) async fn dev_client<'a>(
         deadline: Duration::from_secs(20),
     })
     .await
-    .map_err(|error| format!("dev client join: {error}"))?;
+    .map_err(|error| client_world::verdict::context(format!("dev client join: {error}"), error))?;
     let dev_client_snapshot = dev_client.join_snapshot().clone();
 
     if dev_client_snapshot.world_spatial.content_generation != dev_client_content_generation
@@ -235,7 +235,7 @@ pub(super) async fn dev_client<'a>(
     client_imbue::imbue(&mut dev_client).await?;
     client_npc_shop::npc_shop(&mut dev_client).await?;
     client_stash::stash(&mut dev_client).await?;
-    client_market::market(&mut dev_client).await?;
+    client_market::market(&mut dev_client, clients).await?;
     client_task_board::task_board(&mut dev_client).await?;
     client_prey::prey(&mut dev_client).await?;
     client_hireling::hireling(&mut dev_client).await?;
@@ -259,7 +259,9 @@ pub(super) async fn dev_client<'a>(
     let dev_client_session = *dev_client_snapshot.game_session_id.as_bytes();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     loop {
-        if let Some((1, epoch, grace)) = session_loss_row(url, dev_client_session).await? {
+        if let Some((1, epoch, grace, _)) =
+            session_loss_row(url, dev_client_session, deadline).await?
+        {
             if epoch != "2" || !(58..=62).contains(&grace) {
                 return Err(format!("dev_client loss epoch={epoch} grace={grace}").into());
             }
@@ -271,10 +273,7 @@ pub(super) async fn dev_client<'a>(
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
-    while !matches!(
-        session_loss_row(url, dev_client_session).await?,
-        Some((3, _, _))
-    ) {
+    while !terminal_after_grace(session_loss_row(url, dev_client_session, deadline).await?)? {
         if tokio::time::Instant::now() >= deadline {
             return Err("dev_client session was not released after grace".into());
         }

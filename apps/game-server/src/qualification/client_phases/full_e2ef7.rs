@@ -1792,6 +1792,35 @@ struct LightClient {
     own_updates: u64,
     refusal: Option<casts::SpellCastRefusalDetail>,
 }
+async fn raw_idle_frame<S: tokio::io::AsyncRead + Unpin>(
+    stream: &mut S,
+    until: tokio::time::Instant,
+) -> TestResult<Option<Vec<u8>>> {
+    if tokio::time::Instant::now() >= until {
+        return Ok(None);
+    }
+    let mut first = [0_u8; 1];
+    // Waiting for one decrypted byte is cancel safe and consumes buffered TLS data.
+    match tokio::time::timeout_at(until, stream.read(&mut first)).await {
+        Err(_) => Ok(None),
+        Ok(Ok(0)) => Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
+        Ok(Ok(_)) => light_read(&mut io::Cursor::new(first).chain(stream)).await.map(Some),
+        Ok(Err(error)) => Err(error.into()),
+    }
+}
+
+#[test]
+fn raw_observer_reads_buffered_data_while_transport_is_quiet() -> TestResult {
+    tokio::runtime::Builder::new_current_thread().enable_all().start_paused(true).build()?.block_on(async {
+        let bytes = [0, 0, 0, 1, 21];
+        let mut already_decrypted = io::Cursor::new(bytes);
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(1);
+        let actual = raw_idle_frame(&mut already_decrypted, deadline).await?;
+        assert_eq!(actual, Some(vec![21]));
+        Ok(())
+    })
+}
+
 async fn light_read<S: tokio::io::AsyncRead + Unpin>(stream: &mut S) -> TestResult<Vec<u8>> {
     tokio::time::timeout(Duration::from_secs(20), async {
         let size = stream.read_u32().await?;
@@ -5180,7 +5209,11 @@ impl PvpClient {
     fn take_events(&mut self) {}
     async fn receive(&mut self) -> TestResult<Option<(u64, CommandStatus, Vec<u8>)>> {
         let bytes = light_read(&mut self.stream).await?;
-        let frame = native::decode_wire_envelope(&bytes)?;
+        self.receive_frame(&bytes).await
+    }
+
+    async fn receive_frame(&mut self, bytes: &[u8]) -> TestResult<Option<(u64, CommandStatus, Vec<u8>)>> {
+        let frame = native::decode_wire_envelope(bytes)?;
         frame.validate(native::Direction::ServerToClient, true)?;
         if frame.connection_generation() != self.generation {
             return Err("PvP stale frame generation".into());
@@ -5189,7 +5222,7 @@ impl PvpClient {
             let (sequence, revision, header) = raw_map_replacement(
                 &mut self.stream,
                 self.generation,
-                &bytes,
+                bytes,
                 self.sequence,
                 self.revisions
                     .get(&17)
@@ -5293,6 +5326,8 @@ impl PvpClient {
         }
         let id = self.command;
         self.command = self.command.checked_add(1).ok_or("PvP command overflow")?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+        tokio::time::timeout_at(deadline, async {
         light_write(
             &mut self.stream,
             &native::encode_client_command(
@@ -5313,11 +5348,13 @@ impl PvpClient {
                 return Ok(PvpReply { status, payload });
             }
         }
+        }).await?
     }
     async fn read_gated_delta(&mut self, domain: u32, kind: u32) -> TestResult<PvpReply> {
         if domain != 52 || kind != 1 {
             return Err("PvP unexpected requested delta".into());
         }
+        tokio::time::timeout(Duration::from_secs(20), async {
         loop {
             if let Some(payload) = self.expert_delta.take() {
                 return Ok(PvpReply {
@@ -5329,20 +5366,16 @@ impl PvpClient {
                 return Err("PvP unsolicited result while waiting expert state".into());
             }
         }
+        }).await?
     }
     async fn service_liveness(&mut self, duration: Duration) -> TestResult {
         let until = tokio::time::Instant::now() + duration;
-        loop {
-            if tokio::time::timeout_at(until, self.stream.get_ref().0.readable())
-                .await
-                .is_err()
-            {
-                return Ok(());
-            }
-            if self.receive().await?.is_some() {
-                return Err("PvP unsolicited command result".into());
+        while let Some(frame) = raw_idle_frame(&mut self.stream, until).await? {
+            if self.receive_frame(&frame).await?.is_some() {
+                return Err("Pvp unsolicited command result".into());
             }
         }
+        Ok(())
     }
     async fn attack_target(
         &mut self,
@@ -5914,7 +5947,11 @@ impl ForgeClient {
 
     async fn receive(&mut self) -> TestResult<Option<(u64, CommandStatus, Vec<u8>)>> {
         let bytes = light_read(&mut self.stream).await?;
-        let frame = native::decode_wire_envelope(&bytes)?;
+        self.receive_frame(&bytes).await
+    }
+
+    async fn receive_frame(&mut self, bytes: &[u8]) -> TestResult<Option<(u64, CommandStatus, Vec<u8>)>> {
+        let frame = native::decode_wire_envelope(bytes)?;
         frame.validate(native::Direction::ServerToClient, true)?;
         if frame.connection_generation() != self.generation {
             return Err("Forge stale frame generation".into());
@@ -5923,7 +5960,7 @@ impl ForgeClient {
             let (sequence, revision, header) = raw_map_replacement(
                 &mut self.stream,
                 self.generation,
-                &bytes,
+                bytes,
                 self.sequence,
                 self.revisions
                     .get(&17)
@@ -6063,6 +6100,8 @@ impl ForgeClient {
             .command
             .checked_add(1)
             .ok_or("Forge command overflow")?;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+        tokio::time::timeout_at(deadline, async {
         light_write(
             &mut self.stream,
             &native::encode_client_command(
@@ -6083,20 +6122,16 @@ impl ForgeClient {
                 return Ok(ForgeReply { status, payload });
             }
         }
+        }).await?
     }
     async fn service_liveness(&mut self, duration: Duration) -> TestResult {
         let until = tokio::time::Instant::now() + duration;
-        loop {
-            if tokio::time::timeout_at(until, self.stream.get_ref().0.readable())
-                .await
-                .is_err()
-            {
-                return Ok(());
-            }
-            if self.receive().await?.is_some() {
+        while let Some(frame) = raw_idle_frame(&mut self.stream, until).await? {
+            if self.receive_frame(&frame).await?.is_some() {
                 return Err("Forge unsolicited command result".into());
             }
         }
+        Ok(())
     }
     async fn attack_target(
         &mut self,

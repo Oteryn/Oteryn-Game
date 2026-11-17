@@ -21,24 +21,16 @@ pub(super) async fn provision(
     )
     .ok_or("qualification profile has no source vitals")?;
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
-    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../tools/qualification/node_boot/provision.py");
-    let task = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
-            .arg(script)
-            .args([
-                "--socket",
-                &socket,
-                "--session",
-                &session,
-                "--profile",
-                &profile,
-            ])
-            .status()
-            .map_err(|error| error.to_string())
-    });
-    let status = wait_fixture_command(task, async || {
+    let mut command = fixture_command();
+    command.args([
+        "--socket",
+        &socket,
+        "--session",
+        &session,
+        "--profile",
+        &profile,
+    ]);
+    let status = wait_fixture_command(async { Ok(command.status().await?) }, async || {
         client.service_liveness(Duration::from_millis(100)).await?;
         Ok(())
     })
@@ -70,6 +62,10 @@ pub(super) async fn provision(
         }
     }
     let reference = item_reference(&definitions, 3276)?;
+    let before = client
+        .inventory()
+        .cloned()
+        .ok_or("provisioned inventory missing")?;
     // Fenced provisioning installs an unforged copy; the session owns selected 485 encoding.
     let response = client
         .session_mut()
@@ -83,10 +79,8 @@ pub(super) async fn provision(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
         if client.inventory().is_some_and(|inventory| {
-            inventory
-                .equipment
-                .iter()
-                .any(|entry| entry.item.item_definition_ref == reference)
+            client_hotkey_equip::moved_to_equipment(&before, inventory, reference.get(), None, None)
+                .is_some()
         }) {
             break;
         }
@@ -100,7 +94,8 @@ pub(super) async fn provision(
     Ok(client)
 }
 
-pub(super) fn item_index() -> TestResult<crate::content::item_ref::ItemDefinitionIndex> {
+pub(in crate::qualification) fn item_index()
+-> TestResult<crate::content::item_ref::ItemDefinitionIndex> {
     let keys = native_input()?
         .item_keys
         .as_ref()

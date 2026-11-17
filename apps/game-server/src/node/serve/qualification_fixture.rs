@@ -223,34 +223,25 @@ async fn place(
     )
     .await
     .map_err(|error| fence(format!("qualification spawn holder: {error:?}")))?;
-    let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
+    let tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
         &mut holder,
         deadline.into_std(),
     )
     .await
     .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
-    // The Channel owner stays held through the read-only fence and the realisation, as in the
-    // harness; the control deadline bounds it, and this path exists only in the fixture mode.
-    let mut runtime = owners.runtime.lock().await;
-    let creature = wild_spawn::realize_creature_in_transaction(
-        &mut tx,
+    wild_spawn::realize_creature_in_transaction(
+        tx,
         root,
         authority,
         proof,
         owners.room,
         native,
-        &mut runtime,
+        owners.runtime,
         key,
         session,
         source,
     )
-    .await?;
-    drop(runtime);
-    // The spawn is runtime state, not a SQL mutation; the transaction only held the fences.
-    tx.commit()
-        .await
-        .map_err(|error| fence(format!("qualification spawn commit: {error:?}")))?;
-    Ok(creature)
+    .await
 }
 
 /// This fixture emits only classified errors/static context, never request bytes or node proof.
@@ -290,6 +281,20 @@ fn refusal_warning(
         .field("reason", FieldValue::Owned(reason))
         .field("session", FieldValue::Owned(uuid_text(session)))
         .field("profile", FieldValue::Owned(profile.to_owned()))
+}
+
+fn fixture_build_occurrence(character: &[u8; 16], vocation: &str, domain: &[u8]) -> [u8; 16] {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::new()
+        .chain_update(domain)
+        .chain_update(character)
+        .chain_update(vocation.as_bytes())
+        .finalize();
+    let mut occurrence = [0; 16];
+    occurrence.copy_from_slice(&digest[..16]);
+    occurrence[6] = (occurrence[6] & 0x0f) | 0x70;
+    occurrence[8] = (occurrence[8] & 0x3f) | 0x80;
+    occurrence
 }
 
 async fn prepare_build(
@@ -343,27 +348,37 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
+    let vocation = if profile == "explorer" {
+        "knight"
+    } else {
+        profile
+    };
+    let identity = current.current_character_lease().character_id();
     qualification_build::prepare_character_with_policy_until(
         root,
         authority,
         proof,
         &current,
         qualification_build::QualificationBuildSpec {
-            vocation: if profile == "explorer" {
-                "knight"
-            } else {
-                profile
-            },
+            vocation,
             level: 100,
             context,
-            xp_occurrence: uuid_v7()?,
-            build_occurrence: uuid_v7()?,
+            xp_occurrence: fixture_build_occurrence(
+                identity.as_bytes(),
+                vocation,
+                b"oteryn:qualification.level100.xp:v1",
+            ),
+            build_occurrence: fixture_build_occurrence(
+                identity.as_bytes(),
+                vocation,
+                b"oteryn:qualification.level100.build:v1",
+            ),
         },
         policy,
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    prepare_items(root, authority, proof, &current, native, vocation, deadline).await
 }
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item
@@ -376,11 +391,12 @@ async fn prepare_items(
         crate::foundation::AuthenticatedTransportRefV1,
     >,
     native: &NativeGameplayState,
+    vocation: &str,
     deadline: tokio::time::Instant,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
-    use crate::durability::reward_claim_mint::{RewardClaimMintOutcome, RewardClaimMintRequest};
+    use crate::durability::reward_claim_mint::RewardClaimMintRequest;
     use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
 
     let fence = CurrentCharacterItemFence {
@@ -419,7 +435,8 @@ async fn prepare_items(
         .ok_or("qualification Item index missing")?;
     // Axe, rope, shovel. Every profile needs the same map/melee prerequisites;
     // vocation and level still come from the served progression policy.
-    for (ordinal, id) in [3276, 3003, 3457].into_iter().enumerate() {
+    let blank_rune = matches!(vocation, "paladin" | "monk").then_some(3147);
+    for (ordinal, id) in [3276, 3003, 3457].into_iter().chain(blank_rune).enumerate() {
         let key = format!("oteryn:item.tibia.i{id}");
         let definition = TypedDefinitionRef {
             family: "Item".into(),
@@ -460,7 +477,7 @@ async fn prepare_items(
             key_number: None,
         };
         // Reservation replay retains the same CommandRef and frozen semantic intent.
-        let mut candidate = qualification_build::retry_holder(
+        let candidate = qualification_build::retry_holder(
             Some(root),
             deadline,
             |error| {
@@ -476,15 +493,15 @@ async fn prepare_items(
                     .await
             },
         )
-        .await
-        .map_err(|error| format!("qualification Item reserve: {error:?}"))?;
-        let outcome = root
-            .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
+        .await;
+        let mut candidate = match candidate {
+            Ok(candidate) => candidate,
+            Err(error) if previous_fixture_item_committed(&error) => continue,
+            Err(error) => return Err(format!("qualification Item reserve: {error:?}").into()),
+        };
+        root.commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
             .await
             .map_err(|error| format!("qualification Item commit: {error:?}"))?;
-        if !matches!(outcome, RewardClaimMintOutcome::Committed(_)) {
-            return Err(format!("qualification Item not committed: {outcome:?}").into());
-        }
     }
     Ok(())
 }
@@ -661,7 +678,7 @@ mod tests {
             crate::content::qualify_native_entry_room_from_gameplay_manifest(world, &manifest)?;
         let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
         let index = native.item_index().ok_or("Item index")?;
-        for id in [3276, 3003, 3457] {
+        for id in [3276, 3003, 3457, 3147] {
             let key = format!("oteryn:item.tibia.i{id}");
             let definition = crate::durability::item_mint::TypedDefinitionRef {
                 family: "Item".into(),
@@ -745,4 +762,30 @@ mod tests {
             assert!(request(text.as_bytes()).is_none());
         }
     }
+}
+
+// The reward owner checks this Character's immutable claim key under the current
+// item fence. The fixture exclusively owns the per-item qualification keys.
+fn previous_fixture_item_committed(
+    error: &crate::durability::reward_claim_mint::RewardClaimMintError,
+) -> bool {
+    use crate::durability::reward_claim_mint::{RewardClaimMintError, RewardClaimRefusal};
+    matches!(
+        error,
+        RewardClaimMintError::Refused(RewardClaimRefusal::AlreadyClaimed)
+    )
+}
+
+#[test]
+fn fixture_repeat_accepts_only_the_same_durable_claim() {
+    use crate::durability::reward_claim_mint::{
+        RewardClaimMintError as Error, RewardClaimRefusal as Refusal,
+    };
+    assert!(previous_fixture_item_committed(&Error::Refused(
+        Refusal::AlreadyClaimed
+    )));
+    assert!(!previous_fixture_item_committed(&Error::Refused(
+        Refusal::ClaimPending
+    )));
+    assert!(!previous_fixture_item_committed(&Error::ConflictingCause));
 }

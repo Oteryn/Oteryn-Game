@@ -90,8 +90,36 @@ pub(super) async fn resume_session(
     evidence(
         "resume same_session=resumed generation=2 next_command_id=7 server_sequence=8 position=0_0_0_rev3 step_east=moved_1_0_0_rev4 admissions=2",
     );
-    // The consumed recovery credential cannot resume again.
-    let replay = exchange(address, exact, &framed(&resume(&session, token.as_bytes()))).await?;
+    // The next loss must be reconnectable before the replay, so a
+    // temporarily active/resuming predecessor cannot account for refusal.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    loop {
+        if let Some((1, epoch, grace, _)) = session_loss_row(url, session, deadline).await? {
+            if epoch != "2" || !(58..=62).contains(&grace) {
+                return Err(format!("resumed loss epoch={epoch} grace={grace}").into());
+            }
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("resumed session never became reconnectable".into());
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    let replay_token = sign_recovery(
+        recovery,
+        &accounts[0],
+        &characters[0],
+        &world,
+        generation,
+        now_seconds()?,
+        [0x5e; 32],
+    );
+    let replay = exchange_must_close(
+        address,
+        exact,
+        &framed(&resume(&session, replay_token.as_bytes())),
+    )
+    .await?;
     if replay != Reply::Closed || committed_admissions(url).await? != 2 {
         return Err(format!("replayed recovery credential resumed: {replay:?}").into());
     }
@@ -122,19 +150,6 @@ pub(super) async fn resumed_loss_and_expiry(
     // epoch with its own 60 s grace, retaining the resumed epoch. Within that grace the
     // player resumes the SAME GameSession again: generation 3 continues CommandId and
     // server_sequence from generation 2, and the actor steps back west.
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
-    loop {
-        if let Some((1, epoch, grace)) = session_loss_row(url, session).await? {
-            if epoch != "2" || !(58..=62).contains(&grace) {
-                return Err(format!("resumed loss epoch={epoch} grace={grace}").into());
-            }
-            break;
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("resumed session never became reconnectable".into());
-        }
-        tokio::time::sleep(Duration::from_millis(500)).await;
-    }
     let generation = platform_generation(descriptor, &accounts[0]).await?;
     let token = sign_recovery(
         recovery,
@@ -187,12 +202,15 @@ pub(super) async fn resumed_loss_and_expiry(
     // The twice-resumed session was lost a third time (epoch 3) and expires on its own grace.
     for (label, id) in [("closed", session), ("silent", concurrent_session)] {
         let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
-        while !matches!(session_loss_row(url, id).await?, Some((3, _, _))) {
+        while !terminal_after_grace(session_loss_row(url, id, deadline).await?)? {
             if tokio::time::Instant::now() >= deadline {
                 return Err(format!("{label} session was not released after grace").into());
             }
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
+    }
+    if committed_admissions(url).await? != 2 {
+        return Err("grace expiry changed the admission count".into());
     }
     evidence("grace_expiry closed=terminal silent=terminal admissions=2");
 

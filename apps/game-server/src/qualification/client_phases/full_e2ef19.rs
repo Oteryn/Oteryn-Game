@@ -49,8 +49,10 @@ impl Row {
         if let Err(error) = result {
             evidence(&format!("E2EF19_GAP S04b observed={error}"));
         }
+        let suffix = result.as_ref().err().map_or_else(String::new, |error|
+            verdict::classify(error.as_ref()).suffix("S04b.full/journey"));
         evidence(&format!(
-            "e2e_all scenario=S04b.full status={} seconds={:.3} evidence={}",
+            "e2e_all scenario=S04b.full status={} seconds={:.3} evidence={}{suffix}",
             if result.is_ok() && self.passed.len() == ACTIONS.len() {
                 "PASS"
             } else {
@@ -67,12 +69,13 @@ impl Row {
     }
 }
 
-pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+pub(super) async fn run_packet(clients: &SeamClients<'_>) -> TestResult {
     let mut row = Row::new();
     let result = tokio::time::timeout(Duration::from_secs(180), journey(&mut row, clients))
-        .await
-        .unwrap_or_else(|_| Err("journey-timeout:no-further-reply-frame".into()));
-    row.finish(&result);
+        .await.unwrap_or_else(|elapsed| Err(elapsed.into()));
+    let released = release_row_characters(clients).await;
+    row.finish(verdict::release_affects_verdict(&result, &released));
+    released
 }
 
 fn own_name(client: &DevClientSession) -> TestResult<String> {
@@ -88,9 +91,37 @@ fn own_name(client: &DevClientSession) -> TestResult<String> {
         .to_owned())
 }
 
-async fn settle(client: &mut DevClientSession) -> TestResult {
-    client.service_liveness(Duration::from_millis(250)).await?;
-    Ok(())
+async fn wait_chat_event<T>(
+    mut receive: impl AsyncFnMut(Duration) -> TestResult<Option<T>>,
+) -> TestResult<Option<T>> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while let Some(remaining) = deadline.checked_duration_since(tokio::time::Instant::now()) {
+        let event = receive(remaining.min(Duration::from_millis(100))).await?;
+        if tokio::time::Instant::now() >= deadline {
+            break;
+        }
+        if event.is_some() {
+            return Ok(event);
+        }
+    }
+    Ok(None)
+}
+
+#[test]
+fn chat_delivery_waits_for_delayed_correlated_event() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let deliver_at = tokio::time::Instant::now() + Duration::from_millis(600);
+            let result = wait_chat_event(async |window: Duration| {
+                tokio::time::sleep(window).await;
+                Ok((tokio::time::Instant::now() >= deliver_at).then_some("matched"))
+            }).await?;
+            assert_eq!(result, Some("matched"));
+            Ok(())
+        })
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -101,7 +132,7 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-async fn accepted(client: &mut DevClientSession, intent: ChatIntent, step: &str) -> TestResult {
+async fn accepted(client: &mut DevClientSession, intent: ChatIntent, step: &str) -> TestResult<u64> {
     expect_disposition(client, intent, ChatDisposition::Ok, step).await
 }
 
@@ -110,11 +141,11 @@ async fn expect_disposition(
     intent: ChatIntent,
     expected: ChatDisposition,
     step: &str,
-) -> TestResult {
+) -> TestResult<u64> {
     for attempt in 0..=2 {
         let reply = client.chat(&intent).await?;
         if reply.disposition == expected {
-            return Ok(());
+            return Ok(reply.result_server_sequence);
         }
         if !matches!(
             reply.disposition,
@@ -146,23 +177,38 @@ fn take_channel(client: &mut DevClientSession, channel_id: u16, speaker: &str, t
     })
 }
 
+async fn wait_delivery(
+    client: &mut DevClientSession,
+    mut matches_message: impl FnMut(&mut DevClientSession) -> bool,
+) -> TestResult<bool> {
+    let observed = wait_chat_event(async |window| {
+        if matches_message(client) {
+            return Ok(Some(()));
+        }
+        client.service_liveness(window).await?;
+        Ok(matches_message(client).then_some(()))
+    }).await?;
+    Ok(observed.is_some())
+}
+
 async fn channel_list(client: &mut DevClientSession, step: &str) -> TestResult<ChatChannelList> {
-    accepted(
+    let sequence = accepted(
         client,
         ChatIntent::PrivateChannel(PrivateChannelIntent::List),
         step,
-    )
-    .await?;
-    settle(client).await?;
-    client
-        .take_events()
-        .into_iter()
-        .filter_map(|event| match event {
-            SessionEvent::ChatChannelList(delta) => Some(delta.value),
+    ).await?;
+    wait_chat_event(async |window| {
+        let list = client.take_events().into_iter().find_map(|event| match event {
+            SessionEvent::ChatChannelList(delta) if delta.server_sequence > sequence => {
+                Some(delta.value)
+            }
             _ => None,
-        })
-        .next_back()
-        .ok_or_else(|| format!("{step}:accepted-but-channel-list-delta-missing").into())
+        });
+        if list.is_none() {
+            client.service_liveness(window).await?;
+        }
+        Ok(list)
+    }).await?.ok_or_else(|| format!("{step}:accepted-but-channel-list-delta-missing").into())
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
@@ -180,8 +226,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             ChatIntent::Private { recipient_name: b_name.clone(), text: "e2ef19-a-pm".into() },
             "private-a-to-b",
         ).await?;
-        settle(&mut b).await?;
-        if !take_private(&mut b, &a_name, "e2ef19-a-pm") {
+        if !wait_delivery(&mut b, |client| take_private(client, &a_name, "e2ef19-a-pm")).await? {
             return Err("private-a-to-b:accepted-but-recipient-line-missing".into());
         }
         row.pass("private-a-to-b");
@@ -191,8 +236,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             ChatIntent::Private { recipient_name: a_name.clone(), text: "e2ef19-b-pm".into() },
             "private-b-to-a",
         ).await?;
-        settle(&mut a).await?;
-        if !take_private(&mut a, &b_name, "e2ef19-b-pm") {
+        if !wait_delivery(&mut a, |client| take_private(client, &b_name, "e2ef19-b-pm")).await? {
             return Err("private-b-to-a:accepted-but-recipient-line-missing".into());
         }
         row.pass("private-b-to-a");
@@ -223,12 +267,10 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         row.pass("channel-join");
 
         accepted(&mut a, ChatIntent::PrivateChannel(PrivateChannelIntent::Say { channel_id, text: "e2ef19-a-channel".into() }), "channel-a-to-b").await?;
-        settle(&mut b).await?;
-        if !take_channel(&mut b, channel_id, &a_name, "e2ef19-a-channel") { return Err("channel-a-to-b:accepted-but-line-missing".into()); }
+        if !wait_delivery(&mut b, |client| take_channel(client, channel_id, &a_name, "e2ef19-a-channel")).await? { return Err("channel-a-to-b:accepted-but-line-missing".into()); }
         row.pass("channel-a-to-b");
         accepted(&mut b, ChatIntent::PrivateChannel(PrivateChannelIntent::Say { channel_id, text: "e2ef19-b-channel".into() }), "channel-b-to-a").await?;
-        settle(&mut a).await?;
-        if !take_channel(&mut a, channel_id, &b_name, "e2ef19-b-channel") { return Err("channel-b-to-a:accepted-but-line-missing".into()); }
+        if !wait_delivery(&mut a, |client| take_channel(client, channel_id, &b_name, "e2ef19-b-channel")).await? { return Err("channel-b-to-a:accepted-but-line-missing".into()); }
         row.pass("channel-b-to-a");
 
         accepted(&mut a, ChatIntent::PrivateChannel(PrivateChannelIntent::Exclude { name: b_name.clone() }), "channel-exclude").await?;
@@ -256,8 +298,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         if channel_list(&mut a, "relog-transient-list").await?.own_channel.is_some() { return Err("relog-transient:channel-replayed".into()); }
         row.pass("relog-transient");
         accepted(&mut a, ChatIntent::Private { recipient_name: b_name, text: "e2ef19-relog-pm".into() }, "relog-private-message").await?;
-        settle(&mut b).await?;
-        if !take_private(&mut b, &a_name, "e2ef19-relog-pm") { return Err("relog-private-message:accepted-but-line-missing".into()); }
+        if !wait_delivery(&mut b, |client| take_private(client, &a_name, "e2ef19-relog-pm")).await? { return Err("relog-private-message:accepted-but-line-missing".into()); }
         row.pass("relog-private-message");
         Ok(())
     }.await;

@@ -46,6 +46,12 @@ pub(crate) enum Cause {
     ServerRefused {
         code: u32,
     },
+    CapabilityNotSelected {
+        capability: u32,
+    },
+    EventQueueOverflow {
+        limit: usize,
+    },
     Assertion,
     BlockedBy {
         root: String,
@@ -60,6 +66,8 @@ impl Cause {
             Self::Precondition { .. } => "precondition",
             Self::Transport { .. } => "transport",
             Self::ServerRefused { .. } => "server-refused",
+            Self::CapabilityNotSelected { .. } => "capability-not-selected",
+            Self::EventQueueOverflow { .. } => "event-queue-overflow",
             Self::Assertion => "assertion",
             Self::BlockedBy { .. } => "blocked-by",
         }
@@ -95,6 +103,8 @@ impl Cause {
                     .map_or_else(|| "none".to_owned(), |frame| frame.replace(' ', "_")),
             ),
             Self::ServerRefused { code } => format!(" code={code}"),
+            Self::CapabilityNotSelected { capability } => format!(" capability={capability}"),
+            Self::EventQueueOverflow { limit } => format!(" limit={limit}"),
             Self::Assertion | Self::BlockedBy { .. } => String::new(),
         }
     }
@@ -136,7 +146,7 @@ pub(crate) fn classify(error: &(dyn Error + 'static)) -> Cause {
             return harness.cause.clone();
         }
         if let Some(session) = current.downcast_ref::<oteryn_dev_client::SessionError>() {
-            return session_cause(&session.to_string(), context);
+            return classify_session(session, context);
         }
         if let Some(client) = current.downcast_ref::<DevClientError>() {
             match client {
@@ -146,8 +156,9 @@ pub(crate) fn classify(error: &(dyn Error + 'static)) -> Cause {
                     context.get_or_insert((*phase, last_frame.clone()));
                 }
                 DevClientError::Session(session) => {
-                    return session_cause(&session.to_string(), context);
+                    return classify_session(session, context);
                 }
+                DevClientError::Timeout(phase) => return Cause::Deadline { phase },
                 _ => return transport(None, None, context),
             }
         } else if current.is::<std::io::Error>() {
@@ -179,8 +190,21 @@ fn transport(
     }
 }
 
-// `oteryn_session::SessionError` is not re-exported by the dev client, so the
-// server code and trace come from its stable Display text (#3090).
+fn classify_session(
+    error: &oteryn_dev_client::SessionError,
+    context: Option<(&'static str, String)>,
+) -> Cause {
+    use oteryn_dev_client::SessionError;
+    match error {
+        SessionError::Timeout(phase) => Cause::Deadline { phase },
+        SessionError::CapabilityNotSelected { capability } => Cause::CapabilityNotSelected {
+            capability: *capability,
+        },
+        SessionError::EventQueueOverflow { limit } => Cause::EventQueueOverflow { limit: *limit },
+        _ => session_cause(&error.to_string(), context),
+    }
+}
+
 fn session_cause(text: &str, context: Option<(&'static str, String)>) -> Cause {
     let number = |tail: &str| {
         tail.chars()
@@ -240,7 +264,7 @@ pub(super) struct Watch {
 }
 
 impl Watch {
-    fn new(row: &'static str, harness: &'static Harness) -> Self {
+    pub(super) fn new(row: &'static str, harness: &'static Harness) -> Self {
         Self {
             row,
             needs: Vec::new(),
@@ -277,7 +301,11 @@ impl Watch {
         if self.scenario.is_none() || state.stall.is_none() {
             state.stall = Some(cause.clone());
             if self.scenario.is_some() {
-                state.root = Some(format!("{}/{}", self.row, state.phase));
+                state.root = Some(format!(
+                    "{}/{}",
+                    self.row,
+                    state.phase.replace(char::is_whitespace, "-")
+                ));
             }
         }
         HarnessError::boxed(cause, message)
@@ -524,7 +552,6 @@ pub(super) struct Row {
     /// Failure evidence names the first unproven step and its error text.
     fail_detail: bool,
     /// A known absent server route turns an incomplete row into MISSING-SERVER.
-    pub(super) missing_server: Option<&'static str>,
     watch: Watch,
 }
 
@@ -553,7 +580,6 @@ impl Row {
             started: std::time::Instant::now(),
             evidence: None,
             fail_detail: false,
-            missing_server: None,
             watch: Watch::new(id, harness),
         }
     }
@@ -701,10 +727,13 @@ impl Row {
         if let Err(error) = result {
             evidence(&format!("{}_GAP {} {error}", self.family, self.id));
         }
-        let (status, field) = match (&failure, self.missing_server) {
-            (None, _) => ("PASS", self.evidence.map(|(pass, _)| pass)),
-            (Some(_), Some(source)) => ("MISSING-SERVER", Some(source)),
-            (Some(_), None) => ("FAIL", self.evidence.map(|(_, fail)| fail)),
+        let (status, field) = if failure.is_none() {
+            ("PASS", self.evidence.map(|(pass, _)| pass))
+        } else {
+            failed_row_evidence(
+                result.as_ref().err().map(|error| error.as_ref()),
+                self.evidence.map(|(_, fail)| fail),
+            )
         };
         let detail = (self.fail_detail && status == "FAIL")
             .then(|| match result {
@@ -816,6 +845,9 @@ impl Groups {
             .map(str::trim)
             .filter(|name| !name.is_empty())
             .collect::<Vec<_>>();
+        if pending.is_empty() {
+            return Err("NODE_BOOT_E2E_ONLY selects no groups".into());
+        }
         while let Some(name) = pending.pop() {
             let (group, after) = registry
                 .iter()
@@ -832,6 +864,43 @@ impl Groups {
         self.0
             .as_ref()
             .is_none_or(|selected| selected.contains(group))
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct MissingServerRoute(pub(super) &'static str);
+
+impl std::fmt::Display for MissingServerRoute {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(self.0)
+    }
+}
+
+impl Error for MissingServerRoute {}
+
+fn failed_row_evidence<'a>(
+    error: Option<&(dyn Error + 'static)>,
+    failure: Option<&'a str>,
+) -> (&'static str, Option<&'a str>) {
+    match error.and_then(|error| error.downcast_ref::<MissingServerRoute>()) {
+        Some(missing) => ("MISSING-SERVER", Some(missing.0)),
+        None => ("FAIL", failure),
+    }
+}
+
+pub(super) fn release_affects_verdict<'a>(
+    journey: &'a TestResult,
+    release: &'a TestResult,
+) -> &'a TestResult {
+    if release.is_err()
+        && journey
+            .as_ref()
+            .err()
+            .is_none_or(|error| error.is::<MissingServerRoute>())
+    {
+        release
+    } else {
+        journey
     }
 }
 
@@ -853,6 +922,44 @@ mod verdict_tests {
             "cast-rat:reply-refused-by-server"
         );
         assert_eq!(fail_cause("a", &"x".repeat(500)).chars().count(), 200);
+    }
+
+    #[test]
+    fn passing_packets_require_successful_final_lifecycle() {
+        let journey = Ok(());
+        let release = Err("terminal release not observed".into());
+        assert!(release_affects_verdict(&journey, &release).is_err());
+    }
+
+    #[test]
+    fn row_failure_takes_precedence_over_static_source_evidence() {
+        let missing = MissingServerRoute("source:handler.rs:17");
+        assert_eq!(
+            failed_row_evidence(Some(&missing), Some("failed")),
+            ("MISSING-SERVER", Some("source:handler.rs:17"))
+        );
+        let error = std::io::Error::from(std::io::ErrorKind::UnexpectedEof);
+        assert_eq!(
+            failed_row_evidence(Some(&error), Some("failed")),
+            ("FAIL", Some("failed"))
+        );
+    }
+
+    #[test]
+    fn groups_reject_a_separator_only_selection() {
+        assert!(Groups::parse(Some(" , , "), GROUPS).is_err());
+    }
+
+    #[test]
+    fn classify_keeps_typed_client_failure_kinds() {
+        let adapter = oteryn_dev_client::DevClientError::Timeout("tls");
+        let session = oteryn_dev_client::SessionError::Timeout("frame");
+        assert_eq!(classify(&adapter), Cause::Deadline { phase: "tls" });
+        assert_eq!(classify(&session), Cause::Deadline { phase: "frame" });
+        let capability = oteryn_dev_client::SessionError::CapabilityNotSelected { capability: 17 };
+        let overflow = oteryn_dev_client::SessionError::EventQueueOverflow { limit: 32 };
+        assert_eq!(classify(&capability).kind(), "capability-not-selected");
+        assert_eq!(classify(&overflow).kind(), "event-queue-overflow");
     }
 
     fn paused() -> TestResult<tokio::runtime::Runtime> {
