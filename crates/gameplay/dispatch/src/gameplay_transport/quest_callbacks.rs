@@ -9,6 +9,7 @@ mod conditional_cells;
 use admission::{character_fence_required, stateless_observation_required};
 mod clear_area;
 mod committed_copy;
+mod court_warlock;
 #[path = "daily_world_gates.rs"]
 mod daily_world_gates;
 mod dreamer_carrot;

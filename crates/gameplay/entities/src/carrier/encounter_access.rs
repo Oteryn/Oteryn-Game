@@ -288,7 +288,7 @@ impl ChannelRuntimeV1 {
         project: impl FnOnce() -> bool,
         publish: bool,
     ) -> Result<(Vec<MovementPositionSnapshot>, T), CarrierError> {
-        if players.is_empty() || players.len() > 16 || monsters.is_empty() || monsters.len() > 16 {
+        if players.is_empty() || players.len() > 16 || monsters.len() > 16 {
             return Err(CarrierError::PlanConflict);
         }
         for proof in &players {
