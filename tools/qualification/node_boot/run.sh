@@ -858,6 +858,11 @@ finally:
 PY_RUNTIME_DIAGNOSTICS
   RUNTIME_DIAGNOSTICS_PID=$!
 }
+# Scenario ids of the e2e rows with the given status in a stage log, one per line.
+stage_rows() { grep -oE "e2e_all scenario=[^ ]+ status=$2( |$)" "$1" | sed -E 's/e2e_all scenario=([^ ]+) .*/\1/' | sort -u || true; }
+# Row ids listed in the known-failure file (first field, comments skipped); a missing file lists none.
+known_rows() { [[ -f $1 ]] && grep -vE '^[[:space:]]*(#|$)' "$1" | awk '{print $1}' || true; }
+
 stage() { # name prerequisite... -- function
   local name=$1; shift
   local prerequisites=()
@@ -885,12 +890,19 @@ stage() { # name prerequisite... -- function
   echo "::endgroup::"
   if [[ $rc == 0 ]]; then
     STATUS[$name]=PASS
-    if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
-      # A FAIL row is a failed qualification even when the stage process exits 0.
-      local failed_rows
-      failed_rows=$(grep -oE 'e2e_all scenario=[^ ]+ status=FAIL' "$WORK/stage-$name.log" | sed -E 's/e2e_all scenario=([^ ]+) .*/\1/' | sort -u | paste -sd, -)
+    # A FAIL row fails its stage even when the stage process exits 0, unless the row is
+    # listed in known_fail_rows.txt (debt that every run prints).
+    local known_fail="$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt" new_rows known_hit stale_rows
+    new_rows=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -vxFf <(known_rows "$known_fail") | paste -sd, - || true)
+    known_hit=$(stage_rows "$WORK/stage-$name.log" FAIL | grep -xFf <(known_rows "$known_fail") | paste -sd, - || true)
+    stale_rows=$(stage_rows "$WORK/stage-$name.log" PASS | grep -xFf <(known_rows "$known_fail") | paste -sd, - || true)
+    [[ -z $known_hit ]] || echo "NODE_BOOT_KNOWN_FAIL $name rows=$known_hit"
+    [[ -z $stale_rows ]] || echo "NODE_BOOT_KNOWN_FAIL_STALE $name rows=$stale_rows"
+    if [[ -n $new_rows ]]; then
       STATUS[$name]="FAIL(rows)"
-      echo "NODE_BOOT_STAGE_FAILED $name rows=$failed_rows"
+      echo "NODE_BOOT_STAGE_FAILED $name rows=$new_rows"
+    fi
+    if grep -q 'e2e_all scenario=.* status=FAIL' "$WORK/stage-$name.log"; then
       echo "--- session close events behind failed e2e rows"
       grep -E 'event=(serve_end|serve_command_end|command_guard_failed|join_prepare_failed|connection_[a-z_]+)( |$)' "$node_log" 2>/dev/null | tail -n 120 || true
     fi
