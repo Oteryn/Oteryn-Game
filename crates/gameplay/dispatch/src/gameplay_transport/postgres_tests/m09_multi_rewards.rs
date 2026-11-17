@@ -41,13 +41,18 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
             .ok_or("NPC capabilities")?;
-    super::qengine_outfit_stories::commit_fixture(
-        owner,
-        admitted,
-        "oteryn:quest-transition/quest/u8_1/tower_defence_quest/questline/npc_4",
-        9000,
-    )
-    .await?;
+    for (ordinal, step) in [(8998, "npc_1"), (8999, "npc_3"), (9000, "creature_event_1")] {
+        super::qengine_outfit_stories::commit_fixture(
+            owner,
+            admitted,
+            &format!("oteryn:quest-transition/quest/u8_1/tower_defence_quest/questline/{step}"),
+            ordinal,
+        )
+        .await?;
+    }
+    owner.refresh_quest_session(admitted.game_session_id, false).await;
+    let [thanita] = super::classic_quests::install(owner, admitted, [super::qtowerdef_password::NPC]).await?;
+    let code = super::qtowerdef_password::issue(owner, admitted, thanita).await?;
     let full = name.ends_with("-full");
     if full {
         for n in 0..17 {
@@ -90,7 +95,21 @@ pub(super) async fn exercise(
         .ok_or("wire driver")?;
     conversation.key = "oteryn:quest-reward/m09-tower".into();
     conversation.npc = NPC.into();
-    conversation.keywords = vec!["password".into()];
+    if name.ends_with("-password") {
+        let stored: i64 = sqlx::query_scalar(
+            "SELECT value FROM game_character_quest_tracks WHERE track_key=$1",
+        )
+        .bind("oteryn:quest-progress/quest/u8_1/tower_defence_quest/password")
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(stored.to_string(), code);
+        for answer in ["password", if code == "1000" { "1001" } else { "1000" }] {
+            conversation.keywords = vec![answer.into()];
+            super::qengine_rewards::wire_reward(owner, admitted, npc, &conversation, false).await?;
+            assert_eq!(super::classic_quests::progress(owner, admitted, authority, TRACK).await?, 4);
+        }
+    }
+    conversation.keywords = vec![code.clone()];
     let (result, _, command) =
         super::qengine_rewards::wire_reward(owner, admitted, npc, &conversation, false).await?;
     let received:Vec<(String,i64)>=sqlx::query_as("SELECT definition_production_key,sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key IN ('oteryn:item.tibia.i762','oteryn:item.tibia.i774','oteryn:item.tibia.i763','oteryn:item.tibia.i761') AND lifecycle=1 GROUP BY definition_production_key ORDER BY definition_production_key")
@@ -141,7 +160,7 @@ pub(super) async fn exercise(
             oteryn_protocol_oteryn::npc_service::encode_npc_talk_intent(
                 &oteryn_protocol_oteryn::npc_service::NpcTalkIntent {
                     npc_actor: npc,
-                    text: "password".into(),
+                    text: code,
                 },
             )
             .map_err(debug)?,

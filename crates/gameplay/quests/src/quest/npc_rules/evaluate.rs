@@ -504,3 +504,57 @@ fn resolve_native<'a>(
     }
     Ok(resolved)
 }
+
+#[cfg(test)]
+mod tower_defence_tests {
+    use super::*;
+
+    #[test]
+    fn tower_defence_issues_four_digits_and_requires_the_stored_code() -> Result<(), NpcRuleError> {
+        let catalogue = NpcRuleCatalog::runtime()?;
+        let questline = "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questline";
+        let password = "oteryn:quest-progress/quest/u8_1/tower_defence_quest/password";
+        let tracks = BTreeMap::from([(questline.into(), 3)]);
+        let inventory = NpcInventorySnapshot::default();
+        let outfits = BTreeMap::new();
+        let mut input = NpcRuleInput {
+            npc: "oteryn:npc.thanita",
+            trigger: super::super::NpcRuleTrigger::Say,
+            message: "mission",
+            player_name: None,
+            topic: 0,
+            tracks: &tracks,
+            inventory: &inventory,
+            now_epoch_seconds: 0,
+            calendar_month: 1,
+            premium_current: false,
+            level: 1,
+            vocation: "none",
+            sex: 0,
+            outfits: &outfits,
+        };
+        let plan = catalogue.plan_storage(&input)?.ok_or_else(|| NpcRuleError::Invalid("no issuance".into()))?;
+        let code = plan.track_changes.iter().find(|change| change.key == password)
+            .ok_or_else(|| NpcRuleError::MissingTrack(password.into()))?.after;
+        assert!((1000..=9999).contains(&code));
+        assert!(plan.reply.iter().any(|line| line.contains(&code.to_string())));
+
+        let tracks = BTreeMap::from([(questline.into(), 4), (password.into(), code)]);
+        let correct = code.to_string();
+        let wrong = if code == 1000 { "1001" } else { "1000" };
+        input.npc = "oteryn:npc.bunny_bonecrusher";
+        input.topic = 2;
+        input.tracks = &tracks;
+        for message in ["password", wrong] {
+            input.message = message;
+            assert!(plan_inventory(&catalogue, &input)?.is_none());
+        }
+        input.message = &correct;
+        assert!(plan_inventory(&catalogue, &input)?.is_some());
+        Ok(())
+    }
+
+    fn plan_inventory(catalogue: &NpcRuleCatalog, input: &NpcRuleInput<'_>) -> Result<Option<NpcRulePlan>, NpcRuleError> {
+        plan(catalogue, input, &BTreeMap::new(), false)
+    }
+}
