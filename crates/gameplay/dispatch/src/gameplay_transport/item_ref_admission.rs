@@ -28,7 +28,6 @@ use crate::durability::item_transfer::{
     ItemTransferRequest, ItemWeightLookup, ItemWeightRefused,
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef};
-use std::num::NonZeroU32;
 
 /// The non-empty Item definition index of the active generation, if it pins one.
 fn item_index(generation: Option<&ActiveGeneration>) -> Option<&ItemDefinitionIndex> {
@@ -75,7 +74,7 @@ pub(super) fn pinned_index<'g>(
 }
 
 pub(super) use oteryn_gameplay_items::item_ref_admission::{
-    definition_ref, generation_inbox_item_facts, generation_item_facts,
+    corpse_view, definition_ref, generation_inbox_item_facts, generation_item_facts,
 };
 
 fn native_corpse_appearance(
@@ -160,8 +159,10 @@ pub(super) fn visible_corpses(
 
 /// MAP-ITEM-REF-1 Part B: `USE` on a domain-1 object (ITEM-MOVE-WIRE-0 §4.3). Only a bound corpse
 /// is an item target; an unbound or vanished one is `Gone`, so no corpse Item id is ever made up.
-/// Its contents are the durable corpse entries, each named by the pinned index; any it does not
-/// name, or a failed read, is `None` (`STALE`).
+/// Its contents are the durable corpse entries the pinned index names; an entry it does not name,
+/// or one with no quantity, is reported and left out, never hiding the rest (CORPSELOOT). A busy
+/// holder is retried within the command window; a read that still fails is reported and is
+/// `None` (`STALE`).
 pub(super) async fn observe_item_target(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -191,21 +192,59 @@ pub(super) async fn observe_item_target(
             target: UseItemTarget::Gone,
         });
     };
-    let Some(entries) = admission
-        .root
-        .read_corpse_contents(admission.character, corpse.item.item_instance_id)
+    // A busy durability holder is transient: retried within the command window. Any read that
+    // still fails is reported before the USE answers STALE.
+    let entries = super::AdmissionRetryBudget::for_command(admission.root)
+        .retry_unavailable(async || {
+            admission
+                .root
+                .read_corpse_contents(admission.character, corpse.item.item_instance_id)
+                .await
+                .map_err(|error| match error {
+                    ItemTransferError::Unavailable(
+                        crate::durability::DurabilityError::RootUnavailable,
+                    ) => super::connection::AdmissionRefusal::Unavailable,
+                    _ => super::connection::AdmissionRefusal::Rejected,
+                })
+        })
         .await
-        .ok()?
-    else {
+        .inspect_err(|refusal| {
+            super::operator_event(&format!(
+                "event=corpse_contents_unread reason={}",
+                match refusal {
+                    super::connection::AdmissionRefusal::Unavailable => "holder_busy",
+                    _ => "read_failed",
+                }
+            ));
+        })
+        .ok()?;
+    let Some(entries) = entries else {
         return Some(ItemTargetObservation {
             actor: actor_position,
             target: UseItemTarget::Gone,
         });
     };
-    let contents = corpse_view_items(index, &entries);
-    if contents.len() != entries.len() {
-        return None;
+    let view = corpse_view(index, &entries);
+    for refused in &view.refused {
+        super::operator_event(&format!(
+            "event=corpse_entry_refused item={} revision={} quantity={} reason={}",
+            refused.entry.item.definition.production_key,
+            refused.entry.item.definition.revision_ref,
+            refused.entry.item.quantity,
+            refused.refusal.reason()
+        ));
     }
+    let contents = view
+        .shown
+        .iter()
+        .map(|shown| ViewItem {
+            appearance_id: super::item_view::appearance_of(&shown.entry.item.definition),
+            key: ItemKey::Instance(shown.entry.item.item_instance_id),
+            item_definition_ref: shown.item_definition_ref,
+            count: shown.count,
+            sub_type: 0,
+        })
+        .collect();
     Some(ItemTargetObservation {
         actor: actor_position,
         target: UseItemTarget::Corpse {
@@ -217,26 +256,6 @@ pub(super) async fn observe_item_target(
             contents,
         },
     })
-}
-
-/// The durable corpse entries as domain 11 view items, in loot order.
-fn corpse_view_items(
-    index: &ItemDefinitionIndex,
-    entries: &[crate::durability::item_transfer::BackpackEntry],
-) -> Vec<ViewItem> {
-    entries
-        .iter()
-        .map(|entry| {
-            Some(ViewItem {
-                appearance_id: super::item_view::appearance_of(&entry.item.definition),
-                key: ItemKey::Instance(entry.item.item_instance_id),
-                item_definition_ref: definition_ref(index, &entry.item.definition)?,
-                count: NonZeroU32::new(entry.item.quantity)?,
-                sub_type: 0,
-            })
-        })
-        .collect::<Option<Vec<_>>>()
-        .unwrap_or_default()
 }
 
 /// D1211: resolve every locked carried definition from this exact admitted native generation.
