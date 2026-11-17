@@ -21,6 +21,30 @@ impl PlayLink {
         }
     }
 
+    /// Consume the displayed drop cursor without changing the selected catalogue item.
+    pub fn item_catalogue_continue_drops(&self, reference: u32, after: u16) {
+        let command = {
+            let mut mailbox = lock(&self.mailbox);
+            let panel = &mut mailbox.discovery.inspection;
+            if panel.pending
+                || !panel.selected
+                || panel.catalogue_definition.parse() != Ok(reference)
+                || panel.catalogue_drop_next != Some(after)
+                || !panel.catalogue.contains_key(&reference)
+            {
+                return;
+            }
+            panel.catalogue_drop_next = None;
+            request(
+                panel,
+                Request::CatalogueQuery(catalogue::Query::Drops { reference, after }),
+            )
+        };
+        if let Some(command) = command {
+            self.discovery_send(command);
+        }
+    }
+
     pub fn item_catalogue_filter(&self, search: &str, category: &str) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.discovery.inspection;

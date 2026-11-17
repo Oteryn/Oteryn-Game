@@ -119,8 +119,12 @@ fn donate(
         return;
     }
     state.donate = None;
-    play.link
-        .cyclopedia_map_edit(0, gold.value().to_string().trim().to_owned());
+    let gold = gold.value().to_string();
+    let gold = gold.trim();
+    if !oteryn_client_ui::modal_dialogs::TextEditor::accepts(gold, 64) {
+        return;
+    }
+    play.link.cyclopedia_map_edit(0, gold.to_owned());
     play.link.cyclopedia_map_request(Intent::Donate);
 }
 fn label(commands: &mut Commands, skins: &Skins, parent: Entity, text: impl Into<String>) {
@@ -229,8 +233,10 @@ fn project(
         ("Next area", Kind::Atlas(2)),
         ("Subareas", Kind::Atlas(3)),
         ("Load footprint", Kind::Atlas(5)),
-        ("Previous floor", Kind::Floor { previous: true }),
-        ("Next floor", Kind::Floor { previous: false }),
+        ("Previous floor", Kind::Atlas(7)),
+        ("Next floor", Kind::Atlas(6)),
+        ("Previous exploration floor", Kind::Floor { previous: true }),
+        ("Next exploration floor", Kind::Floor { previous: false }),
         ("Previous page", Kind::Atlas(13)),
         ("Next page", Kind::Atlas(12)),
         ("Exploration status", Kind::Explore(Intent::Query)),

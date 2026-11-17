@@ -306,7 +306,25 @@ fn text_spawned_while_docked_follows_the_floating_window_zoom() -> TestResult {
 fn sidebar_toggles_raised_bosstiary_closed() -> TestResult {
     use crate::bevy_shell::ui::{Control, toolbar::grid::ControlButton};
     let mut app = floating_app("bosstiary-toggle")?;
+    let (link, _commands, outbox) = play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_hud_fixture(&[], None);
+    link.analyser_select(oteryn_client_ui::analyser::Tool::Session.key());
+    link.analyser_open();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .link = link;
+    super::super::super::analyser::install(&mut app);
     super::super::super::bosstiary::install(&mut app);
+    super::super::super::bestiary::install(&mut app);
+    let bestiary = entity_with::<ControlButton>(&mut app, |button| {
+        matches!(button, ControlButton::Grid(Control::Panel("bestiary")))
+    })?;
+    activate(&mut app, bestiary);
+    settle(&mut app);
     let button = entity_with::<ControlButton>(&mut app, |button| {
         matches!(button, ControlButton::Grid(Control::Panel("bosstiary")))
     })?;
@@ -320,8 +338,55 @@ fn sidebar_toggles_raised_bosstiary_closed() -> TestResult {
             .panel_visible("bosstiary")
     };
     assert!(open(&app));
+    use crate::bevy_shell::ui::window_layout::{WindowLayer, WindowStack};
+    let front = |app: &App| {
+        app.world()
+            .resource::<WindowStack>()
+            .front()
+            .and_then(|root| app.world().get::<WindowLayer>(root))
+            .map(|layer| layer.0)
+    };
+    let bestiary_root = entity_with::<WindowLayer>(&mut app, |layer| layer.0 == "bestiary")?;
+    let boss_root = entity_with::<WindowLayer>(&mut app, |layer| layer.0 == "bosstiary")?;
+    for (root, id) in [(bestiary_root, "bestiary"), (boss_root, "bosstiary")] {
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(root, bevy::input_focus::FocusCause::Navigated);
+        settle(&mut app);
+        assert_eq!(front(&app), Some(id));
+    }
+    let reset = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "Reset session").then_some(parent.parent()))
+        .ok_or("analyser reset")?;
+    let kills = |app: &App| {
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .map(|play| play.link.analyser_panel().kills)
+    };
+    activate(&mut app, reset);
+    assert_eq!(kills(&app), Some(23));
     activate(&mut app, button);
     settle(&mut app);
     assert!(!open(&app));
+    let close = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, control)| {
+            (text.0 == "Close"
+                && std::iter::successors(Some(control.parent()), |e| parent(&app, *e))
+                    .any(|e| e == bestiary_root))
+            .then_some(control.parent())
+        })
+        .ok_or("bestiary close")?;
+    activate(&mut app, close);
+    assert!(front(&app).is_none());
+    activate(&mut app, reset);
+    assert_eq!(kills(&app), Some(0));
     Ok(())
 }

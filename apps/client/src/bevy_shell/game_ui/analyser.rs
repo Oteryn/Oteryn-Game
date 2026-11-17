@@ -68,6 +68,12 @@ fn resolve_items(owner: NonSend<HostOwner>, mut previous: Local<Option<IdentityP
         .keys()
         .chain(panel.supply.keys())
         .chain(panel.loot_tracked.iter())
+        .chain(
+            panel
+                .reports
+                .values()
+                .flat_map(|report| report.loot.keys().chain(report.supply.keys())),
+        )
         .copied()
         .collect::<Vec<_>>();
     items.sort_unstable();

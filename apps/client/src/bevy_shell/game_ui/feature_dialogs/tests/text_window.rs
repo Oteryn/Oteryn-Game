@@ -224,6 +224,10 @@ fn house_acl_reply_replaces_pending_member_draft() -> TestResult {
 fn house_handoff_clears_unsent_access_drafts() -> TestResult {
     house_window_action("Handoff", 4, "old member")
 }
+#[test]
+fn rejected_house_member_edit_sends_nothing() -> TestResult {
+    house_window_action("Save guests", 4, &"é".repeat(4097))
+}
 fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestResult {
     use crate::{
         combat_input::PlayCommand,
@@ -382,50 +386,69 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
         id[8] = 0x80;
         let mut successor = id;
         successor[15] = 2;
-        let payload = encode_activity_scope(&ActivityScopeSnapshot {
-            handoff: id,
-            source_session: id,
-            session: successor,
-            scope: ActivityScope::Instance {
-                world: id,
-                instance: id,
-            },
-            scope_generation: 1,
-            connection_generation: 1,
-            lease_generation: 2,
-            selection: vec![49, 117],
-            requires_ack: false,
-        })
-        .map_err(|e| format!("{e:?}"))?;
-        outbox.push(vec![SessionEvent::GatedSnapshotReplaced(AppliedDelta {
-            server_sequence: 1,
-            base_revision: 0,
-            new_revision: 1,
-            value: GatedSnapshot {
-                domain_id: 99,
-                snapshot_type: 1,
-                revision: 1,
-                payload,
-            },
-        })]);
-        app.update();
-        let mut cleared = Vec::new();
-        for (field, text) in app
-            .world_mut()
-            .query::<(&super::super::houses::Field, &EditableText)>()
-            .iter(app.world())
-        {
-            if matches!(field.0, 2 | 4 | 6) {
-                assert_eq!(text.value(), "");
-                cleared.push(field.0);
+        for generation in 1..=2 {
+            if generation == 2 {
+                for (field, mut text) in app
+                    .world_mut()
+                    .query::<(&super::super::houses::Field, &mut EditableText)>()
+                    .iter_mut(app.world_mut())
+                {
+                    if matches!(field.0, 2 | 4 | 6) {
+                        text.editor_mut().set_text("old draft");
+                    }
+                }
+                id = successor;
+                successor[15] += 1;
             }
+            let payload = encode_activity_scope(&ActivityScopeSnapshot {
+                handoff: id,
+                source_session: id,
+                session: successor,
+                scope: ActivityScope::Instance {
+                    world: id,
+                    instance: id,
+                },
+                scope_generation: generation,
+                connection_generation: 1,
+                lease_generation: generation + 1,
+                selection: vec![49, 117],
+                requires_ack: false,
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            outbox.push(vec![SessionEvent::GatedSnapshotReplaced(AppliedDelta {
+                server_sequence: generation,
+                base_revision: generation - 1,
+                new_revision: generation,
+                value: GatedSnapshot {
+                    domain_id: 99,
+                    snapshot_type: 1,
+                    revision: generation,
+                    payload,
+                },
+            })]);
+            app.update();
+            let mut cleared = Vec::new();
+            for (field, text) in app
+                .world_mut()
+                .query::<(&super::super::houses::Field, &EditableText)>()
+                .iter(app.world())
+            {
+                if matches!(field.0, 2 | 4 | 6) {
+                    assert_eq!(text.value(), "");
+                    cleared.push(field.0);
+                }
+            }
+            cleared.sort_unstable();
+            assert_eq!(cleared, [2, 4, 6]);
         }
-        cleared.sort_unstable();
-        assert_eq!(cleared, [2, 4, 6]);
         return Ok(());
     }
     app.world_mut().trigger(Activate { entity: save });
     app.update();
+    if value.len() > 8192 {
+        assert!(receiver.try_recv().is_err());
+        return Ok(());
+    }
     if caption == "Review move-out" {
         let has_error = |app: &mut App| {
             app.world_mut()
@@ -566,6 +589,42 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
                 .iter(app.world())
                 .any(|(field, text)| field.0 == 6 && text.value() == "")
         );
+    }
+    if caption == "Bid" {
+        for (field, mut text) in app
+            .world_mut()
+            .query::<(&super::super::houses::Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            if matches!(field.0, 2 | 4 | 6) {
+                text.editor_mut().set_text("new draft");
+            }
+        }
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .bevy_house_ownership_result(
+                &command,
+                &oteryn_session::GatedCommandResult {
+                    command_id: 1,
+                    server_sequence: 1,
+                    status: oteryn_session::CommandStatus::Rejected,
+                    payload: vec![],
+                },
+            );
+        app.update();
+        for (field, text) in app
+            .world_mut()
+            .query::<(&super::super::houses::Field, &EditableText)>()
+            .iter(app.world())
+        {
+            if matches!(field.0, 2 | 4 | 6) {
+                assert_eq!(text.value(), "new draft");
+            }
+        }
     }
     let expected_kind = if matches!(caption, "Owned / incoming" | "Review transfer") {
         oteryn_client_runtime::house::house_sale::COMMAND

@@ -25,6 +25,7 @@ struct HouseWindow {
     root: Option<Entity>,
     redraw: bool,
     model: Option<Panel>,
+    activity_revision: u64,
     fields: [String; 7],
     request: Option<usize>,
     ownership: Option<oteryn_client_ui::house::sale::OwnershipPanel>,
@@ -108,18 +109,30 @@ fn project(
         .map(|play| play.link.house_panel());
     if let Some(panel) = &projected
         && !state.redraw
+        && state.activity_revision == panel.activity_revision
         && state.model.as_ref() == Some(&panel.model)
         && state.fields == panel.fields
         && state.ownership == ownership
     {
         return;
     }
-    // Ownership review and map controls can redraw the same form. Only carry its
-    // editors across that presentation change while the underlying house is unchanged.
     let rebuilding = state.root.is_some();
-    let same_house = projected
-        .as_ref()
-        .is_some_and(|panel| state.model.as_ref() == Some(&panel.model));
+    let same_house = projected.as_ref().is_some_and(|panel| {
+        state.activity_revision == panel.activity_revision
+            && state.model.as_ref().is_some_and(|old| {
+                let new = &panel.model;
+                old.world == new.world
+                    && old.town == new.town
+                    && old.index == new.index
+                    && old.page.rows.get(old.index).map(|row| &row.house)
+                        == new.page.rows.get(new.index).map(|row| &row.house)
+            })
+    });
+    let acl_loaded = projected.as_ref().is_some_and(|panel| {
+        state.model.as_ref().is_some_and(|old| old.pending_acl_read)
+            && !panel.model.pending_acl_read
+            && panel.model.acl_snapshot.is_some()
+    });
     state.redraw = false;
     if let Some(root) = state.root.take() {
         if focus.get().is_some_and(|entity| fields.contains(entity)) {
@@ -133,6 +146,11 @@ fn project(
         state.feedback.clear();
         return;
     };
+    if state.activity_revision != panel.activity_revision {
+        state.feedback.clear();
+        state.review = None;
+        state.map = false;
+    }
     let mut message = oteryn_client_ui::house::panel_text(&panel.model);
     if let Some(model) = &ownership {
         message.push_str("\nOwnership / incoming transfers:\n");
@@ -147,11 +165,13 @@ fn project(
         message.push_str(review.text());
     }
     message.push_str(&state.feedback);
+    state.activity_revision = panel.activity_revision;
     state.ownership = ownership;
     let mut editors = panel.fields.clone();
     if rebuilding {
         for (field, text) in &fields {
             if (same_house || !matches!(field.0, 2 | 4 | 6))
+                && !(acl_loaded && matches!(field.0, 4 | 6))
                 && panel.fields[field.0] == state.fields[field.0]
             {
                 editors[field.0] = text.value().to_string();
@@ -232,7 +252,9 @@ fn finish(
     let (Some(play), Some(model)) = (&owner.play, &state.model) else {
         return;
     };
-    if play.view.gameplay_input_blocked(&play.link) {
+    if play.view.gameplay_input_blocked(&play.link)
+        || play.link.house_panel().activity_revision != state.activity_revision
+    {
         return;
     }
     let mut values = state.fields.clone();
@@ -306,8 +328,9 @@ fn finish(
         }
         state.redraw = true;
     } else {
-        submit(&play.link, model, &state.fields, values, selection);
-        state.model = None;
+        if submit(&play.link, model, &state.fields, values, selection) {
+            state.model = None;
+        }
         state.review = None;
     }
 }
@@ -317,18 +340,22 @@ pub(super) fn submit(
     expected_fields: &[String; 7],
     fields: [String; 7],
     selection: usize,
-) {
+) -> bool {
     let current = link.house_panel();
     if current.model != *expected
         || current.fields != *expected_fields
+        || fields
+            .iter()
+            .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 8192))
         || current.model.pending.is_some()
     {
-        return;
+        return false;
     }
     for (index, value) in fields.into_iter().enumerate() {
         link.house_edit(index, value);
     }
     link.house_request(selection);
+    true
 }
 
 pub(super) fn build(

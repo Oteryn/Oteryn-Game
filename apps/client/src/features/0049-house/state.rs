@@ -2,6 +2,8 @@
 pub mod ownership;
 #[derive(Clone, Debug, Default)]
 pub struct Panel {
+    /// Distinguishes successive activity resets even when their empty panels are identical.
+    pub activity_revision: u64,
     pub model: oteryn_client_ui::house::Panel,
     pub fields: [String; 7],
     pub ownership: ownership::Ownership,
@@ -39,6 +41,7 @@ impl Panel {
         }
     }
     pub(in crate::play) fn invalidate(&mut self) {
+        self.activity_revision = self.activity_revision.wrapping_add(1);
         self.ownership.model.admitted(if self.model.selected {&[49]} else {&[]});
         self.ownership.navigation=None;self.ownership.fields=Default::default();
         self.model.pending = None;
@@ -56,7 +59,10 @@ impl Panel {
     pub(in crate::play) fn initialize(&mut self, selected: bool) {
         let world = std::mem::take(&mut self.fields[0]);
         let context=self.ownership.context.clone();
-        *self = Self::default();
+        *self = Self {
+            activity_revision: self.activity_revision.wrapping_add(1),
+            ..Self::default()
+        };
         self.model.selected = selected;
         self.ownership.context=context;
         self.ownership.model.admitted(if selected {&[49]} else {&[]});

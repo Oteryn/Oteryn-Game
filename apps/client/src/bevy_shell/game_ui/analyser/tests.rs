@@ -547,6 +547,15 @@ fn analyser_resolves_following_pages_and_new_items() -> TestResult {
         }],
     })]);
     select(&mut app, Tool::Loot)?;
+    select(&mut app, Tool::Session)?;
+    let reset = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, c)| (c.reset && c.tool == Tool::Session).then_some(entity))
+        .ok_or("session reset")?;
+    app.world_mut().trigger(Activate { entity: reset });
+    app.update();
     for _ in 0..10 {
         let command = {
             let mut commands = app.world_mut().non_send_mut::<tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>>();

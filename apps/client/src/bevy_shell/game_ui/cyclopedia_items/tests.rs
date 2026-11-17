@@ -346,11 +346,35 @@ fn drop_sources_pages(inspect_between_pages: bool) -> TestResult {
                 true,
             );
             assert!(link.inventory_select(item.handle));
-            assert!(link.inspect_selected_item());
-            assert!(matches!(
-                receiver.try_recv()?,
-                PlayCommand::ServerMechanic(_)
-            ));
+            app.update();
+            click(&mut app, Action::Prices)?;
+            assert_eq!(link.inspection_panel().catalogue_market, Some(42));
+            while receiver.try_recv().is_ok() {}
+            super::super::item_details::install(&mut app);
+            crate::bevy_shell::ui::window_layout::install(&mut app);
+            link.inspection_set_open(true);
+            app.update();
+            let inspect = app
+                .world_mut()
+                .query::<(&Text, &ChildOf)>()
+                .iter(app.world())
+                .find_map(|(text, parent)| {
+                    (text.0 == "Inspect selected").then_some(parent.parent())
+                })
+                .ok_or("inspect button")?;
+            app.world_mut()
+                .resource_mut::<InputFocus>()
+                .set(inspect, bevy::input_focus::FocusCause::Navigated);
+            app.update();
+            app.world_mut().trigger(Activate { entity: inspect });
+            app.update();
+            let PlayCommand::ServerMechanic(inspect) = receiver.try_recv()? else {
+                return Err("inventory inspection command".into());
+            };
+            assert_eq!(
+                wire::decode_request(&inspect.payload).map_err(|e| format!("{e:?}"))?,
+                Request::Item(item.handle)
+            );
             link.bevy_item_details_response(
                 &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
                     command_id: 4,
@@ -359,8 +383,40 @@ fn drop_sources_pages(inspect_between_pages: bool) -> TestResult {
                     payload: wire::encode_reply(&confirmed).map_err(|e| format!("{e:?}"))?,
                 },
             );
+            app.update();
+            let close = app
+                .world_mut()
+                .query::<(&Text, &ChildOf)>()
+                .iter(app.world())
+                .find_map(|(text, parent)| {
+                    (text.0 == "Close" && app.world().get::<Control>(parent.parent()).is_none())
+                        .then_some(parent.parent())
+                })
+                .ok_or("item details close")?;
+            app.world_mut().trigger(Activate { entity: close });
+            app.update();
         }
         app.update();
     }
+    if inspect_between_pages {
+        assert!(visible(&mut app).contains("Related market offers:"));
+        assert_eq!(link.inspection_panel().catalogue_market, Some(42));
+    }
+    Ok(())
+}
+
+#[test]
+fn trimmed_search_fits_wire_limit() -> TestResult {
+    let (mut app, _, mut commands, _) = catalogue_window()?;
+    app.world_mut()
+        .query_filtered::<&mut EditableText, With<Search>>()
+        .single_mut(app.world_mut())?
+        .editor_mut()
+        .set_text(&format!("{} ", "x".repeat(64)));
+    click(&mut app, Action::Browse)?;
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::ServerMechanic(_)
+    ));
     Ok(())
 }

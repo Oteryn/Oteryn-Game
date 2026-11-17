@@ -255,9 +255,14 @@ fn podium_preview_artwork_is_shown_in_the_podium_window() -> TestResult {
     press(&mut app, 19, ctrl().with(Modifier::Alt))?;
     assert!(form_open(&app, "House podium")?);
     drain(&mut commands);
+    with_link(&app, |link| link.house_podium_edit(3, "citizen".into()))?;
     for (index, value) in [(1, "1"), (2, "1"), (3, "citizen")] {
         set(&mut app, index, value);
     }
+    set(&mut app, 3, &"x".repeat(8000));
+    click(&mut app, Some(7))?;
+    assert!(commands.try_recv().is_err());
+    set(&mut app, 3, "citizen");
     click(&mut app, Some(7))?;
     let PlayCommand::Feature(command) = commands.try_recv()? else {
         return Err("preview request missing".into());
