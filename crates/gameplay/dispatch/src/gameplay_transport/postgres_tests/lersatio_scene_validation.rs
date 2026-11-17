@@ -132,3 +132,32 @@ fn lersatio_scene_encounter_composition_retains_unrelated_operation_guard() -> R
     );
     Ok(())
 }
+
+#[test]
+fn lersatio_first_mirror_can_transform_statue_with_personal_counter() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::world_callbacks::load;
+    let callbacks = load()?;
+    let mut callback = callbacks
+        .iter()
+        .find(|row| row.key.ends_with("authored-magic-sword-passage"))
+        .cloned()
+        .ok_or("personal transform")?;
+    let mut scene = callbacks
+        .iter()
+        .find(|row| row.key.ends_with("authored-life-ring-bridge"))
+        .and_then(|row| row.effects.scene.clone())
+        .ok_or("scene")?;
+    scene.relocations.clear();
+    scene.close.clear();
+    callback.passages.clear();
+    callback.requires_world_admission = true;
+    callback.effects.reset_after_ms = Some(30_000);
+    callback.effects.scene = Some(scene);
+    assert!(callback.has_valid_effects());
+    callback.requires_world_admission = false;
+    assert!(
+        !callback.has_valid_effects(),
+        "personal scene requires durable world admission"
+    );
+    Ok(())
+}

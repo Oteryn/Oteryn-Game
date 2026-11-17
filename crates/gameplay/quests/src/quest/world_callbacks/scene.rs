@@ -110,7 +110,9 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
                 })
         });
     callback.trigger == Trigger::Use
-        && (callback.lever.is_some() || super::effects::scene_encounter(callback))
+        && (callback.lever.is_some()
+            || super::effects::scene_encounter(callback)
+            || super::effects::personal_scene(callback))
         && callback.passages.is_empty()
         && callback.teleport.is_none()
         && callback.offerings.is_empty()
@@ -118,7 +120,9 @@ pub(super) fn valid_scene(callback: &Callback, scene: &SceneEdits) -> bool {
         && callback.native_rule.is_none()
         && callback.experience.is_none()
         && callback.monk_reward.is_none()
-        && (callback.effects.transform.is_none() || super::effects::scene_encounter(callback))
+        && (callback.effects.transform.is_none()
+            || super::effects::scene_encounter(callback)
+            || super::effects::personal_scene(callback))
         && callback.effects.magic.is_none()
         && callback.effects.facing.is_none()
         && callback.effects.item_reward.is_none()

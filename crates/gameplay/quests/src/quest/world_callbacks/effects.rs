@@ -411,6 +411,26 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
         })
 }
 
+pub(super) fn personal_scene(callback: &Callback) -> bool {
+    callback.has_personal_state()
+        && callback.requires_world_admission
+        && callback.actor_kind == ActorKind::Player
+        && callback.trigger == Trigger::Use
+        && callback.lever.is_none()
+        && callback.effects.transform.is_some()
+        && callback.effects.reset_after_ms.is_some()
+        && callback.effects.encounter.is_none()
+        && !callback.reversible
+        && callback.effects.scene.as_ref().is_some_and(|scene| {
+            scene.relocations.is_empty()
+                && scene.evacuate_open.is_empty()
+                && scene.evacuate_close.is_empty()
+                && scene.close.is_empty()
+                && !scene.remove_self
+                && !scene.relocate_items_close
+        })
+}
+
 pub(super) fn scene_encounter(callback: &Callback) -> bool {
     callback
         .effects
@@ -833,6 +853,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)
+                && !personal_scene(callback)
                 && (!lever
                     || (effects.scene.is_none()
                         && effects.party_transfer.is_none()
