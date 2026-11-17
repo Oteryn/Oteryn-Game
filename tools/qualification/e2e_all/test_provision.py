@@ -31,10 +31,8 @@ class ProvisionTests(unittest.TestCase):
                     try:
                         with listener.accept()[0] as connection:
                             connection.settimeout(3)
-                            request = bytearray()
-                            while chunk := connection.recv(64):
-                                request.extend(chunk)
-                            requests.append(bytes(request))
+                            with connection.makefile("rb", buffering=0) as reader:
+                                requests.append(reader.readline(129))
                             # Separate writes exercise a streamed answer, not a datagram.
                             for part in reply:
                                 connection.sendall(part)

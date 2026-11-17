@@ -2841,11 +2841,59 @@ fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
 async fn handle_control(stream: &mut UnixStream) -> Option<Vec<u8>> {
     let mut request = Vec::with_capacity(CONTROL_REQUEST_BYTES);
     let mut limited = (&mut *stream).take(CONTROL_REQUEST_BYTES as u64 + 1);
-    limited.read_to_end(&mut request).await.ok()?;
-    if request.len() > CONTROL_REQUEST_BYTES {
-        return None;
+    while request.len() <= CONTROL_REQUEST_BYTES {
+        let mut byte = [0];
+        if limited.read(&mut byte).await.ok()? == 0 {
+            return Some(request);
+        }
+        request.push(byte[0]);
+        // The qualification caller keeps its write side open while awaiting
+        // the reply, so EOF remains available as a cancellation signal.
+        if byte[0] == b'\n' && request.starts_with(b"qualify ") {
+            break;
+        }
     }
-    Some(request)
+    (request.len() <= CONTROL_REQUEST_BYTES).then_some(request)
+}
+
+async fn while_control_peer_connected<T>(
+    stream: &mut UnixStream,
+    work: impl std::future::Future<Output = T>,
+) -> Option<T> {
+    let mut unexpected = [0];
+    tokio::select! {
+        biased;
+        _ = stream.read(&mut unexpected) => None,
+        result = work => Some(result),
+    }
+}
+
+#[tokio::test]
+async fn qualification_control_cancels_submitted_work_when_peer_disconnects()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (mut node, mut caller) = UnixStream::pair()?;
+    caller.write_all(b"qualify session knight\n").await?;
+    let request = tokio::time::timeout(Duration::from_secs(1), handle_control(&mut node))
+        .await?
+        .ok_or("control request rejected")?;
+    assert_eq!(request, b"qualify session knight\n");
+    let (begun, started) = tokio::sync::oneshot::channel();
+    let work = async {
+        let _ = begun.send(());
+        std::future::pending::<()>().await;
+    };
+    let disconnect = async {
+        started.await?;
+        drop(caller);
+        Ok::<(), tokio::sync::oneshot::error::RecvError>(())
+    };
+    let (result, disconnected) = tokio::time::timeout(Duration::from_secs(1), async {
+        tokio::join!(while_control_peer_connected(&mut node, work), disconnect)
+    })
+    .await?;
+    disconnected?;
+    assert!(result.is_none());
+    Ok(())
 }
 
 /// Bounded, privacy-safe node health for local read-only operations clients.
@@ -2943,14 +2991,19 @@ async fn control_loop(
                     control_diagnose(&request).unwrap_or_else(|| "[]".to_owned()),
                     "ops_diagnose",
                 ),
-                Some(request) if request.starts_with(b"qualify ") => (
-                    qualification_fixture::prepare(
-                        root, authority, proof, config, native, &request,
+                Some(request) if request.starts_with(b"qualify ") => {
+                    let Some(answer) = while_control_peer_connected(
+                        &mut stream,
+                        qualification_fixture::prepare(
+                            root, authority, proof, config, native, &request,
+                        ),
                     )
                     .await
-                    .to_owned(),
-                    "character_bootstrap",
-                ),
+                    else {
+                        return;
+                    };
+                    (answer.to_owned(), "character_bootstrap")
+                }
                 Some(request) if request.starts_with(b"spawn ") => (
                     qualification_fixture::spawn(
                         root, authority, proof, config, native, spawn, &request,

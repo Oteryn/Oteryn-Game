@@ -119,7 +119,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("fresh-admission refusal observed disposition={:?} replies={messages:?}", refused.disposition).into());
     }
     evidence(&format!("C05_CHECK {} PASS durable-denial", ACTIONS[4]));
-    final_logout(&mut caster).await?;
-    final_logout(&mut target).await?;
+    let caster_logout = final_logout(&mut caster).await;
+    let target_logout = final_logout(&mut target).await;
+    caster_logout.and(target_logout)?;
     Ok(())
 }

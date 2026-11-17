@@ -5886,7 +5886,33 @@ fn flr2_catalogue_admission() -> TestResult {
 }
 
 async fn final_logout(client: &mut oteryn_dev_client::DevClientSession) -> TestResult {
-    require_final_logout_result(client.session_mut().logout().await?.result)
+    drive_final_logout(
+        client,
+        async |client| Ok(client.session_mut().logout().await?.result),
+        async |client| {
+            client.service_liveness(Duration::from_millis(250)).await?;
+            client.take_events();
+            Ok(())
+        },
+    )
+    .await
+}
+
+async fn drive_final_logout<C>(
+    client: &mut C,
+    mut send: impl AsyncFnMut(
+        &mut C,
+    ) -> TestResult<Option<oteryn_protocol_oteryn::logout::LogoutResult>>,
+    mut service: impl AsyncFnMut(&mut C) -> TestResult,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
+    loop {
+        let result = send(client).await?;
+        if !final_logout_retry(result) || tokio::time::Instant::now() >= deadline {
+            return require_final_logout_result(result);
+        }
+        service(client).await?;
+    }
 }
 
 fn require_final_logout_result(
@@ -5907,4 +5933,37 @@ fn round2_final_logout_requires_accepted_release() {
         require_final_logout_result(Some(LogoutResult::InFight { retry_after_ms: 1 })).is_err()
     );
     assert!(require_final_logout_result(None).is_err());
+}
+
+fn final_logout_retry(result: Option<oteryn_protocol_oteryn::logout::LogoutResult>) -> bool {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    matches!(
+        result,
+        Some(LogoutResult::Busy | LogoutResult::InFight { .. })
+    )
+}
+
+#[tokio::test]
+async fn round3_final_logout_retry() -> TestResult {
+    use oteryn_protocol_oteryn::logout::LogoutResult;
+    let mut state = (
+        std::collections::VecDeque::from([
+            LogoutResult::Busy,
+            LogoutResult::InFight { retry_after_ms: 1 },
+            LogoutResult::Accepted,
+        ]),
+        0,
+    );
+    drive_final_logout(
+        &mut state,
+        async |state| Ok(state.0.pop_front()),
+        async |state| {
+            state.1 += 1;
+            Ok(())
+        },
+    )
+    .await?;
+    assert!(state.0.is_empty());
+    assert_eq!(state.1, 2);
+    Ok(())
 }

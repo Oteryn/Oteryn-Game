@@ -464,9 +464,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("re-equipping the stripped items did not restore the projections".into());
     }
     if with.off(Stat::LifeLeech) > 0 || with.off(Stat::ManaLeech) > 0 {
-        let safe = route(world, tile(client.world_spatial().actor_position)?, |at|
-            world.base().tile(at.x, at.y, at.floor).is_some_and(|cell| cell.protection_zone()))
-            .ok_or("no reachable protection zone for idle regeneration sample")?;
+        let combat_tile = tile(client.world_spatial().actor_position)?;
+        let safe = route(world, combat_tile, |at| {
+            at.x.abs_diff(combat_tile.x).max(at.y.abs_diff(combat_tile.y)) >= 12
+                && world.base().tile(at.x, at.y, at.floor)
+                    .is_some_and(|cell| idle_regeneration_tile(cell.protection_zone()))
+        }).ok_or("no reachable regeneration-eligible tile away from the melee fight")?;
         walk(&mut client, world, &safe).await?;
     }
     if with.off(Stat::ManaLeech) > 0 { spend_mana_for_sample(&mut client).await?; }
@@ -666,4 +669,12 @@ async fn spend_mana_for_sample(client: &mut DevClientSession) -> TestResult {
     let reply = client.chat(&ChatIntent::Say { mode:ChatSpeechMode::Say, text:"utevo lux".into() }).await?;
     if reply.status != CommandStatus::Accepted { return Err(format!("mana probe speech refused: {reply:?}").into()); }
     settle(client, "mana debit from Light", |client| client.actor_vitals().is_some_and(|now| now.mana < before.mana)).await
+}
+
+fn idle_regeneration_tile(protection_zone: bool) -> bool { !protection_zone }
+
+#[test]
+fn round3_leech_baseline_uses_regeneration_eligible_tile() {
+    assert!(idle_regeneration_tile(false));
+    assert!(!idle_regeneration_tile(true));
 }

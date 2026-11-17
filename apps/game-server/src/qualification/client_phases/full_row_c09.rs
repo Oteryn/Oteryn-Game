@@ -330,23 +330,6 @@ async fn wait_regeneration(
     }
 }
 
-async fn accepted_logout(client: &mut DevClientSession) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(70);
-    loop {
-        let reply = client.session_mut().logout().await?;
-        match reply.result {
-            Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) => return Ok(()),
-            Some(oteryn_protocol_oteryn::logout::LogoutResult::InFight { .. }) => {}
-            _ => return Err(format!("logout reply={reply:?}").into()),
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("logout remained refused; last={reply:?}").into());
-        }
-        client.service_liveness(Duration::from_millis(250)).await?;
-        client.take_events();
-    }
-}
-
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -410,7 +393,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     );
     let durable_quantity = quantity(&client, meat)?;
     let old_session = client.join_snapshot().game_session_id;
-    accepted_logout(&mut client).await?;
+    final_logout(&mut client).await?;
     drop(client);
     let mut client = connect_world(clients, 0xd9).await?;
     let admitted = *client
@@ -432,7 +415,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
             after.1,
         ),
     );
-    accepted_logout(&mut client).await?;
+    final_logout(&mut client).await?;
     Ok(())
 }
 

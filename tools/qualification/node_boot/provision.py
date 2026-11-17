@@ -2,7 +2,9 @@
 
 import argparse
 import re
+import select
 import socket
+import sys
 import time
 import uuid
 
@@ -12,19 +14,26 @@ CREATURE_KEY = re.compile(r"[A-Za-z0-9:._/-]{1,128}")
 SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
 
 
-def _request(socket_path, line, limit):
+def _request(socket_path, line, limit, cancel=None):
     """One control exchange; returns up to `limit` answer bytes plus one overflow-detecting byte."""
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
         deadline = time.monotonic() + 20
         control.settimeout(20)
         control.connect(socket_path)
         control.sendall(line.encode("ascii"))
-        control.shutdown(socket.SHUT_WR)
+        if not line.startswith("qualify "):
+            control.shutdown(socket.SHUT_WR)
         answer = bytearray()
         while len(answer) <= limit:
             control.settimeout(max(0.001, deadline - time.monotonic()))
             if time.monotonic() >= deadline:
                 raise TimeoutError("qualification provisioning deadline exceeded")
+            if cancel is not None:
+                ready, _, _ = select.select([control, cancel], [], [], max(0, deadline - time.monotonic()))
+                if cancel in ready:
+                    raise RuntimeError("qualification provisioning caller disconnected")
+                if not ready:
+                    raise TimeoutError("qualification provisioning deadline exceeded")
             chunk = control.recv(limit + 1 - len(answer))
             if not chunk:
                 break
@@ -32,11 +41,11 @@ def _request(socket_path, line, limit):
         return answer
 
 
-def provision(socket_path, session, profile):
+def provision(socket_path, session, profile, cancel=None):
     identifier = uuid.UUID(session)
     if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
         raise ValueError("invalid qualification request")
-    answer = _request(socket_path, f"qualify {session} {profile}\n", 64)
+    answer = _request(socket_path, f"qualify {session} {profile}\n", 64, cancel)
     if answer != b"qualified\n":
         # repr escapes control/non-ASCII bytes; the 65th byte only detects overflow.
         raise RuntimeError(
@@ -74,8 +83,9 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--profile", choices=PROFILES)
     group.add_argument("--spawn", metavar="CREATURE_KEY")
+    parser.add_argument("--cancel-on-stdin", action="store_true")
     args = parser.parse_args()
     if args.spawn is not None:
         print(spawn(args.socket, args.session, args.spawn))
     else:
-        provision(args.socket, args.session, args.profile)
+        provision(args.socket, args.session, args.profile, sys.stdin if args.cancel_on_stdin else None)

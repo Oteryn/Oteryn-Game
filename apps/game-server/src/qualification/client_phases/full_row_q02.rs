@@ -202,7 +202,7 @@ async fn setup(clients: &SeamClients<'_>, client: &mut DevClientSession) -> Test
     ))
 }
 
-/// Talk to Kesar as a player: walk to him and say hi, problem, help, help, help.
+/// Walk to Kesar and confirm his outbound mission offer.
 /// Kesar has no fixed placement: the day/night clock spawns him at his day or night tile
 /// (`bundle_npcs.rs`), so the row walks to the day tile, then the night tile, until it sees him.
 async fn kesar(
@@ -262,7 +262,7 @@ async fn kesar(
     }
     let actor = actor.ok_or_else(|| format!("kesar not found: {misses:?}"))?;
     let mut replies = Vec::new();
-    for text in ["hi", "problem", "help", "help", "help"] {
+    for &text in KESAR_DIALOGUE {
         let lines = travel::converse(client, actor, text).await?;
         evidence(&format!("Q02_NPC say={text:?} reply={lines:?}"));
         if lines.is_empty() {
@@ -481,4 +481,11 @@ fn quest_reward_must_be_newly_granted() {
     assert!(!fresh_reward(1, 1));
     assert!(fresh_reward(1, 2));
     assert!(!fresh_reward(1, 3));
+}
+
+const KESAR_DIALOGUE: &[&str] = &["hi", "problem", "help", "help", "help", "yes"];
+
+#[test]
+fn round3_kesar_answers_the_outbound_offer() {
+    assert!(KESAR_DIALOGUE.ends_with(&["help", "yes"]));
 }

@@ -276,7 +276,7 @@ async fn setup(
                 revision = door_revision(&delta.value.tiles, door, ordinal).unwrap_or(revision);
             }
         }
-        let reply = client.use_object(&placement, revision).await?.disposition;
+        let reply = use_door_with_cooldown(client, &placement, revision).await?;
         if reply != UseDisposition::Committed {
             return Err(format!(
                 "{label} level {after} same-door positive control returned {reply:?}"
@@ -297,7 +297,7 @@ async fn setup(
             }
             client.service_liveness(Duration::from_millis(50)).await?;
         };
-        let restored = client.use_object(&placement, new_revision).await?.disposition;
+        let restored = use_door_with_cooldown(client, &placement, new_revision).await?;
         if restored != UseDisposition::Committed {
             return Err(format!(
                 "{label} same-door positive control could not restore door: {restored:?}"
@@ -326,7 +326,8 @@ pub(super) async fn provision(
     let mut child = FixtureProcess(std::process::Command::new("sudo")
         .args(["-n", "timeout", "--kill-after=1s", "20s", "python3"])
         .arg(script)
-        .args(["--socket", &socket, "--session", &session, "--profile", &profile])
+        .args(["--socket", &socket, "--session", &session, "--profile", &profile, "--cancel-on-stdin"])
+        .stdin(std::process::Stdio::piped())
         .spawn()?);
     let deadline = tokio::time::Instant::now() + Duration::from_secs(22);
     let status = loop {
@@ -472,6 +473,9 @@ pub(super) fn q03a_route<T>(row: &str, plan: Result<T, String>) -> TestResult<Re
         Err(reason) if row == "Q03a" && reason.starts_with("every reachable tile of the search box exhausted") => {
             Err(format!("MISSING {row} from-town route: {reason}").into())
         }
+        Err(reason) if !reason.starts_with("every reachable tile of the search box exhausted") => {
+            Err(format!("{row} from-town route: {reason}").into())
+        }
         outcome => Ok(outcome),
     }
 }
@@ -517,6 +521,7 @@ struct FixtureProcess(std::process::Child);
 
 impl Drop for FixtureProcess {
     fn drop(&mut self) {
+        drop(self.0.stdin.take());
         if !matches!(self.0.try_wait(), Ok(Some(_))) {
             let _ = self.0.kill();
             let _ = self.0.wait();
@@ -535,5 +540,71 @@ fn round2_cancelled_provisioning_reaps_the_child() -> TestResult {
         std::process::Command::new("kill").args(["-KILL", &pid]).status()?;
     }
     assert!(!still_running);
+    Ok(())
+}
+
+#[test]
+fn round3_from_town_stops_on_planner_budget() {
+    for row in ["Q01a", "Q01b", "Q01c", "Q03a"] {
+        let reason = "search limit of 20 tiles hit after 20 settled";
+        let result = q03a_route::<()>(row, Err(reason.into()));
+        assert!(result.is_err_and(|error| error.to_string() == format!("{row} from-town route: {reason}")));
+    }
+}
+
+async fn use_door_with_cooldown(
+    client: &mut oteryn_dev_client::DevClientSession,
+    placement: &[u8],
+    revision: u64,
+) -> TestResult<UseDisposition> {
+    retry_door_use(
+        client,
+        revision,
+        async |client, revision| Ok(client.use_object(placement, revision).await?.disposition),
+        async |client| {
+            client.service_liveness(Duration::from_millis(200)).await?;
+            Ok(())
+        },
+    ).await
+}
+
+async fn retry_door_use<C>(
+    client: &mut C,
+    revision: u64,
+    mut send: impl AsyncFnMut(&mut C, u64) -> TestResult<UseDisposition>,
+    mut service: impl AsyncFnMut(&mut C) -> TestResult,
+) -> TestResult<UseDisposition> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+    loop {
+        let disposition = send(client, revision).await?;
+        if disposition != UseDisposition::Exhausted || tokio::time::Instant::now() >= deadline {
+            return Ok(disposition);
+        }
+        service(client).await?;
+    }
+}
+
+#[tokio::test]
+async fn round3_door_use_retry() -> TestResult {
+    let mut state = (0, Vec::new());
+    let opened = retry_door_use(
+        &mut state, 4,
+        async |state, revision| {
+            state.1.push(revision);
+            Ok(UseDisposition::Committed)
+        },
+        async |_| Err("unexpected liveness wait when opening the door".into()),
+    ).await?;
+    assert_eq!(opened, UseDisposition::Committed);
+    let restored = retry_door_use(
+        &mut state, 5,
+        async |state, revision| {
+            state.1.push(revision);
+            Ok(if state.0 == 0 { UseDisposition::Exhausted } else { UseDisposition::Committed })
+        },
+        async |state| { state.0 += 1; Ok(()) },
+    ).await?;
+    assert_eq!(restored, UseDisposition::Committed);
+    assert_eq!(state, (1, vec![4, 5, 5]));
     Ok(())
 }

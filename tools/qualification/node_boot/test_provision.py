@@ -2,9 +2,11 @@
 
 from concurrent.futures import ThreadPoolExecutor
 import importlib.util
+import os
 from pathlib import Path
 import socket
 import tempfile
+import threading
 import unittest
 
 
@@ -28,10 +30,9 @@ class ProvisionTests(unittest.TestCase):
                 def serve():
                     with listener.accept()[0] as connection:
                         connection.settimeout(3)
-                        request = bytearray()
-                        while chunk := connection.recv(128):
-                            request.extend(chunk)
-                            self.assertLessEqual(len(request), 128)
+                        with connection.makefile("rb", buffering=0) as reader:
+                            request = reader.readline(129)
+                        self.assertLessEqual(len(request), 128)
                         self.assertEqual(request, f"qualify {SESSION} {profile}\n".encode())
                         connection.sendall(answer)
 
@@ -40,6 +41,60 @@ class ProvisionTests(unittest.TestCase):
                     try:
                         PROVISION.provision(path, SESSION, profile)
                     finally:
+                        served.result(timeout=3)
+
+    def test_qualification_wait_keeps_the_write_half_open(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "control.sock")
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+                listener.bind(path)
+                listener.listen(1)
+                listener.settimeout(3)
+
+                def serve():
+                    with listener.accept()[0] as connection:
+                        connection.settimeout(0.25)
+                        with connection.makefile("rb", buffering=0) as request:
+                            self.assertEqual(request.readline(), f"qualify {SESSION} knight\n".encode())
+                            try:
+                                with self.assertRaises(TimeoutError):
+                                    connection.recv(1)
+                            finally:
+                                connection.sendall(b"qualified\n")
+
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    served = executor.submit(serve)
+                    PROVISION.provision(path, SESSION, "knight")
+                    served.result(timeout=3)
+
+    def test_closing_caller_pipe_disconnects_submitted_provisioning(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "control.sock")
+            read_fd, write_fd = os.pipe()
+            submitted = threading.Event()
+            with os.fdopen(read_fd, "rb") as cancelled, os.fdopen(write_fd, "wb") as caller:
+                with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+                    listener.bind(path)
+                    listener.listen(1)
+                    listener.settimeout(3)
+
+                    def serve():
+                        with listener.accept()[0] as connection:
+                            connection.settimeout(3)
+                            with connection.makefile("rb", buffering=0) as request:
+                                self.assertEqual(
+                                    request.readline(), f"qualify {SESSION} knight\n".encode()
+                                )
+                                submitted.set()
+                                self.assertEqual(connection.recv(1), b"")
+
+                    with ThreadPoolExecutor(max_workers=2) as executor:
+                        served = executor.submit(serve)
+                        call = executor.submit(PROVISION.provision, path, SESSION, "knight", cancelled)
+                        self.assertTrue(submitted.wait(3))
+                        caller.close()
+                        with self.assertRaisesRegex(RuntimeError, "caller disconnected"):
+                            call.result(timeout=3)
                         served.result(timeout=3)
 
     def test_qualified_reply_is_accepted(self):

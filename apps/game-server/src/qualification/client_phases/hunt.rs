@@ -61,7 +61,8 @@ pub(super) async fn hunt_named(
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut damaged = false;
     let mut last_position = target.position;
-    let corpse = 'hunt: loop {
+    let mut target_removed = false;
+    let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
             if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event {
@@ -76,16 +77,23 @@ pub(super) async fn hunt_named(
                 damaged |= delta.value.update.iter().any(|entry| entry.entity == target.entity
                     && matches!(entry.detail, EntityDetail::Actor { health_percent, .. }
                         | EntityDetail::ActorWithIcons { health_percent, .. } if health_percent < 100));
-                if name.is_some() && delta.value.leave.contains(&target.entity) {
-                    let mut corpses = delta.value.enter.iter().filter(|entry| {
-                        entry.kind == EntityKind::Corpse
-                            && entry.position == last_position
-                            && !prior_corpses.contains(&entry.entity)
-                    });
-                    if let (Some(corpse), None) = (corpses.next(), corpses.next()) {
-                        break 'hunt *corpse;
-                    }
-                }
+                target_removed =
+                    named_corpse_ready(target_removed, delta.value.leave.contains(&target.entity));
+            }
+        }
+        if name.is_some()
+            && target_removed
+            && damaged
+            && let Some(entities) = client.world_entities()
+        {
+            let mut corpses = entities.iter().filter(|entry| {
+                entry.kind == EntityKind::Corpse
+                    && entry.position == last_position
+                    && !prior_corpses.contains(&entry.entity)
+                    && corpse_handle(entry.detail).is_some()
+            });
+            if let (Some(corpse), None) = (corpses.next(), corpses.next()) {
+                break *corpse;
             }
         }
         if name.is_none()
@@ -234,4 +242,15 @@ fn round2_appearance_corpse_retains_its_item_handle() {
         }),
         Some(ItemHandle::MIN)
     );
+}
+
+fn named_corpse_ready(removed: bool, leaves_now: bool) -> bool {
+    removed || leaves_now
+}
+
+#[test]
+fn round3_named_corpse_can_arrive_after_removal() {
+    let departed = named_corpse_ready(false, true);
+    assert!(named_corpse_ready(departed, false));
+    assert!(!named_corpse_ready(false, false));
 }
