@@ -679,14 +679,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return;
         }
-        if let Some(map) = self.bundle_map() {
+        let stable_entries = if let Some(map) = self.bundle_map() {
             super::paced_movement::monster_trap::apply_monster_trap_steps(
                 &mut runtime,
                 &states,
                 map,
                 now.get(),
-            );
-        }
+            )
+        } else {
+            Vec::new()
+        };
         if periodic_pass {
             states.next_monster_ai_pass_us = due;
             states.monster_ai_sequence = sequence;
@@ -1106,6 +1108,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(permit);
         #[cfg(test)]
         trace.set("ai_save");
+        self.settle_stable_entries(stable_entries).await;
         self.save_trained_levels(trained).await;
         #[cfg(test)]
         trace.set("ai_complete");

@@ -1,3 +1,11 @@
+/// The donor's grass movement ID is common outside the two stable areas.
+pub fn enters_stable(item_id: u16, x: i32, y: i32, floor: i16) -> bool {
+    item_id == 31159
+        && floor == 7
+        && (((32437..=32448).contains(&x) && (32230..=32239).contains(&y))
+            || ((32846..=32850).contains(&x) && (32114..=32120).contains(&y)))
+}
+
 /// World-wide Horse Station phase, with the loose deadline in Unix milliseconds.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HorseStation {
@@ -17,6 +25,13 @@ impl HorseStation {
         }
     }
 
+    pub fn after_lure(self, now_ms: i64, draw: u8) -> Self {
+        match self {
+            Self::LooseUntil(deadline) if now_ms < deadline && draw == 0 => Self::Confined,
+            phase => phase,
+        }
+    }
+
     pub fn at_save(self, now_ms: i64) -> Self {
         match self {
             Self::LooseUntil(deadline) if now_ms >= deadline => Self::Confined,
@@ -28,6 +43,21 @@ impl HorseStation {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lure_requires_stable_grass_and_a_one_in_thirty_draw() {
+        assert!(enters_stable(31159, 32437, 32230, 7));
+        assert!(enters_stable(31159, 32850, 32120, 7));
+        assert!(!enters_stable(31159, 32851, 32120, 7));
+        assert!(!enters_stable(31159, 32850, 32120, 6));
+        assert!(!enters_stable(31158, 32850, 32120, 7));
+        let loose = HorseStation::LooseUntil(100);
+        assert_eq!(loose.after_lure(99, 0), HorseStation::Confined);
+        for draw in 1..30 {
+            assert_eq!(loose.after_lure(99, draw), loose);
+        }
+        assert_eq!(loose.after_lure(100, 0), loose);
+    }
 
     #[test]
     fn loose_horses_revert_at_first_save_on_or_after_four_days() {

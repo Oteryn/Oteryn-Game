@@ -15,12 +15,56 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
+const HORSE: &str = "oteryn:creature.horse";
+
+pub(in crate::gameplay_transport) struct StableEntry {
+    actor: crate::foundation::ExactActorRef,
+    position: crate::foundation::MovementPositionSnapshot,
+    draw: u8,
+}
+
+impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn settle_stable_entries(
+        &self,
+        entries: Vec<StableEntry>,
+    ) {
+        for entry in entries {
+            let scope =
+                crate::foundation::RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
+            if !matches!(
+                self.root
+                    .settle_horse_lure(
+                        self.character,
+                        self.holder,
+                        scope,
+                        entry.actor.scope_generation(),
+                        self.reset_epoch,
+                        entry.draw,
+                    )
+                    .await,
+                Ok(true)
+            ) {
+                continue;
+            }
+            let mut runtime = self.runtime.lock().await;
+            if runtime.binding().runtime_scope() == scope
+                && runtime
+                    .read_actor_position(entry.actor)
+                    .is_ok_and(|current| current == entry.position)
+            {
+                let _removed = runtime.remove_mount_taming_subject(entry.actor, HORSE);
+            }
+        }
+    }
+}
+
 pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
     runtime: &mut ChannelRuntimeV1,
     states: &ChannelSpellStates,
     map: &BundleMap,
     now: u64,
-) {
+) -> Vec<StableEntry> {
+    let mut stable = Vec::new();
     crate::gameplay_transport::quest_callbacks::monsters::settle_authored_monster_puzzles(
         runtime, map,
     );
@@ -44,6 +88,32 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
         let Some(destination) = tile_entries(map, step.to) else {
             continue;
         };
+        if destination.entries.iter().any(|(_, entry)| {
+            oteryn_gameplay_world_change::horse_station::enters_stable(
+                entry.appearance_id,
+                step.to.x,
+                step.to.y,
+                step.to.floor,
+            )
+        }) && runtime
+            .check_mount_taming_subject(step.actor, HORSE)
+            .is_ok()
+            && let Ok(position) = runtime.read_actor_position(step.actor)
+            && position.position() == step.to
+        {
+            let digest = Sha256::new()
+                .chain_update(b"oteryn:horse-station-lure:v1")
+                .chain_update(step.actor.placement_identity())
+                .chain_update(now.to_be_bytes())
+                .finalize();
+            let draw =
+                (u32::from_be_bytes([digest[0], digest[1], digest[2], digest[3]]) % 30) as u8;
+            stable.push(StableEntry {
+                actor: step.actor,
+                position,
+                draw,
+            });
+        }
         // The Grimvale callback is independent of generic spike-trap PZ/jaw gates.
         for (key, entry) in &destination.entries {
             if entry.appearance_id == 22059 {
@@ -70,6 +140,7 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
             }
         }
     }
+    stable
 }
 
 /// Crystal 9f5a72c data-global/scripts/quests/grimvale/movements_silvered_trap.lua:3-22.

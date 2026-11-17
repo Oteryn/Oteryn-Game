@@ -181,12 +181,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     from,
                                     to: snapshot.position(),
                                 });
-                            super::paced_movement::monster_trap::apply_monster_trap_steps(
+                            let stable_entries = super::paced_movement::monster_trap::apply_monster_trap_steps(
                                 &mut runtime,
                                 &states,
                                 map,
                                 self.owner_now().get(),
                             );
+                            drop(states);
+                            drop(runtime);
+                            self.settle_stable_entries(stable_entries).await;
                         }
                         Moved
                     }
