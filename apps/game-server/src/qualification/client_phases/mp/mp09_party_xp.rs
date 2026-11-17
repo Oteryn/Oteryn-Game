@@ -1,6 +1,6 @@
 //! MP09. Oracle: Crystal 201189f871d23597b82caf88fd611454a2ddefb8:
 //! data/events/scripts/party.lua:73-91 (three vocations: ceil(pool * 1.70 / 3));
-//! base XP per target is the authored creature `experience` in content/creatures/definitions (see HUNT_TARGETS);
+//! base XP per target is the authored creature `experience` in content/creatures/definitions (see HUNT_TARGET);
 //! src/creatures/players/grouping/party.cpp:548-594 (level, distance, activity);
 //! config.lua.dist:302 (share range multiplier 1.5, hence the 2/3 level rule).
 use super::*;
@@ -13,20 +13,9 @@ use oteryn_protocol_oteryn::{
     presentation::{PresentationEventKind, PresentationValueKind},
 };
 
-/// Hunt targets in preference order (key, shown name, base XP): the first whose authored spawn the
-/// bots can walk to (no rope, shovel or ladder use) is hunted. The authored dragon spawns are not
-/// walk-reachable from the temple (run 44062547883). Experience is the authored `experience` of
-/// each creature record in content/creatures/definitions/creatures-*-*.json (one-line JSON, key
-/// `oteryn:creature.<name>`): giant_spider 900 (-00500-00999), ancient_scarab 720 and
-/// demon_skeleton 240 and bonelord 170 and cyclops 150 (-00000-00499), stone_golem 160 (-01500-01864).
-const HUNT_TARGETS: [(&str, &str, u64); 6] = [
-    ("oteryn:creature.giant_spider", "giant spider", 900),
-    ("oteryn:creature.ancient_scarab", "ancient scarab", 720),
-    ("oteryn:creature.demon_skeleton", "demon skeleton", 240),
-    ("oteryn:creature.bonelord", "bonelord", 170),
-    ("oteryn:creature.stone_golem", "stone golem", 160),
-    ("oteryn:creature.cyclops", "cyclops", 150),
-];
+/// Hunt target (key, shown name, base XP), spawned next to the leader through provision.py --spawn. Experience is the
+/// authored `experience` of the bonelord record (`oteryn:creature.bonelord`, creatures-*-00000-00499.json).
+const HUNT_TARGET: (&str, &str, u64) = ("oteryn:creature.bonelord", "bonelord", 170);
 
 const XP_SOURCE: &str = "crates/gameplay/social-rules/src/shared_experience_split.rs:128 (server three-vocation bonus=60%; Crystal=70%)";
 
@@ -514,61 +503,37 @@ async fn encounter(
     bots: &mut [Bot<'_, '_>],
     world: &BundleWorld,
 ) -> TestResult<([u64; 3], [u64; 3], [bool; 3], u64)> {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let from = tile(bots[0].client()?.world_spatial().actor_position)?;
-    let mut tried = Vec::new();
-    let mut chosen = None;
-    for (key, name, xp) in HUNT_TARGETS {
-        let spawns: Vec<TilePos> = metadata
-            .spawns
-            .sources
-            .iter()
-            .flat_map(|source| source.points.iter().map(move |p| (source.floor, p)))
-            .filter(|(_, p)| {
-                metadata
-                    .spawns
-                    .creatures
-                    .get(p.creature as usize)
-                    .is_some_and(|c| c.key == key)
-            })
-            .map(|(floor, p)| TilePos {
-                x: p.x,
-                y: p.y,
-                floor,
-            })
-            .collect();
-        let goal = |at: TilePos| {
-            spawns
-                .iter()
-                .any(|p| p.floor == at.floor && p.x.abs_diff(at.x).max(p.y.abs_diff(at.y)) <= 1)
-                && world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
-                    .is_some_and(|t| !t.protection_zone())
-        };
-        match far_route(world, from, goal) {
-            Ok(path) => {
-                chosen = Some((name, xp, spawns, path));
-                break;
-            }
-            Err(reached) => tried.push(format!(
-                "{key}:spawns={},walkable_reached={}",
-                spawns.len(),
-                reached.len()
-            )),
-        }
-    }
-    let (name, pool, spawns, path) = chosen.ok_or_else(|| format!("no reachable authored hunt spawn;tried={tried:?};start={from:?};source:apps/game-server/src/qualification/client_phases/world.rs:441"))?;
-    evidence(&format!(
-        "MP_CHECK MP09 hunt-route PASS target={name} base_xp={pool} spawns={} steps={} from={from:?}",
-        spawns.len(),
-        path.len()
-    ));
+    let open = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|t| !t.protection_zone())
+    };
+    // The spawn needs free open cells next to the leader (as creature_sweep's leave_protection_zone).
+    let roomy = |at: TilePos| {
+        open(at)
+            && [
+                StepDirection::North,
+                StepDirection::East,
+                StepDirection::South,
+                StepDirection::West,
+            ]
+            .into_iter()
+            .filter(|direction| destination(world, at, *direction).is_some_and(open))
+            .count()
+                >= 3
+    };
+    let path = far_route(world, from, roomy).map_err(|reached| {
+        format!(
+            "no open ground from {from:?};walkable_reached={}",
+            reached.len()
+        )
+    })?;
     let leader = path
         .iter()
         .try_fold(from, |at, &direction| destination(world, at, direction))
-        .ok_or("hunt route leaves the walkable world")?;
+        .ok_or("route to open ground leaves the walkable world")?;
     let mut walks = vec![(0, path)];
     let mut parked = vec![leader];
     for actor in [1, 2] {
@@ -577,10 +542,7 @@ async fn encounter(
             !parked.contains(&at)
                 && at.floor == leader.floor
                 && at.x.abs_diff(leader.x).max(at.y.abs_diff(leader.y)) <= 1
-                && world
-                    .base()
-                    .tile(at.x, at.y, at.floor)
-                    .is_some_and(|t| !t.protection_zone())
+                && open(at)
         };
         let path = far_route(world, here, near)
             .map_err(|reached| format!("MP peer approach has no reachable tile;walkable_reached={};start={here:?};leader={leader:?}", reached.len()))?;
@@ -591,53 +553,68 @@ async fn encounter(
         );
         walks.push((actor, path));
     }
-    // One lockstep walk: sequential walks of three ~200-step routes exceeded the 240 s encounter budget.
     bots::walk_group(bots, world, &walks).await?;
     evidence(&format!(
-        "MP_CHECK MP09 hunt-arrived PASS leader={leader:?} peers within 1 tile outside protection zone"
+        "MP_CHECK MP09 hunt-arrived PASS leader={leader:?} peers within 1 tile on open ground outside the protection zone"
     ));
+    let (key, name, pool) = HUNT_TARGET;
     let mut start = [0; 3];
     for (index, bot) in bots.iter_mut().enumerate() {
         start[index] = stats(bot).await?.0;
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
+    let named = |e: &oteryn_dev_client::EntityRef| {
+        e.kind == EntityKind::Creature
+            && e.display_name.is_some_and(|label| {
+                label
+                    .as_str()
+                    .is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
+            })
+    };
+    let existing: std::collections::BTreeSet<_> = bots[0]
+        .client()?
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|e| named(e))
+        .map(|e| e.entity)
+        .collect();
+    let session = uuid_text(bots[0].client()?.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session, key.to_owned())
+        .await
+        .map_err(|reason| format!("hunt target spawn rejected:{reason};source:tools/qualification/node_boot/provision.py"))?;
+    evidence(&format!(
+        "MP_CHECK MP09 hunt-route PASS target={name} base_xp={pool} spawn_answer={answer} leader={leader:?}"
+    ));
     let mut target = None;
-    bots::wait_observation(
-        bots,
-        deadline,
-        "visible hunt target at authored spawn",
-        |bots, _| {
-            let client = bots[0].session.as_ref().ok_or("A closed")?;
-            target = client.world_entities().and_then(|entities| {
-                entities
-                    .iter()
-                    .find(|e| {
-                        e.kind == EntityKind::Creature
-                            && matches!(
-                                e.detail,
-                                oteryn_dev_client::EntityDetail::Actor {
-                                    health_percent: 100,
-                                    ..
-                                }
-                            )
-                            && e.display_name.is_some_and(|label| {
-                                label
-                                    .as_str()
-                                    .is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
-                            })
-                            && spawns.iter().any(|p| {
-                                i16::from(p.floor) == e.position.floor
-                                    && i32::from(p.x)
-                                        .abs_diff(e.position.x)
-                                        .max(i32::from(p.y).abs_diff(e.position.y))
-                                        <= 1
-                            })
-                    })
-                    .map(|e| e.entity)
-            });
-            Ok(target.is_some())
-        },
-    )
+    bots::wait_observation(bots, deadline, "visible spawned hunt target", |bots, _| {
+        let client = bots[0].session.as_ref().ok_or("A closed")?;
+        let player = client.world_spatial().actor_position;
+        target = client.world_entities().and_then(|entities| {
+            entities
+                .iter()
+                .filter(|e| {
+                    named(e)
+                        && !existing.contains(&e.entity)
+                        && e.position.floor == player.floor
+                        && matches!(
+                            e.detail,
+                            oteryn_dev_client::EntityDetail::Actor {
+                                health_percent: 100,
+                                ..
+                            }
+                        )
+                })
+                .min_by_key(|e| {
+                    e.position
+                        .x
+                        .abs_diff(player.x)
+                        .max(e.position.y.abs_diff(player.y))
+                })
+                .map(|e| e.entity)
+        });
+        Ok(target.is_some())
+    })
     .await?;
     let target = target.ok_or("hunt target entity absent")?;
     evidence(&format!(

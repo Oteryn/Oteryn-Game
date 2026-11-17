@@ -550,6 +550,46 @@ fn town_route_retry_delay(
         .then_some(Duration::from_millis(500))
 }
 
+/// `spawn <session> <key>` through `provision.py --spawn`; Err carries the rejected token.
+/// Shared by `creature_sweep` and MP09 (both reach it through `use super::*`).
+async fn request_spawn(session: String, key: String) -> Result<String, String> {
+    let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let output = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("sudo")
+            .args(["-n", "python3"])
+            .arg(script)
+            .args(["--socket", &socket, "--session", &session, "--spawn", &key])
+            .output()
+    })
+    .await
+    .map_err(|error| error.to_string())?
+    .map_err(|error| error.to_string())?;
+    if output.status.success() {
+        return Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned());
+    }
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    Err(match stderr.split_once("reason=") {
+        Some((_, rest)) => rest
+            .chars()
+            .take_while(|character| character.is_ascii_alphanumeric() || *character == '_')
+            .collect(),
+        None => format!(
+            "status={};stderr_tail={}",
+            output.status,
+            stderr
+                .chars()
+                .rev()
+                .take(200)
+                .collect::<String>()
+                .chars()
+                .rev()
+                .collect::<String>()
+        ),
+    })
+}
+
 async fn walk(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
