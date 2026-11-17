@@ -21,6 +21,8 @@ REGISTERED_TALK_STAGES = {(key, "s1") for key in REGISTERED_TALK_QUESTS} | {
     ("oteryn:quest.authored.bank_robbery_mini_world_change", "s1"),
     ("oteryn:quest.authored.child_of_destiny_quest", "s1"),
     ("oteryn:quest.authored.child_of_destiny_quest", "s5"),
+    ("oteryn:quest.authored.top_of_the_city_quest", "s1"),
+    ("oteryn:quest.authored.top_of_the_city_quest", "s4"),
 } | {("oteryn:quest.pilgrimage_of_ashes", f"s{stage}") for stage in range(1, 8)}
 
 

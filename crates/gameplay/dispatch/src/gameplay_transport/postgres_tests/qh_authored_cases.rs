@@ -3,6 +3,7 @@
 use super::fixture::{Harness, id};
 use super::questpc8_authored_programmes::use_target;
 use super::{TestResult, quest_world_callbacks};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
@@ -14,6 +15,12 @@ const SMALL_SAPPHIRE_CHEST: TilePos = TilePos {
     x: 32962,
     y: 32429,
     floor: -7,
+};
+const TOP_OF_THE_CITY: &str = "authored-qh-top-of-the-city";
+const TOP_OF_THE_CITY_CRATE: TilePos = TilePos {
+    x: 32807,
+    y: 31252,
+    floor: -8,
 };
 
 #[test]
@@ -41,22 +48,57 @@ fn qh_small_sapphire_premium_chest_mints_bag_once_postgres() -> TestResult {
     Ok(())
 }
 
+#[test]
+fn qh_top_of_the_city_npc_chain_and_cellar_crate_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    let started = std::time::Instant::now();
+    super::kill_reward_e2e::scenario_thread::run("qh-top-of-the-city", || {
+        // The scenario starts one tile west of this position, beside the cellar crate.
+        quest_world_callbacks::scenario(
+            TOP_OF_THE_CITY,
+            Position {
+                x: 32809,
+                y: 31252,
+                floor: -8,
+            },
+            false,
+        )
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qh_top_of_the_city_npc_chain_and_cellar_crate_postgres duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
 pub(super) fn is_case(name: &str) -> bool {
     name.starts_with("authored-qh-")
 }
 
 /// The registered production binding, parsed from the same committed document the server embeds.
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
-    let document = match name {
-        SMALL_SAPPHIRE => include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../content/quests/authored-bindings/small_sapphire_quest.json"
-        )),
+    let (document, key) = match name {
+        SMALL_SAPPHIRE => (
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/quests/authored-bindings/small_sapphire_quest.json"
+            )),
+            "oteryn:quest-callback/authored-small-sapphire-chest",
+        ),
+        TOP_OF_THE_CITY => (
+            include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/quests/authored-bindings/top_of_the_city_quest.json"
+            )),
+            "oteryn:quest-callback/authored-top-of-the-city-crate",
+        ),
         _ => return Err(format!("unknown qh case {name}").into()),
     };
     Bindings::parse(document.as_bytes())?
         .world_callbacks()
-        .next()
+        .find(|callback| callback.key == key)
         .cloned()
         .ok_or_else(|| "qh binding has no world callback".into())
 }
@@ -83,6 +125,23 @@ pub(super) fn world(
                 floor: -7,
             },
         ),
+        TOP_OF_THE_CITY => (
+            TilePos {
+                x: 32806,
+                y: 31249,
+                floor: -8,
+            },
+            TilePos {
+                x: 32813,
+                y: 31256,
+                floor: -8,
+            },
+            TilePos {
+                x: 32808,
+                y: 31252,
+                floor: -8,
+            },
+        ),
         _ => return Err(format!("unknown qh case {name}").into()),
     };
     super::source_world_crop::world(minimum, maximum, start, native)
@@ -96,6 +155,7 @@ pub(super) async fn exercise(
 ) -> TestResult {
     match name {
         SMALL_SAPPHIRE => small_sapphire(owner, admitted, h).await,
+        TOP_OF_THE_CITY => top_of_the_city(owner, admitted, h).await,
         _ => Err(format!("unknown qh case {name}").into()),
     }
 }
@@ -186,5 +246,89 @@ async fn small_sapphire(
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(after, before, "no second reward is minted");
+    Ok(())
+}
+
+/// TibiaWiki curid 31073 oldid 1050120 (Top of the City Quest/Spoiler): Iriana sends the player
+/// to Jimmy, who wants a food crate from the tavern cellar in exchange for Iriana's Chest.
+/// The roof route, the sewer dig and the cross-floor rope are walked outside this one-floor crop.
+async fn top_of_the_city(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+) -> TestResult {
+    use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
+    const STAGE: &str = "oteryn:quest-progress/authored/top-of-the-city/stage";
+    owner.admit_premium(id(40), admitted.game_session_id);
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 4, 6, 11, 15, 18, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("capabilities")?;
+    let [iriana, jimmy] =
+        super::classic_quests::install(owner, admitted, ["oteryn:npc.iriana", "oteryn:npc.jimmy"])
+            .await?;
+    owner
+        .refresh_quest_session(admitted.game_session_id, false)
+        .await;
+    let mut sequence = 2000_u64;
+    let crate_target = target(owner, TOP_OF_THE_CITY_CRATE)?;
+    assert_eq!(
+        use_target(owner, admitted, 1, &crate_target).await?,
+        UseDisposition::Rejected,
+        "the cellar crate waits for Jimmy's mission"
+    );
+    assert_eq!(live(h, 8772).await?, 0);
+    for (npc, word, stage) in [(iriana, "quest", 1), (jimmy, "iriana", 2)] {
+        assert_eq!(
+            super::questpc7_outfit_items::talk(owner, admitted, npc, &mut sequence, word).await?,
+            NpcIntentDisposition::Ok,
+            "{word}"
+        );
+        assert_eq!(track(h, STAGE).await?, stage, "{word}");
+    }
+    assert_eq!(
+        use_target(owner, admitted, 2, &target(owner, TOP_OF_THE_CITY_CRATE)?).await?,
+        UseDisposition::Committed
+    );
+    assert_eq!(track(h, STAGE).await?, 3);
+    assert_eq!(live(h, 8772).await?, 1, "one food crate");
+    assert_eq!(
+        use_target(owner, admitted, 3, &target(owner, TOP_OF_THE_CITY_CRATE)?).await?,
+        UseDisposition::Rejected,
+        "the crate is taken once"
+    );
+    assert_eq!(live(h, 8772).await?, 1);
+    assert_eq!(
+        super::questpc7_outfit_items::talk(owner, admitted, jimmy, &mut sequence, "quest").await?,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(track(h, STAGE).await?, 4);
+    assert_eq!((live(h, 8772).await?, live(h, 8773).await?), (0, 1));
+    assert_eq!(
+        super::questpc7_outfit_items::talk(owner, admitted, iriana, &mut sequence, "quest").await?,
+        NpcIntentDisposition::Ok
+    );
+    assert_eq!(track(h, STAGE).await?, 5);
+    assert_eq!((live(h, 8773).await?, live(h, 5921).await?), (0, 10));
+    let completed: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes",
+    )
+    .bind("oteryn:quest.authored.top_of_the_city_quest")
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(completed, 1, "the quest completes once");
+    super::questpc7_outfit_items::talk(owner, admitted, iriana, &mut sequence, "quest").await?;
+    assert_eq!(live(h, 5921).await?, 10, "no second reward");
     Ok(())
 }

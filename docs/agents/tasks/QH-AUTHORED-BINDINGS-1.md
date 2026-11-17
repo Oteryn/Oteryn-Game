@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 issue: 1622
 base_branch: main
-branch: claude/happy-davinci-ijz3wy-qh
+branch: claude/happy-davinci-ijz3wy-qh-b2 (batch 2; batch 1 frozen at 447c051 on claude/happy-davinci-ijz3wy-qh)
 pr: null
 owner: quest lane qh (content session on owner instruction, 2026-11-17)
 created_at: 2026-11-17
@@ -19,6 +19,9 @@ owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/qh_authored_cases.rs
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/quest_world_callbacks/scenario.rs (three qh hook branches only)
   - docs/agents/tasks/QH-AUTHORED-BINDINGS-1.md
+  - tools/content-schema/npc-authoring/{chosen_placement_adjustments.py,npc_placement_scope.json,test_qh_missing_tile_cell.py} (batch 2)
+  - tools/content-schema/quest-authoring/qh/ and one input of tools/content-schema/native-gameplay/authored-npc-item-custody.json (batch 2)
+  - regenerated NPC placements, native item profiles and pins (by their tools only)
 merge_authority: CP_ONLY (lane never opens, labels or merges PRs)
 ```
 
@@ -47,10 +50,24 @@ placement, not a synthetic chest.
 | Child of Destiny, Asura Palace | covered on main | engenc bindings (`engenc-child-of-destiny.json`, `engenc-asura-palace.json`, main e2152d05); not duplicated. |
 | Mini world changes (WCVAR), seasonal events (SEASONWIN), Last Creep Standing (m23_last_creep) | server lane | not built here. |
 | Rathleton voting, Measuring Tibia, War Against the Hive missions, Insectoid Outfits (War Exp.), Cartography 101 (carried USE with a location gate), The Repenters (four 20 h tasks, corpse deadline, fire bug), Royal Bounacean Advisor (saplings-alive kill, night talk), The Lightbearer (world basin event) | server mechanic missing | sent to the server lane 2026-11-17; not built here. |
-| Top of the City | blocked: NPC placement data | Native route exists in region x128 y122: sealed door 5289 at 32858,31374,6 opens Jimmy's room 32857-32858,31375-31380,6; pick spot (ground 351 + 8504) at 32803,31259,8 over tunnel 32803-32806,31257-31260,9; rope hole 475 at 32810,31253,8 into the cellar with crates 8771 at 32807,31250-31252,8; food crate 8772, Iriana's Chest 8773, Heaven Blossom 5921 (TibiaWiki curid 31073 oldid 1050120). Jimmy's only placement evidence is the wiki cell 32857,31383,6, which has no native tile; Canary/Crystal world-npc.xml (201189f8) have no Jimmy, and `convert_placements.py` admits only donor overrides or ±1 adjustments. Needs a placement-tooling decision from the content owner. The first-greeting assassin summon and the wrong-bridge resets are server mechanics. |
+| Top of the City | binding + PG case (batch 2) | `top_of_the_city_quest.json`: Iriana `quest` (0→1), Jimmy `iriana` (1→2), pick 3456 on dirt 8504 at 32803,31259,8 teleports to the tunnel 32803,31259,9 (stage 2..4, read only, reusable), crate 8771 at 32807,31252,8 gives food crate 8772 (2→3), Jimmy `quest` takes 8772 and gives Iriana's Chest 8773 (3→4), Iriana `quest` takes 8773 and gives 10 Heaven Blossom 5921 (4→5, bound to the recipe `complete` stage s6, completes). Premium. Sources TibiaWiki curid 30757 oldid 1059697, curid 31073 oldid 1050120, Jimmy curid 30848 oldid 1114684. Iriana placed at 32849,31300,7 (Canary/Crystal agree); door 5289 at 32858,31374,6 has no action id, so it is a plain door and needs no binding. Food crate and chest got native custody through `authored-npc-item-custody.json`. PG case covers the NPC chain and the cellar crate on a one-floor crop; the dig teleport is cross-floor and is covered by the binding's boot validation only. Approximations: no first-greeting assassin summon, no wrong-bridge resets on the roofs (server lane), and the `yes` confirmations are folded into the keyword step. |
 
 ## Checks per batch
 
 `run_checks.py --part checks` and `--part unit-tests`, `pin-check`, `cargo fmt`, clippy for the
 changed crates, and the dispatch PG case (returns `Ok(())` without
 `OTERYN_TEST_POSTGRES_ADMIN_URL`).
+
+## OPEN-FACTS (owner browser check)
+
+- Jimmy: TibiaWiki gives 32857,31383,6, which has no native tile in our map. Placed on the nearest
+  walkable floor-6 ground of his room, 32857,31380,6 (content decision, batch 2). Please confirm
+  his in-game cell on Tibia global.
+
+## Batch 2 evidence
+
+Passed locally on the batch-2 tree: `run_checks.py --part checks` and `--part unit-tests`,
+`regenerate_content.py --check`, world `pin-check`, `cargo fmt --all --check`, clippy for
+`oteryn-gameplay-dispatch --all-features --tests`, and `test_qh_missing_tile_cell`. The dispatch
+test binary was killed for memory twice (SIGKILL) in the cloud container, so the
+`qh_` PostgreSQL cases run on the PC (packet in the READY message).
