@@ -428,6 +428,25 @@ fn native_think_pin(runtime: &ChannelRuntimeV1) -> NativeThinkPin {
     )
 }
 impl ReservedNativeThinkBatch {
+    /// Borrow the original reservation's immutable DATA as a bounded continuation.
+    pub fn quantum(&self, offset: usize, limit: usize) -> Option<Self> {
+        let end = offset.checked_add(limit)?.min(self.entries.len());
+        let entries = self.entries.get(offset..end)?;
+        Some(Self {
+            now_us: self.now_us,
+            stamp: self.stamp,
+            pin: self.pin,
+            occurrences: entries.iter().map(|entry| entry.occurrence).collect(),
+            entries: entries
+                .iter()
+                .map(|entry| ReservedNativeThink {
+                    occurrence: entry.occurrence,
+                    sequence_before: entry.sequence_before,
+                    due_before: entry.due_before,
+                })
+                .collect(),
+        })
+    }
     pub fn occurrences(&self) -> &[ThinkOccurrence] {
         &self.occurrences
     }

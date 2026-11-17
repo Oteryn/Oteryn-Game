@@ -58,6 +58,7 @@ struct Progress {
     source_known: bool,
     source_due: Option<u64>,
     ai_known: bool,
+    ai_cursor: usize,
     movement: Option<Option<u64>>,
     heals_known: bool,
     fields_known: bool,
@@ -132,6 +133,29 @@ impl PendingProfilePass {
     }
     pub(super) fn ai_known(&self) -> bool {
         self.progress().ai_known
+    }
+    // Preserve the original 1024-think window; bound only each holder checkout.
+    pub(super) fn ai_quantum(&self) -> Result<(usize, ReservedNativeThinkBatch), ()> {
+        let progress = self.progress();
+        if progress.rejected || progress.ai_known || !progress.source_known {
+            return Err(());
+        }
+        Ok((
+            progress.ai_cursor,
+            self.batch.quantum(progress.ai_cursor, 32).ok_or(())?,
+        ))
+    }
+    pub(super) fn finish_ai_quantum(&self, offset: usize, count: usize) -> Result<bool, ()> {
+        let mut progress = self.progress();
+        if progress.rejected
+            || progress.ai_known
+            || progress.ai_cursor != offset
+            || count != self.actor_bound.checked_sub(offset).ok_or(())?.min(32)
+        {
+            return Err(());
+        }
+        progress.ai_cursor = offset.checked_add(count).ok_or(())?;
+        Ok(progress.ai_cursor == self.actor_bound)
     }
     /// Called synchronously beside the AI owner's sequence/deadline commit.
     pub(super) fn record_report(

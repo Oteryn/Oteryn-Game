@@ -381,7 +381,9 @@ mod e2ef1 {
                 let start = tile(client.world_spatial().actor_position)?;
                 let landing = path.iter().try_fold(start, |at, direction| destination(world, at, *direction)).ok_or("approach landing absent")?;
                 let object = goals.get(&landing).copied().ok_or("approach candidate absent")?;
-                walk(client, world, &path).await?;
+                evidence(&format!("E2EF1_APPROACH phase=walk_start next_command_id={} steps={}", client.next_command_id(), path.len()));
+                let started = std::time::Instant::now();
+                walk(client, world, &path).await.inspect_err(|error| evidence(&format!("E2EF1_APPROACH phase=walk_error next_command_id={} elapsed_ms={} error={error}", client.next_command_id(), started.elapsed().as_millis())))?;
                 Ok(object)
             }
             Err(failure) => Err(MissingAuthoredTarget(format!("no reachable exact authored target: from={from:?} candidates={candidate_count} within_160={within_old_budget} {failure}")).into()),
@@ -506,10 +508,33 @@ mod e2ef1 {
         revision: u64,
     ) -> TestResult<UseDisposition> {
         let target = target(world, object, revision)?;
-        Ok(client
+        let command = client.next_command_id();
+        let started = std::time::Instant::now();
+        let session_key = client
+            .join_snapshot()
+            .game_session_id
+            .as_bytes()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        evidence(&format!(
+            "E2EF1_USE phase=send session={session_key} command_id={command} target={object:?}"
+        ));
+        let result = client
             .use_object(&target.placement, revision)
-            .await?
-            .disposition)
+            .await
+            .inspect_err(|error| {
+                evidence(&format!(
+                    "E2EF1_USE phase=error session={session_key} command_id={command} elapsed_ms={} server_sequence={} error={error}",
+                    started.elapsed().as_millis(), client.last_server_sequence()
+                ))
+            })?;
+        evidence(&format!(
+            "E2EF1_USE phase=result session={session_key} command_id={command} elapsed_ms={} disposition={:?}",
+            started.elapsed().as_millis(),
+            result.disposition
+        ));
+        Ok(result.disposition)
     }
     async fn m02(
         client: &mut DevClientSession,

@@ -222,20 +222,25 @@ fn live_join_visibility_projects_only_the_observers_interest_area_postgres() -> 
 
 #[test]
 fn monster_pass_cost_idle_channel_does_not_query_every_empty_tile() -> TestResult {
-    pass_cost(false, false)
+    pass_cost(false, false, false)
 }
 
 #[test]
 fn monster_pass_cost_spread_channel_batches_exact_empty_tiles() -> TestResult {
-    pass_cost(true, false)
+    pass_cost(true, false, false)
 }
 
 #[test]
 fn monster_pass_cost_spread_passive_census_batches_field_reads() -> TestResult {
-    pass_cost(true, true)
+    pass_cost(true, true, false)
 }
 
-fn pass_cost(spread: bool, passive: bool) -> TestResult {
+#[test]
+fn native_profile_holder_quantum_hands_back_before_finishing_census() -> TestResult {
+    pass_cost(true, false, true)
+}
+
+fn pass_cost(spread: bool, passive: bool, handback_probe: bool) -> TestResult {
     run_case(async move |harness| {
         prepare_current_session(harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -370,6 +375,11 @@ fn pass_cost(spread: bool, passive: bool) -> TestResult {
             "sim-1",
         )
         .map_err(debug)?;
+        if handback_probe {
+            let viewers = actors.iter().filter_map(|actor| runtime.read_actor_position(*actor).ok().map(|at| at.position())).collect::<Vec<_>>();
+            let (_woken, _) = states.monster_melee.creature_ai.wake_indexed(&viewers, |actor| runtime.read_actor_position(actor).ok().map(|at| at.position()), 0);
+            assert!(actors.len() > 32, "the holder probe must have a real multi-quantum census");
+        }
         for now in [10_000_000, 10_050_000] {
             let prepared_names = owner.capture_native_health_names(&runtime).map_err(debug)?;
             let read_names = owner
@@ -395,6 +405,16 @@ fn pass_cost(spread: bool, passive: bool) -> TestResult {
                 )
                 .await
                 .map_err(debug)?;
+            if handback_probe && now == 10_000_000 {
+                assert!(states.native_profile_pass.has_pending(), "a channel-sized reservation must yield its holder before all AI completes");
+                // A real foreground SQL pass must fit between continuations.
+                ground_scans(owner.root).await?;
+            }
+            for _ in 0..64 {
+                if !states.native_profile_pass.has_pending() { break; }
+                owner.drive_monster_profiles(&mut runtime, &mut states, &mut attack, &deps.room, native, &permit, &revisions, &[], now, &names).await.map_err(debug)?;
+            }
+            assert!(!states.native_profile_pass.has_pending(), "all retained occurrences and consumers must eventually complete");
             let elapsed = started.elapsed();
             let scans = ground_scans(owner.root).await? - before;
             eprintln!(

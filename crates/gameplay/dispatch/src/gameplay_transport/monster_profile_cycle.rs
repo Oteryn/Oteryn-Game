@@ -274,6 +274,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Box::pin(async move {
                 let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names) =
                     context;
+                let holder_started = std::time::Instant::now();
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await.inspect_err(|_| {
                     #[cfg(test)]
                     native_owner_turn(room, "profile_transaction", "begin_refused");
@@ -576,8 +577,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 pending.finish_source(primal_due, rotten_due);
                 }
+                let ai_quantum = if pending.ai_known() { None } else { Some(pending.ai_quantum().map_err(|_| crate::durability::DurabilityError::Unavailable)?) };
                 let table = &mut states.monster_melee.creature_ai;
-                if !pending.ai_known() { for occurrence in batch.occurrences() {
+                if let Some((_, quantum)) = &ai_quantum { for occurrence in quantum.occurrences() {
                     if runtime.contains_live_creature(occurrence.actor) {
                         table.refresh_current_native_creature(runtime, native, occurrence.actor)
                             .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
@@ -639,10 +641,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect::<std::collections::BTreeSet<_>>();
                 let summons = &mut states.monster_summons;
                 let waves = &mut states.rotten_waves;
-                if !pending.ai_known() { table
+                if let Some((_, quantum)) = &ai_quantum { table
                     .run_reserved_current_thinks_borrowed(
                         runtime,
-                        batch,
+                        quantum,
                         &root,
                         &schedule_revisions,
                         candidates,
@@ -670,8 +672,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         },
                     )
                     .await; }
-                if !batch.current_for(runtime) {
+                if !batch.current_for(runtime) || !reader.map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
+                }
+                if let Some((offset, quantum)) = &ai_quantum
+                    && !pending.finish_ai_quantum(*offset, quantum.occurrences().len())
+                        .map_err(|_| crate::durability::DurabilityError::Unavailable)? {
+                        // Read-only SQL and all channel guards are returned before the
+                        // next continuation competes with foreground input again.
+                        drop(reader);
+                        tx.rollback().await.map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                        states.owner_wake.notify_one();
+                        if holder_started.elapsed() >= std::time::Duration::from_secs(1) {
+                            super::operator_event(&format!("event=profile_holder_quantum elapsed_ms={} completed={} reserved={}", holder_started.elapsed().as_millis(), offset + quantum.occurrences().len(), batch.occurrences().len()));
+                        }
+                        return Ok((Some(now), Vec::new(), Vec::new(), false));
                 }
                 pending.finish_ai().map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                 let (proposals,native_actors)=if let Some(primal)=primal_pending.as_ref() {
