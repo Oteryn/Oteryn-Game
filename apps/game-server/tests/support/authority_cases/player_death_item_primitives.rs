@@ -2194,6 +2194,10 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     );
     let reset = prepare_nested_reset(&h, &h.root).await?;
     let audits_before = h.count("game_item_audit_outbox").await?;
+    // The fixture assembles the tree with hundreds of real moves in a fresh
+    // database. Refresh their table statistics and clear dead tuples before
+    // the timed reset so it does not race autovacuum on this setup workload.
+    sqlx::query("VACUUM (ANALYZE)").execute(&h.pool).await?;
     // PostgreSQL function tracking adds timing work to every call in the
     // 501-item transaction. Keep that instrumentation opt-in for diagnosis.
     let function_profile = async {
