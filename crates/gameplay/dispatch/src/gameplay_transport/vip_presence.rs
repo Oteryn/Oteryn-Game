@@ -213,6 +213,7 @@ fn unconfirm(watcher: &mut Watcher) -> PresenceBatch {
         .map(|known| {
             if known.value.status == Status::Online {
                 known.value.status = Status::Unconfirmed;
+                known.value.channel = None;
             }
             known.value.announce = false;
             known.value.confirmed_for_ms = 0;

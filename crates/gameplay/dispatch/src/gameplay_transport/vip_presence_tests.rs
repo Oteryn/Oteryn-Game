@@ -12,7 +12,7 @@ fn session() -> Result<GameSessionId, Box<dyn std::error::Error>> {
 }
 fn row(status: Status) -> Result<VipPresenceRow, Box<dyn std::error::Error>> {
     Ok(VipPresenceRow {
-        channel: None,
+        channel: (status == Status::Online).then(|| id(7)),
         target: CharacterId::decode(&id(2)).map_err(|error| format!("{error:?}"))?,
         entry: 1,
         name: "Alice".into(),
@@ -81,6 +81,7 @@ fn vip_presence_periodic_reconcile_privacy_and_listener_loss_do_not_announce() -
         return Err("listener loss must invalidate online".into());
     };
     assert_eq!(lost.entries[0].status, Status::Unconfirmed);
+    assert!(wire::encode(&lost).is_ok());
     assert_eq!(lost.entries[0].confirmed_for_ms, 0);
     assert!(!lost.entries[0].announce);
     runtime.hint(row(Status::Online)?.target, true);
@@ -134,6 +135,7 @@ fn vip_presence_failed_read_unconfirms_and_unwatched_hints_allocate_nothing() ->
         .complete(session()?, plan, None, now)
         .ok_or("failure snapshot")?;
     assert_eq!(failed.entries[0].status, Status::Unconfirmed);
+    assert!(wire::encode(&failed).is_ok());
     assert!(!failed.entries[0].announce);
     Ok(())
 }
