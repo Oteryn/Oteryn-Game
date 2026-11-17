@@ -897,6 +897,7 @@ def main() -> int:
         run(["python3", f"tools/content-schema/quest-authoring/{script}.py"])
     refresh_quest_donor_capture()
     run(["python3", "tools/contracts/refresh_npc_service_counts.py"])
+    run(["python3", "tools/content-migration/refresh_npc_programme_counts.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
