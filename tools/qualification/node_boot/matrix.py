@@ -294,13 +294,14 @@ def redact(source: Path, destination: Path) -> None:
                     output_file.write(line)
 
 
-def summarize(shards: list[dict], directory: Path, prefix: str) -> tuple[str, list[str]]:
+def summarize(shards: list[dict], directory: Path, prefix: str, *, missing_fatal: bool = True) -> tuple[str, list[str]]:
     """Markdown table plus the problems that fail the summary.
 
     Fatal: a planned shard without a readable result, a World shard that ran
-    no scenario, and any MISSING* scenario status. Scenario FAIL rows and
-    E2EF1_INCOMPLETE are reported; each shard job already fails on its own
-    NODE_BOOT_RESULT.
+    no scenario, and any MISSING* scenario status unless `missing_fatal` is
+    false (the PR heavy and Merge Queue gates, whose single-machine run never
+    failed on MISSING rows). Scenario FAIL rows and E2EF1_INCOMPLETE are
+    reported; each shard job already fails on its own NODE_BOOT_RESULT.
     """
     problems: list[str] = []
     rows = ["| shard | result | exit | minutes | scenarios | PASS | FAIL | MISSING | other |",
@@ -329,7 +330,7 @@ def summarize(shards: list[dict], directory: Path, prefix: str) -> tuple[str, li
             owners.setdefault(scenario["id"], []).append(item["name"])
             if status != "PASS":
                 details.append(f"- `{item['name']}` {scenario['id']} {status}")
-        if counts["MISSING"]:
+        if counts["MISSING"] and missing_fatal:
             problems.append(f"{item['name']}: {counts['MISSING']} MISSING scenario(s)")
         if item["world"] and not result["scenarios"]:
             problems.append(f"{item['name']}: World shard ran no scenario")
@@ -384,6 +385,8 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("plan", type=Path)
     s.add_argument("directory", type=Path)
     s.add_argument("--prefix", required=True)
+    s.add_argument("--missing-informational", action="store_true",
+                   help="report MISSING* scenarios without failing the summary")
     args = parser.parse_args(argv)
     try:
         if args.command == "plan":
@@ -404,7 +407,8 @@ def main(argv: list[str] | None = None) -> int:
             redact(args.source, args.destination)
         else:
             markdown, problems = summarize(json.loads(args.plan.read_text(encoding="utf-8")),
-                                           args.directory, args.prefix)
+                                           args.directory, args.prefix,
+                                           missing_fatal=not args.missing_informational)
             print(markdown)
             return 1 if problems else 0
     except PlanError as error:
