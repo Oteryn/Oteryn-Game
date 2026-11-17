@@ -119,6 +119,7 @@ pub enum QuestCallbackProjection {
     Scene {
         mutations: Vec<QuestSceneMutation>,
         remove_self: bool,
+        reset: Option<(u64, EntryFacts)>,
     },
     ItemCycle {
         position: TilePos,
@@ -454,9 +455,24 @@ impl CallbackStates {
             QuestCallbackProjection::Scene {
                 mutations,
                 remove_self,
+                reset,
             } => {
                 if !project_scene(self, owner, mutations, *remove_self) {
                     return false;
+                }
+                if let Some((due, restore)) = reset {
+                    let revision = self
+                        .changed
+                        .get(&owner)
+                        .map_or(0, |(revision, _)| *revision);
+                    self.movement_decays.insert(
+                        (*due, owner),
+                        MovementDecay {
+                            revision,
+                            restore: *restore,
+                            overlay: None,
+                        },
+                    );
                 }
             }
             QuestCallbackProjection::ItemCycle {

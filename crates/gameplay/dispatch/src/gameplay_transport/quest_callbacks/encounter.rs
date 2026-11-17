@@ -119,7 +119,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             && callback.effects.reset_after_ms.is_some()
             && !matches!(
                 projection,
-                Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
+                Some(
+                    crate::map::facts::QuestCallbackProjection::TimedTransform { .. }
+                        | crate::map::facts::QuestCallbackProjection::Scene { reset: Some(_), .. }
+                )
             )
         {
             return UseDisposition::Rejected;

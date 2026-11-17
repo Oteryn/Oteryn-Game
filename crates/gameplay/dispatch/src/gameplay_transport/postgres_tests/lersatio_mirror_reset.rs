@@ -30,9 +30,10 @@ fn lersatio_mirror_reset_waits_thirty_seconds_and_fences_newer_revision() {
     assert_eq!(facts.object_revision(1), 1);
     assert_eq!(facts.expire_movement_items(30_000_000), 1);
     assert_eq!(facts.object_revision(1), 2);
-    let later = QuestCallbackProjection::TimedTransform {
-        due: 60_000_000,
-        restore: intact,
+    let later = QuestCallbackProjection::Scene {
+        mutations: Vec::new(),
+        remove_self: false,
+        reset: Some((60_000_000, intact)),
     };
     assert!(facts.apply_quest_callback(1, 2, broken, &[], &[], false, Some(&later)));
     assert!(facts.apply_quest_callback(1, 3, intact, &[], &[], false, None));
