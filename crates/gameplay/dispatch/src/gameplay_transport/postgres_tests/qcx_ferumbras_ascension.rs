@@ -49,12 +49,6 @@ fn chest_case() -> TestResult {
             .fetch_one(&h.pool)
             .await?;
         eprintln!("QCX36 reward_chest PostgreSQL {version}");
-        // Set the earned seal and passage state so this case exercises just the chest.
-        for (suffix, value) in [("programme", 2_i64), ("passages", 8), ("seal_7", 1)] {
-            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$1,$2,$3,character_revision FROM game_character_roots WHERE character_id=encode($4,'hex')::uuid")
-                .bind(format!("oteryn:quest-progress/questpc7/ferumbras/{suffix}"))
-                .bind(QUEST).bind(value).bind(id(41).as_slice()).execute(&h.pool).await?;
-        }
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -180,6 +174,17 @@ fn chest_case() -> TestResult {
         raise_level(&owner, &admitted).await?;
         owner.states.level_refresh.mark([fence.character_id]);
         Box::pin(owner.refresh_level_up_vitals(deps.actor, admitted.game_session_id)).await;
+        // Set the earned seal and passage state so this case exercises just the chest.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        for (suffix, value) in [("programme", 2_i64), ("passages", 8), ("seal_7", 1)] {
+            sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$1,$2,$3,character_revision FROM game_character_roots WHERE character_id=encode($4,'hex')::uuid")
+                .bind(format!("oteryn:quest-progress/questpc7/ferumbras/{suffix}"))
+                .bind(QUEST).bind(value).bind(id(41).as_slice()).execute(&mut *tx).await?;
+        }
+        tx.commit().await?;
         owner.admit_quest_session(&admitted).await;
 
         let use_chest = super::questpc7_ferumbras::use_at;
