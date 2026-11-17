@@ -1155,6 +1155,7 @@ fn scenario_case(
                 generation
                     .native_gameplay()
                     .ok_or("native story policies")?,
+                name,
             )?
         } else if diprath_room {
             super::super::l6_diprath_room::world(

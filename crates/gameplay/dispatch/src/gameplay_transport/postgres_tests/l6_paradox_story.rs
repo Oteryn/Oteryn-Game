@@ -94,7 +94,7 @@ fn approach(c: Contact) -> Position {
 pub(super) fn start() -> Position {
     approach(CONTACTS[0])
 }
-fn run(name: &'static str) -> TestResult {
+pub(super) fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -120,8 +120,15 @@ fn l6_paradox_story_native_legacy_progress_and_catch_up() -> TestResult {
 fn l6_paradox_story_native_legacy_completed_catch_up() -> TestResult {
     run("qengine-rewards-questpc4-paradox-story-legacy-completed")
 }
-pub(super) fn world(native: &NativeGameplayState) -> TestResult<crate::map::boot::BundleWorld> {
-    super::l6_world_pickups::native_scene(native, crops()?, &[])
+pub(super) fn world(
+    native: &NativeGameplayState,
+    name: &str,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    let mut selected = crops()?;
+    if super::l6_paradox_riddler_wire::selected(name) {
+        selected.extend(super::l6_paradox_riddler_wire::crops()?);
+    }
+    super::l6_world_pickups::native_scene(native, selected, &[])
 }
 pub(super) fn crops() -> TestResult<Vec<super::l6_world_pickups::NativeCrop>> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop};
@@ -169,6 +176,7 @@ pub(super) fn crops() -> TestResult<Vec<super::l6_world_pickups::NativeCrop>> {
 async fn install(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
+    riddler_wire: bool,
 ) -> TestResult<Vec<EntityRef>> {
     let catalogue = NpcDataCatalogue::load(
         std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
@@ -220,6 +228,9 @@ async fn install(
             }],
         })
         .collect();
+    if riddler_wire {
+        npcs.push(super::l6_paradox_riddler_wire::placement());
+    }
     npcs.sort_by(|a, b| a.key.cmp(&b.key));
     runtime
         .place_npcs(
@@ -245,13 +256,13 @@ async fn install(
         })
         .collect()
 }
-struct Reply {
+pub(super) struct Reply {
     id: u64,
     payload: Vec<u8>,
     body: Vec<u8>,
-    disposition: NpcIntentDisposition,
+    pub(super) disposition: NpcIntentDisposition,
 }
-async fn conversation(
+pub(super) async fn conversation(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     npc: EntityRef,
@@ -632,7 +643,8 @@ pub(super) async fn exercise(
     if legacy {
         install_legacy_callbacks(owner, legacy_completed)?;
     }
-    let npcs = install(owner, admitted).await?;
+    let riddler_wire = super::l6_paradox_riddler_wire::selected(name);
+    let npcs = install(owner, admitted, riddler_wire).await?;
     let mut selected = admitted
         .continuity
         .selected_capabilities
@@ -834,6 +846,9 @@ pub(super) async fn exercise(
         assert_existing_receipts_preserved(&before, &after);
         assert_eq!(after["achievements"], before["achievements"]);
         assert_eq!(after["grants"], before["grants"]);
+    }
+    if riddler_wire {
+        super::l6_paradox_riddler_wire::exercise(owner, admitted, h).await?;
     }
     Ok(())
 }
