@@ -1536,7 +1536,7 @@ fn scenario_case(
                 3
             } else if name.starts_with("qengine-rewards-l2-djinn-") {
                 13
-            } else if classic_npc {
+            } else if classic_npc || qd_world {
                 5
             } else if monk {
                 4
@@ -1575,6 +1575,7 @@ fn scenario_case(
             || name.contains("l6-beggar-")
             || name == "npcfix-m38-mistrock"
             || name == "qengine-rewards-m01a-sven"
+            || name == "qengine-rewards-qd-steal-from-thieves"
             || (qm03 && name.ends_with("-premium"))
             || name.contains("l7-knight-")
             || name.contains("l8-")
