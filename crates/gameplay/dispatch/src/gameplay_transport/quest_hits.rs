@@ -7,7 +7,45 @@ use crate::durability::{
 use std::sync::Arc;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn drain_mage_tower_hits(&self) -> bool {
+        let queue = self.states.attack.lock().await.kills().clone();
+        while let Some(hit) = queue.next_mage_tower_hit() {
+            let Ok(current) = self.current_quest_fence(hit.session).await else {
+                return false;
+            };
+            if let Some(fence) = current {
+                let live = {
+                    let runtime = self.runtime.lock().await;
+                    runtime.owner_fence().is_ok()
+                        && runtime.bound_attacker_lease(hit.actor, hit.session) == Ok(hit.lease)
+                };
+                if live
+                    && fence.character_id == hit.lease.character_id()
+                    && fence.character_lease_generation == hit.lease.generation()
+                    && self
+                        .root
+                        .consume_mage_tower_kills(
+                            self.character,
+                            self.holder,
+                            fence,
+                            hit.epoch,
+                            hit.target,
+                        )
+                        .await
+                        .is_err()
+                {
+                    return false;
+                }
+            }
+            queue.acknowledge_mage_tower_hit(hit);
+        }
+        true
+    }
+
     pub(super) async fn drain_native_quest_hits(&self) -> bool {
+        if !self.drain_mage_tower_hits().await {
+            return false;
+        }
         let pending = {
             let attack = self.states.attack.lock().await;
             let Ok(cache) = attack.kills().1.lock() else {

@@ -389,11 +389,21 @@ struct RefusedSourceDrop {
     reason: SourceDropRefusalReason,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) struct MageTowerHit {
+    pub actor: ExactActorRef,
+    pub session: GameSessionId,
+    pub lease: crate::foundation::CharacterLease,
+    pub target: ExactActorRef,
+    pub epoch: u64,
+}
+
 #[derive(Debug, Default)]
 struct KillQueueState {
     /// Advisory deduplication follows the already bounded, exact corpse projections.
     analyser: Vec<(ExactActorRef, Arc<Mutex<super::analyser::DeathReceipts>>)>,
     boss_contributions: boss_reward_contribution::BossContributions,
+    mage_tower_hits: Vec<MageTowerHit>,
     // Equipment-owner projections, independent of a held attack target or swing-cache epoch.
     proficiency_weapons: Vec<(ExactActorRef, GameSessionId, u64, Option<String>)>,
     proficiency_deaths: Vec<FrozenProficiencyDeath>,
@@ -561,6 +571,58 @@ struct FrozenProficiencyDeath {
 }
 
 impl KillSettlementQueue {
+    pub(super) fn capture_mage_tower_hit(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        let Some((epoch, _)) = runtime.world_change_cycles() else {
+            return;
+        };
+        if !runtime
+            .world_spawn_cohort(target)
+            .is_some_and(|(key, _, _)| key == "the_mage_s_tower")
+            || !runtime
+                .companion_snapshot_including_dead(target)
+                .is_ok_and(|view| view.state.policy.definition_key == "oteryn:creature.raging_mage")
+        {
+            return;
+        }
+        let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
+            return;
+        };
+        let hit = MageTowerHit {
+            actor,
+            target,
+            session,
+            lease,
+            epoch: *epoch,
+        };
+        let mut state = self.state();
+        state.mage_tower_hits.retain(|previous| {
+            previous.epoch == *epoch
+                && runtime.bound_attacker_lease(previous.actor, previous.session)
+                    == Ok(previous.lease)
+        });
+        if !state.mage_tower_hits.contains(&hit)
+            && state.mage_tower_hits.len() < runtime.actor_slot_capacity()
+        {
+            state.mage_tower_hits.push(hit);
+        }
+    }
+
+    pub(super) fn next_mage_tower_hit(&self) -> Option<MageTowerHit> {
+        self.state().mage_tower_hits.first().copied()
+    }
+
+    pub(super) fn acknowledge_mage_tower_hit(&self, hit: MageTowerHit) {
+        self.state()
+            .mage_tower_hits
+            .retain(|pending| *pending != hit);
+    }
+
     pub(super) fn statistics(&self) -> &super::public_kill_statistics::CaptureQueue {
         &self.2
     }

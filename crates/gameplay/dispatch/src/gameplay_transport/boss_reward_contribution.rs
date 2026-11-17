@@ -296,6 +296,7 @@ impl KillSettlementQueue {
         actor: ExactActorRef,
         session: GameSessionId,
     ) {
+        self.capture_mage_tower_hit(runtime, boss, actor, session);
         self.state()
             .boss_contributions
             .participant(runtime, boss, actor, session);

@@ -3,6 +3,7 @@
 pub mod benevola;
 mod fire_earth;
 pub(crate) mod fire_feathered;
+mod mage_tower;
 pub(super) mod shared_objects;
 pub(crate) mod shared_progress;
 
