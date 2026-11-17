@@ -273,7 +273,7 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("UPDATE game_character_progression_state SET level=$1")
+    sqlx::query("UPDATE game_character_progression_state SET level=$1, character_revision=2")
         .bind(level)
         .execute(&mut *tx)
         .await?;
@@ -286,8 +286,12 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
                 .bind(id(41).as_slice()).bind(id(91).as_slice()).bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(ordinal).bind(id(seed + 20).as_slice()).execute(&mut *tx).await?;
         }
     }
+    // Imported prerequisite tracks require revision 2; keep their Character root
+    // and progression at the same revision before loading the live quest fence.
+    sqlx::query("UPDATE game_character_roots SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice()).execute(&mut *tx).await?;
     for s in &callback.storage {
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,value,quest_key,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,1) ON CONFLICT(character_id,track_key) DO UPDATE SET value=excluded.value")
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,value,quest_key,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=excluded.value")
             .bind(id(41).as_slice()).bind(&s.track).bind(s.minimum).bind(&callback.quest).execute(&mut *tx).await?;
     }
     tx.commit().await?;
