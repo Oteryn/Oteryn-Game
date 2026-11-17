@@ -4,11 +4,6 @@
         {
             "quest": "oteryn:quest.the_white_raven_monastery_quest",
             "recipe_sha256": "ad32242bc66dbc321ecfd2caeb651ded11bb395c8cd8ba1e610855f47124a714",
-            "admission": {
-                "minimum_level": 0,
-                "premium": false,
-                "prerequisites": []
-            },
             "sources": [
                 "https://tibia.fandom.com/wiki/The_White_Raven_Monastery_Quest/Spoiler (curid 4295, oldid 1002868): use the Dead Human north of the magic-wall hole in the Ghostlands catacombs for a Backpack with the Monk's Diary",
                 "https://tibia.fandom.com/wiki/The_White_Raven_Monastery_Quest (curid 3766, oldid 756263): free account, rewards Blessed Ankh, Family Brooch, Isle of the Kings access",
