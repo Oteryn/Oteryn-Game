@@ -40,6 +40,7 @@
       "failure_message": null,
       "success_message": "STOP THAT, YOU WORM, OR I'LL SHOW YOU THE BEAUTY OF DEATH.",
       "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81",
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
       ],
       "effects": {
@@ -102,6 +103,7 @@
       "failure_message": null,
       "success_message": "FINE. DIE PRETTY!",
       "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81",
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
       ],
       "effects": {
@@ -221,6 +223,7 @@
       "failure_message": null,
       "success_message": "STOP THAT, YOU WORM, OR I'LL SHOW YOU THE BEAUTY OF DEATH.",
       "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81",
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
       ],
       "effects": {
@@ -283,6 +286,7 @@
       "failure_message": null,
       "success_message": "FINE. DIE PRETTY!",
       "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81",
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
       ],
       "effects": {
@@ -402,6 +406,7 @@
       "failure_message": null,
       "success_message": "STOP THAT, YOU WORM, OR I'LL SHOW YOU THE BEAUTY OF DEATH.",
       "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81",
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
       ],
       "effects": {
@@ -464,6 +469,7 @@
       "failure_message": null,
       "success_message": "FINE. DIE PRETTY!",
       "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81",
         "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
       ],
       "effects": {

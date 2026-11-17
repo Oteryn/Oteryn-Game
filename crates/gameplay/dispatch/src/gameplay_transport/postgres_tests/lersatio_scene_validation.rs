@@ -216,6 +216,9 @@ fn lersatio_mirrors_are_registered_with_both_counter_transitions() -> Result<(),
             ));
             assert_eq!(callback.effects.reset_after_ms, Some(30_000));
             assert_eq!(callback.effects.encounter.is_some(), phase == "second");
+            assert!(callback.sources.iter().any(|source| source.starts_with(
+                "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:"
+            )));
             assert_eq!(callback.selector.appearance, Some(8667));
             assert_eq!(callback.effects.transform, Some(8721));
             let mission_guard = callback
