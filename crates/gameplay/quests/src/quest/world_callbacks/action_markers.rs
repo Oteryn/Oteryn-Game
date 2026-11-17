@@ -37,7 +37,7 @@ pub fn load(source: &str) -> Result<Vec<Callback>, String> {
             || binding.callbacks.iter().any(|callback| {
                 callback.trigger != Trigger::StepIn
                     || callback.selector.action != Some(binding.action)
-                    || callback.selector.ordinal != Some(1)
+                    || callback.selector.ordinal.is_some()
                     || callback.selector.position.is_none()
                     || callback.teleport.is_none()
                     || !callback.storage.is_empty()

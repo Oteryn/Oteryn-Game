@@ -17,8 +17,7 @@
             },
             "unique": null,
             "action": 25018,
-            "appearance": null,
-            "ordinal": 1
+            "appearance": null
           },
           "lever": null,
           "reversible": false,
@@ -53,8 +52,7 @@
             },
             "unique": null,
             "action": 25018,
-            "appearance": null,
-            "ordinal": 1
+            "appearance": null
           },
           "lever": null,
           "reversible": false,
@@ -89,8 +87,7 @@
             },
             "unique": null,
             "action": 25018,
-            "appearance": null,
-            "ordinal": 1
+            "appearance": null
           },
           "lever": null,
           "reversible": false,
@@ -125,8 +122,7 @@
             },
             "unique": null,
             "action": 25018,
-            "appearance": null,
-            "ordinal": 1
+            "appearance": null
           },
           "lever": null,
           "reversible": false,

@@ -1095,7 +1095,12 @@ fn world_cells(
             sector::Item {
                 palette: 0,
                 depth: 0,
-                attrs: Default::default(),
+                attrs: sector::Attrs {
+                    action: ((floor, x, y) == (trigger.floor, trigger.x, trigger.y)
+                        && callback.selector.action == Some(25018))
+                    .then_some(25018),
+                    ..Default::default()
+                },
             },
         );
         sectors

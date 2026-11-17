@@ -15,8 +15,6 @@ OUTPUT = ROOT / 'content/quests/action-marker-bindings.json'
 def build():
     callbacks = document()['callbacks']
     for callback in callbacks:
-        # loadLuaMapAction stamps ground and top item; select the stair once.
-        callback['selector']['ordinal'] = 1
         callback['effects'] = {'teleport_effect': 11}
     return {'schema': 1, 'bindings': [{'action': 25018,
             'handler': 'cursed_crystal_stairs', 'callbacks': callbacks}]}

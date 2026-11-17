@@ -1316,7 +1316,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return entered;
         };
         let cause = QuestCause::Step(command);
-        let selected = (0..base.depths().iter().filter(|d| **d == 0).count())
+        let mut selected = (0..base.depths().iter().filter(|d| **d == 0).count())
             .filter_map(|o| {
                 let key = placement_key(at, u8::try_from(o).ok()?)?;
                 if map.facts.base_hidden(key) {
@@ -1335,6 +1335,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .flatten()
             .collect::<Vec<_>>();
+        // Donor startup marks both the ground and top stair. One action handler
+        // runs once per entered tile, independent of which marked ordinal is present.
+        selected.dedup_by(|left, right| {
+            left.0.selector.action == Some(25018) && std::ptr::eq(left.0, right.0)
+        });
         let mut selected = if selected.len() > 1
             && selected.iter().enumerate().all(|(i, (left, _))| {
                 selected[..i]
