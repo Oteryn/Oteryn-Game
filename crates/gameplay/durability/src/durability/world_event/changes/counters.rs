@@ -33,6 +33,8 @@ pub enum CreditOutcome {
     AlreadyApplied,
     /// The accepted Energized death left the World in its Energized phase.
     ResurrectEnergizedMage,
+    /// The accepted Energized death now has a Raging encounter to qualify.
+    QualifyRagingMageRoom,
     Refused,
 }
 /// Source events are emitted by native death, quest-receipt or item-burn adapters.
@@ -307,17 +309,26 @@ pub async fn credit(
         .bind(world.as_bytes().as_slice()).bind(i16::from(event.source_kind)).bind(&event.occurrence).fetch_optional(&mut **tx).await?;
     let mage = CounterKind::MagesTower;
     let energized_death = event.credits.contains(&(mage, Credit::Kill(1)));
-    let should_resurrect = |state: CounterState| {
-        energized_death
-            && state.epoch == authority.epoch
-            && state.credit_generation == event.counter_generations[mage.index()]
-            && state.stage == 1
+    let mage_projection = |state: CounterState| {
+        if !energized_death
+            || state.epoch != authority.epoch
+            || state.credit_generation != event.counter_generations[mage.index()]
+        {
+            return None;
+        }
+        match state.stage {
+            1 => Some(CreditOutcome::ResurrectEnergizedMage),
+            2 => Some(CreditOutcome::QualifyRagingMageRoom),
+            _ => None,
+        }
     };
     if let Some(previous) = previous {
         return Ok(if previous != binding {
             CreditOutcome::Refused
-        } else if should_resurrect(values[mage.index()]) && authority.current(tx).await? {
-            CreditOutcome::ResurrectEnergizedMage
+        } else if let Some(projection) = mage_projection(values[mage.index()])
+            && authority.current(tx).await?
+        {
+            projection
         } else {
             CreditOutcome::AlreadyApplied
         });
@@ -378,8 +389,8 @@ pub async fn credit(
             }
         }
     }
-    if should_resurrect(values[mage.index()]) {
-        return Ok(CreditOutcome::ResurrectEnergizedMage);
+    if let Some(projection) = mage_projection(values[mage.index()]) {
+        return Ok(projection);
     }
     Ok(CreditOutcome::Applied {
         phase_changed: changed,

@@ -404,6 +404,7 @@ struct KillQueueState {
     analyser: Vec<(ExactActorRef, Arc<Mutex<super::analyser::DeathReceipts>>)>,
     boss_contributions: boss_reward_contribution::BossContributions,
     mage_tower_hits: Vec<MageTowerHit>,
+    qualified_mage_tower_room: Option<CreatureDeathOccurrenceKey>,
     // Equipment-owner projections, independent of a held attack target or swing-cache epoch.
     proficiency_weapons: Vec<(ExactActorRef, GameSessionId, u64, Option<String>)>,
     proficiency_deaths: Vec<FrozenProficiencyDeath>,
@@ -615,6 +616,14 @@ impl KillSettlementQueue {
         {
             state.mage_tower_hits.push(hit);
         }
+    }
+
+    pub(super) fn mage_tower_room_qualified(&self, death: CreatureDeathOccurrenceKey) -> bool {
+        self.state().qualified_mage_tower_room == Some(death)
+    }
+
+    pub(super) fn mark_mage_tower_room_qualified(&self, death: CreatureDeathOccurrenceKey) {
+        self.state().qualified_mage_tower_room = Some(death);
     }
 
     pub(super) fn pending_mage_tower_hits(&self) -> Vec<MageTowerHit> {
@@ -3687,6 +3696,11 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 Ok(crate::durability::world_event::changes::counters::CreditOutcome::ResurrectEnergizedMage) => {
                     let mut runtime = admission.runtime.lock().await;
                     if runtime.resurrect_energized_mage(entry.target, admission.owner_now().get()).is_err() {
+                        return SettleReport { verdict: SettleVerdict::Retry, no_progression: false };
+                    }
+                }
+                Ok(crate::durability::world_event::changes::counters::CreditOutcome::QualifyRagingMageRoom) => {
+                    if admission.eject_mage_tower_spectators(*epoch, self.fence, entry.facts.death, entry.facts.corpse).await.is_err() {
                         return SettleReport { verdict: SettleVerdict::Retry, no_progression: false };
                     }
                 }

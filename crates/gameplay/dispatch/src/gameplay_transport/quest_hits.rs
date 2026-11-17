@@ -7,6 +7,113 @@ use crate::durability::{
 use std::sync::Arc;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Crystal raging_mage_tower/creaturescripts_raging_mage_1.lua:20–25.
+    pub(super) async fn eject_mage_tower_spectators(
+        &self,
+        epoch: u64,
+        fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+        death: crate::foundation::CreatureDeathOccurrenceKey,
+        center: crate::foundation::MovementLocalPosition,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        use crate::durability::DurabilityError;
+        use crate::foundation::MovementLocalPosition;
+
+        let queue = self.states.attack.lock().await.kills().clone();
+        if queue.mage_tower_room_qualified(death) {
+            return Ok(());
+        }
+        let in_room = |at: MovementLocalPosition| {
+            at.floor == center.floor
+                && at.x.abs_diff(center.x) <= 10
+                && at.y.abs_diff(center.y) <= 10
+        };
+        let (spectators, raging) = {
+            let runtime = self.runtime.lock().await;
+            let positioned = runtime
+                .positioned_actor_census()
+                .map_err(|_| DurabilityError::Unavailable)?;
+            let mut spectators = Vec::new();
+            let mut raging = None;
+            for (actor, position, session) in positioned {
+                if !in_room(position.position()) {
+                    continue;
+                }
+                if let Some(session) = session {
+                    let lease = runtime
+                        .bound_attacker_lease(actor, session)
+                        .map_err(|_| DurabilityError::Unavailable)?;
+                    spectators.push((actor, session, lease));
+                } else if runtime
+                    .matches_live_creature_identity(actor, b"oteryn:creature.raging_mage")
+                    && runtime
+                        .world_spawn_cohort(actor)
+                        .is_some_and(|(key, _, _)| key == "the_mage_s_tower")
+                {
+                    raging = Some(actor);
+                }
+            }
+            (spectators, raging)
+        };
+        if spectators.is_empty() {
+            queue.mark_mage_tower_room_qualified(death);
+            return Ok(());
+        }
+        let ids = spectators
+            .iter()
+            .map(|(_, _, lease)| lease.character_id().as_bytes().to_vec())
+            .collect();
+        let Some(unworthy) = self
+            .root
+            .mage_tower_unworthy(self.character, self.holder, fence, epoch, ids, raging)
+            .await?
+        else {
+            return Ok(());
+        };
+        if !unworthy.is_empty() {
+            let map = self.bundle_map().ok_or(DurabilityError::Unavailable)?;
+            let closed = crate::map::floor::BundleDoors(&map.facts);
+            let mut runtime = self.runtime.lock().await;
+            runtime
+                .owner_fence()
+                .map_err(|_| DurabilityError::Unavailable)?;
+            let exit = MovementLocalPosition {
+                x: 33142,
+                y: 31529,
+                floor: 3,
+            };
+            for (actor, session, lease) in spectators {
+                if !unworthy
+                    .iter()
+                    .any(|id| id.as_slice() == lease.character_id().as_bytes())
+                    || runtime.bound_attacker_lease(actor, session) != Ok(lease)
+                {
+                    continue;
+                }
+                let position = runtime
+                    .read_actor_position(actor)
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                if in_room(position.position()) {
+                    let proof = crate::map::floor::prepare_quest_callback_teleport(
+                        &mut runtime,
+                        self.movement_cells(),
+                        actor,
+                        session,
+                        position,
+                        exit,
+                        false,
+                        &closed,
+                    )
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                    runtime
+                        .commit_source_step(proof)
+                        .map_err(|_| DurabilityError::Unavailable)?;
+                }
+            }
+        }
+        queue.mark_mage_tower_room_qualified(death);
+        Ok(())
+    }
+
     async fn drain_mage_tower_hits(&self) -> bool {
         let queue = self.states.attack.lock().await.kills().clone();
         for hit in queue.pending_mage_tower_hits() {
