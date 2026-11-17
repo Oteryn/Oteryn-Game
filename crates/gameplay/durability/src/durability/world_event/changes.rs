@@ -14,6 +14,7 @@ use sha2::{Digest, Sha256};
 mod bindings;
 pub mod callbacks;
 pub mod counters;
+mod horse_station;
 
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
 pub fn roll(
@@ -193,6 +194,7 @@ pub(super) async fn record(
     let timestamp: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM activated_at)*1000)::bigint FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
         .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut **tx).await?;
     let mut selected = roll(world, epoch, timestamp)?;
+    horse_station::at_save(tx, world, timestamp).await?;
     counters::at_reset(
         tx,
         world,
