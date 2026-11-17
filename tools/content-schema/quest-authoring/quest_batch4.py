@@ -627,6 +627,24 @@ def load_packets(root, selected=None, available=False):
 def expected_files(root, selected=None, available=False):
     root = Path(root)
     packets = load_packets(root, selected=selected, available=available)
+    # The source packet describes the depot. The lake is a separately
+    # authored runtime rule backed by the wiki and retained map placements.
+    lake_path = root / 'content/quests/world-callbacks/krailos-water.json'
+    if lake_path.is_file():
+        for packet in packets:
+            if packet['quest_directory'] != 'krailos':
+                continue
+            lake = read(lake_path)
+            fields(lake, {'schema', 'callbacks'}, {'schema', 'callbacks'}, 'Krailos lake')
+            rows = lake['callbacks']
+            require(lake['schema'] == 1 and isinstance(rows, list) and len(rows) == 2
+                    and all(isinstance(row, dict) and row.get('quest') == QUEST_OWNERS['krailos']
+                            for row in rows)
+                    and {row.get('key') for row in rows} == {
+                        'oteryn:quest-callback/krailos-water-pour',
+                        'oteryn:quest-callback/krailos-water-purify',
+                    }, 'invalid Krailos lake callbacks')
+            packet['callbacks'].extend(rows)
     seed = read(root / CALLBACK_OUTPUT)
     fields(seed, {'schema', 'callbacks'}, {'schema', 'callbacks'}, 'existing world callbacks')
     require(type(seed['schema']) is int and seed['schema'] == 1 and isinstance(seed['callbacks'], list),

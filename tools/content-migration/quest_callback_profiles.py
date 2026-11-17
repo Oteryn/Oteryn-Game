@@ -256,6 +256,9 @@ def _requested_inputs(root, extra_keys=()):
         item = callback.get('item_on_target')
         if item:
             keys.add(item['item'])
+            if callback['key'] in ('oteryn:quest-callback/krailos-water-pour',
+                                   'oteryn:quest-callback/krailos-water-purify'):
+                authored_keys.add(item['item'])
             if item.get('replacement'):
                 keys.add(item['replacement'])
     # These source chests also advance a quest track. Their Item definitions
