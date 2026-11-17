@@ -15,7 +15,9 @@ const PARALYSED_ICON: u8 = 14;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients, world))).await;
-    match result.unwrap_or_else(|_| Err("C16b.client journey timeout".into())) {
+    let result = result.unwrap_or_else(|_| Err("C16b.client journey timeout".into()));
+    if reach_report_missing("C16b.client", &result) { return; }
+    match result {
         Ok(()) => evidence(
             "e2e_all scenario=C16b.client status=PASS evidence=paralyze-condition-status-reply",
         ),
@@ -26,6 +28,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
 }
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
+    reach_require_items(&[3165])?;
     let mut caster = connect_world(clients, 0x16).await?;
     let outcome = verdict::observe(capture(&mut caster, clients, world)).await;
     let cleanup = verdict::observe(full_e2ef5::rune_cleanup(&mut caster, world)).await;

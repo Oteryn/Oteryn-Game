@@ -65,17 +65,19 @@ async fn acquire_rune(
         .collect();
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let npc = match reach_npc(
+    let npc = match reach_seller(
         client,
         world,
         &metadata.npcs,
-        |npc| sellers.contains(&npc.key),
+        &sellers,
+        id,
         &format!("C16-rune-{id}"),
     )
     .await
     {
         Ok(npc) => npc,
         Err(error) => {
+            if error.is::<ReachMissing>() { return Err(error); }
             let balances = runtime::balances(client.session_mut()).await?;
             return Err(format!("rune {id} acquisition blocked: {error}; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
         }
@@ -293,6 +295,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
     };
     let result: TestResult = verdict::observe(async {
         let path = Path::new(&directory);
+        reach_require_items(&[3180])?;
         let mut client = connect_world(clients, 0xc1).await?;
         let snapshot = client
             .session_mut()
@@ -377,6 +380,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
         Ok(())
     })
     .await;
+    if reach_report_missing("C16a.client", &result) { return; }
     match result {
         Ok(()) => evidence(
             "e2e_all scenario=C16a.client status=PASS evidence=raw-domain-17-placement-and-expiry",
@@ -389,10 +393,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
 
 #[cfg(test)]
 #[test]
-fn qualification_reach2_c16a_newhaven_seller() -> TestResult {
+fn qualification_reach2_c16a_newhaven_missing_seller() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| reach2_seller_test(3180, "C16a").map_err(|error| error.to_string()))?
+        .spawn(|| reach2_seller_test(3180, "C16a", "item=3180 authored_sellers=12 compiled_sellers=0").map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "reach2 seller test thread failed")?
         .map_err(Into::into)

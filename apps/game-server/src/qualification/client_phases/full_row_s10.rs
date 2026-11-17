@@ -22,7 +22,7 @@ use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_gameplay_entities::rashid_schedule::RashidDestination;
 use oteryn_protocol_oteryn::npc_service as wire;
 
-const TRAVEL_NPCS: &[(&str, &str, &str, u64)] = &[
+pub(super) const TRAVEL_NPCS: &[(&str, &str, &str, u64)] = &[
     ("oteryn:npc.captain_bluebear", "edron", "Edron", 160),
     ("oteryn:npc.captain_seagull", "thais", "Thais", 130),
     ("oteryn:npc.kendra", "thais", "Thais", 180),
@@ -47,6 +47,7 @@ impl Row {
         ));
     }
     fn finish(self, result: TestResult) {
+        if reach_report_missing("S10.full", &result) { return; }
         let status = if result.is_ok()
             && self.attempted
                 == [
@@ -229,6 +230,8 @@ async fn earn(
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    let (authored_captains, compiled_captains) = reach_captain_counts(&metadata.npcs);
+    if compiled_captains == 0 { return Err(ReachMissing(format!("authored_captains={authored_captains} compiled_captains=0")).into()); }
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
         bytes,

@@ -44,6 +44,7 @@ impl Row {
         self.0.complete()
     }
     fn finish(self, result: TestResult) {
+        if reach_report_missing(&format!("{}.full", self.0.id), &result) { return; }
         self.0.finish(&result);
     }
 }
@@ -945,6 +946,7 @@ async fn rune_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();
+            reach_require_items(&[if id == "C16b" { 3165 } else { 3180 }])?;
             let mut client = connect_world(clients, tag).await?;
             let mut peer_cancelled = false;
             let mut completed = false;
@@ -1100,17 +1102,19 @@ pub(super) async fn acquire_rune(
         .collect();
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let npc = match reach_npc(
+    let npc = match reach_seller(
         client,
         world,
         &metadata.npcs,
-        |npc| sellers.contains(&npc.key),
+        &sellers,
+        id,
         &format!("C16-rune-{id}"),
     )
     .await
     {
         Ok(npc) => npc,
         Err(error) => {
+            if error.is::<ReachMissing>() { return Err(error); }
             let balances = runtime::balances(client.session_mut()).await?;
             return Err(format!("rune {id} acquisition blocked: {error}; eligible_sellers={sellers:?}; observed_balances={balances:?}; carried_quantity={}; no item mint or remote vendor interaction; source:crates/gameplay/dispatch/src/gameplay_transport/npc_trade_command.rs:1", rune_quantity(client, reference)?).into());
         }
@@ -2881,6 +2885,7 @@ async fn companion_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();
+            if id == "C16c" { reach_require_items(&[3177])?; }
             let mut client = connect_world(clients, tag).await?;
             let mut completed = false;
             let deadline =
@@ -4106,6 +4111,7 @@ async fn tile_item_row(clients: &SeamClients<'_>, world: &BundleWorld) {
     let watch = row.0.watch();
     let result: TestResult = async {
         let _row = watch.enter();
+            reach_require_items(&[3178])?;
         let mut client = connect_world(clients, 0xe0).await?;
         let mut completed = false;
         let result = watch

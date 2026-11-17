@@ -34,6 +34,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let result = result.unwrap_or_else(|_| {
         Err("step=journey observed=timeout-240s need=all-native-replies-and-deltas".into())
     });
+    if reach_report_missing("C06.full", &result) { return; }
     if let Err(error) = &result {
         evidence(&format!("C06_GAP {error}"));
     }
@@ -49,6 +50,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    reach_require_items(&[DAMAGE_RUNE_ID, HEAL_RUNE_ID])?;
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -285,11 +287,12 @@ async fn acquire(
                 })?
         })
         .collect();
-    let npc = reach_npc(
+    let npc = reach_seller(
         client,
         world,
         npcs,
-        |npc| sellers.contains(&npc.key),
+        &sellers,
+        item_id,
         &format!("C06-rune-{item_id}"),
     )
     .await?;

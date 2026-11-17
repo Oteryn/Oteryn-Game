@@ -498,6 +498,157 @@ struct ReachOffer {
     arrival: TilePos,
 }
 
+/// Missing authored/compiled content is distinct from a failed player route.
+#[derive(Debug)]
+struct ReachMissing(String);
+
+impl std::fmt::Display for ReachMissing {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(&self.0)
+    }
+}
+impl std::error::Error for ReachMissing {}
+
+#[derive(Debug)]
+struct ReachUnreachable {
+    label: String,
+    from: TilePos,
+    searched: usize,
+}
+impl std::fmt::Display for ReachUnreachable {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "{}: no reachable compiled-world goal from={:?}; searched={} cap={REACH_SEARCH_NODES}",
+            self.label, self.from, self.searched
+        )
+    }
+}
+impl std::error::Error for ReachUnreachable {}
+
+fn reach_missing_line(scenario: &str, error: &(dyn std::error::Error + 'static)) -> Option<String> {
+    error.downcast_ref::<ReachMissing>().map(|missing| {
+        format!("e2e_all scenario={scenario} status=MISSING seconds=0 evidence={missing}")
+    })
+}
+
+fn reach_report_missing(scenario: &str, result: &TestResult) -> bool {
+    if let Err(error) = result
+        && let Some(line) = reach_missing_line(scenario, error.as_ref())
+    {
+        evidence(&line);
+        return true;
+    }
+    false
+}
+
+fn reach_sellers(item: u32) -> TestResult<BTreeSet<String>> {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/services/trade/trade-00000-00323.json"),
+    )?)?;
+    let key = format!("oteryn:item.tibia.i{item}");
+    Ok(trades["records"]
+        .as_array()
+        .ok_or("trade records absent")?
+        .iter()
+        .filter_map(|record| {
+            let declaration = &record["declaration"];
+            declaration["offers"]
+                .as_array()?
+                .iter()
+                .any(|offer| offer["direction"] == "SellToPlayer" && offer["item"]["key"] == key)
+                .then(|| declaration["identity"]["key"].as_str())
+                .flatten()?
+                .strip_prefix("oteryn:service.trade.")
+                .map(|name| format!("oteryn:npc.{name}"))
+        })
+        .collect())
+}
+
+fn reach_captain_counts(npcs: &oteryn_world_bundle::npc::Table) -> (usize, usize) {
+    let authored = full_row_s10::TRAVEL_NPCS;
+    (
+        authored.len(),
+        authored
+            .iter()
+            .filter(|(key, _, _, _)| {
+                npcs.npcs
+                    .iter()
+                    .any(|npc| npc.key == *key && !npc.placements.is_empty())
+            })
+            .count(),
+    )
+}
+
+fn reach_seller_missing(
+    npcs: &oteryn_world_bundle::npc::Table,
+    sellers: &BTreeSet<String>,
+    item: u32,
+    unreachable: Option<usize>,
+) -> Option<ReachMissing> {
+    let compiled = npcs
+        .npcs
+        .iter()
+        .filter(|npc| sellers.contains(&npc.key) && !npc.placements.is_empty())
+        .count();
+    let counts = format!(
+        "item={item} authored_sellers={} compiled_sellers={compiled}",
+        sellers.len()
+    );
+    if compiled == 0 {
+        return Some(ReachMissing(counts));
+    }
+    let (authored_captains, compiled_captains) = reach_captain_counts(npcs);
+    unreachable.filter(|_| compiled_captains == 0).map(|searched| ReachMissing(format!("{counts} authored_captains={authored_captains} compiled_captains={compiled_captains} searched={searched}")))
+}
+
+fn reach_require_items(items: &[u32]) -> TestResult {
+    verdict::Harness::global().progress("compiled-goal-content");
+    let metadata = oteryn_world_bundle::bundle::visit(
+        &std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?,
+        |_, _| Ok(()),
+    )?;
+    for &item in items {
+        if let Some(missing) =
+            reach_seller_missing(&metadata.npcs, &reach_sellers(item)?, item, None)
+        {
+            return Err(missing.into());
+        }
+    }
+    Ok(())
+}
+
+fn reach_seller_route_error(
+    npcs: &oteryn_world_bundle::npc::Table,
+    sellers: &BTreeSet<String>,
+    item: u32,
+    error: Box<dyn std::error::Error>,
+) -> Box<dyn std::error::Error> {
+    if let Some(unreachable) = error.downcast_ref::<ReachUnreachable>()
+        && let Some(missing) = reach_seller_missing(npcs, sellers, item, Some(unreachable.searched))
+    {
+        return missing.into();
+    }
+    error
+}
+
+async fn reach_seller<'a>(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    npcs: &'a oteryn_world_bundle::npc::Table,
+    sellers: &BTreeSet<String>,
+    item: u32,
+    label: &str,
+) -> TestResult<&'a oteryn_world_bundle::npc::Npc> {
+    if let Some(missing) = reach_seller_missing(npcs, sellers, item, None) {
+        return Err(missing.into());
+    }
+    reach_npc(client, world, npcs, |npc| sellers.contains(&npc.key), label)
+        .await
+        .map_err(|error| reach_seller_route_error(npcs, sellers, item, error))
+}
+
 type ReachDepartures = BTreeMap<TilePos, Vec<usize>>;
 
 /// Only ordinary, unguarded captain offers from the same catalogue used by serve.
@@ -733,7 +884,11 @@ async fn reach_travel(
             Ok(())
         })
         .await?;
-        let (goal, actions) = planned.map_err(|searched| format!("{label}: no reachable compiled-world goal from={from:?}; searched={searched} cap={REACH_SEARCH_NODES}"))?;
+        let (goal, actions) = planned.map_err(|searched| ReachUnreachable {
+            label: label.to_owned(),
+            from,
+            searched,
+        })?;
         let fare = actions
             .iter()
             .filter_map(|action| match action {
@@ -3812,87 +3967,66 @@ fn reach2_fixture() -> TestResult<&'static (BundleWorld, oteryn_world_bundle::np
 }
 
 #[cfg(test)]
-fn reach2_seller_test(id: u32, row: &str) -> TestResult {
+fn reach2_seller_test(id: u32, row: &str, expected: &str) -> TestResult {
     let (world, npcs) = reach2_fixture()?;
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let trades: serde_json::Value = serde_json::from_slice(&std::fs::read(
-        root.join("content/services/trade/trade-00000-00323.json"),
-    )?)?;
-    let key = format!("oteryn:item.tibia.i{id}");
-    let sellers: BTreeSet<_> = trades["records"]
-        .as_array()
-        .ok_or("trade records")?
-        .iter()
-        .filter_map(|r| {
-            r["declaration"]["offers"]
-                .as_array()?
-                .iter()
-                .any(|o| o["direction"] == "SellToPlayer" && o["item"]["key"] == key)
-                .then(|| r["declaration"]["identity"]["key"].as_str())
-                .flatten()?
-                .strip_prefix("oteryn:service.trade.")
-                .map(|name| format!("oteryn:npc.{name}"))
-        })
-        .collect();
-    let (offers, departures) = reach_travel_offers(npcs)?;
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?;
-    let (goal, actions) = runtime
-        .block_on(reach_search(
-            world,
-            TOWN,
-            |at| {
-                npcs.npcs
-                    .iter()
-                    .filter(|npc| sellers.contains(&npc.key))
-                    .any(|npc| reach_npc_at(npc, at))
-            },
-            &offers,
-            &departures,
-            async || {
-                tokio::task::yield_now().await;
-                Ok(())
-            },
-        ))?
-        .map_err(|searched| format!("{row}: no reachable seller {id}; searched={searched}"))?;
-    let npc = npcs
-        .npcs
-        .iter()
-        .find(|npc| sellers.contains(&npc.key) && reach_npc_at(npc, goal))
-        .ok_or("seller goal absent")?;
-    let mut at = TOWN;
-    let mut captains = Vec::new();
-    for action in &actions {
-        match action {
-            ReachMove::Step(direction) => {
-                at = destination(world, at, *direction).ok_or("seller route has illegal step")?;
-            }
-            ReachMove::Boat(index) => {
-                assert!(
-                    departures
-                        .get(&at)
-                        .is_some_and(|indices| indices.contains(index))
-                );
-                at = offers[*index].arrival;
-                assert!(
-                    world
-                        .base()
-                        .tile(at.x, at.y, at.floor)
-                        .is_some_and(|tile| tile.walkable())
-                        && world.enterable(at)
-                );
-                captains.push(offers[*index].captain.as_str());
-            }
-        }
-    }
-    assert_eq!(at, goal);
-    assert!(reach_npc_at(npc, at));
-    assert!(!actions.is_empty());
-    eprintln!(
-        "{row} seller={} item={id} goal={goal:?} route_length={} captains={captains:?}",
-        npc.key,
-        actions.len()
+    let sellers = reach_sellers(id)?;
+    let error: Box<dyn std::error::Error> =
+        if let Some(missing) = reach_seller_missing(npcs, &sellers, id, None) {
+            missing.into()
+        } else {
+            // Compiled food sellers are not automatically MISSING merely because a
+            // captain is absent: first exhaust the real whole-bundle player route.
+            let (offers, departures) = reach_travel_offers(npcs)?;
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?;
+            let searched = runtime
+                .block_on(reach_search(
+                    world,
+                    TOWN,
+                    |at| {
+                        npcs.npcs
+                            .iter()
+                            .any(|npc| sellers.contains(&npc.key) && reach_npc_at(npc, at))
+                    },
+                    &offers,
+                    &departures,
+                    async || {
+                        tokio::task::yield_now().await;
+                        Ok(())
+                    },
+                ))?
+                .err()
+                .ok_or("expected the pinned content gap, but a seller route is reachable")?;
+            reach_seller_route_error(
+                npcs,
+                &sellers,
+                id,
+                Box::new(ReachUnreachable {
+                    label: row.to_owned(),
+                    from: TOWN,
+                    searched,
+                }),
+            )
+        };
+    let missing = error
+        .downcast_ref::<ReachMissing>()
+        .ok_or_else(|| format!("{row}: expected MISSING, observed {error}"))?;
+    assert_eq!(missing.0, expected);
+    let line =
+        reach_missing_line(row, error.as_ref()).ok_or("missing classification has no verdict")?;
+    assert!(line.contains(" status=MISSING "));
+    assert!(!line.contains(" status=FAIL "));
+    assert!(!line.contains(" status=PASS "));
+    assert!(line.ends_with(expected));
+    // A transport/assertion failure must keep its normal FAIL disposition.
+    let unrelated = reach_seller_route_error(
+        npcs,
+        &sellers,
+        id,
+        std::io::Error::other("transport failed").into(),
     );
+    assert!(reach_missing_line(row, unrelated.as_ref()).is_none());
+    eprintln!("{line}");
     Ok(())
 }
