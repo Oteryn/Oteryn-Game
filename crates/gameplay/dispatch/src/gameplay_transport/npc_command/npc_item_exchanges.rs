@@ -202,7 +202,7 @@ pub(super) async fn talk(
     if recipe.npc == bored::WYDA && !confirmed {
         match admission
             .root
-            .world_change_active(admission.world_id, "bored")
+            .wyda_exchange_available(admission.world_id)
             .await
         {
             Ok(true) => (),

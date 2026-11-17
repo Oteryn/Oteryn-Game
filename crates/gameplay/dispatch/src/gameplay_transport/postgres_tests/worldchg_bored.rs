@@ -60,13 +60,13 @@ async fn exercise(admin: String) -> TestResult {
     assert!(sqlx::query_scalar::<_, bool>("SELECT game_world_reset_initialize(encode($1,'hex')::uuid,$2,$3,$2,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_06',1)")
         .bind(world_bytes).bind(server.as_slice()).bind(map).bind(client.as_slice()).bind(frame.as_slice())
         .fetch_one(&h.pool).await?);
-    assert!(!h.root.world_change_active(world, "bored").await?);
+    assert!(!h.root.wyda_exchange_available(world).await?);
 
     assert!(sqlx::query_scalar::<_, bool>("SELECT game_world_reset_publish(encode($1,'hex')::uuid,0,$2,$3,$2,$4,$5,'[]'::jsonb,1)")
         .bind(world_bytes).bind(server.as_slice()).bind(map).bind(client.as_slice()).bind(frame.as_slice())
         .fetch_one(&h.pool).await?);
     let reset = h.root.retiring_world_reset(world).await?.ok_or("reset")?;
-    assert!(!h.root.world_change_active(world, "bored").await?);
+    assert!(!h.root.wyda_exchange_available(world).await?);
     planned_world_reset::reset_fixture::replace(&h, world, channel, &h.node).await?;
     assert_eq!(
         h.root.finish_world_reset(&authority, &h.node, &reset, room, room).await.map_err(debug)?,
@@ -75,7 +75,7 @@ async fn exercise(admin: String) -> TestResult {
     let stored: Option<bool> = sqlx::query_scalar("SELECT (decision->>'bored')::boolean FROM game_world_change_days WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=1")
         .bind(world_bytes).fetch_one(&h.pool).await?;
     assert_eq!(stored, Some(expected));
-    assert_eq!(h.root.world_change_active(world, "bored").await?, expected);
+    assert_eq!(h.root.wyda_exchange_available(world).await?, expected);
     assert!(h.root.world_changes(world, 0).await?.is_none());
     Ok(())
 }

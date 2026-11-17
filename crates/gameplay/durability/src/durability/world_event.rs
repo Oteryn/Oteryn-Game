@@ -414,18 +414,7 @@ pub(super) async fn change_active(
     }
     // The generic quest, callback and travel gates must also consume native
     // daily/counter bindings, rather than requiring a second synthetic state row.
-    let epoch: Option<String> = sqlx::query_scalar("SELECT a.reset_epoch::text FROM game_world_reset_active a JOIN game_world_change_days d USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid")
-        .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-    let Some(epoch) = epoch else {
-        return Ok(false);
-    };
-    let epoch = epoch
-        .parse()
-        .map_err(|_| DurabilityError::InvalidStoredState)?;
-    if epoch == 0 {
-        return Ok(false);
-    }
-    Ok(changes::load(tx, world, epoch)
+    Ok(changes::current(tx, world)
         .await?
         .is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(&day, key)))
 }

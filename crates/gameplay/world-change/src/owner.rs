@@ -94,7 +94,6 @@ pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
         };
     }
     match key {
-        "bored" => day.bored,
         "thawing" => day.thawing,
         "their_masters_voice" => day.their_masters_voice,
         "oriental_trader" => day.oriental_trader.is_some(),

@@ -957,13 +957,10 @@ impl DurabilityRoot {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
                     }
                     let mut request = request;
-                    if let Some(teddy) = wyda_teddy {
-                        if !super::world_event::change_active(&mut tx, world_id, "bored").await? {
-                            return Ok(Err(NpcTradeError::RequirementNotMet));
-                        }
-                        if wyda::roll_teddy(&mut tx).await? {
-                            request.item = teddy;
-                        }
+                    if wyda_teddy.is_some()
+                        && !super::world_event::changes::wyda_exchange_available(&mut tx, world_id).await?
+                    {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
                     }
                     let entries = lock_entries(&mut tx, &backpack, world_id, request.fluid_subtype.unwrap_or(0), &request.item.definition.production_key).await?;
                     if request.cause.side == NpcTradeSide::Exchange {
@@ -1001,6 +998,13 @@ impl DurabilityRoot {
                         Err(NpcTradeError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     };
+                    // Wyda checks capacity against the heavier broom before this draw.
+                    // Missing herbs and insufficient capacity therefore cannot filter rolls.
+                    if let Some(teddy) = wyda_teddy
+                        && wyda::roll_teddy(&mut tx).await?
+                    {
+                        request.item = teddy;
+                    }
                     // A sell-all records and audits the units it sold as its quantity.
                     let quantity = if sell_all { units } else { request.quantity };
 

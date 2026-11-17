@@ -398,11 +398,11 @@ mod tests {
         let day = roll_calendar(&world, active_epoch, 1, 1);
         let captured = crate::decision::NativeDecision::capture(&day);
         let restored = captured.restore().map_err(|e| format!("{e:?}"))?;
-        assert!(crate::owner::is_active(&restored, "bored"));
+        assert!(restored.bored);
         let before_next_save = roll_calendar(&world, active_epoch, 1, 2);
-        assert!(crate::owner::is_active(&before_next_save, "bored"));
+        assert!(before_next_save.bored);
         let after_next_save = roll_calendar(&world, active_epoch + 1, 1, 2);
-        assert!(!crate::owner::is_active(&after_next_save, "bored"));
+        assert!(!after_next_save.bored);
         Ok(())
     }
 

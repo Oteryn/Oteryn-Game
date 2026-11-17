@@ -231,7 +231,47 @@ pub async fn load(
     record(tx, world, epoch).await.map(Some)
 }
 
+pub(super) async fn current(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+) -> Result<Option<DailyWorldChanges>, DurabilityError> {
+    let epoch: Option<String> = sqlx::query_scalar("SELECT a.reset_epoch::text FROM game_world_reset_active a JOIN game_world_change_days d USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid")
+        .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let Some(epoch) = epoch else {
+        return Ok(None);
+    };
+    let epoch = epoch
+        .parse()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if epoch == 0 {
+        return Ok(None);
+    }
+    load(tx, world, epoch).await
+}
+
+pub(in crate::durability) async fn wyda_exchange_available(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+) -> Result<bool, DurabilityError> {
+    lock_admission_relations(tx).await?;
+    Ok(current(tx, world).await?.is_some_and(|day| day.bored))
+}
+
 impl DurabilityRoot {
+    /// Advisory read for Wyda's prompt. The trade owner rechecks the same day at commit.
+    pub async fn wyda_exchange_available(&self, world: WorldId) -> Result<bool, DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let available = wyda_exchange_available(&mut tx, world).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(available)
+                })
+            })
+            .await
+    }
+
     pub async fn world_changes(
         &self,
         world: WorldId,

@@ -626,3 +626,32 @@ fn worldchg_trader_source_binding_preserves_legacy_and_separates_selected_ships(
         bind_yasir_position(legacy, Some((33102, 32884, -6)))
     );
 }
+
+#[test]
+fn wyda_exchange_takes_one_herb_and_requires_room_for_the_reward() -> Result<()> {
+    let mut trade = request(NpcTradeSide::Exchange, 1, 0);
+    trade.cause.npc_key = bored::WYDA.into();
+    trade.item.stack = ItemStackClass::NonStackable;
+    trade.item.definition.revision_ref = "definition-r1".into();
+    let herb = wyda::input();
+    for reward in [bored::TORN_TEDDY, bored::WITCHESBROOM] {
+        trade.item.definition.production_key = reward.into();
+        assert_eq!(priced(&trade)?, (0, 1));
+        let stack = entry(10, 2, herb.clone(), 5);
+        let plan = pick_exchange::plan_one(&trade, 2, std::slice::from_ref(&stack), herb, true)?;
+        assert_eq!(plan.lines[0].quantity_before, 5);
+        assert_eq!(plan.lines[0].quantity_after, 4);
+        assert_eq!(plan.lines[1].quantity_after, 1);
+        assert!(matches!(
+            pick_exchange::plan_one(&trade, 1, std::slice::from_ref(&stack), herb, true),
+            Err(NpcTradeError::DoesNotFit)
+        ));
+        let entries = [stack, entry(11, 1, herb.clone(), 1)];
+        let full = pick_exchange::plan_one(&trade, entries.len(), &entries, herb, true)?;
+        assert_eq!(full.lines[0].item_instance_id, id(11));
+        assert_eq!(full.lines[0].quantity_after, 0);
+    }
+    trade.item.definition.production_key = "oteryn:item.tibia.i3454".into();
+    assert!(matches!(priced(&trade), Err(NpcTradeError::InvalidInput)));
+    Ok(())
+}
