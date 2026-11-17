@@ -199,7 +199,7 @@ async fn exercise(h: &Harness) -> TestResult {
     .await?;
     assert_eq!(receipts, 0);
 
-    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,3,$2,'krailos-fixture',$2,$3,$4,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2030-02')")
+    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,3,$2,'krailos-fixture',$2,$3,$4,'TIBIA_SERVER_SAVE_BERLIN_06',1,TIMESTAMPTZ '2030-02-04 06:00 Europe/Berlin','2030-02')")
         .bind(world.as_bytes().as_slice()).bind(server.as_slice()).bind(client.as_slice()).bind(frame.as_slice()).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_world_reset_active VALUES (encode($1,'hex')::uuid,3)")
         .bind(world.as_bytes().as_slice())
@@ -316,6 +316,25 @@ async fn exercise(h: &Harness) -> TestResult {
         .fetch_one(&h.pool)
         .await?;
     assert_eq!(progress, 36);
+    sqlx::query(
+        "INSERT INTO game_world_reset_epochs
+         SELECT world_id,6,target_digest,map_revision,server_digest,client_digest,frame_digest,
+                calendar,calendar_revision,activated_at+interval '3 days',reset_month
+         FROM game_world_reset_epochs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=3",
+    )
+    .bind(world.as_bytes().as_slice())
+    .execute(&h.pool)
+    .await?;
+    sqlx::query(
+        "UPDATE game_world_reset_active SET reset_epoch=6 WHERE world_id=encode($1,'hex')::uuid",
+    )
+    .bind(world.as_bytes().as_slice())
+    .execute(&h.pool)
+    .await?;
+    owner.reset_epoch = 6;
+    owner.refresh_krailos_lake().await;
+    assert_eq!(appearance_at(&owner, pour)?, 22420);
+    assert_eq!(appearance_at(&owner, purify)?, 22414);
     Ok(())
 }
 
