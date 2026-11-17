@@ -89,7 +89,7 @@ fn scenario(name: &'static str, choice: Option<usize>) -> TestResult {
     }
     let started = std::time::Instant::now();
     let result = run_async(async move |admin| {
-        let h = Harness::create_with_admission_seed(admin, name, false, false).await?;
+        let h = Harness::create_with_admission_seed(admin, name, true, false).await?;
         let fresh = prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
