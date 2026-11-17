@@ -391,7 +391,7 @@
       "path": "content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
     },
     {
-      "path": "content/interactions/reward_claims/reward-claim-variants-00100-00103.json"
+      "path": "content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
     },
     {
       "path": "content/interactions/reward_claims/reward-claims-00000-00099.json"
@@ -400,7 +400,7 @@
       "path": "content/interactions/reward_claims/reward-claims-00100-00199.json"
     },
     {
-      "path": "content/interactions/reward_claims/reward-claims-00200-00231.json"
+      "path": "content/interactions/reward_claims/reward-claims-00200-00230.json"
     },
     {
       "path": "content/items/authored-static-admissions.json"
@@ -868,9 +868,6 @@
       "path": "tools/content-schema/native-gameplay/m42-hot-ingredient-profile.json"
     },
     {
-      "path": "tools/content-schema/native-gameplay/qaitems-item-profiles.json"
-    },
-    {
       "path": "tools/content-schema/native-gameplay/qengine-reward-item-profiles.json"
     },
     {
@@ -1052,7 +1049,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 6504,
+          "record_count": 6505,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -1060,7 +1057,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "0b747bcc26cb6fa701a9c3baadf6a82159000c6602e7526e7fc5f72e68d2d3e1"
+          "sha256": "c827515f1df2bde168223adb8e51f8b47f547aaa3da5034e452f779add47c4aa"
         },
         {
           "creates_canonical_identities": false,
