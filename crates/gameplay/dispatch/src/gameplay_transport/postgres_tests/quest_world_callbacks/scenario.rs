@@ -51,6 +51,7 @@ fn scenario_case(
         name == "uneasy-alliance-crystal" || m44_children || m44_lions || m44_amphora || m44_flower;
     let qm48 = name == "qm48/mammoth";
     let m03_use = name == super::super::qengine_m03_use::NAME;
+    let qd_b2 = name.starts_with(super::super::qd_b2_world::PREFIX);
     let elemental_pin = name.starts_with("qn1-elemental-");
     let qm50 = name == "goblin-merchant-elevator-upper";
     let m03_pits = name == super::super::qengine_m03_pits::NAME;
@@ -77,6 +78,7 @@ fn scenario_case(
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
     let native_crop = m03_use
+        || qd_b2
         || engenc_asura
         || m49
         || qm03
@@ -123,6 +125,8 @@ fn scenario_case(
             y: 32167,
             floor: -8,
         }
+    } else if qd_b2 {
+        super::super::qd_b2_world::start(name)?
     } else if engenc_asura {
         super::super::engenc_asura_dispatch::start(name)?
     } else if m07_too_hot {
@@ -348,6 +352,8 @@ fn scenario_case(
     let draconia_escape = name.starts_with("draconia-escape-");
     let mut callback = if m03_use {
         super::super::qengine_m03_use::callback()?
+    } else if qd_b2 {
+        super::super::qd_b2_world::callback(name)?
     } else if engenc_asura {
         super::super::engenc_asura_dispatch::callback(name)?
     } else if m03_pits {
@@ -1025,6 +1031,11 @@ fn scenario_case(
                     .native_gameplay()
                     .ok_or("machine native policies")?,
             )?
+        } else if qd_b2 {
+            super::super::qd_b2_world::world(
+                name,
+                generation.native_gameplay().ok_or("qd-b2 native policies")?,
+            )?
         } else if engenc_asura {
             super::super::engenc_asura_dispatch::world(
                 generation.native_gameplay().ok_or("native Asura")?,
@@ -1527,6 +1538,8 @@ fn scenario_case(
                 13
             } else if classic_npc {
                 5
+            } else if qd_b2 {
+                5
             } else if monk {
                 4
             } else if callback.effects.encounter.is_some() {
@@ -1860,6 +1873,15 @@ fn scenario_case(
                 &mut admitted,
                 &h,
                 &authority,
+            ))
+            .await?;
+        } else if qd_b2 {
+            Box::pin(super::super::qd_b2_world::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                name,
             ))
             .await?;
         } else if engenc_asura {
