@@ -108,14 +108,14 @@ fn qoptic_observer_eye_wire_step_moves_only_the_paired_player() -> TestResult {
         deps.initialize_player(&owner, partner, partner_session)
             .await;
         let mut admitted = deps.admitted;
-        for (command, direction, expected_partner_y) in [
-            (1, StepDirection::South, 32907),
-            (2, StepDirection::South, 32908),
-            (3, StepDirection::South, 32908),
+        for (command, direction, controller_y, partner_y) in [
+            (1, StepDirection::South, 32913, 32907),
+            (2, StepDirection::South, 32914, 32908),
+            (3, StepDirection::South, 32915, 32908),
             // Re-entering the topaz alone must not reuse the old partner.
-            (4, StepDirection::North, 32908),
-            (5, StepDirection::North, 32908),
-            (6, StepDirection::South, 32908),
+            (4, StepDirection::North, 32914, 32908),
+            (5, StepDirection::North, 32913, 32908),
+            (6, StepDirection::South, 32914, 32908),
         ] {
             let result = super::quest_world_callbacks::wire(
                 &owner,
@@ -129,17 +129,29 @@ fn qoptic_observer_eye_wire_step_moves_only_the_paired_player() -> TestResult {
                 decode_step_result(&result).map_err(debug)?,
                 StepDisposition::Moved
             );
+            let runtime = deps.runtime.lock().await;
             assert_eq!(
-                deps.runtime
-                    .lock()
-                    .await
+                runtime
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position(),
+                MovementLocalPosition {
+                    x: start.x,
+                    y: controller_y,
+                    floor: start.floor
+                },
+                "controller STEP {command}",
+            );
+            assert_eq!(
+                runtime
                     .read_actor_position(partner)
                     .map_err(debug)?
                     .position(),
                 MovementLocalPosition {
-                    y: expected_partner_y,
+                    y: partner_y,
                     ..partner_start
                 },
+                "partner after controller STEP {command}",
             );
         }
         drop(owner);
