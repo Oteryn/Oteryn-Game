@@ -3436,7 +3436,8 @@ async fn continuation_rows(clients: &SeamClients<'_>) {
         let mut completed = false;
         let mut result = watch
             .bound(
-                Duration::from_secs(1_800),
+                // P21 earns its imbuing gold by real hunting, which S08 never does.
+                Duration::from_secs(if id == "P21" { 3_600 } else { 1_800 }),
                 format!("{id}: journey deadline; required observations incomplete"),
                 async {
                     let result = result.await;
@@ -5548,20 +5549,24 @@ async fn earn_gold(
 async fn earn_gold_inner(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    required: u64,
+    target: u64,
 ) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
-    loop {
-        let served = player_gold(client).await?;
-        if served >= required {
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("player-money-acquisition-blocked:required-gold={required};served-bank-plus-carried={served};ordinary-hunt-budget=150s").into());
-        }
-        let hunt = acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await;
-        hunt.map_err(|e|format!("player-money-acquisition-blocked:required-gold={required};served-bank-plus-carried={served};ordinary-hunt={e}"))?;
+    let served = player_gold(client).await?;
+    if served >= target {
+        return Ok(());
     }
+    // Bank gold stays banked; the shared hunt earns the carried part still missing.
+    let bank = served.saturating_sub(full_gold::coin_value(client)?);
+    let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    full_gold::earn(client, world, &meta.spawns, "P21", target - bank)
+        .await
+        .map_err(|e| {
+            format!(
+                "player-money-acquisition-blocked:required-gold={target};served-bank-plus-carried={served};ordinary-hunt={e}"
+            )
+        })?;
+    Ok(())
 }
 fn verify_gold_payment(before: u64, after: u64, charge: u64) -> TestResult {
     if before.checked_sub(after) != Some(charge) {

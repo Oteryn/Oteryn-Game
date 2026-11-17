@@ -13,6 +13,7 @@ include!("character_release.rs");
 include!("e2e_row_batch.rs");
 include!("floor_journey.rs");
 include!("full_e2ef7_mount.rs");
+include!("full_gold_mount.rs");
 include!("full_row_c03_mount.rs");
 include!("full_row_c12_mount.rs");
 include!("client_row_c01_mount.rs");
