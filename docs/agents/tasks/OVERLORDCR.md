@@ -29,7 +29,7 @@ Four source-death rules share `oteryn:quest-progress/quest/u8_2/elemental_sphere
 | dispatch clippy, all targets/all features, warnings denied | Passed with one job |
 | touched server authority-target clippy | Passed |
 | focused catalogue validation | Covered by four successful embedded-catalogue PG loads |
-| pin/lock verification | Pending |
+| pin/lock verification | Passed |
 | behavioral red-to-green proof | Not obtained: initial red attempt failed during compilation |
 
 PG command: `cargo test --locked -p oteryn-game-server --test character_authority_postgres overlordcr -- --nocapture`. Passed `overlordcr_quest_owner_rejects_non_damage_and_replays_all_four_flags_postgres`; marker `OVERLORDCR_OWNER_PG_EXECUTED duration=138.002037182s`. It verifies all four mappings, non-damage/non-overlord rejection, duplicate receipt replay and a distinct later overlord preserving the shared flag.
@@ -51,3 +51,5 @@ Passed: `cargo clippy --locked -p oteryn-gameplay-dispatch --all-targets --all-f
 Clippy for the touched server authority target is still running; pin/lock verification follows it. The embedded catalogue was loaded successfully for each of the four executed PG mappings, so catalogue loading is already covered by that proof.
 
 Passed: `cargo clippy --locked -p oteryn-game-server --test character_authority_postgres --quiet -- -D warnings` (exit 0).
+
+Passed final checks: `oteryn-world-bundle-compiler pin-check . /tmp/overlordcr-pin-check` (oteryn pin digest `9aa91f7abe59f92ff7b159151f9588cb6fd42f0bfb8ef1826520e48d9921a82b`), `cargo metadata --locked --no-deps --format-version 1`, `cargo fmt --all -- --check`, explicit rustfmt checks for every touched Rust file, and `git diff --check`. No generated pins or lockfile were changed. Dispatch clippy is being refreshed after the final test-module formatting change.
