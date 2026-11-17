@@ -118,7 +118,6 @@ fn run(admin: String, spirit: bool, level: i64) -> TestResult {
 }
 
 async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult {
-    super::engnpc2_live_transport::fresh(h).await?;
     let scope = fixture::fence(1)?.runtime_scope;
     let world = scope.world_id();
     let channel = crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?;
@@ -129,6 +128,46 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
         );
     let generation = controller.active().ok_or("active generation")?;
     let native = generation.native_gameplay().ok_or("native gameplay")?;
+    // Compile immutable content before publishing time-bounded admission evidence.
+    let npcs = oteryn_gameplay_content::content::NpcDataCatalogue::load(
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../content")),
+        std::ffi::OsStr::new("world"),
+        oteryn_gameplay_content::content::npc_catalogue_preproduction_limits(),
+    )
+    .map_err(debug)?;
+    let model = npcs.service_model_for_project().map_err(debug)?;
+    let room = oteryn_gameplay_content::content::qualify_native_entry_room(world).map_err(debug)?;
+    let content =
+        oteryn_gameplay_world::world_runtime::ReferenceContentGeneration::from_content(room.door())
+            .map_err(debug)?;
+    let fence = oteryn_gameplay_world::world_runtime::ScopeContentGenerationFence::for_test(
+        scope,
+        fixture::fence(1)?.scope_ownership_generation,
+        content,
+    );
+    let door = Mutex::new(
+        oteryn_gameplay_world::world_runtime::bind_native_entry_door(
+            room.door(),
+            &fence,
+            scope,
+            fixture::fence(1)?.scope_ownership_generation,
+        )
+        .map_err(debug)?,
+    );
+    let spells = oteryn_gameplay_spell::spell::cast::v1_spell_book().map_err(debug)?;
+    let achievements =
+        oteryn_gameplay_social::achievement_catalogue::AchievementCatalogue::embedded()
+            .map_err(debug)?;
+    let charms =
+        oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue::embedded()
+            .map_err(debug)?;
+    let quest_catalogue = Arc::new(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?
+            .catalogue()
+            .clone(),
+    );
+    super::engnpc2_live_transport::fresh(h).await?;
     let (current, _) =
         crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
             .current_session_at(session)
@@ -176,24 +215,6 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
         .map_err(debug)?
         .position();
     let runtime = Mutex::new(runtime);
-    let room = oteryn_gameplay_content::content::qualify_native_entry_room(world).map_err(debug)?;
-    let content =
-        oteryn_gameplay_world::world_runtime::ReferenceContentGeneration::from_content(room.door())
-            .map_err(debug)?;
-    let fence = oteryn_gameplay_world::world_runtime::ScopeContentGenerationFence::for_test(
-        scope,
-        fixture::fence(1)?.scope_ownership_generation,
-        content,
-    );
-    let door = Mutex::new(
-        oteryn_gameplay_world::world_runtime::bind_native_entry_door(
-            room.door(),
-            &fence,
-            scope,
-            fixture::fence(1)?.scope_ownership_generation,
-        )
-        .map_err(debug)?,
-    );
     let descriptor = crate::native_admission_source::descriptor::ProducerDescriptor::new(
         "platform-test".into(),
         ("127.0.0.1".into(), 1),
@@ -211,13 +232,6 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
     )
     .map_err(debug)?;
     let evidence = FreshEvidenceSource::new(descriptor);
-    let spells = oteryn_gameplay_spell::spell::cast::v1_spell_book().map_err(debug)?;
-    let achievements =
-        oteryn_gameplay_social::achievement_catalogue::AchievementCatalogue::embedded()
-            .map_err(debug)?;
-    let charms =
-        oteryn_gameplay_content::content::charm_source::CanonicalCharmCatalogue::embedded()
-            .map_err(debug)?;
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -243,12 +257,7 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
     .build();
     owner.active_generation = Some(generation);
     owner.premium_coordinator = Some(&premium);
-    owner.quest_catalogue = Some(Arc::new(
-        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
-            .map_err(debug)?
-            .catalogue()
-            .clone(),
-    ));
+    owner.quest_catalogue = Some(quest_catalogue);
 
     let catalogue = owner.quest_catalogue.as_ref().ok_or("catalogue")?;
     let key = if spirit {
@@ -296,13 +305,6 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
     }
     tx.commit().await?;
     let fence = composed_test_owner::load_quests(&owner, session).await?;
-    let npcs = oteryn_gameplay_content::content::NpcDataCatalogue::load(
-        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../content")),
-        std::ffi::OsStr::new("world"),
-        oteryn_gameplay_content::content::npc_catalogue_preproduction_limits(),
-    )
-    .map_err(debug)?;
-    let model = npcs.service_model_for_project().map_err(debug)?;
     owner.states.chat.install_npc_talk(Arc::new(
         oteryn_gameplay_npc::npc_talk::NpcTalkBook::from_model_with_native_quests(
             &model,
@@ -361,6 +363,23 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
     };
     let hello = say(17000, "hi".into()).await;
     assert_eq!(hello.disposition, NpcIntentDisposition::Ok);
+    {
+        let r = runtime.lock().await;
+        r.assert_actor_spell_unreserved(actor).map_err(debug)?;
+        assert!(
+            r.content_pin().server_artifact_digest()
+                == generation.identity().server_artifact_digest()
+        );
+        let lease = r.bound_attacker_lease(actor, session).map_err(debug)?;
+        assert!(lease.character_id().as_bytes() == fence.character_id.as_bytes());
+        assert_eq!(lease.generation(), fence.character_lease_generation);
+    }
+    assert!(
+        fence.item_fence()
+            == composed_test_owner::load_quests(&owner, session)
+                .await?
+                .item_fence()
+    );
     let outcome = say(17001, callback.keywords[0].clone()).await;
     let gold: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity * 100),0)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3035' AND lifecycle=1").fetch_one(&h.pool).await?;
     let receipts: i64 = sqlx::query_scalar(
