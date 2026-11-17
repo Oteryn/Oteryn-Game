@@ -1500,6 +1500,9 @@ fn scenario_case(
                 8
             } else if name.starts_with("qengine-rewards-l12-") {
                 128
+            } else if name.starts_with("qengine-rewards-qkill-") {
+                // Player, quest NPC, three retained removal witnesses and one lethal actor.
+                6
             } else if name == "qengine-rewards-grimvale-story" {
                 // Player, two retained afflicted guardians, two contacts, one active hunt.
                 6
