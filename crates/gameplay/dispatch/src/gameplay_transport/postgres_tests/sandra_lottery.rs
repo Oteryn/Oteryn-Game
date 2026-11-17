@@ -457,7 +457,7 @@ pub(super) async fn exercise_outcome(
         assert!(matches!(
             result.transition,
             QuestTransitionOutcome::Refused(
-                crate::durability::quest_state::QuestRefusal::CapacityExceeded
+                oteryn_gameplay_quests::quest::QuestRefusal::CapacityExceeded
             )
         ));
         assert!(!result.inventory_changed);
