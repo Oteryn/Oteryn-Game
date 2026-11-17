@@ -2,6 +2,11 @@
   "schema": "OTERYN_AUTHORED_NPC_ITEM_CUSTODY/v1",
   "inputs": [
     {
+      "path": "content/dialogues/quest-rules/quest-batch3-qd-troll_sabotage.json",
+      "sha256": "bea6af6f0b83f04643cfa571f65fb954e432113a5b95fe4e7c453273ee25112c",
+      "quest": "oteryn:quest.troll_sabotage_quest"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/batch3_a/npc/fathers_burden.json",
       "sha256": "3e61e951d10057e71e8090fcd12865dbbee2718a6c7771d536a5ba258df9214b",
       "quest": "oteryn:quest.a_father_s_burden_quest"
