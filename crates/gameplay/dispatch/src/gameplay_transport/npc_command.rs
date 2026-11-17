@@ -44,6 +44,7 @@ mod catalogue_track_mutation;
 mod classic_quests;
 mod coin_exchange;
 mod dark_trails;
+pub(super) mod djinn_greetings;
 mod endgame;
 mod fire_feathered;
 mod grizzly;
@@ -757,6 +758,12 @@ pub(super) async fn npc_bank_talk(
         admission.owner_now(),
         super::item_ref_admission::pinned_index(&runtime, admission.active_generation),
     );
+    if matches!(
+        ordinary.disposition,
+        NpcIntentDisposition::Ok | NpcIntentDisposition::NoConversation
+    ) {
+        let _ = djinn_greetings::soulfire(admission, &runtime, actor, command, &intent).await;
+    }
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;

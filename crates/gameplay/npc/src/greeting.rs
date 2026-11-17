@@ -52,3 +52,28 @@ pub fn contains_words(haystack: &[String], needle: &[String]) -> bool {
             .windows(needle.len())
             .any(|window| window == needle)
 }
+
+/// The Efreet transcript specifies 150 delayed fire ticks over twelve and a half minutes.
+pub fn soulfire_on_greeting(npc: &str, text: &str) -> Option<(u32, u32, u32)> {
+    if npc != "oteryn:npc.baa_leal" {
+        return None;
+    }
+    let said = words(text);
+    (said.iter().any(|word| matches!(word.as_str(), "hi" | "hello" | "hail"))
+        && !contains_words(&said, &words("djanni'hah")))
+    .then_some((1_500, 10, 5_000))
+}
+
+#[cfg(test)]
+mod efreet_tests {
+    use super::*;
+
+    #[test]
+    fn baa_leal_punishes_only_the_wrong_greeting() {
+        let npc = "oteryn:npc.baa_leal";
+        assert_eq!(soulfire_on_greeting(npc, "hello"), Some((1_500, 10, 5_000)));
+        assert_eq!(soulfire_on_greeting(npc, "Hi, DJANNI'HAH"), None);
+        assert_eq!(soulfire_on_greeting(npc, "mission"), None);
+        assert_eq!(soulfire_on_greeting("oteryn:npc.alesar", "hi"), None);
+    }
+}
