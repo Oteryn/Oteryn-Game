@@ -3,6 +3,7 @@
 use super::*;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::qualification_spell_character as qualification_build;
+#[cfg(any(test, feature = "qualification-spawn"))]
 use crate::qualification_wild_spawn as wild_spawn;
 
 fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
@@ -143,6 +144,21 @@ pub(super) async fn spawn(
     let (Some(native), Some(owners)) = (native, owners) else {
         return refuse("native_unavailable", None);
     };
+    spawn_placed(root, authority, proof, native, owners, session, key, refuse).await
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+#[allow(clippy::too_many_arguments)]
+async fn spawn_placed(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    native: &NativeGameplayState,
+    owners: SpawnOwners<'_>,
+    session: [u8; 16],
+    key: &str,
+    refuse: impl Fn(&'static str, Option<&str>) -> String,
+) -> String {
     let placed = tokio::time::timeout(
         Duration::from_secs(10),
         place(root, authority, proof, native, owners, session, key),
@@ -166,6 +182,23 @@ pub(super) async fn spawn(
     }
 }
 
+#[cfg(not(any(test, feature = "qualification-spawn")))]
+#[allow(clippy::too_many_arguments)]
+async fn spawn_placed(
+    _root: &DurabilityRoot,
+    _authority: &ReconciledCharacterAuthority<'_, '_>,
+    _proof: &NodeIncarnationProof,
+    _native: &NativeGameplayState,
+    _owners: SpawnOwners<'_>,
+    _session: [u8; 16],
+    _key: &str,
+    refuse: impl Fn(&'static str, Option<&str>) -> String,
+) -> String {
+    // The test-support owners are not in this build; only the qualification-spawn build places.
+    refuse("not_qualification", None)
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
 async fn place(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
