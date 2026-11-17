@@ -68,3 +68,30 @@ execution with Cargo code 101. The gameplay content lib-test and dispatch
 lib-test rustc processes were killed by SIGKILL. The cgroup recorded two
 OOM kills and has a 16 GiB memory limit with no swap. A one-job retry is
 running against the same base and retained artifacts.
+
+## Archive-only failure on PR #3268
+
+Run 44187588857, job 134408139208, entered the library archive step at
+22:21:59 UTC after mold installation and swap setup. The archive builds
+and packages lib-test binaries without executing test bodies. GitHub's
+annotation says: "The hosted runner lost communication with the server.
+Anything in your workflow that terminates the runner process, starves it
+for CPU/Memory, or blocks its network access can cause this error."
+
+Both lanes compile the dispatch library with `cfg(test)`, which includes
+the PostgreSQL test modules via
+`crates/gameplay/dispatch/src/gameplay_transport/monk_save.rs:220` and
+`crates/gameplay/dispatch/src/gameplay_transport/monk_save_postgres_tests.rs:40`
+even when the runtime PostgreSQL URL is absent. The mount generator in
+`crates/gameplay/dispatch/build.rs:21` calls the local filesystem helper
+at `apps/game-server/build_mounts.rs:9`. It does not connect to a database
+or run an external command. #3056 added a net 77,673 lines across 344 files
+in the dispatch PostgreSQL test tree. The local OOM hit rustc during the
+two lib-test builds. The serial retry is actively accumulating CPU time in
+dispatch rustc. Hosted archive failure remains consistent with build-time
+resource pressure, but the annotation alone does not identify the exact
+local process or a linker deadlock.
+
+From the fresh game-server test binary,
+`bundle_spawn_owner_tests::a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn`
+passed in 30.16s.
