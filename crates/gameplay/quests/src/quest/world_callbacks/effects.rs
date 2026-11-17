@@ -765,6 +765,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || callback.is_read_only()
             || callback.lever.is_some()
             || callback.reversible
+            || callback.facing.is_some()
             || callback.teleport.is_some()
             || callback.remote_teleport.is_some()
             || callback.world_change.is_some()
@@ -773,6 +774,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             || operations != 0
             || callback.experience.is_some()
             || callback.monk_reward.is_some()
+            || callback.item_reward().is_some()
             || effects.shared
                 != CallbackEffects {
                     tool_spawn: effects.tool_spawn.clone(),
@@ -1237,6 +1239,9 @@ mod tool_spawn_tests {
         effects["tool_spawn"] = spawn;
         callback.effects = serde_json::from_value(effects).map_err(|e| e.to_string())?;
         assert!(valid(&callback));
+        callback.facing = Some(0);
+        assert!(!valid(&callback));
+        callback.facing = None;
         callback.requires_world_admission = false;
         assert!(!valid(&callback));
         callback.requires_world_admission = true;
