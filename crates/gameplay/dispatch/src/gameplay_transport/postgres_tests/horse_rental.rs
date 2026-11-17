@@ -1,6 +1,8 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
-use crate::content::native_gameplay::test_support::activated_with_optional_cosmetics;
+use crate::content::native_gameplay::test_support::{
+    activated_with_optional_cosmetics, cosmetics_test_packet,
+};
 use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
 use crate::foundation::{
     ChannelContentPin, MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
@@ -33,11 +35,11 @@ fn scenario() -> TestResult {
         // Compile content before opening the admission holder; cold Native setup can exceed
         // the holder's idle lifetime on a contended CI worker.
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-        let mut cosmetics: serde_json::Value =
-            serde_json::from_reader(std::fs::File::open(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../../content/cosmetics/outfits/native-cosmetics.json"
-            ))?)?;
+        let mut cosmetics = cosmetics_test_packet();
+        cosmetics["authoring"] = serde_json::from_reader(std::fs::File::open(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/cosmetics/outfits/authoring.json"
+        ))?)?;
         // Keep the real rental mount bindings under the admission fixture's revision.
         cosmetics["authoring"]["document"]["content_revision"] = "content-1".into();
         let (controller, pin) =
