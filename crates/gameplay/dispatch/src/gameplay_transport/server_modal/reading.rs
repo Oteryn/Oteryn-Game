@@ -1,6 +1,7 @@
 use super::{ComposedFreshAdmission, actor_is_current};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::gameplay_transport::connection::{AdmittedSession, UseOutcome};
+use crate::gameplay_transport::item_ref_admission::pinned_index;
 use oteryn_protocol_oteryn::{server_modal::Dialog, world_object::UseDisposition};
 use std::num::NonZeroU32;
 
@@ -29,9 +30,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )?;
         let definition = {
             let runtime = self.runtime.lock().await;
-            let index =
-                super::super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
+            let index = pinned_index(&runtime, self.active_generation)?;
             let (key, revision) = index.definition_at(definition)?;
+            // The generated Botany chest grant stores this book's body on the instance.
             if key != "oteryn:item.tibia.i11699" {
                 return None;
             }
@@ -66,6 +67,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let runtime = self.runtime.lock().await;
         if !actor_is_current(&runtime, admitted)
+            || pinned_index(&runtime, self.active_generation).is_none()
             || !self
                 .states
                 .player_trades
@@ -74,18 +76,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(UseOutcome::rejected());
         }
-        self.states
+        let queued = self
+            .states
             .server_modals
-            .queue_reading(root, reading_dialog(text))
-            .map_or_else(
-                || Some(UseOutcome::rejected()),
-                |()| {
-                    Some(UseOutcome {
-                        disposition: UseDisposition::Committed,
-                        ..UseOutcome::rejected()
-                    })
-                },
-            )
+            .queue_reading(root, reading_dialog(text));
+        Some(UseOutcome {
+            disposition: if queued.is_some() {
+                UseDisposition::Committed
+            } else {
+                UseDisposition::Rejected
+            },
+            ..UseOutcome::rejected()
+        })
     }
 }
 
