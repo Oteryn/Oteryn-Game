@@ -127,6 +127,7 @@ async fn exercise(h: &Harness) -> TestResult {
         5,
         "briefing and four matching arrivals"
     );
+    talk(&mut owner, admitted, kevin, 16, "bye").await?;
     assert_fares(h, &mut owner, &deps, [captain, technomancer]).await
 }
 
@@ -208,7 +209,8 @@ async fn assert_fares(
                 "rank {rank}, mission 6 at {mission06}, route {}: {reply:?}",
                 route.service,
             );
-            command += 2;
+            talk(owner, &deps.admitted, npc, command + 2, "bye").await?;
+            command += 3;
         }
         assert_eq!(
             owner
