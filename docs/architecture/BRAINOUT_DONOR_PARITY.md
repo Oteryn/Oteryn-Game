@@ -87,7 +87,9 @@ framed production `serve_admitted` path and reuses every assertion.
 The first real PG red ran 35.38 seconds: one-input refusal passed, but two-input
 USE was rejected. The east control reproduced it in 27.25 seconds. Diagnostic
 inspection confirmed the native policy for 19078 was absent. The source custody
-generator now emits it. Temporary diagnostic prints were removed.
+generator now emits it. A second red confirmed that the spell ABI rejected
+intentionally opaque unrelated semantic groups; the participant now uses the
+ordinary custody owner facts. The atomic/replay PG case subsequently passed.
 
 | Local check | Recorded result |
 |---|---|
@@ -101,7 +103,8 @@ generator now emits it. Temporary diagnostic prints were removed.
 | Clippy, dispatch/server | Pending; redundant test adapter bound fixed without a lint allowance |
 | Full World regeneration | Running; canonical World package reproduced the base |
 | No-URL guards and public schema | Passed: 6 filtered tests in 0.11 seconds without the admin URL |
-| PG final qualification and pin verification | Pending |
+| Atomic/replay PG | Passed through production USE in 57.40 seconds; missing-input/storage rollback, Ground reward, Mission09 and replay assertions all passed |
+| Remaining PG cases and pin verification | Pending |
 
 Status: implementation and generated Item admission committed; final qualification
 is still in progress. No PR. Migration 2889 is used; no new capability or command
