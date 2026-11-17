@@ -337,6 +337,41 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     }
     owner.admit_quest_session(&admitted).await;
     owner.refresh_quest_session(session, false).await;
+    // Both peers are independently admitted durable Characters in this Channel.
+    // Member one damages the boss; member two only stands nearby.
+    let mut overlord_peers = Vec::new();
+    let peer_source = if rule.creature.ends_with("_overlord") {
+        Some(super::house_transfer::RecoverySource::start(h).await?)
+    } else { None };
+    if let Some(source) = &peer_source {
+        use crate::gameplay_transport::connection::{AdmittedSession, FirstEntryOutcome, SessionContinuity};
+        for member in [1u8, 2] {
+            let peer_session = super::boss_rewards::privacy::admit_peer(h, &source.evidence, member).await?;
+            let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                .current_session_at(peer_session).await?.0;
+            let fence = crate::gameplay_transport::item_fence_of(current).ok_or("peer fence")?;
+            let peer_actor = {
+                let mut runtime = owner.runtime.lock().await;
+                let reservation = runtime.reserve_fresh_session(peer_session).map_err(debug)?;
+                let peer_actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+                runtime.bind_attacker_lease(peer_actor, peer_session, crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
+                    fence.character_lease_generation).map_err(debug)?).map_err(debug)?;
+                runtime.initialize_pinned_test_position(peer_actor, MovementLocalPosition {
+                    x: position[0] - i32::from(member), y: position[1], floor: i16::try_from(-position[2])?
+                }).map_err(debug)?;
+                peer_actor
+            };
+            deps.initialize_player(&owner, peer_actor, peer_session).await;
+            let peer = AdmittedSession { game_session_id: peer_session,
+                world_id: admitted.world_id, channel_id: admitted.channel_id,
+                runtime_actor: Some(peer_actor), first_entry: FirstEntryOutcome::Positioned,
+                controller: None, continuity: SessionContinuity::FRESH, item_fence: Some(fence) };
+            owner.admit_quest_session(&peer).await;
+            owner.refresh_quest_session(peer_session, false).await;
+            overlord_peers.push((peer_actor, peer_session, *fence.character_id.as_bytes()));
+        }
+    }
     let actor = deps.actor;
     let queue = owner.states.attack.lock().await.kills().clone();
     // This second current native actor really deals damage. It remains an invalid
@@ -405,6 +440,14 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 .bound_attacker_lease(actor, session)
                 .map_err(debug)?;
             let health = runtime.companion_snapshot(target).map_err(debug)?.health;
+            let health = if let Some((peer_actor, peer_session, _)) = overlord_peers.first() {
+                runtime.borrow_exact_actor_commit_at(now).commit_damage_for_bound_attacker(
+                    target, *peer_actor, CommandRef::new(*peer_session, CommandId::new(1).map_err(debug)?), 0,
+                    crate::foundation::OwnerDamageCommand { target: rule.creature.as_bytes(),
+                        occurrence: peer_session.as_bytes(), binding: b"overlordcr-peer-damage", damage: 1 }
+                ).map_err(debug)?;
+                health - 1
+            } else { health };
             let damage = if let Some((other_actor, other_session, _, _)) = lesser_contributor {
                 assert!(
                     health > 2,
@@ -557,6 +600,16 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
             effect.track
         );
     }
+    for (index, (_, _, character)) in overlord_peers.iter().enumerate() {
+        let value: Option<i64> = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
+            .bind(character.as_slice()).bind(&rule.effects[0].track).fetch_optional(&h.pool).await?;
+        assert_eq!(value, if index == 0 { Some(1) } else { None }, "only damage participants receive BossStorage");
+    }
+    if !rule.creature.ends_with("_overlord") {
+        let flags: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage'")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(flags, 0, "other creature deaths do not set BossStorage");
+    }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
     )
@@ -565,7 +618,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     .await?;
     assert_eq!(
         receipts,
-        i64::try_from(kills)?,
+        i64::try_from(kills)? + if overlord_peers.is_empty() { 0 } else { 1 },
         "duplicate corpse projection must retain the first captured receipt"
     );
     Ok(())

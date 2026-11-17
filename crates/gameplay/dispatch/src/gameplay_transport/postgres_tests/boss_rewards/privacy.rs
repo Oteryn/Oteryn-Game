@@ -253,7 +253,7 @@ async fn reward_and_custody_snapshot(
 }
 
 // The existing deadline-pager admission pattern, kept local to this one test.
-async fn admit_peer(
+pub(in super::super) async fn admit_peer(
     h: &Harness,
     evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
     member: u8,

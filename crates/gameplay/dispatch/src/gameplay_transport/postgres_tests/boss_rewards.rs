@@ -34,7 +34,7 @@ mod paged_count;
 mod movement;
 
 #[path = "boss_rewards/privacy.rs"]
-mod privacy;
+pub(super) mod privacy;
 
 #[path = "boss_rewards/concurrent.rs"]
 mod concurrent;

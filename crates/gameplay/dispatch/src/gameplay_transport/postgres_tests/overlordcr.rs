@@ -10,3 +10,10 @@ fn overlordcr_each_overlord_sets_donor_flag_and_replay_is_idempotent_postgres() 
     }
     Ok(())
 }
+
+#[test]
+fn overlordcr_non_overlord_does_not_set_flag_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
+    drop(admin);
+    super::srvenc_source_deaths::scenario("overlordcr_non_overlord", "goblin_leader")
+}
