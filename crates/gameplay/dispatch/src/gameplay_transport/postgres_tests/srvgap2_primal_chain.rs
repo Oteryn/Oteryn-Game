@@ -253,9 +253,11 @@ async fn scenario(admin: String) -> TestResult {
             .source_started_for_test(),
         "the real reserved onThink initializes the source wave clock"
     );
-    // This fixed occurrence schedules the native duplicate-cell regression;
-    // the source oracle below still proves both requests and exact admissions.
-    let wave_at = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(12_000_015);
+    // The wave draws are keyed by the artifact-wide native source digest, so
+    // any accepted content change moves the scheduled cells. Select, inside
+    // the same whole source second, the first occurrence whose source oracle
+    // schedules one cell twice; the native duplicate-cell regression below is
+    // then asserted against that occurrence rather than a digest-bound literal.
     let root_bytes: [u8; 32] = Sha256::new()
         .chain_update(b"srx3:primal:callbacks:v1")
         .chain_update(native.source_digest())
@@ -263,49 +265,35 @@ async fn scenario(admin: String) -> TestResult {
         .finalize()
         .into();
     let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(root_bytes);
-    let mut occurrence = [0; 16];
-    occurrence[..8].copy_from_slice(&wave_at.get().to_be_bytes());
-    let occurrence = oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence);
     let draw_budget =
         2 + u64::from(rules::BEAST_WAVE.count_max) * u64::from(rules::SPAWN_ATTEMPTS) * 4;
-    let mut ordinal = 0;
-    let draws = (0..draw_budget)
-        .map(|_| -> TestResult<u32> {
-            let limit = u64::MAX - u64::MAX % u64::from(rules::DRAW_PPM);
-            for _ in 0..64 {
-                let value = oteryn_simulation_determinism::deterministic_decision_u64(
-                    &root,
-                    occurrence,
-                    "primal_waves",
-                    ordinal,
-                )
-                .map_err(debug)?;
-                ordinal += 1;
-                if value < limit {
-                    return Ok((value % u64::from(rules::DRAW_PPM)) as u32);
+    let wave_draws = |wave_at: u64| -> TestResult<Vec<u32>> {
+        let mut occurrence = [0; 16];
+        occurrence[..8].copy_from_slice(&wave_at.to_be_bytes());
+        let occurrence =
+            oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence);
+        let mut ordinal = 0;
+        (0..draw_budget)
+            .map(|_| -> TestResult<u32> {
+                let limit = u64::MAX - u64::MAX % u64::from(rules::DRAW_PPM);
+                for _ in 0..64 {
+                    let value = oteryn_simulation_determinism::deterministic_decision_u64(
+                        &root,
+                        occurrence,
+                        "primal_waves",
+                        ordinal,
+                    )
+                    .map_err(debug)?;
+                    ordinal += 1;
+                    if value < limit {
+                        return Ok((value % u64::from(rules::DRAW_PPM)) as u32);
+                    }
                 }
-            }
-            Err("qualified source wave draw refused".into())
-        })
-        .collect::<TestResult<Vec<_>>>()?;
-    let draw = |ordinal| -> TestResult<u32> {
-        draws
-            .get(usize::try_from(ordinal)?)
-            .copied()
-            .ok_or("source oracle draw budget".into())
+                Err("qualified source wave draw refused".into())
+            })
+            .collect()
     };
-    let requested_wave = usize::try_from(rules::wave_count(
-        &rules::BEAST_WAVE,
-        rules::hazard_points(&[]),
-        draw(0)?,
-        draw(1)?,
-    ))?;
-    let duplicate_cell = MovementLocalPosition {
-        x: 33555,
-        y: 32763,
-        floor: 15,
-    };
-    let expected_cells = {
+    let (wave_at, duplicate_cell, expected_cells) = {
         let runtime = destination.runtime.lock().await;
         let snapshot = runtime.companion_snapshot(boss).map_err(debug)?;
         let health = u64::try_from(snapshot.health)?;
@@ -314,16 +302,6 @@ async fn scenario(admin: String) -> TestResult {
             crate::gameplay_transport::arena_match::walkable(&destination, &runtime, at)
                 && runtime.native_summon_cell_free(at)
         };
-        // Replay the source schedule, including its six placement attempts. The
-        // three-second delay means earlier requests have not occupied cells yet.
-        let draw_budget =
-            2 + u64::from(rules::BEAST_WAVE.count_max) * u64::from(rules::SPAWN_ATTEMPTS) * 4;
-        let mut draws = (0..draw_budget)
-            .map(draw)
-            .collect::<TestResult<Vec<_>>>()?
-            .into_iter();
-        let mut next_draw = || draws.next().unwrap_or(rules::DRAW_PPM);
-        let mut schedule = rules::PrimalMenaceThinkOwner::default();
         let facts = |now_ms| rules::PrimalMenaceThinkFacts {
             position: boss_position,
             now_ms,
@@ -331,33 +309,165 @@ async fn scenario(admin: String) -> TestResult {
             max_health,
             damage_map_levels: &[],
         };
-        schedule
-            .think(
-                &facts(now.get() / 1_000_000 * 1000),
-                &mut next_draw,
-                tile_free,
-                |_| None,
-            )
+        // Replay the source schedule, including its six placement attempts. The
+        // three-second delay means earlier requests have not occupied cells yet.
+        type SourceSchedule = (usize, Vec<(u64, MovementLocalPosition)>);
+        let source_schedule = |wave_at: u64| -> TestResult<SourceSchedule> {
+            let draws = wave_draws(wave_at)?;
+            let draw = |ordinal: usize| -> TestResult<u32> {
+                draws
+                    .get(ordinal)
+                    .copied()
+                    .ok_or("source oracle draw budget".into())
+            };
+            let requested_wave = usize::try_from(rules::wave_count(
+                &rules::BEAST_WAVE,
+                rules::hazard_points(&[]),
+                draw(0)?,
+                draw(1)?,
+            ))?;
+            let mut draws = draws.iter().copied();
+            let mut next_draw = || draws.next().unwrap_or(rules::DRAW_PPM);
+            let mut schedule = rules::PrimalMenaceThinkOwner::default();
+            schedule
+                .think(
+                    &facts(now.get() / 1_000_000 * 1000),
+                    &mut next_draw,
+                    tile_free,
+                    |_| None,
+                )
+                .map_err(debug)?;
+            let scheduled_spawns = schedule
+                .think(
+                    &facts(wave_at / 1_000_000 * 1000),
+                    &mut next_draw,
+                    tile_free,
+                    |_| None,
+                )
+                .map_err(debug)?
+                .into_iter()
+                .enumerate()
+                .filter_map(|(index, effect)| match effect {
+                    rules::PrimalMenaceEffect::ScheduledSpawn {
+                        kind: rules::WaveKind::Beast,
+                        position,
+                        ..
+                    } => Some((index as u64 + 1, position)),
+                    _ => None,
+                })
+                .collect();
+            Ok((requested_wave, scheduled_spawns))
+        };
+        // Crystal the_primal_menace.lua:279 calls Game.createMonster with
+        // normal placement. map.cpp:254-309 tries eight shuffled neighbours
+        // after an occupied centre; it does not discard the second request.
+        let source_terrain = active
+            .qualify_activity_source_room(&scene.room, PinnedActivitySourceRoom::Primal)
             .map_err(debug)?;
-        let scheduled_spawns: Vec<_> = schedule
-            .think(
-                &facts(wave_at.get() / 1_000_000 * 1000),
-                &mut next_draw,
-                tile_free,
-                |_| None,
-            )
-            .map_err(debug)?
-            .into_iter()
-            .enumerate()
-            .filter_map(|(index, effect)| match effect {
-                rules::PrimalMenaceEffect::ScheduledSpawn {
-                    kind: rules::WaveKind::Beast,
-                    position,
-                    ..
-                } => Some((index as u64 + 1, position)),
-                _ => None,
-            })
-            .collect();
+        let source_world = source_terrain
+            .source_world()
+            .ok_or("qualified Primal source terrain")?;
+        let source_admissions = |scheduled_spawns: &[(u64, MovementLocalPosition)]|
+         -> TestResult<std::collections::BTreeSet<_>> {
+            let mut admitted_cells = std::collections::BTreeSet::new();
+            for &(callback, at) in scheduled_spawns {
+                let mut occurrence = [0; 16];
+                occurrence[..8].copy_from_slice(&callback.to_be_bytes());
+                let occurrence =
+                    oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence);
+                let mut ordinal = 0;
+                let plan =
+                    oteryn_gameplay_world::movement::source_placement::SourcePlacementPlan::prepare(
+                        at,
+                        false,
+                        false,
+                        |bound| {
+                            let limit = u64::MAX - u64::MAX % u64::from(bound);
+                            for _ in 0..64 {
+                                let value = oteryn_simulation_determinism::deterministic_decision_u64(
+                                    &root,
+                                    occurrence,
+                                    "primal_source_placement",
+                                    ordinal,
+                                );
+                                ordinal += 1;
+                                if let Ok(value) = value
+                                    && value < limit
+                                {
+                                    return (value % u64::from(bound)) as u32;
+                                }
+                            }
+                            bound
+                        },
+                    )
+                    .map_err(debug)?;
+                let placed = plan
+                    .select(
+                        |at| {
+                            let cell = crate::content::LogicalCell {
+                                x: at.x, y: at.y, z: -i32::from(at.floor),
+                            };
+                            let tile = source_world.immutable_tile(source_world.scope(), cell).ok()?;
+                            let flags = tile.flags();
+                            let teleport = source_world.pending_mutable_placements().iter().any(|placement| {
+                                placement.source_position() == [cell.x, cell.y, cell.z]
+                                    && placement.source_kind() == Some("teleport")
+                            });
+                            Some(oteryn_gameplay_world::movement::source_placement::SourcePlacementCell {
+                                exists: true,
+                                query_add: tile_free(at) && tile.ground_present()
+                                    && !flags.immovable_block_solid && !flags.floor_change
+                                    && !flags.protection_zone && !teleport
+                                    && !admitted_cells.contains(&(at.x, at.y, at.floor)),
+                                protection_zone: flags.protection_zone,
+                                teleport,
+                            })
+                        },
+                        |_, _| Some(true),
+                    )
+                    .map_err(debug)?;
+                if let Some(at) = placed {
+                    assert!(
+                        admitted_cells.insert((at.x, at.y, at.floor)),
+                        "normal placement cannot stack creatures"
+                    );
+                }
+            }
+            Ok(admitted_cells)
+        };
+        // Stay inside the 12th source second used by the fixed cadence below.
+        // Select only an occurrence whose replayed source requests are all
+        // scheduled, one cell is requested exactly twice and normal placement
+        // admits that cell, so the regression below is exercised.
+        let mut selected = None;
+        for wave_at in 12_000_000..12_100_000 {
+            let (requested_wave, scheduled_spawns) = source_schedule(wave_at)?;
+            if scheduled_spawns.len() != requested_wave {
+                continue;
+            }
+            let duplicate = scheduled_spawns
+                .iter()
+                .map(|(_, at)| *at)
+                .find(|cell| scheduled_spawns.iter().filter(|(_, at)| at == cell).count() == 2);
+            let Some(duplicate_cell) = duplicate else {
+                continue;
+            };
+            let admitted_cells = source_admissions(&scheduled_spawns)?;
+            if admitted_cells.contains(&(duplicate_cell.x, duplicate_cell.y, duplicate_cell.floor))
+            {
+                selected = Some((
+                    wave_at,
+                    requested_wave,
+                    duplicate_cell,
+                    scheduled_spawns,
+                    admitted_cells,
+                ));
+                break;
+            }
+        }
+        let (wave_at, requested_wave, duplicate_cell, scheduled_spawns, admitted_cells) =
+            selected.ok_or("no source occurrence schedules an admitted duplicate cell")?;
+        let wave_at = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(wave_at);
         let scheduled_cells = scheduled_spawns
             .iter()
             .map(|(_, at)| *at)
@@ -379,80 +489,7 @@ async fn scenario(admin: String) -> TestResult {
             2,
             "corrected content schedules the duplicate cell twice"
         );
-        // Crystal the_primal_menace.lua:279 calls Game.createMonster with
-        // normal placement. map.cpp:254-309 tries eight shuffled neighbours
-        // after an occupied centre; it does not discard the second request.
-        let source_terrain = active
-            .qualify_activity_source_room(&scene.room, PinnedActivitySourceRoom::Primal)
-            .map_err(debug)?;
-        let source_world = source_terrain
-            .source_world()
-            .ok_or("qualified Primal source terrain")?;
-        let mut admitted_cells = std::collections::BTreeSet::new();
-        for (callback, at) in scheduled_spawns {
-            let mut occurrence = [0; 16];
-            occurrence[..8].copy_from_slice(&callback.to_be_bytes());
-            let occurrence =
-                oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence);
-            let mut ordinal = 0;
-            let plan =
-                oteryn_gameplay_world::movement::source_placement::SourcePlacementPlan::prepare(
-                    at,
-                    false,
-                    false,
-                    |bound| {
-                        let limit = u64::MAX - u64::MAX % u64::from(bound);
-                        for _ in 0..64 {
-                            let value = oteryn_simulation_determinism::deterministic_decision_u64(
-                                &root,
-                                occurrence,
-                                "primal_source_placement",
-                                ordinal,
-                            );
-                            ordinal += 1;
-                            if let Ok(value) = value
-                                && value < limit
-                            {
-                                return (value % u64::from(bound)) as u32;
-                            }
-                        }
-                        bound
-                    },
-                )
-                .map_err(debug)?;
-            let placed = plan
-                .select(
-                    |at| {
-                        let cell = crate::content::LogicalCell {
-                            x: at.x, y: at.y, z: -i32::from(at.floor),
-                        };
-                        let tile = source_world.immutable_tile(source_world.scope(), cell).ok()?;
-                        let flags = tile.flags();
-                        let teleport = source_world.pending_mutable_placements().iter().any(|placement| {
-                            placement.source_position() == [cell.x, cell.y, cell.z]
-                                && placement.source_kind() == Some("teleport")
-                        });
-                        Some(oteryn_gameplay_world::movement::source_placement::SourcePlacementCell {
-                            exists: true,
-                            query_add: tile_free(at) && tile.ground_present()
-                                && !flags.immovable_block_solid && !flags.floor_change
-                                && !flags.protection_zone && !teleport
-                                && !admitted_cells.contains(&(at.x, at.y, at.floor)),
-                            protection_zone: flags.protection_zone,
-                            teleport,
-                        })
-                    },
-                    |_, _| Some(true),
-                )
-                .map_err(debug)?;
-            if let Some(at) = placed {
-                assert!(
-                    admitted_cells.insert((at.x, at.y, at.floor)),
-                    "normal placement cannot stack creatures"
-                );
-            }
-        }
-        admitted_cells
+        (wave_at, duplicate_cell, admitted_cells)
     };
     let expected_wave = expected_cells.len();
     super::srx3_primal::drain_actual_native_through(&destination, wave_at.get(), true).await?;

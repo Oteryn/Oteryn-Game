@@ -1571,8 +1571,44 @@ fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_at
             Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))
         );
         assert_eq!(snapshot(&harness.pool).await?, before);
-        let start=QuestTransitionRequest {transition_key:"oteryn:quest-transition/crystalserver/quest/u15_24/targuna/burning_heart/mission/npc_1".into(),cause:QuestCause::Command(command(51)?)};
-        committed(commit(harness, &authority, fence(1)?, start, &catalogue).await)?;
+        // Emiliana's mission start writes the track the Reliable Ram world owner
+        // protects; the generic writer must not impersonate her NPC operation.
+        let start = QuestTransitionRequest {
+            transition_key: "oteryn:quest-transition/crystalserver/quest/u15_24/targuna/burning_heart/mission/npc_1".into(),
+            cause: QuestCause::Command(command(51)?),
+        };
+        assert_eq!(
+            commit(harness, &authority, fence(1)?, start, &catalogue).await,
+            Err("InvalidInput".into()),
+            "a generic command cannot write the protected source mission track"
+        );
+        assert_eq!(snapshot(&harness.pool).await?, before);
+        // Import only that historical predecessor at r2, as the dispatch Herald case
+        // does; the death and its rewards below still use the real fenced owner.
+        expect_committed(
+            &harness.pool,
+            "Herald predecessor r2",
+            &award(73, 1, 1000, 1010),
+        )
+        .await?;
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        let seeded = sqlx::query(
+            "INSERT INTO game_character_quest_tracks(character_id, track_key, quest_key, value, \
+               committed_character_revision) \
+             SELECT character_id, $2, $3, 1, character_revision FROM game_character_roots \
+              WHERE character_id = encode($1,'hex')::uuid AND character_revision = 2",
+        )
+        .bind(id(CHARACTER).to_vec())
+        .bind(mission)
+        .bind("oteryn:quest.targuna_quest")
+        .execute(&mut *tx)
+        .await?;
+        assert_eq!(seeded.rows_affected(), 1);
+        tx.commit().await?;
+        assert_eq!(track_value(&harness.pool, mission).await?, Some(1));
         let sequencer = CharacterRevisionSequencer::new();
         let mut slot = sequencer
             .acquire(CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?)
