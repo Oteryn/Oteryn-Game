@@ -13,7 +13,7 @@ const START: Position = Position {
 };
 
 #[test]
-fn qc_obsidian_knife_steel_then_uzgod_knife_once_and_completes() -> TestResult {
+fn qc_obsidian_knife_friend_cyclops_forges_draconian_steel_repeatably() -> TestResult {
     run("qc-obsidian-knife")
 }
 
@@ -132,33 +132,31 @@ pub(super) async fn exercise(
 }
 
 /// TibiaWiki Obsidian Knife Quest: the Sweaty Cyclops turns a Dragon Shield into
-/// a Piece of Draconian Steel for a friend; Uzgod forges steel and an Obsidian
-/// Lance into the Obsidian Knife.
+/// a Piece of Draconian Steel once Friends and Traders made him a friend. Uzgod's
+/// forge (steel plus Obsidian Lance, 20 h cooldown) is the native NPC exchange
+/// that `pick_exchange` already proves.
 async fn obsidian_knife(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
     callbacks: &[RewardCallback],
 ) -> TestResult {
-    let [cyclops, uzgod] = super::classic_quests::install(
-        owner,
-        admitted,
-        ["oteryn:npc.a_sweaty_cyclops", "oteryn:npc.uzgod"],
-    )
-    .await?;
+    let [cyclops] =
+        super::classic_quests::install(owner, admitted, ["oteryn:npc.a_sweaty_cyclops"]).await?;
     let steel = callback(callbacks, "qc-obsidian-draconian-steel")?;
-    let knife = callback(callbacks, "qc-obsidian-knife")?;
+    let words = vec!["hi", "forge draconian steel"];
     mint(owner, admitted, 3416, 1, 7000).await?;
     // A stranger to the cyclops cannot buy the steel service.
-    super::qengine_rewards::wire_conversation(
+    let (result, _, _) = super::qengine_rewards::wire_conversation(
         owner,
         admitted,
         cyclops,
         steel,
         false,
-        vec!["hi", "uth'lokr", "yes"],
+        words.clone(),
     )
     .await?;
+    assert_ne!(result, NpcIntentDisposition::Ok);
     assert_eq!(count(h, 3416).await?, 1);
     assert_eq!(count(h, 5889).await?, 0);
     super::qengine_outfit_stories::seed_quest_prerequisites(
@@ -169,85 +167,27 @@ async fn obsidian_knife(
         90,
     )
     .await?;
-    let (result, _, _) = super::qengine_rewards::wire_conversation(
-        owner,
-        admitted,
-        cyclops,
-        steel,
-        false,
-        vec!["hi", "uth'lokr", "yes"],
-    )
-    .await?;
-    assert_eq!(result, NpcIntentDisposition::Ok);
-    assert_eq!(count(h, 3416).await?, 0);
-    assert_eq!(count(h, 5889).await?, 1);
-    // Uzgod refuses without the obsidian lance and keeps the steel.
-    let (result, _, _) = super::qengine_rewards::wire_conversation(
-        owner,
-        admitted,
-        uzgod,
-        knife,
-        false,
-        vec!["hi", "draconian steel", "yes"],
-    )
-    .await?;
-    assert_eq!(result, NpcIntentDisposition::Rejected);
-    assert_eq!(count(h, 5889).await?, 1);
-    assert_eq!(count(h, 5908).await?, 0);
-    assert!(!completed(h, &knife.quest).await?);
-    mint(owner, admitted, 3313, 1, 7001).await?;
-    let (result, _, _) = super::qengine_rewards::wire_conversation(
-        owner,
-        admitted,
-        uzgod,
-        knife,
-        false,
-        vec!["hi", "draconian steel", "yes"],
-    )
-    .await?;
-    assert_eq!(result, NpcIntentDisposition::Ok);
-    assert_eq!(count(h, 5889).await?, 0);
-    assert_eq!(count(h, 3313).await?, 0);
-    assert_eq!(count(h, 5908).await?, 1);
-    assert!(completed(h, &knife.quest).await?);
-    // The knife is forged once: a second set of materials is not consumed.
-    mint(owner, admitted, 3416, 1, 7002).await?;
-    super::qengine_rewards::wire_conversation(
-        owner,
-        admitted,
-        cyclops,
-        steel,
-        false,
-        vec!["hi", "uth'lokr", "yes"],
-    )
-    .await?;
-    assert_eq!(
-        count(h, 5889).await?,
-        1,
-        "the steel service stays repeatable"
-    );
-    mint(owner, admitted, 3313, 1, 7003).await?;
-    super::qengine_rewards::wire_conversation(
-        owner,
-        admitted,
-        uzgod,
-        knife,
-        false,
-        vec!["hi", "draconian steel", "yes"],
-    )
-    .await?;
-    assert_eq!(count(h, 5889).await?, 1);
-    assert_eq!(count(h, 3313).await?, 1);
-    assert_eq!(count(h, 5908).await?, 1);
-    let grants: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_quest_reward_sources WHERE character_id=encode($1,'hex')::uuid \
-         AND transition_key=$2",
-    )
-    .bind(id(41).as_slice())
-    .bind(&knife.key)
-    .fetch_one(&h.pool)
-    .await?;
-    assert_eq!(grants, 1);
+    for used in 1..=2 {
+        if used > 1 {
+            mint(owner, admitted, 3416, 1, 7000 + u64::try_from(used)?).await?;
+        }
+        let (result, _, _) = super::qengine_rewards::wire_conversation(
+            owner,
+            admitted,
+            cyclops,
+            steel,
+            false,
+            words.clone(),
+        )
+        .await?;
+        assert_eq!(result, NpcIntentDisposition::Ok);
+        assert_eq!(count(h, 3416).await?, 0);
+        assert_eq!(
+            count(h, 5889).await?,
+            used,
+            "the steel service stays repeatable"
+        );
+    }
     Ok(())
 }
 

@@ -6,9 +6,9 @@
       "quest": "oteryn:quest.friends_and_traders",
       "npc": "oteryn:npc.a_sweaty_cyclops",
       "keywords": [
-        "yes"
+        "forge draconian steel"
       ],
-      "topic": 6,
+      "topic": 0,
       "next_topic": 0,
       "storage": [
         {
@@ -44,53 +44,6 @@
         "track": "oteryn:quest-progress/qc/friends/draconian-steel-uses",
         "maximum": 1000000000000
       }
-    },
-    {
-      "key": "oteryn:quest-reward/qc-obsidian-knife",
-      "quest": "oteryn:quest.obsidian_knife_quest",
-      "npc": "oteryn:npc.uzgod",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 15,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/qc/obsidian_knife/knife",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 1
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i5889",
-          "count": 1
-        },
-        {
-          "item": "oteryn:item.tibia.i3313",
-          "count": 1
-        }
-      ],
-      "present": [],
-      "give": {
-        "item": "oteryn:item.tibia.i5908",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Here you have it."
-      ],
-      "sources": [
-        "https://tibia.fandom.com/index.php?title=Obsidian_Knife_Quest/Spoiler&oldid=880658",
-        "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/npc/uzgod.lua#L60-L72"
-      ],
-      "completes": true,
-      "failure_reply": [
-        "You don't have these items."
-      ]
     },
     {
       "key": "oteryn:quest-reward/qc-sinatuki-perch-99",

@@ -2,27 +2,6 @@
   "schema": 1,
   "offers": [
     {
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "uth'lokr"
-      ],
-      "topic": 0,
-      "any_topic": true,
-      "next_topic": 6,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 1,
-          "maximum": 15,
-          "set": 1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "Firy steel it is. Need green ones' breath to melt. Or red even better. Me can make from shield. Lil' one want to trade?"
-      ]
-    },
-    {
       "npc": "oteryn:npc.sinatuki",
       "keywords": [
         "chuqua"
@@ -33,27 +12,6 @@
       "storage": [],
       "reply": [
         "Chuqua jamjam!! Tiyopa Sinatuki?"
-      ]
-    },
-    {
-      "npc": "oteryn:npc.uzgod",
-      "keywords": [
-        "draconian steel"
-      ],
-      "topic": 0,
-      "any_topic": true,
-      "next_topic": 15,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/qc/obsidian_knife/knife",
-          "minimum": -1,
-          "maximum": -1,
-          "set": -1,
-          "preserve": true
-        }
-      ],
-      "reply": [
-        "You bringing me draconian steel and obsidian lance in exchange for obsidian knife?"
       ]
     }
   ]
