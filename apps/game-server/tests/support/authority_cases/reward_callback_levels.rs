@@ -444,7 +444,7 @@ async fn overflow(h: &fixture::Harness) -> TestResult {
             &serde_json::to_vec(&serde_json::json!({
                 "schema": 1, "quests": [{
                     "quest": callback.quest,
-                    "recipe_sha256": format!("{:x}", sha2::Sha256::digest(b"engine reward scaling fixture")),
+                    "recipe_sha256": sha2::Sha256::digest(b"engine reward scaling fixture").iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
                     "sources": ["engine reward scaling fixture"],
                     "tracks": [{"key": callback.storage[0].track, "initial":0,"minimum":0,"maximum":1}],
                     "stages": [{"key":"reward","completes":false,"trigger":{"kind":"npc_dialogue","callback": &callback}}]
