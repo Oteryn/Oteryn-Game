@@ -72,18 +72,34 @@ struct Owner {
     fail_return: bool,
 }
 
+// Share only the immutable activated content of the one fixture World. Every Owner still
+// builds its own carrier, continuity, scene and stored encounter.
+fn native_fixture(world: WorldId) -> TestResult<NativeGameplayState> {
+    use oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables;
+    static NATIVE: std::sync::OnceLock<(WorldId, TestResult<NativeGameplayState>)> =
+        std::sync::OnceLock::new();
+    let (bound, native) = NATIVE.get_or_init(|| {
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let native = controller
+            .active()
+            .and_then(|active| active.native_gameplay())
+            .cloned()
+            .ok_or_else(|| "native fixture".to_owned());
+        (world, native)
+    });
+    if *bound != world {
+        return Err("immutable fixture must stay bound to the same test World".into());
+    }
+    native.clone()
+}
+
 impl Owner {
     fn fixture(allow_spawn: bool) -> TestResult<Self> {
         Self::fixture_with_capacity(allow_spawn, 3)
     }
     fn fixture_with_capacity(allow_spawn: bool, capacity: usize) -> TestResult<Self> {
         let world = WorldId::decode(&id(1)).map_err(debug)?;
-        let (controller,_)=oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(world,None);
-        let native = controller
-            .active()
-            .and_then(|active| active.native_gameplay())
-            .ok_or("native fixture")?
-            .clone();
+        let native = native_fixture(world)?;
         let scope = RuntimeScopeRefV1::instance(world, id(2)).map_err(debug)?;
         let generation = ScopeOwnershipGeneration::new(1).map_err(debug)?;
         let (carrier, continuity) =
