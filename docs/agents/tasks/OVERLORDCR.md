@@ -17,3 +17,19 @@ Whole-diff self-review: no new storage owner, SQL migration, capability, command
 Second dispatch test attempt: after `cargo clean -p oteryn-gameplay-dispatch`, `CARGO_BUILD_JOBS=1 cargo test -p oteryn-gameplay-dispatch --lib overlordcr -- --nocapture` again ended with `(signal: 9, SIGKILL: kill)` before any test executed. The repository PG workflow documents extra swap for this target; this container has no swap or administrative capabilities. Full lethal-path tests remain intact. Added a separate mounted authority-case proof of the quest-owner transaction to obtain supplemental PostgreSQL evidence without compiling dispatch library tests.
 
 Passed: `cargo clippy --locked -p oteryn-gameplay-quests --all-targets --quiet -- -D warnings`. Supplemental authority PG test compilation is in progress.
+
+Current validation table (ci-local.sh is absent at this base):
+
+| Check | Result |
+| --- | --- |
+| cargo fmt plus explicit mounted-file rustfmt | Passed |
+| quest crate clippy, all targets, warnings denied | Passed |
+| governance validator and unit tests | Passed, 135 tests |
+| full dispatch lethal-path PG regressions | Two compiler OOM failures, including clean single-job retry; no test execution |
+| supplemental authority PG proof | Building with one job |
+| dispatch clippy, all targets/all features | Pending |
+| game-server touched authority target clippy | Pending |
+| pin/lock verification | Pending |
+| behavioral red-to-green proof | Not obtained; initial red attempt failed in compiler |
+
+Donor key rechecked on the current 201189f8 checkout: `data-global/lib/core/storages.lua:1084`, `BossStorage = 41652`. Its overlord death script is byte-identical to packet revision 9f5a72c for the relevant file. The supplemental build has progressed past the content crate into gameplay dependencies.
