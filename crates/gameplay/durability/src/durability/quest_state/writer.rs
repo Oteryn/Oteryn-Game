@@ -1954,7 +1954,8 @@ impl DurabilityRoot {
                             let digest = sha2::Sha256::new()
                                 .chain_update(b"oteryn.deeplings.chest.v1")
                                 .chain_update(fence.character_id.as_bytes())
-                                .chain_update(committed.as_bytes())
+                                .chain_update(command.game_session_id().as_bytes())
+                                .chain_update(command.command_id().get().to_be_bytes())
                                 .chain_update(world.key.as_bytes())
                                 .finalize();
                             let draw = u64::from_be_bytes(digest[..8].try_into()
