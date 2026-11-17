@@ -74,6 +74,11 @@ pub(super) async fn exercise(
         use_target(owner, admitted, 1, &target).await?,
         UseDisposition::Committed
     );
+    assert_ne!(
+        use_target(owner, admitted, 2, &target).await?,
+        UseDisposition::Committed,
+        "a broken mirror cannot advance the counter again"
+    );
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -82,7 +87,8 @@ pub(super) async fn exercise(
     let state = owner
         .root
         .read_character_quest_state(owner.character, fence.character_id)
-        .await?;
+        .await
+        .map_err(super::fixture::debug)?;
     assert_eq!(
         state
             .tracks()

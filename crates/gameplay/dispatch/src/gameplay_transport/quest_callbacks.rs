@@ -994,9 +994,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
-        let source_trial = selected
-            .iter()
-            .any(|c| c.effects.target_transform.is_some());
+        let source_trial = selected.iter().any(|c| {
+            c.effects.target_transform.is_some()
+                || (c.requires_world_admission
+                    && c.effects.transform.is_some()
+                    && c.effects.reset_after_ms.is_some())
+        });
         self.select_source_phase(&mut selected, actor, &command)
             .await;
         if source_trial && selected.is_empty() {
