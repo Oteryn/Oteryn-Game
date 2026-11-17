@@ -1255,6 +1255,7 @@ pub(super) async fn exercise(
     if key == "rcauth/wyda-blood-herb" {
         // This test starts after the source chest was claimed. Its protected
         // track cannot be initialized using a synthetic generic transition.
+        super::questpc8_magic_sword::raise_level(owner, admitted, 2, 247).await?;
         let fence = owner
             .current_quest_fence(admitted.game_session_id)
             .await

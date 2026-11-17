@@ -182,6 +182,19 @@ pub(super) fn prepare(
                 {
                     return Some(choice);
                 }
+                // These exchanges own their exact hand-in words after completion too.
+                // Keep their refusal ahead of ordinary NPC dialogue.
+                if let Some(callback) = callbacks.iter().find(|callback| {
+                    matches!(
+                        callback.key.as_str(),
+                        "oteryn:quest-reward/rcauth/willie-banana"
+                            | "oteryn:quest-reward/rcauth/wyda-blood-herb"
+                    ) && callback.npc == context.2
+                        && callback.topic == topic.number
+                        && callback.keywords.contains(&text)
+                }) {
+                    return refusal(&callback.failure_reply);
+                }
                 return None;
             }
             if let Some(offer) = offers
