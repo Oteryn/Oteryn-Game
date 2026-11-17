@@ -50,7 +50,8 @@ Validation recorded so far:
 |---|---|
 | `cargo fmt --all` | Passed; include-mounted leaf files also formatted with Rust 2024 rustfmt |
 | `python3 tools/content-schema/validate_full_game_content_tree.py` | Passed: 19 domains, 39 systems, 100 nodes; no unassigned entries |
-| Initial focused dispatch regression | Build still running; no red/green result claimed |
+| Initial focused dispatch regression | Build killed by SIGKILL before tests; no behavioral red result claimed |
+| Focused retry | Dispatch outputs cleaned; running with `CARGO_BUILD_JOBS=1` and normal profiles |
 | Quest-authoring checks and unit-tests runner | Running |
 | Clippy, full regeneration and pin verification | Pending |
 
