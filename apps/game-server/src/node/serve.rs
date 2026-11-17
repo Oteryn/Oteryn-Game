@@ -102,7 +102,9 @@ const LAST_POSITION_FLUSH_BUDGET: Duration = Duration::from_secs(3);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
-const CONTROL_REQUEST_BYTES: usize = 64;
+/// The longest valid control line: `spawn <36-byte session> <key of at most 128 bytes>\n`
+/// (172 bytes); `qualify` and operation ids are shorter. A longer line is refused unread.
+const CONTROL_REQUEST_BYTES: usize = 6 + 36 + 1 + 128 + 1;
 const CONTROL_DEADLINE: Duration = Duration::from_secs(30);
 const MAX_GAMEPLAY_KEY_BYTES: usize = 16 * 1024;
 

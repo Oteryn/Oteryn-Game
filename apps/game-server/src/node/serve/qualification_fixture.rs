@@ -698,6 +698,14 @@ mod tests {
     }
 
     #[test]
+    fn longest_valid_spawn_line_fits_the_control_request_bound() {
+        let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
+        let line = format!("spawn {id} {}\n", "k".repeat(128));
+        assert_eq!(line.len(), CONTROL_REQUEST_BYTES);
+        assert!(spawn_request(true, line.as_bytes()).is_ok());
+    }
+
+    #[test]
     fn spawn_request_accepts_only_v7_sessions_and_bounded_keys() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
         let long = "x".repeat(129);
