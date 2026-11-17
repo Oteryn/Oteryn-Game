@@ -235,10 +235,7 @@ async fn earn(
         })
         .ok_or("step earn-fare: no legitimate route to an authored rat spawn")?;
         walk(client, world, &path).await?;
-        let here = client.world_spatial().actor_position;
-        let target = client.world_entities()
-            .and_then(|entities| nearest_spawn(entities.iter(), here, "Rat"))
-            .ok_or("step earn-fare: no visible rat after routing")?.entity;
+        let target = approach_spawn_target(client, world, "Rat", deadline).await?;
         client_hunt::hunt_target(client, Some(target))
             .await
             .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step earn-fare: real combat/loot failed: {error}"), error) })?;

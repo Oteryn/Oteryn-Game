@@ -531,6 +531,29 @@ mod tests {
     }
 
     #[test]
+    fn qualification_prefix_is_limited_to_fixture_commands()
+    -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                for enabled in [false, true] {
+                    let (mut client, mut server) = UnixStream::pair()?;
+                    let (sent, request) = tokio::join!(
+                        async {
+                            client.write_all(b"!health\n").await?;
+                            client.shutdown().await
+                        },
+                        handle_control(&mut server, enabled),
+                    );
+                    sent?;
+                    assert!(request.is_none());
+                }
+                Ok(())
+            })
+    }
+
+    #[test]
     fn python_provision_requests_reach_the_real_control_parser()
     -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         std::thread::Builder::new()
@@ -561,7 +584,7 @@ mod tests {
                                         .output()
                                 });
                                 let (mut stream, _) = listener.accept().await?;
-                                let bytes = handle_control(&mut stream)
+                                let bytes = handle_control(&mut stream, true)
                                     .await
                                     .ok_or("Python request exceeded control bound")?;
                                 assert_eq!(

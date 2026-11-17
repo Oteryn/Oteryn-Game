@@ -31,6 +31,8 @@ class ProvisionTests(unittest.TestCase):
                     try:
                         with listener.accept()[0] as connection:
                             connection.settimeout(3)
+                            self.assertEqual(connection.recv(1), b"!")
+                            connection.sendall(b"!")
                             request = bytearray()
                             while chunk := connection.recv(64):
                                 request.extend(chunk)
@@ -65,11 +67,12 @@ class ProvisionTests(unittest.TestCase):
 
     def test_response_reads_share_one_deadline(self):
         with mock.patch.object(provision.socket, "socket") as factory, mock.patch.object(
-            provision.time, "monotonic", side_effect=[0, 21, 21]
+            provision.time, "monotonic", side_effect=[0, 0, 0, 0, 0, 41, 41]
         ):
+            factory.return_value.__enter__.return_value.recv.return_value = b"!"
             with self.assertRaises(TimeoutError):
                 provision.provision("control.sock", SESSION, "sorcerer")
-            factory.return_value.__enter__.return_value.recv.assert_not_called()
+            factory.return_value.__enter__.return_value.recv.assert_called_once_with(1)
 
     def test_bad_sessions_and_profiles_are_rejected_before_connecting(self):
         for session, profile in [

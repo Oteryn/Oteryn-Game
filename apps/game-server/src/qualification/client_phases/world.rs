@@ -501,7 +501,7 @@ mod travel {
     }
 
     pub(super) struct Planner<'a> {
-        world: &'a BundleWorld,
+        pub(super) world: &'a BundleWorld,
         /// Door tile -> (placement key, authored action id).
         doors: HashMap<TilePos, (u64, u16)>,
         ladders: HashMap<TilePos, u8>,
@@ -1315,6 +1315,29 @@ mod travel {
             })
     }
 
+    const NAGINATA_PICK_HITS: u64 = 6;
+
+    fn pick_observation(revision: Option<u64>, complete: bool, before: u64) -> Option<u64> {
+        match revision {
+            Some(revision) if revision > before => Some(revision),
+            None if complete => Some(NAGINATA_PICK_HITS),
+            _ => None,
+        }
+    }
+
+    fn projected_pick_revision(
+        tile: &oteryn_protocol_oteryn::world_map::MapTile,
+        spot: TilePos,
+        ordinal: u8,
+        before: u64,
+    ) -> Option<u64> {
+        pick_observation(
+            base_ordinal_revision(std::slice::from_ref(tile), spot, ordinal),
+            !tile.more,
+            before,
+        )
+    }
+
     fn tool_revision(events: &[SessionEvent], spot: TilePos, ordinal: u8) -> Option<u64> {
         events.iter().rev().find_map(|event| {
             let tiles = match event {
@@ -1473,8 +1496,15 @@ mod travel {
                     for hit in 1..=hits {
                         verdict::Harness::global().progress("travel descent");
                         let reply = if let Some(tool) = tool {
-                            self.use_tool(client, spot, ordinal, tool, &mut revision, hit < hits)
-                                .await?
+                            self.use_tool(
+                                client,
+                                spot,
+                                ordinal,
+                                tool,
+                                &mut revision,
+                                tool == 3456 || hit < hits,
+                            )
+                            .await?
                         } else {
                             use_map_object(client, &self.placement(spot, ordinal)?).await?
                         };
@@ -1498,6 +1528,9 @@ mod travel {
                                 show(spot)
                             )
                             .into());
+                        }
+                        if tool == Some(3456) && revision >= NAGINATA_PICK_HITS {
+                            break;
                         }
                     }
                     if let Some(direction) = direction {
@@ -1625,24 +1658,58 @@ mod travel {
                 }
                 let disposition = decode_use_result(&response.payload)
                     .map_err(|error| format!("tool {tool} USE result: {error:?}"))?;
-                if disposition == UseDisposition::Committed && needs_revision {
-                    // Bundle revisions are published in MapOrigin::BaseOrdinal. A pick hit
-                    // increments this revision even while the same stone remains visible.
+                let pick = tool == 3456;
+                if pick
+                    && disposition == UseDisposition::Committed
+                    && *revision + 1 == NAGINATA_PICK_HITS
+                {
+                    *revision = NAGINATA_PICK_HITS;
+                    return Ok(disposition);
+                }
+                if (disposition == UseDisposition::Committed && needs_revision)
+                    || (pick && disposition == UseDisposition::StaleState)
+                {
                     let before = *revision;
                     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
                     loop {
                         verdict::Harness::global().progress("travel tool map update");
-                        if let Some(observed) = tool_revision(&client.take_events(), spot, ordinal)
-                            && observed > before
-                        {
+                        let events = client.take_events();
+                        let observed = if pick {
+                            let position = ActorPosition {
+                                x: i32::from(spot.x),
+                                y: i32::from(spot.y),
+                                floor: i16::from(spot.floor),
+                            };
+                            client
+                                .session_mut()
+                                .world_map_tile(position)
+                                .and_then(|tile| {
+                                    projected_pick_revision(&tile, spot, ordinal, before)
+                                })
+                        } else {
+                            tool_revision(&events, spot, ordinal)
+                                .filter(|&revision| revision > before)
+                        };
+                        if let Some(observed) = observed {
                             *revision = observed;
-                            return Ok(disposition);
+                            if pick && observed >= NAGINATA_PICK_HITS {
+                                return Ok(UseDisposition::NothingToUse);
+                            }
+                            break;
                         }
                         if tokio::time::Instant::now() >= deadline {
-                            return Err(format!("tool {tool} USE at {} committed but no revised map entry was published", show(spot)).into());
+                            return Err(format!(
+                                "tool {tool} USE at {} published no usable map update",
+                                show(spot)
+                            )
+                            .into());
                         }
                         client.service_liveness(Duration::from_millis(50)).await?;
                     }
+                    if disposition == UseDisposition::StaleState {
+                        continue;
+                    }
+                    return Ok(disposition);
                 }
                 if disposition != UseDisposition::Exhausted {
                     return Ok(disposition);
@@ -2075,6 +2142,14 @@ mod travel {
             assert_eq!(remaining_pick_hits(6, 1), 5);
             assert_eq!(remaining_pick_hits(6, 5), 1);
             assert_eq!(remaining_pick_hits(6, 6), 0);
+        }
+
+        #[test]
+        fn shared_pick_missing_ordinal_can_mark_open_passage() {
+            assert_eq!(pick_observation(None, false, 4), None);
+            assert_eq!(pick_observation(Some(4), true, 4), None);
+            assert_eq!(pick_observation(Some(5), true, 4), Some(5));
+            assert_eq!(pick_observation(None, true, 4), Some(6));
         }
 
         include!("travel_tests.rs");
@@ -5267,10 +5342,19 @@ tokio::task_local! {
 }
 
 pub(super) async fn await_fixture_workers() {
-    let workers = FIXTURE_WORKERS.with(|workers| workers.take());
-    for worker in workers {
-        let _ = worker.await;
-    }
+    std::future::poll_fn(|cx| {
+        FIXTURE_WORKERS.with(|workers| {
+            let mut workers = workers.borrow_mut();
+            while let Some(worker) = workers.last_mut() {
+                if std::future::Future::poll(std::pin::Pin::new(worker), cx).is_pending() {
+                    return std::task::Poll::Pending;
+                }
+                workers.pop();
+            }
+            std::task::Poll::Ready(())
+        })
+    })
+    .await;
 }
 
 async fn fixture_timeout<T>(
@@ -5586,12 +5670,33 @@ async fn travel_to_spawn_target(
         )
     })?;
     walk(client, world, &path).await?;
-    for _ in 0..32 {
+    approach_spawn_target(
+        client,
+        world,
+        name,
+        tokio::time::Instant::now() + Duration::from_secs(75),
+    )
+    .await
+}
+
+async fn approach_spawn_target(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    name: &str,
+    deadline: tokio::time::Instant,
+) -> TestResult<oteryn_dev_client::EntityRef> {
+    verdict::Harness::global().bounded_wait(deadline, "spawn observation");
+    let mut steps = 0;
+    while steps < 32 && tokio::time::Instant::now() < deadline {
         let here = client.world_spatial().actor_position;
-        let target = client
+        let Some(target) = client
             .world_entities()
             .and_then(|entities| nearest_spawn(entities.iter(), here, name))
-            .ok_or_else(|| format!("spawn route has no visible {name}"))?;
+        else {
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+            continue;
+        };
         let entity = target.entity;
         let target = tile(target.position)?;
         let path = route(world, tile(here)?, |at| {
@@ -5602,6 +5707,7 @@ async fn travel_to_spawn_target(
             return Ok(entity);
         };
         walk(client, world, &[*direction]).await?;
+        steps += 1;
     }
     Err("could not approach a live creature within the route budget".into())
 }
@@ -6525,7 +6631,7 @@ fn qualification_round_two_caller_contracts() {
         (include_str!("world.rs"), "world_map_tile(position)"),
         (
             include_str!("world.rs"),
-            "if disposition == UseDisposition::Committed && needs_revision",
+            "disposition == UseDisposition::Committed && needs_revision",
         ),
         (
             include_str!("indexed_verdict.rs"),
@@ -6566,6 +6672,60 @@ fn qualification_retries_and_encounter_cleanup_keep_their_owners() {
             combat.contains("let target = travel_to_spawn_target("),
         ),
         ("MP09", mp09.contains("fixture_timeout(")),
+    ]
+    .into_iter()
+    .filter_map(|(name, ok)| (!ok).then_some(name))
+    .collect();
+    assert!(missing.is_empty(), "missing caller behavior: {missing:?}");
+}
+
+#[test]
+fn qualification_cancelled_fixture_drain_keeps_pending_worker() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(FIXTURE_WORKERS.scope(Default::default(), async {
+            let (release, gate) = std::sync::mpsc::sync_channel(1);
+            let _worker = FixtureCommand::start(move || {
+                gate.recv_timeout(Duration::from_secs(2))
+                    .map_err(|error| error.to_string())
+            })?;
+            for _ in 0..2 {
+                let mut drain = Box::pin(await_fixture_workers());
+                tokio::select! {
+                    biased;
+                    () = &mut drain => return Err("pending worker escaped fixture cleanup".into()),
+                    () = tokio::task::yield_now() => {}
+                }
+                drop(drain);
+            }
+            release.send(())?;
+            await_fixture_workers().await;
+            Ok(())
+        }))
+}
+
+#[test]
+fn qualification_routed_hunts_service_empty_spawns_and_approach_live_targets() {
+    let q02 = include_str!("full_row_q02.rs");
+    let s10 = include_str!("full_row_s10.rs");
+    let world = include_str!("world.rs");
+    let spawn = world
+        .split_once("async fn travel_to_spawn_target")
+        .map_or("", |(_, body)| body);
+    let spawn = spawn
+        .split_once("pub(crate) fn smoke")
+        .map_or("", |(body, _)| body);
+    let missing: Vec<_> = [
+        ("Q02 approach", q02.contains("approach_spawn_target(")),
+        (
+            "S10 approach and wait",
+            s10.contains("approach_spawn_target("),
+        ),
+        (
+            "C09 approach and wait",
+            spawn.contains("approach_spawn_target("),
+        ),
     ]
     .into_iter()
     .filter_map(|(name, ok)| (!ok).then_some(name))

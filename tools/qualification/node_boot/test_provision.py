@@ -43,7 +43,7 @@ class ProvisionTests(unittest.TestCase):
                     return b"!"
                 if now[0] == 25:
                     control.sendall.assert_called_with(f"qualify {SESSION} knight\n".encode())
-                    now[0] = 45
+                    now[0] = 64
                     return b"qualified\n"
                 return b""
 

@@ -2838,13 +2838,17 @@ fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
     (bytes[6] >> 4 == 7 && bytes[8] & 0xc0 == 0x80).then_some(bytes)
 }
 
-async fn handle_control(stream: &mut UnixStream) -> Option<Vec<u8>> {
+async fn handle_control(stream: &mut UnixStream, qualification_fixture: bool) -> Option<Vec<u8>> {
     let mut request = Vec::with_capacity(CONTROL_REQUEST_BYTES);
     let mut first = [0];
     if stream.read(&mut first).await.ok()? == 0 {
         return Some(request);
     }
-    if first[0] == b'!' {
+    let fixture_prefix = first[0] == b'!';
+    if fixture_prefix {
+        if !qualification_fixture {
+            return None;
+        }
         // A queued fixture client submits the mutating request only after this
         // accepted connection has a server-side deadline.
         stream.write_all(b"!").await.ok()?;
@@ -2854,7 +2858,9 @@ async fn handle_control(stream: &mut UnixStream) -> Option<Vec<u8>> {
     let remaining = CONTROL_REQUEST_BYTES + 1 - request.len();
     let mut limited = (&mut *stream).take(remaining as u64);
     limited.read_to_end(&mut request).await.ok()?;
-    if request.len() > CONTROL_REQUEST_BYTES {
+    if request.len() > CONTROL_REQUEST_BYTES
+        || (fixture_prefix && !request.starts_with(b"qualify ") && !request.starts_with(b"spawn "))
+    {
         return None;
     }
     Some(request)
@@ -2948,7 +2954,7 @@ async fn control_loop(
         let connection = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
         let connection = connection.as_deref();
         let served = tokio::time::timeout(CONTROL_DEADLINE, async {
-            let request = handle_control(&mut stream).await;
+            let request = handle_control(&mut stream, config.qualification_fixture).await;
             let (answer, event_name) = match request {
                 Some(request) if request == b"health\n" => (control_health(root), "ops_health"),
                 Some(request) if control_diagnose(&request).is_some() => (
