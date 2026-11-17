@@ -7,6 +7,21 @@ use super::super::NativeCastDispatch;
 use super::*;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 
+const FAMILIAR_RESCUE_TRACK: &str = "oteryn:quest-progress/between-the-lines/familiar-rescue";
+
+fn familiar_is_captured(progress: Option<i64>) -> bool {
+    progress == Some(1)
+}
+
+#[cfg(test)]
+#[test]
+fn between_the_lines_familiar_cast_window() {
+    assert!(!familiar_is_captured(None));
+    assert!(!familiar_is_captured(Some(0)));
+    assert!(familiar_is_captured(Some(1)));
+    assert!(!familiar_is_captured(Some(2)));
+}
+
 fn familiar_spell(spell: &crate::spell::SpellDefinition) -> bool {
     matches!(&spell.execution, Execution::NativeProfile(profile)
         if profile.spell()["execution"]["native_behavior"]["key"] == "familiar_summon")
@@ -672,7 +687,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .ok()?;
-        let owned = {
+        let (owned, original_retained) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             if !current_owner(&runtime, &fence, actor, session) {
@@ -687,7 +702,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && p.intent == *intent
                 }),
             };
-            qualify_raw_owned_cast_facts(
+            let owned = qualify_raw_owned_cast_facts(
                 &raw,
                 command,
                 &item_fence,
@@ -698,8 +713,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &retry_access,
                 self.owner_now().get(),
             )
-            .ok()?
+            .ok()?;
+            (owned, retry_access.original_retained)
         };
+        // Reconciliation must finish the original transaction even if quest progress
+        // changed after it was submitted.
+        if !original_retained {
+            let quest_state = self
+                .root
+                .read_character_quest_state(self.character, fence.character_id)
+                .await
+                .ok()?;
+            if quest_state.character_revision() != Some(fence.expected_character_revision)
+                || familiar_is_captured(quest_state.tracks().get(FAMILIAR_RESCUE_TRACK).copied())
+            {
+                return Some(SpellCastOutcome::rejected());
+            }
+        }
         // Administrative state has an explicit source bootstrap and current SQL fence.
         // Missing Premium/learning evidence remains unavailable in the registered adapter.
         let group = {
