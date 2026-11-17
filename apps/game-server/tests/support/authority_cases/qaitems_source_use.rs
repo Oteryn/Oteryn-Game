@@ -285,7 +285,7 @@ async fn exercise(
             &authority,
             &h.node,
             &fence,
-            &oteryn_gameplay_items::item_ref_admission::NativeItemWeights(native),
+            &NativeContent(native),
             &template,
         )
         .await
@@ -467,4 +467,34 @@ fn source_scene(
         |_| None,
     )
     .map_err(|e| debug(e).into())
+}
+
+// Delegate every starter-grant fact to the same qualified native generation.
+struct NativeContent<'a>(
+    &'a oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+);
+impl crate::durability::item_transfer::ItemWeightLookup for NativeContent<'_> {
+    fn generation_digest(&self) -> [u8; 32] {
+        self.0.source_digest()
+    }
+    fn weight_of(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        crate::durability::item_transfer::ItemWeightLookup::weight_of(
+            &super::engitem_reward_text::Weights(self.0),
+            definition,
+        )
+    }
+}
+impl crate::durability::item_loop_move::ItemLoopContent for NativeContent<'_> {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        self.0.source_digest()
+    }
+    fn loop_facts(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Option<crate::durability::item_transfer::ItemDefinitionFacts> {
+        oteryn_gameplay_items::item_ref_admission::generation_item_facts(self.0, definition).ok()
+    }
 }
