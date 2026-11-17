@@ -11,7 +11,7 @@ ALTER TABLE game_character_build_state DROP CONSTRAINT game_character_build_stat
 ALTER TABLE game_character_build_state ADD CONSTRAINT game_character_build_state_committed_character_revision_check
     CHECK (committed_character_revision BETWEEN 1 AND 18446744073709551615);
 CREATE FUNCTION game_character_creation_build_seed(c UUID) RETURNS BOOLEAN
-LANGUAGE sql STABLE AS $$
+LANGUAGE sql STABLE SET search_path = pg_catalog, public AS $$
     SELECT EXISTS (
         SELECT 1 FROM game_character_build_state b JOIN game_character_roots r USING(character_id)
         WHERE b.character_id=c AND r.creation_vocation IS NOT NULL
@@ -23,7 +23,7 @@ LANGUAGE sql STABLE AS $$
               = (0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0)
           AND b.offline_pool_s=43200 AND b.offline_skill=-1)
 $$;
-CREATE FUNCTION game_character_initialize_creation_build() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION game_character_initialize_creation_build() RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, public AS $$
 BEGIN
     IF NEW.creation_vocation IS NOT NULL THEN
         INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,
