@@ -17,6 +17,15 @@ fn hotkey_equip_postgres_worn_item_toggles_with_spare_carried() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-equip-spare", || scenario(true))
 }
 
+#[test]
+fn hotkey_equip_postgres_qualification_knight_hatchet() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-qualification", || {
+        scenario_options_impl(
+            false, false, false, false, None, false, ScenarioMode::Qualification,
+        )
+    })
+}
+
 fn scenario(spare: bool) -> TestResult {
     scenario_options(spare, false, false, false, None, false)
 }
@@ -97,6 +106,7 @@ pub(super) fn coalescing_scenario() -> TestResult {
 #[derive(Clone, Copy)]
 pub(super) enum ScenarioMode {
     Normal,
+    Qualification,
     Coalescing,
     Pouch,
     ForeignPouch,
@@ -180,6 +190,8 @@ fn scenario_options_impl(
             incoming
         } else if matches!(mode, ScenarioMode::Ammo { .. }) {
             "oteryn:item.tibia.i3447"
+        } else if matches!(mode, ScenarioMode::Qualification) {
+            "oteryn:item.tibia.i3276"
         } else if started {
             "oteryn:item.tibia.i6529"
         } else {
@@ -232,6 +244,9 @@ fn scenario_options_impl(
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&harness.pool).await?;
         let mut entries = vec![(item_key, 1)];
+        if matches!(mode, ScenarioMode::Qualification) {
+            entries.extend([("oteryn:item.tibia.i3003", 1), ("oteryn:item.tibia.i3457", 1)]);
+        }
         if matches!(mode, ScenarioMode::Hands { full: true, .. }) {
             entries.resize(20, ("oteryn:item.tibia.i3031", 1));
         }
@@ -248,6 +263,17 @@ fn scenario_options_impl(
             entries.resize(20, ("oteryn:item.tibia.i3031", 1));
         }
         item_look::seed_main_backpack(&harness, &entries).await?;
+        if matches!(mode, ScenarioMode::Qualification) {
+            // Model the persisted level-100 knight fixture before its fresh load.
+            // The real equipment owner reads these rows under the current lease.
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'knight',0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($2,'hex')::uuid)")
+                .bind(id(41).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_progression_state(character_id,character_revision,level,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision) VALUES(encode($1,'hex')::uuid,1,100,15694800,'profile-1','ruleset-1','content-1','simulation-1','evidence-1','declaration-1','policy-1','reward-1') ON CONFLICT(character_id) DO UPDATE SET level=100,total_experience=15694800")
+                .bind(id(41).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
         if matches!(mode, ScenarioMode::Hands { .. } | ScenarioMode::Ammo { .. }) {
             let mut tx = harness.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
@@ -394,7 +420,9 @@ fn scenario_options_impl(
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            if nested
+            if matches!(mode, ScenarioMode::Qualification) {
+                &[4, 6, 12, 14, 179, 180, 485]
+            } else if nested
                 || started
                 || matches!(mode, ScenarioMode::Hands { .. } | ScenarioMode::Ammo { .. })
             {
@@ -405,10 +433,14 @@ fn scenario_options_impl(
         )
         .ok_or("capabilities")?;
         assert!(admitted.continuity.selected_capabilities.contains(179));
-        let request = protocol::hotkey_equip::Request {
-            definition: reference,
+        let request = protocol::hotkey_equip::TieredRequest {
+            request: protocol::hotkey_equip::Request {
+                definition: reference,
+            },
+            upgrade_tier: matches!(mode, ScenarioMode::Qualification).then_some(0),
         }
-        .encode();
+        .encode()
+        .ok_or("hotkey tier")?;
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let serve = async {
             crate::gameplay_transport::connection::serve_admitted(
@@ -431,6 +463,20 @@ fn scenario_options_impl(
                 if envelope.message_type() == protocol::MessageType::SnapshotCommit {
                     break;
                 }
+            }
+            if matches!(mode, ScenarioMode::Qualification) {
+                // First action after the fresh snapshot, with capability485's tier0 payload.
+                assert_eq!(
+                    send(&mut client, 1, &request, protocol::CommandStatus::Accepted).await?,
+                    ItemMoveOutcome::Moved
+                );
+                assert_eq!(equipped_count(pool).await?, 1);
+                assert_eq!(
+                    send(&mut client, 1, &request, protocol::CommandStatus::DuplicateReplay).await?,
+                    ItemMoveOutcome::Moved
+                );
+                client.shutdown().await?;
+                return Ok(());
             }
             if matches!(mode, ScenarioMode::Hands { .. } | ScenarioMode::Ammo { .. }) {
                 let expected = match mode {
@@ -717,6 +763,19 @@ fn scenario_options_impl(
         )
         .await
         .ok_or("reloaded equipment")?;
+        if matches!(mode, ScenarioMode::Qualification) {
+            assert_eq!(equipment.items.len(), 1);
+            assert_eq!(equipment.items[0].item_instance_id, id(71));
+            assert_eq!(equipment.items[0].definition.production_key, item_key);
+            assert_eq!(equipment.items[0].slot, 5);
+            let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_receipts")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(receipts, 1);
+            let remaining: Vec<String> = sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) ORDER BY i.definition_production_key")
+                .fetch_all(&harness.pool).await?;
+            assert_eq!(remaining, ["oteryn:item.tibia.i3003", "oteryn:item.tibia.i3457"]);
+            return Ok(());
+        }
         if matches!(mode, ScenarioMode::Hands { .. } | ScenarioMode::Ammo { .. }) {
             let refused = matches!(
                 mode,
