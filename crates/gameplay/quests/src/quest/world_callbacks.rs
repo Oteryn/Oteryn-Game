@@ -748,6 +748,9 @@ pub fn load() -> Result<Vec<Callback>, String> {
         "../../../../../content/quests/world-callbacks/qc-chests.json"
     ))?);
     callbacks.extend(parse(include_str!(
+        "../../../../../content/quests/world-callbacks/qc-lizard-sanctuary.json"
+    ))?);
+    callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/qc-twenty-miles.json"
     ))?);
     callbacks.extend(parse(include_str!(
@@ -1663,6 +1666,8 @@ mod batch4_tests;
 mod bounded_tests;
 #[cfg(test)]
 mod outfit_tests;
+#[cfg(test)]
+mod qc_lizard_sanctuary_tests;
 #[cfg(test)]
 mod qc_twenty_miles_tests;
 

@@ -115,14 +115,14 @@ async fn held(h: &Harness, item: &str) -> TestResult<i64> {
     .await?)
 }
 
-async fn completed(h: &Harness) -> TestResult<bool> {
+async fn completed(h: &Harness, quest: &str) -> TestResult<bool> {
     Ok(sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_character_quest_states WHERE \
          character_id=encode($1,'hex')::uuid AND quest_key=$2 \
          AND completed_character_revision IS NOT NULL)",
     )
     .bind(id(41).as_slice())
-    .bind(QUEST)
+    .bind(quest)
     .fetch_one(&h.pool)
     .await?)
 }
@@ -250,7 +250,7 @@ pub(super) async fn exercise_chain(
         ($npc:expr, $name:expr, $words:expr, $stage:expr) => {{
             assert_eq!(say!($npc, $name, $words), NpcIntentDisposition::Ok, $name);
             assert_eq!(track(h, &stage_key).await?, $stage, "accepted: {}", $name);
-            assert!(!completed(h).await?, "complete before the compass: {}", $name);
+            assert!(!completed(h, QUEST).await?, "complete before the compass: {}", $name);
         }};
     }
     macro_rules! stage {
@@ -344,7 +344,7 @@ pub(super) async fn exercise_chain(
     // The compass turn completes only against the compass.
     stage!(22);
     refused!(guardian, "qc-twenty-miles-guardian-compass", ["hi", "compass"], 22);
-    assert!(!completed(h).await?);
+    assert!(!completed(h, QUEST).await?);
     give!(21795);
     assert_eq!(
         say!(guardian, "qc-twenty-miles-guardian-compass", ["hi", "compass"]),
@@ -352,7 +352,7 @@ pub(super) async fn exercise_chain(
     );
     assert_eq!(track(h, &stage_key).await?, 23);
     assert_eq!(held(h, &item(21795)).await?, 0);
-    assert!(completed(h).await?);
+    assert!(completed(h, QUEST).await?);
     assert_eq!(track(h, &format!("{P}access_birthing")).await?, 1);
     give!(21795);
     refused!(guardian, "qc-twenty-miles-guardian-compass", ["hi", "compass"], 23);
@@ -489,7 +489,7 @@ pub(super) async fn exercise_world(
     if let Some(reward) = reward {
         assert_eq!(held(h, &reward.item).await?, i64::from(reward.count));
     }
-    assert_eq!(completed(h).await?, callback.completes);
+    assert_eq!(completed(h, &callback.quest).await?, callback.completes);
     let after = audits().await?;
     // The same command id replays the committed result without a second effect.
     assert_eq!(
