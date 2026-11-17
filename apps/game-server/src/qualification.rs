@@ -1533,6 +1533,12 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 runtime: None,
                 recovery: &recovery_key()?,
             };
+            if client_original_entry_roundtrip::selected(
+                std::env::var("NODE_BOOT_E2E_ONLY").ok().as_deref(),
+                world_path.is_some(),
+            )? {
+                return Box::pin(client_original_entry_roundtrip::run(&clients)).await;
+            }
             if let Some(path) = world_path {
                 let packet_accounts = packet_accounts
                     .as_ref()
@@ -2920,6 +2926,8 @@ mod client_imbue;
 mod client_market;
 #[path = "qualification/client_phases/npc_shop.rs"]
 mod client_npc_shop;
+#[path = "qualification/client_phases/original_entry_roundtrip.rs"]
+mod client_original_entry_roundtrip;
 #[path = "qualification/client_phases/party.rs"]
 mod client_party;
 #[path = "qualification/client_phases/player_trade.rs"]
