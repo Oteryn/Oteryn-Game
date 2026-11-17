@@ -8,6 +8,18 @@ use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget, enc
 use oteryn_protocol_oteryn::presentation::{PresentationEventKind, encode_presentation_batch};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
+    // Keep the real journey available for entitled callers; this disposable fixture is free.
+    if spell_book()
+        .ok()
+        .and_then(|book| book.spoken("exeta res").map(|entry| entry.spell.premium))
+        == Some(true)
+    {
+        evidence(&format!(
+            "SEAM_EVIDENCE e2e_all scenario=C17d.client status=MISSING-SERVER evidence={}",
+            full_e2ef5::PREMIUM_MISSING
+        ));
+        return;
+    }
     let result = verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await;
     match result {
         Ok(Ok(())) => evidence("SEAM_EVIDENCE e2e_all scenario=C17d.client status=PASS"),

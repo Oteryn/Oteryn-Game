@@ -1,11 +1,118 @@
 //! E2EF5: player speech -> cast dispatcher -> appearance frames -> fresh admission.
-//! No privileged provisioning or database access. Unfinished rows emit no invented verdict.
+//! Disposable free-account setup uses the fenced fixture; casts use normal player admission.
 use super::*;
 use oteryn_dev_client::{
     ChatDisposition, ChatIntent, ChatSpeechMode, DevClientSession, SessionEvent,
 };
 use oteryn_protocol_oteryn::appearance::{self, Binding, Look};
 use std::collections::BTreeSet;
+
+pub(super) const PREMIUM_MISSING: &str = "premium required; qualification fixture is free-account only (qualification_spell_character.rs:59)";
+
+// Each invocation bootstraps a new Character from a real Platform intent. The
+// shared row Characters remain untouched, including their one-shot build fixture.
+pub(super) async fn spell_characters(clients: &SeamClients<'_>) -> TestResult<[[u8; 16]; 2]> {
+    let mut database = sqlx::PgConnection::connect(clients.url).await?;
+    let revisions: (String, String, String, String) = sqlx::query_as(
+        "SELECT profile_revision, ruleset_revision, content_revision, starter_template_revision \
+         FROM game_character_roots WHERE character_id = encode($1, 'hex')::uuid",
+    )
+    .bind(clients.characters[1].as_slice())
+    .fetch_one(&mut database)
+    .await?;
+    let request = serde_json::json!({
+        "account": clients.accounts[1], "world": uuid_text(&clients.world),
+        "revisions": [revisions.0, revisions.1, revisions.2, revisions.3],
+    })
+    .to_string();
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let project = required("WP5_PROJECT")?;
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let output = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("sudo")
+            .args(["-n", "python3"])
+            .arg(script)
+            .args([
+                "--socket",
+                &socket,
+                "--project",
+                &project,
+                "--fresh-character",
+                &request,
+            ])
+            .output()
+    })
+    .await??;
+    if !output.status.success() {
+        return Err("C17 fresh Platform character bootstrap failed".into());
+    }
+    let name = std::str::from_utf8(&output.stdout)?.trim();
+    let character: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(character_id) FROM game_character_roots \
+         WHERE account_id = $1::uuid AND name = $2 LIMIT 1",
+    )
+    .bind(&clients.accounts[1])
+    .bind(name)
+    .fetch_one(&mut database)
+    .await?;
+    database.close().await?;
+    let character = <[u8; 16]>::try_from(character.as_slice())?;
+    Ok([clients.characters[0], character])
+}
+
+pub(super) async fn provision_c17(
+    clients: &SeamClients<'_>,
+    profile: &'static str,
+    tag: u8,
+) -> TestResult<DevClientSession> {
+    let mut client = connect_world(clients, tag).await?;
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let status = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("sudo")
+            .args(["-n", "python3"])
+            .arg(script)
+            .args([
+                "--socket",
+                &socket,
+                "--session",
+                &session,
+                "--profile",
+                profile,
+            ])
+            .status()
+    })
+    .await??;
+    if !status.success() {
+        return Err("C17 one-shot spell fixture failed".into());
+    }
+    logout(&mut client).await?;
+    drop(client);
+    let mut client = connect_world(clients, tag).await?;
+    let words = if profile == "c17a" {
+        "utani hur"
+    } else {
+        "utevo res ina"
+    };
+    let spell = native_spell_book()?
+        .spoken(words)
+        .ok_or("C17 fixture spell absent")?
+        .spell;
+    let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
+        return Err("C17 fixture requires fixed mana".into());
+    };
+    if level(&mut client).await? != spell.level
+        || client
+            .actor_vitals()
+            .is_none_or(|vitals| vitals.mana < cost)
+    {
+        return Err("C17 fresh admission lacks source spell level/mana".into());
+    }
+    Ok(client)
+}
 
 const ILLUSION_ACTIONS: &[&str] = &[
     "cast-rat",
@@ -72,7 +179,14 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();
-            let mut client = connect_world(clients, tag).await?;
+            let characters = spell_characters(clients).await?;
+            let row_clients = SeamClients {
+                characters: &characters,
+                ..*clients
+            };
+            let clients = &row_clients;
+            let profile = if id == "C17a" { "c17a" } else { "c17c" };
+            let mut client = provision_c17(clients, profile, tag).await?;
             let mut completed = false;
             let deadline =
                 format!("{id} native journey exceeded {limit}s; remaining actions unproven");
@@ -94,11 +208,15 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
             // returns above and drops this connection with its uncertain reply/frame.
             // Restore the entry tile even after a failed movement/cast assertion.
             let cleanup: TestResult = async {
-                let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-                    at == TOWN
-                })
-                .ok_or("E2EF5 return route unavailable")?;
-                walk(&mut client, world, &back).await?;
+                let from = tile(client.world_spatial().actor_position)?;
+                if from != TOWN {
+                    let back = reach_route(&mut client, world, from, |at| at == TOWN)
+                        .await?
+                        .map_err(|searched| {
+                            format!("E2EF5 return route unavailable after {searched} tiles")
+                        })?;
+                    walk(&mut client, world, &back).await?;
+                }
                 logout(&mut client).await
             }
             .await;
@@ -109,7 +227,11 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
             cleanup
         }
         .await;
-        row.finish(result);
+        if id == "C17a" && result.is_ok() {
+            row.0.finish_missing_server(PREMIUM_MISSING);
+        } else {
+            row.finish(result);
+        }
     }
     rune_rows(clients, world).await;
     combat_rows(clients, world).await;
@@ -171,7 +293,7 @@ async fn say(
         })
         .await?)
 }
-async fn logout(client: &mut DevClientSession) -> TestResult {
+pub(super) async fn logout(client: &mut DevClientSession) -> TestResult {
     let (result, logout, attempts, busy_timed_out) = super::logout_retrying_busy(client).await?;
     if result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!(
@@ -720,7 +842,7 @@ async fn haste(
         return Err(format!("C17a player level frame={player_level}, Haste requires level {}, Strong Haste requires level {}; this packet has no legitimate advancement/vocation journey; source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/spells.rs:225", haste.level, strong.level).into());
     }
     let haste_duration = duration(haste)?;
-    let strong_duration = duration(strong)?;
+
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
         world
             .base()
@@ -786,6 +908,14 @@ async fn haste(
     if !same_cadence(cadence(client, &cells).await?, hasted) {
         return Err("C17a recast did not reapply haste".into());
     }
+    if strong.premium {
+        evidence(&format!(
+            "E2EF5_CHECK row=C17a action=strong-cast status=MISSING evidence={PREMIUM_MISSING}"
+        ));
+        expire_speed(client, &cells, baseline, recast_started, haste_duration).await?;
+        return Ok(());
+    }
+    let strong_duration = duration(strong)?;
     let cooldown = haste
         .groups
         .iter()
@@ -1776,6 +1906,10 @@ async fn combat_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
         ("C17d", CHALLENGE_ACTIONS, 0xc4),
     ] {
         let mut row = Row::new(id, actions);
+        if id == "C17d" {
+            row.0.finish_missing_server(PREMIUM_MISSING);
+            continue;
+        }
         let watch = row.0.watch();
         let result: TestResult = async {
             let _row = watch.enter();

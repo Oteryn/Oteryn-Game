@@ -10,7 +10,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk"
+        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "c17a" | "c17c"
     )
     .then_some((session, profile))
 }
@@ -76,18 +76,34 @@ async fn prepare_build(
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
     let context = policy.context.clone();
+    let (vocation, level) = match profile {
+        "c17a" | "c17c" => {
+            let words = if profile == "c17a" {
+                "utani hur"
+            } else {
+                "utevo res ina"
+            };
+            let spell = native
+                .spell_book()
+                .spoken(words)
+                .ok_or("qualification spell absent")?
+                .spell;
+            if spell.premium || !spell.vocations.contains(&crate::spell::Vocation::Sorcerer) {
+                return Err("qualification spell requires a free Sorcerer".into());
+            }
+            ("sorcerer", spell.level)
+        }
+        "explorer" => ("knight", 100),
+        _ => (profile, 100),
+    };
     qualification_build::prepare_character_with_policy(
         root,
         authority,
         proof,
         &current,
         qualification_build::QualificationBuildSpec {
-            vocation: if profile == "explorer" {
-                "knight"
-            } else {
-                profile
-            },
-            level: 100,
+            vocation,
+            level,
             context,
             xp_occurrence: uuid_v7()?,
             build_occurrence: uuid_v7()?,
@@ -210,6 +226,27 @@ mod tests {
         let room =
             crate::content::qualify_native_entry_room_from_gameplay_manifest(world, &manifest)?;
         let native = crate::content::qualified_native_gameplay_test_state(room.compiled())?;
+        for (words, level) in [("utani hur", 14), ("utevo res ina", 23)] {
+            let spell = native
+                .spell_book()
+                .spoken(words)
+                .ok_or("C17 spell absent")?
+                .spell;
+            assert_eq!(spell.level, level);
+            assert!(!spell.premium);
+            assert!(spell.vocations.contains(&crate::spell::Vocation::Sorcerer));
+            let crate::spell::ManaCost::Fixed(cost) = spell.mana else {
+                return Err("C17 spell must have fixed mana".into());
+            };
+            let (_, mana, _) = oteryn_gameplay_characters::vitals::maxima(
+                "sorcerer",
+                level,
+                oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+                oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+            )
+            .ok_or("C17 source vitals absent")?;
+            assert!(mana >= cost);
+        }
         let index = native.item_index().ok_or("Item index")?;
         for id in [3276, 3003, 3457] {
             let key = format!("oteryn:item.tibia.i{id}");
@@ -234,7 +271,9 @@ mod tests {
     #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
-        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk"] {
+        for profile in [
+            "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "c17a", "c17c",
+        ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
         for text in [
