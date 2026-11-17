@@ -614,10 +614,18 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 drop(taken); // Leave the real original queue entry for durable settlement below.
             }
         }
-        assert_eq!(
-            owner.drain_kill_rewards(session).await,
-            DrainOutcome::Drained
-        );
+        let outcome = owner.drain_kill_rewards(session).await;
+        if !overlord_peers.is_empty() {
+            let runtime = owner.runtime.lock().await;
+            eprintln!("[DBG-OVERLORDCR] drain={outcome:?} native_pin={} owner={}",
+                runtime.content_pin().server_artifact_digest() == native.source_digest(),
+                runtime.owner_fence().is_ok());
+            drop(runtime);
+            let flags: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key='oteryn:quest-progress/quest/u8_2/elemental_spheres/boss_storage' AND value=1")
+                .fetch_one(&h.pool).await?;
+            eprintln!("[DBG-OVERLORDCR] committed_flags={flags}");
+        }
+        assert_eq!(outcome, DrainOutcome::Drained);
     }
     assert_eq!(
         owner.drain_kill_rewards(session).await,
