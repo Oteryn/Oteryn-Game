@@ -6,6 +6,8 @@ use super::{
 
 // The imported Sea Serpent storage tracks belong to the Tibia Tales aggregate.
 pub const QUEST: &str = "oteryn:quest.tibia_tales";
+pub const CRANE: &str = "oteryn:quest-callback/sea-serpent-crane";
+pub const REPORTS: &str = "oteryn:quest-npc-program.sea-serpent-reports";
 pub const KEY: &str = "oteryn:quest-callback/sea-serpent-telescope";
 pub const SOURCE: &str = "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_hunt_for_the_sea_serpent/actions_bait.lua:";
 pub const SELECTOR: NativeSelector = NativeSelector {
@@ -17,6 +19,15 @@ pub const SELECTOR: NativeSelector = NativeSelector {
     ordinal: 2,
     appearance: 938,
 };
+// Crystal actions_bait.lua:73 and utils_definitions.hpp:89.
+pub const LOCATION_EFFECT: (Position, u16) = (
+    Position {
+        x: 31933,
+        y: 31037,
+        floor: -7,
+    },
+    34,
+);
 pub const OUTCOME: &str = "oteryn:quest-progress/native/sea-serpent/telescope-outcome";
 pub const TRACKS: [&str; 6] = [
     "oteryn:quest-progress/quest/u8_2/the_hunt_for_the_sea_serpent/quest_line",
@@ -99,6 +110,31 @@ const MESSAGES: [&str; 17] = [
 pub(super) fn message(changes: &[QuestTrackChange]) -> Option<&'static str> {
     let outcome = changes.iter().find(|change| change.track == OUTCOME)?;
     MESSAGES.get(usize::try_from(outcome.after).ok()?).copied()
+}
+
+/// Retain the exact earlier Tibia Tales definition for already persisted players.
+pub(super) fn retain_predecessor(
+    catalogue: &mut super::QuestStateCatalogue,
+    report_marker: Option<&str>,
+) {
+    let mut tracks = catalogue.tracks.clone();
+    tracks.remove(OUTCOME);
+    let mut transitions = catalogue.transitions.clone();
+    transitions.remove(CRANE);
+    transitions.remove(KEY);
+    if let Some(marker) = report_marker {
+        transitions.remove(marker);
+    }
+    let hash = super::definition_hash(QUEST, &tracks, &transitions);
+    let defaults = tracks
+        .values()
+        .filter(|track| track.quest == QUEST)
+        .map(|track| (track.key.clone(), track.initial))
+        .collect();
+    let entries = catalogue.predecessors.entry(QUEST.into()).or_default();
+    if entries.iter().all(|entry| entry.hash != hash) {
+        entries.push(super::NpcDefinitionPredecessor { hash, defaults });
+    }
 }
 
 #[cfg(test)]

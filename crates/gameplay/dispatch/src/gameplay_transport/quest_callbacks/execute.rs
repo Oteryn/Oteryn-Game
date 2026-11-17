@@ -1239,6 +1239,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && let QuestCause::Use(command) = cause {
                         self.project_mead_blackout(runtime,states,actor,command,&committed.changes,map);
                     }
+                    if fresh && callback.key == oteryn_gameplay_quests::quest::sea_serpent::KEY
+                        && committed.changes.iter().any(|change|
+                            change.track == oteryn_gameplay_quests::quest::sea_serpent::TRACKS[4]
+                                && change.before == 0 && change.after == 1)
+                    {
+                        let (position, effect) = oteryn_gameplay_quests::quest::sea_serpent::LOCATION_EFFECT;
+                        map.facts.emit_movement_effect(tile(position), effect);
+                    }
                     self.apply_committed_quest_copy(session, fresh, committed);
                     if callback.effects.encounter.is_some()
                         && !self.refresh_grizzly_kill_snapshot_in_turn(runtime, session)

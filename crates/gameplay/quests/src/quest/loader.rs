@@ -245,6 +245,8 @@ fn admit_native_bindings(
         super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    super::npc_rules::retain_sea_serpent_predecessor(&mut lowered.catalogue)
+        .map_err(|error| QuestLoadError::Json(error.to_string()))?;
     Ok(lowered)
 }
 
@@ -329,6 +331,7 @@ pub(super) fn lower_embedded_quest_state(
                 .or_insert_with(|| callback.sources.join(";"));
         }
     }
+    super::sea_serpent::retain_predecessor(&mut lowered.catalogue, None);
     let before_npc_rewards = lowered.catalogue.clone();
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;

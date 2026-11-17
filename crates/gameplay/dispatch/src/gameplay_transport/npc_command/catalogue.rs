@@ -189,6 +189,17 @@ pub(super) fn prepare(
         command.game_session_id,
         intent,
     )?;
+    if context.2 == "oteryn:npc.captain_haba" {
+        let npc =
+            service_context::live_npc(runtime, actor, command.game_session_id, intent.npc_actor)?;
+        // Crystal world-npc.xml:492-494. The other Haba instance is in Svargrond.
+        if npc.position.floor != 6
+            || npc.position.x.abs_diff(31950) > 1
+            || npc.position.y.abs_diff(31045) > 1
+        {
+            return None;
+        }
+    }
     let catalogue = admission.quest_catalogue.as_ref()?;
     let source = NpcRuleCatalog::runtime()
         .ok()?

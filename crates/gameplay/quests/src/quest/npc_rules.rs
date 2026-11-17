@@ -516,6 +516,7 @@ impl NpcRuleCatalog {
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-gnomus.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-oldrak.json"),
                     include_str!("../../../../../content/dialogues/quest-rules-supplemental/questpc2-henricus.json"),
+                    include_str!("../../../../../content/dialogues/quest-rules-supplemental/sea-serpent-reports.json"),
                 ])?;
                 catalogue.programs.extend(supplemental.programs);
                 validate::catalogue(&catalogue)?;
@@ -530,6 +531,8 @@ impl NpcRuleCatalog {
                             == Some("oteryn:quest-npc-program.first-dragon-calendar")
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.draconia")
+                        || p.document.program_key.as_deref()
+                            == Some(super::sea_serpent::REPORTS)
                         || p.document.program_key.as_deref()
                             == Some("oteryn:quest-npc-program.citizen-source-sagas")
                         || p.document.program_key.as_deref()
@@ -864,6 +867,20 @@ pub(super) fn extend(
     active.predecessors = predecessors;
     completion_predecessors::register(&mut active, source)?;
     Ok(active)
+}
+
+pub(super) fn retain_sea_serpent_predecessor(
+    catalogue: &mut super::QuestStateCatalogue,
+) -> Result<(), NpcRuleError> {
+    let program = NpcRuleCatalog::runtime()?
+        .programs()
+        .iter()
+        .find(|program| {
+            program.document.program_key.as_deref() == Some(super::sea_serpent::REPORTS)
+        })
+        .ok_or_else(|| NpcRuleError::Invalid("Sea Serpent reports programme".into()))?;
+    super::sea_serpent::retain_predecessor(catalogue, Some(&admission::binding_key(program)));
+    Ok(())
 }
 
 /// Only an exact registered predecessor retains its old absent-track values.

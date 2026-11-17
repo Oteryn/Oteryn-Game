@@ -1,5 +1,5 @@
 //! The published lookout telescope dispatches into the fenced quest writer.
-use super::fixture::{Harness, debug, run};
+use super::fixture::{Harness, debug};
 use super::TestResult;
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
@@ -13,12 +13,11 @@ use std::sync::Arc;
 
 #[test]
 fn sea_serpent_native_use_persists_chance_and_replays_postgres() -> TestResult {
-    let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("sea-serpent-telescope", || {
-        run(async |admin| {
+    super::kill_reward_e2e::scenario_thread::run_async(async move |_| {
             super::reset();
             let (scene, world, _) = super::srx3_soul_war_world_fixture::source_world_with_bundle(
                 MovementLocalPosition { x: 31943, y: 31045, floor: 2 },
@@ -33,7 +32,9 @@ fn sea_serpent_native_use_persists_chance_and_replays_postgres() -> TestResult {
             owner.evidence = &evidence.evidence;
             owner.active_generation = scene.controller.active();
             owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&scene.room));
-            super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
+            super::boss_activity::issue_content_and_reset_with_runtime_pin(
+                &h, &scene.pin, &scene.pin, world.map_revision()
+            ).await?;
             let lowered = loader::load_embedded_quest_state("content-1").map_err(debug)?;
             owner.quest_catalogue = Some(Arc::new(lowered.catalogue().clone()));
             let mut admitted = deps.admitted;
@@ -96,13 +97,11 @@ fn sea_serpent_native_use_persists_chance_and_replays_postgres() -> TestResult {
                         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",
                     ).bind(sea_serpent::KEY).fetch_one(&h.pool).await?;
                     assert_eq!(receipts, i64::from(attempt) + 1);
-                    drop(world);
                     h.cleanup().await?;
                     return Ok(());
                 }
             }
             Err("the telescope did not exercise water and success in 96 uses".into())
-        })
     })?;
     eprintln!("POSTGRES_CASE_COMPLETED sea_serpent_native_use duration={:?}", started.elapsed());
     Ok(())
