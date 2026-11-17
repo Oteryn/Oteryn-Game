@@ -30,7 +30,10 @@ CLASSES = {1626: None, 1627: None, 1634: None, 1635: None, 1948: "ladder",
            2572: None, 2573: None, 2574: None, 2575: None, 2576: None,
            2577: None, 2578: None, 2579: None, 2580: None,
            5111: "door", 5112: "door", 21935: None}
-IDS = set(CLASSES)
+# Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml:39751-39753
+# classifies the Cursed Crystal overlay as a large crystal teleporter.
+CURSED_CRYSTAL_OVERLAY = 19387
+IDS = set(CLASSES) | {CURSED_CRYSTAL_OVERLAY}
 XML = 'imports/canary/items-xml/items.xml'
 XML_SHA = '1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2'
 CLIENT_SHA = '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2'
@@ -61,7 +64,7 @@ def capture(root=ROOT):
                    if r['definition']['identity']['key'] in {f'oteryn:item.tibia.i{i}' for i in IDS}}
     records = []
     for item in sorted(IDS):
-        expected_class = CLASSES[item]
+        expected_class = CLASSES.get(item)
         if source.attrs(xml[item]).get('type') != expected_class:
             raise ValueError('SOURCE_GATE_ITEM_CLASS')
         if item == 5111 and source.attrs(xml[item]).get('leveldoor') != '1000':
@@ -76,6 +79,12 @@ def capture(root=ROOT):
         if (record['semantics']['classification']['value']['item_type'] != (source.K(expected_class.upper()) if expected_class else source.NA)
                 or record['admission']['legal_destinations'] != ['Ground']):
             raise ValueError('SOURCE_GATE_ITEM_NOT_STATIC_CLASS')
+        if item == CURSED_CRYSTAL_OVERLAY:
+            primary = source.attrs(xml[item]).get('primarytype')
+            if primary != 'teleporters' or record['attributes']['blocks_movement'] is not False:
+                raise ValueError('SOURCE_GATE_CURSED_CRYSTAL_OVERLAY_DRIFT')
+            record['authoring']['taxonomy'] = {'primary': primary}
+            record['admission']['materializable'] = canonical['materializable']
         records.append(record)
     records = source.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1',
                                     'records': records}, bindings, IDS)['records']

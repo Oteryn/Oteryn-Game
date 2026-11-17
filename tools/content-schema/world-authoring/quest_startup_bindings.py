@@ -23,6 +23,10 @@ SPECS = (
     ("teleport.lua", "TeleportAction", 50022, "action"),
     ("door_level.lua", "LevelDoorAction", 1070, "action"),
     ("lever.lua", "LeverUnique", 30034, "unique"),
+    # World change returns: the Fury Dungeon archway (fury_gates.lua) and the
+    # Nightmare Isle exit (nightmare_isles.lua uid 35020).
+    ("item.lua", "ItemAction", 9715, "action"),
+    ("teleport.lua", "TeleportUnique", 35020, "unique"),
 )
 
 
@@ -34,7 +38,9 @@ def capture(source):
     for filename, table, selector, attribute in SPECS:
         path = "data-global/startup/tables/" + filename
         raw = (source / path).read_bytes()
-        sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
+        source_row = {"path": path, "sha256": hashlib.sha256(raw).hexdigest()}
+        if source_row not in sources:
+            sources.append(source_row)
         fields = lua_tables.assignments(raw.decode(), {table})[table]["fields"]
         (field,) = [f for f in fields if f["key"] == selector]
         value = lua_tables.as_python(field["value"])
@@ -59,7 +65,6 @@ def capture(source):
     # Import only the four stair branches accepted by this native handler.
     path = "data-global/startup/tables/item.lua"
     raw = (source / path).read_bytes()
-    sources.append({"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
     fields = lua_tables.assignments(raw.decode(), {"ItemAction"})["ItemAction"]["fields"]
     (field,) = [field for field in fields if field["key"] == 25018]
     groups = lua_tables.as_python(field["value"])
