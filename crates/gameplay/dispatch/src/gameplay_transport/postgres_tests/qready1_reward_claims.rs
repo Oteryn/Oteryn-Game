@@ -455,7 +455,7 @@ fn qready1_captain_iglues_treasure_quest_exact_reward_once() -> TestResult {
                 &[(32039, 6117)],
                 2472,
                 "oteryn:item.tibia.i3579",
-                1,
+                2,
             )
             .map_err(|e| e.to_string())?;
             Ok(())
