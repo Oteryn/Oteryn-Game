@@ -24,18 +24,21 @@ pub(super) async fn prepare(
     bytes: &[u8],
 ) -> &'static str {
     if !config.qualification_fixture {
+        eprintln!("qualification_fixture_refused reason=fixture_disabled");
         return "rejected";
     }
     let Some(native) = native else {
+        eprintln!("qualification_fixture_refused reason=native_unavailable");
         return "rejected";
     };
     let Some((session, profile)) = request(bytes) else {
+        eprintln!("qualification_fixture_refused reason=invalid_session_or_profile");
         return "rejected";
     };
     match prepare_build(root, authority, proof, config, native, session, profile).await {
         Ok(()) => "qualified",
         Err(error) => {
-            eprintln!("[DBG-prov] qualify rejected: {error}");
+            eprintln!("qualification_fixture_refused profile={profile} reason={error}");
             "rejected"
         }
     }
