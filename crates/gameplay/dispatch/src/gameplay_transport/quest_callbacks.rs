@@ -56,6 +56,15 @@ use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Position, T
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::OnceLock;
 
+// Keep the refusal outcome unchanged while identifying the exact fail-closed guard.
+pub(in crate::gameplay_transport) fn reconcile_refused(step: &str, session: GameSessionId) -> bool {
+    let session = super::format_connection_trace(*session.as_bytes());
+    super::operator_event(&format!(
+        "event=quest_callback_reconcile_refused step={step} session={session}"
+    ));
+    false
+}
+
 #[derive(Clone)]
 struct Pending {
     actor: ExactActorRef,
@@ -467,7 +476,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// Historical receipt recovery does not grant player control or install a projection.
     pub(super) async fn reconcile_quest_callback_receipts(&self, session: GameSessionId) -> bool {
         if !self.reconcile_soul_war_reward_receipts(session).await {
-            return false;
+            return reconcile_refused("receipts_soul_war", session);
         }
         let pending = match self.states.quest_callbacks.records.lock() {
             Ok(records) => records
@@ -476,7 +485,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .filter(|p| matches!(p.cause, QuestCause::Use(_)) && !p.ingress_settled)
                 .cloned()
                 .collect::<Vec<_>>(),
-            Err(_) => return false,
+            Err(_) => return reconcile_refused("receipts_records_lock", session),
         };
         if pending.is_empty() {
             return true;
@@ -496,26 +505,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let _ = self.session_premium_gate(session).await;
         }
         let Some(permit) = self.spell_lane_permit().await else {
-            return false;
+            return reconcile_refused("receipts_spell_lane_permit", session);
         };
         for pending in pending {
             let QuestCause::Use(command) = pending.cause else {
-                return false;
+                return reconcile_refused("receipts_cause", session);
             };
             let (Some(context), Some(catalogue)) = (pending.context, self.quest_catalogue.as_ref())
             else {
-                return false;
+                return reconcile_refused("receipts_context_or_catalogue", session);
             };
             // Replay the exact durable binding, including a bound carried tool.
             let context = match pending.selected_tool {
                 Some((source, intent)) => match context.with_selected_tool(source, intent) {
                     Some(context) => context,
-                    None => return false,
+                    None => return reconcile_refused("receipts_selected_tool", session),
                 },
                 None => context.into(),
             };
             let Ok(Some(fence)) = self.current_quest_fence(pending.session).await else {
-                return false;
+                return reconcile_refused("receipts_quest_fence", session);
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
             let native = self.active_generation.and_then(|g| g.native_gameplay());
@@ -576,7 +585,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let disposition = match outcome {
 
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
-                Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
+                Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return reconcile_refused("receipts_commit_unavailable", session),
                 Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
                     if flame.as_ref().and_then(|input|input.no_change()).is_some()=>UseDisposition::Committed,
                 Ok(_) | Err(_) => UseDisposition::Rejected,
@@ -587,10 +596,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .complete_quest_callback(command, disposition)
                 .is_none()
             {
-                return false;
+                return reconcile_refused("receipts_ingress_completion", session);
             }
             let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
-                return false;
+                return reconcile_refused("receipts_records_update_lock", session);
             };
             if disposition == UseDisposition::Committed {
                 if let Some(record) = records.get_mut(&pending.session) {
@@ -752,7 +761,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// The Channel's existing input gate closes a connection if a result is still unknown.
     pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
         if !self.reconcile_grizzly_boss(session).await {
-            return false;
+            return reconcile_refused("grizzly_boss", session);
         }
         let session = match self.states.quest_callbacks.records.lock() {
             Ok(records) => records
@@ -761,34 +770,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     pending.participants.contains(&session).then_some(*owner)
                 })
                 .unwrap_or(session),
-            Err(_) => return false,
+            Err(_) => return reconcile_refused("records_lock", session),
         };
         if !self.reconcile_quest_callback_receipts(session).await {
-            return false;
+            return reconcile_refused("receipts", session);
         }
         let pending = match self.states.quest_callbacks.records.lock() {
             Ok(p) => p.get(&session).cloned().into_iter().collect::<Vec<_>>(),
-            Err(_) => return false,
+            Err(_) => return reconcile_refused("pending_records_lock", session),
         };
         if pending.is_empty() {
             return true;
         }
         let Some(permit) = self.spell_lane_permit().await else {
-            return false;
+            return reconcile_refused("spell_lane_permit", session);
         };
         for pending in pending {
             let Some(map) = self.bundle_map() else {
-                return false;
+                return reconcile_refused("bundle_map", session);
             };
             let Some(callback) = self
                 .callback_content()
                 .iter()
                 .find(|c| c.key == pending.callback)
             else {
-                return false;
+                return reconcile_refused("callback_missing", session);
             };
             let Ok(Some(fence)) = self.current_quest_fence(pending.session).await else {
-                return false;
+                return reconcile_refused("quest_fence", session);
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
             let observation = self
@@ -808,7 +817,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // A timed-out read has no unknown personal value/receipt to reconcile.
                 // Its now-known result follows the normal native return-on-failure path.
                 let Ok(mut records) = self.states.quest_callbacks.records.lock() else {
-                    return false;
+                    return reconcile_refused("stateless_records_lock", session);
                 };
                 records.remove(&pending.session);
             }
@@ -818,7 +827,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
-                return false;
+                return reconcile_refused("actor_moved", session);
             }
             let result = match observation {
                 Ok(observation) => {
@@ -846,7 +855,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             if result != UseDisposition::Committed {
                 if self.has_pending_quest_callback(pending.session) {
-                    return false;
+                    return reconcile_refused("callback_pending", session);
                 }
                 if let Some(origin) = pending.origin {
                     self.refuse_quest_step(

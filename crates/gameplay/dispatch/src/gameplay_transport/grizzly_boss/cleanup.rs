@@ -1,4 +1,5 @@
 use super::*;
+use crate::gameplay_transport::quest_callbacks::reconcile_refused;
 use crate::gameplay_transport::{AdmissionRetryBudget, connection::AdmissionRefusal};
 use crate::monster_owner_cycle::respawn_job::RespawnExit;
 
@@ -161,14 +162,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> bool {
         let pending = match self.states.grizzly_boss.pending.lock() {
             Ok(pending) => pending.get(&session).cloned(),
-            Err(_) => return false,
+            Err(_) => return reconcile_refused("grizzly_pending_lock", session),
         };
         if let Some(pending) = pending {
             let Some(permit) = self.spell_lane_permit().await else {
-                return false;
+                return reconcile_refused("grizzly_pending_spell_lane_permit", session);
             };
             if !self.execute_grizzly_boss(&permit, &pending).await {
-                return false;
+                return reconcile_refused("grizzly_execute", session);
             }
         }
         if self
@@ -184,7 +185,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // work before borrowing Root; a busy cohort must queue, not starve a
         // peer's bounded callback-recovery read.
         let Some(lookup_permit) = self.spell_lane_permit().await else {
-            return false;
+            return reconcile_refused("grizzly_lookup_spell_lane_permit", session);
         };
         // Concurrent sessions share the non-blocking holder. Its being busy is
         // not evidence of an unresolved visit; retry only that transient failure.
@@ -203,7 +204,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(entry) => entry,
-            Err(_) => return false,
+            Err(_) => return reconcile_refused("grizzly_entry_lookup", session),
         };
         // Expiry and return reconciliation below acquire their own lane permits.
         drop(lookup_permit);
@@ -211,13 +212,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let (actor, binding) = {
                 let runtime = self.runtime.lock().await;
                 let Ok(census) = runtime.positioned_actor_census() else {
-                    return false;
+                    return reconcile_refused("grizzly_actor_census", session);
                 };
                 let Some((actor, _, _)) = census
                     .into_iter()
                     .find(|(_, _, current)| *current == Some(session))
                 else {
-                    return false;
+                    return reconcile_refused("grizzly_actor_missing", session);
                 };
                 (actor, runtime.binding())
             };
@@ -227,7 +228,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && Some(entry.channel_id) == binding.channel_id()
             {
                 if !matches!(self.grizzly_boss_pass().await, Ok(true)) {
-                    return false;
+                    return reconcile_refused("grizzly_expiry_pass", session);
                 }
                 let current = match self
                     .root
@@ -236,19 +237,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     Ok(Some(current)) => current,
                     Ok(None) => return self.remember_grizzly_session(session),
-                    Err(_) => return false,
+                    Err(_) => return reconcile_refused("grizzly_entry_refresh", session),
                 };
                 entry = current;
             }
             if entry.state == GrizzlyBossEntryState::ReturnPending {
                 let Some(permit) = self.spell_lane_permit().await else {
-                    return false;
+                    return reconcile_refused("grizzly_return_spell_lane_permit", session);
                 };
                 if !self
                     .return_grizzly_visit(&permit, actor, session, &entry)
                     .await
                 {
-                    return false;
+                    return reconcile_refused("grizzly_return", session);
                 }
             }
         }
@@ -256,14 +257,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     fn remember_grizzly_session(&self, session: GameSessionId) -> bool {
-        self.states
-            .grizzly_boss
-            .checked
-            .lock()
-            .is_ok_and(|mut checked| {
+        match self.states.grizzly_boss.checked.lock() {
+            Ok(mut checked) => {
                 checked.insert(session);
                 true
-            })
+            }
+            Err(_) => reconcile_refused("grizzly_checked_lock", session),
+        }
     }
 
     /// Retain before asking the database to expire a visit: an unknown COMMIT must

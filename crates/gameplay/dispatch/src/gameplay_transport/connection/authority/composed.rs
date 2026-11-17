@@ -1689,16 +1689,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn enter_input(&self, session: GameSessionId) -> Option<input_gate::InputPermit<'_>> {
         let permit = self.states.input_gate.enter().await?;
-        if !tokio::time::timeout(
+        match tokio::time::timeout(
             std::time::Duration::from_secs(10),
             self.reconcile_quest_callbacks(session),
         )
         .await
-        .unwrap_or(false)
         {
-            return None;
+            Ok(true) => Some(permit),
+            Ok(false) => None,
+            Err(_) => {
+                crate::gameplay_transport::quest_callbacks::reconcile_refused("timeout", session);
+                None
+            }
         }
-        Some(permit)
     }
 
     async fn resume(

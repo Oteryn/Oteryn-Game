@@ -324,6 +324,17 @@
       "note": "NBTRADE-1: a player trade offer, accept or look refused with Rejected; intent is offer, accept or look, cause names the refusal (refusal_*, durability_*, retry_budget_exhausted, native_gameplay_missing, book_poisoned, other). No player identifiers, payloads or raw errors."
     },
     {
+      "event": "quest_callback_reconcile_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "step",
+        "session"
+      ],
+      "codes": [],
+      "note": "Quest callback input reconciliation failed closed or exceeded its existing timeout. Step names the specific callback, receipt or Grizzly recovery guard; session is the opaque GameSessionId in UUID form. No account IDs, character names, command payloads or raw errors."
+    },
+    {
       "event": "release_deferred",
       "level": "warn",
       "span": false,
