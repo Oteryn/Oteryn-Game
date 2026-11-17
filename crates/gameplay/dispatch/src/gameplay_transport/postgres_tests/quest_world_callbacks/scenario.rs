@@ -2868,7 +2868,13 @@ fn scenario_case(
             ))
             .await?;
         } else if name.starts_with("actmark-") {
-            Box::pin(super::super::actmark::exercise(&owner, &mut admitted, name, deps.actor)).await?;
+            Box::pin(super::super::actmark::exercise(
+                &owner,
+                &mut admitted,
+                name,
+                deps.actor,
+            ))
+            .await?;
         } else if let Some(expected_destination) = stateless_destination {
             Box::pin(super::stateless::exercise(
                 &owner,
