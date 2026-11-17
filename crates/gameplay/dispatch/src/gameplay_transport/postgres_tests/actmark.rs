@@ -204,6 +204,10 @@ pub(super) async fn exercise(
         .facts
         .movement_effects_since(0);
     assert_eq!(effects.len(), if steps == 2 { 2 } else { 0 });
-    assert!(effects.iter().all(|(_, _, effect)| *effect == 11));
+    assert!(
+        effects
+            .iter()
+            .all(|(_, at, effect)| (at.x, at.y, at.floor, *effect) == (31974, 32905, -11, 11))
+    );
     Ok(())
 }
