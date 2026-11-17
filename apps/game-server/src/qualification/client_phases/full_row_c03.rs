@@ -319,7 +319,7 @@ async fn move_to_backpack(client: &mut DevClientSession, slot: items::EquipmentS
         .and_then(|inv| inv.equipment.iter().find(|e| e.slot == slot))
         .map(|e| e.item.handle)
         .ok_or("equipment slot already empty")?;
-    let moved = client.move_item(&items::ItemMoveIntent { source: handle, destination: items::ItemMoveDestination::MainBackpack }).await?;
+    let moved = oteryn_dev_client::client_runtime::inventory::send(client.session_mut(), oteryn_dev_client::client_runtime::inventory::MoveRequest { source: handle, destination: items::ItemMoveDestination::MainBackpack }).await?;
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("unequip ITEM_MOVE reply={moved:?}").into());
     }
@@ -332,7 +332,7 @@ async fn restore(client: &mut DevClientSession, slot: items::EquipmentSlot, defi
         .and_then(|inv| inv.entries.iter().find(|e| e.item_definition_ref == definition))
         .map(|e| e.handle)
         .ok_or("stripped item not carried")?;
-    let moved = client.move_item(&items::ItemMoveIntent { source: handle, destination: items::ItemMoveDestination::Equipment(slot) }).await?;
+    let moved = client.move_item(&items::ItemMoveIntent { source: handle, destination: items::ItemMoveDestination::Equipment(slot), count: None }).await?.ok_or("item move capability not selected for this destination")?;
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("re-equip ITEM_MOVE reply={moved:?}").into());
     }

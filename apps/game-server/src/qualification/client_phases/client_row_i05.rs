@@ -31,9 +31,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("i05-active-ring-not-durable")?;
 
     client.take_events();
-    let moved = client
-        .move_item(&items::ItemMoveIntent {
-            source: handle,
+    let moved = oteryn_dev_client::client_runtime::inventory::send(client.session_mut(), oteryn_dev_client::client_runtime::inventory::MoveRequest { source: handle,
             destination: items::ItemMoveDestination::MainBackpack,
         })
         .await?;
@@ -43,10 +41,7 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     client.take_events();
     let moved = client
         .move_item(&items::ItemMoveIntent {
-            source: handle,
-            destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring),
-        })
-        .await?;
+            source: handle, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring), count: None }).await?.ok_or("item move capability not selected for this destination")?;
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("i05-reequip-refused:{moved:?}").into());
     }

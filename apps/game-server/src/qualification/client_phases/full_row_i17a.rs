@@ -336,12 +336,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .map(|item| item.handle)
         .ok_or("step=pouch observed=no-helmet-handle")?;
     client.take_events();
-    let moved = client
-        .move_item(&oteryn_dev_client::ItemMoveIntent {
-            source: helmet_handle,
-            destination: oteryn_dev_client::ItemMoveDestination::Container(bag_handle),
-        })
-        .await?;
+    let moved = oteryn_dev_client::client_runtime::inventory::send(client.session_mut(), oteryn_dev_client::client_runtime::inventory::MoveRequest { source: helmet_handle, destination: oteryn_dev_client::ItemMoveDestination::Container(bag_handle), count: None }).await?.ok_or("item move capability not selected for this destination")?;
     if moved.outcome != Out::Moved {
         return Err(format!("step=into-pouch observed={:?};needed=Moved", moved.outcome).into());
     }

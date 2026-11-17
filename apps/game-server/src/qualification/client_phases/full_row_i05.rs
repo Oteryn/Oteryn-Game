@@ -252,10 +252,7 @@ async fn journey(row: &mut Journey, clients: &SeamClients<'_>) -> TestResult {
         row.passed(2, "combat-loot+npc-talk+trade-ok+inventory-delta");
 
         client.take_events();
-        let moved = client.move_item(&items::ItemMoveIntent {
-            source: carried,
-            destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring),
-        }).await?;
+        let moved = oteryn_dev_client::client_runtime::inventory::send(client.session_mut(), oteryn_dev_client::client_runtime::inventory::MoveRequest { source: carried, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring), count: None }).await?.ok_or("item move capability not selected for this destination")?;
         if moved.outcome != items::ItemMoveOutcome::Moved {
             return Err(format!("energy-ring-equip-refused:reply={moved:?}").into());
         }

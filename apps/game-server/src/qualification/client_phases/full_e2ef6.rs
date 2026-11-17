@@ -1973,12 +1973,12 @@ async fn item_loss(
         buy_amulet(&mut client, npc, amulet).await?;
         let purchased = wait_inventory(&mut client, |view| view.entries.iter().any(|item| item.item_definition_ref == amulet), "purchased Amulet of Loss inventory delta absent").await?;
         let owned = purchased.entries.iter().find(|item| item.item_definition_ref == amulet).ok_or("purchased amulet disappeared")?;
-        let refused = client.move_item(&items::ItemMoveIntent { source: owned.handle, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::RightHand) }).await?;
+        let refused = oteryn_dev_client::client_runtime::inventory::send(client.session_mut(), oteryn_dev_client::client_runtime::inventory::MoveRequest { source: owned.handle, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::RightHand), count: None }).await?.ok_or("item move capability not selected for this destination")?;
         if refused.outcome != items::ItemMoveOutcome::SlotMismatch { return Err(format!("amulet invalid slot did not refuse: {refused:?}").into()); }
         let unchanged = custody(&purchased);
         wait_inventory(&mut client, |view| custody(view) == unchanged, "invalid amulet equip changed custody").await?;
         row.pass("amulet-invalid-slot-refused", refused);
-        let equipped = client.move_item(&items::ItemMoveIntent { source: owned.handle, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Necklace) }).await?;
+        let equipped = oteryn_dev_client::client_runtime::inventory::send(client.session_mut(), oteryn_dev_client::client_runtime::inventory::MoveRequest { source: owned.handle, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Necklace), count: None }).await?.ok_or("item move capability not selected for this destination")?;
         if equipped.outcome != items::ItemMoveOutcome::Moved { return Err(format!("amulet equip refused: {equipped:?}").into()); }
         wait_inventory(&mut client, |view| view.equipment.iter().any(|entry| entry.slot == items::EquipmentSlot::Necklace && entry.item.item_definition_ref == amulet), "amulet necklace native delta absent").await?;
         row.pass("amulet-bought-equipped", client.inventory());

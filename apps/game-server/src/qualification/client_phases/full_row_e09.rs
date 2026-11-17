@@ -512,12 +512,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let parcel_item = item(&client, parcel)?;
     let label_item = item(&client, label)?;
     write(&mut client, label_item.handle.get(), own_name.clone()).await?;
-    let moved = client
-        .move_item(&item_view::ItemMoveIntent {
-            source: label_item.handle,
-            destination: item_view::ItemMoveDestination::Container(parcel_item.handle),
-        })
-        .await?;
+    let moved = oteryn_dev_client::client_runtime::inventory::send(client.session_mut(), oteryn_dev_client::client_runtime::inventory::MoveRequest { source: label_item.handle, destination: item_view::ItemMoveDestination::Container(parcel_item.handle), count: None }).await?.ok_or("item move capability not selected for this destination")?;
     if moved.outcome != item_view::ItemMoveOutcome::Moved {
         return Err(format!(
             "step=label-into-parcel observed={moved:?} need=Moved-and-inventory-delta"

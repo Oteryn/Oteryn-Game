@@ -279,12 +279,7 @@ async fn buy(
 }
 
 async fn equip(client: &mut DevClientSession, key: NonZeroU32, slot: EquipmentSlot) -> TestResult {
-    let reply = client
-        .move_item(&items::ItemMoveIntent {
-            source: carried(client, key)?,
-            destination: items::ItemMoveDestination::Equipment(slot),
-        })
-        .await?;
+    let reply = oteryn_dev_client::client_runtime::inventory::send(client.session_mut(), oteryn_dev_client::client_runtime::inventory::MoveRequest { source: carried(client, key)?, destination: items::ItemMoveDestination::Equipment(slot), count: None }).await?.ok_or("item move capability not selected for this destination")?;
     if reply.outcome != items::ItemMoveOutcome::Moved
         || client.inventory().is_none_or(|v| {
             !v.equipment
