@@ -67,7 +67,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let viewed = players.iter().map(|(_, character)| *character).collect();
         let emblems = self
             .root
-            .read_guild_emblems(self.character, self.holder, fence, viewed)
+            .read_guild_emblems(
+                self.character,
+                self.holder,
+                fence,
+                self.resident_origin(admitted).await,
+                viewed,
+            )
             .await
             .ok()??;
         Some(

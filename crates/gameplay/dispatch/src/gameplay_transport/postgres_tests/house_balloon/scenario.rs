@@ -10,6 +10,10 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
                 if after == 0 { before } else { after }
             ),
         ),
+        Case::ResidentTick | Case::ResidentLetter => (
+            "oteryn:item.tibia.i3505".into(),
+            "oteryn:item.tibia.i3505".into(),
+        ),
         Case::CarpetTile { .. } => (
             "oteryn:item.tibia.i22736".to_owned(),
             "oteryn:item.tibia.i22737".to_owned(),
@@ -233,6 +237,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             &[4, 6, 11, 15, 18, 49, 86]
         }
         Case::Nested => &[4, 6, 12, 14, 15, 49, 86],
+        Case::ResidentTick | Case::ResidentLetter => &[4, 6, 15, 49, 86, 115, 508, 509, 511],
         Case::Carried | Case::Foreign => &[4, 6, 15, 49, 86],
     };
     admitted.continuity.selected_capabilities =
@@ -274,7 +279,9 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     let before = item(h).await?;
     if !matches!(
         case,
-        Case::Decoration(_, _)
+        Case::ResidentTick
+            | Case::ResidentLetter
+            | Case::Decoration(_, _)
             | Case::NativeNoop(_)
             | Case::Container
             | Case::ContainerCapacity
@@ -314,6 +321,10 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         admitted.continuity.next_command_id, 1,
         "the actual House handoff creates a new session"
     );
+    if matches!(case, Case::ResidentTick | Case::ResidentLetter) {
+        return super::super::house_resident_reads::exchange(h, &owner, admitted, before_ref, case)
+            .await;
+    }
     let actor_position = {
         let runtime = owner.runtime.lock().await;
         let state = runtime

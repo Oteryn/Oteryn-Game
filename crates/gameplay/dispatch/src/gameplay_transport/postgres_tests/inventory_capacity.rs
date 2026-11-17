@@ -115,6 +115,7 @@ fn inventory_capacity_real_connection_postgres() -> TestResult {
                 &authority,
                 &h.node,
                 fence,
+                None,
                 &probe,
             )
             .await
@@ -138,7 +139,7 @@ fn inventory_capacity_real_connection_postgres() -> TestResult {
             fence.connection_generation.get() + 1,
         ).map_err(debug)?;
         assert_eq!(
-            h.root.read_inventory_capacity(&authority, &h.node, outdated, &weights)
+            h.root.read_inventory_capacity(&authority, &h.node, outdated, None, &weights)
                 .await.map_err(debug)?,
             None
         );
@@ -211,7 +212,7 @@ fn inventory_capacity_real_connection_postgres() -> TestResult {
         );
         assert_eq!(
             h.root
-                .read_inventory_capacity(&authority, &h.node, fence, &weights)
+                .read_inventory_capacity(&authority, &h.node, fence, None, &weights)
                 .await
                 .map_err(debug)?,
             None,

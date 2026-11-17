@@ -27,7 +27,7 @@ use oteryn_protocol_oteryn::{
 use serde_json::Value;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
+pub(super) const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 const POSITION: [i32; 3] = [32310, 32804, 7];
 const BEFORE: &str = "oteryn:item.tibia.i37414";
 const AFTER: &str = "oteryn:item.tibia.i37471";
@@ -111,12 +111,30 @@ const INVENTORY_OFFERS: &[OfferedCapability] = &[
         id: 86,
         requires: &[],
     },
+    OfferedCapability {
+        id: 115,
+        requires: &[4],
+    },
+    OfferedCapability {
+        id: 508,
+        requires: &[4, 6],
+    },
+    OfferedCapability {
+        id: 509,
+        requires: &[6],
+    },
+    OfferedCapability {
+        id: 511,
+        requires: &[4, 115],
+    },
 ];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Case {
+pub(super) enum Case {
     Placed,
     Carried,
+    ResidentTick,
+    ResidentLetter,
     Nested,
     Foreign,
     Decoration(u32, u32),
@@ -225,7 +243,7 @@ fn w18_house_magic_tree_transforms_once_under_current_house_custody() -> TestRes
     run_case(Case::Decoration(26189, 26193))
 }
 
-fn run_case(case: Case) -> TestResult {
+pub(super) fn run_case(case: Case) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         eprintln!("W19 POSTGRES_CASE_COMPLETED status=SKIPPED no_admin_url");
         return Ok(());

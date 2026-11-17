@@ -140,7 +140,7 @@ fn scenario() -> TestResult {
         let read = async || -> TestResult<Vec<([u8; 16], Emblem)>> {
             let mut emblems = h
                 .root
-                .read_guild_emblems(&authority, &h.node, fence, viewed.to_vec())
+                .read_guild_emblems(&authority, &h.node, fence, None, viewed.to_vec())
                 .await
                 .map_err(debug)?
                 .ok_or("current fence")?;

@@ -17,6 +17,7 @@ impl DurabilityRoot {
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
+        house_origin: Option<[u8; 16]>,
         weights: &dyn ItemWeightLookup,
     ) -> Result<Option<(u64, u64)>, DurabilityError> {
         let record = recovery
@@ -28,12 +29,24 @@ impl DurabilityRoot {
             .run_with_context(&mut context, move |holder, deadline, weights| {
                 Box::pin(async move {
                     let weights: &dyn ItemWeightLookup = *weights;
-                    let mut tx = super::db::begin_observation_transaction(holder, deadline).await?;
-                    observe_recovery_fence(&mut tx, &record).await?;
-                    if observe_session_fence(&mut tx, &fence, &node)
+                    let mut tx = if house_origin.is_some() {
+                        super::db::begin_semantic_transaction(holder, deadline).await?
+                    } else {
+                        super::db::begin_observation_transaction(holder, deadline).await?
+                    };
+                    let current = if let Some(origin) = house_origin {
+                        super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
+                        super::db::lock_admission_relations(&mut tx).await?;
+                        super::house_hireling::fence::assert_house_custody_fence(
+                            &mut tx, &node, &fence, origin,
+                        )
                         .await?
-                        .is_err()
-                    {
+                        .is_some()
+                    } else {
+                        observe_recovery_fence(&mut tx, &record).await?;
+                        observe_session_fence(&mut tx, &fence, &node).await?.is_ok()
+                    };
+                    if !current {
                         tx.rollback().await?;
                         return Ok(None);
                     }
