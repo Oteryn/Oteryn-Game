@@ -1483,8 +1483,16 @@ pub(super) async fn exercise(
     // the largest source recipes, preserving every native weight check.
     if matches!(
         family,
-        "battle-mage" | "royal-costume" | "pirate" | "oriental" | "knight" | "hunter" | "mage"
+        "barbarian"
+            | "battle-mage"
+            | "royal-costume"
+            | "pirate"
+            | "oriental"
+            | "knight"
+            | "hunter"
+            | "mage"
     ) {
+        // Ajax's 101 iron ores outweigh a fresh carrier.
         let carrying_level = if family == "royal-costume" { 200 } else { 50 };
         earn_level(owner, admitted, authority, carrying_level).await?;
     }
