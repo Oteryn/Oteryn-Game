@@ -14,10 +14,14 @@ use std::sync::Arc;
 
 #[test]
 fn srx3_megalomania_native_corpses_player_and_creature_steps_postgres() -> TestResult {
+    run_megalomania_native_step(None)
+}
+
+pub(super) fn run_megalomania_native_step(expected_cooldown: Option<i64>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("srx3-megalomania-ground-step", || {
+    super::kill_reward_e2e::scenario_thread::run("srx3-megalomania-ground-step", move || {
         run(async |admin| {
             use crate::gameplay_transport::capabilities::{
                 BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
@@ -90,6 +94,15 @@ fn srx3_megalomania_native_corpses_player_and_creature_steps_postgres() -> TestR
             .await?;
             assert!(matches!(reply, wire::BossActivityReply::Accepted { .. }));
             assert!(barrier.is_some());
+            if let Some(expected) = expected_cooldown {
+                let cooldown: i64 = sqlx::query_scalar(
+                    "SELECT cooldown_seconds FROM game_boss_room_publications WHERE boss_key=$1",
+                )
+                .bind("oteryn:boss.goshnar_s_megalomania")
+                .fetch_one(&h.pool)
+                .await?;
+                assert_eq!(cooldown, expected, "published Megalomania retry period");
+            }
             let fence = admitted.item_fence.ok_or("actual Instance Player")?;
             assert_eq!(fence.runtime_scope, instance);
             let registered = owner
