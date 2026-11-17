@@ -341,8 +341,16 @@ pub(super) fn world_with_objects_and_cells(
     appearances: &[u16],
     extra: &[Position],
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    world_cells(callback, trigger, callback.selector.appearance.unwrap_or(100),
-        1, objects, appearances, None, extra)
+    world_cells(
+        callback,
+        trigger,
+        callback.selector.appearance.unwrap_or(100),
+        1,
+        objects,
+        appearances,
+        None,
+        extra,
+    )
 }
 
 pub(super) fn world_with_cells(
