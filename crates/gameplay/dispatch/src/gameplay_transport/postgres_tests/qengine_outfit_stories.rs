@@ -1013,13 +1013,7 @@ pub(super) async fn exercise(
         }
         if matches!(
             family,
-            "royal-costume"
-                | "druid-rook"
-                | "druid"
-                | "knight"
-                | "assassin"
-                | "hunter"
-                | "warrior"
+            "royal-costume" | "druid-rook" | "druid" | "knight" | "assassin" | "hunter" | "warrior"
         ) {
             expected_take.extend(present.iter().map(amount));
         }
@@ -1505,6 +1499,7 @@ pub(super) async fn exercise(
             | "hunter"
             | "mage"
             | "shaman"
+            | "warrior"
     ) {
         let carrying_level = if family == "royal-costume" { 200 } else { 50 };
         earn_level(owner, admitted, authority, carrying_level).await?;
