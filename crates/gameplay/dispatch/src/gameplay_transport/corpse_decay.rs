@@ -48,7 +48,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let due: Vec<_> = schedule
             .corpses
             .iter()
-            .filter(|corpse| corpse.decay_at_unix_ms <= schedule.database_now_unix_ms)
+            .filter(|corpse| {
+                corpse
+                    .decay_at_unix_ms
+                    .is_some_and(|deadline| deadline <= schedule.database_now_unix_ms)
+            })
             .collect();
         let start = self.background_start("corpse", due.len());
         if let Some(corpse) = due.get(start) {
@@ -82,6 +86,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_ok_and(|owner| owner.generation() == fence.scope_ownership_generation)
             && runtime.binding().runtime_scope() == fence.runtime_scope
         {
+            self.states
+                .loop_ground
+                .reconcile_plain_corpses(fence.runtime_scope, &live);
             let _ = runtime.retain_live_corpse_items(&live);
             for corpse in &schedule.corpses {
                 let _ = runtime.refresh_corpse_item(

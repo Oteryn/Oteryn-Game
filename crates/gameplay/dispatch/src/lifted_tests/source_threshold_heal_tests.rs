@@ -605,6 +605,19 @@ fn private_marker_reinjured_native_hp_blocks_then_exact_source_expiry_reopens() 
             .expect("qualified fixture"),
         1
     );
+    // The stored Lua condition remains visible until the canonical postattack
+    // housekeeping phase, even at its exact expiry deadline.
+    let at = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(s.cooldown_us);
+    let expiry = r
+        .prepare_actor_condition_expiry(
+            a,
+            None,
+            oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([0x53; 16]),
+            at,
+        )
+        .expect("actual condition housekeeping at original source expiry");
+    r.commit_actor_condition(&expiry, at)
+        .expect("commit canonical marker expiry");
     let reopened = owner
         .cast(&mut r, &f, stamp, &s, &proposal(a, &s, 2), s.cooldown_us)
         .expect("qualified fixture");
@@ -1035,4 +1048,163 @@ pub(crate) fn complete_retained_threshold_aggregate_fixture(
         }
     }
     Ok(())
+}
+
+#[test]
+fn srx3_threshold_heal_installs_actual_shared_regeneration_88888() {
+    let (mut runtime, _, creature, source) = fixture("tyrn");
+    let actor = runtime
+        .admit_source_pinned_lab_creature(
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            &creature.key,
+            2399,
+        )
+        .expect("actual qualified Tyrn");
+    let (fence, stamp) = fence(&runtime);
+    let result = ThresholdHealOwner::default()
+        .cast(
+            &mut runtime,
+            &fence,
+            stamp,
+            &source,
+            &proposal(actor, &source, 0),
+            0,
+        )
+        .expect("source threshold callback");
+    assert!(result.started);
+    let store = runtime
+        .actor_conditions(actor, None)
+        .expect("canonical actor condition store");
+    let marker = store.instances().iter().find(|instance|
+        serde_json::to_value(instance.definition().condition_type()).ok()
+            == Some(serde_json::json!({"SpellRegeneration":88888}))
+    ).expect("source callback must publish its real shared regeneration condition, not a private cooldown");
+    assert_eq!(marker.remaining_duration_ms(0), Some(900_000));
+    assert!(
+        matches!(
+            marker.definition().values(),
+            crate::foundation::ConditionValues::SpellRegeneration {
+                health_gain: 0,
+                health_interval_ms: 900_000,
+                mana_gain: 0,
+                ..
+            }
+        ),
+        "Tyrn's source dormant health interval remains fifteen minutes"
+    );
+    assert_eq!(marker.remaining_duration_ms(900_000_000), Some(0));
+}
+
+#[test]
+fn srx3_source_get_condition_keeps_expired_stored_88888_until_postattack_phase() {
+    use crate::foundation::{
+        ActorConditionTransition, ApplicationFacts, ConditionDefinition, ConditionSource,
+        ConditionSourceKind, ConditionValues,
+    };
+    use oteryn_simulation_determinism::{
+        DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros,
+    };
+    let (mut runtime, _, creature, source) = fixture("tyrn");
+    let actor = runtime
+        .admit_source_pinned_lab_creature(
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+            &creature.key,
+            1,
+        )
+        .expect("source Tyrn");
+    let definition = ConditionDefinition::new(
+        "source.omrafir.beam.marker",
+        1,
+        ConditionValues::SpellRegeneration {
+            duration_ms: 5000,
+            sub_id: 88888,
+            health_gain: 0,
+            health_interval_ms: 5000,
+            mana_gain: 0,
+            mana_interval_ms: 1000,
+        },
+    )
+    .expect("literal source marker");
+    let root = GameplayDecisionRoot::from_bytes([7; 32]);
+    let facts = ApplicationFacts {
+        now: 0,
+        base_speed: 0, // Zero-gain regeneration has no speed operation.
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: false,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes([0x51; 16]),
+    };
+    let at = SemanticTimeMicros::from_micros(0);
+    let plan = runtime
+        .prepare_actor_condition(
+            actor,
+            None,
+            ActorConditionTransition::Apply {
+                definition: &definition,
+                source: ConditionSource {
+                    actor,
+                    session: None,
+                    kind: ConditionSourceKind::SelfUse,
+                },
+                immunities: &[],
+                facts,
+            },
+            at,
+        )
+        .expect("same canonical actor store");
+    runtime
+        .commit_actor_condition(&plan, at)
+        .expect("same actor marker commit");
+    let (fence, stamp) = fence(&runtime);
+    let mut owner = ThresholdHealOwner::default();
+    let before = owner
+        .cast(
+            &mut runtime,
+            &fence,
+            stamp,
+            &source,
+            &proposal(actor, &source, 0),
+            5_000_000,
+        )
+        .expect("source callback at marker deadline");
+    assert!(
+        !before.started && before.healed.is_none(),
+        "Lua getCondition returns the still-stored marker before source executeConditions"
+    );
+    let at = SemanticTimeMicros::from_micros(5_000_000);
+    let plan = runtime
+        .prepare_actor_condition_expiry(
+            actor,
+            None,
+            DecisionOccurrenceId::from_bytes([0x52; 16]),
+            at,
+        )
+        .expect("actual canonical postattack housekeeping");
+    runtime
+        .commit_actor_condition(&plan, at)
+        .expect("source marker expires in canonical postphase");
+    let after = owner
+        .cast(
+            &mut runtime,
+            &fence,
+            stamp,
+            &source,
+            &proposal(actor, &source, 1),
+            5_000_001,
+        )
+        .expect("next source callback after marker housekeeping");
+    assert!(
+        after.started && after.healed.is_some(),
+        "same actor can heal after shared postphase expires marker"
+    );
 }

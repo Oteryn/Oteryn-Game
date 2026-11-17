@@ -60,6 +60,8 @@ fn summer_population_all_six_radiant_rewards_admit_native_corpses() -> TestResul
         assert!(
             reward
                 .corpse_item
+                .as_ref()
+                .ok_or("actual Summer source corpse")?
                 .production_key
                 .starts_with("oteryn:item.tibia.i54")
         );

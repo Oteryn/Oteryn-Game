@@ -31,6 +31,20 @@ def function(name):
 
 
 class RuntimeEvidenceTests(unittest.TestCase):
+    def test_served_content_revision_is_the_characters_interpretation(self):
+        # NBSEAM: the quest and Task Board owners refuse a Character whose stored progression
+        # content differs from the served readiness.content_revision (ProgressionContextMismatch).
+        interpretation = re.search(r'^readonly INTERPRETATION=\(([^)]*)\)$', TEXT, re.M).group(1).split()
+        readiness = TEXT.split('[readiness]\n', 1)[1].split('\n[', 1)[0]
+        served = re.search(r'^content_revision = "([^"]*)"$', readiness, re.M).group(1)
+        self.assertEqual(served.replace('${INTERPRETATION[2]}', interpretation[2]), interpretation[2])
+        harness = SOURCE.parents[3].joinpath('apps/game-server/src/qualification.rs')
+        if harness.exists():
+            rust = harness.read_text()
+            content = re.search(r'const INTERPRETATION: \[&str; 4\] = \[\s*"[^"]*",\s*"[^"]*",\s*"([^"]*)"', rust).group(1)
+            self.assertEqual(content, interpretation[2])
+            self.assertNotRegex(rust, r'content_revision"?: "')
+
     def test_logout_failures_keep_only_closed_schema_stage_and_kind(self):
         monitor = function('start_runtime_diagnostics').split("<<'PY_RUNTIME_DIAGNOSTICS' &\n", 1)[1]
         prefix = monitor.split("print(f'NODE_BOOT_RUNTIME_MONITOR", 1)[0]
@@ -64,6 +78,7 @@ class RuntimeEvidenceTests(unittest.TestCase):
             ('control_loss_reconcile_pending', 'item_effects'),
             ('control_loss_reconcile_pending', 'gourmet_checkpoint'),
             ('control_loss_reconcile_pending', 'native_cast'),
+            ('control_loss_reconcile_pending', 'soul_war_source_use'),
             ('control_loss_reconcile_pending', 'familiar_cast'),
             ('control_loss_reconcile_pending', 'world_items'),
             ('control_loss_reconcile_pending', 'parameters'),

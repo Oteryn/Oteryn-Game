@@ -114,6 +114,7 @@ fn scenario(native: bool) -> TestResult {
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.continuity.selected_capabilities =
             crate::gameplay_transport::connection::fresh_capability_selection(&owner, &[6, 286])
+                .await
                 .ok_or("named selection")?;
         let selected = admitted.continuity.selected_capabilities;
         assert_eq!(

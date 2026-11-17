@@ -11,14 +11,24 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const KEY33_TABLES: [&str; 3] = [
+const KEY33_TABLES: [&str; 5] = [
     "game_item_ground_locations",
     "game_item_corpse_container_entries",
     "game_native_map_scope_adoptions",
+    "game_elemental_energy_field_receipts",
+    "game_elemental_energy_field_adoptions",
 ];
 
 /// SQL functions that take `pg_advisory_xact_lock(..., 33)` and the table their trigger guards.
-const SQL_KEY33_FUNCTIONS: [(&str, &str); 3] = [
+const SQL_KEY33_FUNCTIONS: [(&str, &str); 5] = [
+    (
+        "game_elemental_energy_adoption_stamp",
+        "game_elemental_energy_field_adoptions",
+    ),
+    (
+        "game_elemental_energy_field_admit",
+        "game_elemental_energy_field_receipts",
+    ),
     ("game_item_ground_owner_lock", "game_item_ground_locations"),
     (
         "game_spell_corpse_entry_owner_lock",
@@ -41,12 +51,16 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/consume_transform_ground.rs", "write"),
     ("crates/gameplay/durability/src/durability/field_removal.rs", "remove_field_in_transaction"),
     ("crates/gameplay/durability/src/durability/field_removal.rs", "retire_restarted_fields"),
+    ("crates/gameplay/durability/src/durability/item_craft/elemental_energy.rs", "create"),
+    ("crates/gameplay/durability/src/durability/item_craft/elemental_energy.rs", "has_room"),
     ("crates/gameplay/durability/src/durability/item_craft/harvest.rs", "write"),
     ("crates/gameplay/durability/src/durability/item_craft/skinning.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/item_craft/soulpit.rs", "place_output"),
     ("crates/gameplay/durability/src/durability/item_decay_retire.rs", "apply_retire"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "apply_loop_move"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),
+    ("crates/gameplay/durability/src/durability/item_loop_move/altar_arrival.rs", "commit_item_loop_altar_arrival"),
+    ("crates/gameplay/durability/src/durability/item_loop_move/dreamer_ring.rs", "commit_item_loop_dreamer_ring"),
     ("crates/gameplay/durability/src/durability/item_loop_move/floor_assembly.rs", "commit_item_loop_floor_assembly"),
     ("crates/gameplay/durability/src/durability/item_loop_move/floor_transform.rs", "apply"),
     ("crates/gameplay/durability/src/durability/item_loop_move/seed_drop.rs", "commit_item_loop_seed_drop"),
@@ -57,8 +71,13 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/map_item_mint.rs", "apply_mint"),
     ("crates/gameplay/durability/src/durability/native_map_items.rs", "adopt_current_ground"),
     ("crates/gameplay/durability/src/durability/native_map_items.rs", "initialize_in_transaction"),
+    ("crates/gameplay/durability/src/durability/native_map_items/elemental_energy.rs", "adopt"),
     ("crates/gameplay/durability/src/durability/player_death_items.rs", "write"),
-    ("crates/gameplay/durability/src/durability/quest_world_callback.rs", "apply_input"),
+    ("crates/gameplay/durability/src/durability/quest_world_callback.rs", "apply_input_in_scope"),
+    ("crates/gameplay/durability/src/durability/quest_world_callback/ground_read.rs", "matches"),
+    ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "matches"),
+    ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "matches_requirements"),
+    ("crates/gameplay/durability/src/durability/quest_world_callback/ground_stack.rs", "require"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_field_chains_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_items_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "apply_consumption_operation"),
@@ -78,6 +97,7 @@ const NON_LANE_KEY33_READS: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/item_craft/skinning.rs", "prepare"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),
     ("crates/gameplay/durability/src/durability/item_text.rs", "lock_ground_text_item"),
+    ("crates/gameplay/durability/src/durability/quest_world_callback/ground_read.rs", "matches"),
 ];
 
 /// Lane-derived proofs: a permit or window directly, or a scope/item authority that is only
@@ -99,6 +119,15 @@ const DELEGATED: [(&str, &str, &str); 1] = [(
     "adopt_current_ground",
     "initialize_in_transaction",
 )];
+
+/// Returning an authority does not prove that the caller held one. Only inputs
+/// to the reviewed writer/minter may establish the lane dependency.
+fn has_lane_proof_parameter(signature: &str) -> bool {
+    let parameters = signature
+        .split_once(") ->")
+        .map_or(signature, |(inputs, _)| inputs);
+    LANE_PROOFS.iter().any(|proof| parameters.contains(proof))
+}
 
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -297,7 +326,7 @@ fn rust_key33_writers_are_pinned_and_hold_a_lane_proof() {
                 None => signature,
             };
             assert!(
-                LANE_PROOFS.iter().any(|proof| proof_holder.contains(proof))
+                has_lane_proof_parameter(&proof_holder)
                     || (locks.contains(&at)
                         && NON_LANE_KEY33_READS
                             .iter()
@@ -335,11 +364,22 @@ fn lane_proof_authorities_are_minted_only_behind_a_permit() {
             .contains("permit: &SpellLanePermit,"),
         "StandingTileRead must be minted behind a lane permit"
     );
+    assert!(
+        text.contains("pub(super) async fn assert_creature_event_scope_in_transaction("),
+        "the generic Creature scope issuer must stay Durability-private"
+    );
+    let creature_scope = signature_of(&text, "assert_creature_event_scope_in_transaction");
+    assert!(
+        creature_scope.contains("permit: &SpellLanePermit,")
+            && creature_scope.contains("node: &NodeIncarnationProof,"),
+        "Creature scope authority requires the actual lane and Node proofs"
+    );
     for (literal, minters) in [
         (
             "SpellItemScopeAuthority {",
             &[
                 "assert_spell_item_scope_with_recovery",
+                "assert_creature_event_scope_in_transaction",
                 "locked_tile_rows",
                 "apply_physical_item_line",
             ][..],
@@ -367,7 +407,7 @@ fn lane_proof_authorities_are_minted_only_behind_a_permit() {
                 "{literal} minted by {name}"
             );
             assert!(
-                LANE_PROOFS.iter().any(|proof| signature.contains(proof)),
+                has_lane_proof_parameter(&signature),
                 "{name} mints {literal} without a lane-derived proof"
             );
         }
@@ -392,7 +432,7 @@ fn physical_item_owner_only_borrows_lane_authorities() {
     );
     assert!(
         text.contains(
-            "pub enum PhysicalItemOwner<'a> { Player(&'a SpellItemAuthority), Creature(&'a SpellItemScopeAuthority), }"
+            "pub enum PhysicalItemOwner<'a> { Player(&'a SpellItemAuthority), Creature(&'a SpellItemScopeAuthority), RegisteredGlobal(&'a SpellItemScopeAuthority), SourceStep(&'a SpellItemScopeAuthority), }"
         ),
         "PhysicalItemOwner variants must only borrow SpellItemAuthority or SpellItemScopeAuthority"
     );

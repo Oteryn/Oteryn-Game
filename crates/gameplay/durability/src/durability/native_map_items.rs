@@ -11,11 +11,17 @@ use serde_json::json;
 use sqlx::{Postgres, Row, Transaction};
 use std::collections::BTreeSet;
 
+mod elemental_energy;
+
 type Result<T> = std::result::Result<T, SpellItemError>;
 fn hex(v: &[u8]) -> String {
     v.iter().map(|b| format!("{b:02x}")).collect()
 }
-fn intent(binding: &NativeMapOwnerBinding, p: &NativeMapItemPlacement, epoch: u64) -> Result<Vec<u8>> {
+fn intent(
+    binding: &NativeMapOwnerBinding,
+    p: &NativeMapItemPlacement,
+    epoch: u64,
+) -> Result<Vec<u8>> {
     let mut document = json!({"schema":"OTERYN_NATIVE_MAP_ITEM_INIT/v1",
         "world":hex(binding.world.as_bytes()),"channel":hex(binding.channel.as_bytes()),
         "scope_generation":binding.scope_generation.to_string(),
@@ -25,7 +31,9 @@ fn intent(binding: &NativeMapOwnerBinding, p: &NativeMapItemPlacement, epoch: u6
         "spatial_position":hex(&p.ground.spatial_position),"source_binding":hex(&p.source_binding),"source_attributes":p.source_attributes,
         "blocks_movement":p.blocks_movement,"blocks_projectile":p.blocks_projectile,"immovable_block_solid":p.immovable_block_solid,"owner_kind":p.owner_kind
     });
-    if epoch != 0 { document["reset_epoch"] = json!(epoch.to_string()); }
+    if epoch != 0 {
+        document["reset_epoch"] = json!(epoch.to_string());
+    }
     serde_json::to_vec(&document).map_err(|_| SpellItemError::Rejected("map intent serialization"))
 }
 
@@ -49,7 +57,9 @@ pub async fn initialize_in_transaction(
     super::db::lock_admission_relations(tx).await?;
     let epoch: String = sqlx::query_scalar("SELECT coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid),0)::text")
         .bind(binding.world.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-    let epoch = epoch.parse::<u64>().map_err(|_| SpellItemError::Rejected("map reset epoch"))?;
+    let epoch = epoch
+        .parse::<u64>()
+        .map_err(|_| SpellItemError::Rejected("map reset epoch"))?;
     let scope = crate::foundation::RuntimeScopeRefV1::channel(binding.world, binding.channel);
     let guard=super::admission_authority_guards::AdmissionGuardStore::from_root(root.clone())
         .load_locked(tx,&crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(scope)).await?
@@ -74,6 +84,9 @@ pub async fn initialize_in_transaction(
     .bind(binding.channel.as_bytes().as_slice())
     .execute(&mut **tx)
     .await?;
+    // Immutable script creation records identify candidates only. The actual
+    // current recovery, Scope, Node and map owner were checked above.
+    elemental_energy::adopt(tx, permit, &binding, node, epoch).await?;
     let mut keys = BTreeSet::new();
     let mut out = Vec::new();
     for p in proof.placements() {

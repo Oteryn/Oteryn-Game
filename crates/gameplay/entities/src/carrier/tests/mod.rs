@@ -16,3 +16,4 @@ include!("spawn_owner_windows.rs");
 include!("support.rs");
 
 include!("scene_move_batch.rs");
+include!("forced_player_steps.rs");

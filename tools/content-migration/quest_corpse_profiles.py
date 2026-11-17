@@ -24,7 +24,7 @@ OBJECTIVES = 'content/quests/authored-death-objectives.json'
 RULES = 'content/quests/authored-death-loot.json'
 REQUIREMENTS = 'tools/content-schema/native-gameplay/quest-corpse-objectives.json'
 CREATURES = 'content/creatures/definitions/spell-native-profiles.json'
-GROUPS = ('physical', 'stack', 'container', 'temporal')
+GROUPS = ('physical', 'stack', 'container', 'temporal', 'classification')
 MAX_ROOTS, MAX_CHAIN, MAX_ITEMS = 32, 8, 128
 
 
@@ -89,6 +89,8 @@ def required(root=ROOT, creatures=None):
         roots.add(item_id(corpse))
     import quest_shared_boss_corpses
     roots.update(quest_shared_boss_corpses.roots(by_creature))
+    import questpc7_corpse_requirements
+    roots.update(questpc7_corpse_requirements.roots(root, by_creature))
     if len(roots) > MAX_ROOTS:
         raise ValueError('QUEST_CORPSE_ROOT_BOUNDS')
     return roots
@@ -280,8 +282,15 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             if (prior['production_definition'] != record['production_definition']
                     or prior['production_binding'] != record['production_binding']
                     or prior['admission'] != record['admission']
-                    or any(prior['semantics'][group] != record['semantics'][group] for group in GROUPS)):
+                    or any(prior['semantics'][group] != record['semantics'][group]
+                           for group in GROUPS if group != 'classification')
+                    or grizzly.known_conflict(prior['semantics']['classification'],
+                                             record['semantics']['classification'])):
                 raise ValueError('QUEST_CORPSE_EXISTING_NATIVE_CONFLICT')
+            # Complete only UNKNOWN classification facts from this exact pinned
+            # XML/DAT corpse closure. All other existing policy/attributes remain.
+            prior['semantics']['classification'] = grizzly.accepted_first(
+                prior['semantics']['classification'], record['semantics']['classification'])
             continue
         document['records'].append(record)
     document['records'].sort(key=order)

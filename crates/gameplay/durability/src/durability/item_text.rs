@@ -13,7 +13,8 @@
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::numeric_u64;
 use super::db::{
-    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use super::item_loop_move::LoopGround;
 use super::item_mint::TypedDefinitionRef;

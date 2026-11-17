@@ -40,9 +40,7 @@ impl ExivaPreferences {
             || self
                 .guild_whitelist
                 .iter()
-                .any(|id| {
-                    oteryn_gameplay_domain::domain::guild::GuildId::from_bytes(*id).is_err()
-                })
+                .any(|id| oteryn_gameplay_domain::domain::guild::GuildId::from_bytes(*id).is_err())
             || self
                 .player_whitelist
                 .iter()
@@ -99,7 +97,8 @@ async fn war_opponent_allowed(
     authority: &SpellItemAuthority,
     target: [u8; 16],
 ) -> Result<bool, SpellItemError> {
-    let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } = authority.runtime_scope() else {
+    let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } = authority.runtime_scope()
+    else {
         return Ok(false);
     };
     let opponents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_members a JOIN game_guild_members b ON b.character_id=encode($2,'hex')::uuid JOIN game_guild_wars w ON w.world_id=encode($3,'hex')::uuid AND w.state=2 AND ((w.declaring_guild=a.guild_id AND w.opposing_guild=b.guild_id) OR (w.opposing_guild=a.guild_id AND w.declaring_guild=b.guild_id)) WHERE a.character_id=encode($1,'hex')::uuid)")
@@ -237,8 +236,10 @@ async fn read_exiva_decision_with_roles_in_transaction(
         .map_err(|_| SpellItemError::Rejected("stored Exiva preference shape"))?;
     preferences.validate()?;
     let basic = decision(&preferences, source, caster_staff, target_staff);
-    if matches!(basic, ExivaDecision::Denied | ExivaDecision::UnknownRelationships)
-        && war_opponent_allowed(tx, authority, target).await?
+    if matches!(
+        basic,
+        ExivaDecision::Denied | ExivaDecision::UnknownRelationships
+    ) && war_opponent_allowed(tx, authority, target).await?
     {
         return Ok(ExivaDecision::Allowed);
     }

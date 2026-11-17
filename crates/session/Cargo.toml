@@ -12,6 +12,9 @@ publish.workspace = true
 category = "session"
 release-role = "production"
 
+[features]
+test-support = []
+
 [dependencies]
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../protocol-oteryn" }
 tokio.workspace = true

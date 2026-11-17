@@ -21,10 +21,12 @@ impl<S: SessionStream> Session<S> {
         &mut self,
         outcome: Result<T, SessionError>,
     ) -> Result<T, SessionError> {
-        if outcome
-            .as_ref()
-            .is_err_and(|error| !matches!(error, SessionError::ActivityScopeChanged))
-        {
+        if outcome.as_ref().is_err_and(|error| {
+            !matches!(
+                error,
+                SessionError::ScopeChanged | SessionError::ActivityScopeChanged
+            )
+        }) {
             self.unusable = true;
         }
         outcome
@@ -193,14 +195,11 @@ impl<S: SessionStream> Session<S> {
         self.next_command_id = command_id
             .checked_add(1)
             .ok_or(SessionError::CommandIdExhausted)?;
-        let frame = encode_client_command(
-            self.connection_generation,
-            &ClientCommandValue {
-                command_id,
-                command_type,
-                payload,
-            },
-        )?;
+        let frame = self.encode_current_command(&ClientCommandValue {
+            command_id,
+            command_type,
+            payload,
+        })?;
         bounded(
             self.deadline,
             "ClientCommand write",
@@ -355,10 +354,11 @@ impl<S: SessionStream> Session<S> {
                 return Err(error);
             }
             if envelope.message_type() == MessageType::SnapshotBegin {
-                let source = self.join_snapshot.game_session_id;
-                self.replace_snapshot(envelope.payload()).await?;
-                if self.join_snapshot.game_session_id != source {
-                    return Err(SessionError::ActivityScopeChanged);
+                if let Some(changed) = self
+                    .replace_snapshot_with_scope_change(envelope.payload())
+                    .await?
+                {
+                    return Err(changed);
                 }
                 continue;
             }

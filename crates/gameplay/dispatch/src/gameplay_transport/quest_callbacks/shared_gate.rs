@@ -50,8 +50,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 cause,
                 origin: None,
                 context: None,
+                flame: None,
                 ingress_settled: false,
                 participants: Vec::new(),
+                projection_target: None,
+                flame_effect_sent: false,
+                selected_tool: None,
             });
             pending.context.get_or_insert(context).clone()
         } else {

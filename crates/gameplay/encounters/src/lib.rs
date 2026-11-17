@@ -4,6 +4,7 @@ pub mod bosses;
 
 pub mod self_heal_qualification;
 
+pub mod soul_war_mirror;
 pub mod soul_war_taint_teleport;
 
 #[allow(unused_imports, reason = "preserve the former server module path")]

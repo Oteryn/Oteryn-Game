@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "6b6a5a3101e090663adcbec2b32a268e1f8a57fb
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "0dd450485daab2b2ffe6da36f82be5fb948c4de0"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "8ca7b7e0c78d5f5c8a49cc80feb8e327d2ff7326"
 EXPECTED_POST_MERGE_RUST_SHA256 = "470b746eca8cad94235ed4f43fdd1de86977ac738421fcaca6dfacfd5ce3c89a"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -73,6 +73,8 @@ EXPECTED_MERGE_GROUP_JOB_KEYS = [
     "durability_postgres",
     "rust_windows",
     "rust_supply_chain",
+    "node_boot_plan",
+    "node_boot_shard",
     "node_boot",
     "server_seam",
     "game_gate",
@@ -644,13 +646,36 @@ def main() -> int:
                 'cargo +1.100.0 install --locked --quiet cargo-deny --version "=0.20.2"',
                 '"$deny_root/bin/cargo-deny" --all-features check',
             ),
-            "node_boot": (
-                "    name: Merge Queue / Node boot against the real Platform\n",
+            # Node boot runs as the `pr` shard set: plan, one machine per shard, fail-closed aggregate.
+            "node_boot_plan": (
+                "    name: Merge Queue / Node boot / plan shards\n",
+                "    needs: candidate\n",
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
-                "ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05",
-                "bash tools/qualification/node_boot/run.sh | tee \"$evidence\"",
-                "grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' \"$evidence\"",
+                "python3 tools/qualification/node_boot/matrix.py plan --set pr > \"$RUNNER_TEMP/shards.json\"",
+                "\"$RUNNER_TEMP/shards.json\")\" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05\n",
+            ),
+            "node_boot_shard": (
+                "    name: Merge Queue / Node boot / ${{ matrix.shard.name }}\n",
+                "    needs: [candidate, node_boot_plan]\n",
+                "    if: needs.candidate.outputs.server_qualification != 'false'\n",
+                "    timeout-minutes: 240\n",
+                "      fail-fast: false\n",
+                "        shard: ${{ fromJSON(needs.node_boot_plan.outputs.shards) }}\n",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
+                "ref: ${{ matrix.shard.platform_ref }}",
+                "NODE_BOOT_FAILURE_LOG_DIR=\"$logs\" bash tools/qualification/node_boot/run.sh | tee \"$evidence\"",
+                "python3 tools/qualification/node_boot/matrix.py extract \"$evidence\"",
+                "--shard \"$SHARD_NAME\" --entry \"$SHARD_ENTRY\" --exit-code \"$code\"",
+            ),
+            "node_boot": (
+                "    name: Merge Queue / Node boot against the real Platform\n",
+                "    needs: [candidate, node_boot_plan, node_boot_shard]\n",
+                "    if: always() && needs.candidate.outputs.server_qualification != 'false'\n",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
+                "          test \"$PLAN_RESULT\" = success\n",
+                "          test \"$SHARD_RESULT\" = success\n",
+                "          exit \"$status\"\n",
             ),
             "server_seam": (
                 "    name: Merge Queue / Server Seam over TCP+TLS\n",

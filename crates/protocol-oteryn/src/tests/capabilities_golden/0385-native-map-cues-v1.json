@@ -1,0 +1,18 @@
+{
+  "id": 385,
+  "name": "NATIVE_MAP_CUES_V1",
+  "constant": "native_map_cues::CAPABILITY_NATIVE_MAP_CUES_V1",
+  "requires": [
+    23,
+    30
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

@@ -235,6 +235,12 @@ fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) -> Result<(
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
+        let combat_room = deps.room.bundle_view(
+            cells.clone(),
+            pin.frame_binding().digest(),
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart { x: 2, y: 2, floor: 7 },
+        ).ok_or("push combat room")?;
         let channel_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -261,6 +267,11 @@ fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) -> Result<(
             .reserve_fresh_session(deps.admitted.game_session_id)
             .map_err(debug)?;
         deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+            .current_session_at(deps.admitted.game_session_id).await?.0;
+        runtime.bind_attacker_lease(
+            deps.actor, deps.admitted.game_session_id, current.current_character_lease(),
+        ).map_err(debug)?;
         runtime
             .initialize_pinned_test_position(deps.actor, at(2, 2))
             .map_err(debug)?;
@@ -268,6 +279,7 @@ fn scenario(seed: &'static str, unpushable: bool, trap: Option<u16>) -> Result<(
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;

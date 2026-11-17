@@ -62,7 +62,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let mut context = (native, content, catalogue);
+        let mut context = (native, content, catalogue, permit);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder,deadline,context| Box::pin(async move {
             let mut tx=begin_type2_transaction(holder,deadline).await?;
             super::super::character_authority::assert_recovery_fence(&mut tx,&record).await?;
@@ -78,7 +78,7 @@ impl DurabilityRoot {
             if assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(request.craft.command),context.1.loop_content_digest()).await.is_err() {
                 return Ok(Some(UseDisposition::Rejected));
             }
-            let result=super::write_with_skinning(&mut tx,fence,&request.craft,context.0,context.1,Some((&request,context.2))).await?;
+            let result=super::write_with_skinning(&mut tx,context.3,fence,&request.craft,context.0,context.1,Some((&request,context.2))).await?;
             if result==UseDisposition::Committed { tx.commit(deadline).await?; }
             Ok(Some(result))
         })).await
@@ -105,7 +105,7 @@ pub(super) async fn prepare(
     .bind(channel.as_bytes().as_slice())
     .execute(&mut ***tx)
     .await?;
-    let row=sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_production_key,g.spatial_position,p.race_key,p.race_definition_revision FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_corpse_source_races p USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND i.quantity=1 AND p.mint_transaction_id=i.minted_transaction_id AND NOT EXISTS(SELECT 1 FROM game_corpse_skinning_records s WHERE s.corpse_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_schedules t WHERE t.item_instance_id=i.item_instance_id) FOR UPDATE OF i,g")
+    let row=sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_production_key,g.spatial_position,p.race_key,p.race_definition_revision FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) JOIN game_corpse_source_races p USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid AND g.runtime_scope_ownership_generation=$4::text::numeric AND i.lifecycle=1 AND i.quantity=1 AND p.mint_transaction_id=i.minted_transaction_id AND NOT EXISTS(SELECT 1 FROM game_corpse_skinning_records s WHERE s.corpse_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_timed_states t WHERE t.item_instance_id=i.item_instance_id) FOR UPDATE OF i,g")
         .bind(request.corpse.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string()).fetch_optional(&mut ***tx).await?;
     let Some(row) = row else {
         return Ok(None);
@@ -161,6 +161,19 @@ pub(super) async fn prepare(
     else {
         return Ok(None);
     };
+    // A timed corpse must retain an exact supported original-source decay chain.
+    // The same predicate fences the durable skinning receipt's admission guard.
+    let temporal_allowed: bool = sqlx::query_scalar(
+        "SELECT game_corpse_skinning_temporal_allowed(encode($1,'hex')::uuid,$2,$3)",
+    )
+    .bind(request.corpse.as_slice())
+    .bind(&spent_key)
+    .bind(spent_revision)
+    .fetch_one(&mut ***tx)
+    .await?;
+    if !temporal_allowed {
+        return Ok(None);
+    }
     let spent = TypedDefinitionRef {
         family: "Item".into(),
         production_key: spent_key,

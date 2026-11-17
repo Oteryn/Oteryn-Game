@@ -69,6 +69,16 @@ use crate::movement::CardinalStep;
 use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
 use crate::spell::combat_execution::actor_atom;
 
+// Crystal soul_war_mechanics.lua:1091-1098: the event scales each
+// post-mitigation component before Game's Wheel additions, including zero.
+fn cruelty_health_component(component: i64, drain: Option<u64>) -> Option<i64> {
+    let Some(drain) = drain else {
+        return Some(component);
+    };
+    let scaled = component as f64 * (1.0 - drain as f64 / 100.0).max(0.0);
+    (scaled.is_finite() && scaled >= 0.0 && scaled < i64::MAX as f64).then(|| scaled.trunc() as i64)
+}
+
 /// `ATTACK0-RL-01` and `ATTACK0-RL-02`: intents per [`ATTACK_INTENT_WINDOW`].
 const MAX_INTENTS_PER_WINDOW: usize = 25;
 const _: () = assert!(

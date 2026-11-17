@@ -26,6 +26,8 @@ readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7
 readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
+# The served readiness.content_revision is this same revision: the quest and Task Board
+# owners refuse a Character whose stored progression content differs from the served one.
 readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
@@ -730,7 +732,8 @@ labels = {
                       'release_not_applicable', 'release_not_expired', 'release_retry_lifted',
                       'release_settle',
                       'resting_stamina_readback', 'retire', 'retire_session',
-                      'spell_reconcile', 'staff_release', 'stamina_character', 'stamina_session',
+                      'soul_war_source_use', 'spell_reconcile', 'staff_release',
+                      'stamina_character', 'stamina_session',
                       'terminal_session', 'training_character', 'training_readback',
                       'training_save', 'training_session', 'wheel_gift', 'world_items',
                       'zones_after_reconcile', 'zones_before_reconcile',

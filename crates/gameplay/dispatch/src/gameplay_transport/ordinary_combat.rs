@@ -585,6 +585,9 @@ fn lower(
     };
     if let Some(owner) = magnitude.as_mut() {
         owner
+            .bind_native_health_observations(runtime, owned.native_health_observations())
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+        owner
             .select_item_spell(spell)
             .map_err(|_| SpellCastDisposition::Rejected)?;
         crate::gameplay_transport::attack::charm_combat::select_spell_critical(
@@ -2514,6 +2517,9 @@ pub(in crate::gameplay_transport) async fn prepare_due(
         )
         .map_err(|_| SpellCastDisposition::Rejected)
         .and_then(|mut owner| {
+            owner
+                .bind_native_health_observations(runtime, owned.native_health_observations())
+                .map_err(|_| SpellCastDisposition::Rejected)?;
             owner
                 .select_item_spell(spell)
                 .map_err(|_| SpellCastDisposition::Rejected)?;

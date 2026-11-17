@@ -87,6 +87,9 @@ pub struct CounterState {
     pub stage: u8,
     pub phase_version: u64,
     pub credit_generation: u64,
+    /// Personal quest lifetime; Hive/Deepling cycles can span several saves.
+    #[serde(default = "initial_occurrence_generation")]
+    pub occurrence_generation: u64,
     pub revision: u64,
     pub counts: [u64; 3],
     pub condition: bool,
@@ -104,6 +107,7 @@ impl CounterState {
             },
             phase_version: 1,
             credit_generation: 1,
+            occurrence_generation: 1,
             revision: 1,
             counts: [0; 3],
             condition: false,
@@ -139,6 +143,7 @@ impl CounterState {
             || self.entered_epoch > self.epoch
             || self.phase_version == 0
             || self.credit_generation == 0
+            || self.occurrence_generation == 0
             || self.revision == 0
             || (self.deadline_ms.is_some()
                 != ((kind == CounterKind::MagesTower && self.stage == 3)
@@ -172,6 +177,19 @@ impl CounterState {
         {
             next.credit_generation = self
                 .credit_generation
+                .checked_add(1)
+                .ok_or(CounterError::Overflow)?;
+        }
+        // These source lifecycles reset on a downgrade, not on daily epoch changes
+        // or forward access stages. Other counter kinds remain unbound for quests.
+        let new_occurrence = match kind {
+            CounterKind::HiveBorn => next.stage < self.stage,
+            CounterKind::Deeplings => self.stage == 3 && next.stage == 1,
+            _ => false,
+        };
+        if new_occurrence {
+            next.occurrence_generation = self
+                .occurrence_generation
                 .checked_add(1)
                 .ok_or(CounterError::Overflow)?;
         }
@@ -446,6 +464,10 @@ impl CounterState {
         self.finish(next, kind)
     }
 }
+fn initial_occurrence_generation() -> u64 {
+    1
+}
+
 fn add(counter: &mut u64, amount: u64) -> Result<(), CounterError> {
     *counter = counter.checked_add(amount).ok_or(CounterError::Overflow)?;
     Ok(())

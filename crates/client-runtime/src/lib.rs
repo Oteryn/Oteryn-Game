@@ -355,3 +355,5 @@ pub mod server_modal;
 
 pub use oteryn_session::coin_market;
 pub use oteryn_session::coin_transfer;
+
+pub use oteryn_session::personal_map_marks;

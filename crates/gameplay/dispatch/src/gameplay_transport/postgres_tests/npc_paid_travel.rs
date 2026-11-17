@@ -672,7 +672,13 @@ fn scenario(reward_fixture: bool) -> TestResult {
         );
         // Arrival consumption releases the travel hold back to the ordinary Movement owner.
         // Exercise that production handoff rather than only inspecting the relocated snapshot.
-        tokio::time::sleep(std::time::Duration::from_millis(2100)).await;
+        // Movement uses the owner clock; travel exhaustion uses PostgreSQL time.
+        // Advance only movement so this handoff cannot spend the three-second
+        // exhaustion window that the next route assertion still needs.
+        owner.clock_origin = owner
+            .clock_origin
+            .checked_sub(std::time::Duration::from_millis(2100))
+            .ok_or("post-travel movement clock")?;
         let (walked, _) = owner
             .tutorial_paced_step(dependencies.actor, session, StepDirection::North)
             .await;

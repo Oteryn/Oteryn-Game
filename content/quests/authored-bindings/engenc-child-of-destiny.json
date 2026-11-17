@@ -1,0 +1,212 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.authored.child_of_destiny_quest",
+      "recipe_sha256": "ae81db88b5dedff024087c54000272f127279ba3a50a41d31385541d612aed4a",
+      "sources": [
+        "Chosen Oteryn Child of Destiny recipe; canonical native references; no vocation, spell or character-template mutation.",
+        "https://tibia.fandom.com/index.php?curid=67084&oldid=570842",
+        "https://www.tibiawiki.com.br/index.php?curid=28219&oldid=443296"
+      ],
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/engenc/child/phase",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 6
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/child/melee",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/child/spear",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "key": "oteryn:quest-progress/engenc/child/rune",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/engenc-child-s1",
+              "quest": "oteryn:quest.authored.child_of_destiny_quest",
+              "npc": "oteryn:npc.neill",
+              "keywords": [
+                "training"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/engenc/child/phase",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Begin the training route by defeating a party skeleton. Then practise a spear throw and a magic missile."
+              ],
+              "sources": [
+                "Chosen Oteryn Child of Destiny recipe; canonical native references; no vocation, spell or character-template mutation."
+              ]
+            }
+          }
+        },
+        {
+          "key": "s2",
+          "completes": false,
+          "trigger": {
+            "kind": "kill",
+            "counter": {
+              "key": "oteryn:quest-transition/native-kills/engenc-child-s2",
+              "creature": "oteryn:creature.party_skeleton",
+              "track": "oteryn:quest-progress/engenc/child/melee",
+              "gate": "oteryn:quest-progress/engenc/child/phase",
+              "gate_value": 1,
+              "maximum": 1,
+              "advance_gate_to": 2
+            }
+          }
+        },
+        {
+          "key": "s3",
+          "completes": false,
+          "trigger": {
+            "kind": "hit",
+            "objective": {
+              "key": "oteryn:quest-transition/native-hits/engenc-child-s3",
+              "creature": "oteryn:creature.party_skeleton",
+              "source": {
+                "kind": "weapon",
+                "item": "oteryn:item.tibia.i17110"
+              },
+              "track": "oteryn:quest-progress/engenc/child/spear",
+              "gate": "oteryn:quest-progress/engenc/child/phase",
+              "gate_value": 2,
+              "advance_gate_to": 3
+            }
+          }
+        },
+        {
+          "key": "s4",
+          "completes": false,
+          "trigger": {
+            "kind": "hit",
+            "objective": {
+              "key": "oteryn:quest-transition/native-hits/engenc-child-s4",
+              "creature": "oteryn:creature.party_skeleton",
+              "source": {
+                "kind": "rune",
+                "item": "oteryn:item.tibia.i17512",
+                "spell": "candidate:spell/rune/lightest_magic_missile_rune"
+              },
+              "track": "oteryn:quest-progress/engenc/child/rune",
+              "gate": "oteryn:quest-progress/engenc/child/phase",
+              "gate_value": 3,
+              "advance_gate_to": 4
+            }
+          }
+        },
+        {
+          "key": "s5",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/engenc-child-s5",
+              "quest": "oteryn:quest.authored.child_of_destiny_quest",
+              "npc": "oteryn:npc.salbra",
+              "keywords": [
+                "training"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/engenc/child/phase",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The healing lesson is complete. Speak about the festival with the Destiny Seer at the exit."
+              ],
+              "sources": [
+                "Chosen Oteryn Child of Destiny recipe; canonical native references; no vocation, spell or character-template mutation."
+              ]
+            }
+          }
+        },
+        {
+          "key": "s6",
+          "completes": true,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/engenc-child-s6",
+              "quest": "oteryn:quest.authored.child_of_destiny_quest",
+              "npc": "oteryn:npc.the_destiny_seer",
+              "keywords": [
+                "festival"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/engenc/child/phase",
+                  "minimum": 5,
+                  "maximum": 5,
+                  "set": 6
+                }
+              ],
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i3577",
+                "count": 3,
+                "contents": [],
+                "additional": [
+                  {
+                    "item": "oteryn:item.tibia.i268",
+                    "count": 1
+                  }
+                ]
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "You have finished the training route. Take these provisions before you continue."
+              ],
+              "sources": [
+                "Chosen Oteryn Child of Destiny recipe; canonical native references; no vocation, spell or character-template mutation."
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

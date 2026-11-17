@@ -48,7 +48,21 @@ pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
     {
         return Err(RewardClaimMintError::InvalidInput);
     }
-    for child in &request.contents {
+    validate_items(&request.contents)?;
+    // UUID text widths are fixed. PostgreSQL jsonb text adds spaces after
+    // commas/colons; twenty bytes per ten-field child conservatively include
+    // those separators. Refuse before reservation if the frozen plan may not
+    // fit the storage owner's complete-plan byte ceiling.
+    if plan_for_transaction(request, &[0; 16]).to_string().len() + request.contents.len() * 20
+        > 32_768
+    {
+        return Err(RewardClaimMintError::CapacityExceeded);
+    }
+    Ok(())
+}
+
+pub(super) fn validate_items(items: &[RewardClaimMintContent]) -> Result<()> {
+    for child in items {
         validate_facts(&child.item).map_err(from_transfer_input)?;
         let (maximum, _) = stack_maximum(child.item.stack)
             .map_err(|refusal| RewardClaimMintError::Refused(from_stack_refusal(refusal)))?;
@@ -82,15 +96,6 @@ pub(super) fn validate(request: &RewardClaimMintRequest) -> Result<()> {
         }) {
             return Err(RewardClaimMintError::InvalidInput);
         }
-    }
-    // UUID text widths are fixed. PostgreSQL jsonb text adds spaces after
-    // commas/colons; twenty bytes per ten-field child conservatively include
-    // those separators. Refuse before reservation if the frozen plan may not
-    // fit the storage owner's complete-plan byte ceiling.
-    if plan_for_transaction(request, &[0; 16]).to_string().len() + request.contents.len() * 20
-        > 32_768
-    {
-        return Err(RewardClaimMintError::CapacityExceeded);
     }
     Ok(())
 }
@@ -145,18 +150,25 @@ pub(super) fn plan(request: &RewardClaimMintRequest, reservation: &Reservation) 
 }
 
 fn plan_for_transaction(request: &RewardClaimMintRequest, transaction: &[u8; 16]) -> Value {
+    plan_items(&request.contents, transaction, child_id)
+}
+
+pub(super) fn plan_items(
+    items: &[RewardClaimMintContent],
+    transaction: &[u8; 16],
+    derive: fn(&[u8; 16], usize, u8) -> [u8; 16],
+) -> Value {
     Value::Array(
-        request
-            .contents
+        items
             .iter()
             .enumerate()
             .map(|(index, child)| {
                 let ordinal = index + 1;
                 let mut entry = json!({
                     "ordinal": ordinal,
-                    "transaction_id": uuid(&child_id(transaction, ordinal, 1)),
-                    "event_id": uuid(&child_id(transaction, ordinal, 2)),
-                    "item_instance_id": uuid(&child_id(transaction, ordinal, 3)),
+                    "transaction_id": uuid(&derive(transaction, ordinal, 1)),
+                    "event_id": uuid(&derive(transaction, ordinal, 2)),
+                    "item_instance_id": uuid(&derive(transaction, ordinal, 3)),
                     "family": child.item.definition.family,
                     "production_key": child.item.definition.production_key,
                     "revision_ref": child.item.definition.revision_ref,
@@ -208,12 +220,20 @@ pub(super) async fn check_capacity(
         }
     }
     let mut incoming = 0_u64;
-    for (facts, quantity) in std::iter::once((&request.item, request.quantity)).chain(
-        request
-            .contents
-            .iter()
-            .map(|child| (&child.item, child.quantity)),
-    ) {
+    for (facts, quantity) in std::iter::once((&request.item, request.quantity))
+        .chain(
+            request
+                .contents
+                .iter()
+                .map(|child| (&child.item, child.quantity)),
+        )
+        .chain(
+            request
+                .additional_items
+                .iter()
+                .map(|item| (&item.item, item.quantity)),
+        )
+    {
         let Ok(unit) = weights.weight_of(&facts.definition) else {
             return Ok(Err(RewardClaimMintError::InvalidInput));
         };
@@ -253,7 +273,40 @@ pub(super) async fn apply(
     root_envelope: &[u8],
     tuple: SelectedType2Tuple,
 ) -> std::result::Result<(), DurabilityError> {
-    if frozen.request.contents.is_empty() {
+    apply_plan(
+        tx,
+        frozen,
+        reservation,
+        root_envelope,
+        tuple,
+        MintPlan {
+            items: &frozen.request.contents,
+            parent: frozen.item_instance_id,
+            ordinal_base: 0,
+            nested: true,
+            derive: child_id,
+        },
+    )
+    .await
+}
+
+pub(super) struct MintPlan<'a> {
+    pub items: &'a [RewardClaimMintContent],
+    pub parent: [u8; 16],
+    pub ordinal_base: u64,
+    pub nested: bool,
+    pub derive: fn(&[u8; 16], usize, u8) -> [u8; 16],
+}
+
+pub(super) async fn apply_plan(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    frozen: &FrozenClaim,
+    reservation: &Reservation,
+    root_envelope: &[u8],
+    tuple: SelectedType2Tuple,
+    plan: MintPlan<'_>,
+) -> std::result::Result<(), DurabilityError> {
+    if plan.items.is_empty() {
         return Ok(());
     }
     let (_, root_message) = audit::decode_reward_claim_mint_envelope(root_envelope)
@@ -271,11 +324,15 @@ pub(super) async fn apply(
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         placement_ordinal: root_entry.placement_ordinal,
     };
-    for (index, child) in frozen.request.contents.iter().enumerate() {
+    for (index, child) in plan.items.iter().enumerate() {
         let ordinal = index + 1;
-        let transaction = child_id(&reservation.transaction_id, ordinal, 1);
-        let event = child_id(&reservation.transaction_id, ordinal, 2);
-        let item = child_id(&reservation.transaction_id, ordinal, 3);
+        let transaction = (plan.derive)(&reservation.transaction_id, ordinal, 1);
+        let event = (plan.derive)(&reservation.transaction_id, ordinal, 2);
+        let item = (plan.derive)(&reservation.transaction_id, ordinal, 3);
+        let placement_ordinal = plan
+            .ordinal_base
+            .checked_add(ordinal as u64)
+            .ok_or(DurabilityError::InvalidStoredState)?;
         let mut message = root_message.clone();
         message.after = Some(OneItemStateV1 {
             item_instance_id: item.to_vec(),
@@ -285,12 +342,12 @@ pub(super) async fn apply(
             lifecycle: ITEM_LIFECYCLE_LIVE,
             key_number: u32::from(child.key_number.unwrap_or(0)),
         });
-        let destination = if frozen.request.backpack_outputs {
+        let destination = if frozen.request.backpack_outputs && plan.nested {
             super::backpack_outputs::position(root_position, ordinal)?
         } else {
             ContainerEntryPosition {
-                parent_item_instance_id: frozen.item_instance_id,
-                placement_ordinal: ordinal as u64,
+                parent_item_instance_id: plan.parent,
+                placement_ordinal,
             }
         };
         message
@@ -317,7 +374,7 @@ pub(super) async fn apply(
             .bind(&child.item.definition.family).bind(&child.item.definition.production_key)
             .bind(&child.item.definition.revision_ref).bind(i64::from(child.quantity))
             .bind(transaction.as_slice()).execute(&mut **tx).await?;
-        if frozen.request.backpack_outputs {
+        if frozen.request.backpack_outputs && plan.nested {
             super::backpack_outputs::insert(
                 tx,
                 reservation,
@@ -327,7 +384,7 @@ pub(super) async fn apply(
                 ordinal,
             )
             .await?;
-        } else {
+        } else if plan.nested {
             sqlx::query(
                 "INSERT INTO game_item_nested_entries(item_instance_id,world_id,\
             parent_item_instance_id,placement_ordinal,placed_transaction_id) \
@@ -336,11 +393,17 @@ pub(super) async fn apply(
             )
             .bind(item.as_slice())
             .bind(reservation.world_id.as_slice())
-            .bind(frozen.item_instance_id.as_slice())
-            .bind(ordinal.to_string())
+            .bind(plan.parent.as_slice())
+            .bind(placement_ordinal.to_string())
             .bind(transaction.as_slice())
             .execute(&mut **tx)
             .await?;
+        } else {
+            sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric(20,0),encode($6,'hex')::uuid)")
+                .bind(item.as_slice()).bind(reservation.world_id.as_slice())
+                .bind(frozen.character_id.as_bytes().as_slice()).bind(plan.parent.as_slice())
+                .bind(placement_ordinal.to_string()).bind(transaction.as_slice())
+                .execute(&mut **tx).await?;
         }
         sqlx::query(
             "INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,\

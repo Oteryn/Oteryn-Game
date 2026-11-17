@@ -1,0 +1,81 @@
+{
+  "family": "Terrain",
+  "records": [
+    {
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain.tibia.i7748",
+        "revision": "definition-r1"
+      },
+      "kind": {
+        "state": "KNOWN",
+        "value": "ground"
+      },
+      "walkable": {
+        "state": "KNOWN",
+        "value": true
+      },
+      "ground_speed": {
+        "state": "KNOWN",
+        "value": 150
+      },
+      "blocks_projectile": {
+        "state": "UNKNOWN"
+      },
+      "blocks_sight": {
+        "state": "UNKNOWN"
+      },
+      "floor_change": {
+        "state": "UNKNOWN"
+      },
+      "automap": {
+        "state": "KNOWN",
+        "value": {
+          "shown": true,
+          "color": 24
+        }
+      },
+      "client_projection": {
+        "state": "KNOWN",
+        "value": {
+          "appearance_id": 7748
+        }
+      },
+      "provenance": {
+        "source": {
+          "engine": "crystal",
+          "repository": "zimbadev/crystalserver",
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "profile": "OTERYN_M49_OFFICIAL_APPEARANCE_CROSS_CHECKED_GROUND/v1"
+        },
+        "source_item_id": 7748,
+        "item_pointer": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7748",
+          "revision": "definition-r1"
+        },
+        "route": {
+          "owner": "Terrain",
+          "reason": "ground_or_border"
+        },
+        "fields": {
+          "kind": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.bank"
+          ],
+          "walkable": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.unpass"
+          ],
+          "ground_speed": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ],
+          "automap": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.flags.automap"
+          ],
+          "client_projection": [
+            "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.id"
+          ]
+        }
+      }
+    }
+  ]
+}

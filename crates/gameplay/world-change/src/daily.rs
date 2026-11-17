@@ -185,6 +185,10 @@ pub struct DailyWorldChanges {
     pub counter_stages: [u8; 8],
     #[serde(skip)]
     pub counter_generations: [u64; 8],
+    /// Live personal-quest occurrence IDs for qualified counter lifecycles; zero is unbound.
+    /// This projection never changes the immutable daily draw.
+    #[serde(skip)]
+    pub counter_quest_occurrences: [u64; 8],
     #[serde(skip)]
     pub counter_progress: [[u64; 3]; 8],
     #[serde(skip)]
@@ -251,6 +255,7 @@ impl DailyWorldChanges {
             world_counters: true,
             counter_stages: [1, 3, u8::from(fire_from_the_earth), 1, 1, 1, 1, 1],
             counter_generations: [1; 8],
+            counter_quest_occurrences: [0; 8],
             counter_progress: [[0; 3]; 8],
             shared_used_sources_mask: 0,
             reset_epoch,
@@ -405,6 +410,7 @@ mod tests {
                 world_counters: true,
                 counter_stages: [1, 3, 0, 1, 1, 1, 1, 1],
                 counter_generations: [1; 8],
+                counter_quest_occurrences: [0; 8],
                 counter_progress: [[0; 3]; 8],
                 shared_used_sources_mask: 0,
             }

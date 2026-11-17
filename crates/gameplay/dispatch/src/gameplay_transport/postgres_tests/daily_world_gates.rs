@@ -222,9 +222,7 @@ fn scenario(
         let mut deps = Dependencies::new()?;
         let (controller, activated) = native_artifact(deps.admitted.world_id)?;
         let generation = controller.active().ok_or("generation")?;
-        if eligible {
-            super::tutorial_vitals_fixture::publish_native_activation(&h, activated).await?;
-        }
+        deps.room = activated.qualified_room().clone();
         let (consumer, clock, activation, _) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
         if eligible {
@@ -247,15 +245,62 @@ fn scenario(
         let cells = world
             .movement_cells(activated.qualified_room().movement_cells())
             .map_err(debug)?;
+        let frame = world.frame_binding_digest(deps.admitted.world_id);
+        deps.combat_room = Some(
+            deps.room
+                .bundle_view(
+                    cells.clone(),
+                    frame,
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: 100,
+                        y: 100,
+                        floor: 7,
+                    },
+                )
+                .ok_or("bundle combat view")?,
+        );
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
             generation.identity().server_artifact_digest(),
             generation.identity().client_artifact_digest(),
-            activated.frame_binding().digest(),
+            frame,
             world.map_revision_digest(),
             (100, 100, 7),
         );
+        if eligible {
+            sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+                .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+            sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,NULL,$4,$5,$6)")
+                .bind(id(42).as_slice()).bind(id(43).as_slice())
+                .bind(activated.activation_sequence().to_string())
+                .bind(pin.server_artifact_digest().as_slice())
+                .bind(pin.client_artifact_digest().as_slice())
+                .bind(frame.as_slice()).execute(&h.pool).await?;
+            let stored: (Vec<u8>, Vec<u8>, Vec<u8>) = sqlx::query_as(
+                "SELECT server_artifact_digest,client_artifact_digest,frame_binding_digest \
+                 FROM game_content_activations \
+                 WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid \
+                 ORDER BY activation_sequence DESC LIMIT 1",
+            )
+            .bind(id(42).as_slice())
+            .bind(id(43).as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(
+                (
+                    stored.0.as_slice(),
+                    stored.1.as_slice(),
+                    stored.2.as_slice()
+                ),
+                (
+                    pin.server_artifact_digest().as_slice(),
+                    pin.client_artifact_digest().as_slice(),
+                    frame.as_slice(),
+                )
+            );
+        }
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             deps.admitted.world_id,
             deps.admitted.channel_id,
