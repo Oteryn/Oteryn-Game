@@ -65,7 +65,6 @@ impl Fight {
             Self::CourtWarlock(f) => f.victors(runtime),
         }
     }
-
 }
 
 #[derive(Default, Debug)]
@@ -91,8 +90,12 @@ impl Registry {
                 Ok(Some(_)) => {
                     // Credit was captured in the lethal turn. Release the lever
                     // only after exact terminal decorations retire; tick retries failures.
-                    let Fight::Cults(fight) = &mut phase.fight else { return true; };
-                    fight.advance(runtime, |runtime, at| placement(&phase.cells, runtime, at)).is_err()
+                    let Fight::Cults(fight) = &mut phase.fight else {
+                        return true;
+                    };
+                    fight
+                        .advance(runtime, |runtime, at| placement(&phase.cells, runtime, at))
+                        .is_err()
                 }
                 Ok(None) => phase
                     .frozen
@@ -181,6 +184,10 @@ impl Registry {
     }
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the existing atomic admission binds its clock in the same owner turn"
+)]
 pub(super) fn bind(
     runtime: &mut ChannelRuntimeV1,
     callback: &Callback,
@@ -203,6 +210,24 @@ pub(super) fn bind(
                 y: i32::from(p.y),
                 floor: -i16::from(p.floor),
             };
+        let low = local(encounter.room_min);
+        let high = local(encounter.room_max);
+        let stale: Vec<_> = runtime
+            .positioned_melee_census()?
+            .into_iter()
+            .filter(|(actor, at, session)| {
+                let at = at.position();
+                session.is_none()
+                    && runtime.contains_live_creature(*actor)
+                    && at.floor == low.floor
+                    && (low.x..=high.x).contains(&at.x)
+                    && (low.y..=high.y).contains(&at.y)
+            })
+            .map(|(actor, _, _)| actor)
+            .collect();
+        for actor in stale {
+            runtime.remove_encounter_actor(actor)?;
+        }
         let center = encounter
             .players
             .first()

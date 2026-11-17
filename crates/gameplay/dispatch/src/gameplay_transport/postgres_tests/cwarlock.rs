@@ -296,6 +296,25 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(1))
                 .ok_or("clock")?;
+            // BossLever removes stale room monsters before starting a new run.
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let health = runtime
+                    .companion_policy(phases::RAUBRITTERS[0])
+                    .map_err(debug)?
+                    .maximum_health;
+                runtime
+                    .commit_quest_creature_spawn(&[(
+                        phases::RAUBRITTERS[0],
+                        health,
+                        MovementLocalPosition {
+                            x: 33830,
+                            y: 32133,
+                            floor: 2,
+                        },
+                    )])
+                    .map_err(debug)?;
+            }
             let before = owner.owner_now().get();
             assert_eq!(
                 use_lever(&owner, &admitted, &placement, 0, 4).await,
@@ -338,7 +357,7 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                     .ok_or("clock")?;
                 let revision = crate::map::view::MapFacts::object_revision(world.facts(), key);
                 assert_eq!(
-                    use_lever(&owner, &admitted, &placement, revision, 3).await,
+                    use_lever(&owner, &admitted, &placement, revision, 5).await,
                     UseDisposition::Rejected
                 );
             } else if mode >= 2 {
