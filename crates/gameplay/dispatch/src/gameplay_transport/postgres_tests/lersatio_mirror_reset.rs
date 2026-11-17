@@ -18,6 +18,12 @@ fn mirror(appearance_id: u16) -> EntryFacts {
 
 #[test]
 fn lersatio_mirror_reset_waits_thirty_seconds_and_fences_newer_revision() {
+    let mut missing_reset = QuestCallbackProjection::Scene {
+        mutations: Vec::new(),
+        remove_self: false,
+        reset: None,
+    };
+    assert!(!missing_reset.refresh_source_reset_due(30_000_000));
     let facts = BundleFacts::default();
     let intact = mirror(8667);
     let broken = mirror(8721);
