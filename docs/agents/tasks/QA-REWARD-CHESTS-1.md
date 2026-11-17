@@ -58,7 +58,6 @@ quests whose claims match the wiki totals.
 4. Alawar Keys 4501 (chest 2472 at 32172,31602,10) and 4503 (one of the chests at 32030/32031,31686/31688,8): no donor UID, once-only unconfirmed, which 4503 chest unknown.
 5. Power Bolts Pile of Bones with the Two Handed Sword: position unknown; no placement authored.
 6. Isle of the Mists drawer (second emerald + book): no drawer on our map.
-7. Inquisition reward room book "Interrogating a Vampire": no TibiaWiki page; talesoftibia (8.2, Thais Jail Library) differs from the donor in wording and has an extra final paragraph. Donor text kept until a Global source exists.
 
 ## Validation state
 
@@ -70,6 +69,7 @@ quests whose claims match the wiki totals.
 
 - Batch 3: 22 single-chest quests match the wiki (Adorned UH .. Spike Sword); no change.
 - Batch 4: 206 placements across ~45 multi-chest quests; 100 OK. Ghostsilver Lantern web: Global gives the lit lantern 23738 (rev 1148076), but 23738 has no native item profile (PG DefinitionNotFound, qa5 run), so the claim stays on the donor 23734 until the server lane admits the 23738 profile (qaitems).
+- Book texts held on the donor: Global texts for Power Bolts 6112 (rev 841657), Dreamer's Challenge book 6196 (rev 1114576) and Pits of Inferno Tible 6202 (rev 1022683) were authored in eb5868346 and reverted. world_reward_claims.rs pins each written-text uid to its donor body sha256, so the claims stopped binding (PG panic: source namespace must match the native World binder, qa6). The Global texts go to the server lane (rcauth) to repin; then eb5868346 is re-applied.
 - Correct item not yet materializable (server/items lane): Giant Smithhammer box 12510 → 3208
   (Explorer Society/Spoiler rev 1090719), Beregar firewalker boots 9019 → 9018 (rev 1148768),
   Secret Service poem scroll 5952 → 347 (rev 1115206), Secret Service lottery ticket 5956 → 5957 (rev 1114329).
@@ -77,8 +77,3 @@ quests whose claims match the wiki totals.
 - Koshei platinum (100 vs 50): owned by qcx6 (record 78); not changed here.
 - Owner batch: Magic Sword north wand (Yellow Spell Wand), Dark Trails notebook/Shargon chest positions,
   missing one-time items (Outlaw Camp bag, Shargon chest, Crystal of Focus, Explorer Society books), 53 placements without wiki contents.
-- Book texts (14 checked against TibiaWiki, talesoftibia as a cross-check): 10 match. Corrected to the
-  Global text in `global_corrections.TEXTS`: Power Bolts book (The Dreammaster (Book) rev 841657), Dreamer's
-  Challenge Book of the Lost Heroes (rev 1114576, heading line), Pits of Inferno Holy Tible (rev 1022683,
-  heading and "honor"). Inquisition book: open fact 7.
-  Check: `test_committed_variants_carry_tibia_global_book_texts` red on the old content, green now.

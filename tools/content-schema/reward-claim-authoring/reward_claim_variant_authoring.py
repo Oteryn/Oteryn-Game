@@ -192,7 +192,6 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                 serialized_item_stacks(reward, claim_items, stack_problem)
             poison_daggers.correct_canonical(source['identity']['key'], placement['position'], reward)
             global_corrections.correct_canonical(source['identity']['key'], placement['position'], reward)
-            global_corrections.correct_written_text(source['identity']['key'], reward)
             for qi, quantity in enumerate(reward.get('items', [])):
                 problem = stack_problem(claim_items[quantity['item']['key']], quantity['count'])
                 if problem:
