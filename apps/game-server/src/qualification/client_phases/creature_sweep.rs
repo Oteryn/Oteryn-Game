@@ -1,12 +1,22 @@
-//! Creature sweep: every authored, walk-reachable creature species is reached, fought, killed and
-//! looted by a real bot over the real wire, with XP, corpse and loot checked against content.
+//! Creature sweep: every authored creature species is spawned next to the player through the node's
+//! qualification `spawn` control command, fought, killed and looted by a real bot over the real wire,
+//! with XP, corpse and loot checked against content.
 //!
-//! Select with `NODE_BOOT_E2E_ONLY=creature_sweep` (the sweep moves the core Character far from the
-//! town and is never part of the default run). `OTERYN_E2E_CREATURE_BATCH=start:len` selects a slice
-//! of the stably ordered walkable species (default `0:3`; anything else is an error).
+//! Select with `NODE_BOOT_E2E_ONLY=creature_sweep` (never part of the default run).
+//! `OTERYN_E2E_CREATURE_BATCH=start:len` selects a slice of the key-sorted species list of
+//! `content/creatures/definitions` (default `0:3`; anything else is an error).
 //!
-//! Rows per species: `CS.<key>.reach|kill|xp|corpse|loot|full`. A FAIL row makes `run` return Err,
-//! which `journeys` propagates with `?`, so the node-boot stage exits non-zero.
+//! Spawn path: `tools/qualification/node_boot/provision.py --spawn` over `NODE_BOOT_CONTROL_SOCKET`
+//! (`sudo -n python3`, as `provision.rs` runs the fixture), answered by the node's uid-0 `spawn`
+//! control route (`qualification_wild_spawn.rs`, feature `qualification-spawn`).
+//!
+//! One shared session serves the whole sweep: it is re-admitted and re-provisioned only when its
+//! health is low or the session became unusable. A creature that cannot be killed within the bound
+//! gets `kill FAIL cause=deadline`; the sweep releases the target and moves on.
+//!
+//! Rows per species: `CS.<key>.spawn|kill|xp|corpse|loot|full`. `spawn` carries the node answer, or
+//! the rejected token with cause=precondition. A FAIL row makes `run` return Err, which `journeys`
+//! propagates with `?`, so the node-boot stage exits non-zero.
 //! XP oracle: the authored `experience` through the server's own
 //! `crates/gameplay/characters/src/hunting_experience.rs:13 hunting_experience` (called from
 //! `crates/gameplay/durability/src/durability/party_kill_xp.rs:369`), with no prey, no boost, full
@@ -26,14 +36,13 @@ use std::collections::BTreeSet;
 
 const BATCH_VARIABLE: &str = "OTERYN_E2E_CREATURE_BATCH";
 const BATCH_DEFAULT: (usize, usize) = (0, 3);
-const STEPS: [&str; 5] = ["reach", "kill", "xp", "corpse", "loot"];
+const STEPS: [&str; 5] = ["spawn", "kill", "xp", "corpse", "loot"];
 const SWEEP_LEVEL: u32 = 100;
 const CORE_CHARACTER: usize = 0;
 /// A full stamina bar in minutes (`composed_admission/vitals.rs:191`); no hunting time passes first.
 const FULL_STAMINA_MINUTES: i32 = 2520;
-const VISIBLE_SECONDS: u64 = 90;
+const VISIBLE_SECONDS: u64 = 30;
 const KILL_SECONDS: u64 = 150;
-const WALK_ATTEMPTS: usize = 4;
 
 /// `start:len` with plain decimal numbers and `len > 0`; `None` runs the default slice.
 fn creature_batch(value: Option<&str>) -> TestResult<(usize, usize)> {
@@ -180,7 +189,7 @@ enum LootBinding {
 struct Species {
     short: String,
     definition: Option<Definition>,
-    spawns: Vec<TilePos>,
+    key: String,
     loot: LootBinding,
 }
 
@@ -305,37 +314,6 @@ fn far_route(
     Err(parents.into_keys().collect())
 }
 
-fn standable(reached: &BTreeSet<TilePos>, world: &BundleWorld, at: TilePos) -> bool {
-    reached.contains(&at)
-        && world
-            .base()
-            .tile(at.x, at.y, at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-}
-
-/// A non-PZ reached tile within one tile of the authored spawn point.
-fn near_reached(reached: &BTreeSet<TilePos>, world: &BundleWorld, point: TilePos) -> bool {
-    (-1_i32..=1).any(|dy| {
-        (-1_i32..=1).any(|dx| {
-            match (
-                u16::try_from(i32::from(point.x) + dx),
-                u16::try_from(i32::from(point.y) + dy),
-            ) {
-                (Ok(x), Ok(y)) => standable(
-                    reached,
-                    world,
-                    TilePos {
-                        x,
-                        y,
-                        floor: point.floor,
-                    },
-                ),
-                _ => false,
-            }
-        })
-    })
-}
-
 fn item_ref(
     items: &crate::content::item_ref::ItemDefinitionIndex,
     key: &str,
@@ -344,10 +322,11 @@ fn item_ref(
     items.definition_ref("Item", key, revision)
 }
 
+// `world` serves the one walk out of the protection zone; the authored spawn table is not used.
 pub(super) async fn run(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
+    _spawns: &oteryn_world_bundle::spawn::Table,
 ) -> TestResult {
     if !std::env::var("NODE_BOOT_E2E_ONLY").is_ok_and(|list| !list.trim().is_empty()) {
         evidence("e2e_groups creature_sweep=skipped reason=opt_in_with_NODE_BOOT_E2E_ONLY");
@@ -355,71 +334,44 @@ pub(super) async fn run(
     }
     let (start, len) = batch_from_env()?;
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let mut by_species: BTreeMap<String, Vec<TilePos>> = BTreeMap::new();
-    for source in &spawns.sources {
-        for point in &source.points {
-            let Some(creature) = spawns.creatures.get(point.creature as usize) else {
-                continue;
-            };
-            by_species
-                .entry(creature.key.to_string())
-                .or_default()
-                .push(TilePos {
-                    x: point.x,
-                    y: point.y,
-                    floor: source.floor,
-                });
-        }
-    }
     verdict::Harness::global().progress("creature-sweep-census");
-    let reached: BTreeSet<TilePos> = far_route(world, TOWN, |_| false)
-        .err()
-        .ok_or("census search unexpectedly reached its goal")?
-        .into_iter()
-        .collect();
-    let walkable: Vec<(&String, &Vec<TilePos>)> = by_species
-        .iter()
-        .filter(|(_, points)| {
-            points
-                .iter()
-                .any(|point| near_reached(&reached, world, *point))
-        })
-        .collect();
+    let definitions = definitions(&root)?;
+    // `definitions` is a BTreeMap, so the species list is sorted by key.
+    let keys: Vec<&String> = definitions.keys().collect();
     evidence(&format!(
-        "creature_sweep census spawned_species={} walkable_species={} start={} reached_tiles={}",
-        by_species.len(),
-        walkable.len(),
-        at(TOWN),
-        reached.len()
+        "creature_sweep census defined_species={} total={} start={}",
+        keys.len(),
+        keys.len(),
+        at(TOWN)
     ));
-    for (index, chunk) in walkable.chunks(25).enumerate() {
-        let keys: Vec<&str> = chunk.iter().map(|(key, _)| key.as_str()).collect();
+    for (index, chunk) in keys.chunks(25).enumerate() {
+        let listed: Vec<&str> = chunk.iter().map(|key| key.as_str()).collect();
         evidence(&format!(
-            "creature_sweep walkable_keys from={} keys={}",
+            "creature_sweep species_keys from={} keys={}",
             index * 25,
-            keys.join(",")
+            listed.join(",")
         ));
     }
-    if start >= walkable.len() {
+    if start >= keys.len() {
         return Err(format!(
-            "{BATCH_VARIABLE} start {start} is beyond the {} walkable species",
-            walkable.len()
+            "{BATCH_VARIABLE} start {start} is beyond the {} species",
+            keys.len()
         )
         .into());
     }
-    let end = start.saturating_add(len).min(walkable.len());
+    let end = start.saturating_add(len).min(keys.len());
     evidence(&format!(
         "creature_sweep batch start={start} len={len} selected={}",
         end - start
     ));
-    let definitions = definitions(&root)?;
     let tables = loot_tables(&root)?;
     let items = provisioning::item_index()?;
     let mut tally = Tally::default();
     let mut seconds = Vec::new();
-    for (key, points) in &walkable[start..end] {
-        let found = definitions.get(key.as_str());
-        let loot = match found.and_then(|(_, table)| table.as_ref()) {
+    let mut session: Option<DevClientSession> = None;
+    for key in &keys[start..end] {
+        let (definition, table) = &definitions[key.as_str()];
+        let loot = match table {
             None => LootBinding::None,
             Some(table) => tables.get(table).map_or_else(
                 || LootBinding::Missing(table.clone()),
@@ -439,11 +391,11 @@ pub(super) async fn run(
         };
         let species = Species {
             short: token(key.strip_prefix("oteryn:creature.").unwrap_or(key)),
-            definition: found.map(|(definition, _)| Definition {
+            definition: Some(Definition {
                 name: definition.name.clone(),
                 experience: definition.experience,
             }),
-            spawns: (*points).clone(),
+            key: (*key).clone(),
             loot,
         };
         let scenario: &'static str =
@@ -451,10 +403,26 @@ pub(super) async fn run(
         let started = std::time::Instant::now();
         verdict::indexed(
             scenario,
-            Box::pin(sweep_species(clients, world, &items, &species, &mut tally)),
+            Box::pin(sweep_species(
+                clients,
+                world,
+                &items,
+                &species,
+                &mut session,
+                &mut tally,
+            )),
         )
         .await;
         seconds.push(started.elapsed().as_secs_f64());
+    }
+    if let Some(mut client) = session.take() {
+        if let Err(error) = release(&mut client).await {
+            tally.fail += 1;
+            evidence(&format!(
+                "creature_sweep release_failed error={}",
+                token(&error.to_string())
+            ));
+        }
     }
     let mean = seconds.iter().sum::<f64>() / seconds.len().max(1) as f64;
     evidence(&format!(
@@ -479,54 +447,133 @@ async fn sweep_species(
     world: &BundleWorld,
     items: &crate::content::item_ref::ItemDefinitionIndex,
     species: &Species,
+    session: &mut Option<DevClientSession>,
     tally: &mut Tally,
 ) -> TestResult {
     let started = std::time::Instant::now();
     let mut rows = Rows::new(&species.short);
-    // A fresh admission for every species: one dropped session never cascades.
-    let mut session: Option<DevClientSession> = None;
-    if let Err(stop) = Box::pin(hunt(
-        clients,
-        world,
-        items,
-        species,
-        &mut session,
-        &mut rows,
-    ))
-    .await
-    {
+    if let Err(stop) = Box::pin(hunt(clients, world, items, species, session, &mut rows)).await {
         rows.fail(stop.step, stop.cause, &stop.detail);
         rows.block_rest(stop.step);
     }
-    let released = match session.take() {
-        Some(mut client) => release(&mut client).await,
-        None => Ok(()),
-    };
-    if let Err(error) = &released {
-        evidence(&format!(
-            "creature_sweep release_failed key={} error={}",
-            species.short,
-            token(&error.to_string())
-        ));
-    }
-    let failed = rows.counts.fail > 0 || released.is_err();
+    let failed = rows.counts.fail > 0;
     // The `.full` verdict line is the indexed Watch's own; this line carries the species counts.
     evidence(&format!(
-        "creature_sweep species={} seconds={:.3} rows_pass={} rows_fail={} rows_skipped={} release={}",
+        "creature_sweep species={} seconds={:.3} rows_pass={} rows_fail={} rows_skipped={}",
         species.short,
         started.elapsed().as_secs_f64(),
         rows.counts.pass,
         rows.counts.fail,
-        rows.counts.skipped,
-        if released.is_ok() { "ok" } else { "failed" }
+        rows.counts.skipped
     ));
     tally.pass += rows.counts.pass;
-    tally.fail += rows.counts.fail + usize::from(released.is_err());
+    tally.fail += rows.counts.fail;
     tally.skipped += rows.counts.skipped;
     if failed {
         return Err(format!("creature {} has FAIL rows", species.short).into());
     }
     Ok(())
+}
+
+/// The shared session is admitted once; it is re-provisioned only when health is low and dropped
+/// when the wire failed, so the next species starts from a usable player.
+async fn ready(
+    clients: &SeamClients<'_>,
+    world: &BundleWorld,
+    session: &mut Option<DevClientSession>,
+) -> TestResult {
+    if session.is_none() {
+        *session = Some(connect_character(clients, 0x80, CORE_CHARACTER).await?);
+    }
+    prepare_player(clients, session).await?;
+    let low = session
+        .as_ref()
+        .and_then(|client| client.actor_vitals())
+        .is_some_and(|vitals| vitals.health.saturating_mul(2) < vitals.max_health);
+    if low {
+        let mut client = session.take().ok_or("session absent")?;
+        release(&mut client).await?;
+        drop(client);
+        let fresh = connect_character(clients, 0x80, CORE_CHARACTER).await?;
+        *session = Some(provisioning::provision_fixture(fresh, clients, CORE_CHARACTER).await?);
+    }
+    let client = session.as_mut().ok_or("session absent")?;
+    leave_protection_zone(client, world).await
+}
+
+/// The spawn needs free non-PZ cells next to the player: walk once to open ground.
+async fn leave_protection_zone(client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
+    let open = |at: TilePos| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .is_some_and(|tile| !tile.protection_zone())
+    };
+    let roomy = |at: TilePos| {
+        open(at)
+            && [
+                StepDirection::North,
+                StepDirection::East,
+                StepDirection::South,
+                StepDirection::West,
+            ]
+            .into_iter()
+            .filter(|direction| destination(world, at, *direction).is_some_and(open))
+            .count()
+                >= 3
+    };
+    let from = tile(client.world_spatial().actor_position)?;
+    if roomy(from) {
+        return Ok(());
+    }
+    verdict::Harness::global().progress("creature-sweep-route");
+    let path = far_route(world, from, roomy).map_err(|reachable| {
+        format!(
+            "no open ground from {} ({} tiles reachable)",
+            at(from),
+            reachable.len()
+        )
+    })?;
+    walk(client, world, &path).await
+}
+
+/// `spawn <session> <key>` through `provision.py --spawn`; Err carries the rejected token.
+async fn request_spawn(session: String, key: String) -> Result<String, String> {
+    let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let output = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("sudo")
+            .args(["-n", "python3"])
+            .arg(script)
+            .args(["--socket", &socket, "--session", &session, "--spawn", &key])
+            .output()
+    })
+    .await
+    .map_err(|error| error.to_string())?
+    .map_err(|error| error.to_string())?;
+    if output.status.success() {
+        return Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned());
+    }
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    Err(match stderr.split_once("reason=") {
+        Some((_, rest)) => rest
+            .chars()
+            .take_while(|character| character.is_ascii_alphanumeric() || *character == '_')
+            .collect(),
+        None => format!(
+            "status={};stderr_tail={}",
+            output.status,
+            stderr
+                .chars()
+                .rev()
+                .take(200)
+                .collect::<String>()
+                .chars()
+                .rev()
+                .collect::<String>()
+        ),
+    })
 }
 
 async fn hunt(
@@ -539,92 +586,51 @@ async fn hunt(
 ) -> Result<(), Failure> {
     let definition = species.definition.as_ref().ok_or_else(|| {
         failure(
-            "reach",
+            "spawn",
             "content",
             "no creature definition with a display name in content/creatures/definitions",
         )
     })?;
-    *session = Some(
-        connect_character(clients, 0x80, CORE_CHARACTER)
-            .await
-            .map_err(|error| failure("reach", "precondition", format!("admission:{error}")))?,
-    );
-    prepare_player(clients, session)
-        .await
-        .map_err(|error| failure("reach", "precondition", format!("provisioning:{error}")))?;
+    if let Err(error) = ready(clients, world, session).await {
+        // A failed setup leaves no trusted session; the next species starts fresh.
+        *session = None;
+        return Err(failure("spawn", "precondition", format!("setup:{error}")));
+    }
     let client = session
         .as_mut()
-        .ok_or_else(|| failure("reach", "precondition", "session absent after provisioning"))?;
+        .ok_or_else(|| failure("spawn", "precondition", "session absent after setup"))?;
     let (xp_before, level) = read_stats(client)
         .await
-        .map_err(|error| failure("reach", "precondition", format!("stats:{error}")))?;
+        .map_err(|error| failure("spawn", "precondition", format!("stats:{error}")))?;
 
-    // Reach: walk with real STEP commands to a non-PZ tile within one tile of an authored spawn.
-    let goal = |tile_at: TilePos| {
-        species.spawns.iter().any(|point| {
-            point.floor == tile_at.floor
-                && point.x.abs_diff(tile_at.x).max(point.y.abs_diff(tile_at.y)) <= 1
-        }) && world
-            .base()
-            .tile(tile_at.x, tile_at.y, tile_at.floor)
-            .is_some_and(|tile| !tile.protection_zone())
-    };
-    let mut steps = 0_usize;
-    let mut arrived = false;
-    let mut last_error = String::new();
-    for attempt in 1..=WALK_ATTEMPTS {
-        verdict::Harness::global().progress("creature-sweep-route");
-        let from = tile(client.world_spatial().actor_position)
-            .map_err(|error| failure("reach", "unreachable", error))?;
-        if goal(from) {
-            arrived = true;
-            break;
-        }
-        // Drops are one way: a site that cannot reach the goal first returns to the start.
-        let path = match far_route(world, from, goal) {
-            Ok(path) => path,
-            Err(reachable) => match far_route(world, from, |tile_at| tile_at == TOWN) {
-                Ok(back) if !back.is_empty() => back,
-                _ => {
-                    return Err(failure(
-                        "reach",
-                        "unreachable",
-                        format!(
-                            "no route from {} ({} tiles reachable) to any spawn of the species",
-                            at(from),
-                            reachable.len()
-                        ),
-                    ));
-                }
-            },
-        };
-        match walk(client, world, &path).await {
-            Ok(()) => steps += path.len(),
-            Err(error) => {
-                last_error = format!("attempt {attempt}: {error}");
-            }
-        }
-    }
-    let here = tile(client.world_spatial().actor_position)
-        .map_err(|error| failure("reach", "unreachable", error))?;
-    if !arrived && !goal(here) {
-        return Err(failure(
-            "reach",
-            "unreachable",
-            format!(
-                "not at a spawn after {WALK_ATTEMPTS} walks from {};{last_error}",
-                at(here)
-            ),
-        ));
-    }
-    // The species must be visible and attackable at the spawn.
     let name = definition.name.as_str();
+    let named = |entry: &oteryn_dev_client::EntityRef| {
+        entry.kind == EntityKind::Creature
+            && matches!(entry.detail, EntityDetail::Actor { .. })
+            && entry.display_name.is_some_and(|label| {
+                label
+                    .as_str()
+                    .is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
+            })
+    };
+    // Leftovers of an earlier species never count as this species' spawn.
+    let existing: BTreeSet<_> = client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entry| named(entry))
+        .map(|entry| entry.entity)
+        .collect();
+    let session_id = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let answer = request_spawn(session_id, species.key.clone())
+        .await
+        .map_err(|reason| failure("spawn", "precondition", format!("rejected:{reason}")))?;
     let visible_deadline = tokio::time::Instant::now() + Duration::from_secs(VISIBLE_SECONDS);
     let target = loop {
         client
             .service_liveness(Duration::from_millis(100))
             .await
-            .map_err(|error| failure("reach", "unreachable", error))?;
+            .map_err(|error| failure("spawn", "protocol", error))?;
         verdict::Harness::global().progress("creature-sweep-visible");
         client.take_events();
         let player = client.world_spatial().actor_position;
@@ -632,14 +638,9 @@ async fn hunt(
             entities
                 .iter()
                 .filter(|entry| {
-                    entry.kind == EntityKind::Creature
-                        && entry.position.floor == player.floor
-                        && matches!(entry.detail, EntityDetail::Actor { .. })
-                        && entry.display_name.is_some_and(|label| {
-                            label
-                                .as_str()
-                                .is_ok_and(|shown| shown.eq_ignore_ascii_case(name))
-                        })
+                    entry.position.floor == player.floor
+                        && named(entry)
+                        && !existing.contains(&entry.entity)
                 })
                 .min_by_key(|entry| {
                     entry
@@ -655,18 +656,17 @@ async fn hunt(
         }
         if tokio::time::Instant::now() >= visible_deadline {
             return Err(failure(
-                "reach",
+                "spawn",
                 "absent",
-                format!(
-                    "arrived at {} but no {name} was visible within {VISIBLE_SECONDS}s",
-                    at(here)
-                ),
+                format!("{answer};no {name} visible within {VISIBLE_SECONDS}s"),
             ));
         }
     };
+    let here = tile(client.world_spatial().actor_position)
+        .map_err(|error| failure("spawn", "protocol", error))?;
     rows.pass(
-        "reach",
-        &format!("name:{name};steps:{steps};at:{}", at(here)),
+        "spawn",
+        &format!("answer:{answer};name:{name};player:{}", at(here)),
     );
 
     // Kill: attack in chase mode until that exact entity is gone, with damage observed.
@@ -760,7 +760,7 @@ async fn hunt(
         let _ = client.session_mut().attack_target(None).await;
         return Err(failure(
             "kill",
-            "unkillable",
+            "deadline",
             format!(
                 "no death within {KILL_SECONDS}s;damage_observed={damaged};health_percent={last_health};last_position={last_position:?};player={player:?};vitals={:?}",
                 client.actor_vitals()
