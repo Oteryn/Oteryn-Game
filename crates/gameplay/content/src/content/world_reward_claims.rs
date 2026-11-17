@@ -64,13 +64,13 @@ pub const REWARD_CLAIM_SHARDS: [&str; 6] = [
         "../../../../../content/interactions/reward_claims/reward-claims-00100-00199.json"
     ),
     include_str!(
-        "../../../../../content/interactions/reward_claims/reward-claims-00200-00230.json"
+        "../../../../../content/interactions/reward_claims/reward-claims-00200-00231.json"
     ),
     include_str!(
         "../../../../../content/interactions/reward_claims/reward-claim-variants-00000-00099.json"
     ),
     include_str!(
-        "../../../../../content/interactions/reward_claims/reward-claim-variants-00100-00104.json"
+        "../../../../../content/interactions/reward_claims/reward-claim-variants-00100-00103.json"
     ),
     include_str!("../../../../../content/interactions/reward_claims/engclaim-native.json"),
 ];

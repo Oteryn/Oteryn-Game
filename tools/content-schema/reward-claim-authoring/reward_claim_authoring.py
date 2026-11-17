@@ -40,6 +40,7 @@ import hashlib
 import json
 import re
 import sys
+import subprocess
 from pathlib import Path
 
 import container_native
@@ -577,6 +578,26 @@ def committed_errors() -> list[str]:
     return errors
 
 
+
+EMBEDDED_REGISTRY = "crates/gameplay/content/src/content/world_reward_claims.rs"
+
+
+def embedded_shards(index_text: str) -> str:
+    """Keep the compiled loader's include table on the generated family index."""
+    shards = json.loads(index_text)["shards"]
+    block = f"pub const REWARD_CLAIM_SHARDS: [&str; {len(shards)}] = [\n"
+    block += "".join(f'    include_str!("../../../../../{path}"),\n' for path in shards)
+    block += "];\n"
+    formatted = subprocess.run(["rustfmt", "--edition", "2024"], input=block,
+                               text=True, capture_output=True, check=True).stdout.rstrip()
+    source = (ROOT / EMBEDDED_REGISTRY).read_text()
+    source, count = re.subn(r"pub const REWARD_CLAIM_SHARDS: \[&str; \d+\] = \[\n.*?^\];",
+                            lambda _: formatted, source, flags=re.MULTILINE | re.DOTALL)
+    if count != 1:
+        raise ValueError("RewardClaim embedded shard table is missing or ambiguous")
+    return source
+
+
 def generate() -> dict[str, str]:
     claims_bytes = (ROOT / CLAIMS_REL).read_bytes()
     claims = json.loads(claims_bytes)
@@ -616,6 +637,7 @@ def generate() -> dict[str, str]:
         )
         + "\n"
     )
+    outputs[EMBEDDED_REGISTRY] = embedded_shards(outputs[INDEX_PATH])
     return outputs
 
 
