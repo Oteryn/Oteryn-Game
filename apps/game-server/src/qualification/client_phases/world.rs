@@ -9,6 +9,7 @@ use std::path::Path;
 mod general_stats;
 
 include!("character_core.rs");
+include!("newhaven_hunt.rs");
 include!("character_release.rs");
 include!("e2e_row_batch.rs");
 include!("floor_journey.rs");
@@ -2960,17 +2961,60 @@ async fn newhaven_leg(
         .into());
     }
     leave_islet(&mut client, world).await?;
-    travel_to_spawn(&mut client, world, spawns, FOOTMAN).await?;
-    // Named gap: a footman's corpse item (i6002) is not materializable, so its kill reward is
-    // refused (`kill_reward_refused reason=corpse_item_inadmissible`) and no corpse is minted.
-    // The hunt still runs and is reported; any other hunt failure fails the leg.
-    if let Err(error) = client_hunt::hunt_creature(&mut client, Some(FOOTMAN)).await {
-        if error.to_string() != "hunt produced no corpse before deadline" {
-            return Err(error);
-        }
+    if let Err(error) = newhaven_equip_weapon(&mut client).await {
+        let cause = if error
+            .to_string()
+            .starts_with("Newhaven no-vocation starter has no")
+        {
+            "missing_starter_weapon"
+        } else {
+            "weapon_setup_failed"
+        };
         evidence(&format!(
-            "NEWHAVEN_GAP case=footman-hunt state=failed cause=\"corpse i6002 not materializable (CorpseItemInadmissible)\" error=\"{error}\""
+            "NEWHAVEN_GAP case=footman-hunt state=failed cause={cause} error=\"{error}\""
         ));
+        return Err(error);
+    }
+    for attempt in 1..=3 {
+        let result = match travel_to_spawn(&mut client, world, spawns, FOOTMAN).await {
+            Ok(()) => client_hunt::hunt_newhaven(&mut client, world, FOOTMAN).await,
+            Err(_) if newhaven_hunt_died(&client) => Err("newhaven hunt died".into()),
+            Err(error) => return Err(error),
+        };
+        let Err(error) = result else { break };
+        let message = error.to_string();
+        let observed_cause = newhaven_hunt_cause(
+            client
+                .actor_vitals()
+                .ok_or("Newhaven hunt vitals missing")?
+                .health,
+            newhaven_at_temple(&client) || message == "newhaven hunt died",
+            message == "newhaven hunt kill_observed_no_corpse",
+        );
+        if observed_cause == "died" {
+            evidence(&format!(
+                "NEWHAVEN_GAP case=footman-hunt state=failed cause={observed_cause}"
+            ));
+            newhaven_wait_for_respawn(&mut client).await?;
+            break;
+        }
+        if message == "newhaven hunt recovered; retry one footman" && attempt < 3 {
+            continue;
+        }
+        let cause = match message.as_str() {
+            "newhaven hunt kill_observed_no_corpse" => "kill_observed_no_corpse",
+            "newhaven hunt no_kill" | "newhaven hunt recovered; retry one footman" => "no_kill",
+            _ => return Err(error),
+        };
+        evidence(&format!(
+            "NEWHAVEN_GAP case=footman-hunt state=failed cause={cause} error=\"{error}\""
+        ));
+        break;
+    }
+    // A hunt death invalidates the old route. Wait above, then leave from the
+    // actual live islet tile; travel_to_spawn plans from that current position.
+    if newhaven_at_temple(&client) {
+        leave_islet(&mut client, world).await?;
     }
     // Stop the hunt before approaching a fresh, stronger melee attacker. Both Muglex
     // types are hostile and never flee; the assassin has attack 15 versus the footman's 10
@@ -3194,7 +3238,18 @@ async fn travel_to_spawn(
             .tile(at.x, at.y, at.floor)
             .is_none_or(|tile| tile.protection_zone())
             && points.iter().any(|(floor, point)| {
-                at.floor == *floor && at.x.abs_diff(point.x) <= 1 && at.y.abs_diff(point.y) <= 1
+                at.floor == *floor
+                    && at.x.abs_diff(point.x) <= 1
+                    && at.y.abs_diff(point.y) <= 1
+                    && (creature != "oteryn:creature.muglex_clan_footman"
+                        || points
+                            .iter()
+                            .filter(|(other_floor, other)| {
+                                at.floor == *other_floor
+                                    && at.x.abs_diff(other.x).max(at.y.abs_diff(other.y)) <= 1
+                            })
+                            .count()
+                            == 1)
             })
     })
     .ok_or_else(|| format!("no reachable {creature} spawn within town route budget"))?;
@@ -3221,10 +3276,22 @@ async fn travel_to_spawn(
             })
             .copied()
             .ok_or("spawn route has no visible creature")?;
+        let target_entity = target.entity;
         let target = tile(target.position)?;
         let path = route(world, tile(here)?, |at| {
             at.floor == target.floor
                 && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
+                && (creature != "oteryn:creature.muglex_clan_footman"
+                    || client.world_entities().is_some_and(|entities| {
+                        entities.iter().all(|other| {
+                            other.entity == target_entity
+                                || other.kind != oteryn_dev_client::EntityKind::Creature
+                                || other.position.floor != here.floor
+                                || tile(other.position).is_ok_and(|other_at| {
+                                    at.x.abs_diff(other_at.x).max(at.y.abs_diff(other_at.y)) > 1
+                                })
+                        })
+                    }))
                 && world
                     .base()
                     .tile(at.x, at.y, at.floor)
