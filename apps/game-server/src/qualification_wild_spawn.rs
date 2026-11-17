@@ -295,14 +295,22 @@ fn static_cell_refusal(
         y: position.y,
         z: i32::from(position.floor),
     };
-    // This native declaration requires completely qualified source metadata.
-    // Pending source placements cannot be treated as absent durable Items.
-    if room.source_world().is_none_or(|world| {
-        world
+    // The fixture room declares completely qualified source metadata, and a pending source
+    // placement cannot be treated as an absent durable Item. A bundle World's room has no
+    // source world and no pending placements; its Items are read per tile from the durable
+    // owner by the caller, so only the bundle's own collision index qualifies the cell there.
+    let pending_or_unqualified = match room.source_world() {
+        Some(world) => world
             .pending_mutable_placements()
             .iter()
-            .any(|placement| placement.cell() == cell)
-    }) || cells.index().lookup(cells.scope(), cell) != Ok(CollisionClass::Walkable)
+            .any(|placement| placement.cell() == cell),
+        None => !matches!(
+            cells.index(),
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)
+        ),
+    };
+    if pending_or_unqualified
+        || cells.index().lookup(cells.scope(), cell) != Ok(CollisionClass::Walkable)
     {
         return Err(
             "qualification spawn cell is unknown, blocked or pending materialization".into(),
