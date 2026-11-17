@@ -122,11 +122,16 @@ fn walk(dir: &Path) -> Vec<PathBuf> {
     found
 }
 
-/// Identifiers in path position: right after `::`, or anywhere in a `::{ .. }` group.
+/// Identifiers in path position: right before or after `::` (a file with `use super::*` names a
+/// sibling as `sibling::item`), or anywhere in a `::{ .. }` group.
 fn path_segments(text: &str) -> Vec<String> {
+    let word = |c: char| c.is_ascii_alphanumeric() || c == '_';
     let mut names = Vec::new();
     let mut rest = text;
     while let Some(at) = rest.find("::") {
+        let before = rest[..at].trim_end();
+        let start = before.rfind(|c: char| !word(c)).map_or(0, |i| i + 1);
+        names.push(before[start..].to_owned());
         rest = rest[at + 2..].trim_start();
         let end = if rest.starts_with('{') {
             let mut depth = 0;
@@ -141,12 +146,11 @@ fn path_segments(text: &str) -> Vec<String> {
                 })
                 .unwrap_or(rest.len())
         } else {
-            rest.find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
-                .unwrap_or(rest.len())
+            rest.find(|c: char| !word(c)).unwrap_or(rest.len())
         };
         names.extend(
             rest[..end]
-                .split(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+                .split(|c: char| !word(c))
                 .filter(|w| !w.is_empty())
                 .map(str::to_owned),
         );
