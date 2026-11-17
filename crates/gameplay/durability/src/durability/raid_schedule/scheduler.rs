@@ -242,6 +242,17 @@ impl DurabilityRoot {
                         clock.minute_of_day % 60 == 4
                             && before.last_fired_at_ms.is_none_or(|last| last < clock.minute_started_at_ms)
                             && phase.is_some_and(|progress| progress.phase_one_active())
+                    } else if candidate.key.as_str() == "oteryn:raid.horse_station" {
+                        let loose_until: Option<i64> = sqlx::query_scalar(
+                            "SELECT loose_until_ms FROM game_horse_stations
+                             WHERE world_id=encode($1,'hex')::uuid AND loose_until_ms IS NOT NULL FOR SHARE",
+                        )
+                        .bind(request.world.as_bytes().as_slice())
+                        .fetch_optional(&mut *tx).await?;
+                        loose_until.is_some_and(|deadline| {
+                            use oteryn_gameplay_world_change::horse_station::HorseStation;
+                            HorseStation::LooseUntil(deadline).wave_due(request.now_ms, before.last_fired_at_ms)
+                        })
                     } else { interval_due };
                     let persistent_fired = !window.repeat && candidate.definition.despawn_after_ms.is_none()
                         && before.latest_firing.as_ref().is_some_and(|f| f.reset_epoch == request.reset_epoch);

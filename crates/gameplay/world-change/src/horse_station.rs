@@ -7,6 +7,7 @@ pub fn enters_stable(item_id: u16, x: i32, y: i32, floor: i16) -> bool {
 }
 
 const HOUR_MS: i64 = 60 * 60 * 1_000;
+const LOOSE_DURATION_MS: i64 = 4 * 24 * HOUR_MS;
 pub const RENTAL_PRICE_GOLD: u64 = 500;
 const RENTAL_MOUNTS: [u16; 3] = [22, 25, 26];
 
@@ -34,7 +35,9 @@ impl HorseStation {
     /// a four-day deadline, applied at the first server save at or after it.
     pub fn after_rental(self, now_ms: i64, draw: u8) -> Self {
         match self {
-            Self::Confined if draw < 3 => Self::LooseUntil(now_ms.saturating_add(4 * 24 * HOUR_MS)),
+            Self::Confined if draw < 3 => {
+                Self::LooseUntil(now_ms.saturating_add(LOOSE_DURATION_MS))
+            }
             phase => phase,
         }
     }
@@ -64,7 +67,10 @@ impl HorseStation {
     /// wave, followed by one wave per three hours until confinement.
     pub fn wave_due(self, now_ms: i64, previous_wave_ms: Option<i64>) -> bool {
         matches!(self, Self::LooseUntil(deadline) if now_ms < deadline)
-            && previous_wave_ms.is_none_or(|last| now_ms.saturating_sub(last) >= 3 * HOUR_MS)
+            && previous_wave_ms.is_none_or(|last| {
+                matches!(self, Self::LooseUntil(deadline) if last < deadline.saturating_sub(LOOSE_DURATION_MS))
+                    || now_ms.saturating_sub(last) >= 3 * HOUR_MS
+            })
     }
 
     pub fn after_lure(self, now_ms: i64, draw: u8) -> Self {
@@ -113,6 +119,7 @@ mod tests {
     fn loose_horses_wave_immediately_then_every_three_hours_until_confinement() {
         let loose = HorseStation::LooseUntil(4 * 24 * 3_600_000);
         assert!(loose.wave_due(100, None));
+        assert!(loose.wave_due(100, Some(-1)));
         assert!(!loose.wave_due(10_800_099, Some(100)));
         assert!(loose.wave_due(10_800_100, Some(100)));
         assert!(!HorseStation::Confined.wave_due(10_800_100, Some(100)));
