@@ -375,7 +375,8 @@ async fn spawn(
         .actor)
 }
 
-/// Sends one push and returns its disposition, reading past spatial updates.
+/// Sends one push and returns its disposition, reading past spatial updates. Like a real
+/// client it names the native floor the visibility projection exported (-7 for runtime 7).
 async fn push(
     client: &mut DuplexStream,
     id: u64,
@@ -387,7 +388,7 @@ async fn push(
         destination: ActorPosition {
             x: to.x,
             y: to.y,
-            floor: to.floor,
+            floor: oteryn_protocol_oteryn::world_spatial::native_floor(to.floor),
         },
     })
     .map_err(debug)?;

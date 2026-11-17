@@ -26,10 +26,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Rejected;
         }
+        // The client names the native floor the projection exported; convert it like autowalk.
         let destination = MovementLocalPosition {
             x: intent.destination.x,
             y: intent.destination.y,
-            floor: intent.destination.floor,
+            floor: self.runtime_floor(intent.destination.floor),
         };
         let Some(_permit) = self.spell_lane_permit().await else {
             return Rejected;
