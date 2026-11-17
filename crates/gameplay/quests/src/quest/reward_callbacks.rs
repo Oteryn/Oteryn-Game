@@ -230,6 +230,8 @@ pub struct RewardCallback {
     pub completes: bool,
     #[serde(default, skip_serializing_if = "is_false")]
     pub repeatable: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub once_per_server_save: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub required_claims: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -486,6 +488,8 @@ const DOCUMENTS: &[&str] = &[
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qd-sams-old-backpack.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/qd-steal-from-thieves.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
     include_str!("../../../../../content/quests/native-reward-callbacks/engclaim.json"),
 ];
@@ -851,6 +855,11 @@ fn validate_document_with_capacity(
             || c.required_claims
                 .iter()
                 .any(|key| !slug(key, "oteryn:reward-claim.", b"._/:-", 128))
+            || (c.once_per_server_save
+                && (!c.repeatable
+                    || c.storage.is_empty()
+                    || c.carried_item.is_some()
+                    || c.world_claim.is_some()))
             || (c.repeatable
                 && (!((c.fee.is_some() && c.give.is_some())
                     || (!c.take.is_empty() && (c.give.is_some() || c.experience.is_some())))
@@ -1176,6 +1185,12 @@ fn value_plan(callback: &RewardCallback) -> Result<Vec<u8>, String> {
             &callback.requires_completed_quests,
         ))
         .map_err(|error| error.to_string())?
+    };
+    let current = if callback.once_per_server_save {
+        serde_json::to_vec(&("oteryn:quest-reward-server-save-v1", current))
+            .map_err(|error| error.to_string())?
+    } else {
+        current
     };
     if callback.per_occurrence_mint {
         serde_json::to_vec(&("oteryn:quest-reward-occurrence-mint-v1", current))
@@ -1538,6 +1553,41 @@ pub(super) fn retain_outfit_reward_predecessor(
         );
     }
     active.npc_legacy.insert(QUEST.into(), complete);
+    Ok(())
+}
+
+/// Preserve the quest pin for players who used the blender before Feed could be turned in.
+pub(super) fn retain_scatterbrained_craft_predecessor(
+    catalogue: &mut QuestStateCatalogue,
+) -> Result<(), String> {
+    const FEED: &str = "oteryn:quest-reward/chosen/scatterbrained/feed";
+    let callback = parse(include_str!(
+        "../../../../../content/quests/chosen-reward-callbacks.json"
+    ))?
+    .into_iter()
+    .find(|callback| callback.key == FEED)
+    .ok_or("Scatterbrained Feed callback missing")?;
+    let quest = callback.quest.clone();
+    let digest = Sha256::digest(value_plan(&callback)?);
+    let digest: String = digest.iter().map(|byte| format!("{byte:02x}")).collect();
+    let marker = format!("oteryn:quest-reward-rule/{digest}");
+    let transitions = catalogue
+        .transitions
+        .iter()
+        .filter(|(key, transition)| {
+            transition.quest == quest && key.as_str() != FEED && key.as_str() != marker
+        })
+        .map(|(key, transition)| (key.clone(), transition.clone()))
+        .collect();
+    let hash = super::definition_hash(&quest, &catalogue.tracks, &transitions);
+    catalogue
+        .predecessors
+        .entry(quest)
+        .or_default()
+        .push(super::NpcDefinitionPredecessor {
+            hash,
+            defaults: BTreeMap::new(),
+        });
     Ok(())
 }
 
@@ -2240,7 +2290,7 @@ mod tests {
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
         // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal.
-        assert_eq!(load()?.len(), 207 + 59 + 121 + 1 + 1);
+        assert_eq!(load()?.len(), 207 + 59 + 124 + 1 + 1);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

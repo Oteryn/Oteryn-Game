@@ -2,6 +2,18 @@
   "schema": 1,
   "offers": [
     {
+      "npc": "oteryn:npc.eclesius",
+      "keywords": [
+        "feed"
+      ],
+      "topic": 0,
+      "next_topic": 257,
+      "storage": [],
+      "reply": [
+        "Did you bring the fish flakes?"
+      ]
+    },
+    {
       "npc": "oteryn:npc.rashid",
       "keywords": [
         "mission"

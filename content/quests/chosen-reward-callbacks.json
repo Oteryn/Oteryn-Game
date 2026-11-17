@@ -211,6 +211,57 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/chosen/scatterbrained/feed",
+      "quest": "oteryn:quest.the_scatterbrained_sorcerer_quest",
+      "npc": "oteryn:npc.eclesius",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 257,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qready1-craft/qready1-scatter-blend",
+          "minimum": 0,
+          "maximum": 1000001,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "repeatable": true,
+      "once_per_server_save": true,
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i9109",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3035",
+        "count": 1,
+        "additional": [
+          {
+            "item": "oteryn:item.tibia.i3031",
+            "count": 50
+          }
+        ]
+      },
+      "experience": 250,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thanks for bringing the fish food. Here is your pay."
+      ],
+      "failure_reply": [
+        "Bring one portion of fish flakes. I can pay you once per server-save day."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/index.php?oldid=332575#Feed",
+        "https://www.tibiawiki.com.br/index.php?oldid=433619#Tasks",
+        "OTERYN_AUTHORED_APPROXIMATION: deliver the prepared fish flakes to Eclesius."
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/chosen/trader/trophy",
       "quest": "oteryn:quest.the_travelling_trader_quest",
       "npc": "oteryn:npc.rashid",

@@ -810,6 +810,7 @@ async fn wardrobe(
         .ok_or("wardrobe outfit")?;
     let seed = RewardCallback {
         repeatable: false,
+        once_per_server_save: false,
         required_claims: Vec::new(),
         counter: None,
         requirements: None,

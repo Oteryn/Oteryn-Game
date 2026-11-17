@@ -728,6 +728,9 @@
         "repeatable": {
           "type": "boolean"
         },
+        "once_per_server_save": {
+          "type": "boolean"
+        },
         "world_claim": {
           "type": "object",
           "additionalProperties": false,

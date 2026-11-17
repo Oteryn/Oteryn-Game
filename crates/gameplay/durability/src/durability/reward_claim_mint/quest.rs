@@ -363,6 +363,13 @@ pub(crate) async fn apply(
             return Ok(false);
         }
     }
+    if callback.once_per_server_save
+        && native_daily::admit(tx, fence.character_id, &callback.key)
+            .await?
+            .is_none()
+    {
+        return Ok(false);
+    }
     if !super::quest_participants::apply(
         tx,
         fence,

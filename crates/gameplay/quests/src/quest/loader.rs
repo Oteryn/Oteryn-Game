@@ -232,9 +232,11 @@ fn admit_native_bindings(
             for quest in &bindings.quests {
                 let source = quest.sources.join(";");
                 for track in &quest.tracks {
+                    // A shared native counter keeps its donor witness (shared_tracks.rs).
                     lowered
                         .source_tracks
-                        .insert(track.key.clone(), source.clone());
+                        .entry(track.key.clone())
+                        .or_insert_with(|| source.clone());
                 }
             }
         }
@@ -246,6 +248,8 @@ fn admit_native_bindings(
     lowered.catalogue =
         super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     super::reward_callbacks::retain_kormarak_once_predecessor(&mut lowered.catalogue)
+        .map_err(QuestLoadError::Json)?;
+    super::reward_callbacks::retain_scatterbrained_craft_predecessor(&mut lowered.catalogue)
         .map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }

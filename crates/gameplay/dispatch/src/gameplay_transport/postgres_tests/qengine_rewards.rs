@@ -921,6 +921,9 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     // Keep each route's future state out of this shared dispatcher's inline state.
+    if name == super::scatterbrained::CASE {
+        return Box::pin(super::scatterbrained::exercise(owner, admitted, h)).await;
+    }
     if name.starts_with("qengine-rewards-fibula-completion") {
         return Box::pin(super::questpc6_fibula_completion::exercise(
             owner, admitted, h, name,
@@ -1056,6 +1059,12 @@ pub(super) async fn exercise(
     if name.starts_with("qengine-rewards-qnpcfx-m10-") {
         return Box::pin(super::qnpcfx_m10::exercise(
             owner, admitted, h, authority, name,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-qd-steal-from-thieves" {
+        return Box::pin(super::qd_steal_from_thieves::exercise(
+            owner, admitted, h, authority,
         ))
         .await;
     }
