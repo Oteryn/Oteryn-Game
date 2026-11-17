@@ -86,6 +86,8 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
         run(async |admin| {
             reset();
             let h = Harness::create_with_admission_seed(admin, "cwarlock", false, false).await?;
+            // Keep the independent native source registered for genuine peer bootstrap.
+            let _source = super::house_transfer::RecoverySource::start(&h).await?;
             let fresh = prepare_current_session(&h).await?;
             let callback = oteryn_gameplay_quests::quest::world_callbacks::load()?
                 .into_iter()

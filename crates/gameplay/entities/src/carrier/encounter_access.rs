@@ -398,6 +398,7 @@ impl ChannelRuntimeV1 {
 
     /// Publish a bounded spawn and its already observed world readset together.
     /// A stale or refused map projection restores every staged actor and policy.
+    /// Starting health may be reduced; maximum health remains the native policy's.
     pub fn commit_quest_creature_spawn_with_projection(
         &mut self,
         monsters: &[(&str, i64, MovementLocalPosition)],
@@ -413,8 +414,20 @@ impl ChannelRuntimeV1 {
         let before = self.carrier.clone();
         let result = (|| {
             for (key, health, at) in monsters {
-                let actor = self.admit_encounter_actor(key, *health, *at)?;
+                let maximum = self.companion_policy(key)?.maximum_health;
+                if *health <= 0 || *health > maximum {
+                    return Err(CarrierError::InvalidCreatureHealth);
+                }
+                let actor = self.admit_encounter_actor(key, maximum, *at)?;
                 self.install_creature_policy(actor, key)?;
+                let index = self.encounter_actor_index(actor)?;
+                let Slot::CreatureOccupied {
+                    health: current, ..
+                } = &mut self.carrier.slots[index]
+                else {
+                    return Err(CarrierError::NotCreature);
+                };
+                *current = *health;
                 actors.push(actor);
             }
             if !project() {
