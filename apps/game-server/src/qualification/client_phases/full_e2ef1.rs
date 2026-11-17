@@ -137,6 +137,12 @@ mod e2ef1 {
             floor: -i16::from(at.floor),
         }
     }
+    // Plain (non-key) door families whose placements are channel doors in the compiled
+    // town regions. Every 1638 placement there is a House door, which belongs to the
+    // House runtime and never to the DoorBook; 2177/2179 are the nearest non-House ones.
+    fn plain_door(world: &BundleWorld, o: Object) -> bool {
+        matches!(o.appearance, 1638 | 2177 | 2179) && world.facts().doors().at(o.at)
+    }
     fn distance(a: TilePos, b: TilePos) -> u16 {
         if a.floor == b.floor {
             a.x.abs_diff(b.x).max(a.y.abs_diff(b.y))
@@ -428,15 +434,8 @@ mod e2ef1 {
         checks: &mut Checks,
         revisions: &mut BTreeMap<(TilePos, u8), u64>,
     ) -> TestResult {
-        // 1638/1639 is a plain door family (not a key, level or quest door).
-        let object = approach(
-            client,
-            world,
-            objects,
-            |o| o.appearance == 1638 && world.facts().doors().at(o.at),
-            3,
-        )
-        .await?;
+        // Plain door family (not a key, level or quest door), see `plain_door`.
+        let object = approach(client, world, objects, |o| plain_door(world, o), 3).await?;
         let before = tile(client.world_spatial().actor_position)?;
         let revision = *revisions.get(&(object.at, object.ordinal)).unwrap_or(&0);
         if door_use(client, world, object, revision).await? != UseDisposition::Committed
@@ -906,13 +905,19 @@ mod e2ef1 {
         // Exact production registry families: plain 1638/1639 and key triple
         // locked 1628, unlocked 1629, open 1630. No name/keyword classification.
         let mut families_ok = true;
-        for (appearance, case) in [(1638, "basic-door"), (1629, "unlocked-key-door")] {
+        for (appearance, case) in [(0, "basic-door"), (1629, "unlocked-key-door")] {
             let result: TestResult = async {
                 let object = approach(
                     client,
                     world,
                     objects,
-                    |o| o.appearance == appearance && world.facts().doors().at(o.at),
+                    |o| {
+                        if appearance == 0 {
+                            plain_door(world, o)
+                        } else {
+                            o.appearance == appearance && world.facts().doors().at(o.at)
+                        }
+                    },
                     1,
                 )
                 .await?;
