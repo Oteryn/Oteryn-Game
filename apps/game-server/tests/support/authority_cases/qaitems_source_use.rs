@@ -262,13 +262,34 @@ async fn exercise(
             .catalogue()
             .clone(),
     ));
-    super::engitem_reward_text::equip_backpack(
-        h,
-        &authority,
-        native,
-        &super::engitem_reward_text::Weights(native),
-    )
-    .await?;
+    let fence = composed_test_owner::load_quests(&owner, session)
+        .await?
+        .item_fence();
+    let fresh = composed_test_owner::fresh_fixture::fresh::Source::new(0)?.request()?;
+    h.root
+        .initialize_admission_equipment(
+            &authority,
+            &h.node,
+            &fence,
+            generation.identity().server_artifact_digest(),
+            fresh.operation(),
+        )
+        .await
+        .map_err(debug)?;
+    let template = crate::durability::starter_grant::StarterTemplate {
+        definition: super::engitem_reward_text::definition(2854),
+        ..crate::durability::starter_grant::StarterTemplate::main()
+    };
+    h.root
+        .grant_starter_items(
+            &authority,
+            &h.node,
+            &fence,
+            &super::engitem_reward_text::Weights(native),
+            &template,
+        )
+        .await
+        .map_err(debug)?;
     let report =
         oteryn_gameplay_content::content::world_reward_claims::bind_embedded_reward_claims(
             scene.base().as_ref(),
