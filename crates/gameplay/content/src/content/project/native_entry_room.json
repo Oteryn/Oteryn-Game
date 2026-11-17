@@ -612,6 +612,10 @@
           }
         }
       ]
+    },
+    "house_tiles": {
+      "schema": "OTERYN_NATIVE_HOUSE_TILES/v1",
+      "houses": []
     }
   },
   "authoring_profiles": [

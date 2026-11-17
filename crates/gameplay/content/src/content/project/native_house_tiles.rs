@@ -277,11 +277,28 @@ mod tests {
             0x01, 0x9a, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
         ])
         .unwrap();
+        let documents = super::super::native_entry_room_documents(world).unwrap();
+        let project = super::super::ProjectSnapshot::new(
+            documents.documents().clone(),
+            super::super::native_entry_first_slice_limits().project,
+        )
+        .unwrap()
+        .parse_native_entry()
+        .unwrap();
         let room = super::super::qualify_native_entry_room(world).unwrap();
         let cells = room.movement_cells();
+        // Explicitly omit metadata in this fixture even when the accepted room
+        // declares an empty House set. Omission must continue to fail closed.
+        let omitted = QualifiedHouseTiles::qualify(
+            project.project(),
+            &project.source().cells,
+            cells.scope().clone(),
+            None,
+        )
+        .unwrap();
         let start = room.entry_start();
         assert_eq!(
-            cells.house_tiles().house_at(
+            omitted.house_at(
                 cells.scope(),
                 LogicalCell {
                     x: start.x,

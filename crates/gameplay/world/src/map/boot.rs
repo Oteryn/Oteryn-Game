@@ -1947,7 +1947,9 @@ pub mod tests {
         let world_id = WorldId::decode(&id(1))?;
         let channel_id = ChannelId::decode(&id(2))?;
         let entry = crate::content::qualify_native_entry_room(world_id)?;
-        assert!(!entry.movement_cells().house_tiles().is_known_empty());
+        // An imported bundle must establish its own House facts even when the
+        // original entry room explicitly qualifies an empty House set.
+        assert!(entry.movement_cells().house_tiles().is_known_empty());
         for house in [0, 42] {
             let (bytes, load) = bundle_with_house("item:box", 0, "item:coin", 1, house);
             let world = boot(&bytes, &pins(load, 2), world_id, channel_id, items)?;
