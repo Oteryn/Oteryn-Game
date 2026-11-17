@@ -514,6 +514,7 @@ pub(super) async fn run(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
     spawns: &oteryn_world_bundle::spawn::Table,
+    hunt_failed: bool,
 ) {
     verdict::Harness::global().progress("newhaven_journey");
     if newhaven_at_temple(client)
@@ -560,6 +561,16 @@ pub(super) async fn run(
         Err(error) => row("viola-lost-wisdom-handin", Err(error.to_string().into())),
     }
     let names = names.unwrap_or_default();
+    if hunt_failed {
+        for step in [
+            "the-corruptor-first-kill-vocation-set",
+            "the-corruptor-second-kill-no-vocation-set",
+            "muglex-clan-chief-kill-and-loot",
+        ] {
+            row(step, Ok((false, "dependent on footman-hunt".into())));
+        }
+        return;
+    }
     let first = boss(
         client,
         world,

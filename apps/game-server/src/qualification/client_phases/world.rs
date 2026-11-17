@@ -2969,6 +2969,7 @@ async fn newhaven_leg(
         .into());
     }
     leave_islet(&mut client, world).await?;
+    let mut deferred: Option<String> = None;
     if let Err(error) = newhaven_equip_weapon(&mut client).await {
         let cause = if error
             .to_string()
@@ -2981,9 +2982,12 @@ async fn newhaven_leg(
         evidence(&format!(
             "NEWHAVEN_GAP case=footman-hunt state=failed cause={cause} error=\"{error}\""
         ));
-        return Err(error);
+        deferred = Some(error.to_string());
     }
     for attempt in 1..=3 {
+        if deferred.is_some() {
+            break;
+        }
         let result = match travel_to_spawn(&mut client, world, spawns, FOOTMAN).await {
             Ok(()) => client_hunt::hunt_newhaven(&mut client, world, FOOTMAN).await,
             Err(_) if newhaven_hunt_died(&client) => Err("newhaven hunt died".into()),
@@ -3070,9 +3074,12 @@ async fn newhaven_leg(
         "mechanic=death state=relogged position={respawn:?} health={}",
         client.actor_vitals().ok_or("death relog vitals")?.health
     ));
-    newhaven_journey::run(&mut client, clients, world, spawns).await;
+    newhaven_journey::run(&mut client, clients, world, spawns, deferred.is_some()).await;
     drop(client);
-    Ok(())
+    match deferred {
+        Some(error) => Err(error.into()),
+        None => Ok(()),
+    }
 }
 
 async fn profile_journey(
