@@ -574,7 +574,26 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    let mut step = "sounds";
+    let result = visibility_inner(stream, authority, session, &mut step).await;
+    if result.is_err() {
+        operator_event(&format!("event=visibility_refresh_refused step={step}"));
+    }
+    result
+}
+
+async fn visibility_inner<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+    step: &mut &'static str,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
     sounds(stream, authority, session).await?;
+    *step = "inventory_pending";
     let inventory_refresh_pending = session
         .item_view
         .as_ref()
@@ -595,6 +614,7 @@ where
         .await
         .ok_or(ServeEnd::Disconnected)?;
     }
+    *step = "newhaven_inventory";
     refresh_newhaven_inventory(
         stream,
         authority,
@@ -606,11 +626,14 @@ where
     )
     .await
     .ok_or(ServeEnd::Disconnected)?;
+    *step = "player_trade";
     player_trade::refresh(stream, authority, session).await?;
+    *step = "cyclopedia_tracker";
     cyclopedia_tracker::refresh(stream, authority, session).await?;
     // Crystal's tile notifications refresh every observer, including an idle one.
     // Use the same bounded connection refresh already used after local item commits.
     // The pending inventory retry already observes these containers this tick.
+    *step = "container_views";
     if !inventory_refresh_pending
         && session
             .selected_capabilities
@@ -642,6 +665,7 @@ where
     let Some(view) = session.visibility.as_mut() else {
         return Ok(());
     };
+    *step = "entity_names";
     let Some(channel) = crate::gameplay_transport::entity_names::observe(
         authority,
         session.actor,
@@ -651,6 +675,7 @@ where
     else {
         return Err(ServeEnd::Disconnected);
     };
+    *step = "appearances";
     let projection = session
         .appearances
         .refresh_result(
@@ -670,8 +695,10 @@ where
             session.sequence = to_sequence;
             session.revision = to_revision;
             session.admitted.continuity.spatial_revision = session.revision;
+            *step = "party_skull";
             party_skull::refresh(stream, authority, session).await?;
             // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
+            *step = "world_map";
             if let (Some(view), Some(items)) =
                 (session.world_map.as_mut(), session.item_view.as_mut())
             {
@@ -707,6 +734,7 @@ where
         Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => {}
         Err(ObservationError::Unavailable) => return Err(ServeEnd::Disconnected),
     }
+    *step = "world_clock";
     // CLOCK-1 (§11.3): a due domain 18 delta, at most one per 10,000 ms.
     if session
         .selected_capabilities
@@ -732,6 +760,7 @@ where
             }
         }
     }
+    *step = "weather";
     // WEATHER-1: a full-replacement domain 22 delta only when the observation
     // changed (a new absolute slot, or a lost or restored binding). Visual only: no
     // gameplay owner is read or written.

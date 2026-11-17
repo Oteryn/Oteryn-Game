@@ -98,13 +98,18 @@ def pinned_sha(root: Path, relative: Path, variable: str) -> str:
     return match[1]
 
 
+# Groups that run for hours or need a second World; only the custom set runs them.
+ON_DEMAND_GROUPS = frozenset({"creature_sweep", "mp"})
+
+
 def group_partition(groups: list[str]) -> list[list[str]]:
     """Core-like groups | f4..f6 | f7 and later, in registry order.
 
     These are the combinations the single-machine run already executes
     together; a group gets its own shard only through the custom set.
+    ON_DEMAND_GROUPS never join a partition.
     """
-    journey = [g for g in groups if g != "rows"]
+    journey = [g for g in groups if g != "rows" and g not in ON_DEMAND_GROUPS]
     numbered = {g: int(m[1]) for g in journey if (m := re.fullmatch(r"f(\d+)[a-z]*", g))}
     parts = [
         [g for g in journey if g not in numbered],
