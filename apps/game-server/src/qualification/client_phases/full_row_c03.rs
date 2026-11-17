@@ -566,6 +566,30 @@ mod tests {
     use super::*;
 
     #[test]
+    fn c03_default_negotiation_selects_all_entity_fields() {
+        use oteryn_protocol_oteryn::capability_tables::BUNDLE_WORLD_OFFERS_V1;
+        use oteryn_protocol_oteryn::world_spatial_entities::EntityFields;
+
+        // connect_world uses connect_session's default support; the Bundle offer includes
+        // each entity extension and its dependencies, including 386 -> [4, 6].
+        let supported = oteryn_dev_client::CLIENT_SUPPORTED_CAPABILITIES;
+        for id in [4, 6, 19, 134, 286, 372, 386] {
+            assert!(supported.contains(&id), "client must support {id}");
+            assert!(BUNDLE_WORLD_OFFERS_V1.iter().any(|(offered, requires)| {
+                *offered == id && requires.iter().all(|required| supported.contains(required))
+            }), "Bundle must offer {id} and the client must support its prerequisites");
+        }
+        assert_eq!(EntityFields::selected(supported), EntityFields {
+            display_names: true,
+            item_handles: true,
+            light: true,
+            party_icons: true,
+            native_icons: true,
+            native_objects: true,
+        });
+    }
+
+    #[test]
     fn pass_requires_every_step_and_no_failure() {
         let mut row = Row::new();
         for step in STEPS {

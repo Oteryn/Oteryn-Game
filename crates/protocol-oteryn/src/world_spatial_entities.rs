@@ -1152,6 +1152,155 @@ mod tests {
         own
     }
 
+    // C03 uses connect_world -> connect_character -> the dev client's default support.
+    // These are all of its capabilities that affect the entity codec.
+    const C03_ENTITY_CAPABILITIES: &[u32] = &[4, 6, 19, 134, 286, 372, 386];
+
+    fn c03_baseline_entities() -> Vec<WorldSpatialEntity> {
+        let mut monster = actor(EntityKind::Creature, 1);
+        monster.detail = EntityDetail::ActorWithIcons {
+            direction: StepDirection::West,
+            appearance_ref: 1,
+            health_percent: 100,
+            icons: NativeCreatureIcons::new(&[NativeCreatureIcon {
+                category: 1,
+                id: 6,
+                count: 1,
+            }])
+            .expect("valid monster icon"),
+        };
+        let mut corpse = object(EntityKind::Corpse, 2);
+        corpse.detail = EntityDetail::ObjectWithAppearance {
+            item_definition_ref: 24388,
+            quantity: 1,
+            item_handle: NonZeroU64::new(2),
+            appearance_id: NonZeroU16::new(39529).expect("native corpse appearance"),
+        };
+        let mut ground = object(EntityKind::GroundItem, 3);
+        ground.detail = EntityDetail::Object {
+            item_definition_ref: 3031,
+            quantity: 1,
+            item_handle: NonZeroU64::new(3),
+        };
+        let mut entities = vec![own(), monster, corpse, ground];
+        for entity in &mut entities {
+            if actor_kind(entity.kind) {
+                entity.display_name = Some(
+                    crate::entity_names::EntityDisplayName::new("C03 baseline")
+                        .expect("bounded display name"),
+                );
+            }
+        }
+        entities
+    }
+
+    fn assert_c03_round_trip(capabilities: &[u32]) {
+        let fields = EntityFields::selected(capabilities);
+        let baseline = snapshot(c03_baseline_entities());
+        let lights = EntityLights::new();
+        let encoded =
+            encode_world_spatial_entities_snapshot_with_fields(&baseline, fields, &lights);
+        let delta = WorldSpatialEntitiesDelta {
+            content_generation: baseline.content_generation,
+            actor_position: baseline.actor_position,
+            enter: baseline.entities.clone(),
+            update: Vec::new(),
+            leave: Vec::new(),
+        };
+        let encoded_delta =
+            encode_world_spatial_entities_delta_with_fields(&delta, fields, &lights);
+        if fields.native_objects && !fields.item_handles {
+            // Contract native-object-appearance-v1 requires 4 and 6. Both directions reject
+            // this invalid negotiation, for every detail variant, before emitting an entry.
+            assert_eq!(encoded, Err(WorldSpatialError::Malformed));
+            assert_eq!(encoded_delta, Err(WorldSpatialError::Malformed));
+            for entity in &baseline.entities {
+                assert_eq!(
+                    super::encode_entity(entity, fields, None),
+                    Err(WorldSpatialError::Malformed)
+                );
+                let bytes = super::encode_entity(
+                    entity,
+                    EntityFields::selected(C03_ENTITY_CAPABILITIES),
+                    None,
+                )
+                .expect("valid complete negotiation");
+                assert_eq!(
+                    super::decode_entity(&bytes, fields),
+                    Err(WorldSpatialError::Malformed)
+                );
+            }
+            return;
+        }
+        let mut expected = baseline.clone();
+        if !fields.native_objects {
+            for entity in &mut expected.entities {
+                if let EntityDetail::ObjectWithAppearance {
+                    item_definition_ref,
+                    quantity,
+                    item_handle,
+                    ..
+                } = entity.detail
+                {
+                    entity.detail = EntityDetail::Object {
+                        item_definition_ref,
+                        quantity,
+                        item_handle,
+                    };
+                }
+            }
+        }
+        if !fields.item_handles {
+            for entity in &mut expected.entities {
+                if let EntityDetail::Object { item_handle, .. } = &mut entity.detail {
+                    *item_handle = None;
+                }
+            }
+        }
+        let bytes = encoded.expect("encode C03 snapshot");
+        let (decoded, decoded_lights) =
+            decode_world_spatial_entities_snapshot_with_fields(&bytes, fields)
+                .expect("decode C03 snapshot");
+        assert_eq!(decoded, expected);
+        assert_eq!(decoded_lights, lights);
+        assert_eq!(
+            encode_world_spatial_entities_snapshot_with_fields(&decoded, fields, &lights),
+            Ok(bytes)
+        );
+        let bytes = encoded_delta.expect("encode C03 delta");
+        let (decoded, decoded_lights) =
+            decode_world_spatial_entities_delta_with_fields(&bytes, fields)
+                .expect("decode C03 delta");
+        assert_eq!(decoded.enter, expected.entities);
+        assert!(decoded.update.is_empty() && decoded.leave.is_empty());
+        assert_eq!(decoded_lights, lights);
+        assert_eq!(
+            encode_world_spatial_entities_delta_with_fields(&decoded, fields, &lights),
+            Ok(bytes)
+        );
+    }
+
+    #[test]
+    fn c03_baseline_round_trips_with_dev_client_entity_capabilities() {
+        assert_c03_round_trip(C03_ENTITY_CAPABILITIES);
+    }
+
+    #[test]
+    fn c03_every_entity_detail_obeys_capability_4_386_contract() {
+        for item_handles in [false, true] {
+            for native_objects in [false, true] {
+                let mut capabilities = vec![6, 19, 134, 286, 372];
+                if item_handles {
+                    capabilities.push(4);
+                }
+                if native_objects {
+                    capabilities.push(386);
+                }
+                assert_c03_round_trip(&capabilities);
+            }
+        }
+    }
+
     fn delta(n_enter: usize, n_update: usize, n_leave: usize) -> WorldSpatialEntitiesDelta {
         let mut next = 1_u32;
         let mut take = |count: usize| {
