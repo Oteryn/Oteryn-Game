@@ -146,14 +146,18 @@ def overlay_outputs(outputs, *, require_all=False, supplied_by=None):
             bindings = [
                 row for row in document["bindings"] if row["attribute"] == attribute
             ]
-            raw, rows = doors.overlay_region(
-                raw,
-                index["palette"],
-                {"bindings": bindings},
-                attribute=attribute,
-                item_ids={r["item"] for r in bindings},
-            )
-            imported.extend(rows)
+            # The source may stamp ground and a top item at the same position.
+            # The door overlay owns one binding per tile, so pass each exact item
+            # separately rather than silently replacing one position's row.
+            for item in sorted({row["item"] for row in bindings}):
+                raw, rows = doors.overlay_region(
+                    raw,
+                    index["palette"],
+                    {"bindings": [row for row in bindings if row["item"] == item]},
+                    attribute=attribute,
+                    item_ids={item},
+                )
+                imported.extend(rows)
         outputs[path] = raw
         region["sha256"] = hashlib.sha256(raw).hexdigest()
         byte_delta += len(raw) - len(original)
