@@ -241,6 +241,37 @@ async fn say(
 ) -> TestResult {
     talk(owner, admitted, npc, next, texts, NpcIntentDisposition::Ok).await
 }
+const DAY: i64 = 86_400;
+
+struct WeekdayHandIn<'a> {
+    texts: &'a [&'a str],
+    stage: i64,
+    item: Option<(u32, i64)>,
+    days_to_save: i64,
+}
+
+async fn refuse_before_server_save(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    rashid: EntityRef,
+    next: &mut u64,
+    hand_in: WeekdayHandIn<'_>,
+) -> TestResult {
+    h.root
+        .advance_test_quest_clock(hand_in.days_to_save * DAY - 60)
+        .map_err(debug)?;
+    let before_gold = gold(h).await?;
+    talk(owner, admitted, rashid, next, hand_in.texts, NpcIntentDisposition::Rejected).await?;
+    assert_eq!(stage(h).await?, hand_in.stage);
+    if let Some((item, count)) = hand_in.item {
+        assert_eq!(quantity(h, item).await?, count);
+    }
+    assert_eq!(gold(h).await?, before_gold);
+    h.root.advance_test_quest_clock(60).map_err(debug)?;
+    Ok(())
+}
+
 async fn teleport(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -475,7 +506,6 @@ pub(super) async fn exercise(
         ).ok_or("NPC capability")?;
     // 2026-07-06 06:00 Berlin. Keep the Premium and missing-item checks on Monday.
     const MONDAY_SAVE: i64 = 1_783_310_400;
-    const DAY: i64 = 86_400;
     h.root.set_test_quest_clock(MONDAY_SAVE).map_err(debug)?;
     let mut next = admitted.continuity.next_command_id;
     // Direct custody setup and SELL owner proofs have their own command IDs;
@@ -519,12 +549,10 @@ pub(super) async fn exercise(
     assert_eq!(stage(h).await?, -1);
     eprintln!("QUESTPC8_TRADER_FIRST_HANDIN trophy=1 ore=3 goldfish=1 native_premium_current=true");
 
-    h.root.advance_test_quest_clock(7 * DAY - 60).map_err(debug)?;
-    talk(owner, admitted, rashid, &mut next, &["hi", "mission", "yes"],
-        NpcIntentDisposition::Rejected).await?;
-    assert_eq!(stage(h).await?, -1);
-    assert_eq!(quantity(h, 7397).await?, 1);
-    h.root.advance_test_quest_clock(60).map_err(debug)?;
+    Box::pin(refuse_before_server_save(
+        owner, admitted, h, rashid, &mut next,
+        WeekdayHandIn { texts: &["hi", "mission", "yes"], stage: -1, item: Some((7397, 1)), days_to_save: 7 },
+    )).await?;
     say(
         owner,
         admitted,
@@ -588,14 +616,10 @@ pub(super) async fn exercise(
     assert_ne!(oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?, UseDisposition::Committed);
     assert_eq!(quantity(h, 145).await?, 1);
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
-    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
-    let before_gold = gold(h).await?;
-    talk(owner, admitted, rashid, &mut next, &["hi", "package"],
-        NpcIntentDisposition::Rejected).await?;
-    assert_eq!(stage(h).await?, 4);
-    assert_eq!(quantity(h, 145).await?, 1);
-    assert_eq!(gold(h).await?, before_gold);
-    h.root.advance_test_quest_clock(60).map_err(debug)?;
+    Box::pin(refuse_before_server_save(
+        owner, admitted, h, rashid, &mut next,
+        WeekdayHandIn { texts: &["hi", "package"], stage: 4, item: Some((145, 1)), days_to_save: 1 },
+    )).await?;
     say(owner, admitted, rashid, &mut next, &["hi", "package"]).await?;
     assert_eq!(stage(h).await?, 5);
     assert_eq!(quantity(h, 145).await?, 0);
@@ -638,14 +662,10 @@ pub(super) async fn exercise(
     drop_goldfish(owner, admitted, h, &mut side_next).await?;
     drop_goldfish(owner, admitted, h, &mut side_next).await?;
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
-    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
-    let before_gold = gold(h).await?;
-    talk(owner, admitted, rashid, &mut next, &["hi", "cheese"],
-        NpcIntentDisposition::Rejected).await?;
-    assert_eq!(stage(h).await?, 6);
-    assert_eq!(quantity(h, 169).await?, 1);
-    assert_eq!(gold(h).await?, before_gold);
-    h.root.advance_test_quest_clock(60).map_err(debug)?;
+    Box::pin(refuse_before_server_save(
+        owner, admitted, h, rashid, &mut next,
+        WeekdayHandIn { texts: &["hi", "cheese"], stage: 6, item: Some((169, 1)), days_to_save: 1 },
+    )).await?;
     say(owner, admitted, rashid, &mut next, &["hi", "cheese"]).await?;
     assert_eq!(stage(h).await?, 7);
     assert_eq!(quantity(h, 169).await?, 0);
@@ -663,14 +683,10 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 227).await?, 1);
     assert_eq!(gold(h).await?, 1900);
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
-    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
-    let before_gold = gold(h).await?;
-    talk(owner, admitted, rashid, &mut next, &["hi", "vase"],
-        NpcIntentDisposition::Rejected).await?;
-    assert_eq!(stage(h).await?, 8);
-    assert_eq!(quantity(h, 227).await?, 1);
-    assert_eq!(gold(h).await?, before_gold);
-    h.root.advance_test_quest_clock(60).map_err(debug)?;
+    Box::pin(refuse_before_server_save(
+        owner, admitted, h, rashid, &mut next,
+        WeekdayHandIn { texts: &["hi", "vase"], stage: 8, item: Some((227, 1)), days_to_save: 1 },
+    )).await?;
     say(owner, admitted, rashid, &mut next, &["hi", "vase"]).await?;
     assert_eq!(stage(h).await?, 9);
     assert_eq!(quantity(h, 227).await?, 0);
@@ -688,36 +704,29 @@ pub(super) async fn exercise(
     assert_eq!(quantity(h, 7385).await?, 1);
     assert_eq!(gold(h).await?, 1650);
     let rashid = visit(owner, admitted, "oteryn:npc.rashid").await?;
-    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
-    let before_gold = gold(h).await?;
-    talk(owner, admitted, rashid, &mut next, &["hi", "sword"],
-        NpcIntentDisposition::Rejected).await?;
-    assert_eq!(stage(h).await?, 10);
-    assert_eq!(quantity(h, 7385).await?, 1);
-    assert_eq!(gold(h).await?, before_gold);
-    h.root.advance_test_quest_clock(60).map_err(debug)?;
+    Box::pin(refuse_before_server_save(
+        owner, admitted, h, rashid, &mut next,
+        WeekdayHandIn { texts: &["hi", "sword"], stage: 10, item: Some((7385, 1)), days_to_save: 1 },
+    )).await?;
     say(owner, admitted, rashid, &mut next, &["hi", "sword"]).await?;
     assert_eq!(stage(h).await?, 11);
     assert_eq!(quantity(h, 7385).await?, 0);
     let fish = quantity(h, 5929).await?;
-    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
-    talk(owner, admitted, rashid, &mut next, &["goldfish"],
-        NpcIntentDisposition::Rejected).await?;
-    assert_eq!(stage(h).await?, 11);
-    assert_eq!(quantity(h, 5929).await?, fish);
-    h.root.advance_test_quest_clock(60).map_err(debug)?;
+    Box::pin(refuse_before_server_save(
+        owner, admitted, h, rashid, &mut next,
+        WeekdayHandIn { texts: &["goldfish"], stage: 11, item: Some((5929, fish)), days_to_save: 1 },
+    )).await?;
     say(owner, admitted, rashid, &mut next, &["goldfish"]).await?;
     assert_eq!(stage(h).await?, 12);
     assert_eq!(quantity(h, 5929).await?, fish - 1);
-    h.root.advance_test_quest_clock(DAY - 60).map_err(debug)?;
-    talk(owner, admitted, rashid, &mut next, &["mission"],
-        NpcIntentDisposition::Rejected).await?;
-    assert_eq!(stage(h).await?, 12);
+    Box::pin(refuse_before_server_save(
+        owner, admitted, h, rashid, &mut next,
+        WeekdayHandIn { texts: &["mission"], stage: 12, item: None, days_to_save: 1 },
+    )).await?;
     let premature: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_account_achievements WHERE achievement_key='oteryn:achievement/recognised_trader')",
     ).fetch_one(&h.pool).await?;
     assert!(!premature);
-    h.root.advance_test_quest_clock(60).map_err(debug)?;
     say(owner, admitted, rashid, &mut next, &["mission"]).await?;
     let recognition_command = next - 1;
     owner.states.quest_sessions.lock().map_err(debug)?.remove(&admitted.game_session_id);
