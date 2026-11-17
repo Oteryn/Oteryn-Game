@@ -1369,6 +1369,8 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
+            // Ninety-nine fish exceed a fresh character's capacity.
+            "qc-sinatuki" => Some(150),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -1509,7 +1511,7 @@ fn scenario_case(
                 // Thirteen selected vendors/priests and one player; charge every actor slot.
                 14
             } else if name == "qc-obsidian-knife" {
-                3 // One player, the Sweaty Cyclops and Uzgod.
+                2 // One player and the Sweaty Cyclops.
             } else if native_story
                 || (native_upper && name.ends_with("-complete"))
                 || matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped")
