@@ -563,7 +563,7 @@ async fn encounter(
         start[index] = stats(bot).await?.0;
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
-    let named = |e: &oteryn_dev_client::EntityRef| {
+    let named = |e: &oteryn_dev_client::WorldSpatialEntity| {
         e.kind == EntityKind::Creature
             && e.display_name.is_some_and(|label| {
                 label
