@@ -51,7 +51,7 @@ const PRESENT_RECIPE: Recipe = Recipe {
 const WYDA_RECIPE: Recipe = Recipe {
     npc: bored::WYDA,
     keyword: "blood herb",
-    output: bored::BLOOD_HERB,
+    output: bored::WITCHESBROOM,
     prompt: "Do you have a blood herb for me?",
     success: "Thank you -SOOO- much! Here, let me give you a reward...",
     cancel: Some("I see."),
@@ -246,12 +246,7 @@ pub(super) async fn talk(
         };
         super::super::item_ref_admission::generation_item_facts(native, &definition).ok()
     };
-    let output = if recipe.npc == bored::WYDA {
-        bored::WITCHESBROOM
-    } else {
-        recipe.output
-    };
-    let Some(item) = profile(output) else {
+    let Some(item) = profile(recipe.output) else {
         return Some(rejected());
     };
     let backpack = match admission

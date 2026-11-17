@@ -59,13 +59,14 @@ pub(super) fn plan_one(
 ) -> Result<Plan> {
     let source = entries
         .iter()
-        .find(|entry| {
+        .filter(|entry| {
             entry.live
                 && !entry.not_default
                 && entry.quantity > 0
                 && (stack_allowed || entry.quantity == 1)
                 && entry.definition == *input
         })
+        .min_by_key(|entry| entries.len() == capacity && entry.quantity > 1)
         .ok_or(NpcTradeError::ItemNotFound)?;
     if entries.len() > capacity || (entries.len() == capacity && source.quantity > 1) {
         return Err(NpcTradeError::DoesNotFit);

@@ -387,6 +387,26 @@ mod tests {
     }
 
     #[test]
+    fn bored_gate_changes_at_server_save_and_survives_reload() -> Result<(), String> {
+        let world = [42; 16];
+        let active_epoch = (1..=64)
+            .find(|epoch| {
+                roll_calendar(&world, *epoch, 1, 1).bored
+                    && !roll_calendar(&world, epoch + 1, 1, 1).bored
+            })
+            .ok_or("active epoch followed by inactive epoch")?;
+        let day = roll_calendar(&world, active_epoch, 1, 1);
+        let captured = crate::decision::NativeDecision::capture(&day);
+        let restored = captured.restore().map_err(|e| format!("{e:?}"))?;
+        assert!(crate::owner::is_active(&restored, "bored"));
+        let before_next_save = roll_calendar(&world, active_epoch, 1, 2);
+        assert!(crate::owner::is_active(&before_next_save, "bored"));
+        let after_next_save = roll_calendar(&world, active_epoch + 1, 1, 2);
+        assert!(!crate::owner::is_active(&after_next_save, "bored"));
+        Ok(())
+    }
+
+    #[test]
     fn w05b_chances_follow_the_donor_percentages() {
         assert!(percent_roll(at(9, 100), 10) && percent_roll(at(10, 100) - 1, 10));
         assert!(!percent_roll(at(10, 100), 10));

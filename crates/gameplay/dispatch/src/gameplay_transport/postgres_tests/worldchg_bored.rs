@@ -67,6 +67,7 @@ async fn exercise(admin: String) -> TestResult {
         .fetch_one(&h.pool).await?);
     let reset = h.root.retiring_world_reset(world).await?.ok_or("reset")?;
     assert!(!h.root.world_change_active(world, "bored").await?);
+    planned_world_reset::reset_fixture::replace(&h, world, channel, &h.node).await?;
     assert_eq!(
         h.root.finish_world_reset(&authority, &h.node, &reset, room, room).await.map_err(debug)?,
         Some(1)

@@ -135,6 +135,8 @@ fn reward_callback_npc(key: &str) -> bool {
 // Shared default handler 8479e2aa..:81-82,92 supplies Orockle's text.
 const YEO_GREET: &str = "Ah, it's you. Nice to see you.";
 const BENE_GREET: &str = "Greetings. I hope you are here on a {mission} for nature!";
+// Crystal 201189f data-global/npc/wyda.lua:132.
+const WYDA_GREET: &str = "What? A mundane talking to me? Amusing.";
 const OROCKLE: &str = "oteryn:npc.orockle";
 const DEEP_SEAS_GUARDIAN: &str = "oteryn:npc.guardian_of_the_deep_seas";
 const OROCKLE_FAREWELL: &str = "Good bye, |PLAYERNAME|.";
@@ -348,10 +350,11 @@ impl NpcTalkBook {
                     )
                 ),
                 format_args!(
-                    "{}\0{}\0{}\0{}\0{}",
+                    "{}\0{}\0{}\0{}\0{}\0{}",
                     dark_trails::TEXT,
                     format_args!("{}\0{}", SHARED_WORLD_NPC_SOURCE, YEO_GREET),
                     BENE_GREET,
+                    WYDA_GREET,
                     OROCKLE_FAREWELL,
                     OROCKLE_TRADE
                 ),
@@ -575,6 +578,13 @@ impl NpcTalkBook {
                 (
                     "Hello, hello, |PLAYERNAME|! Please come in, look, and buy!".into(),
                     "Bye, bye |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
+            } else if reference.key == "oteryn:npc.wyda" {
+                (
+                    WYDA_GREET.into(),
+                    "Good bye, |PLAYERNAME|.".into(),
                     None,
                     Vec::new(),
                 )
