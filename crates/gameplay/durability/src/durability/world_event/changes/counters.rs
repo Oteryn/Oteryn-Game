@@ -206,12 +206,7 @@ pub(super) async fn project(
     let now_ms = u64::try_from(now_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
     let activated_ms =
         u64::try_from(activated_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
-    day.mage_tower_portal_waiting = now_ms
-        < oteryn_gameplay_world_change::counter::mage_tower_portal_open_at_ms(
-            world.as_bytes(),
-            day.reset_epoch,
-            activated_ms,
-        );
+    day.project_mage_tower_portal(world.as_bytes(), activated_ms, now_ms);
     day.shared_used_sources_mask =
         shared_objects::used_sources_mask(tx, world, day.reset_epoch).await?;
     let values = states(tx, world, false).await?;

@@ -397,3 +397,85 @@ fn mage_tower_room(
     )
     .map_err(debug)
 }
+
+#[tokio::test]
+async fn worldchg_mage_tower_portal_waits_until_deadline_and_restarts_at_save() {
+    use oteryn_gameplay_world_change::{counter::mage_tower_portal_open_at_ms, daily::roll_calendar};
+    use tokio::time::{Duration, Instant, advance, pause};
+
+    pause();
+    let world = id(42);
+    let mut day = roll_calendar(&world, 1, 6, 13);
+    let activation = Instant::now();
+    let delay = mage_tower_portal_open_at_ms(&world, 1, 0);
+    let now_ms = || u64::try_from(activation.elapsed().as_millis()).expect("test clock fits u64");
+    day.project_mage_tower_portal(&world, 0, now_ms());
+    assert!(!day.mage_tower_portal_open());
+    advance(Duration::from_millis(delay - 1)).await;
+    day.project_mage_tower_portal(&world, 0, now_ms());
+    assert!(!day.mage_tower_portal_open());
+    advance(Duration::from_millis(1)).await;
+    day.project_mage_tower_portal(&world, 0, now_ms());
+    assert!(day.mage_tower_portal_open());
+
+    day.counter_stages[CounterKind::MagesTower.index()] = 4;
+    assert!(!day.mage_tower_portal_open());
+    let mut next_day = roll_calendar(&world, 2, 6, 14);
+    next_day.project_mage_tower_portal(&world, now_ms(), now_ms());
+    assert!(!next_day.mage_tower_portal_open());
+}
+
+#[test]
+fn worldchg_mage_tower_portal_delay_is_bounded_and_epoch_stable() {
+    use oteryn_gameplay_world_change::counter::mage_tower_portal_open_at_ms;
+
+    let world = id(42);
+    let delays = (1..=128)
+        .map(|epoch| {
+            let delay = mage_tower_portal_open_at_ms(&world, epoch, 0);
+            assert!((600_000..=10_800_000).contains(&delay));
+            assert_eq!(mage_tower_portal_open_at_ms(&world, epoch, 700), delay + 700);
+            delay
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    assert!(delays.len() > 100);
+}
+
+#[test]
+fn worldchg_mage_tower_portal_projects_active_save_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    super::kill_reward_e2e::scenario_thread::run_async(async move |_| {
+        let h = Harness::create_with_admission_seed(admin, "mage_tower_portal_save", false, false)
+            .await?;
+        let world = WorldId::decode(&id(42)).map_err(debug)?;
+        for (epoch, age, open) in [(1, 0, false), (2, 10_801, true), (3, 0, false)] {
+            sqlx::query(
+                "INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month)
+                 VALUES(encode($1,'hex')::uuid,$2::bigint,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,
+                        clock_timestamp() - make_interval(secs => $4),to_char((clock_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'))",
+            )
+            .bind(world.as_bytes().as_slice())
+            .bind(epoch)
+            .bind([7u8; 32].as_slice())
+            .bind(f64::from(age))
+            .execute(&h.pool)
+            .await?;
+            sqlx::query(
+                "INSERT INTO game_world_reset_active(world_id,reset_epoch) VALUES(encode($1,'hex')::uuid,$2::bigint)
+                 ON CONFLICT (world_id) DO UPDATE SET reset_epoch=excluded.reset_epoch",
+            )
+            .bind(world.as_bytes().as_slice())
+            .bind(epoch)
+            .execute(&h.pool)
+            .await?;
+            for _ in 0..2 {
+                let day = h.root.world_changes(world, u64::try_from(epoch)?).await?.ok_or("active day")?;
+                assert_eq!(day.mage_tower_portal_open(), open, "save {epoch}");
+                assert_eq!(day.counter_stages[CounterKind::MagesTower.index()], 1);
+            }
+        }
+        Ok(())
+    })
+}

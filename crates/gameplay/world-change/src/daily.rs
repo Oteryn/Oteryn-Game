@@ -283,6 +283,11 @@ impl DailyWorldChanges {
                 .contains(&self.counter_stages[crate::counter::CounterKind::MagesTower.index()])
     }
 
+    pub fn project_mage_tower_portal(&mut self, world: &[u8; 16], activated_ms: u64, now_ms: u64) {
+        self.mage_tower_portal_waiting = now_ms
+            < crate::counter::mage_tower_portal_open_at_ms(world, self.reset_epoch, activated_ms);
+    }
+
     /// Compiled entrance layers selected for this epoch, never paths loaded by the runtime.
     pub fn layers(&self) -> Vec<&'static str> {
         self.fury_gates
@@ -322,8 +327,17 @@ pub fn roll_calendar(world: &[u8; 16], reset_epoch: u64, month: u8, day: u8) -> 
 }
 
 pub(crate) fn draw_for_epoch(world: &[u8; 16], epoch: u64, purpose: &str) -> u64 {
+    draw_for_epoch_indexed(world, epoch, purpose, 0)
+}
+
+pub(crate) fn draw_for_epoch_indexed(
+    world: &[u8; 16],
+    epoch: u64,
+    purpose: &str,
+    index: u64,
+) -> u64 {
     let (root, occurrence) = decision_context(world, epoch);
-    draw(&root, occurrence, purpose)
+    draw_indexed(&root, occurrence, purpose, index)
 }
 
 fn decision_context(
@@ -349,11 +363,20 @@ fn draw(
     occurrence: [u8; 16],
     purpose: &str,
 ) -> u64 {
+    draw_indexed(root, occurrence, purpose, 0)
+}
+
+fn draw_indexed(
+    root: &oteryn_simulation_determinism::GameplayDecisionRoot,
+    occurrence: [u8; 16],
+    purpose: &str,
+    index: u64,
+) -> u64 {
     oteryn_simulation_determinism::deterministic_decision_u64(
         root,
         oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence),
         purpose,
-        0,
+        index,
     )
     .unwrap_or(u64::MAX)
 }
@@ -426,6 +449,7 @@ mod tests {
                 counter_quest_occurrences: [0; 8],
                 counter_progress: [[0; 3]; 8],
                 shared_used_sources_mask: 0,
+                mage_tower_portal_waiting: false,
             }
         );
         let none = roll([u64::MAX; 9], 5, 12);

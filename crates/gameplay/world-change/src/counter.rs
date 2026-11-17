@@ -10,14 +10,20 @@ const MAGE_TOWER_PORTAL_DELAY_SECONDS: (u64, u64) = (10 * 60, 3 * 60 * 60);
 pub fn mage_tower_portal_open_at_ms(world: &[u8; 16], epoch: u64, activated_ms: u64) -> u64 {
     let (min, max) = MAGE_TOWER_PORTAL_DELAY_SECONDS;
     let width = max - min + 1;
-    for attempt in 0.. {
-        let purpose = format!("mage-tower-portal-delay-v1-{attempt}");
-        let draw = crate::daily::draw_for_epoch(world, epoch, &purpose);
+    let mut attempt = 0;
+    loop {
+        let draw = crate::daily::draw_for_epoch_indexed(
+            world,
+            epoch,
+            "mage-tower-portal-delay-v1",
+            attempt,
+        );
+        // Reject the incomplete final bucket so every delay is equally likely.
         if draw < u64::MAX - u64::MAX % width {
             return activated_ms.saturating_add((min + draw % width) * 1_000);
         }
+        attempt += 1;
     }
-    unreachable!("unbounded sequence of occurrence draws")
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
