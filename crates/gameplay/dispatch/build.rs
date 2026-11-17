@@ -24,5 +24,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "postgres_tests_mounts.rs",
         "",
     )?;
-    build_pg_shard::filter(&out.join("postgres_tests_mounts.rs"))
+    build_pg_shard::filter(
+        &out.join("postgres_tests_mounts.rs"),
+        &root.join("src/gameplay_transport/monk_save_postgres_tests.rs"),
+    )
 }

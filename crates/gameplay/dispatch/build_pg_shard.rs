@@ -10,8 +10,9 @@ use std::path::{Path, PathBuf};
 pub const ENV: &str = "OTERYN_DISPATCH_PG_TESTS";
 
 /// Rewrites the mount list `mounts` (pairs of `#[path = ..]` and `mod stem;` lines) to the
-/// selected closure when `ENV` is set and non-empty.
-pub fn filter(mounts: &Path) -> Result<(), Box<dyn Error>> {
+/// selected closure when `ENV` is set and non-empty. Siblings that `parent` (the module that
+/// includes the list) or its explicit `#[path]` children reach are always kept.
+pub fn filter(mounts: &Path, parent: &Path) -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-env-changed={ENV}");
     let selector = std::env::var(ENV).unwrap_or_default();
     let patterns: Vec<&str> = selector
@@ -45,12 +46,18 @@ pub fn filter(mounts: &Path) -> Result<(), Box<dyn Error>> {
         .filter(|stem| patterns.iter().any(|p| stem.contains(p)))
         .cloned()
         .collect();
-    while let Some(stem) = pending.pop() {
-        if !keep.insert(stem.clone()) {
-            continue;
-        }
+    let mut start = Some(parent.to_path_buf());
+    loop {
+        let root = match start.take() {
+            Some(parent) => parent,
+            None => match pending.pop() {
+                Some(stem) if keep.insert(stem.clone()) => modules[&stem].0.clone(),
+                Some(_) => continue,
+                None => break,
+            },
+        };
         let mut files = BTreeSet::new();
-        module_tree(&modules[&stem].0, &mut files);
+        module_tree(&root, &mut files);
         for file in &files {
             println!("cargo:rerun-if-changed={}", file.display());
             for name in path_segments(&std::fs::read_to_string(file)?) {
