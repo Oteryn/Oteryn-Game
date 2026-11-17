@@ -36,12 +36,14 @@ fn private_messages_postgres_cross_node_wire_delivery_replay_and_world_boundary(
                 let (second_node, second) = world::admit_second_node(&h).await.map_err(|e| format!("recipient setup: {e}"))?;
                 {
                     use crate::durability::guild_chat_fixture as guild;
+                    let mut party = h.pool.begin().await?;
                     sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES($1::uuid,$2::uuid,$3::uuid,1,3)")
-                        .bind(guild::uuid(id(201))).bind(guild::uuid(id(42))).bind(guild::uuid(id(41))).execute(&h.pool).await?;
+                        .bind(guild::uuid(id(201))).bind(guild::uuid(id(42))).bind(guild::uuid(id(41))).execute(&mut *party).await?;
                     for (member, channel, seq) in [(41,43,1_i32),(world::RECIPIENT,world::RECIPIENT_CHANNEL,2)] {
                         sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES($1::uuid,$2::uuid,$3,1,$4::uuid)")
-                            .bind(guild::uuid(id(member))).bind(guild::uuid(id(201))).bind(seq).bind(guild::uuid(id(channel))).execute(&h.pool).await?;
+                            .bind(guild::uuid(id(member))).bind(guild::uuid(id(201))).bind(seq).bind(guild::uuid(id(channel))).execute(&mut *party).await?;
                     }
+                    party.commit().await?;
                     let seal = h.recovery.seal_current().map_err(debug)?;
                     let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
                     let mut first = Dependencies::new()?;
