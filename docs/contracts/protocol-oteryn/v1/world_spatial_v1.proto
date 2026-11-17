@@ -86,9 +86,18 @@ message WorldSpatialSnapshotV1 {
 // ---------------------------------------------------------------------------------------------
 // VIS-2 (MOVE-RL-11-VISIBILITY-V1, D84-D87): the second schema revision of domain 1, snapshot type
 // 2 and delta type 2, gated by the optional capability 6 WORLD_SPATIAL_ENTITIES. A session that
-// did not select the capability receives only the v1 types above (own actor). Payloads are at
-// most 33,792 bytes without capability 286; with it, 50,688 bytes
-// (256 entries x 194 B + 1,024 B header). Unknown, repeated and kind-
+// did not select the capability receives only the v1 types above (own actor).
+// Type 2 snapshot and delta limits depend on capabilities 286 and 502.
+// The payload limit is 256 times the entry limit plus 1,024 bytes.
+//
+// | Capabilities | Max entry bytes | Max payload bytes |
+// | --- | ---: | ---: |
+// | Neither | 128 | 33792 |
+// | 286 only | 194 | 50688 |
+// | 502 only | 179 | 46848 |
+// | 286 and 502 | 245 | 63744 |
+//
+// Unknown, repeated and kind-
 // inconsistent fields, duplicate identities and zero or unknown enum values fail closed.
 // ---------------------------------------------------------------------------------------------
 
@@ -146,7 +155,7 @@ message WorldSpatialEntityV1 {
   // S-ENTNAME: required on players, creatures and NPCs only when capability 286
   // WORLD_SPATIAL_ENTITIES_V2 is selected alongside capability 6. Non-blank UTF-8,
   // at most 64 bytes, no control characters. Never on objects. Unknown to old
-  // decoders, so omitted unless negotiated. Named entries allow at most 194 bytes.
+  // decoders, so omitted unless negotiated. Entry limits for each profile appear above.
   string display_name = 13;
   // Optional, actors only, exclusively under capability 502 ACTOR_MOTION_V1.
   // Exactly 48 bytes; the strict little-endian profile is actor-motion-v1.md.

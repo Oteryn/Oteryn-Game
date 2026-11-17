@@ -1766,6 +1766,34 @@ mod tests {
     }
 
     #[test]
+    fn published_visibility_limits_match_negotiated_profiles() {
+        let schema =
+            include_str!("../../../docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto");
+        let prose =
+            include_str!("../../../docs/contracts/protocol-oteryn/v1/world-spatial-entities-v2.md");
+        for (profile, display_names, actor_motion) in [
+            ("Neither", false, false),
+            ("286 only", true, false),
+            ("502 only", false, true),
+            ("286 and 502", true, true),
+        ] {
+            let fields = EntityFields {
+                display_names,
+                actor_motion,
+                ..EntityFields::default()
+            };
+            let row = format!(
+                "| {profile} | {} | {} |",
+                entry_limit(fields),
+                payload_limit(fields)
+            );
+            for contract in [schema, prose] {
+                assert!(contract.contains(&row), "missing profile limits: {row}");
+            }
+        }
+    }
+
+    #[test]
     fn registries_bind_capability_6_the_type_2_payloads_and_the_limits() {
         let protocol: Value = serde_json::from_str(PROTOCOL_REGISTRY).expect("protocol registry");
         let capabilities = protocol["capabilities"].as_array().expect("capabilities");
