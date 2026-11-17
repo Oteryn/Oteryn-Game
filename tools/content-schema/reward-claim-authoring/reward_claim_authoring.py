@@ -458,8 +458,16 @@ def validate(records: list, items: dict, source_checks: list | None = None,
     errors = []
     expected_charge_checks = []
     charge_evidence = load_source_charge_evidence() if charge_evidence is None else charge_evidence
-    originals = {(c["identity"]["key"], tuple(p["position"][k] for k in ("x", "y", "z")), a12(r["item"])): r["count"]
-        for c in (source_claims or []) for p in c["placements"] for r in p.get("reward", {}).get("items", [])}
+    originals = {}
+    for claim in source_claims or []:
+        pilot_key = claim["identity"]["key"]
+        for placement in claim["placements"]:
+            position = tuple(placement["position"][key] for key in ("x", "y", "z"))
+            for reward in placement.get("reward", {}).get("items", []):
+                binding = (pilot_key, position, a12(reward["item"]))
+                if pilot_key == koshei_platinum.PILOT and binding in originals:
+                    errors.append(f"{pilot_key}: duplicate original Koshei reward binding")
+                originals[binding] = reward["count"]
     keys, bindings = set(), set()
     for row in records:
         record = row["definition"]
@@ -523,7 +531,12 @@ def validate(records: list, items: dict, source_checks: list | None = None,
                 qualified_items = container_native.claim_items(pilot_key, items)
                 quantity, charge_check = charged_source_reward(qualified_items.get(item_key), pilot_key,
                     position, item_key, raw_count, charge_evidence)
-                quantity = koshei_platinum.quantity(pilot_key, position, item_key, quantity, ids)
+                try:
+                    quantity = koshei_platinum.quantity(pilot_key, position, item_key, quantity, ids)
+                except ValueError as error:
+                    errors.append(f"{key}: {error}")
+                    ready = False
+                    continue
                 if pilot_key == koshei_platinum.PILOT and quantity != reward["count"]:
                     errors.append(f"{key}: reward quantity disagrees with Koshei platinum normalization")
                 if charge_check:

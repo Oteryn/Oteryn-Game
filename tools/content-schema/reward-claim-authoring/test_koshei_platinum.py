@@ -84,6 +84,37 @@ def test_authoring_refuses_drift_in_real_source():
         raise AssertionError("authoring silently accepted changed donor quantity")
 
 
+
+def test_validation_rejects_duplicate_source_bindings_in_either_order():
+    claim, manifest, items = fixture()
+    records, checks = rca.build_records([claim], manifest, items, [], set())
+    drift = copy.deepcopy(claim)
+    drift["placements"][0]["reward"]["items"][0]["count"] = 50
+    for sources in ([drift, claim], [claim, drift], [claim, claim]):
+        errors = rca.validate(records, items, checks, sources, [])
+        assert any("duplicate original Koshei reward binding" in error for error in errors)
+
+
+def test_validation_reports_target_binding_drift_without_raising():
+    claim, manifest, items = fixture()
+    records, checks = rca.build_records([claim], manifest, items, [], set())
+    for ids in ([], IDS[:1], IDS + [IDS[0]],
+                [{"server": "canary", "unique_id": None}]):
+        changed = copy.deepcopy(records)
+        changed[0]["definition"]["placements"][0]["source_binding"]["legacy_unique_ids"] = ids
+        for sources in ([claim], None):
+            errors = rca.validate(changed, items, checks, sources, [])
+            assert any("KOSHEI_PLATINUM_SOURCE_DRIFT" in error for error in errors)
+
+
+def test_validation_reports_raw_source_drift_without_raising():
+    claim, manifest, items = fixture()
+    records, checks = rca.build_records([claim], manifest, items, [], set())
+    claim["placements"][0]["reward"]["items"][0]["count"] = 50
+    errors = rca.validate(records, items, checks, [claim], [])
+    assert any("KOSHEI_PLATINUM_SOURCE_DRIFT" in error for error in errors)
+
+
 if __name__ == "__main__":
     for name, test in sorted(globals().copy().items()):
         if name.startswith("test_") and callable(test):
