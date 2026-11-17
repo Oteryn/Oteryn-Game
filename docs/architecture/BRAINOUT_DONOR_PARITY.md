@@ -97,7 +97,8 @@ generator now emits it. Temporary diagnostic prints were removed.
 | Clippy, quests/durability | Earlier all-target passes; rerun after whole-stack change pending |
 | Clippy, dispatch/server | Pending; redundant test adapter bound fixed without a lint allowance |
 | Full World regeneration | Running; canonical World package reproduced the base |
-| PG final qualification, no-URL guard and pin verification | Pending |
+| No-URL guards and public schema | Passed: 6 filtered tests in 0.11 seconds without the admin URL |
+| PG final qualification and pin verification | Pending |
 
 Status: implementation and generated Item admission committed; final qualification
 is still in progress. No PR. Migration 2889 is used; no new capability or command
