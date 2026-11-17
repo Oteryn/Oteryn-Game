@@ -435,6 +435,7 @@ fn atelier_reveal_uses_review_cancel_and_one_shot_confirm_through_bevy() -> Test
         Ok(())
     };
     activate_label(&mut app, "Gem Atelier / Workshop")?;
+    assert!(super::atelier::shared_button_catalogue(&mut app));
     activate_label(&mut app, "Reveal gem")?;
     assert!(commands.try_recv().is_err());
     assert!(

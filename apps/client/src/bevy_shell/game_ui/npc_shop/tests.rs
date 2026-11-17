@@ -50,6 +50,72 @@ fn publish(outbox: &crate::play::Outbox, revision: u64, price: u32) {
     })]);
 }
 #[test]
+fn idle_shop_frame_skips_catalogue_formatting() -> Result {
+    use std::{hint::black_box, time::Instant};
+    let (host, _, outbox) = fixture()?;
+    let mut window = host
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .npc_shop_panel()
+        .live
+        .window;
+    window.offers = (1..=1024)
+        .map(|item| npc_service::NpcOffer {
+            item_definition_ref: item,
+            ..window.offers[0]
+        })
+        .collect();
+    outbox.push(vec![SessionEvent::NpcTradeWindow(AppliedDelta {
+        server_sequence: 8,
+        base_revision: 7,
+        new_revision: 8,
+        value: window,
+    })]);
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .init_resource::<InputFocus>()
+    .insert_non_send(host)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    let shop = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .npc_shop_panel()
+        .live;
+    assert_eq!(shop.window.offers.len(), 1024);
+    let format = (0..5)
+        .map(|_| {
+            let start = Instant::now();
+            black_box(shop.filtered_quotes(Some(NpcTradeSide::Buy), ""));
+            start.elapsed()
+        })
+        .min()
+        .ok_or("format")?;
+    let idle = (0..5)
+        .map(|_| {
+            let start = Instant::now();
+            app.update();
+            start.elapsed()
+        })
+        .min()
+        .ok_or("idle")?;
+    assert!(idle < format, "idle frame {idle:?}, formatting {format:?}");
+    Ok(())
+}
+#[test]
 fn npc_shop_actual_activate_emits_exact_retained_trade_and_pending_blocks_repeats() -> Result {
     let (host, mut commands, _) = fixture()?;
     let mut app = App::new();

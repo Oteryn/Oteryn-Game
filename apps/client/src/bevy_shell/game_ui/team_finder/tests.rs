@@ -108,6 +108,7 @@ fn team_search_filter_application_cancel_and_paging() -> Result {
     app.update();
     let filter = TeamFilter {
         name: "second".into(),
+        level: Some(25),
         ..default()
     };
     for (field, mut text) in app
@@ -117,8 +118,12 @@ fn team_search_filter_application_cancel_and_paging() -> Result {
     {
         if matches!(field, Field::Name) {
             *text = EditableText::new("second");
+        } else if matches!(field, Field::Level) {
+            *text = EditableText::new("25");
         }
     }
+    click(&mut app, Kind::Select(1))?;
+    app.update();
     click(&mut app, Kind::Filter(TeamFilter::default()))?;
     app.update();
     assert!(
@@ -571,5 +576,49 @@ fn manage_team_renders_in_the_selected_language() -> Result {
         assert!(shown(&mut app, german), "{german}");
         assert!(!shown(&mut app, source), "{source}");
     }
+    Ok(())
+}
+
+#[test]
+fn acknowledgement_preserves_later_edits() -> Result {
+    let (mut app, mut rx, outbox) = manage_team(Some(advertised(10)))?;
+    listing_texts(&mut app, ["20", "100", "15", "4", "3", "0", "1", "1", ""]);
+    click(&mut app, Kind::Publish(Vec::new()))?;
+    command(&mut rx)?;
+    app.update();
+    listing_texts(&mut app, ["21", "100", "15", "4", "3", "0", "1", "1", ""]);
+    leader_reply(&outbox, oteryn_session::CommandStatus::Accepted);
+    app.update();
+    assert_eq!(editors(&mut app)[0], "21");
+    Ok(())
+}
+
+#[test]
+fn publish_fences_pending_paste() -> Result {
+    let (mut app, mut rx, _) = manage_team(Some(advertised(10)))?;
+    for (field, mut text) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if matches!(field, Field::Listing(0)) {
+            text.pending_paste = Some(bevy::clipboard::ClipboardRead::Pending(
+                std::sync::Arc::new(std::sync::Mutex::new(None)),
+            ));
+        }
+    }
+    click(&mut app, Kind::Publish(Vec::new()))?;
+    assert!(rx.try_recv().is_err());
+    listing_texts(&mut app, ["32", "100", "15", "4", "3", "0", "1", "1", ""]);
+    app.update();
+    let sent = command(&mut rx)?;
+    assert_eq!(
+        oteryn_client_ui::team_finder_leader::decode_upsert(&sent.payload)
+            .map_err(|e| format!("{e:?}"))?
+            .min_level,
+        32
+    );
+    app.update();
+    assert!(rx.try_recv().is_err());
     Ok(())
 }

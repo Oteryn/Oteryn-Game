@@ -226,15 +226,11 @@ fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     (keys, windows, searches): ProjectQueries,
-    resources: (
-        Res<Skins>,
-        ResMut<Assets<Image>>,
-        ResMut<bevy::input_focus::InputFocus>,
-    ),
+    skin: Res<Skins>,
+    mut images: ResMut<Assets<Image>>,
     mut state: ResMut<State>,
     guard: ModalGuard,
 ) {
-    let (skin, mut images, mut focus) = resources;
     let Some(play) = &owner.play else {
         for entity in &windows {
             commands.entity(entity).despawn();
@@ -266,7 +262,15 @@ fn project(
     if !state.dirty && state.rendered.as_ref() == Some(&(generation, panel.clone())) {
         return;
     }
-    let searching = focus.get().is_some_and(|entity| searches.contains(entity));
+    let retained = searches.single().ok().filter(|_| {
+        state
+            .rendered
+            .as_ref()
+            .is_some_and(|(previous, _)| *previous == generation)
+    });
+    if let Some(field) = retained {
+        commands.entity(field).remove::<ChildOf>();
+    }
     for entity in &windows {
         commands.entity(entity).despawn();
     }
@@ -296,14 +300,11 @@ fn project(
         .spawn(source::button_caption("Outfit", skin.font.clone()))
         .id();
     commands.entity(root).add_child(title);
-    search::build(
-        &mut commands,
-        &skin,
-        root,
-        &state.search,
-        searching,
-        &mut focus,
-    );
+    if let Some(field) = retained {
+        commands.entity(root).add_child(field);
+    } else {
+        search::build(&mut commands, &skin, root, &state.search);
+    }
     for key in outfits(&panel)
         .into_iter()
         .filter(|key| search::matches(key, &state.search))

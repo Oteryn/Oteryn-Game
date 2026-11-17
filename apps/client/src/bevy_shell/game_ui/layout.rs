@@ -17,16 +17,19 @@ use bevy::{
 use std::path::PathBuf;
 
 /// Layout entry of the main window: physical desktop position and logical size.
-const WINDOW: &str = "window";
+const WINDOW: &str = "window.logical";
 // The layout format caps rectangle sizes at 4096 but supports desktop coordinates
 // up to 32768. A point in window-local pixels records the full logical extent.
-const WINDOW_EXTENT: &str = "window.extent";
+const WINDOW_EXTENT: &str = "window.logical.extent";
 /// The local layout file and what it holds; without a path the layout stays transient.
 #[derive(Resource, Default)]
 pub(in crate::bevy_shell) struct LayoutStore {
     path: Option<PathBuf>,
     layout: WindowLayout,
     pending_save: bool,
+    migrated: bool,
+    #[cfg(test)]
+    rejection_count: usize,
     retry_after: std::time::Duration,
     rejected: std::collections::HashMap<&'static str, [i32; 4]>,
 }
@@ -43,10 +46,46 @@ impl LayoutStore {
             ..default()
         }
     }
+    pub(in crate::bevy_shell) fn primary_window_plugin(&self) -> WindowPlugin {
+        let mut window = Window {
+            title: "Oteryn".into(),
+            resolution: (1024, 720).into(),
+            resize_constraints: bevy::window::WindowResizeConstraints {
+                min_width: 1020.,
+                min_height: 650.,
+                ..default()
+            },
+            ..default()
+        };
+        if let Some([x, y, width, height]) = self.window()
+            && let (Ok(width), Ok(height)) = (u32::try_from(width), u32::try_from(height))
+        {
+            window.position = bevy::window::WindowPosition::At(IVec2::new(x, y));
+            window.resolution = (width, height).into();
+        }
+        if let Some([x, y, _, _]) = self.legacy_window() {
+            window.position = bevy::window::WindowPosition::At(IVec2::new(x, y));
+        }
+        WindowPlugin {
+            close_when_requested: false,
+            primary_window: Some(window),
+            ..default()
+        }
+    }
     /// The remembered main window physical desktop position and logical size.
     pub(in crate::bevy_shell) fn window(&self) -> Option<[i32; 4]> {
-        let [x, y, width, height] = self.layout.bounds(WINDOW)?;
-        if let Some([w, h, 1, 1]) = self.layout.bounds(WINDOW_EXTENT)
+        self.bounds_with_extent(WINDOW, WINDOW_EXTENT)
+    }
+    /// Unversioned files stored physical pixels. Restore them once the backend knows the monitor.
+    pub(in crate::bevy_shell) fn legacy_window(&self) -> Option<[i32; 4]> {
+        if self.window().is_some() || self.migrated {
+            return None;
+        }
+        self.bounds_with_extent("window", "window.extent")
+    }
+    fn bounds_with_extent(&self, id: &str, extent: &str) -> Option<[i32; 4]> {
+        let [x, y, width, height] = self.layout.bounds(id)?;
+        if let Some([w, h, 1, 1]) = self.layout.bounds(extent)
             && w.min(4096) == width
             && h.min(4096) == height
         {
@@ -74,6 +113,10 @@ impl LayoutStore {
         match result {
             Ok(()) => self.pending_save = true,
             Err(error) => {
+                #[cfg(test)]
+                {
+                    self.rejection_count += 1;
+                }
                 self.rejected.insert(id, bounds);
                 leprintln!("Could not save window layout: {error}", error = error);
             }
@@ -134,7 +177,7 @@ fn remember(
     time: Res<Time<Real>>,
     splitters: Query<&Splitter>,
     nodes: Query<&Node>,
-    windows: Query<&Window, With<PrimaryWindow>>,
+    mut windows: Query<&mut Window, With<PrimaryWindow>>,
 ) {
     if store.path.is_none() || splitters.iter().any(|splitter| splitter.gesture.is_some()) {
         return;
@@ -149,6 +192,15 @@ fn remember(
         let size = size.round() as i32;
         let bounds = [0, 0, 1, size];
         store.remember_bounds(splitter.id, bounds);
+    }
+    if let Some([_, _, width, height]) = store.legacy_window()
+        && let Ok(mut window) = windows.single_mut()
+        && window.mode == WindowMode::Windowed
+    {
+        window
+            .resolution
+            .set_physical_resolution(width as u32, height as u32);
+        store.migrated = true;
     }
     if let Ok(window) = windows.single()
         && window.mode == WindowMode::Windowed

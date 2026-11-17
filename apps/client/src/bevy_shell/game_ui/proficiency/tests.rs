@@ -634,3 +634,22 @@ fn proficiency_shapes_slot_through_modify_rank_reshape_and_confirmed_clear() -> 
     }
     Ok(())
 }
+
+#[test]
+fn proficiency_close_while_catalogue_refresh_is_pending() -> Result {
+    let (mut app, mut commands, _) = app()?;
+    click(&mut app, |kind| matches!(kind, Kind::Refresh))?;
+    assert_eq!(command(&mut commands)?.kind, 660);
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Close))?;
+    let panel = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .weapon_proficiency_panel();
+    assert!(!panel.open);
+    Ok(())
+}

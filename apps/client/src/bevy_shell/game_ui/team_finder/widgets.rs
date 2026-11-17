@@ -31,6 +31,7 @@ pub(super) fn build(
     panel: &Panel,
     leader: &Leader,
     values: &[String; LISTING_FIELDS],
+    search: &[String; 2],
 ) -> Entity {
     let root = commands
         .spawn((
@@ -103,15 +104,8 @@ pub(super) fn build(
         ),
     );
     for (field, value) in [
-        (Field::Name, panel.filter.name.clone()),
-        (
-            Field::Level,
-            panel
-                .filter
-                .level
-                .map(|level| level.to_string())
-                .unwrap_or_default(),
-        ),
+        (Field::Name, search[0].clone()),
+        (Field::Level, search[1].clone()),
     ] {
         input(commands, skins, dialog, field, value);
     }

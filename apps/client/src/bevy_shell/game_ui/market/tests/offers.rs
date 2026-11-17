@@ -255,6 +255,12 @@ fn market_drafts_switch_with_the_selected_catalogue_item() -> TestResult {
         if index == 0 {
             edit(&mut app, "market.create.amount", "23")?;
             edit(&mut app, "market.create.price", "456")?;
+            click(&mut app, "market.create.buy")?;
+            click(&mut app, "market.create.confirm")?;
+            let submitted = command(&mut commands)?;
+            assert_eq!((submitted.amount, submitted.price), (23, 456));
+            self::reply(&outbox, 5, vec![]);
+            app.update();
         }
     }
     edit(&mut app, "market.create.amount", "3")?;
@@ -716,5 +722,27 @@ fn market_own_offers_requery_after_the_interval_and_on_reopen() -> TestResult {
         app.update();
     }
     assert_eq!(command(&mut commands)?.action, 3);
+    Ok(())
+}
+
+#[test]
+fn own_refresh_waits_for_catalogue_navigation() -> TestResult {
+    let (mut app, mut commands, outbox, root) = setup()?;
+    app.init_resource::<Time>()
+        .init_resource::<super::super::refresh::Refresh>()
+        .add_systems(Update, super::super::refresh::own.before(project));
+    app.update();
+    click(&mut app, "market.tab.own")?;
+    command(&mut commands)?;
+    reply(&outbox, 3, vec![]);
+    app.update();
+    let item = button(&mut app, root, Kind::Item(0))?;
+    app.world_mut().trigger(Activate { entity: item });
+    feature(&mut commands)?;
+    app.world_mut()
+        .resource_mut::<Time>()
+        .advance_by(super::super::refresh::INTERVAL);
+    app.update();
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

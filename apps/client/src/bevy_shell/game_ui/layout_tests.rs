@@ -335,13 +335,12 @@ fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
     window.resolution.set_scale_factor(2.);
     window.resolution.set_physical_resolution(2400, 1400);
     app.update();
-    let [_, _, width, height] = LayoutStore::load(Some(path.clone()))
-        .window()
-        .ok_or("window")?;
-    let mut restored = Window {
-        resolution: (u32::try_from(width)?, u32::try_from(height)?).into(),
-        ..default()
-    };
+    let mut restart = App::new();
+    restart.add_plugins(LayoutStore::load(Some(path.clone())).primary_window_plugin());
+    let mut primary = restart
+        .world_mut()
+        .query_filtered::<&mut Window, With<PrimaryWindow>>();
+    let mut restored = primary.single_mut(restart.world_mut())?;
     // Windowed creation requests this logical size from winit, which scales it
     // to the monitor before reporting the physical resolution to Bevy.
     restored
@@ -368,5 +367,50 @@ fn failed_layout_save_retries_after_directory_recovers() -> TestResult {
     app.update();
     assert!(WindowLayout::load(&path)?.bounds("console").is_some());
     std::fs::remove_dir_all(dir)?;
+    Ok(())
+}
+
+#[test]
+fn unchanged_rejected_geometry_is_not_recorded_again() -> TestResult {
+    let path = std::env::temp_dir().join(format!("layout-rejected-{}.json", std::process::id()));
+    let mut app = app_with(LayoutStore::load(Some(path.clone())));
+    let mut windows = app
+        .world_mut()
+        .query_filtered::<&mut Window, With<PrimaryWindow>>();
+    windows.single_mut(app.world_mut())?.position = WindowPosition::At(IVec2::new(40000, 80));
+    app.update();
+    app.update();
+    assert_eq!(app.world().resource::<LayoutStore>().rejection_count, 1);
+    windows.single_mut(app.world_mut())?.position = WindowPosition::At(IVec2::new(40001, 80));
+    app.update();
+    assert_eq!(app.world().resource::<LayoutStore>().rejection_count, 2);
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn legacy_physical_bounds_migrate_on_the_actual_display() -> TestResult {
+    let path = std::env::temp_dir().join(format!("legacy-window-{}.json", std::process::id()));
+    let mut legacy = WindowLayout::default();
+    legacy.record("window", [40, 80, 2400, 1400])?;
+    legacy.save(&path)?;
+    let mut app = app_with(LayoutStore::default());
+    app.insert_resource(LayoutStore::load(Some(path.clone())));
+    let mut q = app
+        .world_mut()
+        .query_filtered::<&mut Window, With<PrimaryWindow>>();
+    let mut window = q.single_mut(app.world_mut())?;
+    window.position = WindowPosition::At(IVec2::new(40, 80));
+    window.resolution.set_scale_factor(2.);
+    app.update();
+    assert_eq!(
+        q.single(app.world())?.physical_size(),
+        UVec2::new(2400, 1400)
+    );
+    assert_eq!(
+        LayoutStore::load(Some(path.clone())).window(),
+        Some([40, 80, 1200, 700])
+    );
+    std::fs::remove_file(path)?;
     Ok(())
 }

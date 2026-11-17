@@ -249,6 +249,19 @@ fn picker_binds_exact_live_item_and_never_uses_a_reused_row() -> TestResult {
     };
     outbox.push(vec![inventory(item)]);
     app.update();
+    let roles: Vec<_> = app
+        .world_mut()
+        .query::<&crate::bevy_shell::game_ui::install::RememberScroll>()
+        .iter(app.world())
+        .map(|key| (key.0, key.1))
+        .collect();
+    assert_eq!(
+        roles
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        roles.len()
+    );
     let stale = control(&mut app, Kind::Select(handle))?;
     let replacement = oteryn_session::ItemEntry {
         handle: std::num::NonZeroU64::new(42).ok_or("replacement")?,

@@ -42,7 +42,9 @@ pub(super) fn perform(
     panel: &WeaponProficiencyPanel,
     kind: Kind,
 ) {
-    if link.weapon_proficiency_panel() != *panel || panel.pending {
+    if link.weapon_proficiency_panel() != *panel
+        || (panel.pending && !matches!(kind, Kind::Close | Kind::DiscardClose | Kind::CancelClose))
+    {
         return;
     }
     state.dirty = true;

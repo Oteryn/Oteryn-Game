@@ -1,10 +1,6 @@
 //! Local catalogue search; selection and ownership stay in the appearance owner.
 use super::*;
-use bevy::{
-    input_focus::{FocusCause, InputFocus},
-    text::EditableText,
-    ui_widgets::TextInput,
-};
+use bevy::{text::EditableText, ui_widgets::TextInput};
 #[derive(Component)]
 pub(super) struct Field;
 pub(super) fn matches(key: &str, query: &str) -> bool {
@@ -23,14 +19,7 @@ pub(super) fn update(
         }
     }
 }
-pub(super) fn build(
-    commands: &mut Commands,
-    skin: &Skins,
-    root: Entity,
-    value: &str,
-    searching: bool,
-    focus: &mut InputFocus,
-) {
+pub(super) fn build(commands: &mut Commands, skin: &Skins, root: Entity, value: &str) {
     let mut text = EditableText::new(value);
     text.max_characters = Some(128);
     let field = commands
@@ -51,7 +40,4 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(root).add_child(field);
-    if searching {
-        focus.set(field, FocusCause::Navigated);
-    }
 }
