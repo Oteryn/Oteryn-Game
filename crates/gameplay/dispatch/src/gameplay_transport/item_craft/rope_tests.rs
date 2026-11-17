@@ -732,3 +732,30 @@ fn tools_rope_spot_hidden_target_epoch_and_pz_landing() {
         }
     );
 }
+
+#[test]
+fn open_hole_ropes_from_directly_below_to_first_available_neighbour() {
+    use crate::map::overlay::TilePos;
+    let hole = TilePos {
+        x: 10,
+        y: 20,
+        floor: -9,
+    };
+    let below = TilePos { floor: -10, ..hole };
+    let south = TilePos { y: 21, ..hole };
+    let north = TilePos { y: 19, ..hole };
+    let east = TilePos { x: 11, ..hole };
+    assert_eq!(
+        rope_item_landing(hole, |pos| pos == east || pos == north),
+        Some((below, north))
+    );
+    assert_eq!(
+        rope_item_landing(hole, |pos| pos == south || pos == north),
+        Some((below, south))
+    );
+    assert_eq!(rope_item_landing(hole, |_| false), None);
+    assert_eq!(
+        rope_item_landing(TilePos { floor: -15, ..hole }, |_| true),
+        None
+    );
+}

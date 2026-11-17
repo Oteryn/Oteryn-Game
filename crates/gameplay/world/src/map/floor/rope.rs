@@ -17,6 +17,27 @@ const OFFSETS: &[(i32, i32)] = &[
     (1, -1),
 ];
 
+/// An open hole's source and the first adjacent tile that can accept its item.
+pub fn rope_item_landing(
+    hole: TilePos,
+    mut accepts: impl FnMut(TilePos) -> bool,
+) -> Option<(TilePos, TilePos)> {
+    let floor = hole
+        .floor
+        .checked_sub(1)
+        .filter(|floor| i32::from(*floor) >= -MAX_Z)?;
+    let source = TilePos { floor, ..hole };
+    let destination = OFFSETS.iter().find_map(|&(dx, dy)| {
+        let tile = TilePos {
+            x: u16::try_from(i32::from(hole.x) + dx).ok()?,
+            y: u16::try_from(i32::from(hole.y) + dy).ok()?,
+            ..hole
+        };
+        accepts(tile).then_some(tile)
+    })?;
+    Some((source, destination))
+}
+
 /// Exact map identity selected by USE; recreated projections have a new identity.
 #[derive(Clone, Copy)]
 pub enum LadderTarget {

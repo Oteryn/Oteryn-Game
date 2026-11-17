@@ -3,6 +3,11 @@ use super::*;
 use crate::content::{LogicalCell, NativeEntryMovementCells};
 use crate::foundation::ChannelRuntimeV1;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
+use crate::gameplay_transport::item_move::{LoopMoveRefusal, LoopMoveResult};
+use crate::gameplay_transport::loop_move::{self, LoopGroundOverlay};
+use crate::gameplay_transport::world_map::{self, MapHandleTarget, MapViewSource};
+use crate::map::floor::rope_item_landing;
+use crate::map::overlay::TilePos;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -23,7 +28,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return Ok(None);
         };
-        let Some(_permit) = self.spell_lane_permit().await else {
+        let Some(permit) = self.spell_lane_permit().await else {
             return Err(());
         };
         let inventory = tokio::time::timeout(
@@ -64,6 +69,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .await
         .map_err(|_| ())?
         .ok_or(())?;
+        let lift = {
+            let mut runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            resolve_item_lift(
+                self, &mut runtime, &states, actor, command, intent, target, &ground, index,
+            )
+        };
+        if let Some(lift) = lift {
+            let disposition = match lift {
+                Ok((item, from, to)) => match loop_move::relocate_roped_item(
+                    self, &permit, actor, command, item, &ground, from, to,
+                )
+                .await
+                {
+                    LoopMoveResult::Committed => UseDisposition::Committed,
+                    LoopMoveResult::Refused(LoopMoveRefusal::Stale) => UseDisposition::StaleState,
+                    LoopMoveResult::Unknown => return Err(()),
+                    _ => UseDisposition::NotPossible,
+                },
+                Err(disposition) => disposition,
+            };
+            drop(permit);
+            if disposition == UseDisposition::Committed {
+                self.refresh_terrain_tools().await;
+            }
+            return Ok(Some(UseOutcome {
+                disposition,
+                ..UseOutcome::rejected()
+            }));
+        }
         if !tokio::time::timeout(
             std::time::Duration::from_secs(10),
             self.refresh_pvp_locks(actor, command.game_session_id),
@@ -97,6 +132,139 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             ..UseOutcome::rejected()
         }))
     }
+}
+
+// Crystal's open holes (register_actions.lua:1), with rope spots retaining self-ascent.
+const OPEN_HOLES: &[u16] = &[
+    294, 369, 370, 385, 394, 411, 412, 413, 432, 433, 435, 482, 483, 594, 595, 609, 610, 615, 868,
+    874, 1156, 4824, 7515, 7516, 7517, 7518, 7519, 7520, 7521, 7522, 7737, 7755, 7767, 7768, 8144,
+    8690, 8709, 12203, 12961, 17239, 19220, 23364,
+];
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "current rope USE and its fenced map projection"
+)]
+fn resolve_item_lift(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &mut ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: &UseIntent,
+    target: Option<ItemKey>,
+    ground: &LoopGroundOverlay,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+) -> Option<Result<([u8; 16], TilePos, TilePos), UseDisposition>> {
+    let cells = admission.movement_cells();
+    let at = super::super::bundle_map_position(runtime, cells, actor)?;
+    let pinned = at.map.facts.pinned();
+    let map = MapViewSource {
+        overlay: ground.overlay(),
+        facts: &pinned,
+        content_generation: at.content_generation,
+        reset_epoch: admission.reset_epoch,
+    };
+    let (hole, ordinal) = rope_target(&map, intent, target).ok()?;
+    let tile = map.overlay.base().tile(hole.x, hole.y, hole.floor)?;
+    let appearance = tile
+        .ids()
+        .iter()
+        .zip(tile.depths())
+        .filter(|(_, depth)| **depth == 0)
+        .nth(usize::from(ordinal))
+        .and_then(|(id, _)| pinned.base_entry(hole, ordinal, *id))?
+        .appearance_id;
+    if OPEN_HOLES.binary_search(&appearance).is_err() {
+        return None;
+    }
+    if states.is_dead(actor) || !states.spell_idle(runtime, actor, command.game_session_id) {
+        return Some(Err(UseDisposition::Rejected));
+    }
+    if !rope_in_reach(at.at, hole) {
+        return Some(Err(UseDisposition::TooFar));
+    }
+    let facts = ground.facts(&pinned);
+    let plan = rope_item_landing(hole, |position| {
+        let cell = LogicalCell {
+            x: i32::from(position.x),
+            y: i32::from(position.y),
+            z: -i32::from(position.floor),
+        };
+        at.map.facts.house_id(position).is_none()
+            && !at.map.floors.contains(position)
+            && !at.map.facts.doors().blocks(position)
+            && cells
+                .spell_tiles()
+                .lookup(cells.scope(), cell)
+                .is_ok_and(|tile| tile.ground_present() && !tile.flags().immovable_block_item)
+            && view::compose_tile(ground.overlay(), &facts, position).is_ok_and(|tile| {
+                tile.is_some_and(|tile| {
+                    tile.entries
+                        .iter()
+                        .filter(|entry| matches!(entry.source, view::EntrySource::Ground(_)))
+                        .count()
+                        < crate::durability::ground_cell_limit::GROUND_CELL_ROOT_LIMIT
+                })
+            })
+    });
+    let Some((from, to)) = plan else {
+        return Some(Err(UseDisposition::NotPossible));
+    };
+    let native = admission.active_generation?.native_gameplay()?;
+    let item = view::compose_tile(ground.overlay(), &facts, from)
+        .ok()
+        .flatten()
+        .and_then(|tile| {
+            tile.entries.iter().rev().find_map(|entry| {
+                let view::EntrySource::Ground(item) = entry.source else {
+                    return None;
+                };
+                let MapDefinition::Item(reference) = entry.facts.definition else {
+                    return None;
+                };
+                let (key, revision) = index.definition_at(reference)?;
+                let policy = native.item_policy(key, revision)?;
+                use crate::content::ReferenceItemField as Fact;
+                matches!(&policy.record().semantics.physical, Fact::Known(physical)
+                    if physical.movable == Fact::Known(true))
+                .then_some(item)
+            })
+        });
+    Some(
+        item.map(|item| (item, from, to))
+            .ok_or(UseDisposition::NotPossible),
+    )
+}
+
+fn rope_target(
+    map: &MapViewSource<'_, impl MapFacts>,
+    intent: &UseIntent,
+    target: Option<ItemKey>,
+) -> Result<(TilePos, u8), UseDisposition> {
+    match &intent.use_with_map_item {
+        Some(MapUseTarget::Object(object)) => {
+            world_map::resolve_map_target(map, object, |_| None::<()>)
+                .map(|target| (target.pos, target.ordinal))
+                .map_err(|_| UseDisposition::StaleState)
+        }
+        Some(MapUseTarget::Item(_)) => {
+            match target.and_then(|key| world_map::resolve_map_handle(map, key).ok()) {
+                Some(MapHandleTarget::Base { pos, ordinal, .. }) => Ok((pos, ordinal)),
+                _ => Err(UseDisposition::StaleState),
+            }
+        }
+        None => Err(UseDisposition::NothingToUse),
+    }
+}
+
+fn rope_in_reach(
+    at: crate::gameplay_transport::world_spatial::ActorPosition,
+    spot: TilePos,
+) -> bool {
+    i16::from(spot.floor) == at.floor
+        && at.x.abs_diff(i32::from(spot.x)) <= 1
+        && at.y.abs_diff(i32::from(spot.y)) <= 1
 }
 
 fn carried_rope<'a>(
@@ -177,27 +345,11 @@ fn rope_in_channel(
         content_generation: at.content_generation,
         reset_epoch,
     };
-    let spot = match &intent.use_with_map_item {
-        Some(MapUseTarget::Object(object)) => {
-            match crate::gameplay_transport::world_map::resolve_map_target(&map, object, |_| {
-                None::<()>
-            }) {
-                Ok(target) => target.pos,
-                Err(_) => return UseDisposition::StaleState,
-            }
-        }
-        Some(MapUseTarget::Item(_)) => match target.and_then(|key| {
-            crate::gameplay_transport::world_map::resolve_map_handle(&map, key).ok()
-        }) {
-            Some(crate::gameplay_transport::world_map::MapHandleTarget::Base { pos, .. }) => pos,
-            _ => return UseDisposition::StaleState,
-        },
-        None => return UseDisposition::NothingToUse,
+    let (spot, _) = match rope_target(&map, intent, target) {
+        Ok(target) => target,
+        Err(disposition) => return disposition,
     };
-    if i16::from(spot.floor) != at.at.floor
-        || at.at.x.abs_diff(i32::from(spot.x)) > 1
-        || at.at.y.abs_diff(i32::from(spot.y)) > 1
-    {
+    if !rope_in_reach(at.at, spot) {
         return UseDisposition::TooFar;
     }
     let spot = LogicalCell {

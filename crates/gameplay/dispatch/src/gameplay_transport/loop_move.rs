@@ -1252,6 +1252,79 @@ pub(super) async fn relocate_source_item(
     let ItemKey::Instance(item) = item else {
         return LoopMoveResult::Refused(LoopMoveRefusal::NotSupported);
     };
+    relocate_ground_item(
+        admission,
+        permit,
+        actor,
+        command,
+        item,
+        from,
+        destination,
+        None,
+    )
+    .await
+}
+
+/// Rope USE has already qualified the exact open hole and its neighbouring landing.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one fenced rope lift and its current source projection"
+)]
+pub(super) async fn relocate_roped_item(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    actor: ExactActorRef,
+    command: UseCommand,
+    item: [u8; 16],
+    projection: &LoopGroundOverlay,
+    from: TilePos,
+    to: TilePos,
+) -> LoopMoveResult {
+    let Some(pickup_cell) = projection.pickup_cell(&item) else {
+        return LoopMoveResult::Refused(LoopMoveRefusal::Stale);
+    };
+    let destination = WorldTilePosition {
+        x: i32::from(to.x),
+        y: i32::from(to.y),
+        floor: i16::from(to.floor),
+    };
+    if from.floor.checked_add(1) != Some(to.floor)
+        || from.x.abs_diff(to.x) > 1
+        || from.y.abs_diff(to.y) > 1
+        || (from.x, from.y) == (to.x, to.y)
+        || projection
+            .ground_entry(&item)
+            .is_none_or(|(at, _)| at != from)
+    {
+        return LoopMoveResult::Refused(LoopMoveRefusal::Blocked);
+    }
+    relocate_ground_item(
+        admission,
+        permit,
+        actor,
+        command,
+        item,
+        from,
+        destination,
+        Some(pickup_cell),
+    )
+    .await
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "shared durable writer for qualified source relocations"
+)]
+async fn relocate_ground_item(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    actor: ExactActorRef,
+    command: UseCommand,
+    item: [u8; 16],
+    from: TilePos,
+    destination: WorldTilePosition,
+    roped_pickup_cell: Option<Vec<u8>>,
+) -> LoopMoveResult {
     let Some(fence) = command.item_fence else {
         return LoopMoveResult::Refused(LoopMoveRefusal::Rejected);
     };
@@ -1276,13 +1349,17 @@ pub(super) async fn relocate_source_item(
         let Some(map) = admission.bundle_map() else {
             return LoopMoveResult::Refused(LoopMoveRefusal::NotSupported);
         };
-        let Some(ground) = source_drop_cell(
-            map.overlay.base(),
-            (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
-            destination,
-        )
-        .ok() else {
-            return LoopMoveResult::Refused(LoopMoveRefusal::Blocked);
+        let ground = if roped_pickup_cell.is_some() {
+            ground_cell(destination.x, destination.y, destination.floor)
+        } else {
+            match source_drop_cell(
+                map.overlay.base(),
+                (i32::from(from.x), i32::from(from.y), i16::from(from.floor)),
+                destination,
+            ) {
+                Ok(ground) => ground,
+                Err(_) => return LoopMoveResult::Refused(LoopMoveRefusal::Blocked),
+            }
         };
         (
             native,
@@ -1309,11 +1386,9 @@ pub(super) async fn relocate_source_item(
             LoopMoveRequest {
                 item,
                 count: None,
-                pickup_cell: Some(ground_cell(
-                    i32::from(from.x),
-                    i32::from(from.y),
-                    i16::from(from.floor),
-                )),
+                pickup_cell: Some(roped_pickup_cell.unwrap_or_else(|| {
+                    ground_cell(i32::from(from.x), i32::from(from.y), i16::from(from.floor))
+                })),
                 destination: LoopDestination::Ground(ground),
             },
         )
