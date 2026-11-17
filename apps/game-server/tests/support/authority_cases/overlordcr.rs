@@ -1,6 +1,8 @@
 //! Supplemental quest-owner transaction proof; dispatch tests exercise lethal capture.
 use crate::bestiary_postgres_harness as fixture;
-use crate::durability::character_progression::ExperienceRewardOccurrence;
+use crate::durability::character_progression::{
+    CharacterProgressionError, ExperienceRewardOccurrence,
+};
 use crate::durability::quest_state::{
     QuestCause, QuestTransitionOutcome,
     native_kills::{NativeDeathSource, NativeQuestDeath},
@@ -102,6 +104,33 @@ async fn exercise(h: &fixture::Harness, element: &str) -> fixture::TestResult {
     if let NativeDeathSource::Source(source) = &mut death.source {
         source.dealt_damage = true;
     }
+    let mut other_creature = death.clone();
+    other_creature.creature = "oteryn:creature.rat".into();
+    let invalid = h
+        .root
+        .commit_character_native_quest_kill(
+            &authority,
+            &h.node,
+            fence,
+            cause,
+            other_creature,
+            Arc::clone(&catalogue),
+        )
+        .await;
+    assert!(matches!(
+        invalid,
+        Err(CharacterProgressionError::InvalidInput)
+    ));
+    assert_eq!(h.root_revision().await?, "1");
+    let before: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_character_quest_tracks WHERE track_key=$1")
+            .bind(track)
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(
+        before, 0,
+        "non-overlord and non-damage requests set no flag"
+    );
     let committed = h
         .root
         .commit_character_native_quest_kill(
