@@ -76,7 +76,9 @@ fn scenario_case(
     let native_altar = name.starts_with("l6-floor-assembly-native");
     let native_gate = name.starts_with("l6-tomb-gate-native-");
     let last_creep = name == "qengine-rewards-m23-last-creep";
-    let native_crop = m03_use
+    let cursed_stairs = name.starts_with("crystal-stairs-");
+    let native_crop = cursed_stairs
+        || m03_use
         || engenc_asura
         || m49
         || qm03
@@ -1023,7 +1025,12 @@ fn scenario_case(
                 "content-1",
             )?;
         let generation = controller.active().ok_or("generation")?;
-        let world = if m03_use {
+        let world = if cursed_stairs {
+            super::super::actmark::native_world(
+                &callback,
+                generation.native_gameplay().ok_or("native stairs")?,
+            )?
+        } else if m03_use {
             super::super::qengine_m03_use::world(
                 generation
                     .native_gameplay()
