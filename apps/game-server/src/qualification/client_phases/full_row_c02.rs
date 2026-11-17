@@ -69,7 +69,11 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         started: std::time::Instant::now(),
         step: 0,
     };
-    let result = verdict::indexed_timeout(Duration::from_secs(420), verdict::observe(journey(&mut row, clients))).await;
+    let result = verdict::indexed_timeout(
+        Duration::from_secs(420),
+        verdict::observe(journey(&mut row, clients)),
+    )
+    .await;
     let result = match result {
         Ok(result) => result,
         Err(_) => Err(format!("timeout-after-step-{}", row.step).into()),
@@ -279,7 +283,17 @@ async fn buy(
 }
 
 async fn equip(client: &mut DevClientSession, key: NonZeroU32, slot: EquipmentSlot) -> TestResult {
-    let reply = oteryn_dev_client::client_runtime::inventory::send(client.session_mut(), oteryn_dev_client::client_runtime::inventory::MoveRequest { source: carried(client, key)?, destination: items::ItemMoveDestination::Equipment(slot), count: None }).await?.ok_or("item move capability not selected for this destination")?;
+    let source = carried(client, key)?;
+    let reply = oteryn_dev_client::client_runtime::inventory::send(
+        client.session_mut(),
+        oteryn_dev_client::client_runtime::inventory::MoveRequest {
+            source,
+            destination: items::ItemMoveDestination::Equipment(slot),
+            count: None,
+        },
+    )
+    .await?
+    .ok_or("item move capability not selected for this destination")?;
     if reply.outcome != items::ItemMoveOutcome::Moved
         || client.inventory().is_none_or(|v| {
             !v.equipment

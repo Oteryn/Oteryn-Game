@@ -15,7 +15,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     evidence(&format!(
         "e2e_all scenario=I05.client status={}{}",
         if result.is_ok() { "PASS" } else { "FAIL" },
-        result.as_ref().err().map_or(String::new(), |error| format!(" evidence={error}"))
+        result
+            .as_ref()
+            .err()
+            .map_or(String::new(), |error| format!(" evidence={error}"))
     ));
 }
 
@@ -24,24 +27,39 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let active = provisioning::item_reference(&provisioning::item_index()?, ACTIVE_ENERGY_RING)?;
     let handle = client
         .inventory()
-        .and_then(|view| view.equipment.iter().find(|row| {
-            row.slot == items::EquipmentSlot::Ring && row.item.item_definition_ref == active
-        }))
+        .and_then(|view| {
+            view.equipment.iter().find(|row| {
+                row.slot == items::EquipmentSlot::Ring && row.item.item_definition_ref == active
+            })
+        })
         .map(|row| row.item.handle)
         .ok_or("i05-active-ring-not-durable")?;
 
     client.take_events();
-    let moved = oteryn_dev_client::client_runtime::inventory::send(client.session_mut(), oteryn_dev_client::client_runtime::inventory::MoveRequest { source: handle,
+    let moved = oteryn_dev_client::client_runtime::inventory::send(
+        client.session_mut(),
+        oteryn_dev_client::client_runtime::inventory::MoveRequest {
+            source: handle,
             destination: items::ItemMoveDestination::MainBackpack,
-        })
-        .await?;
+            count: None,
+        },
+    )
+    .await?
+    .ok_or("item move capability not selected for this destination")?;
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("i05-unequip-refused:{moved:?}").into());
     }
     client.take_events();
-    let moved = client
-        .move_item(&items::ItemMoveIntent {
-            source: handle, destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring), count: None }).await?.ok_or("item move capability not selected for this destination")?;
+    let moved = oteryn_dev_client::client_runtime::inventory::send(
+        client.session_mut(),
+        oteryn_dev_client::client_runtime::inventory::MoveRequest {
+            source: handle,
+            destination: items::ItemMoveDestination::Equipment(items::EquipmentSlot::Ring),
+            count: None,
+        },
+    )
+    .await?
+    .ok_or("item move capability not selected for this destination")?;
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("i05-reequip-refused:{moved:?}").into());
     }
@@ -86,7 +104,9 @@ fn write_capture(name: &str, payload: &[u8], expected: &str) {
     };
     let path = Path::new(&path);
     if let Err(error) = std::fs::write(path.join(name), payload) {
-        evidence(&format!("I05_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "I05_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
     if let Err(error) = std::fs::write(path.join("i05-expected.txt"), expected) {
         evidence(&format!(
