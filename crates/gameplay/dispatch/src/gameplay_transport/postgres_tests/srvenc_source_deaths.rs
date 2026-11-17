@@ -639,7 +639,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
                 "SELECT character_id::text,track_key,value FROM game_character_quest_tracks ORDER BY character_id,track_key",
             ).fetch_all(&h.pool).await?;
             let xp: i64 =
-                sqlx::query_scalar("SELECT count(*) FROM game_character_experience_receipts")
+                sqlx::query_scalar("SELECT count(*) FROM game_character_xp_receipts")
                     .fetch_one(&h.pool)
                     .await?;
             eprintln!(
