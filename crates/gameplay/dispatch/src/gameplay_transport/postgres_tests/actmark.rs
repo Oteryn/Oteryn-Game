@@ -11,7 +11,16 @@ fn actmark_binding_rejects_unknown_action_at_load() -> TestResult {
     let mut value: serde_json::Value =
         serde_json::from_str(world_callbacks::action_markers::EMBEDDED)?;
     value["bindings"][0]["action"] = 65535.into();
-    assert!(world_callbacks::action_markers::load(&value.to_string()).is_err());
+    for callback in value["bindings"][0]["callbacks"]
+        .as_array_mut()
+        .ok_or("callbacks")?
+    {
+        callback["selector"]["action"] = 65535.into();
+    }
+    let error = world_callbacks::action_markers::load(&value.to_string())
+        .err()
+        .ok_or("unknown action admitted")?;
+    assert!(error.contains("65535"), "{error}");
     Ok(())
 }
 
