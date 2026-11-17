@@ -94,3 +94,9 @@ defaults `item:remove()` to count -1. Ground output therefore reuses the existin
 whole-stack offering debit, bounded to 100 units; the new PG stacked-input case
 uses stacks of three and two and retains all success/replay assertions. The schema
 rejects partial-unit offering declarations for this deliberately small primitive.
+
+Full regeneration checkpoint: World canonicalization reproduced the base package
+(tree d786f8ac03d267259e1c0a53288cb4c0dfeb1a25a42633a795c7254590226403).
+The production native provider now contains exactly one stimulated brain profile:
+materializable, movable, pickupable, nonstackable, Ground/inventory destinations,
+weight 1500. Quest tree authoring and downstream checks/pins remain in progress.
