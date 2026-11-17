@@ -293,10 +293,10 @@ pub(super) async fn prepare(
                 .weight_of(&request.item.definition)
                 .map_err(|_| NpcTradeError::InvalidInput)?,
         ),
-        bag_weight: bag
-            .as_ref()
-            .and_then(|facts| facts.weight)
-            .map_or(0, u64::from),
+        bag_weight: match &bag {
+            Some(bag) => u64::from(bag.weight.ok_or(NpcTradeError::InvalidInput)?),
+            None => 0,
+        },
         funds: total,
     };
     let packing = plan_purchase(input).map_err(|error| match error {
