@@ -293,6 +293,8 @@ pub(super) async fn walk_bot(
                 pump(bots).await?;
             }
         }).await.map_err(|_| "MP movement deadline")??;
+        // A server-confirmed tile change is real progress of the running row.
+        verdict::Harness::global().progress("walk");
         pump(bots).await?;
     }
     Ok(())
