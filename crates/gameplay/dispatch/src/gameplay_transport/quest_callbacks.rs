@@ -19,6 +19,7 @@ mod goblin_elevator;
 mod ground_stack;
 mod mead;
 pub(super) mod monsters;
+mod mummys_curse;
 mod party_transfer;
 mod personal_encounter;
 mod personal_trial;
@@ -100,6 +101,7 @@ pub(super) struct PendingCallbacks {
     pub(super) elemental: std::sync::Mutex<std::collections::HashMap<[u8; 16], ExactActorRef>>,
     personal: personal_encounter::Cohorts,
     timed: std::sync::Mutex<Vec<timed_encounter::TimedEncounter>>,
+    mummys_curse: std::sync::Mutex<Option<mummys_curse::TombTimers>>,
     records: std::sync::Mutex<std::collections::HashMap<GameSessionId, Pending>>,
     carrot_refusal:
         std::sync::Mutex<Option<(ExactActorRef, GameSessionId, MovementPositionSnapshot)>>,
@@ -150,6 +152,13 @@ impl PendingCallbacks {
             .ok()?
             .iter()
             .map(|pending| pending.next_due_us())
+            .chain(
+                self.mummys_curse
+                    .lock()
+                    .ok()?
+                    .as_ref()
+                    .and_then(mummys_curse::TombTimers::next_due_us),
+            )
             .min()
     }
 }
@@ -974,6 +983,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             super::world_map::resolve_map_target(&source, target, |_| None::<()>).ok()?
         };
+        if let Some(action) = mummys_curse::source_action(map, &resolved) {
+            return Some(
+                self.use_mummys_curse(
+                    actor,
+                    command,
+                    map,
+                    &resolved,
+                    action,
+                    target.expected_revision,
+                )
+                .await,
+            );
+        }
         let mut selected = self
             .callback_content()
             .iter()

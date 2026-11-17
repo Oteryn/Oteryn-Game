@@ -143,6 +143,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        self.drain_mummys_curse(&mut runtime, map);
         let Ok(mut pending) = self.states.quest_callbacks.timed.lock() else {
             return;
         };

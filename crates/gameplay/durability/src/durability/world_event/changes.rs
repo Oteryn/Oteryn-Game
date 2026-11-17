@@ -14,6 +14,7 @@ use sha2::{Digest, Sha256};
 mod bindings;
 pub mod callbacks;
 pub mod counters;
+pub mod mummys_curse;
 
 /// The day after the reset `reset_epoch` of `world`, on the UTC calendar at `unix_ms`.
 pub fn roll(
