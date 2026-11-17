@@ -1,0 +1,114 @@
+"""Failure diagnostics for the disposable spell-character bootstrap."""
+import contextlib
+import io
+import re
+import socket
+import subprocess
+import tempfile
+import threading
+import unittest
+import uuid
+from pathlib import Path
+from unittest.mock import patch
+
+import provision
+
+
+class ProvisionTests(unittest.TestCase):
+    def test_sanitizer_drops_sensitive_lines_case_insensitively(self):
+        source = "safe\nPASSWORD=a\npostgres://a\nmysql://a\nSeCrEt=a\nToken=a\nkey=a\nlast\n"
+        self.assertEqual(provision.sanitized_text(source.encode()), "safe\nlast")
+
+    def test_failed_command_reports_sanitized_stdout_and_stderr(self):
+        child = subprocess.CompletedProcess([], 7, "Artisan rejected the name\nsecret=hidden\n",
+                                            "safe PHP detail\nTOKEN=hidden\n")
+        log = io.StringIO()
+        with patch.object(provision.subprocess, "run", return_value=child), contextlib.redirect_stderr(log):
+            with self.assertRaisesRegex(RuntimeError, "Platform bootstrap intent exit status 7"):
+                provision.run_capture(["docker"], "Platform bootstrap intent", 30)
+        self.assertIn("Artisan rejected the name", log.getvalue())
+        self.assertIn("safe PHP detail", log.getvalue())
+        self.assertNotIn("hidden", log.getvalue())
+        self.assertIn("stdout:", log.getvalue())
+        self.assertIn("stderr:", log.getvalue())
+
+    def test_timeout_reports_partial_output_without_command_arguments(self):
+        failure = subprocess.TimeoutExpired(["private-argument"], 30,
+                                            output=b"partial Artisan output\n",
+                                            stderr=b"password=hidden\nsafe timeout detail\n")
+        log = io.StringIO()
+        with patch.object(provision.subprocess, "run", side_effect=failure), contextlib.redirect_stderr(log):
+            with self.assertRaisesRegex(RuntimeError, "intent timed out after 30s"):
+                provision.run_capture(["docker"], "intent", 30)
+        self.assertIn("partial Artisan output", log.getvalue())
+        self.assertIn("safe timeout detail", log.getvalue())
+        self.assertNotIn("hidden", log.getvalue())
+        self.assertNotIn("private-argument", log.getvalue())
+
+    def test_success_returns_output_without_polluting_the_name_channel(self):
+        child = subprocess.CompletedProcess([], 0, "captured output", "captured warning")
+        log = io.StringIO()
+        with patch.object(provision.subprocess, "run", return_value=child), contextlib.redirect_stderr(log):
+            self.assertEqual(provision.run_capture(["docker"], "intent", 30), "captured output")
+        self.assertEqual(log.getvalue(), "")
+
+    def test_generated_names_match_the_pinned_shared_naming_rules(self):
+        # Platform 3bc2d0e CharacterBootstrapIntentContract::assertRequestedName
+        # and Game CHAR-NAME-1: total 2..29, ASCII words, single spaces.
+        for value in (0, (1 << 128) - 1, 0x01934F107C047001805B3B1122334401):
+            name = provision.fresh_character_name(uuid.UUID(int=value))
+            self.assertEqual(len(name), 26)
+            self.assertIsNotNone(re.fullmatch(r"[A-Za-z]+(?: [A-Za-z]+)*", name))
+            self.assertLessEqual(len(name), 29)
+
+    def test_php_failure_is_reported_before_connecting_to_the_node(self):
+        results = [subprocess.CompletedProcess([], 0, "container-id\n", ""),
+                   subprocess.CompletedProcess([], 1, "Artisan: issue refused\n", "safe PHP error\n")]
+        log = io.StringIO()
+        with patch.object(provision.subprocess, "run", side_effect=results), contextlib.redirect_stderr(log):
+            with self.assertRaisesRegex(RuntimeError, "Platform bootstrap intent exit status 1"):
+                provision.fresh_character("unused.sock", "test-project", {})
+        self.assertIn("Artisan: issue refused", log.getvalue())
+        self.assertIn("safe PHP error", log.getvalue())
+
+    def node_refusal(self, answer):
+        results = [subprocess.CompletedProcess([], 0, "container-id\n", ""),
+                   subprocess.CompletedProcess([], 0, "", "")]
+        received = []
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "control.sock")
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+                listener.bind(path)
+                listener.listen()
+                def serve():
+                    connection, _ = listener.accept()
+                    with connection:
+                        request = bytearray()
+                        while block := connection.recv(128):
+                            request.extend(block)
+                        received.append(bytes(request))
+                        connection.sendall(answer)
+                thread = threading.Thread(target=serve, daemon=True)
+                thread.start()
+                try:
+                    with patch.object(provision.subprocess, "run", side_effect=results):
+                        with self.assertRaises(RuntimeError) as failure:
+                            provision.fresh_character(path, "test-project", {})
+                finally:
+                    thread.join(timeout=5)
+                self.assertFalse(thread.is_alive())
+        self.assertEqual(len(received), 1)
+        self.assertEqual(uuid.UUID(received[0].decode().strip()).version, 7)
+        return str(failure.exception)
+
+    def test_node_refusal_includes_the_actual_answer(self):
+        self.assertIn("answer='rejected'", self.node_refusal(b"rejected\n"))
+
+    def test_node_refusal_does_not_echo_sensitive_answers(self):
+        message = self.node_refusal(b"token=hidden\n")
+        self.assertIn("<empty or filtered>", message)
+        self.assertNotIn("hidden", message)
+
+
+if __name__ == "__main__":
+    unittest.main()

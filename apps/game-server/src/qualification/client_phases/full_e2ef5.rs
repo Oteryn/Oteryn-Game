@@ -43,9 +43,12 @@ pub(super) async fn spell_characters(clients: &SeamClients<'_>) -> TestResult<[[
             ])
             .output()
     })
-    .await??;
+    .await?
+    .map_err(|error| {
+        format!("C17 fresh Platform character bootstrap could not launch sudo -n python3: {error}")
+    })?;
     if !output.status.success() {
-        return Err("C17 fresh Platform character bootstrap failed".into());
+        return Err(c17_subprocess_failure("fresh Platform character bootstrap", &output).into());
     }
     let name = std::str::from_utf8(&output.stdout)?.trim();
     let character: Vec<u8> = sqlx::query_scalar(
@@ -59,6 +62,38 @@ pub(super) async fn spell_characters(clients: &SeamClients<'_>) -> TestResult<[[
     database.close().await?;
     let character = <[u8; 16]>::try_from(character.as_slice())?;
     Ok([clients.characters[0], character])
+}
+
+fn c17_subprocess_failure(stage: &str, output: &std::process::Output) -> String {
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let mut tail: Vec<_> = stderr
+        .lines()
+        .rev()
+        .take(20)
+        .filter(|line| {
+            let lower = line.to_ascii_lowercase();
+            ![
+                "password",
+                "postgres://",
+                "mysql://",
+                "secret",
+                "token",
+                "key=",
+            ]
+            .iter()
+            .any(|pattern| lower.contains(pattern))
+        })
+        .collect();
+    tail.reverse();
+    let tail = if tail.is_empty() {
+        "<empty or filtered>".into()
+    } else {
+        tail.join(" | ")
+    };
+    format!(
+        "C17 {stage} failed; status={}; stderr_tail={tail}",
+        output.status
+    )
 }
 
 pub(super) async fn provision_c17(
@@ -960,6 +995,48 @@ async fn haste(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn c17_subprocess_failure_keeps_status_and_sanitized_tail() -> TestResult {
+        let output = std::process::Command::new("python3").args(["-c",
+            r"import sys; sys.stderr.write('name rejected\nPASSWORD=hidden\npostgres://hidden\nSeCrEt=hidden\nTOKEN=hidden\nkey=hidden\nnode answer=rejected\n'); sys.exit(7)",
+        ]).output()?;
+        assert_eq!(output.status.code(), Some(7));
+        let message = c17_subprocess_failure("fresh Platform character bootstrap", &output);
+        assert!(message.contains(&output.status.to_string()));
+        assert!(message.contains("name rejected"));
+        assert!(message.contains("node answer=rejected"));
+        assert!(!message.contains("hidden"));
+        let output = std::process::Output {
+            stderr: (0..30)
+                .map(|n| format!("line-{n:02}\n"))
+                .collect::<String>()
+                .into_bytes(),
+            ..output
+        };
+        let message = c17_subprocess_failure("fixture", &output);
+        assert!(!message.contains("line-09"));
+        assert!(message.contains("line-10"));
+        assert!(message.contains("line-29"));
+        Ok(())
+    }
+
+    #[test]
+    fn c17_subprocess_generated_names_match_game_policy() -> TestResult {
+        let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tools/qualification/node_boot/provision.py");
+        let output = std::process::Command::new("python3").args(["-c",
+            "import importlib.util,sys,uuid; s=importlib.util.spec_from_file_location('provision',sys.argv[1]); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); [print(m.fresh_character_name(uuid.UUID(int=n))) for n in (0,(1<<128)-1,0x01934f107c047001805b3b1122334401)]",
+        ]).arg(script).output()?;
+        assert!(output.status.success());
+        let names = std::str::from_utf8(&output.stdout)?;
+        assert_eq!(names.lines().count(), 3);
+        for name in names.lines() {
+            assert_eq!(name.len(), 26);
+            assert!(crate::domain::character_name::CharacterName::parse(name).is_ok());
+        }
+        Ok(())
+    }
+
     #[test]
     fn verdict_requires_every_distinct_action_and_nonzero_frame() {
         let mut row = Row::new("C17c", &["cast", "expiry"]);

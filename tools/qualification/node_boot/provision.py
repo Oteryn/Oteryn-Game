@@ -2,14 +2,51 @@
 
 import argparse
 import json
+import re
 import secrets
 import socket
 import subprocess
+import sys
 import time
 import uuid
 
 
 PROFILES = ("explorer", "knight", "paladin", "sorcerer", "druid", "monk", "c17a", "c17c")
+
+
+SENSITIVE_LINE = re.compile(r"password|postgres://|mysql://|secret|token|key=", re.IGNORECASE)
+
+
+def sanitized_text(output):
+    if isinstance(output, bytes):
+        output = output.decode("utf-8", errors="replace")
+    return "\n".join(line for line in (output or "").splitlines()
+                     if not SENSITIVE_LINE.search(line))
+
+
+def report_child_output(stage, stdout, stderr):
+    for stream, output in (("stdout", stdout), ("stderr", stderr)):
+        safe = sanitized_text(output)
+        if safe:
+            print(f"{stage} {stream}:\n{safe}", file=sys.stderr)
+
+
+def run_capture(command, stage, timeout):
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        report_child_output(stage, error.stdout, error.stderr)
+        raise RuntimeError(f"{stage} timed out after {timeout}s") from None
+    if result.returncode:
+        report_child_output(stage, result.stdout, result.stderr)
+        raise RuntimeError(f"{stage} exit status {result.returncode}")
+    return result.stdout
+
+
+def fresh_character_name(operation):
+    # Both pinned naming contracts allow 2..29 ASCII letters with single spaces;
+    # neither imposes a per-word limit. This name is 26 characters long.
+    return "Spell " + "".join(chr(ord("a") + int(c, 16)) for c in operation.hex[-20:])
 
 
 def provision(socket_path, session, profile):
@@ -32,7 +69,7 @@ def provision(socket_path, session, profile):
                 break
             answer.extend(chunk)
         if answer != b"qualified\n":
-            raise RuntimeError("node refused qualification provisioning")
+            raise RuntimeError(f"node refused qualification provisioning: answer={sanitized_text(answer.decode(errors='replace')) or '<empty or filtered>'!r}")
 
 
 def fresh_character(socket_path, project, request):
@@ -40,29 +77,30 @@ def fresh_character(socket_path, project, request):
     operation = uuid.UUID(int=(int(time.time() * 1000) << 80)
                           | (7 << 76) | (secrets.randbits(12) << 64)
                           | (2 << 62) | secrets.randbits(62))
-    name = "Spell " + "".join(chr(ord("a") + int(c, 16)) for c in operation.hex[-20:])
+    name = fresh_character_name(operation)
     request.update(operation=str(operation), name=name)
-    containers = subprocess.check_output([
+    containers = run_capture([
         "docker", "ps", "--filter", f"label=com.docker.compose.project={project}",
         "--filter", "label=com.docker.compose.service=platform", "--format", "{{.ID}}",
-    ], text=True, timeout=20).split()
+    ], "Platform container discovery", timeout=20).split()
     if len(containers) != 1:
-        raise RuntimeError("qualification requires one Platform container")
+        raise RuntimeError(f"qualification requires one Platform container; found={len(containers)}")
     php = r'''require "vendor/autoload.php";
 $app=require "bootstrap/app.php";
 $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 $r=json_decode($argv[1],true,512,JSON_THROW_ON_ERROR);
 $id=Illuminate\Support\Facades\DB::table("identities")->where("account_id",$r["account"])->value("id");
-if (!$id) { exit(1); }
+if (!$id) { fwrite(STDERR,"C17 bootstrap: no Platform identity for requested AccountId\n"); exit(1); }
 $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",[
 "--identity-id"=>(string)$id,"--operation-id"=>$r["operation"],
 "--target-world-id"=>$r["world"],"--requested-name"=>$r["name"],"--requested-sex"=>"Female",
 "--profile-revision"=>$r["revisions"][0],"--ruleset-revision"=>$r["revisions"][1],
 "--content-revision"=>$r["revisions"][2],"--starter-template-revision"=>$r["revisions"][3]]);
+if ($code !== 0) { fwrite(STDERR,Illuminate\Support\Facades\Artisan::output()); }
 exit($code);'''
-    subprocess.run(["docker", "exec", "--user", "www-data", containers[0],
+    run_capture(["docker", "exec", "--user", "www-data", containers[0],
                     "php", "-r", php, json.dumps(request)],
-                   check=True, stdout=subprocess.DEVNULL, timeout=30)
+                   "Platform bootstrap intent", timeout=30)
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
         control.settimeout(60)
         control.connect(socket_path)
@@ -75,7 +113,7 @@ exit($code);'''
                 break
             answer.extend(chunk)
         if answer != b"committed\n":
-            raise RuntimeError("node refused fresh spell character bootstrap")
+            raise RuntimeError(f"node refused fresh spell character bootstrap: answer={sanitized_text(answer.decode(errors='replace')) or '<empty or filtered>'!r}")
     return name
 
 
