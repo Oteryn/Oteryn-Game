@@ -900,6 +900,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || spectators.minimum.x > spectators.maximum.x
                 || spectators.minimum.y > spectators.maximum.y
                 || !in_room(spectators.destination)
+                || spectators.contains(spectators.destination)
                 || encounter.timing.is_some()
                 || encounter.phase.is_some()
                 || !encounter.players.is_empty()

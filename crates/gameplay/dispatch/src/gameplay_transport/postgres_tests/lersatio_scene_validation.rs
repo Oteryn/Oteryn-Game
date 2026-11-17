@@ -95,6 +95,31 @@ fn lersatio_scene_encounter_composition_retains_unrelated_operation_guard() -> R
         callback.has_valid_effects(),
         "bounded scene + spectator encounter"
     );
+    let mut fixed_staging = callback.clone();
+    fixed_staging.effects.scene = None;
+    let encounter = fixed_staging
+        .effects
+        .encounter
+        .as_mut()
+        .ok_or("encounter")?;
+    encounter.spectators = None;
+    assert!(
+        !fixed_staging.has_valid_effects(),
+        "empty fixed staging remains invalid"
+    );
+    let mut overlapping = callback.clone();
+    let spectators = overlapping
+        .effects
+        .encounter
+        .as_mut()
+        .and_then(|encounter| encounter.spectators.as_mut())
+        .ok_or("spectators")?;
+    spectators.minimum.floor = -1;
+    spectators.maximum.floor = -1;
+    assert!(
+        !overlapping.has_valid_effects(),
+        "source census must not contain its landing"
+    );
     callback.effects.item_cycle = Some(
         serde_json::from_value(serde_json::json!({
             "position":{"x":32965,"y":31457,"floor":-2},"remove":8667,"create":8721
