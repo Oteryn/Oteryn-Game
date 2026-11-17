@@ -1,6 +1,7 @@
 CREATE TABLE game_horse_stations (
     world_id UUID PRIMARY KEY CHECK (game_node_is_uuid_v7(world_id)),
-    loose_until_ms BIGINT CHECK (loose_until_ms >= 0)
+    loose_until_ms BIGINT CHECK (loose_until_ms >= 0),
+    confined_at_ms BIGINT CHECK (confined_at_ms >= 0)
 );
 
 REVOKE ALL ON game_horse_stations FROM PUBLIC;

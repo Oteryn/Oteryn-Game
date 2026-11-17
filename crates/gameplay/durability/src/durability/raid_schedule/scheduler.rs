@@ -253,6 +253,14 @@ impl DurabilityRoot {
                             use oteryn_gameplay_world_change::horse_station::HorseStation;
                             HorseStation::LooseUntil(deadline).wave_due(request.now_ms, before.last_fired_at_ms)
                         })
+                    } else if candidate.key.as_str() == "oteryn:raid.horse_station_stables" {
+                        let confined_at: Option<i64> = sqlx::query_scalar(
+                            "SELECT confined_at_ms FROM game_horse_stations
+                             WHERE world_id=encode($1,'hex')::uuid AND loose_until_ms IS NULL
+                               AND confined_at_ms IS NOT NULL FOR SHARE",
+                        ).bind(request.world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                        confined_at.is_some_and(|at| at <= request.now_ms
+                            && before.last_fired_at_ms.is_none_or(|last| last < at))
                     } else { interval_due };
                     let persistent_fired = !window.repeat && candidate.definition.despawn_after_ms.is_none()
                         && before.latest_firing.as_ref().is_some_and(|f| f.reset_epoch == request.reset_epoch);

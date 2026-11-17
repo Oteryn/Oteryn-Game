@@ -185,11 +185,59 @@ async fn exercise(h: &Harness) -> TestResult {
     request.now_ms += 60_000;
     assert_eq!(
         h.root
-            .check_raid_schedules(&authority, &h.node, request)
+            .check_raid_schedules(&authority, &h.node, request.clone())
             .await?
             .firings
             .len(),
         1
+    );
+    let stable_key = ProductionKey::new("oteryn:raid.horse_station_stables").map_err(debug)?;
+    let stables = catalogue.get(&stable_key).ok_or("generated stable wave")?;
+    let stable_firing = id(83);
+    request.candidates[0].key = stable_key;
+    request.candidates[0].definition = stables
+        .select([7; 32], stable_firing)
+        .map_err(debug)?
+        .definition;
+    request.candidates[0].firing_id = stable_firing;
+    assert!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, request.clone())
+            .await?
+            .firings
+            .is_empty()
+    );
+    request.now_ms += 60_000;
+    sqlx::query("UPDATE game_horse_stations SET loose_until_ms=NULL,confined_at_ms=$2 WHERE world_id=encode($1,'hex')::uuid")
+        .bind(world.as_bytes().as_slice()).bind(request.now_ms).execute(&h.pool).await?;
+    assert_eq!(
+        h.root
+            .check_raid_schedules(&authority, &h.node, request.clone())
+            .await?
+            .firings
+            .len(),
+        1
+    );
+    let stables = h
+        .root
+        .advance_raid_run(
+            &h.node,
+            stable_firing,
+            channel,
+            request.generation,
+            request.candidates[0].definition.clone(),
+            request.now_ms,
+        )
+        .await?
+        .ok_or("stable wave")?;
+    let CommittedRaidAction::Wave { creatures, .. } = stables.action else {
+        return Err("expected the stable repopulation wave".into());
+    };
+    assert_eq!(creatures.len(), 9);
+    assert!(
+        creatures
+            .iter()
+            .all(|plan| plan.creature.as_str() != "oteryn:creature.wild_horse")
     );
     Ok(())
 }

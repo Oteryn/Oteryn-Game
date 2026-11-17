@@ -583,29 +583,40 @@ def registered(project: dict, manifest: dict, lock: dict, count: int) -> tuple:
     return project, manifest, lock
 
 
-def horse_station_raid(creatures: dict, placements: dict) -> dict:
+def horse_station_raid(creatures: dict, placements: dict, *, stable: bool) -> dict:
     # Crystal 201189f8 Palomino: two rectangles, three of each horse per wave.
     source = {"repository": REPOSITORY, "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
               "path": "data-global/npc/palomino.lua", "line": 104,
               "sha256": "595387918194d62554ba02e66c381e945fc065a0c0b3b2658ce773fe52f293da",
               "evidence": "OTS_HYPOTHESIS_ONLY"}
+    loose = [(name, 3) for name in ("Brown Horse", "Grey Horse", "Horse", "Wild Horse")]
+    areas = [((32456, 32193, 7), (32491, 32261, 7), loose),
+             ((32431, 32240, 7), (32464, 32280, 7), loose)]
+    if stable:
+        source = {**source, "path": "data-global/scripts/globalevents/others/horse_station.lua",
+                  "line": 14,
+                  "sha256": "0d6615155766a3ccd21a5ba8519a687dcca1ff5314ed57d07600dbe021c863f0"}
+        areas = [
+            ((32438, 32231, 7), (32442, 32238, 7), [("Brown Horse", 2), ("Grey Horse", 1), ("Horse", 3)]),
+            ((32846, 32114, 7), (32850, 32120, 7), [("Brown Horse", 1), ("Grey Horse", 1), ("Horse", 1)]),
+        ]
     entries = []
-    for start, end in [((32456, 32193, 7), (32491, 32261, 7)),
-                       ((32431, 32240, 7), (32464, 32280, 7))]:
-        for name in ("Brown Horse", "Grey Horse", "Horse", "Wild Horse"):
+    for start, end, inhabitants in areas:
+        for name, amount in inhabitants:
             area = {label: dict(zip(("x", "y", "floor"), point, strict=True))
                     for label, point in (("from", start), ("to", end))}
             entries.append({"creature": "oteryn:creature." + name.lower().replace(" ", "_"),
-                            "source_name": name, "amount": {"min": 3, "max": 3}, "area": area,
+                            "source_name": name, "amount": {"min": amount, "max": amount}, "area": area,
                             "area_anchor": area_anchor(area), "spawn_mode": "area", "boss": False,
-                            "source": {**source, "line": 126}})
-    record = {"key": "oteryn:raid.horse_station", "name": "Horse Station",
+                            "source": {**source, "line": source["line"] if stable else 126}})
+    record = {"key": "oteryn:raid.horse_station_stables" if stable else "oteryn:raid.horse_station",
+              "name": "Horse Station Stables" if stable else "Horse Station",
               "wiki_area": "Thais Surroundings", "wiki_records": [], "wiki_sources": [],
               "boss_names": [], "sources": [source], "inactive_reasons": [], "variant_group": None,
               "end": {"kind": "until_reset"},
-              "schedule": {"kind": "calendar", "interval_ms": 10_800_000, "repeat": True,
+              "schedule": {"kind": "calendar", "interval_ms": 60_000 if stable else 10_800_000, "repeat": True,
                            "window": {"start_month": 1, "start_day": 1, "end_month": 12, "end_day": 31}},
-              "variants": [{"key": "data-global/npc/palomino.lua#spawnRaidHorses",
+              "variants": [{"key": source["path"] + ("#horseStable" if stable else "#spawnRaidHorses"),
                             "announcements": [], "waves": [{"delay_ms": 0, "entries": entries}]}]}
     qualify(record, creatures, placements)
     return record
@@ -620,7 +631,8 @@ def outputs(root: Path, *, register: bool = True) -> dict[str, bytes]:
     if (root / seasonal_raids.CAPTURE).is_file():
         records.extend(seasonal_raids.records(root, qualify, bind_area, citation, creature_catalogue(root), load(root, PLACEMENTS)))
         records.sort(key=lambda record: record["key"])
-    records.append(horse_station_raid(creature_catalogue(root), load(root, PLACEMENTS)))
+    creatures, placements = creature_catalogue(root), load(root, PLACEMENTS)
+    records.extend(horse_station_raid(creatures, placements, stable=stable) for stable in (False, True))
     records.sort(key=lambda record: record["key"])
     totals = {kind: {"total": sum(r["kind"] == kind for r in records),
                      "active": sum(r["kind"] == kind and r["active"] for r in records)}

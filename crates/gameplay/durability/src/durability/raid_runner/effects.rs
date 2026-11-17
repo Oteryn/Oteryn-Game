@@ -41,7 +41,21 @@ pub(super) async fn world_current(
     // firing supplies the expected epoch/pin, not the independently read truth.
     let current: Option<bool> = sqlx::query_scalar("SELECT game_world_reset_map_epoch_current(f.world_id,f.reset_epoch) AND EXISTS(SELECT 1 FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=f.world_id AND a.reset_epoch=f.reset_epoch AND e.target_digest=f.bundle_digest) FROM game_world_raid_firings f WHERE f.firing_id=encode($1,'hex')::uuid")
         .bind(firing.as_slice()).fetch_optional(&mut **tx).await?;
-    Ok(current.unwrap_or(false))
+    if current != Some(true) {
+        return Ok(false);
+    }
+    // Persistent stable actors are retired when their confinement ends. The
+    // normal LOST effect removes them even if the spawn run already completed.
+    let stable: Option<bool> = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_horse_stations s WHERE s.world_id=f.world_id
+             AND s.loose_until_ms IS NULL AND s.confined_at_ms<=f.fired_at_ms FOR SHARE)
+         FROM game_world_raid_firings f WHERE f.firing_id=encode($1,'hex')::uuid
+           AND f.raid_key='oteryn:raid.horse_station_stables'",
+    )
+    .bind(firing.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    Ok(stable.unwrap_or(true))
 }
 
 pub(super) async fn insert(
