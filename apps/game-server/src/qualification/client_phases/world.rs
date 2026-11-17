@@ -481,6 +481,74 @@ fn route(
     None
 }
 
+const REACH_SEARCH_NODES: usize = 3_000_000;
+const REACH_CHUNK: usize = 20_000;
+
+/// Like `route` without its 160-tile and two-floor window: whole bundle up to
+/// REACH_SEARCH_NODES tiles, serving the connection every REACH_CHUNK expansions.
+/// `Ok(Err(searched))` means unreachable or the search cap was hit.
+pub(super) async fn reach_route(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+) -> TestResult<Result<Vec<StepDirection>, usize>> {
+    reach_route_serviced(world, from, goal, async || {
+        verdict::Harness::global().progress("route-search");
+        client.service_liveness(Duration::from_millis(1)).await?;
+        Ok(())
+    })
+    .await
+}
+
+// Keep the search shared with the offline production-bundle regression. Live
+// callers always supply the connection service above, including error propagation.
+async fn reach_route_serviced(
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    mut service: impl AsyncFnMut() -> TestResult,
+) -> TestResult<Result<Vec<StepDirection>, usize>> {
+    let mut queue = VecDeque::from([from]);
+    let mut parents = BTreeMap::from([(from, None)]);
+    let mut expanded = 0usize;
+    while let Some(at) = queue.pop_front() {
+        if goal(at) {
+            let mut path = Vec::new();
+            let mut cursor = at;
+            while let Some(Some((previous, direction))) = parents.get(&cursor) {
+                path.push(*direction);
+                cursor = *previous;
+            }
+            path.reverse();
+            return Ok(Ok(path));
+        }
+        if parents.len() > REACH_SEARCH_NODES {
+            break;
+        }
+        expanded += 1;
+        if expanded.is_multiple_of(REACH_CHUNK) {
+            service().await?;
+        }
+        for direction in [
+            StepDirection::North,
+            StepDirection::East,
+            StepDirection::South,
+            StepDirection::West,
+        ] {
+            let Some(next) = destination(world, at, direction) else {
+                continue;
+            };
+            if parents.contains_key(&next) {
+                continue;
+            }
+            parents.insert(next, Some((at, direction)));
+            queue.push_back(next);
+        }
+    }
+    Ok(Err(parents.len()))
+}
+
 /// Use the production floor resolver over the production bundle's collision facts.
 fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> Option<TilePos> {
     use crate::map::floor::{Ground, resolve_landing};
@@ -2833,9 +2901,11 @@ pub(super) async fn journeys(
     evidence(&format!(
         "world_fixture role=core phase=return_to_town from={from:?} to={TOWN:?}"
     ));
-    let back = route(world, from, |at| at == TOWN).ok_or_else(|| {
-        format!("required core has no return route to town: from={from:?} to={TOWN:?}")
-    })?;
+    let back = reach_route(&mut client, world, from, |at| at == TOWN)
+        .await?
+        .map_err(|searched| {
+            format!("required core has no return route to town: from={from:?} to={TOWN:?} searched={searched}")
+        })?;
     walk(&mut client, world, &back).await?;
     client = character_core(client, clients, world).await?;
     client = include!("full_e2ef3_registration.rs");
@@ -3123,10 +3193,20 @@ async fn travel_to_spawn(
 }
 
 pub(crate) fn smoke() -> TestResult {
+    smoke_with(Some(&[(126, 125), (126, 126), (127, 127)]), |_| Ok(()))
+}
+
+fn smoke_with(
+    regions: Option<&[(u16, u16)]>,
+    check: impl FnOnce(&BundleWorld) -> TestResult,
+) -> TestResult {
     use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
     let started = std::time::Instant::now();
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let project = source::project_regions(&root, &[(126, 125), (126, 126), (127, 127)])?;
+    let project = match regions {
+        Some(regions) => source::project_regions(&root, regions)?,
+        None => source::project(&root)?,
+    };
     let (registry, palette) = source::registry(&root, &project)?;
     let identity = serde_json::from_slice(&std::fs::read(
         root.join("content/world/pins/oteryn.identity.json"),
@@ -3152,12 +3232,14 @@ pub(crate) fn smoke() -> TestResult {
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>()
         .into();
-    let world = load_world(
+    // This smoke may select a different bundle from other tests in this process.
+    let world = boot_world(
         compiled.bytes,
         &pin,
         WorldId::decode(&v7(1, 2))?,
         ChannelId::decode(&v7(1, 3))?,
     )?;
+    let world = &world;
     assert!(
         world
             .base()
@@ -3180,6 +3262,7 @@ pub(crate) fn smoke() -> TestResult {
         route(world, landing, |at| at == TOWN).is_some(),
         "town floor-change route must have a return path"
     );
+    check(world)?;
     let rats: Vec<_> = project
         .families
         .spawns
@@ -3328,4 +3411,78 @@ fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
             assert_eq!(town_route_retry_delay(disposition, false, attempt), None);
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_reach_route_crosses_more_than_160_tiles() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            smoke_with(None, |world| {
+                let from = TilePos { x: 32536, y: 32514, floor: -7 };
+                assert!(route(world, from, |at| at == TOWN).is_none());
+                let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+                let mut services = 0;
+                let path = runtime.block_on(reach_route_serviced(world, from, |at| at == TOWN, async || {
+                    services += 1;
+                    tokio::task::yield_now().await;
+                    Ok(())
+                }))?.map_err(|searched| format!("profile return unreachable: searched={searched} component={:?}", reach_component(world, from)))?;
+                assert!(path.len() > 160);
+                assert!(services > 0, "long searches must service liveness");
+                let mut at = from;
+                for direction in &path {
+                    at = destination(world, at, *direction).ok_or("invalid reach route step")?;
+                }
+                assert_eq!(at, TOWN);
+                evidence(&format!("reach_route_crosses_more_than_160_tiles from={from:?} to={TOWN:?} path_length={} services={services}", path.len()));
+                let refused = runtime.block_on(reach_route_serviced(world, from, |at| at == TOWN, async || Err("route service failed".into())));
+                assert_eq!(refused.err().ok_or("liveness error was swallowed")?.to_string(), "route service failed");
+                Ok(())
+            }).map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "reach route test thread failed")??;
+    Ok(())
+}
+
+#[cfg(test)]
+fn reach_component(world: &BundleWorld, from: TilePos) -> (TilePos, TilePos, Vec<TilePos>) {
+    let mut queue = VecDeque::from([from]);
+    let mut seen = std::collections::BTreeSet::from([from]);
+    let mut doors = std::collections::BTreeSet::new();
+    let (mut low, mut high) = (from, from);
+    while let Some(at) = queue.pop_front() {
+        low.x = low.x.min(at.x);
+        low.y = low.y.min(at.y);
+        low.floor = low.floor.min(at.floor);
+        high.x = high.x.max(at.x);
+        high.y = high.y.max(at.y);
+        high.floor = high.floor.max(at.floor);
+        for (dx, dy, direction) in [
+            (0, -1, StepDirection::North),
+            (1, 0, StepDirection::East),
+            (0, 1, StepDirection::South),
+            (-1, 0, StepDirection::West),
+        ] {
+            if let Some((x, y)) = at.x.checked_add_signed(dx).zip(at.y.checked_add_signed(dy)) {
+                let adjacent = TilePos {
+                    x,
+                    y,
+                    floor: at.floor,
+                };
+                if world.facts().doors().at(adjacent) {
+                    doors.insert(adjacent);
+                }
+            }
+            if let Some(next) = destination(world, at, direction)
+                && seen.len() <= REACH_SEARCH_NODES
+                && seen.insert(next)
+            {
+                queue.push_back(next);
+            }
+        }
+    }
+    (low, high, doors.into_iter().collect())
 }

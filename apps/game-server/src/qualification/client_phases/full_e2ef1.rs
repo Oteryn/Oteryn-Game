@@ -71,6 +71,7 @@ mod e2ef1 {
         ),
         ("M07", &["carried-rope", "rope-ascent", "relogin"]),
     ];
+    const FLOOR_EXHAUST_WORDS: &str = "exevo infir flam hur";
     const DIRS: [StepDirection; 4] = [
         StepDirection::North,
         StepDirection::East,
@@ -267,19 +268,33 @@ mod e2ef1 {
         range: u16,
     ) -> TestResult<Object> {
         let from = tile(client.world_spatial().actor_position)?;
-        for &object in objects
+        let mut candidates: Vec<_> = objects.iter().copied().filter(|o| wanted(*o)).collect();
+        candidates.sort_by_key(|object| (distance(from, object.at), object.at, object.ordinal));
+        let candidate_count = candidates.len();
+        let within_old_budget = candidates
             .iter()
-            .filter(|object| wanted(**object) && distance(from, object.at) <= 160)
-        {
-            if let Some(path) = route(world, from, |at| {
+            .filter(|o| distance(from, o.at) <= 160)
+            .count();
+        evidence(&format!(
+            "E2EF1_APPROACH from={from:?} candidates={candidate_count} within_160={within_old_budget} nearest={:?}",
+            candidates.first()
+        ));
+        let mut searched = 0;
+        for object in candidates {
+            match reach_route(client, world, from, |at| {
                 distance(at, object.at) == range
                     && (range != 1 || at.x == object.at.x || at.y == object.at.y)
-            }) {
-                walk(client, world, &path).await?;
-                return Ok(object);
+            })
+            .await?
+            {
+                Ok(path) => {
+                    walk(client, world, &path).await?;
+                    return Ok(object);
+                }
+                Err(nodes) => searched += nodes,
             }
         }
-        Err("no reachable exact authored target within town budget".into())
+        Err(format!("no reachable exact authored target: from={from:?} candidates={candidate_count} within_160={within_old_budget} searched={searched}").into())
     }
 
     async fn m01(
@@ -466,7 +481,8 @@ mod e2ef1 {
         world: &BundleWorld,
         checks: &mut Checks,
     ) -> TestResult {
-        use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
+        use oteryn_dev_client::client_runtime::inventory::MoveRequest;
+        use oteryn_dev_client::{ItemMoveDestination, ItemMoveOutcome};
         use oteryn_protocol_oteryn::item_view::WorldTilePosition;
         let item = client
             .inventory()
@@ -477,8 +493,10 @@ mod e2ef1 {
             )?;
         let ground = client.world_spatial().actor_position;
         let dropped = client
-            .move_item(&ItemMoveIntent {
+            .session_mut()
+            .move_item_counted(MoveRequest {
                 source: item.handle,
+                count: None,
                 destination: ItemMoveDestination::Ground(WorldTilePosition {
                     x: ground.x,
                     y: ground.y,
@@ -529,8 +547,10 @@ mod e2ef1 {
         walk(client, world, &path).await?;
         let before = client.world_spatial().actor_position;
         let moved = client
-            .move_item(&ItemMoveIntent {
+            .session_mut()
+            .move_item_counted(MoveRequest {
                 source: handle,
+                count: None,
                 destination: ItemMoveDestination::MainBackpack,
             })
             .await?;
@@ -560,17 +580,19 @@ mod e2ef1 {
     ) -> TestResult {
         use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
         let book = native_spell_book()?;
+        // Scorch is an aggressive, untargeted level-1 sorcerer wave (8 mana).
+        // Flame Wave exceeds the pristine fixture's level before provisioning.
         let spell = book
-            .spoken("exevo flam hur")
-            .ok_or("aggressive spell content absent: flame wave")?
+            .spoken(FLOOR_EXHAUST_WORDS)
+            .ok_or("aggressive spell content absent: Scorch")?
             .spell;
         if !spell.aggressive {
-            return Err("flame wave is not aggressive".into());
+            return Err("Scorch is not aggressive".into());
         }
         let index = (1..=book.source_len())
             .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
             .find(|i| book.indexed(*i).is_some_and(|s| s.key == spell.key))
-            .ok_or("flame wave source index")?;
+            .ok_or("Scorch source index")?;
         let cooldown = Duration::from_micros(
             spell
                 .groups
@@ -1193,6 +1215,28 @@ mod e2ef1 {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn qualification_floor_exhaust_spell_fits_pristine_sorcerer() -> TestResult {
+            std::thread::Builder::new()
+                .stack_size(64 << 20)
+                .spawn(|| -> Result<(), String> {
+                    let book = native_spell_book().map_err(|error| error.to_string())?;
+                    let spell = book
+                        .spoken(FLOOR_EXHAUST_WORDS)
+                        .ok_or("floor exhaust spell missing")?
+                        .spell;
+                    assert!(spell.aggressive);
+                    assert_eq!(spell.level, 1);
+                    assert!(!spell.premium && !spell.learning_required && !spell.needs_target);
+                    assert!(spell.vocations.contains(&crate::spell::Vocation::Sorcerer));
+                    assert_eq!(spell.soul, 0);
+                    Ok(())
+                })?
+                .join()
+                .map_err(|_| "floor exhaust content test thread failed")??;
+            Ok(())
+        }
+
         #[test]
         fn full_rows_require_every_named_action() {
             for (_, required) in ROWS {
