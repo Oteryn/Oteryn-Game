@@ -10,8 +10,8 @@
 //! (`sudo -n python3`, as `provision.rs` runs the fixture), answered by the node's uid-0 `spawn`
 //! control route (`qualification_wild_spawn.rs`, feature `qualification-spawn`).
 //!
-//! One shared session serves the whole sweep: it is re-admitted and re-provisioned only when its
-//! health is low or the session became unusable. A creature that cannot be killed within the bound
+//! One shared session serves the whole sweep: it is provisioned once, and re-admitted (never
+//! re-provisioned) when its health stays low or the session became unusable. A creature that cannot be killed within the bound
 //! gets `kill FAIL cause=deadline`; the sweep releases the target and moves on.
 //!
 //! Rows per species: `CS.<key>.spawn|kill|xp|corpse|loot|full`. `spawn` carries the node answer, or
@@ -43,6 +43,7 @@ const CORE_CHARACTER: usize = 0;
 const FULL_STAMINA_MINUTES: i32 = 2520;
 const VISIBLE_SECONDS: u64 = 30;
 const KILL_SECONDS: u64 = 150;
+const HEALTH_WAIT_SECONDS: u64 = 60;
 
 /// `start:len` with plain decimal numbers and `len > 0`; `None` runs the default slice.
 fn creature_batch(value: Option<&str>) -> TestResult<(usize, usize)> {
@@ -171,6 +172,8 @@ fn failure(step: &'static str, cause: &'static str, detail: impl std::fmt::Displ
 struct Definition {
     name: String,
     experience: u64,
+    attackable: bool,
+    speed: u64,
 }
 
 struct LootEntry {
@@ -234,6 +237,10 @@ fn definitions(root: &Path) -> TestResult<BTreeMap<String, (Definition, Option<S
                 Definition {
                     name: name.to_owned(),
                     experience: profile["experience"].as_u64().unwrap_or(0),
+                    attackable: profile["details"]["flags"]["attackable"]
+                        .as_bool()
+                        .unwrap_or(false),
+                    speed: profile["speed"].as_u64().unwrap_or(0),
                 },
                 record["definition"]["loot"]["key"]
                     .as_str()
@@ -336,11 +343,25 @@ pub(super) async fn run(
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     verdict::Harness::global().progress("creature-sweep-census");
     let definitions = definitions(&root)?;
-    // `definitions` is a BTreeMap, so the species list is sorted by key.
-    let keys: Vec<&String> = definitions.keys().collect();
+    // `definitions` is a BTreeMap, so the species list is sorted by key. Huntable means a player
+    // can attack it and gains experience for the kill; zero-speed definitions are the scenery,
+    // eggs and totems the authoring marks attackable and never move.
+    let (mut not_attackable, mut no_experience, mut immobile) = (0usize, 0usize, 0usize);
+    let mut keys: Vec<&String> = Vec::new();
+    for (key, (definition, _)) in &definitions {
+        if !definition.attackable {
+            not_attackable += 1;
+        } else if definition.experience == 0 {
+            no_experience += 1;
+        } else if definition.speed == 0 {
+            immobile += 1;
+        } else {
+            keys.push(key);
+        }
+    }
     evidence(&format!(
-        "creature_sweep census defined_species={} total={} start={}",
-        keys.len(),
+        "creature_sweep census defined={} huntable={} excluded_not_attackable={not_attackable} excluded_no_experience={no_experience} excluded_immobile={immobile} start={}",
+        definitions.len(),
         keys.len(),
         at(TOWN)
     ));
@@ -394,6 +415,8 @@ pub(super) async fn run(
             definition: Some(Definition {
                 name: definition.name.clone(),
                 experience: definition.experience,
+                attackable: definition.attackable,
+                speed: definition.speed,
             }),
             key: (*key).clone(),
             loot,
@@ -475,8 +498,9 @@ async fn sweep_species(
     Ok(())
 }
 
-/// The shared session is admitted once; it is re-provisioned only when health is low and dropped
-/// when the wire failed, so the next species starts from a usable player.
+/// The shared session is admitted once and provisioned once for the whole sweep. Low health is
+/// recovered by waiting, then by a fresh admission of the same character; the fixture never reruns
+/// on a character that already carries the build.
 async fn ready(
     clients: &SeamClients<'_>,
     world: &BundleWorld,
@@ -486,19 +510,31 @@ async fn ready(
         *session = Some(connect_character(clients, 0x80, CORE_CHARACTER).await?);
     }
     prepare_player(clients, session).await?;
-    let low = session
-        .as_ref()
-        .and_then(|client| client.actor_vitals())
-        .is_some_and(|vitals| vitals.health.saturating_mul(2) < vitals.max_health);
-    if low {
+    if is_low(session) {
+        let recover = tokio::time::Instant::now() + Duration::from_secs(HEALTH_WAIT_SECONDS);
+        while is_low(session) && tokio::time::Instant::now() < recover {
+            let client = session.as_mut().ok_or("session absent")?;
+            client.service_liveness(Duration::from_millis(250)).await?;
+            client.take_events();
+            verdict::Harness::global().progress("creature-sweep-recover");
+        }
+    }
+    if is_low(session) {
+        // Still low (or dead): admit the character again, without the fixture.
         let mut client = session.take().ok_or("session absent")?;
         release(&mut client).await?;
         drop(client);
-        let fresh = connect_character(clients, 0x80, CORE_CHARACTER).await?;
-        *session = Some(provisioning::provision_fixture(fresh, clients, CORE_CHARACTER).await?);
+        *session = Some(connect_character(clients, 0x80, CORE_CHARACTER).await?);
     }
     let client = session.as_mut().ok_or("session absent")?;
     leave_protection_zone(client, world).await
+}
+
+fn is_low(session: &Option<DevClientSession>) -> bool {
+    session
+        .as_ref()
+        .and_then(|client| client.actor_vitals())
+        .is_some_and(|vitals| vitals.health.saturating_mul(2) < vitals.max_health)
 }
 
 /// The spawn needs free non-PZ cells next to the player: walk once to open ground.
@@ -1025,7 +1061,10 @@ async fn open_corpse(
     Ok(got)
 }
 
-/// Provision the level-100 axe build once (the fenced fixture command), then reuse it.
+/// Provision the level-100 build once (the fenced fixture command), then reuse it. The fixture is
+/// one-shot per character: a refusal on a character that already reads level 100 means "already
+/// provisioned". The weapon is not equipped: the fixture's axe record has unknown level and
+/// vocations, so the server refuses the slot; the sweep fights with what the profile carries.
 async fn prepare_player(
     clients: &SeamClients<'_>,
     session: &mut Option<DevClientSession>,
@@ -1035,8 +1074,49 @@ async fn prepare_player(
     if level >= SWEEP_LEVEL {
         return Ok(());
     }
-    let fresh = session.take().ok_or("session absent")?;
-    *session = Some(provisioning::provision_fixture(fresh, clients, CORE_CHARACTER).await?);
+    let mut client = session.take().ok_or("session absent")?;
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let profile = std::env::var("NODE_BOOT_PROFILE").unwrap_or_else(|_| "sorcerer".into());
+    let game_session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let status = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("sudo")
+            .args(["-n", "python3"])
+            .arg(script)
+            .args([
+                "--socket",
+                &socket,
+                "--session",
+                &game_session,
+                "--profile",
+                &profile,
+            ])
+            .status()
+    })
+    .await??;
+    let (result, logout, attempts, busy_timed_out) = logout_retrying_busy(&mut client).await?;
+    if result != Some(LogoutResult::Accepted) {
+        return Err(format!(
+            "fixture setup logout refused: {logout}; attempts={attempts}; busy_timed_out={busy_timed_out}"
+        )
+        .into());
+    }
+    drop(client);
+    let mut fresh = connect_character(clients, 0x70, CORE_CHARACTER).await?;
+    let (_, level) = read_stats(&mut fresh).await?;
+    *session = Some(fresh);
+    if level < SWEEP_LEVEL {
+        return Err(format!(
+            "node-boot fenced build provisioning failed (fixture exit ok={}, level {level})",
+            status.success()
+        )
+        .into());
+    }
+    evidence(&format!(
+        "creature_sweep provisioned level={level} fixture_ok={} weapon=none_equipped",
+        status.success()
+    ));
     Ok(())
 }
 
