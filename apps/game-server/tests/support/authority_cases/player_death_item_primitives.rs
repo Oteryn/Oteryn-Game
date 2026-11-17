@@ -2194,12 +2194,15 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     );
     let reset = prepare_nested_reset(&h, &h.root).await?;
     let audits_before = h.count("game_item_audit_outbox").await?;
-    // Enable optional diagnostics on this private fixture's existing runtime
-    // connection, after setup and outside the measured production operation.
+    // PostgreSQL function tracking adds timing work to every call in the
+    // 501-item transaction. Keep that instrumentation opt-in for diagnosis.
     let function_profile = async {
+        if std::env::var_os("OTERYN_TEST_MAX501_FUNCTION_PROFILE").is_none() {
+            return Ok(None);
+        }
         let pid = maximum_retirement_function_checkpoint(&h, true).await?;
         let before = maximum_retirement_function_costs(&h).await?;
-        Ok::<_, Box<dyn std::error::Error>>((pid, before))
+        Ok::<_, Box<dyn std::error::Error>>(Some((pid, before)))
     }
     .await;
     // The production owner retains its existing two-second semantic-pass
@@ -2219,7 +2222,7 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
         None => eprintln!("[DBG-audit-765f34] MAX501 profile=missing"),
     }
     match function_profile {
-        Ok((pid, before)) => {
+        Ok(Some((pid, before))) => {
             if let Err(error) = report_maximum_retirement_function_costs(
                 &h,
                 pid,
@@ -2231,6 +2234,7 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
                 eprintln!("[DBG-audit-765f34] MAX501 function profile unavailable: {error}");
             }
         }
+        Ok(None) => {}
         Err(error) => {
             eprintln!("[DBG-audit-765f34] MAX501 function profile unavailable: {error}");
         }
