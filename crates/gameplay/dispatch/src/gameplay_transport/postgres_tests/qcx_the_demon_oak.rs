@@ -4,7 +4,8 @@ use super::kill_reward_e2e::scenario_thread::run_async;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition};
 use crate::gameplay_transport::connection::{FirstEntryOutcome, UseCommand};
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use crate::map::{
@@ -15,7 +16,6 @@ use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
 
-const QUEST: &str = "oteryn:quest.demon_oak";
 const DONE: &str = "oteryn:quest-progress/quest/u8_2/the_demon_oak/done";
 const GRAVE: TilePos = TilePos {
     x: 32710,
@@ -106,8 +106,10 @@ fn scenario(name: &'static str, choice: Option<usize>) -> TestResult {
                 "content-1",
             )?;
         let generation = controller.active().ok_or("active generation")?;
-        let start = match choice {
-            Some(index) => TilePos {
+        let alternative = choice.map(|index| index ^ 1);
+        let start = match choice.zip(alternative) {
+            Some((index, other)) => TilePos {
+                x: u16::midpoint(CHESTS[index].0.x, CHESTS[other].0.x),
                 y: 32394,
                 ..CHESTS[index].0
             },
@@ -208,14 +210,47 @@ fn scenario(name: &'static str, choice: Option<usize>) -> TestResult {
             UseDisposition::Committed
         );
 
-        let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        let seeded = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,2,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-            .bind(id(41).as_slice()).bind(DONE).bind(QUEST).execute(&mut *tx).await?;
-        assert_eq!(seeded.rows_affected(), 1);
-        tx.commit().await?;
+        // Seed the reward precondition through the canonical source transitions.
+        let catalogue = Arc::clone(owner.quest_catalogue.as_ref().ok_or("quest catalogue")?);
+        let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
+        for (command, transition) in [
+            (
+                100,
+                "oteryn:quest-transition/quest/u8_2/the_demon_oak/done/action_1",
+            ),
+            (
+                101,
+                "oteryn:quest-transition/quest/u8_2/the_demon_oak/done/npc_2",
+            ),
+        ] {
+            let current = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(debug)?
+                .ok_or("current quest fence")?;
+            let outcome = slot
+                .commit_quest_transition(
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    current,
+                    QuestTransitionRequest {
+                        transition_key: transition.into(),
+                        cause: QuestCause::Command(CommandRef::new(
+                            admitted.game_session_id,
+                            CommandId::new(command).map_err(debug)?,
+                        )),
+                    },
+                    Arc::clone(&catalogue),
+                )
+                .await
+                .map_err(debug)?;
+            assert!(
+                matches!(outcome, QuestTransitionOutcome::Committed(_)),
+                "{transition}: {outcome:?}"
+            );
+        }
+        drop(slot);
         owner
             .refresh_quest_session(admitted.game_session_id, false)
             .await;
@@ -225,17 +260,19 @@ fn scenario(name: &'static str, choice: Option<usize>) -> TestResult {
             .ok_or("clock")?;
         assert_eq!(
             use_at(&owner, admitted, target, 2).await?,
-            UseDisposition::Committed
+            UseDisposition::Committed,
+            "the exact World placement must accept the reported victory"
         );
 
-        if let Some(index) = choice {
+        if let Some((index, other)) = choice.zip(alternative) {
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
                 .ok_or("clock")?;
-            assert_ne!(
-                use_at(&owner, admitted, target, 3).await?,
-                UseDisposition::Committed
+            assert_eq!(
+                use_at(&owner, admitted, CHESTS[other].0, 3).await?,
+                UseDisposition::Rejected,
+                "a different reachable chest must refuse after the first reward"
             );
             for (ci, (_, item)) in CHESTS.iter().enumerate() {
                 let count: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
@@ -348,7 +385,9 @@ fn reward_world(
     cells.insert((GRAVE.floor, GRAVE.y, GRAVE.x), vec![0, 1]);
     for (pos, _) in CHESTS {
         cells.insert((pos.floor, pos.y, pos.x), vec![0, 2, 3]);
-        cells.insert((pos.floor, pos.y + 1, pos.x), vec![0]);
+    }
+    for x in [32711, 32715] {
+        cells.insert((-8, 32394, x), vec![0]);
     }
     let mut sectors = BTreeMap::<_, Vec<_>>::new();
     for ((floor, y, x), stack) in cells {
