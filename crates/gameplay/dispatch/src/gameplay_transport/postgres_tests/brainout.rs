@@ -108,7 +108,7 @@ pub(super) fn catalogue(
             Ok(track)
         })
         .collect::<Result<Vec<_>, &str>>()?;
-    quest::QuestStateCatalogue::new(
+    Ok(quest::QuestStateCatalogue::new(
         original.content_revision(),
         tracks,
         vec![
@@ -118,7 +118,7 @@ pub(super) fn catalogue(
                 .ok_or("brain mission transition")?,
         ],
     )
-    .map_err(debug)
+    .map_err(debug)?)
 }
 pub(super) fn world(
     native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
@@ -184,10 +184,11 @@ pub(super) async fn exercise(
     callback: &Callback,
     name: &str,
 ) -> TestResult {
-    owner.states.chat.admit(
+    owner.states.chat.admit_as(
         admitted.game_session_id,
         "Brain",
-        crate::foundation::SemanticTimeMicros::from_micros(u64::try_from(
+        None,
+        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(u64::try_from(
             owner.clock_origin.elapsed().as_micros(),
         )?),
     );
@@ -246,15 +247,13 @@ pub(super) async fn exercise(
     } else {
         "No brains"
     };
-    assert!(
-        owner
-            .states
-            .chat
-            .drain(admitted.game_session_id)
-            .iter()
-            .any(|line| matches!(line,
-        oteryn_protocol_oteryn::chat::ChatLine::Private {text,..} if text == expected_refusal))
-    );
+    let mut feedback = Vec::new();
+    while let Some(line) = owner.states.chat.next(admitted.game_session_id) {
+        owner.states.chat.delivered(admitted.game_session_id);
+        feedback.push(line);
+    }
+    assert!(feedback.iter().any(|line| matches!(line,
+        oteryn_protocol_oteryn::chat::ChatLine::Private {text,..} if text == expected_refusal)));
     assert_eq!(counts(h).await?, (1, 0, 0), "missing input must roll back");
     super::quest_world_callbacks::input_item(owner, fence.item_fence(), second, 8702, false)
         .await?;

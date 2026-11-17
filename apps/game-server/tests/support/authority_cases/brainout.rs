@@ -53,7 +53,7 @@ mod l6_world_pickups {
     }
 }
 mod quest_world_callbacks {
-    use super::{AdmittedSession, ComposedFreshAdmission, TestResult, debug, id};
+    use super::{AdmittedSession, TestResult, composed_test_owner, debug, id};
     use crate::foundation::{MessageType, decode_wire_envelope};
     pub(super) fn scenario(
         name: &str,
@@ -77,7 +77,8 @@ mod quest_world_callbacks {
             },
             item_transfer::{ItemTransferDestination, ItemTransferRequest},
         };
-        use oteryn_gameplay_items::item_ref_admission::{NativeItemWeights, generation_item_facts};
+        use composed_test_owner::native_item_weights;
+        use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
         let native = owner
             .active_generation
             .and_then(|g| g.native_gameplay())
@@ -147,7 +148,11 @@ mod quest_world_callbacks {
             )
             .await
             .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
-        let permit = owner.spell_lane.acquire().await.map_err(debug)?;
+        let permit = owner
+            .spell_lane
+            .acquire()
+            .await
+            .map_err(|_| "unresolved spell lane")?;
         let ItemMintOutcome::Committed(item) = owner
             .root
             .commit_item_mint(&permit, owner.character, owner.holder, &mut candidate)
@@ -192,7 +197,7 @@ mod quest_world_callbacks {
                     ruleset_revision: "ruleset-1".into(),
                     sim_revision: "sim-1".into(),
                 },
-                &NativeItemWeights(native),
+                &native_item_weights(native),
             )
             .await
             .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
@@ -204,7 +209,7 @@ mod quest_world_callbacks {
                 owner.holder,
                 fence,
                 &mut transfer,
-                &NativeItemWeights(native),
+                &native_item_weights(native),
             )
             .await
             .map_err(|error| format!("input item n={n} at line {}: {error:?}", line!()))?;
@@ -219,7 +224,7 @@ mod quest_world_callbacks {
                 owner.holder,
                 &fence,
                 command(1)?,
-                &NativeItemWeights(native),
+                &native_item_weights(native),
                 LoopMoveRequest {
                     item: item.item_instance_id,
                     count: None,
@@ -505,7 +510,7 @@ async fn exercise(h: &fixture::Harness, name: &str) -> TestResult {
             &authority,
             &h.node,
             &fence.item_fence(),
-            &oteryn_gameplay_items::item_ref_admission::NativeItemWeights(native),
+            &composed_test_owner::native_item_weights(native),
             &template,
         )
         .await
@@ -531,7 +536,7 @@ async fn exercise(h: &fixture::Harness, name: &str) -> TestResult {
                         max_soul: 100,
                     },
                     (3, 7_000_000),
-                    crate::foundation::SemanticTimeMicros::from_micros(u64::try_from(
+                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(u64::try_from(
                         owner.clock_origin.elapsed().as_micros()
                     )?)
                 )

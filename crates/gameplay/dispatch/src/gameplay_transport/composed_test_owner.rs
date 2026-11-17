@@ -200,3 +200,12 @@ pub fn world_tool_callbacks(
         .map(|c| c.key.clone())
         .collect())
 }
+
+/// The production native custody adapter, exposed only with test support.
+pub fn native_item_weights(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> impl crate::durability::item_transfer::ItemWeightLookup
++ crate::durability::item_loop_move::ItemLoopContent
++ '_ {
+    super::item_ref_admission::NativeItemWeights(native)
+}
