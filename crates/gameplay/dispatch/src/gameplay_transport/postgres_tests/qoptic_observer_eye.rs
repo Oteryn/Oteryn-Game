@@ -299,12 +299,11 @@ fn platform_world(
         floors: vec![-14],
     };
     data.manifest.palette.truncate(1);
-    data.manifest.palette[0].key = "oteryn:item.tibia.i100".into();
-    for (index, id) in [24912, 24889, 24898, 24899].into_iter().enumerate() {
+    for id in [24912, 24889, 24898, 24899] {
         data.manifest.palette.push(writer::PaletteEntry {
             key: format!("oteryn:item.tibia.i{id}"),
             family: writer::Family::Item,
-            id: u32::try_from(index)? + 1,
+            id,
             terrain: None,
         });
     }
