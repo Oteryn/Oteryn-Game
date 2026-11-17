@@ -65,7 +65,7 @@ receipts, one success transition, seven-day versus fixed-date expiry, and a new
 DB-only owner's recovery. Clock fixtures affect business time only, with all
 publication, reset, recovery and runtime guards retained.
 
-Local PostgreSQL 18.6 execution: one case passed in 70.40 seconds (all three
+Local PostgreSQL 18.6 execution: one case passed in 74.21 seconds (all three
 event windows); `migration_numbers_are_unique_and_match_embedded_migrator`
 also passed. The case is mounted by game-server and reused by the smaller
 durability lib test target for focused qualification.

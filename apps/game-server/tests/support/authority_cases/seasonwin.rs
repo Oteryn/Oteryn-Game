@@ -7,7 +7,7 @@ use crate::foundation::{ChannelId, WorldId};
 async fn reset_epoch(
     h: &Harness,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
-    room: &crate::content::QualifiedNativeEntryRoom,
+    room: &oteryn_gameplay_content::content::QualifiedNativeEntryRoom,
     world: WorldId,
     channel: ChannelId,
 ) -> TestResult {
@@ -169,7 +169,7 @@ async fn cases(
     sqlx::query("CREATE FUNCTION seasonwin_reset_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=game_seasonwin_now(); NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$").execute(&h.pool).await?;
     sqlx::query("CREATE TRIGGER seasonwin_reset_clock BEFORE INSERT ON game_world_reset_epochs FOR EACH ROW EXECUTE FUNCTION seasonwin_reset_clock()").execute(&h.pool).await?;
     let (_controller, pin) =
-        crate::content::native_gameplay::test_support::activated_with_loot_tables(
+        oteryn_gameplay_content::content::native_gameplay::test_support::activated_with_loot_tables(
             world,
             Some(include_bytes!(
                 "../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
