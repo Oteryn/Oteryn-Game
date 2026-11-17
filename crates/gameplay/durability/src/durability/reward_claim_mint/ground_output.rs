@@ -54,20 +54,31 @@ pub(crate) async fn create(
     else {
         return Ok(false);
     };
-    let qualified =
-        super::super::spell_items_abi::QualifiedItemDefinition::from_native_policy(policy)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-    // Initially support plain portable roots only; containers, charge state and
-    // timed transforms need their existing specialized participants.
-    if !qualified.materializable
-        || !qualified.movable
-        || !qualified.inventory_destination
-        || !qualified.ground_destination
-        || qualified.container_capacity.is_some()
-        || qualified.decay.is_some()
-        || qualified.stack_maximum < u32::from(output.count)
-        || policy.record().semantics.charges
-            != oteryn_gameplay_content::content::ReferenceItemField::NotApplicable
+    use oteryn_gameplay_content::content::ReferenceItemField as Field;
+    use oteryn_gameplay_items::item_ref_admission::{
+        generation_ground_item_facts, generation_item_facts,
+    };
+    let (Ok(carried), Ok(ground)) = (
+        generation_item_facts(native, &definition),
+        generation_ground_item_facts(native, &definition),
+    ) else {
+        return Ok(false);
+    };
+    let Ok((maximum, _)) = super::super::item_transfer::stack_maximum(carried.stack) else {
+        return Ok(false);
+    };
+    // Ordinary source custody admits these physical facts without claiming
+    // opaque combat/use/lifetime semantics. Reuse that owner, not spell ABI
+    // completeness. Explicit instance-state contracts retain their own owners.
+    let semantics = &policy.record().semantics;
+    if carried != ground
+        || carried.weight.is_none()
+        || carried.container_capacity.is_some()
+        || maximum < u32::from(output.count)
+        || matches!(&semantics.container, Field::Known(_))
+        || matches!(&semantics.charges, Field::Known(_))
+        || matches!(&semantics.temporal, Field::Known(_))
+        || matches!(&semantics.fluid, Field::Known(_))
     {
         return Ok(false);
     }
