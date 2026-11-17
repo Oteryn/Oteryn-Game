@@ -116,3 +116,25 @@ fn skull_of_ratha_completes_only_after_both_bags_and_the_basement_chest() -> Res
     }
     Ok(())
 }
+
+/// TibiaWiki Sanctuary of the Lizard God Quest (rev 1198612): the Legion Helmet
+/// chest behind the sanctuary teleport is the quest's reward and closes it.
+#[test]
+fn sanctuary_of_the_lizard_god_completes_on_the_legion_helmet_chest() -> Result<(), String> {
+    let loaded =
+        super::loader::load_embedded_quest_state("content-1").map_err(|e| format!("{e:?}"))?;
+    let catalogue = loaded.catalogue();
+    let quest = "oteryn:quest.sanctuary_of_the_lizard_god";
+    assert_eq!(catalogue.completion_tracks(quest).count(), 1);
+    let transition = catalogue
+        .transition("oteryn:quest-transition/kv/legiondawnport/chest")
+        .ok_or("Legion Helmet chest")?;
+    assert_eq!(transition.quest, quest);
+    assert_eq!(transition.effects[0].effect, QuestEffectKind::Set(1));
+    let stored = std::collections::BTreeMap::new();
+    let changes = catalogue
+        .evaluate(transition, &stored, 0)
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(catalogue.completes_after_claim_sets(transition, &stored, &changes));
+    Ok(())
+}

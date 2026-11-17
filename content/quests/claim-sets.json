@@ -270,5 +270,12 @@
         "quest/u7_6/explorer_society/skull_of_ratha/bag2"
       ]
     ]
+  },
+  "oteryn:quest.sanctuary_of_the_lizard_god": {
+    "groups": [
+      [
+        "kv/legiondawnport"
+      ]
+    ]
   }
 }

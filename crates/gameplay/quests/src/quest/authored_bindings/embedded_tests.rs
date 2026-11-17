@@ -556,7 +556,7 @@ mod main_native_contract {
         for stage in arena.stages {
             track(&stage.track, &arena.quest, stage.goal)?;
         }
-        assert_eq!(additions.len(), 69);
+        assert_eq!(additions.len(), 70);
 
         let baseline = crate::quest::loader::lower_embedded_quest_state("native-admission-fixture")
             .map_err(|error| format!("{error:?}"))?;
