@@ -1,6 +1,6 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
-use crate::content::native_gameplay::test_support::{
+use crate::content::native_gameplay::test_support::cosmetics_fixture::{
     activated_with_optional_cosmetics, cosmetics_test_packet,
 };
 use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
