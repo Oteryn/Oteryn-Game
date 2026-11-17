@@ -303,11 +303,12 @@ fn sandra_lottery_postgres_seeded_win_and_replay_grants_once() -> super::TestRes
     })
 }
 
-pub(super) async fn exercise_win(
+pub(super) async fn exercise_outcome(
     owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut super::AdmittedSession,
     h: &super::fixture::Harness,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    win: bool,
 ) -> super::TestResult {
     use crate::durability::item_loop_move::ItemLoopContent;
     use crate::durability::quest_state::{
@@ -365,7 +366,8 @@ pub(super) async fn exercise_win(
             topic: 0,
             transition_key: "oteryn:quest-npc/sandra/lottery".into(),
         };
-        if draw_for_request(weights.loop_content_digest(), &request, fence.character_id) == Some(0)
+        if draw_for_request(weights.loop_content_digest(), &request, fence.character_id)
+            .is_some_and(|draw| (draw == 0) == win)
         {
             selected = Some(request);
             break;
@@ -395,7 +397,7 @@ pub(super) async fn exercise_win(
     let prize: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i5958'")
         .fetch_one(&h.pool).await?;
     assert_eq!(input, 0);
-    assert_eq!(prize, 1);
+    assert_eq!(prize, i64::from(win));
     let replay = owner
         .root
         .reconcile_npc_program(authority, fence.character_id, request)
@@ -408,6 +410,25 @@ pub(super) async fn exercise_win(
     ));
     let after: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i5958'")
         .fetch_one(&h.pool).await?;
-    assert_eq!(after, 1);
+    assert_eq!(after, i64::from(win));
     Ok(())
+}
+
+#[test]
+fn sandra_lottery_postgres_seeded_blank_consumes_ticket_and_replays_once() -> super::TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run("sandra-lottery-blank", || {
+        super::quest_world_callbacks::scenario(
+            "sandra-lottery-blank",
+            oteryn_gameplay_quests::quest::world_callbacks::Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
+            false,
+        )
+    })
 }
