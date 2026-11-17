@@ -9,7 +9,6 @@ use crate::gameplay_transport::connection::{
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use std::time::{Duration, Instant};
 
-const TRACK: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit";
 const FAILURE: &str = "Indeed there is something to be done, but I need someone more experienced. Come back later if you want to.";
 
 #[test]
@@ -89,8 +88,8 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
                 1
             );
 
-            // Let selection see the eligible stage. Stop the writer at receipt lookup
-            // so the durable stage can advance before it validates the callback.
+            // With no backpack, the reward writer cannot deliver Muriel's container.
+            // Pause it at receipt lookup so the second reply races a reopened conversation.
             let mut tx = h.pool.begin().await?;
             sqlx::query("LOCK TABLE game_character_quest_receipts IN ACCESS EXCLUSIVE MODE")
                 .execute(&mut *tx)
@@ -128,14 +127,6 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
                         .ok_or("reopened engagement")?;
                     assert_ne!(chat.npc_conversation_generation(session), generation);
                 }
-                let changed = sqlx::query(
-                    "INSERT INTO game_character_quest_tracks                      (character_id,track_key,quest_key,value,committed_character_revision)                      SELECT character_id,$2,'oteryn:quest.tibia_tales',1,character_revision                      FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
-                )
-                .bind(id(41).as_slice())
-                .bind(TRACK)
-                .execute(&mut *tx)
-                .await?;
-                assert_eq!(changed.rows_affected(), 1);
                 tx.commit().await?;
                 Ok::<(), Box<dyn std::error::Error>>(())
             };
@@ -155,12 +146,13 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
                     [FAILURE]
                 );
             }
-            sqlx::query("DELETE FROM game_character_quest_tracks WHERE track_key=$1")
-                .bind(TRACK)
-                .execute(&h.pool)
-                .await?;
             talk(&mut owner, &admitted, npc, command_id + 3, "bye").await?;
         }
+        let receipts: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(receipts, 0);
         Ok(())
     });
     eprintln!(
