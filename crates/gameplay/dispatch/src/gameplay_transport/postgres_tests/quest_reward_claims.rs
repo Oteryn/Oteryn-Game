@@ -369,7 +369,9 @@ fn quest_reward_claims_panpipe_locked_door_to_reward_and_replay() -> TestResult 
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(&PHASE_A_CONTAINERS[1], None, false, true, false).map_err(|e| e.to_string()))?
+        .spawn(|| {
+            scenario(&PHASE_A_CONTAINERS[1], None, false, true, false).map_err(|e| e.to_string())
+        })?
         .join()
         .map_err(|_| "Panpipe access scenario panicked")??;
     eprintln!(
@@ -556,7 +558,9 @@ fn execute(chest: &'static Chest) -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(chest, None, false, false, false).map_err(|error| error.to_string()))?
+        .spawn(move || {
+            scenario(chest, None, false, false, false).map_err(|error| error.to_string())
+        })?
         .join()
         .map_err(|_| "quest reward claims reward scenario panicked")??;
     eprintln!(
