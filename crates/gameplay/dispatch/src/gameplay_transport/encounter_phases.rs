@@ -24,8 +24,8 @@ pub(super) struct ActivePhase {
 
 #[derive(Debug)]
 enum Fight {
-    CourtWarlock(CourtWarlock),
-    Cults(CultsEncounter),
+    CourtWarlock(Box<CourtWarlock>),
+    Cults(Box<CultsEncounter>),
 }
 impl Fight {
     fn is_current(&self, runtime: &ChannelRuntimeV1) -> bool {
@@ -235,14 +235,14 @@ pub(super) fn bind(
             .to;
         return Ok(ActivePhase {
             key,
-            fight: Fight::CourtWarlock(CourtWarlock::bind(
+            fight: Fight::CourtWarlock(Box::new(CourtWarlock::bind(
                 runtime,
                 players,
                 now,
                 local(encounter.room_min),
                 local(encounter.room_max),
                 local(center),
-            )?),
+            )?)),
             credits,
             frozen: None,
             cells,
