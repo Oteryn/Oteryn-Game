@@ -12,6 +12,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let edits = if close { &scene.close } else { &scene.open };
+        let mut oven_edits;
+        let edits = if callback.key == "oteryn:quest-callback/authored-outlaw-camp-oven" {
+            let [source, destination] = edits.as_slice() else {
+                return Err(UseDisposition::Rejected);
+            };
+            let source_tile =
+                crate::map::view::compose_tile(&map.overlay, &map.facts, tile(source.position))
+                    .map_err(|_| UseDisposition::Rejected)?
+                    .ok_or(UseDisposition::Rejected)?;
+            let Some(appearance) = source_tile
+                .entries
+                .iter()
+                .rev()
+                .filter(|entry| !entry.facts.pickupable)
+                .map(|entry| entry.facts.appearance_id)
+                .next()
+                .filter(|appearance| matches!(appearance, 2535 | 2536))
+            else {
+                // Crystal toggles the switch even if the oven is out of position.
+                return Ok(None);
+            };
+            oven_edits = [source.clone(), destination.clone()];
+            oven_edits[0].remove = Some(appearance);
+            oven_edits[1].create = Some(appearance);
+            oven_edits.as_slice()
+        } else {
+            edits.as_slice()
+        };
         let evacuations = if close {
             &scene.evacuate_close
         } else {

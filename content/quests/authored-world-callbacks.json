@@ -4352,6 +4352,90 @@
         "reusable": true
       },
       "success_message": "You have dispelled imperial influence 4 of 4."
+    },
+    {
+      "key": "oteryn:quest-callback/authored-outlaw-camp-oven",
+      "quest": "oteryn:quest.the_outlaw_camp_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32614,
+          "y": 32173,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "ordinal": 1
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_outlaw_camp/actions_oven.lua:1-23",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1007-1011",
+        "Retained native oven appearance 2535 at (32623,32188,9); the lever has no retained UID, so it uses the exact placement."
+      ],
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32623,
+                "y": 32188,
+                "floor": -9
+              },
+              "remove": 2535,
+              "create": null,
+              "passable": null,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32623,
+                "y": 32189,
+                "floor": -9
+              },
+              "remove": null,
+              "create": 2535,
+              "passable": false,
+              "allow_missing": false
+            }
+          ],
+          "close": [
+            {
+              "position": {
+                "x": 32623,
+                "y": 32189,
+                "floor": -9
+              },
+              "remove": 2535,
+              "create": null,
+              "passable": null,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32623,
+                "y": 32188,
+                "floor": -9
+              },
+              "remove": null,
+              "create": 2535,
+              "passable": false,
+              "allow_missing": false
+            }
+          ]
+        }
+      }
     }
   ]
 }

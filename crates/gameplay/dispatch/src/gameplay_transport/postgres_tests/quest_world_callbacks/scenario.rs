@@ -2,7 +2,7 @@
 use super::*;
 
 pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
-    scenario_case(name, trigger, lever_fixture, None)
+    scenario_case(name, trigger, lever_fixture, None, None)
 }
 
 #[allow(
@@ -14,7 +14,11 @@ pub(crate) fn stateless_scenario(
     trigger: Position,
     expected_destination: Position,
 ) -> TestResult {
-    scenario_case(name, trigger, false, Some(expected_destination))
+    scenario_case(name, trigger, false, Some(expected_destination), None)
+}
+
+pub(crate) fn scenario_with_admin(name: &str, trigger: Position, admin: String) -> TestResult {
+    scenario_case(name, trigger, false, None, Some(admin))
 }
 
 fn scenario_case(
@@ -22,7 +26,14 @@ fn scenario_case(
     trigger: Position,
     lever_fixture: bool,
     stateless_destination: Option<Position>,
+    admin_override: Option<String>,
 ) -> TestResult {
+    use super::super::outlaw_camp_oven;
+    let oven = match name {
+        outlaw_camp_oven::CASE => Some(2535),
+        outlaw_camp_oven::LIT_CASE => Some(2536),
+        _ => None,
+    };
     let sidec_npc = name.starts_with("sidec-");
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
@@ -437,6 +448,8 @@ fn scenario_case(
             name.strip_suffix("-level49").unwrap_or(name)
         } else if name == "giant-smithhammer-asymmetric" {
             "giant-smithhammer"
+        } else if oven.is_some() {
+            outlaw_camp_oven::CASE
         } else if name == "authored-trader" {
             "authored-trader-package"
         } else if elemental_pin
@@ -673,6 +686,8 @@ fn scenario_case(
         super::super::questpc8_life_ring::world()?
     } else if name == "authored-life-ring-bridge" {
         super::super::questpc8_life_ring_bridge::world()?
+    } else if let Some(appearance) = oven {
+        outlaw_camp_oven::world(appearance)?
     } else if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
         super::super::questpc8_retrieval_routes::world(route)?
     } else if name == "authored-braindeath" {
@@ -922,7 +937,8 @@ fn scenario_case(
     } else {
         world(&callback, trigger)?
     };
-    run(async |admin| {
+    run(async |configured| {
+        let admin = admin_override.unwrap_or(configured);
         let h = if shared_rewards
             || qengine_reward
             || outfit_world
@@ -2780,6 +2796,13 @@ fn scenario_case(
             Box::pin(super::super::questpc8_life_ring_bridge::exercise(
                 &mut owner,
                 &mut admitted,
+            ))
+            .await?;
+        } else if let Some(appearance) = oven {
+            Box::pin(outlaw_camp_oven::exercise(
+                &mut owner,
+                &mut admitted,
+                appearance,
             ))
             .await?;
         } else if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {
