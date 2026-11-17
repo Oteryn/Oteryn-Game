@@ -216,16 +216,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err("P03 step=refusal observed=active-state-mutated".into());
     }
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, &selected.selected).await?;
-    client_hunt::hunt(&mut client).await?;
+    let target = travel_to_spawn_target(&mut client, world, &metadata.spawns, &selected.selected).await?;
+    client_hunt::hunt_target(&mut client, Some(target)).await?;
     // Keep answering liveness while the interval runs out; a bare sleep lets
     // the server drop the session as unresponsive.
     let until = tokio::time::Instant::now() + Duration::from_secs(61);
     while tokio::time::Instant::now() < until {
         client.service_liveness(Duration::from_millis(500)).await?;
     }
-    travel_to_spawn(&mut client, world, &metadata.spawns, &selected.selected).await?;
-    client_hunt::hunt(&mut client).await?;
+    let target = travel_to_spawn_target(&mut client, world, &metadata.spawns, &selected.selected).await?;
+    client_hunt::hunt_target(&mut client, Some(target)).await?;
     let checkpoint = query(&mut client, "effect-checkpoint").await?;
     let checkpoint = slot(&checkpoint, number)?.clone();
     if checkpoint.state != 2

@@ -6,6 +6,7 @@ from pathlib import Path
 import socket
 import tempfile
 import unittest
+from unittest.mock import MagicMock, patch
 
 
 SPEC = importlib.util.spec_from_file_location(
@@ -17,6 +18,16 @@ SESSION = "01890f4c-3b2a-7c01-8d11-9a321b7c0004"
 
 
 class ProvisionTests(unittest.TestCase):
+    def test_control_reply_can_arrive_after_twenty_seconds(self):
+        with patch.object(PROVISION.socket, "socket") as socket_factory, patch.object(
+            PROVISION.time, "monotonic", side_effect=[0, 0, 0, 25, 25]
+        ):
+            control = MagicMock()
+            socket_factory.return_value.__enter__.return_value = control
+            control.recv.side_effect = [b"qualified\n", b""]
+            PROVISION.provision("fixture.sock", SESSION, "knight")
+            control.recv.assert_called()
+
     def exchange(self, answer):
         with tempfile.TemporaryDirectory() as directory:
             path = str(Path(directory) / "control.sock")

@@ -269,8 +269,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let before_loot = inventory_signature(&client)?;
     let mut after_loot = before_loot.clone();
     for _ in 0..4 {
-        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        client_hunt::hunt(&mut client).await?;
+        let target = travel_to_spawn_target(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        client_hunt::hunt_target(&mut client, Some(target)).await?;
         after_loot = inventory_signature(&client)?;
         if after_loot != before_loot { break; }
     }

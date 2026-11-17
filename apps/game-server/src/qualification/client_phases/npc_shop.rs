@@ -100,13 +100,7 @@ pub(super) async fn transact(
     evidence("mechanic=npc_shop conversation=open trade_window=decoded look=real_offer");
     let mut connection = sqlx::PgConnection::connect(clients.url).await?;
     let before_gold = gold(&mut connection, clients).await?;
-    if before_gold < i64::from(request.expected_unit_price) {
-        evidence(&format!(
-            "mechanic=npc_shop skipped=insufficient_gold_for_authored_buy_offer definition_ref={definition} price={} available={before_gold} content_id=oteryn:service.trade.sam source=crates/gameplay/durability/src/durability/npc_trade.rs:780",
-            request.expected_unit_price
-        ));
-        return Ok(());
-    }
+    require_buy_funds(before_gold, request.expected_unit_price)?;
     let units = |client: &oteryn_dev_client::DevClientSession| -> u64 {
         client.inventory().map_or(0, |inventory| {
             inventory
@@ -142,4 +136,17 @@ pub(super) async fn transact(
 async fn gold(connection: &mut sqlx::PgConnection, clients: &SeamClients<'_>) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT COALESCE((SELECT sum(i.quantity * CASE i.definition_production_key WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100 WHEN 'oteryn:item.tibia.i3043' THEN 10000 ELSE 0 END)::bigint FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.character_id=encode($1,'hex')::uuid AND i.lifecycle=1),0) + COALESCE((SELECT balance FROM game_account_bank_balances WHERE account_id=$2::uuid AND world_id=encode($3,'hex')::uuid),0)")
         .bind(clients.characters[1].as_slice()).bind(&clients.accounts[1]).bind(clients.world.as_slice()).fetch_one(connection).await?)
+}
+
+fn require_buy_funds(gold: i64, price: u32) -> TestResult {
+    if gold < i64::from(price) {
+        return Err(format!("Sam BUY requires {price} gold, fixture has {gold}").into());
+    }
+    Ok(())
+}
+
+#[test]
+fn qualification_shop_requires_buy_funds() {
+    assert!(require_buy_funds(4, 5).is_err());
+    assert!(require_buy_funds(5, 5).is_ok());
 }

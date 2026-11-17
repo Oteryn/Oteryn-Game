@@ -1294,7 +1294,7 @@ mod travel {
         let position = ActorPosition {
             x: i32::from(spot.x),
             y: i32::from(spot.y),
-            floor: -i16::from(spot.floor),
+            floor: i16::from(spot.floor),
         };
         tiles
             .iter()
@@ -1326,13 +1326,27 @@ mod travel {
         placement: &[u8],
         at: TilePos,
         ordinal: u8,
-    ) -> u64 {
-        let event_revision = tool_revision(&client.take_events(), at, ordinal);
-        let view_revision = event_revision.or_else(|| {
-            let snapshot = client.session_mut().world_map_snapshot()?;
-            base_ordinal_revision(&snapshot.tiles, at, ordinal)
-        });
-        overlay_revision(client, placement).max(view_revision.unwrap_or_default())
+    ) -> TestResult<u64> {
+        let position = ActorPosition {
+            x: i32::from(at.x),
+            y: i32::from(at.y),
+            floor: i16::from(at.floor),
+        };
+        let view_revision = client
+            .session_mut()
+            .world_map_tile(position)
+            .and_then(|tile| base_ordinal_revision(&[tile], at, ordinal));
+        let overlay = client
+            .world_object_overlay()
+            .iter()
+            .find(|entry| entry.placement == placement);
+        view_revision
+            .into_iter()
+            .chain(overlay.map(|entry| entry.revision))
+            .max()
+            .ok_or_else(|| {
+                format!("no current map revision for {} ordinal {ordinal}", show(at)).into()
+            })
     }
 
     fn overlay_revision(client: &DevClientSession, placement: &[u8]) -> u64 {
@@ -1441,12 +1455,15 @@ mod travel {
                     hits,
                     direction,
                 } => {
-                    let mut revision =
-                        observed_revision(client, &self.placement(spot, ordinal)?, spot, ordinal);
+                    let mut revision = if tool.is_some() {
+                        observed_revision(client, &self.placement(spot, ordinal)?, spot, ordinal)?
+                    } else {
+                        0
+                    };
                     for hit in 1..=hits {
                         verdict::Harness::global().progress("travel descent");
                         let reply = if let Some(tool) = tool {
-                            self.use_tool(client, spot, ordinal, tool, &mut revision)
+                            self.use_tool(client, spot, ordinal, tool, &mut revision, hit < hits)
                                 .await?
                         } else {
                             use_map_object(client, &self.placement(spot, ordinal)?).await?
@@ -1512,8 +1529,8 @@ mod travel {
                             &self.placement(spot, ordinal)?,
                             spot,
                             ordinal,
-                        );
-                        self.use_tool(client, spot, ordinal, ROPE_ITEM, &mut revision)
+                        )?;
+                        self.use_tool(client, spot, ordinal, ROPE_ITEM, &mut revision, false)
                             .await?
                     };
                     evidence(&format!(
@@ -1562,6 +1579,7 @@ mod travel {
             ordinal: u8,
             tool: u32,
             revision: &mut u64,
+            needs_revision: bool,
         ) -> TestResult<UseDisposition> {
             use oteryn_protocol_oteryn::world_object::*;
             let reference = provisioning::item_reference(&provisioning::item_index()?, tool)?;
@@ -1597,7 +1615,7 @@ mod travel {
                 }
                 let disposition = decode_use_result(&response.payload)
                     .map_err(|error| format!("tool {tool} USE result: {error:?}"))?;
-                if disposition == UseDisposition::Committed && tool != ROPE_ITEM {
+                if disposition == UseDisposition::Committed && needs_revision {
                     // Bundle revisions are published in MapOrigin::BaseOrdinal. A pick hit
                     // increments this revision even while the same stone remains visible.
                     let before = *revision;
@@ -2004,7 +2022,7 @@ mod travel {
             let position = ActorPosition {
                 x: 100,
                 y: 100,
-                floor: 8,
+                floor: -8,
             };
             let event = |ordinal, object_revision| {
                 SessionEvent::WorldMapSnapshot(oteryn_dev_client::AppliedDelta {
@@ -2017,7 +2035,7 @@ mod travel {
                             bundle_digest: [0; 32],
                             reset_epoch: 1,
                             origin: position,
-                            first_visible_floor: 8,
+                            first_visible_floor: -8,
                         },
                         tiles: vec![MapTile {
                             position,
@@ -5046,8 +5064,9 @@ pub(super) async fn journeys(
         floor: -i16::from(at.floor),
     });
     client = client_disconnect_resume::recover(client, clients, after).await?;
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-    client_hunt::hunt_named(&mut client, Some("Rat")).await?;
+    let target =
+        travel_to_spawn_target(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    client_hunt::hunt_target(&mut client, Some(target)).await?;
     travel_to_spawn(
         &mut client,
         world,
@@ -5213,20 +5232,30 @@ pub(super) fn fixture_command(script: &Path) -> std::process::Command {
     command
         .args([
             "--kill-after=2s",
-            "35s",
+            "55s",
             "sudo",
             "-n",
             "timeout",
             "--kill-after=2s",
-            "30s",
+            "50s",
             "python3",
         ])
         .arg(script);
     command
 }
 
+tokio::task_local! {
+    pub(super) static FIXTURE_WORKERS: std::cell::RefCell<Vec<tokio::sync::oneshot::Receiver<()>>>;
+}
+
+pub(super) async fn await_fixture_workers() {
+    let workers = FIXTURE_WORKERS.with(|workers| workers.take());
+    for worker in workers {
+        let _ = worker.await;
+    }
+}
+
 pub(super) struct FixtureCommand<T> {
-    worker: Option<std::thread::JoinHandle<()>>,
     result: tokio::sync::oneshot::Receiver<Result<T, String>>,
 }
 
@@ -5235,23 +5264,13 @@ impl<T: Send + 'static> FixtureCommand<T> {
         command: impl FnOnce() -> Result<T, String> + Send + 'static,
     ) -> std::io::Result<Self> {
         let (send, result) = tokio::sync::oneshot::channel();
-        let worker = std::thread::Builder::new().spawn(move || {
+        let (done, worker_done) = tokio::sync::oneshot::channel();
+        std::thread::Builder::new().spawn(move || {
             let _ = send.send(command());
+            let _ = done.send(());
         })?;
-        Ok(Self {
-            worker: Some(worker),
-            result,
-        })
-    }
-}
-
-impl<T> Drop for FixtureCommand<T> {
-    fn drop(&mut self) {
-        // A watchdog can drop the entire row. The bounded command still owns
-        // its fixture until its process exits, so join before releasing the row.
-        if let Some(worker) = self.worker.take() {
-            let _ = worker.join();
-        }
+        let _ = FIXTURE_WORKERS.try_with(|workers| workers.borrow_mut().push(worker_done));
+        Ok(Self { result })
     }
 }
 
@@ -5429,6 +5448,16 @@ async fn travel_to_spawn(
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
 ) -> TestResult {
+    travel_to_spawn_target(client, world, spawns, creature).await?;
+    Ok(())
+}
+
+async fn travel_to_spawn_target(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+) -> TestResult<oteryn_dev_client::EntityRef> {
     static NAMES: std::sync::OnceLock<Result<BTreeMap<String, String>, String>> =
         std::sync::OnceLock::new();
     let names = NAMES
@@ -5498,13 +5527,14 @@ async fn travel_to_spawn(
             .world_entities()
             .and_then(|entities| nearest_spawn(entities.iter(), here, name))
             .ok_or_else(|| format!("spawn route has no visible {name}"))?;
+        let entity = target.entity;
         let target = tile(target.position)?;
         let path = route(world, tile(here)?, |at| {
             at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
         })
         .ok_or("visible creature unreachable")?;
         let Some(direction) = path.first() else {
-            return Ok(());
+            return Ok(entity);
         };
         walk(client, world, &[*direction]).await?;
     }
@@ -6344,35 +6374,26 @@ fn qualification_serviced_search_and_provisioning_drain_observations() -> TestRe
 
 #[test]
 fn qualification_fixture_command_joins_writer_when_wait_is_cancelled() -> TestResult {
-    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-        let finished = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-        let writer_finished = finished.clone();
-        let (release, gate) = std::sync::mpsc::sync_channel(1);
-        let task = FixtureCommand::start(move || {
-            gate.recv().map_err(|error| error.to_string())?;
-            writer_finished.store(true, std::sync::atomic::Ordering::SeqCst);
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(FIXTURE_WORKERS.scope(Default::default(), async {
+            let (release, gate) = std::sync::mpsc::sync_channel(1);
+            let task = FixtureCommand::start(move || {
+                gate.recv().map_err(|error| error.to_string())?;
+                Ok(())
+            })?;
+            drop(task);
+            let mut cleanup = Box::pin(await_fixture_workers());
+            tokio::select! {
+                biased;
+                () = &mut cleanup => return Err("cleanup completed before writer release".into()),
+                () = tokio::task::yield_now() => {}
+            }
+            release.send(())?;
+            cleanup.await;
             Ok(())
-        })?;
-        let mut waiting = Box::pin(wait_fixture_command(task, async || {
-            std::future::pending::<TestResult>().await
-        }));
-        tokio::select! {
-            biased;
-            result = &mut waiting => return Err(format!("writer completed before cancellation: {result:?}").into()),
-            () = tokio::task::yield_now() => {}
-        }
-        let (cancelled, completed) = std::sync::mpsc::sync_channel(1);
-        let releaser = std::thread::spawn(move || {
-            let _ = completed.recv_timeout(Duration::from_millis(50));
-            release.send(())
-        });
-        drop(waiting);
-        let joined = finished.load(std::sync::atomic::Ordering::SeqCst);
-        let _ = cancelled.send(());
-        releaser.join().map_err(|_| "writer release thread panicked")??;
-        assert!(joined, "cancellation detached the fixture writer");
-        Ok(())
-    })
+        }))
 }
 
 #[test]
@@ -6403,12 +6424,12 @@ fn qualification_spawn_and_fixture_command_have_outer_process_deadlines() -> Tes
         args,
         [
             "--kill-after=2s",
-            "35s",
+            "55s",
             "sudo",
             "-n",
             "timeout",
             "--kill-after=2s",
-            "30s",
+            "50s",
             "python3",
             "provision.py"
         ]
@@ -6427,4 +6448,37 @@ fn qualification_spawn_and_fixture_command_have_outer_process_deadlines() -> Tes
         assert!(source.contains("fixture_command(&script)"));
     }
     Ok(())
+}
+
+#[test]
+fn qualification_round_two_caller_contracts() {
+    let checks = [
+        (include_str!("npc_shop.rs"), "require_buy_funds(before_gold"),
+        (include_str!("full_row_p03.rs"), "hunt_target("),
+        (include_str!("full_gold.rs"), "hunt_target("),
+        (include_str!("world.rs"), "world_map_tile(position)"),
+        (
+            include_str!("world.rs"),
+            "if disposition == UseDisposition::Committed && needs_revision",
+        ),
+        (
+            include_str!("indexed_verdict.rs"),
+            "await_fixture_workers().await",
+        ),
+        (
+            include_str!("../../../../../tools/qualification/node_boot/provision.py"),
+            "CONTROL_REPLY_TIMEOUT = 40",
+        ),
+    ];
+    let implementation = |source: &'static str| {
+        source
+            .split("#[test]\nfn qualification_round_two_caller_contracts")
+            .next()
+            .unwrap_or_default()
+    };
+    let missing: Vec<_> = checks
+        .into_iter()
+        .filter_map(|(source, needle)| (!implementation(source).contains(needle)).then_some(needle))
+        .collect();
+    assert!(missing.is_empty(), "missing contracts: {missing:?}");
 }

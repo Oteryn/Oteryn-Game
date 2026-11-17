@@ -212,7 +212,7 @@ async fn check(
         }
         .ok_or("map tool target ordinal missing")?;
         let placement = map_placement(model.world, target, ordinal)?;
-        let expected_revision = travel::observed_revision(client, &placement, target, ordinal);
+        let expected_revision = travel::observed_revision(client, &placement, target, ordinal)?;
         let intent = UseIntent {
             target: UseTarget::Item(source),
             use_with: None,

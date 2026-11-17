@@ -358,9 +358,9 @@ pub(super) async fn earn(
             if unreachable.contains(&index) {
                 continue;
             }
-            match travel_to_spawn(client, world, spawns, &candidate.key).await {
-                Ok(()) => {
-                    picked = Some(candidate);
+            match travel_to_spawn_target(client, world, spawns, &candidate.key).await {
+                Ok(target) => {
+                    picked = Some((candidate, target));
                     break;
                 }
                 Err(error) => {
@@ -372,7 +372,7 @@ pub(super) async fn earn(
                 }
             }
         }
-        let candidate =
+        let (candidate, target) =
             picked.ok_or_else(|| format!("{row}: no reachable gold creature at level {level}"))?;
         if deadline.is_none() {
             let budget = candidate.budget(needed.saturating_sub(observed));
@@ -387,7 +387,7 @@ pub(super) async fn earn(
             ));
         }
         let hunted = async {
-            client_hunt::hunt(client).await?;
+            client_hunt::hunt_target(client, Some(target)).await?;
             loot_coins(client).await
         }
         .await;

@@ -53,6 +53,24 @@ pub(super) fn apply<S: SessionStream>(
     let value = decode_world_map_delta(&header, delta.payload)
         .map_err(|_| SessionError::Protocol(FoundationProtocolError::StateRevisionMismatch))?;
     revision.1 = delta.new_revision;
+    let snapshot = if session.map_tiles.is_none() {
+        session.world_map_snapshot()
+    } else {
+        None
+    };
+    let tiles = session.map_tiles.get_or_insert_with(|| {
+        snapshot
+            .into_iter()
+            .flat_map(|view| view.tiles)
+            .map(|tile| (tile_key(tile.position), tile))
+            .collect()
+    });
+    for &position in &value.cleared {
+        tiles.remove(&tile_key(position));
+    }
+    for tile in &value.tiles {
+        tiles.insert(tile_key(tile.position), tile.clone());
+    }
     session.map_header = Some(value.header);
     Ok(SessionEvent::WorldMap(AppliedDelta {
         server_sequence: sequence,
@@ -62,7 +80,23 @@ pub(super) fn apply<S: SessionStream>(
     }))
 }
 
+fn tile_key(position: world_spatial::ActorPosition) -> (i32, i32, i16) {
+    (position.x, position.y, position.floor)
+}
+
 impl<S: SessionStream> Session<S> {
+    /// Current map tile after full snapshots and subsequent validated deltas.
+    pub fn world_map_tile(&self, position: world_spatial::ActorPosition) -> Option<MapTile> {
+        match &self.map_tiles {
+            Some(tiles) => tiles.get(&tile_key(position)).cloned(),
+            None => self
+                .world_map_snapshot()?
+                .tiles
+                .into_iter()
+                .find(|tile| tile.position == position),
+        }
+    }
+
     /// The latest validated full map snapshot, including any mid-session replacement.
     pub fn world_map_snapshot(&self) -> Option<WorldMapViewSnapshot> {
         self.gated_snapshot(STATE_DOMAIN_WORLD_MAP_VIEW)

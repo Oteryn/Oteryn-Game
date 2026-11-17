@@ -80,7 +80,7 @@ pub(crate) fn indexed(
 ) -> impl Future<Output = ()> {
     // Each row owns its future on the heap; hundreds of inline row temporaries
     // otherwise accumulate in journeys' debug-build poll frame.
-    Box::pin(async move {
+    Box::pin(crate::qualification::client_world::FIXTURE_WORKERS.scope(Default::default(), async move {
         let mut watch = Watch::new(scenario, Harness::global());
         watch.scenario = Some(scenario);
         let result = run_indexed(&watch, journey).await;
@@ -99,7 +99,8 @@ pub(crate) fn indexed(
         for line in watch.take_verdicts() {
             evidence(&line);
         }
-    })
+        crate::qualification::client_world::await_fixture_workers().await;
+    }))
 }
 
 /// Called after legacy line normalization, before output. Buffer only this
@@ -201,6 +202,36 @@ mod tests {
             );
             Ok(())
         })
+    }
+
+    #[test]
+    fn qualification_indexed_deadline_precedes_fixture_cleanup() -> TestResult {
+        use crate::qualification::client_world::{
+            FIXTURE_WORKERS, FixtureCommand, await_fixture_workers,
+        };
+        runtime()?.block_on(FIXTURE_WORKERS.scope(Default::default(), async {
+            let harness = Box::leak(Box::new(Harness::new(true, None)));
+            let watch = new_watch(harness);
+            let (release, gate) = std::sync::mpsc::sync_channel(1);
+            let error = run_indexed(&watch, async {
+                let _worker =
+                    FixtureCommand::start(move || gate.recv().map_err(|error| error.to_string()))?;
+                std::future::pending::<TestResult>().await
+            })
+            .await
+            .err()
+            .ok_or("missing row deadline")?;
+            assert!(matches!(classify(error.as_ref()), Cause::Deadline { .. }));
+            let mut cleanup = Box::pin(await_fixture_workers());
+            tokio::select! {
+                biased;
+                () = &mut cleanup => return Err("worker escaped row cleanup".into()),
+                () = tokio::task::yield_now() => {}
+            }
+            release.send(())?;
+            cleanup.await;
+            Ok(())
+        }))
     }
 
     #[test]

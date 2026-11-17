@@ -49,6 +49,21 @@ impl SnapshotState {
         session.open_container = self.open_container;
         session.inventory_revision = self.inventory_revision;
         session.container_revision = self.container_revision;
+        let map_domain = world_map::STATE_DOMAIN_WORLD_MAP_VIEW;
+        let incoming_map = self
+            .gated_snapshots
+            .iter()
+            .find(|row| row.domain_id == map_domain);
+        if session
+            .gated_snapshots
+            .iter()
+            .find(|row| row.domain_id == map_domain)
+            .map(|row| row.revision)
+            != incoming_map.map(|row| row.revision)
+            || session.map_header != self.map_header
+        {
+            session.map_tiles = None;
+        }
         session.gated_snapshots = self.gated_snapshots;
         session.gated_revisions = self.gated_revisions;
         session.appearance = self.appearance;

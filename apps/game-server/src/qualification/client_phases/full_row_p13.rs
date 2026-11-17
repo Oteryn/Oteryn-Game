@@ -132,10 +132,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<bool> {
     }
     evidence("P13_CHECK malformed-refusal PASS rejected-empty-and-state-inert");
 
-    travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
+    let target = travel_to_spawn_target(&mut client, world, &metadata.spawns, "oteryn:creature.rat")
         .await
         .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=walk-to-training observed={error} need=reachable-rat"), error) })?;
-    client_hunt::hunt(&mut client)
+    client_hunt::hunt_target(&mut client, Some(target))
         .await
         .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=combat-training observed={error} need=attack-damage-corpse-and-loot-deltas"), error) })?;
     evidence("P13_CHECK combat-training PASS attack-damage-corpse-use-loot-deltas");

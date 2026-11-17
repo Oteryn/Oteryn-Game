@@ -1,37 +1,28 @@
 //! Hunt through network attack, visibility, corpse USE and item-move replies.
 use super::*;
+use oteryn_dev_client::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
 pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
-    hunt_named(client, None).await
+    hunt_target(client, None).await
 }
 
-pub(super) async fn hunt_named(
+pub(super) async fn hunt_target(
     client: &mut oteryn_dev_client::DevClientSession,
-    name: Option<&str>,
+    target: Option<EntityRef>,
 ) -> TestResult {
-    use oteryn_dev_client::{EntityDetail, EntityKind};
     if !client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
     {
+        if target.is_some() {
+            return Err("routed hunt requires the world-map capability".into());
+        }
         evidence("mechanic=hunt skipped=entry_room_has_no_native_combat_and_loot_content");
         return Ok(());
     }
     let position = client.world_spatial().actor_position;
     let target = client
         .world_entities()
-        .and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == EntityKind::Creature
-                    && name.is_none_or(|expected| client_world::has_display_name(entry, expected))
-                    && entry.position.floor == position.floor
-                    && entry
-                        .position
-                        .x
-                        .abs_diff(position.x)
-                        .max(entry.position.y.abs_diff(position.y))
-                        <= 1
-            })
-        })
+        .and_then(|entities| select_hunt_target(entities.iter(), position, target))
         .copied()
         .ok_or("hunt route has no visible monster")?;
     let attack = client
@@ -172,4 +163,55 @@ pub(super) async fn hunt_named(
         entries.len()
     ));
     Ok(())
+}
+
+fn select_hunt_target<'a>(
+    mut entities: impl Iterator<Item = &'a WorldSpatialEntity>,
+    position: ActorPosition,
+    target: Option<EntityRef>,
+) -> Option<&'a WorldSpatialEntity> {
+    entities.find(|entry| {
+        entry.kind == EntityKind::Creature
+            && target.is_none_or(|expected| entry.entity == expected)
+            && entry.position.floor == position.floor
+            && entry
+                .position
+                .x
+                .abs_diff(position.x)
+                .max(entry.position.y.abs_diff(position.y))
+                <= 1
+    })
+}
+
+#[test]
+fn qualification_hunt_keeps_routed_entity() {
+    let here = ActorPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    let make = |id| WorldSpatialEntity {
+        entity: EntityRef {
+            identity: [id; 16],
+            generation: 1,
+        },
+        kind: EntityKind::Creature,
+        display_name: None,
+        position: ActorPosition { x: 101, ..here },
+        detail: EntityDetail::Actor {
+            direction: oteryn_protocol_oteryn::world_spatial::StepDirection::North,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    let first = make(1);
+    let selected = make(2);
+    assert_eq!(
+        select_hunt_target([&first, &selected].into_iter(), here, Some(selected.entity)),
+        Some(&selected),
+    );
+    assert_eq!(
+        select_hunt_target([&first].into_iter(), here, Some(selected.entity)),
+        None
+    );
 }

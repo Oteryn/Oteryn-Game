@@ -414,8 +414,8 @@ async fn acquire(
         if tokio::time::Instant::now() >= hunt_deadline {
             return Err(format!("needed=player-earned-gold>={price};have={have};route=npc-trade:{seller};ordinary-hunts={hunts}-in-120s").into());
         }
-        travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        client_hunt::hunt(client).await?;
+        let target = travel_to_spawn_target(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        client_hunt::hunt_target(client, Some(target)).await?;
         hunts += 1;
     }
     let (npc_entry, path) = reachable(&seller, tile(client.world_spatial().actor_position)?)
