@@ -484,15 +484,67 @@ fn route(
 const REACH_SEARCH_NODES: usize = 3_000_000;
 const REACH_CHUNK: usize = 20_000;
 
+#[derive(Clone, Copy, Debug)]
+pub(super) struct ReachFailure {
+    searched: usize,
+    component: (TilePos, TilePos),
+}
+
+impl std::fmt::Display for ReachFailure {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "searched={} component={:?}..{:?}",
+            self.searched, self.component.0, self.component.1
+        )
+    }
+}
+
+// Newhaven's tutorial temple is not a hometown catalogue entry. Its authored
+// protection-zone flags, like the catalogue temples' flags, remain authoritative.
+fn return_protection_zone(world: &BundleWorld, at: TilePos) -> bool {
+    world
+        .base()
+        .tile(at.x, at.y, at.floor)
+        .is_some_and(|tile| tile.walkable() && tile.protection_zone())
+        && world.enterable(at)
+}
+
+async fn return_to_protection_zone(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+) -> TestResult<TilePos> {
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = reach_route(client, world, from, |at| return_protection_zone(world, at))
+        .await?
+        .map_err(|failure| {
+            format!(
+                "profile return has no reachable protection-zone temple: from={from:?} {failure}"
+            )
+        })?;
+    walk(client, world, &path).await?;
+    let at = tile(client.world_spatial().actor_position)?;
+    if !return_protection_zone(world, at) {
+        return Err(
+            format!("profile return did not reach a protection-zone temple: at={at:?}").into(),
+        );
+    }
+    Ok(at)
+}
+
+fn home_temple_return(at: TilePos, failure: ReachFailure) -> String {
+    format!("profile_return goal=home_temple at={at:?} fixture_town=unreachable {failure}")
+}
+
 /// Like `route` without its 160-tile and two-floor window: whole bundle up to
 /// REACH_SEARCH_NODES tiles, serving the connection every REACH_CHUNK expansions.
-/// `Ok(Err(searched))` means unreachable or the search cap was hit.
+/// `Ok(Err(failure))` records the searched component when unreachable or capped.
 pub(super) async fn reach_route(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
-) -> TestResult<Result<Vec<StepDirection>, usize>> {
+) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
     reach_route_serviced(world, from, goal, async || {
         verdict::Harness::global().progress("route-search");
         client.service_liveness(Duration::from_millis(1)).await?;
@@ -508,7 +560,7 @@ async fn reach_route_serviced(
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
     mut service: impl AsyncFnMut() -> TestResult,
-) -> TestResult<Result<Vec<StepDirection>, usize>> {
+) -> TestResult<Result<Vec<StepDirection>, ReachFailure>> {
     let mut queue = VecDeque::from([from]);
     let mut parents = BTreeMap::from([(from, None)]);
     let mut expanded = 0usize;
@@ -546,7 +598,20 @@ async fn reach_route_serviced(
             queue.push_back(next);
         }
     }
-    Ok(Err(parents.len()))
+    let mut low = from;
+    let mut high = from;
+    for at in parents.keys() {
+        low.x = low.x.min(at.x);
+        low.y = low.y.min(at.y);
+        low.floor = low.floor.min(at.floor);
+        high.x = high.x.max(at.x);
+        high.y = high.y.max(at.y);
+        high.floor = high.floor.max(at.floor);
+    }
+    Ok(Err(ReachFailure {
+        searched: parents.len(),
+        component: (low, high),
+    }))
 }
 
 /// Use the production floor resolver over the production bundle's collision facts.
@@ -2896,17 +2961,25 @@ pub(super) async fn journeys(
     if map.header.bundle_digest != world.base().digest() || map.tiles.is_empty() {
         return Err("town join served a different or empty World bundle".into());
     }
-    // Resume from the profile journey's saved cell and travel normally to town.
-    let from = tile(client.world_spatial().actor_position)?;
-    evidence(&format!(
-        "world_fixture role=core phase=return_to_town from={from:?} to={TOWN:?}"
-    ));
-    let back = reach_route(&mut client, world, from, |at| at == TOWN)
-        .await?
-        .map_err(|searched| {
-            format!("required core has no return route to town: from={from:?} to={TOWN:?} searched={searched}")
-        })?;
-    walk(&mut client, world, &back).await?;
+    // M04 can leave this Character at its Newhaven home temple after death.
+    // First reach the nearest authored safe tile in the current component.
+    let at = return_to_protection_zone(&mut client, world).await?;
+    match reach_route(&mut client, world, at, |at| at == TOWN).await? {
+        Ok(back) => {
+            evidence(&format!("profile_return goal=fixture_town at={at:?}"));
+            walk(&mut client, world, &back).await?;
+        }
+        Err(failure) => {
+            let detail = home_temple_return(at, failure);
+            evidence(&detail);
+            // character_core's step/relogin phase plans from TOWN. Do not run it
+            // (or its dependent town phases) against a different island.
+            evidence(&format!(
+                "e2e_all scenario=M01.step-relogin status=FAIL seconds=0 evidence={detail} cause=precondition root=profile_return/fixture-town"
+            ));
+            return Err(detail.into());
+        }
+    }
     client = character_core(client, clients, world).await?;
     client = include!("full_e2ef3_registration.rs");
     client = floor_journey(client, clients, world).await?;
@@ -3415,74 +3488,91 @@ fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
 
 #[cfg(test)]
 #[test]
-fn qualification_reach_route_crosses_more_than_160_tiles() -> TestResult {
+fn qualification_profile_return_reaches_home_temple_after_m04_respawn() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(|| -> Result<(), String> {
             smoke_with(None, |world| {
-                let from = TilePos { x: 32536, y: 32514, floor: -7 };
+                let from = TilePos {
+                    x: 32536,
+                    y: 32514,
+                    floor: -7,
+                };
                 assert!(route(world, from, |at| at == TOWN).is_none());
                 let runtime = tokio::runtime::Builder::new_current_thread().build()?;
-                let mut services = 0;
-                let path = runtime.block_on(reach_route_serviced(world, from, |at| at == TOWN, async || {
-                    services += 1;
-                    tokio::task::yield_now().await;
-                    Ok(())
-                }))?.map_err(|searched| format!("profile return unreachable: searched={searched} component={:?}", reach_component(world, from)))?;
-                assert!(path.len() > 160);
-                assert!(services > 0, "long searches must service liveness");
+                let path = runtime
+                    .block_on(reach_route_serviced(
+                        world,
+                        from,
+                        |at| return_protection_zone(world, at),
+                        async || {
+                            tokio::task::yield_now().await;
+                            Ok(())
+                        },
+                    ))?
+                    .map_err(|failure| format!("profile return unreachable: {failure}"))?;
                 let mut at = from;
                 for direction in &path {
-                    at = destination(world, at, *direction).ok_or("invalid reach route step")?;
+                    at = destination(world, at, *direction).ok_or("invalid profile return step")?;
                 }
-                assert_eq!(at, TOWN);
-                evidence(&format!("reach_route_crosses_more_than_160_tiles from={from:?} to={TOWN:?} path_length={} services={services}", path.len()));
-                let refused = runtime.block_on(reach_route_serviced(world, from, |at| at == TOWN, async || Err("route service failed".into())));
-                assert_eq!(refused.err().ok_or("liveness error was swallowed")?.to_string(), "route service failed");
+                assert!(return_protection_zone(world, at));
+                assert!(
+                    world
+                        .base()
+                        .tile(at.x, at.y, at.floor)
+                        .is_some_and(|tile| tile.protection_zone())
+                );
+                // BFS must stop at the nearest PZ, including an already safe respawn.
+                assert!(path.is_empty() || !return_protection_zone(world, from));
+                let disconnected = runtime
+                    .block_on(reach_route_serviced(
+                        world,
+                        at,
+                        |at| at == TOWN,
+                        async || Ok(()),
+                    ))?
+                    .err()
+                    .ok_or("Newhaven unexpectedly has a walking route to the fixture town")?;
+                let detail = home_temple_return(at, disconnected);
+                assert!(detail.contains("profile_return goal=home_temple"));
+                assert!(detail.contains("fixture_town=unreachable"));
+                assert!(detail.contains("searched=") && detail.contains("component="));
+                evidence(&format!("{detail} path_length={}", path.len()));
+                let town = runtime
+                    .block_on(reach_route_serviced(
+                        world,
+                        TOWN,
+                        |at| return_protection_zone(world, at),
+                        async || Ok(()),
+                    ))?
+                    .map_err(|failure| {
+                        format!("fixture town lost its protection zone: {failure}")
+                    })?;
+                assert!(town.is_empty());
+                // A search that lasts a chunk must propagate a failed liveness service.
+                let mut services = 0;
+                let refused = runtime.block_on(reach_route_serviced(
+                    world,
+                    TOWN,
+                    |_| false,
+                    async || {
+                        services += 1;
+                        Err("route service failed".into())
+                    },
+                ));
+                assert_eq!(services, 1);
+                assert_eq!(
+                    refused
+                        .err()
+                        .ok_or("liveness error was swallowed")?
+                        .to_string(),
+                    "route service failed"
+                );
                 Ok(())
-            }).map_err(|error| error.to_string())
+            })
+            .map_err(|error| error.to_string())
         })?
         .join()
-        .map_err(|_| "reach route test thread failed")??;
+        .map_err(|_| "profile return test thread failed")??;
     Ok(())
-}
-
-#[cfg(test)]
-fn reach_component(world: &BundleWorld, from: TilePos) -> (TilePos, TilePos, Vec<TilePos>) {
-    let mut queue = VecDeque::from([from]);
-    let mut seen = std::collections::BTreeSet::from([from]);
-    let mut doors = std::collections::BTreeSet::new();
-    let (mut low, mut high) = (from, from);
-    while let Some(at) = queue.pop_front() {
-        low.x = low.x.min(at.x);
-        low.y = low.y.min(at.y);
-        low.floor = low.floor.min(at.floor);
-        high.x = high.x.max(at.x);
-        high.y = high.y.max(at.y);
-        high.floor = high.floor.max(at.floor);
-        for (dx, dy, direction) in [
-            (0, -1, StepDirection::North),
-            (1, 0, StepDirection::East),
-            (0, 1, StepDirection::South),
-            (-1, 0, StepDirection::West),
-        ] {
-            if let Some((x, y)) = at.x.checked_add_signed(dx).zip(at.y.checked_add_signed(dy)) {
-                let adjacent = TilePos {
-                    x,
-                    y,
-                    floor: at.floor,
-                };
-                if world.facts().doors().at(adjacent) {
-                    doors.insert(adjacent);
-                }
-            }
-            if let Some(next) = destination(world, at, direction)
-                && seen.len() <= REACH_SEARCH_NODES
-                && seen.insert(next)
-            {
-                queue.push_back(next);
-            }
-        }
-    }
-    (low, high, doors.into_iter().collect())
 }

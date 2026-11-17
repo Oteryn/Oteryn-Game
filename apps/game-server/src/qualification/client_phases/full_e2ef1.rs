@@ -291,7 +291,7 @@ mod e2ef1 {
                     walk(client, world, &path).await?;
                     return Ok(object);
                 }
-                Err(nodes) => searched += nodes,
+                Err(failure) => searched += failure.searched,
             }
         }
         Err(format!("no reachable exact authored target: from={from:?} candidates={candidate_count} within_160={within_old_budget} searched={searched}").into())
@@ -708,17 +708,9 @@ mod e2ef1 {
                 "E2EF1_GAP row=M04 case=push-creature error={error}"
             ));
         }
-        // Leave the rat spawn before the row's logout waits out the in-fight lock:
-        // left there, the live rats kill this core Character, which then respawns
-        // at the home temple beyond the core's town route budget.
-        let left: TestResult = async {
-            let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-                at == TOWN
-            })
-            .ok_or("push-creature return route")?;
-            walk(client, world, &back).await
-        }
-        .await;
+        // Leave the lethal encounter for the nearest authored protection zone.
+        // The row's later origin return still enforces its fixture-town requirement.
+        let left = return_to_protection_zone(client, world).await.map(|_| ());
         player.and(creature).and(left)
     }
     async fn player_push(
@@ -1200,10 +1192,22 @@ mod e2ef1 {
                 if passed { "PASS" } else { "FAIL" },
                 started.elapsed().as_secs_f64()
             ));
-            let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
-                at == origin
-            })
-            .ok_or("movement full row has no return route")?;
+            let from = tile(client.world_spatial().actor_position)?;
+            let back = match reach_route(&mut client, world, from, |at| at == origin).await? {
+                Ok(back) => back,
+                Err(failure) => {
+                    let at = return_to_protection_zone(&mut client, world).await?;
+                    let detail = home_temple_return(at, failure);
+                    evidence(&detail);
+                    for (blocked_row, _) in &ROWS[ordinal + 1..] {
+                        verdicts.done.insert(blocked_row);
+                        evidence(&format!(
+                            "e2e_all scenario={blocked_row}.full status=FAIL seconds=0 evidence={detail} cause=precondition root=profile_return/fixture-town"
+                        ));
+                    }
+                    return Err(detail.into());
+                }
+            };
             walk(&mut client, world, &back).await?;
         }
         if failed {
