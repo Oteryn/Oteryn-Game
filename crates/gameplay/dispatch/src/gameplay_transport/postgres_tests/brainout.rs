@@ -332,7 +332,26 @@ async fn counts(h: &Harness) -> TestResult<(i64, i64, i64)> {
 #[test]
 fn brainout_ground_output_schema_rejects_unbound_or_mixed_outputs() -> TestResult {
     let original = callback(NAME)?;
-    let value = serde_json::to_value(original)?;
+    use sha2::Digest;
+    let digest: String = sha2::Sha256::digest(serde_json::to_vec(&original)?)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    let value = serde_json::to_value(&original)?;
+    let validate = |callback| -> TestResult<bool> {
+        let document = serde_json::json!({"schema":1,"quests":[{
+            "quest":original.quest,"recipe_sha256":digest,"sources":original.sources,
+            "tracks":original.storage.iter().map(|s| serde_json::json!({
+                "key":s.track,"initial":0,"minimum":0,"maximum":s.maximum.max(s.set),
+            })).collect::<Vec<_>>(),
+            "stages":[{"key":"brain","completes":false,"trigger":{"kind":"map_use","callback":callback}}],
+        }]});
+        Ok(quest::authored_bindings::Bindings::parse(&serde_json::to_vec(&document)?).is_ok())
+    };
+    assert!(
+        validate(value.clone())?,
+        "unmodified production plan passes the public binding validator"
+    );
     for case in 0..4 {
         let mut invalid = value.clone();
         match case {
@@ -344,13 +363,7 @@ fn brainout_ground_output_schema_rejects_unbound_or_mixed_outputs() -> TestResul
             }
             _ => invalid["effects"]["ground_output"]["position"]["floor"] = 1.into(),
         }
-        assert!(
-            quest::world_callbacks::parse(
-                &serde_json::json!({"schema":1,"callbacks":[invalid]}).to_string()
-            )
-            .is_err(),
-            "invalid Ground output case {case}"
-        );
+        assert!(!validate(invalid)?, "invalid Ground output case {case}");
     }
     Ok(())
 }
