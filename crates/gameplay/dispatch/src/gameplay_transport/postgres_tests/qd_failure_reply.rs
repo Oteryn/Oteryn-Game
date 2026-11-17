@@ -19,15 +19,8 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
     assert!(!admin.is_empty());
     let started = Instant::now();
     let result = super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
-        let h =
-            Harness::create_with_admission_seed(admin, "qd_failure_reply", false, false).await?;
+        let h = Harness::create_with_admission_seed(admin, "qd_failure_reply", true, false).await?;
         prepare_current_session(&h).await?;
-        sqlx::query(
-            "INSERT INTO game_character_progression_state VALUES              (encode($1,'hex')::uuid,1,35,999,'profile-1','ruleset-1','content-1',              'simulation-1','evidence-1','declaration-1','policy-1','reward-1')",
-        )
-        .bind(id(41).as_slice())
-        .execute(&h.pool)
-        .await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -78,6 +71,9 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
             .ok_or("fence")?;
 
         for (command_id, stale) in [(7000, false), (7010, true)] {
+            if stale {
+                talk(&mut owner, &admitted, npc, command_id - 1, "bye").await?;
+            }
             talk(&mut owner, &admitted, npc, command_id, "hi").await?;
             talk(&mut owner, &admitted, npc, command_id + 1, "mission").await?;
             assert_eq!(
@@ -110,7 +106,8 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
             let advance = async {
                 loop {
                     let blocked: bool = sqlx::query_scalar(
-                        "SELECT EXISTS(SELECT 1 FROM pg_locks                          WHERE relation='game_character_quest_receipts'::regclass AND NOT granted)",
+                        "SELECT EXISTS(SELECT 1 FROM pg_locks \
+                         WHERE relation='game_character_quest_receipts'::regclass AND NOT granted)",
                     )
                     .fetch_one(&h.pool)
                     .await?;
@@ -146,7 +143,6 @@ fn muriel_failure_reply_is_shown_on_refused_callback() -> TestResult {
                     [FAILURE]
                 );
             }
-            talk(&mut owner, &admitted, npc, command_id + 3, "bye").await?;
         }
         let receipts: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
