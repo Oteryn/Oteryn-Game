@@ -175,8 +175,28 @@ fn scenario(admin: String, gobbles: i64, expected_stage: u8) -> TestResult {
         }
         sqlx::query("UPDATE game_terrain_tool_transforms SET state_item_id=12065,decay_step=0,decay_at_unix_ms=$1")
             .bind(deadline).execute(&h.pool).await?;
-        for (empty, expected) in [(false, 12065), (true, 12059)] {
-            let mut empty = empty;
+        let mut players = Vec::new();
+        {
+            let mut runtime = owner.runtime.lock().await;
+            for (tag, x) in [(51, 33312), (52, 33313)] {
+                let visitor = GameSessionId::decode(&id(tag)).map_err(debug)?;
+                let reservation = runtime.reserve_fresh_session(visitor).map_err(debug)?;
+                let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+                runtime
+                    .initialize_pinned_test_position(
+                        actor,
+                        crate::foundation::MovementLocalPosition {
+                            x,
+                            y: 31872,
+                            floor: 9,
+                        },
+                    )
+                    .map_err(debug)?;
+                players.push((visitor, actor));
+            }
+        }
+        for expected in [12065, 12065, 12059] {
+            let mut runtime = &*owner.runtime;
             assert!(
                 h.root
                     .project_world_change_counters(
@@ -185,8 +205,17 @@ fn scenario(admin: String, gobbles: i64, expected_stage: u8) -> TestResult {
                         scope,
                         generation,
                         epoch,
-                        &mut empty,
-                        |empty, _| Ok(*empty),
+                        &mut runtime,
+                        |runtime, _| {
+                            let runtime = runtime
+                                .try_lock()
+                                .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                            Ok(!runtime.committed_player_positions().iter().any(|at| {
+                                oteryn_gameplay_world::terrain_tools::voice_dungeon_contains(
+                                    at.x, at.y, at.floor,
+                                )
+                            }))
+                        },
                     )
                     .await?
             );
@@ -195,6 +224,14 @@ fn scenario(admin: String, gobbles: i64, expected_stage: u8) -> TestResult {
                     .fetch_one(&h.pool)
                     .await?;
             assert_eq!(appearance, expected);
+            if let Some((visitor, actor)) = players.pop() {
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .remove_terminal_session(visitor, actor)
+                    .map_err(debug)?;
+            }
         }
         Ok(())
     })
