@@ -1,11 +1,22 @@
 //! Hunt through network attack, visibility, corpse USE and item-move replies.
 use super::*;
+use std::collections::BTreeSet;
 pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
+    hunt_named(client, None).await
+}
+
+pub(super) async fn hunt_named(
+    client: &mut oteryn_dev_client::DevClientSession,
+    name: Option<&str>,
+) -> TestResult {
     use oteryn_dev_client::{EntityDetail, EntityKind};
     if !client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
     {
+        if let Some(name) = name {
+            return Err(format!("hunt for {name} needs native combat and loot").into());
+        }
         evidence("mechanic=hunt skipped=entry_room_has_no_native_combat_and_loot_content");
         return Ok(());
     }
@@ -15,6 +26,13 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Creature
+                    && matches_target_name(
+                        name,
+                        entry
+                            .display_name
+                            .as_ref()
+                            .and_then(|label| label.as_str().ok()),
+                    )
                     && entry.position.floor == position.floor
                     && entry
                         .position
@@ -25,7 +43,14 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
             })
         })
         .copied()
-        .ok_or("hunt route has no visible monster")?;
+        .ok_or_else(|| format!("hunt route has no visible target matching {name:?}"))?;
+    let prior_corpses: BTreeSet<_> = client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entity| entity.kind == EntityKind::Corpse)
+        .map(|entity| entity.entity)
+        .collect();
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -55,7 +80,9 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
             .world_entities()
             .and_then(|entities| {
                 entities.iter().find(|entry| {
-                    entry.kind == EntityKind::Corpse && entry.position == last_position
+                    entry.kind == EntityKind::Corpse
+                        && entry.position == last_position
+                        && (name.is_none() || !prior_corpses.contains(&entry.entity))
                 })
             })
             .copied()
@@ -164,4 +191,19 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
         entries.len()
     ));
     Ok(())
+}
+
+fn matches_target_name(wanted: Option<&str>, observed: Option<&str>) -> bool {
+    wanted.is_none_or(|name| observed.is_some_and(|label| label.eq_ignore_ascii_case(name)))
+}
+
+#[test]
+fn a_nearby_other_creature_cannot_count_as_court_warlock() {
+    assert!(matches_target_name(
+        Some("Court Warlock"),
+        Some("Court Warlock")
+    ));
+    assert!(!matches_target_name(Some("Court Warlock"), Some("Rat")));
+    assert!(!matches_target_name(Some("Court Warlock"), None));
+    assert!(matches_target_name(None, Some("Rat")));
 }

@@ -11,13 +11,14 @@
 //! 6. Repeat wrap with a stale revision; expect a `Stale` refusal and no inventory delta.
 //! 7. Log out, freshly admit the character, and re-check the complete durable inventory view.
 //!
-//! The production node-boot world currently exposes no legitimate player route that assigns an
-//! owned house or supplies the house furniture/kit. The journey nevertheless sends every native
-//! mechanic command and then fails naming the missing precondition; it never provisions state.
+//! House ownership and placed furnishings are prerequisites. Resolve their current
+//! durable identities and exercise the mutations through the admitted player session.
 use super::*;
-use oteryn_dev_client::client_runtime::{item_use, world_interaction::Target};
+use oteryn_dev_client::client_runtime::house_transfer as transfer;
 use oteryn_dev_client::{CharacterInventory, DevClientSession, ItemHandle};
+use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin, MapTile};
 use oteryn_protocol_oteryn::{CommandStatus, house_wrap as wrap, world_object};
+use std::num::NonZeroU32;
 
 /// The refusal is the server's correct answer outside a house, so the row fails on the missing
 /// precondition: House ownership is only settled by the Control-side auction settlement, which
@@ -52,20 +53,8 @@ fn compact(value: &str) -> String {
 
 async fn wrap_command(
     client: &mut DevClientSession,
-    action: wrap::Action,
-    revision: u64,
+    request: wrap::Request,
 ) -> TestResult<wrap::Reply> {
-    let request = wrap::Request {
-        action,
-        item: [0; 16],
-        expected_revision: revision,
-        acl_revision: 0,
-        position: [
-            client.world_spatial().actor_position.x,
-            client.world_spatial().actor_position.y,
-            i32::from(client.world_spatial().actor_position.floor),
-        ],
-    };
     let reply = client
         .session_mut()
         .gated_command(
@@ -74,142 +63,371 @@ async fn wrap_command(
             &request.encode(),
         )
         .await?;
-    wrap::Reply::decode(&reply.payload).ok_or_else(|| {
+    let disposition = wrap::Reply::decode(&reply.payload).ok_or_else(|| {
         format!(
-            "step={action:?} observed=status:{:?},payload:{:?}",
-            reply.status, reply.payload
+            "step={:?} observed=invalid-payload:{:?}",
+            request.action, reply.payload
         )
-        .into()
-    })
-}
-
-async fn use_with_self(
-    client: &mut DevClientSession,
-    step: &str,
-    handle: ItemHandle,
-) -> TestResult {
-    let payload = item_use::use_with_payload(handle, &Target::Item(handle))?;
-    let reply = client
-        .session_mut()
-        .world_context_use(&payload)
-        .await?;
-    let disposition = world_object::decode_use_result(&reply.payload)
-        .map_err(|error| format!("step={step} observed=reply-decode-{error:?}"))?;
-    validate_use_reply(step, reply.status, disposition)
+    })?;
+    let expected = match disposition {
+        wrap::Reply::Committed(_) => CommandStatus::Accepted,
+        wrap::Reply::Refused(_) => CommandStatus::Rejected,
+    };
+    if reply.status != expected {
+        return Err(format!(
+            "step={:?} observed=status:{:?},reply:{disposition:?}",
+            request.action, reply.status
+        )
+        .into());
+    }
+    Ok(disposition)
 }
 
 fn validate_use_reply(
     step: &str,
     status: CommandStatus,
     disposition: world_object::UseDisposition,
+    observed: bool,
 ) -> TestResult {
     if status != CommandStatus::Accepted || disposition != world_object::UseDisposition::Committed {
         return Err(format!(
             "step={step} observed=status:{status:?},disposition:{disposition:?} needed=accepted-committed-with-state-delta"
-        )
-        .into());
+        ).into());
     }
-    Err(format!(
-        "step={step} observed=status:{status:?},disposition:{disposition:?} needed=observable-furniture-or-fluid-state-delta"
+    if !observed {
+        return Err(format!(
+            "step={step} observed=status:{status:?},disposition:{disposition:?} needed=observable-furniture-or-fluid-state-delta"
+        ).into());
+    }
+    Ok(())
+}
+
+async fn transfer_house(client: &mut DevClientSession, house: &str, exit: bool) -> TestResult {
+    let intent = transfer::HouseTransferIntent {
+        exit,
+        house: house.to_owned(),
+    };
+    let payload = transfer::encode_house_transfer_intent(&intent)
+        .map_err(|error| format!("house transfer encode: {error:?}"))?;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            transfer::CAPABILITY_HOUSE_TRANSFER_V1,
+            transfer::COMMAND_TYPE_HOUSE_TRANSFER,
+            &payload,
+        )
+        .await?;
+    let ack = transfer::decode_house_transfer_ack(&reply.payload)
+        .map_err(|error| format!("house transfer reply {:?}: {error:?}", reply.status))?;
+    if reply.status != CommandStatus::Accepted || ack.house.as_deref() != (!exit).then_some(house) {
+        return Err(format!("house transfer did not commit the requested scope: {ack:?}").into());
+    }
+    Ok(())
+}
+
+async fn furniture_custody(
+    db: &mut sqlx::PgConnection,
+    item: [u8; 16],
+    character: [u8; 16],
+) -> TestResult<(String, String, Option<Vec<u8>>, bool)> {
+    Ok(sqlx::query_as(
+        "SELECT i.definition_production_key,i.state_revision::text,h.spatial_position,
+                EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid)
+           FROM game_item_instances i LEFT JOIN game_item_house_interior_locations h USING(item_instance_id,world_id)
+          WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1",
+    ).bind(item.as_slice()).bind(character.as_slice()).fetch_one(db).await?)
+}
+
+async fn logout(client: &mut DevClientSession) -> TestResult {
+    let reply = client.session_mut().logout().await?;
+    if reply.result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout observed={reply:?}").into());
+    }
+    Ok(())
+}
+
+fn inventory_state(client: &DevClientSession) -> TestResult<CharacterInventory> {
+    let mut inventory = client
+        .inventory()
+        .cloned()
+        .ok_or("missing I10 inventory view")?;
+    for entry in inventory
+        .entries
+        .iter_mut()
+        .chain(inventory.main_backpack.iter_mut())
+        .chain(inventory.equipment.iter_mut().map(|entry| &mut entry.item))
+    {
+        entry.handle = ItemHandle::MIN;
+    }
+    Ok(inventory)
+}
+
+async fn destroy(
+    client: &mut DevClientSession,
+    db: &mut sqlx::PgConnection,
+    house: &str,
+    world: &[u8; 16],
+    weapon: ItemHandle,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+) -> TestResult {
+    let session = *client.join_snapshot().game_session_id.as_bytes();
+    let targets: Vec<(Vec<u8>, String, Vec<u8>)> = sqlx::query_as(
+        "SELECT uuid_send(i.item_instance_id),i.definition_production_key,h.spatial_position
+           FROM game_item_house_interior_locations h JOIN game_item_instances i USING(item_instance_id,world_id)
+          WHERE h.world_id=encode($1,'hex')::uuid AND h.house_key=$2 AND i.lifecycle=1
+            AND i.definition_production_key IN ('oteryn:item.tibia.i2295','oteryn:item.tibia.i2296','oteryn:item.tibia.i4995')
+          ORDER BY h.spatial_position,i.item_instance_id LIMIT 64",
+    ).bind(world.as_slice()).bind(house).fetch_all(&mut *db).await?;
+    let mut projected = BTreeMap::new();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let (instance, handle, original) = loop {
+        if projected.is_empty()
+            && let Some(map) = client.session_mut().world_map_snapshot()
+        {
+            for tile in map.tiles {
+                projected.insert(
+                    (tile.position.x, tile.position.y, tile.position.floor),
+                    tile,
+                );
+            }
+        }
+        for event in client.take_events() {
+            if let oteryn_dev_client::SessionEvent::WorldMap(delta) = event {
+                for at in delta.value.cleared {
+                    projected.remove(&(at.x, at.y, at.floor));
+                }
+                for tile in delta.value.tiles {
+                    projected.insert(
+                        (tile.position.x, tile.position.y, tile.position.floor),
+                        tile,
+                    );
+                }
+            }
+        }
+        let found = targets.iter().find_map(|(instance, key, cell)| {
+            let [x, y, z] =
+                crate::durability::consume_transform::HouseActionContext::decode_spatial_position(
+                    cell,
+                )?;
+            let revision = index.revision(key)?;
+            let definition = index.definition_ref("Item", key, revision)?;
+            let at = (x, y, -i16::try_from(z).ok()?);
+            let tile = projected.get(&at).filter(|tile: &&MapTile| !tile.more)?;
+            let mut matching = tile
+                .items
+                .iter()
+                .filter(|item| item.definition == MapDefinition::Item(definition));
+            let (Some(item), None) = (matching.next(), matching.next()) else {
+                return None;
+            };
+            let MapOrigin::Handle(handle) = item.origin else {
+                return None;
+            };
+            Some((instance, handle, key))
+        });
+        if let Some(found) = found {
+            break found;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=destroy observed=no-unambiguous-placed-furniture-handle".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    };
+    let disposition =
+        super::full_row_i11::use_ingredient(client, weapon, Some(handle), None).await?;
+    let receipt: Option<(String, bool)> = sqlx::query_as(
+        "SELECT outcome, CASE WHEN outcome='COMMITTED' THEN
+                   remains_item IS NOT NULL AND EXISTS(SELECT 1 FROM game_item_house_interior_locations h
+                       WHERE h.item_instance_id=(remains_item->>'item_instance_id')::uuid AND h.world_id=r.world_id AND h.house_key=r.house_key)
+               ELSE before_item=after_item AND EXISTS(SELECT 1 FROM game_item_house_interior_locations h JOIN game_item_instances i USING(item_instance_id,world_id)
+                       WHERE h.item_instance_id=r.target AND i.definition_production_key=$3 AND i.lifecycle=1) END
+           FROM game_house_furniture_destroy_receipts r
+          WHERE r.game_session_id=encode($1,'hex')::uuid AND r.target=encode($2,'hex')::uuid
+          ORDER BY command_id DESC LIMIT 1",
+    ).bind(session.as_slice()).bind(instance.as_slice()).bind(original)
+        .fetch_optional(&mut *db).await?;
+    validate_use_reply(
+        "destroy",
+        CommandStatus::Accepted,
+        disposition,
+        receipt.is_some_and(|(_, observed)| observed),
     )
-    .into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
+    use super::full_row_i11::{self as fluids, OVENS, VESSEL};
+    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
+    let world = load_world(
+        bytes.clone(),
+        &pin,
+        WorldId::decode(&clients.world)?,
+        ChannelId::decode(&clients.channel)?,
+    )?;
     let mut client = connect_world(clients, 0xb0).await?;
-    let initial: CharacterInventory = client
-        .inventory()
-        .cloned()
-        .ok_or("step=admit observed=no-inventory")?;
-    let handle = initial
-        .entries
-        .first()
-        .or(initial.main_backpack.as_ref())
-        .map(|entry| entry.handle)
-        .ok_or("step=admit observed=no-ordinary-item")?;
-
-    // Do not short-circuit: even when one owner refuses, every row command is attempted and its
-    // observed result is retained for the final runtime-derived verdict.
-    let wrapped = wrap_command(&mut client, wrap::Action::Wrap, 0).await;
-    client.service_liveness(Duration::from_millis(100)).await?;
-    let after_wrap = client.inventory().cloned();
-    let unwrapped = wrap_command(&mut client, wrap::Action::Unwrap, 0).await;
-    client.service_liveness(Duration::from_millis(100)).await?;
-    let after_unwrap = client.inventory().cloned();
-    let destroyed = use_with_self(&mut client, "destroy", handle).await;
-    let filled = use_with_self(&mut client, "fluid-fill", handle).await;
-    let poured = use_with_self(&mut client, "fluid-pour", handle).await;
-    let before_refused = client.inventory().cloned();
-    let refused = wrap_command(&mut client, wrap::Action::Wrap, u64::MAX).await;
-    client.service_liveness(Duration::from_millis(100)).await?;
-    let after_refused = client.inventory().cloned();
-    let before_logout = client.inventory().cloned();
-    if client.session_mut().logout().await?.result
-        != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
-    {
-        return Err("step=logout observed=refused".into());
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let character = clients.characters[1];
+    let (house, item, revision, acl, cell): (String, Vec<u8>, String, String, Vec<u8>) = sqlx::query_as(
+        "SELECT p.house_key,uuid_send(i.item_instance_id),i.state_revision::text,p.acl_revision::text,h.spatial_position
+           FROM game_house_properties p JOIN game_item_house_interior_locations h USING(world_id,house_key)
+           JOIN game_item_instances i USING(item_instance_id,world_id)
+          WHERE p.world_id=encode($1,'hex')::uuid AND p.owner_character_id=encode($2,'hex')::uuid
+            AND i.definition_production_key='oteryn:item.tibia.i6355' AND i.lifecycle=1
+          ORDER BY p.house_key,h.spatial_position,i.item_instance_id LIMIT 1",
+    ).bind(clients.world.as_slice()).bind(character.as_slice()).fetch_optional(&mut db).await?
+        .ok_or("step=wrap observed=no-owned-house-with-placed-furniture needed=ordinary-house-settlement-and-furnishing")?;
+    let item = item.as_slice().try_into()?;
+    let revision: u64 = revision.parse()?;
+    let position =
+        crate::durability::consume_transform::HouseActionContext::decode_spatial_position(&cell)
+            .ok_or("owned furniture has invalid position")?;
+    let index = provisioning::item_index()?;
+    let weapon_ref = provisioning::item_reference(&index, 3265)?;
+    if fluids::carried_item(&client, weapon_ref).is_err() {
+        super::full_row_i17c::acquire(&mut client, world, 3265, 1).await?;
     }
-    let fresh = connect_world(clients, 0xb1).await?;
-    let after_relog = fresh
-        .inventory()
-        .cloned()
-        .ok_or("step=fresh-admission observed=no-inventory")?;
+    let weapon = fluids::carried_item(&client, weapon_ref)?.handle;
+    let entry = super::full_row_s05::entrance(&house)?;
+    let path = route(
+        world,
+        tile(client.world_spatial().actor_position)?,
+        travel::beside(entry),
+    )
+    .ok_or("step=enter-house observed=no-route-to-owned-house")?;
+    walk(&mut client, world, &path).await?;
+    transfer_house(&mut client, &house, false).await?;
 
-    // Only the expected channel-scope refusal can establish the absent admission route. All six
-    // mechanic commands above have reached the native server before this decision is made.
-    if matches!(wrapped, Ok(wrap::Reply::Refused(wrap::Refusal::NotInHouse)))
-        && matches!(
-            unwrapped,
-            Ok(wrap::Reply::Refused(wrap::Refusal::NotInHouse))
-        )
-        && matches!(refused, Ok(wrap::Reply::Refused(wrap::Refusal::NotInHouse)))
-    {
-        if before_logout.as_ref() != Some(&initial) || after_relog != initial {
-            return Err("step=refusal observed=inventory-changed".into());
-        }
-        return Err(
-            "step=wrap observed=NotInHouse; needed=legitimate-owned-house-admission-route".into(),
-        );
-    }
-
-    let wrap_revision = match wrapped {
-        Err(error) => return Err(format!("step=wrap observed={error}").into()),
-        Ok(wrap::Reply::Committed(revision)) => revision,
-        other => return Err(format!("step=wrap observed={other:?}").into()),
+    let request = wrap::Request {
+        action: wrap::Action::Wrap,
+        item,
+        expected_revision: revision,
+        acl_revision: acl.parse()?,
+        position,
     };
-    if after_wrap
-        .as_ref()
-        .is_none_or(|inventory| inventory == &initial)
+    let kit = provisioning::item_reference(&index, 6371)?;
+    let previous_kits = fluids::quantity(&client, kit)?;
+    let wrapped = wrap_command(&mut client, request).await?;
+    let wrap::Reply::Committed(wrapped_revision) = wrapped else {
+        return Err(format!("step=wrap observed={wrapped:?}").into());
+    };
+    wait_for_kit_count(&mut client, kit, previous_kits + 1).await?;
+    if revision.checked_add(1) != Some(wrapped_revision)
+        || furniture_custody(&mut db, item, character).await?
+            != (
+                "oteryn:item.tibia.i6371".into(),
+                wrapped_revision.to_string(),
+                None,
+                true,
+            )
     {
-        return Err(
-            format!("step=wrap observed=inventory:{after_wrap:?} needed=inventory-delta").into(),
-        );
+        return Err("step=wrap missing exact kit conversion or custody transition".into());
     }
-    match unwrapped {
-        Err(error) => return Err(format!("step=unwrap observed={error}").into()),
-        Ok(wrap::Reply::Committed(revision)) if revision > wrap_revision => {}
-        other => return Err(format!("step=unwrap observed={other:?}").into()),
+
+    let unwrapped = wrap_command(
+        &mut client,
+        wrap::Request {
+            action: wrap::Action::Unwrap,
+            expected_revision: wrapped_revision,
+            ..request
+        },
+    )
+    .await?;
+    let wrap::Reply::Committed(unwrapped_revision) = unwrapped else {
+        return Err(format!("step=unwrap observed={unwrapped:?}").into());
+    };
+    wait_for_kit_count(&mut client, kit, previous_kits).await?;
+    let placed = furniture_custody(&mut db, item, character).await?;
+    if wrapped_revision.checked_add(1) != Some(unwrapped_revision)
+        || placed
+            != (
+                "oteryn:item.tibia.i6355".into(),
+                unwrapped_revision.to_string(),
+                Some(cell),
+                false,
+            )
+    {
+        return Err("step=unwrap missing exact furniture conversion or house placement".into());
     }
-    if after_unwrap
-        .as_ref()
-        .is_none_or(|inventory| Some(inventory) == after_wrap.as_ref())
+    destroy(&mut client, &mut db, &house, &clients.world, weapon, &index).await?;
+    let before_refusal = inventory_state(&client)?;
+    let refused = wrap_command(&mut client, request).await?;
+    client.service_liveness(Duration::from_millis(100)).await?;
+    if refused != wrap::Reply::Refused(wrap::Refusal::Stale)
+        || inventory_state(&client)? != before_refusal
+        || furniture_custody(&mut db, item, character).await? != placed
     {
         return Err(format!(
-            "step=unwrap observed=inventory:{after_unwrap:?} needed=inventory-or-house-custody-delta"
+            "step=stale-refusal observed={refused:?}; expected Stale and unchanged custody"
         )
         .into());
     }
-    destroyed.map_err(|error| format!("step=destroy observed={error}"))?;
-    filled.map_err(|error| format!("step=fluid-fill observed={error}"))?;
-    poured.map_err(|error| format!("step=fluid-pour observed={error}"))?;
-    if !matches!(refused, Ok(wrap::Reply::Refused(wrap::Refusal::Stale))) {
-        return Err(format!("step=stale-refusal observed={refused:?}").into());
+    transfer_house(&mut client, &house, true).await?;
+    let vessel = fluids::water_vessel(&mut client, world, &bytes, &index, true).await?;
+    let (target, at) = fluids::walk_to_map_item(&mut client, world, &bytes, "pour-target", |key| {
+        OVENS.contains(&key)
+    })
+    .await?;
+    let splash = provisioning::item_reference(&index, 2886)?;
+    client.take_events();
+    let disposition = fluids::use_ingredient(&mut client, vessel, None, Some(target)).await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let mut saw_splash = false;
+    while tokio::time::Instant::now() < deadline {
+        saw_splash |= client.take_events().into_iter().any(|event| {
+            let oteryn_dev_client::SessionEvent::WorldMap(delta) = event else {
+                return false;
+            };
+            delta.value.tiles.iter().any(|tile| {
+                tile.position.x == i32::from(at.x)
+                    && tile.position.y == i32::from(at.y)
+                    && tile.position.floor == i16::from(at.floor)
+                    && tile.items.iter().any(|item| {
+                        item.definition == MapDefinition::Item(splash) && item.sub_type == 1
+                    })
+            })
+        });
+        if saw_splash {
+            break;
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
     }
-    if after_refused != before_refused {
-        return Err("step=stale-refusal observed=inventory-delta".into());
+    validate_use_reply(
+        "fluid-pour",
+        CommandStatus::Accepted,
+        disposition,
+        saw_splash,
+    )?;
+    fluids::wait_subtype(&mut client, vessel, 0).await?;
+
+    let before_logout = inventory_state(&client)?;
+    let session = client.join_snapshot().game_session_id;
+    logout(&mut client).await?;
+    let fresh = connect_world(clients, 0xb1).await?;
+    let vessel_ref = provisioning::item_reference(&index, VESSEL)?;
+    if fresh.join_snapshot().game_session_id == session
+        || inventory_state(&fresh)? != before_logout
+        || fluids::carried_item(&fresh, vessel_ref)?.sub_type != 0
+        || furniture_custody(&mut db, item, character).await? != placed
+    {
+        return Err(
+            "step=fresh-admission observed=durable-furniture-or-inventory-state-changed".into(),
+        );
     }
-    if before_logout.as_ref() != Some(&after_relog) {
-        return Err("step=fresh-admission observed=inventory-state-changed".into());
+    Ok(())
+}
+
+async fn wait_for_kit_count(
+    client: &mut DevClientSession,
+    kit: NonZeroU32,
+    expected: u64,
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while super::full_row_i11::quantity(client, kit)? != expected {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("step=wrap observed=missing-kit-inventory-delta".into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
     }
     Ok(())
 }
@@ -230,6 +448,7 @@ mod tests {
             "destroy",
             CommandStatus::Rejected,
             world_object::UseDisposition::Rejected,
+            false,
         );
         let rejected = rejected.err().map(|error| error.to_string());
         assert!(
@@ -240,10 +459,24 @@ mod tests {
             "fluid-fill",
             CommandStatus::Accepted,
             world_object::UseDisposition::Committed,
+            false,
         );
         let unverified = unverified.err().map(|error| error.to_string());
         assert!(unverified.is_some_and(|error| {
             error.contains("needed=observable-furniture-or-fluid-state-delta")
         }));
     }
+}
+
+#[test]
+fn furniture_and_fluid_use_can_pass_with_exact_state_evidence() {
+    assert!(
+        validate_use_reply(
+            "fluid-fill",
+            CommandStatus::Accepted,
+            world_object::UseDisposition::Committed,
+            true
+        )
+        .is_ok()
+    );
 }

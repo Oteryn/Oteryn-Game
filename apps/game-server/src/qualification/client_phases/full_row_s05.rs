@@ -174,7 +174,7 @@ fn select(rows: &[house::Row], kind: u64) -> Option<house::Row> {
         .cloned()
 }
 
-fn entrance(key: &str) -> TestResult<TilePos> {
+pub(super) fn entrance(key: &str) -> TestResult<TilePos> {
     for body in [
         include_str!("../../../../../content/houses/houses-00000-00499.json"),
         include_str!("../../../../../content/houses/houses-00500-00994.json"),

@@ -174,7 +174,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         .ok_or_else(|| format!("no-affordable-offer-balance-{}", page.total_coins))?;
 
     row.at("purchase");
-    let accepted_request = request(0xe1, offer, &page.catalog_revision, offer.price);
+    let accepted_request = request(
+        original_session.as_bytes(),
+        0xe1,
+        offer,
+        &page.catalog_revision,
+        offer.price,
+    );
     let accepted = purchase(&mut client, &accepted_request).await?;
     if accepted.code != wire::StorePurchaseCode::Accepted
         || accepted.order_id.is_none()
@@ -197,7 +203,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let stale_price = offer.price.checked_add(1).ok_or("offer-price-overflow")?;
     let stale = purchase(
         &mut client,
-        &request(0xe2, offer, &page.catalog_revision, stale_price),
+        &request(
+            original_session.as_bytes(),
+            0xe2,
+            offer,
+            &page.catalog_revision,
+            stale_price,
+        ),
     )
     .await?;
     if stale.code != wire::StorePurchaseCode::StaleQuote
@@ -236,14 +248,13 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
 }
 
 fn request(
+    session: &[u8; 16],
     seed: u8,
     offer: &wire::StoreOffer,
     revision: &str,
     price: u64,
 ) -> wire::StorePurchaseRequest {
-    let mut id = [seed; 16];
-    id[6] = 0x70 | (seed & 0x0f);
-    id[8] = 0x80 | (seed & 0x3f);
+    let id = purchase_id(session, seed);
     wire::StorePurchaseRequest {
         purchase_request_id: id,
         offer_key: offer.offer_key.clone(),
@@ -251,6 +262,24 @@ fn request(
         price,
         currency: offer.currency.clone(),
     }
+}
+
+fn purchase_id(session: &[u8; 16], seed: u8) -> [u8; 16] {
+    let mut id = *session;
+    id[15] ^= seed;
+    id
+}
+
+#[test]
+fn purchase_ids_are_scoped_to_admission_and_operation() {
+    let mut first = [0; 16];
+    first[6] = 0x70;
+    first[8] = 0x80;
+    let mut second = first;
+    second[0] = 1;
+    assert_ne!(purchase_id(&first, 0xe1), purchase_id(&second, 0xe1));
+    assert_ne!(purchase_id(&first, 0xe1), purchase_id(&first, 0xe2));
+    assert_eq!(purchase_id(&first, 0xe1), purchase_id(&first, 0xe1));
 }
 
 fn assert_history(

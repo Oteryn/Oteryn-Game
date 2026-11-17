@@ -276,19 +276,31 @@ fn collect(event: &SessionEvent, me: EntityRef, out: &mut Vec<Seen>) {
 }
 
 /// Idle regeneration: no attack, vitals polled for the window; returns (health/s, mana/s).
-async fn idle_rate(client: &mut DevClientSession, seconds: u64) -> TestResult<(f64, f64)> {
+async fn idle_rate(
+    client: &mut DevClientSession,
+    seconds: u64,
+) -> TestResult<(Option<f64>, Option<f64>)> {
     let first = *client.actor_vitals().ok_or("vitals-absent")?;
     let (mut hp, mut mp, mut last) = (0_u64, 0_u64, first);
+    let (mut hp_capped, mut mp_capped) = (
+        first.health >= first.max_health,
+        first.mana >= first.max_mana,
+    );
     let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
     while tokio::time::Instant::now() < deadline {
         client.service_liveness(Duration::from_millis(100)).await?;
         client.take_events();
         let now = *client.actor_vitals().ok_or("vitals-absent")?;
+        hp_capped |= now.health >= now.max_health;
+        mp_capped |= now.mana >= now.max_mana;
         hp += u64::from(now.health.saturating_sub(last.health));
         mp += u64::from(now.mana.saturating_sub(last.mana));
         last = now;
     }
-    Ok((hp as f64 / seconds as f64, mp as f64 / seconds as f64))
+    Ok((
+        idle_baseline(hp, seconds, hp_capped),
+        idle_baseline(mp, seconds, mp_capped),
+    ))
 }
 
 async fn fight(client: &mut DevClientSession, target: EntityRef, seconds: u64, hits_wanted: usize) -> TestResult<Fight> {
@@ -429,8 +441,11 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("tabs", (with.offence.character_revision, with.offence.equipment_revision, with.defence.equipment_revision));
 
     // Clean baseline: the same fight with every strippable source out of the equipment.
-    let (stripped, clean) = if with.offence_sources() > 0 { strip(&mut client).await? } else { (Vec::new(), true) };
-    let (idle_hp, idle_mp) = idle_rate(&mut client, 8).await?;
+    let (stripped, clean) = if with.offence_sources() > 0 {
+        strip(&mut client).await?
+    } else {
+        (Vec::new(), true)
+    };
     let target = reachable_monster(&mut client, world, &metadata.spawns).await?;
     let base = fight(&mut client, target, FIGHT_SECONDS, 12).await?;
     let base_hits = base.own_hits(me);
@@ -442,8 +457,12 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if !after_restore.same(&with) {
         return Err("re-equipping the stripped items did not restore the projections".into());
     }
+    let (idle_hp, idle_mp) = idle_rate(&mut client, 8).await?;
     if base_hits.len() >= 6 && base_taken > 0 {
-        row.pass("baseline", (&base_hits, base_taken, idle_hp, idle_mp, clean));
+        row.pass(
+            "baseline",
+            (&base_hits, base_taken, idle_hp, idle_mp, clean),
+        );
     } else {
         row.fail("baseline", format!("attributed-player-hits={};monster-hits-on-player={base_taken};needed>=6-and>=1;{}", base_hits.len(), base.counters(me)));
     }
@@ -472,13 +491,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     if life <= 0 && mana <= 0 {
         row.fail("leech", needed("life-or-mana-leech", 0));
     } else {
-        let life_ok = life > 0 && dealt.saturating_mul(life as u64) / 1_000_000 >= 1 && hunt.health_up as f64 > idle_hp * hunt.seconds;
-        let mana_ok = mana > 0 && dealt.saturating_mul(mana as u64) / 1_000_000 >= 1 && hunt.mana_up as f64 > idle_mp * hunt.seconds;
+        let life_ok = life > 0
+            && dealt.saturating_mul(life as u64) / 1_000_000 >= 1
+            && idle_hp.is_some_and(|rate| hunt.health_up as f64 > rate * hunt.seconds);
+        let mana_ok = mana > 0
+            && dealt.saturating_mul(mana as u64) / 1_000_000 >= 1
+            && idle_mp.is_some_and(|rate| hunt.mana_up as f64 > rate * hunt.seconds);
         if (life <= 0 || life_ok) && (mana <= 0 || mana_ok) {
-            row.pass("leech", (life, mana, hunt.health_up, hunt.mana_up, idle_hp, idle_mp));
+            row.pass(
+                "leech",
+                (life, mana, hunt.health_up, hunt.mana_up, idle_hp, idle_mp),
+            );
         } else {
             row.fail("leech", format!(
-                "life-projection={life} health-up={} idle={:.2}/s;mana-projection={mana} mana-up={} idle={:.2}/s;dealt={dealt};vitals={vitals:?}",
+                "life-projection={life} health-up={} idle={:?}/s;mana-projection={mana} mana-up={} idle={:?}/s;dealt={dealt};vitals={vitals:?}",
                 hunt.health_up, idle_hp, hunt.mana_up, idle_mp
             ));
         }
@@ -595,4 +621,15 @@ mod tests {
     fn evidence_token_has_no_whitespace() {
         assert!(!token("a b\"c\n").contains(char::is_whitespace));
     }
+}
+
+fn idle_baseline(gain: u64, seconds: u64, capped: bool) -> Option<f64> {
+    (!capped).then(|| gain as f64 / seconds as f64)
+}
+
+#[test]
+fn capped_vitals_cannot_establish_an_idle_regeneration_rate() {
+    assert_eq!(idle_baseline(0, 8, true), None);
+    assert_eq!(idle_baseline(0, 8, false), Some(0.0));
+    assert_eq!(idle_baseline(16, 8, false), Some(2.0));
 }

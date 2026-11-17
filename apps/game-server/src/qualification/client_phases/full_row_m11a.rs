@@ -21,7 +21,9 @@
 //! database.  Speech is the native client command path for parameter spells.
 use super::*;
 use oteryn_dev_client::{ChatDisposition, ChatIntent, ChatSpeechMode, DevClientSession};
-use oteryn_protocol_oteryn::{actor_spell_catalog as catalog, logout::LogoutResult};
+use oteryn_protocol_oteryn::{
+    actor_spell_catalog as catalog, logout::LogoutResult, world_spatial::ActorPosition,
+};
 
 const WORDS_UP: &str = "exani hur up";
 const WORDS_DOWN: &str = "exani hur down";
@@ -35,8 +37,9 @@ struct Observation {
     disposition: ChatDisposition,
     before: oteryn_protocol_oteryn::actor_spell::ActorVitals,
     after: oteryn_protocol_oteryn::actor_spell::ActorVitals,
-    before_position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
-    after_position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+    before_position: ActorPosition,
+    facing: Option<StepDirection>,
+    after_position: ActorPosition,
     result_sequence: u64,
     saw_vitals_delta: bool,
     saw_spatial_delta: bool,
@@ -149,6 +152,20 @@ async fn observe_speech(
         format!("step={command} observed=missing-pre-vitals server-needed=vitals-snapshot")
     })?;
     let before_position = client.world_spatial().actor_position;
+    let facing = client.world_entities().and_then(|entities| {
+        entities.iter().find_map(|entity| {
+            if &entity.entity.identity != entities.own_identity() {
+                return None;
+            }
+            match entity.detail {
+                oteryn_dev_client::EntityDetail::Actor { direction, .. }
+                | oteryn_dev_client::EntityDetail::ActorWithIcons { direction, .. } => {
+                    Some(direction)
+                }
+                _ => None,
+            }
+        })
+    });
     client.take_events();
     let reply = client
         .chat(&ChatIntent::Say {
@@ -169,6 +186,7 @@ async fn observe_speech(
         before,
         after,
         before_position,
+        facing,
         after_position,
         result_sequence: reply.result_server_sequence,
         saw_vitals_delta: events
@@ -244,15 +262,17 @@ fn validate_success(
             ).into());
         }
     }
-    let one_floor = up.after_position.floor.abs_diff(up.before_position.floor) == 1;
-    let one_tile = (up.after_position.x.abs_diff(up.before_position.x) == 1
-        && up.after_position.y == up.before_position.y)
-        || (up.after_position.y.abs_diff(up.before_position.y) == 1
-            && up.after_position.x == up.before_position.x);
+    let (one_floor, one_tile, returns) = levitate_landings(
+        up.before_position,
+        up.after_position,
+        down.before_position,
+        down.after_position,
+    );
     if player_level < levitate.level
         || !levitate.available
         || !one_floor
         || !one_tile
+        || !went_forward(up)
     {
         return Err(format!(
             "step=2-up command={} observed={up:?} player_level={player_level} required_level={} catalog_available={} server-needed=eligible-cast-moving-exactly-one-floor-and-one-forward-tile",
@@ -260,11 +280,9 @@ fn validate_success(
         )
         .into());
     }
-    if down.before_position != up.after_position
-        || down.after_position.floor != up.before_position.floor
-    {
+    if !returns {
         return Err(format!(
-            "step=3-down command={} original={:?} observed={down:?} server-needed=return-to-original-floor",
+            "step=3-down command={} original={:?} observed={down:?} server-needed=one-forward-tile-to-original-floor",
             down.command, up.before_position
         )
         .into());
@@ -300,4 +318,69 @@ mod tests {
         assert_eq!(WORDS_REFUSAL, "exani hur sideways");
         assert_ne!(WORDS_UP, WORDS_DOWN);
     }
+}
+
+fn went_forward(observed: &Observation) -> bool {
+    let (dx, dy) = match observed.facing {
+        Some(StepDirection::North) => (0, -1),
+        Some(StepDirection::East) => (1, 0),
+        Some(StepDirection::South) => (0, 1),
+        Some(StepDirection::West) => (-1, 0),
+        _ => return false,
+    };
+    observed.before_position.x.checked_add(dx) == Some(observed.after_position.x)
+        && observed.before_position.y.checked_add(dy) == Some(observed.after_position.y)
+}
+
+fn levitate_landings(
+    start: ActorPosition,
+    upper: ActorPosition,
+    down_from: ActorPosition,
+    lower: ActorPosition,
+) -> (bool, bool, bool) {
+    let step = if start.floor > 0 { -1 } else { 1 };
+    let one_floor = start.floor.checked_add(step) == Some(upper.floor);
+    let one_tile = (upper.x.abs_diff(start.x) == 1 && upper.y == start.y)
+        || (upper.y.abs_diff(start.y) == 1 && upper.x == start.x);
+    let returns = down_from == upper
+        && lower.floor == start.floor
+        && i64::from(lower.x) - i64::from(upper.x) == i64::from(upper.x) - i64::from(start.x)
+        && i64::from(lower.y) - i64::from(upper.y) == i64::from(upper.y) - i64::from(start.y);
+    (one_floor, one_tile, returns)
+}
+
+#[test]
+fn levitate_requires_upward_and_forward_landings() {
+    let start = ActorPosition {
+        x: 20,
+        y: 20,
+        floor: -7,
+    };
+    let upper = ActorPosition {
+        x: 21,
+        y: 20,
+        floor: -6,
+    };
+    let landing = ActorPosition {
+        x: 22,
+        y: 20,
+        floor: -7,
+    };
+    assert_eq!(
+        levitate_landings(start, upper, upper, landing),
+        (true, true, true)
+    );
+    let wrong_floor = ActorPosition { floor: -8, ..upper };
+    assert!(!levitate_landings(start, wrong_floor, wrong_floor, landing).0);
+    assert!(!levitate_landings(start, upper, upper, start).2);
+    let legacy_start = ActorPosition { floor: 7, ..start };
+    let legacy_upper = ActorPosition { floor: 6, ..upper };
+    let legacy_landing = ActorPosition {
+        floor: 7,
+        ..landing
+    };
+    assert_eq!(
+        levitate_landings(legacy_start, legacy_upper, legacy_upper, legacy_landing),
+        (true, true, true)
+    );
 }

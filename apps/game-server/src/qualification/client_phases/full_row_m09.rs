@@ -415,7 +415,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     row.pass("fishing-replies-and-deltas", committed);
 
+    let mut stalled = 0;
     while units(&client, worm_ref) > 0 {
+        let worms = units(&client, worm_ref);
         let reply = use_on(
             &mut client,
             rod.handle,
@@ -426,6 +428,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         if reply.0 != CommandStatus::Accepted {
             return Err(format!("step 3 bait-drain reply={reply:?}").into());
         }
+        stalled = bait_stall(stalled, worms, units(&client, worm_ref))?;
     }
     let fish = units(&client, fish_ref);
     let refusal = use_on(
@@ -455,11 +458,19 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         oteryn_dev_client::EntityDetail::Object {
             item_handle: Some(handle),
             ..
+        }
+        | oteryn_dev_client::EntityDetail::ObjectWithAppearance {
+            item_handle: Some(handle),
+            ..
         } => handle,
         _ => return Err("step 4 served corpse has no item handle".into()),
     };
     let corpse_definition =
         object_definition(corpse).ok_or("step 4 served corpse has no object definition")?;
+    let source_id = index
+        .definition_at(NonZeroU32::new(corpse_definition).ok_or("zero corpse definition")?)
+        .and_then(|(key, _)| key.strip_prefix("oteryn:item.tibia.i"))
+        .and_then(|id| id.parse::<u16>().ok());
     let before_skin = inventory_signature(&client)?;
     let skin_reply = use_on(&mut client, knife.handle, MapUseTarget::Item(corpse_handle)).await?;
     settle(&mut client).await?;
@@ -475,11 +486,33 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
                     "step 4 committed skinning removed the observed corpse: reply={skin_reply:?}"
                 )
             })?;
-        if spent_definition == corpse_definition {
-            return Err(format!(
-                "step 4 committed skinning did not transform corpse: reply={skin_reply:?}; definition={corpse_definition}"
+        let (kind, reward) = source_id
+            .and_then(|id| oteryn_gameplay_items::fishing::gathering_rule(5908, id))
+            .ok_or("step 4 committed skinning has no authored corpse yield rule")?;
+        let oteryn_gameplay_items::fishing::GatheringTarget::Corpse { spent_item } = kind else {
+            return Err("step 4 skinning rule is not a corpse rule".into());
+        };
+        let reward_ref = provisioning::item_reference(&index, u32::from(reward.item))?;
+        let spent_ref = provisioning::item_reference(&index, u32::from(spent_item))?;
+        let tally = |signature: &[(u32, u32, u32)]| {
+            signature
+                .iter()
+                .filter(|entry| entry.0 == reward_ref.get())
+                .map(|entry| u64::from(entry.1))
+                .sum::<u64>()
+        };
+        if spent_definition != spent_ref.get()
+            || !skinning_effect(
+                corpse_definition,
+                spent_definition,
+                tally(&before_skin),
+                tally(&after_skin),
             )
-            .into());
+        {
+            return Err(format!(
+                "step 4 skinning needs an authored spent corpse and material grant; corpse={corpse_definition}->{spent_definition} yield={} {}->{}",
+                reward.item, tally(&before_skin), tally(&after_skin)
+            ).into());
         }
         row.pass(
             "skinning-replies-and-deltas",
@@ -563,6 +596,10 @@ fn object_definition(entity: oteryn_dev_client::WorldSpatialEntity) -> Option<u3
         oteryn_dev_client::EntityDetail::Object {
             item_definition_ref,
             ..
+        }
+        | oteryn_dev_client::EntityDetail::ObjectWithAppearance {
+            item_definition_ref,
+            ..
         } => Some(item_definition_ref),
         _ => None,
     }
@@ -585,7 +622,7 @@ async fn hunt_corpse(
                 .spawns
                 .creatures
                 .get(point.creature as usize)
-                .is_some_and(|creature| creature.key == "oteryn:creature.rat")
+                .is_some_and(|creature| creature.key == "oteryn:creature.minotaur")
         })
         .map(|(floor, point)| TilePos {
             x: point.x,
@@ -611,6 +648,10 @@ async fn hunt_corpse(
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == oteryn_dev_client::EntityKind::Creature
+                    && entry.display_name.is_some_and(|name| {
+                        name.as_str()
+                            .is_ok_and(|label| label.eq_ignore_ascii_case("Minotaur"))
+                    })
                     && entry.position.floor == at.floor
                     && entry
                         .position
@@ -622,6 +663,13 @@ async fn hunt_corpse(
         })
         .copied()
         .ok_or("step 4 combat endpoint has no served creature")?;
+    let previous_corpses: BTreeSet<_> = client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entity| entity.kind == oteryn_dev_client::EntityKind::Corpse)
+        .map(|entity| entity.entity)
+        .collect();
     let reply = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -630,8 +678,15 @@ async fn hunt_corpse(
         return Err(format!("step 4 ATTACK reply={reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(45);
+    let mut last_position = target.position;
     loop {
         settle(client).await?;
+        if let Some(current) = client
+            .world_entities()
+            .and_then(|entities| entities.get(&target.entity))
+        {
+            last_position = current.position;
+        }
         if !client
             .world_entities()
             .is_some_and(|entities| entities.iter().any(|entry| entry.entity == target.entity))
@@ -649,7 +704,8 @@ async fn hunt_corpse(
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == oteryn_dev_client::EntityKind::Corpse
-                    && entry.position == target.position
+                    && entry.position == last_position
+                    && !previous_corpses.contains(&entry.entity)
             })
         })
         .copied()
@@ -669,4 +725,39 @@ mod tests {
         row.pass("fresh-admission-durable-custody", "fixture");
         assert!(ACTIONS.iter().all(|action| row.passed.contains(action)));
     }
+}
+
+fn bait_stall(stalled: u32, before: u64, after: u64) -> TestResult<u32> {
+    if after < before {
+        return Ok(0);
+    }
+    if stalled >= 39 {
+        return Err(format!(
+            "step 3 bait-drain: 40 consecutive casts without progress; bait={after}"
+        )
+        .into());
+    }
+    Ok(stalled + 1)
+}
+
+#[test]
+fn bait_drain_bounds_consecutive_casts_without_progress() -> TestResult {
+    let mut stalled = 0;
+    for _ in 0..39 {
+        stalled = bait_stall(stalled, 1, 1)?;
+    }
+    assert!(bait_stall(stalled, 1, 1).is_err());
+    assert_eq!(bait_stall(stalled, 1, 0)?, 0);
+    Ok(())
+}
+
+fn skinning_effect(original: u32, spent: u32, before_yield: u64, after_yield: u64) -> bool {
+    original != spent && before_yield.checked_add(1) == Some(after_yield)
+}
+
+#[test]
+fn skinning_requires_the_expected_material_credit() {
+    assert!(!skinning_effect(10, 11, 3, 3));
+    assert!(!skinning_effect(10, 10, 3, 4));
+    assert!(skinning_effect(10, 11, 3, 4));
 }

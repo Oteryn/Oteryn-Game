@@ -13,15 +13,16 @@
 //!    this is the player-observable buy-escrow refund path owned by market settlement.
 //! 6. Log out, obtain a fresh admission, walk back to the locker, and re-check My Offers and
 //!    History so the ended offer and refund outcome are shown to be durable.
-//! 7. Having driven the real settlement path, require independent scheduled expiry. The current
-//!    server exposes only command/query-driven advancement, so this step reports MISSING-SERVER
-//!    at the production owner rather than fabricating a 30-day clock advance or a PASS.
+//! 7. Leave a second buy offer open and age its timestamps in the disposable database.
+//!    Observe scheduled expiry before sending any market command, then check the refund and history.
 use super::*;
 use oteryn_dev_client::DevClientSession;
 use oteryn_protocol_oteryn::market::{self as wire, MarketReply, MarketRequest};
 use std::collections::BTreeSet;
 
-const GAP: &str = "source:crates/gameplay/durability/src/durability/market/settlement.rs:240";
+const OFFER_PRICE: i64 = 1;
+const OFFER_FEE: i64 = 20;
+const EXPIRED_STATE: i16 = 4;
 
 async fn command(client: &mut DevClientSession, request: MarketRequest) -> TestResult<MarketReply> {
     let payload =
@@ -61,7 +62,7 @@ async fn at_market(client: &mut DevClientSession, world: &BundleWorld) -> TestRe
     walk(client, world, &path).await
 }
 
-async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
+async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(
@@ -120,6 +121,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
     }
     evidence("E06_CHECK step=3 status=PASS observed-code=14");
 
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let before = bank_gold(&mut db, clients).await?;
     let created = command(&mut client, request(5, definitions[0], [0; 16], 0)).await?;
     if created.code != 1 {
         return Err(format!("E06 step 4: create observed-code={}; need premium-current and at least fee+escrow bank gold", created.code).into());
@@ -136,18 +139,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
     }
     evidence("E06_CHECK step=4 status=PASS offer-visible");
 
+    let bank_with_escrow = bank_gold(&mut db, clients).await?;
+    if before.checked_sub(OFFER_FEE + OFFER_PRICE) != Some(bank_with_escrow)
+        || offer_state(&mut db, clients, offer).await? != (1, OFFER_PRICE, 0)
+    {
+        return Err("E06 step 4: expected fee debit and exact buy escrow funding".into());
+    }
+    let expected_refund = bank_with_escrow + OFFER_PRICE;
     let cancelled = command(&mut client, request(7, 0, offer, 0)).await?;
-    if cancelled.code != 1 {
+    if cancelled.code != 1 || cancelled.action != 7 {
         return Err(format!("E06 step 5: cancel observed={cancelled:?}").into());
     }
     let own = command(&mut client, request(3, 0, [0; 16], 0)).await?;
     let history = command(&mut client, request(4, 0, [0; 16], 0)).await?;
-    if own.rows.iter().any(|row| row.offer == offer)
-        || !history
-            .rows
-            .iter()
-            .any(|row| row.offer == offer && row.state == 2)
-    {
+    if !settled_offer(
+        &own,
+        &history,
+        offer,
+        bank_gold(&mut db, clients).await?,
+        expected_refund,
+        offer_state(&mut db, clients, offer).await?,
+        3,
+    ) {
         return Err(format!(
             "E06 step 5: refund/history delta missing own={own:?} history={history:?}"
         )
@@ -164,32 +177,45 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<&'static str> {
     at_market(&mut client, world).await?;
     let own = command(&mut client, request(3, 0, [0; 16], 0)).await?;
     let history = command(&mut client, request(4, 0, [0; 16], 0)).await?;
-    if own.rows.iter().any(|row| row.offer == offer)
-        || !history
-            .rows
-            .iter()
-            .any(|row| row.offer == offer && row.state == 2)
-    {
+    if !settled_offer(
+        &own,
+        &history,
+        offer,
+        bank_gold(&mut db, clients).await?,
+        expected_refund,
+        offer_state(&mut db, clients, offer).await?,
+        3,
+    ) {
         return Err(format!(
             "E06 step 6: fresh-admission state mismatch own={own:?} history={history:?}"
         )
         .into());
     }
+    evidence("E06_CHECK step=6 status=PASS durable-cancelled-refund");
+    expire_offer(
+        &mut client,
+        &mut db,
+        clients,
+        definitions[0],
+        expected_refund,
+    )
+    .await?;
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
     {
         return Err("E06 step 6: final logout refused".into());
     }
-    evidence("E06_CHECK step=6 status=PASS durable-ended-offer");
-    Ok(GAP)
+    Ok(())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+            .await;
     match result {
-        Ok(Ok(source)) => evidence(&format!(
-            "e2e_all scenario=E06.full status=MISSING-SERVER seconds={:.3} evidence={source}",
+        Ok(Ok(())) => evidence(&format!(
+            "e2e_all scenario=E06.full status=PASS seconds={:.3}",
             started.elapsed().as_secs_f64()
         )),
         Ok(Err(error)) => evidence(&format!(
@@ -218,4 +244,159 @@ mod tests {
         offer[8] = 0x80;
         assert!(wire::encode_request(request(7, 0, offer, 0)).is_ok());
     }
+}
+
+async fn bank_gold(db: &mut sqlx::PgConnection, clients: &SeamClients<'_>) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT coalesce((SELECT balance FROM game_account_bank_balances WHERE account_id=$1::uuid AND world_id=encode($2,'hex')::uuid),0)::bigint",
+    ).bind(&clients.accounts[1]).bind(clients.world.as_slice()).fetch_one(db).await?)
+}
+
+async fn offer_state(
+    db: &mut sqlx::PgConnection,
+    clients: &SeamClients<'_>,
+    offer: [u8; 16],
+) -> TestResult<(i16, i64, i64)> {
+    Ok(sqlx::query_as(
+        "SELECT state,escrow_gold::bigint,held_credit_gold::bigint FROM game_market_offers WHERE offer_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid",
+    ).bind(offer.as_slice()).bind(clients.world.as_slice()).bind(clients.characters[1].as_slice()).fetch_one(db).await?)
+}
+
+async fn expire_offer(
+    client: &mut DevClientSession,
+    db: &mut sqlx::PgConnection,
+    clients: &SeamClients<'_>,
+    definition: u32,
+    before: i64,
+) -> TestResult {
+    let created = command(client, request(5, definition, [0; 16], 0)).await?;
+    let offer = created.offer;
+    if created.code != 1
+        || created.action != 5
+        || offer_state(db, clients, offer).await? != (1, OFFER_PRICE, 0)
+        || before.checked_sub(OFFER_FEE + OFFER_PRICE) != Some(bank_gold(db, clients).await?)
+    {
+        return Err(format!(
+            "E06 step 7: expiry requires a funded open buy offer; observed={created:?}"
+        )
+        .into());
+    }
+    // Only age the offer created by this disposable qualification session. Preserve
+    // the 30-day lifetime constraint and leave settlement to the normal market owners.
+    let aged = sqlx::query(
+        "UPDATE game_market_offers SET created_at_us=1,expires_at_us=2592000000001 WHERE offer_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid AND state=1",
+    ).bind(offer.as_slice()).bind(clients.world.as_slice()).bind(clients.characters[1].as_slice())
+        .execute(&mut *db).await?;
+    if aged.rows_affected() != 1 {
+        return Err("E06 step 7: expiry fixture lost its open offer".into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(75);
+    verdict::Harness::global().bounded_wait(deadline, "market-expiry");
+    let scheduled = loop {
+        let (state, _, _) = offer_state(db, clients, offer).await?;
+        if state != 1 || tokio::time::Instant::now() >= deadline {
+            break state == EXPIRED_STATE;
+        }
+        client.service_liveness(Duration::from_millis(250)).await?;
+        client.take_events();
+    };
+    // History is itself a market command and can trigger demand-driven settlement.
+    let history = command(client, request(4, 0, [0; 16], 0)).await?;
+    let own = command(client, request(3, 0, [0; 16], 0)).await?;
+    let settled = settled_offer(
+        &own,
+        &history,
+        offer,
+        bank_gold(db, clients).await?,
+        before - OFFER_FEE,
+        offer_state(db, clients, offer).await?,
+        EXPIRED_STATE,
+    );
+    expiry_verdict(scheduled, settled)
+}
+
+fn settled_offer(
+    own: &MarketReply,
+    history: &MarketReply,
+    offer: [u8; 16],
+    bank: i64,
+    expected: i64,
+    state: (i16, i64, i64),
+    ended_state: i16,
+) -> bool {
+    own.code == 1
+        && own.action == 3
+        && history.code == 1
+        && history.action == 4
+        && state == (ended_state, 0, 0)
+        && bank == expected
+        && !own.rows.iter().any(|row| row.offer == offer)
+        && history.rows.iter().any(|row| {
+            row.offer == offer
+                && row.state == 2
+                && row.price == 1
+                && row.amount == 1
+                && row.side == 1
+        })
+}
+
+fn expiry_verdict(scheduled: bool, settled: bool) -> TestResult {
+    match (scheduled, settled) {
+        (true, true) => Ok(()),
+        (false, true) => Err("E06 step 7: scheduled expiry unobserved before the market command; subsequent settlement refunded the escrow".into()),
+        (_, false) => Err("E06 step 7: expected expired state, refund and successful own-offers/history replies".into()),
+    }
+}
+
+#[test]
+fn expiry_verdict_requires_observed_settlement_and_schedule() {
+    assert!(expiry_verdict(true, true).is_ok());
+    assert!(expiry_verdict(false, true).is_err());
+    assert!(expiry_verdict(false, false).is_err());
+}
+
+#[test]
+fn cancellation_checks_refund_and_successful_queries() {
+    let offer = [1; 16];
+    let mut own = MarketReply {
+        action: 3,
+        code: 1,
+        offer: [0; 16],
+        rows: vec![],
+    };
+    let history = MarketReply {
+        action: 4,
+        code: 1,
+        offer: [0; 16],
+        rows: vec![wire::MarketRow {
+            offer,
+            definition: 1,
+            side: 1,
+            amount: 1,
+            price: 1,
+            state: 2,
+            anonymous: false,
+        }],
+    };
+    assert!(settled_offer(&own, &history, offer, 100, 100, (3, 0, 0), 3));
+    assert!(!settled_offer(&own, &history, offer, 99, 100, (3, 0, 0), 3));
+    assert!(!settled_offer(
+        &own,
+        &history,
+        offer,
+        100,
+        100,
+        (5, 0, 1),
+        3
+    ));
+    own.code = 9;
+    assert!(!settled_offer(
+        &own,
+        &history,
+        offer,
+        100,
+        100,
+        (3, 0, 0),
+        3
+    ));
 }

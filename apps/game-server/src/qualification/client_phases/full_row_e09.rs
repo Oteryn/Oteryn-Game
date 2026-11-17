@@ -221,8 +221,25 @@ async fn depot_search(
         .map_err(|e| format!("step=inbox-search observed=decode-{e:?} need=valid-reply").into())
 }
 
-fn inbox(reply: &depot_search::Reply) -> u32 {
-    reply.results.iter().map(|result| result.inbox).sum()
+fn inbox(reply: &depot_search::Reply, client_id: u32) -> TestResult<u64> {
+    match (reply.outcome, reply.results.as_slice()) {
+        (depot_search::Outcome::NotFound, []) => Ok(0),
+        (depot_search::Outcome::Found, [result]) if result.client_id == client_id => {
+            Ok(u64::from(result.inbox))
+        }
+        _ => Err(format!("invalid inbox search result for {client_id}: {reply:?}").into()),
+    }
+}
+
+fn delivered_delta(reply: &depot_search::Reply, client_id: u32, before: u64) -> TestResult<u64> {
+    let count = inbox(reply, client_id)?;
+    if before.checked_add(1) != Some(count) {
+        return Err(format!(
+            "inbox delivery for {client_id}: expected one new item, observed {before}->{count}"
+        )
+        .into());
+    }
+    Ok(count)
 }
 
 async fn acquire(
@@ -482,6 +499,8 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     .ok_or("step=walk-mailbox observed=route-disappeared need=reachable-adjacent-tile")?;
     walk(&mut client, world, &path).await?;
     let mailbox_handle = visible_mailbox_handle(&mut client, &definitions, mailbox_at)?;
+    let letter_baseline = inbox(&depot_search(&mut client, 3506).await?, 3506)?;
+    let parcel_baseline = inbox(&depot_search(&mut client, 3504).await?, 3504)?;
     let before_letters = units(&client, letter);
     let outcome = post(&mut client, first.handle.get(), mailbox_handle).await?;
     if outcome != mail::MailOutcome::Posted {
@@ -489,11 +508,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     wait_units(&mut client, letter, before_letters - 1).await?;
     let delivered = depot_search(&mut client, 3506).await?;
-    if inbox(&delivered) == 0 {
-        return Err(
-            format!("step=letter-inbox observed={delivered:?} need=inbox-count-positive").into(),
-        );
-    }
+    let letter_count = delivered_delta(&delivered, 3506, letter_baseline)?;
     row.pass("letter-posted-and-delivered", delivered);
     let refused = item(&client, letter)?;
     write(
@@ -531,12 +546,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     wait_units(&mut client, parcel, 0).await?;
     let parcel_delivery = depot_search(&mut client, 3504).await?;
-    if inbox(&parcel_delivery) == 0 {
-        return Err(format!(
-            "step=parcel-inbox observed={parcel_delivery:?} need=inbox-count-positive"
-        )
-        .into());
-    }
+    let parcel_count = delivered_delta(&parcel_delivery, 3504, parcel_baseline)?;
     row.pass("parcel-label-and-delivery", parcel_delivery);
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -550,7 +560,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     }
     let letter_after = depot_search(&mut fresh, 3506).await?;
     let parcel_after = depot_search(&mut fresh, 3504).await?;
-    if inbox(&letter_after) == 0 || inbox(&parcel_after) == 0 {
+    if delivered_delta(&letter_after, 3506, letter_baseline)? != letter_count
+        || delivered_delta(&parcel_after, 3504, parcel_baseline)? != parcel_count
+    {
         return Err(format!("step=durable-inbox observed=letter-{letter_after:?}-parcel-{parcel_after:?} need=persisted-inbox-counts").into());
     }
     row.pass(
@@ -579,7 +591,7 @@ mod tests {
         assert!(row.invalid);
     }
     #[test]
-    fn inbox_totals_only_inbox_custody() {
+    fn inbox_counts_new_mail_of_the_requested_definition() -> TestResult {
         let reply = depot_search::Reply {
             outcome: depot_search::Outcome::Found,
             retrieved: 0,
@@ -591,6 +603,10 @@ mod tests {
                 tiers: vec![],
             }],
         };
-        assert_eq!(inbox(&reply), 4);
+        assert_eq!(inbox(&reply, 3506)?, 4);
+        assert!(delivered_delta(&reply, 3506, 4).is_err());
+        assert!(delivered_delta(&reply, 3504, 3).is_err());
+        assert_eq!(delivered_delta(&reply, 3506, 3)?, 4);
+        Ok(())
     }
 }

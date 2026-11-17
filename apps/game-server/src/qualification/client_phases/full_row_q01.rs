@@ -76,8 +76,6 @@ pub(super) const CHESTS: [Chest; 16] = [
     chest("Q03k", "six_rubies", (32371, 32262, 12), 6156, 3030, 0, 0x1c),
 ];
 
-pub(super) const Q03A_MISSING: &str = "MISSING no confirmed descent into Q03a reward room: 32302,32257,8 ground 355 without action 101; rope spot 386 at 32302,32257,9; search exhausted 114052 settled; closest 32305,32254,7";
-
 pub(super) fn row_status(result: &TestResult) -> &'static str {
     match result {
         Ok(()) => "PASS",
@@ -138,9 +136,6 @@ async fn journey(clients: &SeamClients<'_>, chest: &Chest) -> TestResult {
     }
     let reference = provisioning::item_reference(&provisioning::item_index()?, chest.item)?;
     from_town(planner, chest, &label)?;
-    if chest.row == "Q03a" {
-        return Err(Q03A_MISSING.into());
-    }
     let mut client = connect_character(clients, chest.tag, chest.character).await?;
     let result = match setup(clients, planner, chest, &label, &mut client).await {
         Ok(()) => claim(&mut client, planner, chest, &label, ordinal, reference).await,
@@ -181,16 +176,16 @@ async fn below_level_check(
     chest: &Chest,
     label: &str,
     level: u32,
-) -> TestResult {
+) -> TestResult<TilePos> {
     let action = u16::try_from(1000 + DOOR_LEVEL)?;
-    let Some(&door) = planner.level_doors(chest.at, 12, action).first() else {
-        evidence(&format!(
-            "Q01_CHECK {label} below_level not_run: no level-{DOOR_LEVEL} door within 12 tiles of the chest"
-        ));
-        return Ok(());
-    };
+    let door = *planner
+        .level_doors(chest.at, 12, action)
+        .first()
+        .ok_or_else(|| {
+            format!("{label} no level-{DOOR_LEVEL} door within 12 tiles of the chest")
+        })?;
     let mut passages = travel::Passages::default();
-    if let Err(error) = travel::travel_to(
+    travel::travel_to(
         client,
         planner,
         &format!("{label}:below-level"),
@@ -198,24 +193,30 @@ async fn below_level_check(
         &travel::beside(door),
         &mut passages,
     )
-    .await
-    {
-        evidence(&format!(
-            "Q01_CHECK {label} below_level not_run: cannot walk to the door: {error}"
-        ));
-        return Ok(());
-    }
+    .await?;
     let reply = travel::use_map_object(client, &planner.door_placement(door)?).await?;
     evidence(&format!(
         "Q01_CHECK {label} below_level level={level} door={},{},{} action={action} use={reply:?}",
         door.x, door.y, -door.floor
     ));
-    if reply == UseDisposition::Committed {
-        return Err(
-            format!("{label} level {level} character opened the level-{DOOR_LEVEL} door").into(),
-        );
+    validate_level_refusal(label, level, reply)?;
+    Ok(door)
+}
+
+fn validate_level_refusal(label: &str, level: u32, reply: UseDisposition) -> TestResult {
+    if level >= DOOR_LEVEL || reply != UseDisposition::Locked {
+        return Err(format!(
+            "{label} level {level} door-{DOOR_LEVEL} probe returned {reply:?}; expected a below-level Locked reply"
+        ).into());
     }
     Ok(())
+}
+
+#[test]
+fn level_door_requires_locked_reply_from_below_level_character() {
+    assert!(validate_level_refusal("test", 1, UseDisposition::Locked).is_ok());
+    assert!(validate_level_refusal("test", 1, UseDisposition::TooFar).is_err());
+    assert!(validate_level_refusal("test", DOOR_LEVEL, UseDisposition::Locked).is_err());
 }
 
 /// Below-level check first, then the fixture build (knight, level 100), logout, reconnect and
@@ -228,14 +229,19 @@ async fn setup(
     client: &mut oteryn_dev_client::DevClientSession,
 ) -> TestResult {
     let before = level(client).await?;
+    let probed_door = if chest.quest == "noble_armor" {
+        if before >= DOOR_LEVEL {
+            return Err(format!("{label} needs a character below level {DOOR_LEVEL} for the door probe; observed {before}").into());
+        }
+        Some(below_level_check(client, planner, chest, label, before).await?)
+    } else {
+        None
+    };
     if before >= DOOR_LEVEL {
         evidence(&format!(
             "Q01_CHECK {label} setup:fixture_level={before} (raised by an earlier row)"
         ));
         return Ok(());
-    }
-    if chest.quest == "noble_armor" {
-        below_level_check(client, planner, chest, label, before).await?;
     }
     let after = provision(clients, client, chest.tag, chest.character, "knight", label).await?;
     evidence(&format!(
@@ -246,6 +252,32 @@ async fn setup(
             "{label} fixture left the character at level {after}, below {DOOR_LEVEL}"
         )
         .into());
+    }
+    if let Some(door) = probed_door {
+        let mut passages = travel::Passages::default();
+        travel::travel_to(
+            client,
+            planner,
+            &format!("{label}:at-level"),
+            door,
+            &travel::beside(door),
+            &mut passages,
+        )
+        .await?;
+        let reply = travel::use_map_object(client, &planner.door_placement(door)?).await?;
+        if reply != UseDisposition::Committed {
+            return Err(format!(
+                "{label} level {after} same-door positive control returned {reply:?}"
+            )
+            .into());
+        }
+        let restored = travel::use_map_object(client, &planner.door_placement(door)?).await?;
+        if restored != UseDisposition::Committed {
+            return Err(format!(
+                "{label} same-door positive control could not restore door: {restored:?}"
+            )
+            .into());
+        }
     }
     Ok(())
 }
@@ -303,7 +335,7 @@ fn from_town(planner: &travel::Planner<'_>, chest: &Chest, label: &str) -> TestR
     let goal = planner.reward_goal(chest.at);
     let planned = planner.plan(TOWN, chest.at, &goal, true, &travel::Passages::default());
     verdict::Harness::global().progress("walk");
-    match planned {
+    match q03a_route(chest.row, planned)? {
         Ok(route) => {
             evidence(&format!(
                 "TRAVEL_ROUTE {label} from-town {TOWN:?} actions={}",
@@ -314,14 +346,24 @@ fn from_town(planner: &travel::Planner<'_>, chest: &Chest, label: &str) -> TestR
             }
         }
         Err(reason) => {
-            evidence(&format!("TRAVEL_ROUTE {label} from-town {TOWN:?} unreached: {reason}"));
+            evidence(&format!(
+                "TRAVEL_ROUTE {label} from-town {TOWN:?} unreached: {reason}"
+            ));
             match chest.row {
-                "Q03a" => return Err(Q03A_MISSING.into()),
                 "Q01a" | "Q01b" => {
-                    let entries = [(32558,31960,7), (32546,31969,8), (32411,32008,7),
-                        (32441,32016,8), (32453,32039,9), (32453,32040,8), (32448,32042,8)]
-                        .map(|(x,y,z)| planner.tile_evidence(TilePos { x,y,floor:-z }));
-                    for entry in &entries { evidence(&format!("TRAVEL_MAP_GAP {label} {entry}")); }
+                    let entries = [
+                        (32558, 31960, 7),
+                        (32546, 31969, 8),
+                        (32411, 32008, 7),
+                        (32441, 32016, 8),
+                        (32453, 32039, 9),
+                        (32453, 32040, 8),
+                        (32448, 32042, 8),
+                    ]
+                    .map(|(x, y, z)| planner.tile_evidence(TilePos { x, y, floor: -z }));
+                    for entry in &entries {
+                        evidence(&format!("TRAVEL_MAP_GAP {label} {entry}"));
+                    }
                     return Err(format!("MISSING served bundle has no supported route into noble_armor; confirmed full-bundle entrance waypoints: [{}]; {reason}", entries.join("; ")).into());
                 },
                 "Q01c" => {
@@ -400,4 +442,22 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, chest: &Chest) {
         row_status(&result),
         started.elapsed().as_secs_f64()
     ));
+}
+
+pub(super) fn q03a_route<T>(row: &str, plan: Result<T, String>) -> TestResult<Result<T, String>> {
+    match plan {
+        Err(reason) if row == "Q03a" => {
+            Err(format!("MISSING {row} from-town route: {reason}").into())
+        }
+        outcome => Ok(outcome),
+    }
+}
+
+#[test]
+fn q03a_admission_depends_on_current_route() {
+    let reachable = q03a_route("Q03a", Ok(()));
+    assert!(matches!(reachable, Ok(Ok(()))));
+    let unreachable = q03a_route::<()>("Q03a", Err("current planner failure".into())).map(|_| ());
+    assert_eq!(row_status(&unreachable), "MISSING");
+    assert!(unreachable.is_err_and(|error| error.to_string().contains("current planner failure")));
 }

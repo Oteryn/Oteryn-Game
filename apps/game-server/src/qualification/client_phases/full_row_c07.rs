@@ -87,16 +87,34 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }).ok_or("step=field-cast observed=no-reachable-non-pz-corridor need=compiled-field-site")?;
     walk(&mut client, world, &site_path).await?;
     let from = tile(client.world_spatial().actor_position)?;
-    let (direction, target_tile) = adjacent(world, from).ok_or("step=field-cast observed=no-adjacent-target need=walkable-target")?;
+    let (direction, target_tile) = adjacent(world, from)
+        .ok_or("step=field-cast observed=no-adjacent-target need=walkable-target")?;
     let target = actor_position(target_tile);
-    let health_before = client.actor_vitals().ok_or("step=field-step observed=no-vitals need=vitals-frame")?.health;
+    let map_target = ActorPosition {
+        floor: i16::from(target_tile.floor),
+        ..target
+    };
+    let health_before = client
+        .actor_vitals()
+        .ok_or("step=field-step observed=no-vitals need=vitals-frame")?
+        .health;
     client.take_events();
     let (disposition, cast_sequence) = use_rune(&mut client, reference, target).await?;
     if disposition != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
-        return Err(format!("step=field-cast observed={disposition:?} need=Committed-and-field-delta").into());
+        return Err(format!(
+            "step=field-cast observed={disposition:?} need=Committed-and-field-delta"
+        )
+        .into());
     }
-    let placed = field_frame(&mut client, target, field, true, cast_sequence, Duration::from_secs(5)).await?;
-    inventory_count(&mut client, reference, before_count - 1).await?;
+    let placed = wait_placement_and_debit(
+        &mut client,
+        map_target,
+        field,
+        reference,
+        before_count - 1,
+        cast_sequence,
+    )
+    .await?;
     check("attack-rune", placed);
 
     let step = client.step_retrying(direction).await?;
@@ -105,7 +123,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     let damaged = wait_health_below(&mut client, health_before).await?;
     check("field-contact-damage", damaged);
-    let expired = field_frame(&mut client, target, field, false, placed, Duration::from_secs(75)).await?;
+    let expired = field_frame(
+        &mut client,
+        map_target,
+        field,
+        false,
+        placed,
+        Duration::from_secs(75),
+    )
+    .await?;
     check("field-expiry", expired);
 
     let back = route(world, target_tile, |at| at == from).ok_or("step=post-expiry-step observed=no-return-route need=adjacent-route")?;
@@ -135,10 +161,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .ok_or("step=fresh-admission observed=no-map-snapshot need=world-map-view")?;
     let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
         .map_err(|error| format!("C07 fresh map: {error:?}"))?;
-    if map.tiles.iter().find(|tile| tile.position == target).is_some_and(|tile| {
-        tile.items.iter().any(|item| item.definition == MapDefinition::Item(field))
-    }) {
-        return Err("step=fresh-admission observed=expired-field-present need=decay-remain-retired".into());
+    if !fresh_tile_without_field(field_at(&map.tiles, map_target, field)) {
+        return Err("step=fresh-admission observed=tile-absent-or-expired-field-present need=published-tile-without-field".into());
     }
     check("fresh-admission", fresh.last_server_sequence());
     logout(&mut fresh).await
@@ -148,13 +172,37 @@ fn adjacent(world: &BundleWorld, at: TilePos) -> Option<(StepDirection, TilePos)
     [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
         .into_iter().find_map(|direction| destination(world, at, direction).filter(|next| next.floor == at.floor).map(|next| (direction, next)))
 }
-fn actor_position(at: TilePos) -> ActorPosition { ActorPosition { x: i32::from(at.x), y: i32::from(at.y), floor: -i16::from(at.floor) } }
-fn check(step: &str, sequence: u64) { evidence(&format!("C07_CHECK {step} PASS server_sequence={sequence}")); }
-fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
-    Ok(client.inventory().ok_or("C07 inventory absent")?.entries.iter().filter(|e| e.item_definition_ref == reference).map(|e| u64::from(e.count.get())).sum())
+fn actor_position(at: TilePos) -> ActorPosition {
+    ActorPosition {
+        x: i32::from(at.x),
+        y: i32::from(at.y),
+        floor: -i16::from(at.floor),
+    }
 }
-fn handle(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<oteryn_protocol_oteryn::item_view::ItemHandle> {
-    client.inventory().and_then(|v| v.entries.iter().find(|e| e.item_definition_ref == reference)).map(|e| e.handle).ok_or_else(|| "step=rune-use observed=no-carried-handle need=purchased-rune-inventory-frame".into())
+fn check(step: &str, sequence: u64) {
+    evidence(&format!("C07_CHECK {step} PASS server_sequence={sequence}"));
+}
+fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
+    Ok(rune_count(
+        client.inventory().ok_or("C07 inventory absent")?,
+        reference,
+    ))
+}
+fn handle(
+    client: &DevClientSession,
+    reference: std::num::NonZeroU32,
+) -> TestResult<oteryn_protocol_oteryn::item_view::ItemHandle> {
+    client
+        .inventory()
+        .and_then(|v| {
+            v.entries
+                .iter()
+                .find(|e| e.item_definition_ref == reference)
+        })
+        .map(|e| e.handle)
+        .ok_or_else(|| {
+            "step=rune-use observed=no-carried-handle need=purchased-rune-inventory-frame".into()
+        })
 }
 
 async fn acquire(client: &mut DevClientSession, world: &BundleWorld, npcs: &oteryn_world_bundle::npc::Table, reference: std::num::NonZeroU32) -> TestResult<u64> {
@@ -195,11 +243,36 @@ async fn use_rune(client: &mut DevClientSession, reference: std::num::NonZeroU32
     Ok((disposition, reply.server_sequence))
 }
 
-async fn inventory_count(client: &mut DevClientSession, reference: std::num::NonZeroU32, expected: u64) -> TestResult<u64> {
+async fn inventory_count(
+    client: &mut DevClientSession,
+    reference: std::num::NonZeroU32,
+    expected: u64,
+) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop { for event in client.take_events() { if let SessionEvent::Inventory(delta) = event && quantity(client, reference)? == expected { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step=inventory-delta observed={} need={expected}", quantity(client, reference)?).into()); } client.service_liveness(Duration::from_millis(20)).await?; }
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::Inventory(delta) = event
+                && rune_count(&delta.value, reference) == expected
+            {
+                return Ok(delta.server_sequence);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "step=inventory-delta observed={} need={expected}",
+                quantity(client, reference)?
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(20)).await?;
+    }
 }
-async fn later_frame(client: &mut DevClientSession) -> TestResult { client.service_liveness(Duration::from_millis(100)).await.map_err(Into::into) }
+async fn later_frame(client: &mut DevClientSession) -> TestResult {
+    client
+        .service_liveness(Duration::from_millis(100))
+        .await
+        .map_err(Into::into)
+}
 async fn wait_health_below(client: &mut DevClientSession, before: u32) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop { for event in client.take_events() { if let SessionEvent::ActorVitals(delta) = event && delta.value.health < before { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step=field-step observed=health:{} need=health-below:{before}", client.actor_vitals().map_or(0, |v| v.health)).into()); } client.service_liveness(Duration::from_millis(20)).await?; }
@@ -207,7 +280,28 @@ async fn wait_health_below(client: &mut DevClientSession, before: u32) -> TestRe
 async fn field_frame(client: &mut DevClientSession, at: ActorPosition, reference: std::num::NonZeroU32, present: bool, after: u64, wait: Duration) -> TestResult<u64> {
     let deadline = tokio::time::Instant::now() + wait;
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    loop { for event in client.take_events() { if let SessionEvent::WorldMap(delta) = event && delta.server_sequence > after && let Some(tile) = delta.value.tiles.iter().find(|t| t.position == at) && tile.items.iter().any(|item| item.definition == MapDefinition::Item(reference)) == present { return Ok(delta.server_sequence); } } if tokio::time::Instant::now() >= deadline { return Err(format!("step={} observed=missing-map-delta tile={at:?} need=field-{present}", if present {"field-cast"} else {"field-expiry"}).into()); } client.service_liveness(Duration::from_millis(25)).await?; }
+    loop {
+        for event in client.take_events() {
+            if let SessionEvent::WorldMap(delta) = event
+                && delta.server_sequence > after
+                && field_at(&delta.value.tiles, at, reference) == Some(present)
+            {
+                return Ok(delta.server_sequence);
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "step={} observed=missing-map-delta tile={at:?} need=field-{present}",
+                if present {
+                    "field-cast"
+                } else {
+                    "field-expiry"
+                }
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
 }
 
 async fn logout(client: &mut DevClientSession) -> TestResult {
@@ -219,5 +313,104 @@ async fn logout(client: &mut DevClientSession) -> TestResult {
 mod tests {
     use super::*;
     #[test]
-    fn field_ids_resolve_from_the_production_item_index() -> TestResult { let index = provisioning::item_index()?; let rune = provisioning::item_reference(&index, RUNE_ID)?; let field = provisioning::item_reference(&index, FIELD_ID)?; assert_ne!(rune, field); Ok(()) }
+    fn field_ids_resolve_from_the_production_item_index() -> TestResult {
+        let index = provisioning::item_index()?;
+        let rune = provisioning::item_reference(&index, RUNE_ID)?;
+        let field = provisioning::item_reference(&index, FIELD_ID)?;
+        assert_ne!(rune, field);
+        Ok(())
+    }
+}
+
+fn field_at(
+    tiles: &[oteryn_protocol_oteryn::world_map::MapTile],
+    at: ActorPosition,
+    reference: std::num::NonZeroU32,
+) -> Option<bool> {
+    tiles.iter().find(|tile| tile.position == at).map(|tile| {
+        tile.items
+            .iter()
+            .any(|item| item.definition == MapDefinition::Item(reference))
+    })
+}
+
+fn fresh_tile_without_field(has_field: Option<bool>) -> bool {
+    has_field == Some(false)
+}
+
+#[test]
+fn field_expiry_requires_a_published_target_tile() {
+    assert!(!fresh_tile_without_field(None));
+    assert!(!fresh_tile_without_field(Some(true)));
+    assert!(fresh_tile_without_field(Some(false)));
+}
+
+async fn wait_placement_and_debit(
+    client: &mut DevClientSession,
+    at: ActorPosition,
+    field: std::num::NonZeroU32,
+    rune: std::num::NonZeroU32,
+    expected: u64,
+    after: u64,
+) -> TestResult<u64> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let mut frames = [None; 2];
+    loop {
+        let relevant = client
+            .take_events()
+            .into_iter()
+            .filter_map(|event| match event {
+                SessionEvent::WorldMap(delta)
+                    if field_at(&delta.value.tiles, at, field) == Some(true) =>
+                {
+                    Some((true, delta.server_sequence))
+                }
+                SessionEvent::Inventory(delta) if rune_count(&delta.value, rune) == expected => {
+                    Some((false, delta.server_sequence))
+                }
+                _ => None,
+            });
+        cast_frames(relevant, after, &mut frames);
+        if let [Some(_), Some(placed)] = frames {
+            return Ok(placed);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!(
+                "step=field-cast observed={frames:?} need=map-placement-and-exact-rune-debit"
+            )
+            .into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+}
+
+fn rune_count(
+    inventory: &oteryn_dev_client::CharacterInventory,
+    rune: std::num::NonZeroU32,
+) -> u64 {
+    inventory
+        .entries
+        .iter()
+        .filter(|entry| entry.item_definition_ref == rune)
+        .map(|entry| u64::from(entry.count.get()))
+        .sum()
+}
+
+fn cast_frames(
+    events: impl IntoIterator<Item = (bool, u64)>,
+    after: u64,
+    frames: &mut [Option<u64>; 2],
+) {
+    for (is_map, sequence) in events {
+        if sequence > after {
+            frames[usize::from(is_map)] = Some(sequence);
+        }
+    }
+}
+
+#[test]
+fn field_cast_preserves_both_deltas_after_the_cast() {
+    let mut frames = [None; 2];
+    cast_frames([(false, 10), (true, 12), (false, 13)], 11, &mut frames);
+    assert_eq!(frames, [Some(13), Some(12)]);
 }

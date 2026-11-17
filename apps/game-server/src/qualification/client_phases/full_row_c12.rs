@@ -15,7 +15,7 @@
 //! 5. `unequipped-cast`: CAST again with the item only carried; require the measured mean to fall
 //!    below the augmented mean (a carried item grants no augment).
 //! 6. `fresh-admission`: re-equip, LOGOUT, admit afresh, require the right-hand item to persist and
-//!    CAST again; the pooled augmented mean must exceed the baseline mean.
+//!    CAST again; the fresh-session augmented mean must exceed the baseline mean.
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
@@ -564,16 +564,31 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         return Err("fresh admission lost the right-hand item".into());
     }
     let replay = samples(&hunt, &mut fresh, spell).await?;
-    let pooled: Vec<u64> = augmented.iter().chain(&replay).copied().collect();
-    if mean(&pooled) <= mean(&baseline) {
-        return Err(format!("augment not reconstructed: baseline={baseline:?} pooled-augmented={pooled:?}").into());
+    if !fresh_augment_present(&baseline, &replay) {
+        return Err(format!(
+            "augment not reconstructed: baseline={baseline:?} fresh-augmented={replay:?}"
+        )
+        .into());
     }
-    row.pass("fresh-admission", (&replay, mean(&pooled) / mean(&baseline)));
+    row.pass(
+        "fresh-admission",
+        (&replay, mean(&replay) / mean(&baseline)),
+    );
     logout(&mut fresh).await
+}
+
+fn fresh_augment_present(baseline: &[u64], fresh: &[u64]) -> bool {
+    mean(fresh) > mean(baseline)
 }
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn fresh_admission_requires_its_own_damage_gain() {
+        assert!(!super::fresh_augment_present(&[10, 10], &[10, 10]));
+        assert!(super::fresh_augment_present(&[10, 10], &[12, 12]));
+    }
+
     use super::*;
 
     #[test]

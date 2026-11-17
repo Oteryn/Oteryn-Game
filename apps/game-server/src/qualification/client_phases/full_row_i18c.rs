@@ -206,48 +206,13 @@ fn reference(id: u32) -> TestResult<std::num::NonZeroU32> {
     provisioning::item_reference(&index, id)
 }
 
+use super::full_row_i18a::{browse_entry, browse_open, drop_first, here, require_browse};
 use oteryn_dev_client::{ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome};
-use oteryn_protocol_oteryn::browse_field as browse;
 use oteryn_protocol_oteryn::container_tree as tree;
-use oteryn_protocol_oteryn::item_view::WorldTilePosition;
 
 fn view_of(selected: &[u32], payload: &[u8]) -> TestResult<tree::ContainerViews> {
     selected_container_views(selected, payload)
         .map_err(|error| format!("step=views-decode observed={error:?}").into())
-}
-
-async fn browse_open(
-    client: &mut DevClientSession,
-    at: WorldTilePosition,
-) -> TestResult<(tree::ContainerViewOutcome, Option<tree::ContainerView>)> {
-    let payload =
-        browse::encode_browse_field_intent(&browse::BrowseFieldIntent::Open { position: at })
-            .map_err(|error| format!("step=browse-encode observed={error:?}"))?;
-    let reply = client
-        .session_mut()
-        .gated_command(
-            browse::CAPABILITY_BROWSE_FIELD_V1,
-            browse::COMMAND_TYPE_BROWSE_FIELD_INTENT,
-            &payload,
-        )
-        .await?;
-    let outcome = tree::decode_container_view_result(&reply.payload)
-        .map_err(|error| format!("step=browse-reply observed={error:?}"))?;
-    if outcome != tree::ContainerViewOutcome::Opened {
-        return Ok((outcome, None));
-    }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(
-            tree::STATE_DOMAIN_CONTAINER_VIEWS,
-            tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
-        )
-        .await?;
-    let view = view_of(client.selected_capabilities(), &delta.payload)?
-        .views
-        .into_iter()
-        .find(|view| view.browse.is_some());
-    Ok((outcome, view))
 }
 
 async fn view_intent(
@@ -276,66 +241,6 @@ async fn view_intent(
     Ok((outcome, view_of(client.selected_capabilities(), &delta.payload)?.views))
 }
 
-fn here(client: &DevClientSession) -> WorldTilePosition {
-    let at = client.world_spatial().actor_position;
-    WorldTilePosition {
-        x: at.x,
-        y: at.y,
-        floor: -at.floor,
-    }
-}
-
-fn ground(client: &DevClientSession) -> WorldTilePosition {
-    let at = client.world_spatial().actor_position;
-    WorldTilePosition {
-        x: at.x,
-        y: at.y,
-        floor: at.floor,
-    }
-}
-
-/// Drops the first backpack entry on the actor's own tile and returns its definition and count.
-async fn drop_first(
-    client: &mut DevClientSession,
-    prefer: Option<std::num::NonZeroU32>,
-) -> TestResult<(std::num::NonZeroU32, std::num::NonZeroU32)> {
-    let item = client
-        .inventory()
-        .and_then(|inventory| {
-            prefer
-                .and_then(|want| {
-                    inventory
-                        .entries
-                        .iter()
-                        .find(|item| item.item_definition_ref == want)
-                })
-                .or(inventory.entries.first())
-        })
-        .copied()
-        .ok_or("step=drop observed=no-backpack-item;needed:player-acquired-item")?;
-    let at = ground(client);
-    let before = quantity(client, item.item_definition_ref)?;
-    client.take_events();
-    let moved = client
-        .move_item(&ItemMoveIntent {
-            source: item.handle,
-            destination: ItemMoveDestination::Ground(at),
-        })
-        .await?;
-    if moved.outcome != ItemMoveOutcome::Moved {
-        return Err(format!("step=drop observed={:?};needed=Moved", moved.outcome).into());
-    }
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    while quantity(client, item.item_definition_ref)? >= before {
-        client.take_events();
-        if tokio::time::Instant::now() >= deadline {
-            return Err("step=drop observed=no-inventory-debit".into());
-        }
-        client.service_liveness(Duration::from_millis(50)).await?;
-    }
-    Ok((item.item_definition_ref, item.count))
-}
-
 /// Moves a browse entry into the main backpack and waits for the inventory credit.
 async fn take_entry(
     client: &mut DevClientSession,
@@ -361,29 +266,25 @@ async fn take_entry(
     Ok(())
 }
 
-fn has(
-    view: &tree::ContainerView,
-    definition: std::num::NonZeroU32,
-) -> Option<oteryn_protocol_oteryn::item_view::ItemEntry> {
-    view.entries
-        .iter()
-        .find(|entry| entry.item_definition_ref == definition)
-        .copied()
-}
-
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let world = open_world(clients).await?;
     let mut client = connect_world(clients, 0xf3).await?;
     let bag = reference(2853)?;
     acquire(&mut client, world, 2853, 1)
         .await
-        .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step=buy-bag observed={error};needed:player-gold-and-reachable-seller"), error) })?;
+        .map_err(|error| {
+            verdict::record_error(verdict::IndexedError::as_error(&error));
+            verdict::context(
+                format!("step=buy-bag observed={error};needed:player-gold-and-reachable-seller"),
+                error,
+            )
+        })?;
     let at = here(&client);
-    drop_first(&mut client, Some(bag)).await?;
+    let dropped = drop_first(&mut client, Some(bag)).await?;
     let (outcome, view) = browse_open(&mut client, at).await?;
-    let browse_view =
-        view.ok_or_else(|| format!("step=browse observed={outcome:?};needed=Opened-with-view"))?;
-    let entry = has(&browse_view, bag).ok_or("step=browse observed=bag-not-listed")?;
+    let browse_view = require_browse(at, outcome, view)?;
+    let entry = browse_entry(&browse_view.entries, bag, dropped.handle)
+        .ok_or("step=browse observed=dropped-bag-not-listed")?;
     let (opened, views) = view_intent(
         &mut client,
         tree::ContainerViewIntent::Open {
@@ -422,7 +323,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
     let entry = restored
-        .and_then(|view| has(view, bag))
+        .and_then(|view| browse_entry(&view.entries, bag, dropped.handle))
         .ok_or("step=up observed=bag-not-listed-in-restored-view")?;
     take_entry(&mut client, &entry).await?;
     logout(&mut client).await?;

@@ -12,7 +12,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk"
+        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "sweep"
     )
     .then_some((session, profile))
 }
@@ -349,12 +349,12 @@ async fn prepare_build(
         proof,
         &current,
         qualification_build::QualificationBuildSpec {
-            vocation: if profile == "explorer" {
+            vocation: if matches!(profile, "explorer" | "sweep") {
                 "knight"
             } else {
                 profile
             },
-            level: 100,
+            level: if profile == "sweep" { 1000 } else { 100 },
             context,
             xp_occurrence: uuid_v7()?,
             build_occurrence: uuid_v7()?,
@@ -545,9 +545,10 @@ mod tests {
                             .join(format!("qualification-{}.sock", uuid_text(&session)));
                         let result = tokio::time::timeout(Duration::from_secs(10), async {
                             let listener = UnixListener::bind(&path)?;
-                            for profile in
-                                ["knight", "druid", "paladin", "sorcerer", "explorer", "monk"]
-                            {
+                            for profile in [
+                                "knight", "druid", "paladin", "sorcerer", "explorer", "monk",
+                                "sweep",
+                            ] {
                                 let script = Path::new(env!("CARGO_MANIFEST_DIR"))
                                     .join("../../tools/qualification/node_boot/provision.py");
                                 let socket = path.clone();
@@ -733,7 +734,9 @@ mod tests {
     #[test]
     fn qualification_request_accepts_only_named_profiles_and_v7_sessions() {
         let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
-        for profile in ["explorer", "knight", "paladin", "sorcerer", "druid", "monk"] {
+        for profile in [
+            "explorer", "knight", "paladin", "sorcerer", "druid", "monk", "sweep",
+        ] {
             assert!(request(format!("qualify {id} {profile}\n").as_bytes()).is_some());
         }
         for text in [

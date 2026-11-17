@@ -18,6 +18,7 @@ use std::collections::HashMap;
 
 const QUEST_LEVEL: u32 = 250;
 const KESAR: &str = "oteryn:npc.kesar_the_younger_day";
+const ELDORAN: &str = "oteryn:npc.eldoran_the_ambitious";
 const WARLOCK: &str = "oteryn:creature.court_warlock";
 const REWARD_ITEM: u32 = 52824;
 const BOAT_REFUSAL: &str = "This small fishing boat is tied up firmly.";
@@ -302,21 +303,74 @@ async fn warlock(
         &mut passages,
     )
     .await?;
-    client_hunt::hunt(client).await?;
+    client_hunt::hunt_named(client, Some("Court Warlock")).await?;
     Ok(format!("killed at {}", show(point)))
 }
 
-/// The final reward must be carried.
-fn reward(client: &DevClientSession) -> TestResult<String> {
+/// Claim through Eldoran's authored post-Warlock dialogue and await the inventory grant.
+async fn reward(
+    client: &mut DevClientSession,
+    planner: &travel::Planner<'_>,
+    npcs: &oteryn_world_bundle::npc::Table,
+) -> TestResult<String> {
+    let placement = npcs
+        .npcs
+        .iter()
+        .find(|npc| npc.key == ELDORAN)
+        .and_then(|npc| npc.placements.first())
+        .ok_or("Eldoran has no authored placement")?;
+    let spot = TilePos {
+        x: placement.x,
+        y: placement.y,
+        floor: placement.floor,
+    };
+    let mut passages = travel::Passages::default();
+    travel::travel_to(
+        client,
+        planner,
+        "Q02:eldoran",
+        spot,
+        &travel::beside(spot),
+        &mut passages,
+    )
+    .await?;
+    let actor = client
+        .world_entities()
+        .and_then(|entities| {
+            entities.iter().find(|e| {
+                e.kind == EntityKind::Npc
+                    && e.display_name.is_some_and(|name| {
+                        name.as_str()
+                            .is_ok_and(|name| name.eq_ignore_ascii_case("Eldoran the Ambitious"))
+                    })
+                    && e.position
+                        .x
+                        .abs_diff(i32::from(spot.x))
+                        .max(e.position.y.abs_diff(i32::from(spot.y)))
+                        <= 3
+                    && e.position.floor == -i16::from(spot.floor)
+            })
+        })
+        .map(|entity| entity.entity)
+        .ok_or("Eldoran is missing from the reached entity view")?;
     let reference = provisioning::item_reference(&provisioning::item_index()?, REWARD_ITEM)?;
-    let held = full_row_q01::carried(client, reference);
-    if held == 0 {
-        return Err(format!(
-            "reward item {REWARD_ITEM} (The Broken Sword of Eldoran Etzel) is not in the backpack"
-        )
-        .into());
+    let before = full_row_q01::carried(client, reference);
+    travel::converse(client, actor, "hi").await?;
+    let response = travel::converse(client, actor, "news").await?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        let held = full_row_q01::carried(client, reference);
+        if fresh_reward(before, held) {
+            return Ok(format!(
+                "item={REWARD_ITEM} carried={before}->{held} reply={response:?}"
+            ));
+        }
+        if tokio::time::Instant::now() >= deadline || held > before {
+            return Err(format!("reward item {REWARD_ITEM} expected one new grant; carried={before}->{held}; reply={response:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
     }
-    Ok(format!("item={REWARD_ITEM} carried={held}"))
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -373,6 +427,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         .await,
     );
     row.check("court_warlock", warlock(c, planner, &metadata.spawns).await);
+    row.check("reward", reward(c, planner, &metadata.npcs).await);
     row.check(
         "boat_return",
         crossed(
@@ -397,7 +452,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .await,
     );
-    row.check("reward", reward(c));
     let _ = client.session_mut().logout().await;
     if row.failed > 0 {
         return Err(format!("{} Q02 step(s) failed", row.failed).into());
@@ -416,4 +470,15 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64()
     ));
+}
+
+fn fresh_reward(before: usize, after: usize) -> bool {
+    before.checked_add(1) == Some(after)
+}
+
+#[test]
+fn quest_reward_must_be_newly_granted() {
+    assert!(!fresh_reward(1, 1));
+    assert!(fresh_reward(1, 2));
+    assert!(!fresh_reward(1, 3));
 }
