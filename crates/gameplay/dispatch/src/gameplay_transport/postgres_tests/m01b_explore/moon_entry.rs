@@ -75,7 +75,7 @@ pub(super) async fn exercise(
     let actor = admitted.runtime_actor.ok_or("moon actor")?;
     // Same administrator arrangement as worldchg_grimvale; all decisions are then
     // created/read by the existing durable World owner and native commands stay fenced.
-    for (epoch, month, day) in [(0_i64, 6_i32, 12_i32), (1, 6, 13), (2, 6, 14), (3, 7, 13)] {
+    for (epoch, month, day) in [(0_i64, 6_i32, 11_i32), (1, 6, 13), (2, 6, 15), (3, 7, 13)] {
         sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,make_timestamptz(2031,$4,$5,12,0,0,'UTC'),$6)")
             .bind(admitted.world_id.as_bytes().as_slice()).bind(epoch).bind([1_u8;32].as_slice()).bind(month).bind(day).bind(format!("2031-{month:02}")).execute(&h.pool).await?;
     }

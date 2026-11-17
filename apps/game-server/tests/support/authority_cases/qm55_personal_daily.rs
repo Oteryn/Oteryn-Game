@@ -45,7 +45,7 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
     const COMPLETE: &str = "oteryn:quest-transition/qm55/personal-daily-complete";
     let world = f::scope()?.world_id();
     for epoch in [1_i64, 2] {
-        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2031-06-12T12:00:00Z','2031-06')")
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2,$3,'map-1',$3,$3,$3,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2031-06-11T12:00:00Z','2031-06')")
             .bind(world.as_bytes().as_slice()).bind(epoch).bind([7_u8;32].as_slice()).execute(&h.pool).await?;
     }
     let reset = shared_world_progress::save_event_restart_key(QUEST);

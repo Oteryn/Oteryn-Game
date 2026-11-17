@@ -27,6 +27,8 @@ pub(super) async fn exercise(
         .ok_or("native policies")?
         .install_companion_policies(&mut *owner.runtime.lock().await)
         .map_err(debug)?;
+    // The bestiary kill settles only for a session bound to its Character progression.
+    owner.admit_progression_session(admitted).await;
     assert!(owner.premium_coordinator.is_none());
     let production = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
         .map_err(debug)?;

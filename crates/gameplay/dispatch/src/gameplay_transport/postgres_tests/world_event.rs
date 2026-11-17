@@ -123,7 +123,7 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_dea
                 let clock_sql = if clock == Some("QworldGrimvaleActive") {
                     "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-13 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"
                 } else {
-                    "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-12 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"
+                    "CREATE FUNCTION seasonal_fixture_clock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.activated_at=TIMESTAMPTZ '2026-10-11 06:00 Europe/Berlin'; NEW.reset_month=to_char((NEW.activated_at AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'); RETURN NEW; END $$"
                 };
                 sqlx::query(clock_sql).execute(&h.pool).await?;
             } else if clock == Some("Christmas") {
