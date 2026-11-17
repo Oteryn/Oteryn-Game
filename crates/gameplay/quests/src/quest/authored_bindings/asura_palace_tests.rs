@@ -68,6 +68,18 @@ fn engenc_asura_chambers_and_orchid_require_owned_defenders_before_each_door() -
         .transition("oteryn:quest-callback/engenc/asura/s5/entry")
         .ok_or("orchid entry")?;
     assert!(catalogue.evaluate(orchid, &state, 0).is_err());
+    let claim = |name: &str, order: &str| {
+        catalogue
+            .transition(&format!(
+                "oteryn:quest-callback/engenc/asura/s6/{name}/{order}"
+            ))
+            .ok_or("treasure")
+    };
+    assert!(
+        catalogue
+            .evaluate(claim("sapphires", "first")?, &state, 0)
+            .is_err()
+    );
     // The Flaming Orchid room (s5) holds one boss; the chambers hold two defenders each.
     for (stage, kills) in [("s2", 2), ("s3", 2), ("s4", 2), ("s5", 1)] {
         if stage == "s5" {
@@ -124,6 +136,37 @@ fn engenc_asura_chambers_and_orchid_require_owned_defenders_before_each_door() -
             state.insert(change.track, change.after);
         }
         assert!(catalogue.evaluate(door, &state, 0).is_err());
+    }
+    // Crystal 201189f8 the_lament_asuras/actions_doors.lua:2,12 gates only the Orchid door.
+    for stage in &quest.stages {
+        if let Trigger::MapUse { callback } = &stage.trigger {
+            let level = (stage.key == "s5-door").then_some(250);
+            assert_eq!(callback.minimum_level, level, "{}", stage.key);
+        }
+    }
+    // Each top-floor container pays once; whichever is claimed second completes the quest.
+    for (first, second) in [("sapphires", "rubies"), ("rubies", "sapphires")] {
+        let mut state = state.clone();
+        for (name, order, completes) in [(first, "first", false), (second, "last", true)] {
+            // Before any claim the "last" variant is refused; after one, the "first" one is.
+            let wrong = if completes { "first" } else { "last" };
+            assert!(catalogue.evaluate(claim(name, wrong)?, &state, 0).is_err());
+            let transition = claim(name, order)?;
+            let changes = catalogue
+                .evaluate(transition, &state, 0)
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(catalogue.completes_after(transition, &changes), completes);
+            for change in changes {
+                state.insert(change.track, change.after);
+            }
+            assert!(catalogue.evaluate(transition, &state, 0).is_err());
+            assert!(
+                catalogue
+                    .evaluate(claim(name, "first")?, &state, 0)
+                    .is_err()
+            );
+            assert!(catalogue.evaluate(claim(name, "last")?, &state, 0).is_err());
+        }
     }
     Ok(())
 }

@@ -481,27 +481,44 @@ async fn chamber(
             next_command,
         )
         .await?;
-        let map = owner.bundle_map().ok_or("map")?;
-        let mut placement = map.overlay.base().digest().to_vec();
-        placement.extend_from_slice(&key.to_be_bytes());
-        let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(
-            &oteryn_protocol_oteryn::world_object::WorldObjectTarget {
-                placement,
-                expected_revision: map.facts.object_revision(key),
-            },
-        )
-        .map_err(debug)?;
-        let reply =
-            super::quest_world_callbacks::wire(owner, admitted, next_command, 2, payload).await?;
-        next_command += 1;
-        assert_eq!(
-            oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
-            if index + 1 < encounter.monsters.len() {
-                oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
-            } else {
-                oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+        // The Orchid door also needs level 250 (Crystal 201189f8 actions_doors.lua:2,12):
+        // the last defender down, a durable level below it is refused, then admitted at it.
+        let minimum = door.minimum_level.map(i64::from);
+        let levels = match minimum {
+            Some(level) if index + 1 == encounter.monsters.len() => vec![Some(level - 1), Some(level)],
+            _ => vec![None],
+        };
+        for level in levels {
+            if let Some(level) = level {
+                sqlx::query("UPDATE game_character_progression_state SET level=$2 WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(level)
+                    .execute(&h.pool)
+                    .await?;
             }
-        );
+            let map = owner.bundle_map().ok_or("map")?;
+            let mut placement = map.overlay.base().digest().to_vec();
+            placement.extend_from_slice(&key.to_be_bytes());
+            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(
+                &oteryn_protocol_oteryn::world_object::WorldObjectTarget {
+                    placement,
+                    expected_revision: map.facts.object_revision(key),
+                },
+            )
+            .map_err(debug)?;
+            let reply =
+                super::quest_world_callbacks::wire(owner, admitted, next_command, 2, payload)
+                    .await?;
+            next_command += 1;
+            assert_eq!(
+                oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,
+                if index + 1 < encounter.monsters.len() || level < minimum {
+                    oteryn_protocol_oteryn::world_object::UseDisposition::Rejected
+                } else {
+                    oteryn_protocol_oteryn::world_object::UseDisposition::Committed
+                }
+            );
+        }
     }
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1",

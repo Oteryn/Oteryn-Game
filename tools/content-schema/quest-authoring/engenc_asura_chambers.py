@@ -134,6 +134,9 @@ def attach_chambers(document, root):
             "facing": None,
             "magic": None,
         }
+        if "door_minimum_level" in chamber:
+            # Crystal 201189f8 the_lament_asuras/actions_doors.lua:2,12 (level >= 250).
+            door["minimum_level"] = chamber["door_minimum_level"]
         quest["stages"].extend(
             [
                 {
@@ -164,5 +167,48 @@ def attach_chambers(document, root):
                 },
             ]
         )
+    attach_treasure(quest, json.loads((root / INPUT).read_text())["treasure"], callback)
     quest["sources"] = list(dict.fromkeys(quest["sources"]))
     return document
+
+
+def attach_treasure(quest, treasure, callback):
+    """One-shot top-floor chest and sarcophagus; the second one claimed completes the quest.
+
+    TibiaWiki Asura_Palace_Quest/Spoiler: three Small Sapphires in a chest (west) and three
+    Small Rubies in a sarcophagus (east), both on the palace's highest floor. The donor has
+    no such reward entry, so the canonical recipe orders them after the encounter.
+    """
+    stage = treasure["stage"]
+    after = f"{BASE}/{treasure['after']}/opened"
+    tracks = {c["name"]: f"{BASE}/{stage}/{c['name']}" for c in treasure["containers"]}
+    for key in tracks.values():
+        quest["tracks"].append({"key": key, "initial": 0, "minimum": 0, "maximum": 1})
+    for container in treasure["containers"]:
+        name = container["name"]
+        (other,) = [t for n, t in tracks.items() if n != name]
+        for order, claimed in [("first", 0), ("last", 1)]:
+            cb = callback(
+                f"oteryn:quest-callback/engenc/asura/{stage}/{name}/{order}",
+                container["position"],
+                [
+                    {"track": after, "minimum": 1, "maximum": 1, "set": 1, "preserve": True},
+                    {"track": other, "minimum": claimed, "maximum": claimed, "set": claimed, "preserve": True},
+                    {"track": tracks[name], "minimum": 0, "maximum": 0, "set": 1},
+                ],
+            )
+            if cb["selector"]["appearance"] != container["appearance"]:
+                raise ValueError("Asura treasure container changed")
+            cb["effects"] = {
+                "transform": None,
+                "facing": None,
+                "magic": None,
+                "item_reward": {"item": container["item"], "count": container["count"]},
+            }
+            quest["stages"].append(
+                {
+                    "key": f"{stage}-{name}-{order}",
+                    "completes": order == "last",
+                    "trigger": {"kind": "map_use", "callback": cb},
+                }
+            )

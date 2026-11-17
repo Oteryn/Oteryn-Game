@@ -22,8 +22,14 @@ pub(super) fn admitted(callback: &Callback) -> bool {
         .as_array()
         .is_some_and(|stages| {
             stages.iter().any(|stage| {
-                serde_json::from_value::<Callback>(stage["trigger"]["callback"].clone())
-                    .is_ok_and(|bound| bound == *callback)
+                // Binding attach copies the stage's completion onto its callback; only a
+                // completing stage admits a completing callback.
+                serde_json::from_value::<Callback>(stage["trigger"]["callback"].clone()).is_ok_and(
+                    |mut bound| {
+                        bound.completes = callback.completes && stage["completes"] == true;
+                        bound == *callback
+                    },
+                )
             })
         })
 }
@@ -51,12 +57,18 @@ mod tests {
             {
                 continue;
             }
+            callback.completes = stage["completes"] == true;
             assert!(admitted(&callback));
             count += 1;
+            if !callback.completes {
+                callback.completes = true;
+                assert!(!admitted(&callback));
+                callback.completes = false;
+            }
             callback.selector.position.as_mut().ok_or("position")?.x += 1;
             assert!(!admitted(&callback));
         }
-        assert_eq!(count, 8);
+        assert_eq!(count, 12);
         Ok(())
     }
 }
