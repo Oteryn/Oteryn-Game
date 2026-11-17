@@ -36,6 +36,7 @@ pub mod scene;
 pub mod screenshots;
 pub mod spell;
 mod support_delivery;
+pub mod traffic;
 pub mod updater;
 #[path = "features/local-web-links/mod.rs"]
 pub mod web_links;
@@ -153,6 +154,7 @@ impl ClientBootstrap {
         link.configure_coin_shop(self.native_login.clone(), admitted.character_id());
         link.party_own_character(admitted.character_name());
         link.house_world(admitted.world_id());
+        link.set_traffic(admitted.traffic());
         if admitted.training_requested() {
             let remaining = self
                 .native_login

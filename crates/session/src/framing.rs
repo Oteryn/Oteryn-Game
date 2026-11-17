@@ -86,47 +86,6 @@ where
     }
 }
 
-/// Frames and bytes (length prefix included) one direction carried since the process started.
-struct Counter {
-    frames: std::sync::atomic::AtomicU64,
-    bytes: std::sync::atomic::AtomicU64,
-}
-static SENT: Counter = Counter::new();
-static RECEIVED: Counter = Counter::new();
-impl Counter {
-    const fn new() -> Self {
-        Self {
-            frames: std::sync::atomic::AtomicU64::new(0),
-            bytes: std::sync::atomic::AtomicU64::new(0),
-        }
-    }
-    fn read(&self) -> FrameCount {
-        use std::sync::atomic::Ordering::Relaxed;
-        FrameCount {
-            frames: self.frames.load(Relaxed),
-            bytes: self.bytes.load(Relaxed),
-        }
-    }
-}
-fn count(counter: &Counter, body: usize) {
-    use std::sync::atomic::Ordering::Relaxed;
-    counter.frames.fetch_add(1, Relaxed);
-    counter.bytes.fetch_add(body as u64 + 4, Relaxed);
-}
-
-/// Frames and bytes one direction carried, for diagnostics.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct FrameCount {
-    pub frames: u64,
-    pub bytes: u64,
-}
-/// Every frame this process wrote and read through [`write_frame`] and [`read_frame`] (all
-/// session traffic passes them): `(sent, received)`. Counted only after a whole frame succeeds.
-#[must_use]
-pub fn frame_traffic() -> (FrameCount, FrameCount) {
-    (SENT.read(), RECEIVED.read())
-}
-
 /// Writes one length-prefixed frame. Generic over the stream type (client or server side of any
 /// transport) so a fake peer can frame with the exact same code the session uses.
 pub async fn write_frame<S: AsyncWrite + Unpin>(
@@ -139,7 +98,6 @@ pub async fn write_frame<S: AsyncWrite + Unpin>(
     stream.write_all(&length.to_prefix()).await?;
     stream.write_all(body).await?;
     stream.flush().await?;
-    count(&SENT, body.len());
     Ok(())
 }
 
@@ -167,7 +125,6 @@ pub(super) async fn read_frame_body<S: AsyncRead + Unpin>(
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
-    count(&RECEIVED, body.len());
     Ok(body)
 }
 

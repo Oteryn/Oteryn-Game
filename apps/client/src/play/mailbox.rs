@@ -123,6 +123,8 @@ pub(super) struct Mailbox {
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
     pub(super) shared_frontend: bool,
     pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
+    /// The admitted session's byte counters; `None` before admission.
+    pub(super) traffic: Option<std::sync::Arc<crate::traffic::Traffic>>,
     pub(super) hud_resource: super::resource_hud::MailboxState,
     pub(super) local_preferences: crate::play::ReferencePreferences,
     pub(super) ui_sounds: Vec<super::UiSound>,

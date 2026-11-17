@@ -96,8 +96,8 @@ pub(super) struct Snapshot {
     pub ui_scale: f32,
     pub adapter: Option<String>,
     pub memory: Option<u64>,
-    /// Session frames `(sent, received)` since the client started.
-    pub traffic: (oteryn_session::FrameCount, oteryn_session::FrameCount),
+    /// Session bytes `(sent, received)` since admission.
+    pub traffic: Option<(u64, u64)>,
     pub counters: crate::crash_report::LogCounters,
     pub log_level: &'static str,
     pub last_crash: Option<String>,
@@ -124,14 +124,13 @@ impl Snapshot {
                 age.as_secs()
             ));
         }
-        let (sent, received) = self.traffic;
-        lines.push(format!(
-            "Traffic out {} frames {:.1} KiB  in {} frames {:.1} KiB",
-            sent.frames,
-            sent.bytes as f64 / 1024.,
-            received.frames,
-            received.bytes as f64 / 1024.
-        ));
+        if let Some((sent, received)) = self.traffic {
+            lines.push(format!(
+                "Traffic out {:.1} KiB  in {:.1} KiB",
+                sent as f64 / 1024.,
+                received as f64 / 1024.
+            ));
+        }
         if let Some(channel) = &self.channel {
             lines.push(channel.clone());
         }
@@ -278,7 +277,7 @@ pub(super) fn refresh(
         ui_scale: scale.map_or(1., |scale| scale.0),
         adapter: adapter.clone(),
         memory: resident_memory(),
-        traffic: oteryn_session::frame_traffic(),
+        traffic: play.and_then(|play| play.link.traffic_bytes()),
         counters: crate::crash_report::log_counters(),
         log_level: owner.settings.preferences.diagnostics.level_name(),
         last_crash: last_crash.message(),
