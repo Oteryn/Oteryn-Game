@@ -10,6 +10,9 @@
 # SEAM stage against its own bound port.
 set -Eeuo pipefail
 umask 077
+export NODE_BOOT_SKIP_BASIC=1
+export NODE_BOOT_SKIP_NEWHAVEN=1
+export NODE_BOOT_E2E_ONLY=core
 
 readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 readonly TOPOLOGY_REVISION=wp5-node-boot-v1
@@ -1241,6 +1244,7 @@ stage node_assigned_ready operator_setup -- node_assigned_ready
 stage control_socket_peer node_assigned_ready -- control_socket_peer
 stage character_bootstrap node_assigned_ready -- character_bootstrap
 stage "$seam_stage_name" character_bootstrap -- seam_stages
+{ echo DBG_NODE after_seam; grep -aE "qualification_fixture|party_refused|visibility_refresh_refused|kill_reward_corpse|corpse_unbound|level=(warn|error) module=node" "$node_log" | grep -viE "password|postgres://|secret|token" | head -80 | sed "s/^/DBG_NODE /"; } >&2 || true
 fi
 if [[ "$NODE_BOOT_KEEP_STACK$NODE_BOOT_REUSE_STACK" == 00 ]]; then
 stage graceful_shutdown node_assigned_ready -- graceful_shutdown
