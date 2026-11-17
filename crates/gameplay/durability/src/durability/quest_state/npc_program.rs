@@ -290,7 +290,10 @@ fn evaluate_source(
         hot_cuisine_m42::plan(source, &input)
     } else if inventory.is_some() && marlin_trophy::owns(request) {
         source.plan_marlin_items(&input)
-    } else if inventory.is_some() && fathers_burden::owns(request) {
+    } else if inventory.is_some()
+        && (fathers_burden::owns(request)
+            || (request.npc == "oteryn:npc.tereban" && request.transition_key.is_empty()))
+    {
         source.plan_father_items(&input)
     } else if inventory.is_some() && source.outfit_exchange_keys(&request.npc).is_some() {
         source.plan_outfit_exchange(&input)
