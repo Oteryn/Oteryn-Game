@@ -1351,7 +1351,7 @@ SQL
   pvp_await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   pvp_await_log "event=readiness .*ready=true" 60
   local bound_address
-  bound_address="$(sed -nE 's/.*event=listener_bound address=([^ ]+).*/\1/p' "$WORK/pvp-node.log" | tail -n 1)"
+  bound_address="$(sed -nE 's/.* event=listener_bound (trace=[^ ]+ )?detail="address=([^"]+)"$/\2/p' "$WORK/pvp-node.log" | tail -n 1)"
   if [[ ! "$bound_address" =~ ^127\.0\.0\.1:([1-9][0-9]{3,4})$ ]] || (( BASH_REMATCH[1] > 65535 )); then
     fail "PvP node did not report a valid bound listener"; return 1
   fi

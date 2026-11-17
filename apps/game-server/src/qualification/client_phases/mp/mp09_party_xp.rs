@@ -586,6 +586,8 @@ struct HuntResult {
 async fn encounter(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult<HuntResult> {
     let leader = prepare_hunt_ground(bots, world).await?;
     let (key, name, pool) = HUNT_TARGET;
+    let selection = client_daily_boost::reward_selection(bots[0].client()?).await?;
+    let pool = client_daily_boost::boosted_xp(pool, key, &selection)?;
     let mut start = [0; 3];
     for (index, bot) in bots.iter_mut().enumerate() {
         start[index] = stats(bot).await?.0;
@@ -798,6 +800,8 @@ async fn solo_hunt_award(
     activity_started: tokio::time::Instant,
 ) -> TestResult<(String, [u64; 3])> {
     let (key, pool) = ELIGIBILITY_TARGET;
+    let selection = client_daily_boost::reward_selection(bots[0].client()?).await?;
+    let pool = client_daily_boost::boosted_xp(pool, key, &selection)?;
     let mut start = Vec::new();
     for bot in bots.iter_mut() {
         start.push(stats(bot).await?.0);
@@ -833,7 +837,12 @@ async fn solo_hunt_award(
     attack_target(&mut bots[0], None).await?;
     let leader = tile(bots[0].client()?.world_spatial().actor_position)?;
     let distant = tile(bots[2].client()?.world_spatial().actor_position)?;
-    if distant.x.abs_diff(leader.x).max(distant.y.abs_diff(leader.y)) <= 30 {
+    if distant
+        .x
+        .abs_diff(leader.x)
+        .max(distant.y.abs_diff(leader.y))
+        <= 30
+    {
         return Err("solo XP creature died with C inside shared XP range".into());
     }
     let character = bots[0].character;
@@ -907,6 +916,8 @@ async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> T
         return Err(format!("underlevel shared-XP toggle refused: {reply:?}").into());
     }
     let session = uuid_text(bots[3].client()?.join_snapshot().game_session_id.as_bytes());
+    let selection = client_daily_boost::reward_selection(bots[0].client()?).await?;
+    let pool = client_daily_boost::boosted_xp(LEVEL_PROBE.1, LEVEL_PROBE.0, &selection)?;
     let answer = request_spawn(session, LEVEL_PROBE.0.into()).await?;
     let target = parse_spawned_entity(&answer)?;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
@@ -979,7 +990,7 @@ async fn underlevel_party(bots: &mut Vec<Bot<'_, '_>>, world: &BundleWorld) -> T
         (bots[3].character, damage),
     ]
     .into_iter()
-    .map(|(id, amount)| (id, LEVEL_PROBE.1 * amount / LEVEL_PROBE.2))
+    .map(|(id, amount)| (id, pool * amount / LEVEL_PROBE.2))
     .filter(|(_, xp)| *xp > 0)
     .collect();
     if !exact_award_matches(death.shared, false, &death.awards, &expected) {

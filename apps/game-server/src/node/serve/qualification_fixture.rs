@@ -303,10 +303,23 @@ async fn place(
             )
             .await
             .map_err(|error| fence(format!("qualification collision guard: {error:?}")))?;
-        let fresh =
-            wild_spawn::read_spawn_tiles(&mut collision_guard, root, authority, proof, &plan)
-                .await?;
+        let fresh = tokio::time::timeout_at(deadline, async {
+            // The local deadline cancels the read and drops the transaction.
+            // PostgreSQL must keep the lock even if the task is descheduled
+            // after the final SELECT and before synchronous publication.
+            keep_collision_fence(&mut collision_guard)
+                .await
+                .map_err(|error| {
+                    fence(format!("qualification collision guard timeout: {error:?}"))
+                })?;
+            wild_spawn::read_spawn_tiles(&mut collision_guard, root, authority, proof, &plan).await
+        })
+        .await
+        .map_err(|_| fence("qualification spawn collision read deadline".into()))??;
         if let Ok(mut runtime) = owners.runtime.try_lock() {
+            if tokio::time::Instant::now() >= deadline {
+                return Err(fence("qualification spawn publication deadline".into()));
+            }
             let eligible = publication_candidates(fresh, eligible);
             return wild_spawn::publish_spawn(&mut runtime, plan, source, key, &eligible);
         }
@@ -320,6 +333,19 @@ async fn place(
         drop(owners.runtime.lock().await);
         holder = acquire_holder().await?;
     }
+}
+
+#[cfg(any(test, feature = "qualification-spawn"))]
+async fn keep_collision_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "SELECT set_config('transaction_timeout', '0', true), \
+         set_config('idle_in_transaction_session_timeout', '0', true)",
+    )
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
 }
 
 #[cfg(any(test, feature = "qualification-spawn"))]
@@ -492,25 +518,56 @@ async fn prepare_items(
         runtime_scope: current.current_runtime_scope(),
         scope_ownership_generation: current.current_scope_generation(),
     };
-    let inventory = qualification_build::retry_holder(
-        Some(root),
-        deadline,
-        |error| {
-            matches!(
-                error,
-                crate::durability::item_use::ItemUseError::Unavailable(
-                    DurabilityError::RootUnavailable
+    let read_inventory = async || {
+        qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            |error| {
+                matches!(
+                    error,
+                    crate::durability::item_use::ItemUseError::Unavailable(
+                        DurabilityError::RootUnavailable
+                    )
                 )
-            )
-        },
-        async || root.read_item_use_inventory(authority, proof, fence).await,
-    )
-    .await
-    .map_err(|error| format!("qualification inventory: {error:?}"))?;
+            },
+            async || root.read_item_use_inventory(authority, proof, fence).await,
+        )
+        .await
+        .map_err(|error| format!("qualification inventory: {error:?}"))
+    };
+    let mut inventory = read_inventory().await?;
+    if inventory.backpack.is_none() {
+        use crate::durability::starter_grant::{StarterGrantOutcome, StarterTemplate};
+        let template = StarterTemplate {
+            key: fixture_gear_claim(current.current_game_session_id(), "backpack"),
+            ..StarterTemplate::main()
+        };
+        let outcome = qualification_build::retry_holder(
+            Some(root),
+            deadline,
+            |error| matches!(error, DurabilityError::RootUnavailable),
+            async || {
+                root.grant_starter_items(
+                    authority,
+                    proof,
+                    &fence,
+                    &FixtureItemContent(native),
+                    &template,
+                )
+                .await
+            },
+        )
+        .await
+        .map_err(|error| format!("qualification backpack recovery: {error:?}"))?;
+        if outcome == StarterGrantOutcome::NotAdmitted {
+            return Err("qualification backpack recovery was not admitted".into());
+        }
+        inventory = read_inventory().await?;
+    }
     let bag = inventory
         .backpack
         .as_ref()
-        .ok_or("qualification requires the real starter backpack")?;
+        .ok_or("qualification backpack missing after recovery")?;
     let backpack = generation_item_facts(native, &bag.backpack.definition)
         .map_err(|error| format!("qualification backpack: {error:?}"))?;
     let index = native
@@ -532,7 +589,6 @@ async fn prepare_items(
             .equipment
             .iter()
             .chain(bag.entries.iter().map(|entry| &entry.item))
-            .chain(inventory.nested.iter().map(|(_, entry)| &entry.item))
             .any(|existing| existing.definition == definition && existing.quantity == 1)
         {
             continue;
@@ -549,7 +605,10 @@ async fn prepare_items(
             ),
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),
-                production_key: format!("oteryn:qualification.item.i{id}"),
+                production_key: fixture_gear_claim(
+                    current.current_game_session_id(),
+                    &format!("i{id}"),
+                ),
                 revision_ref: "qualification-v1".into(),
             },
             source_placement: "oteryn:qualification.node-boot".into(),
@@ -595,6 +654,45 @@ async fn prepare_items(
     Ok(())
 }
 
+// A successful setup reloads through a new admission. Inventory determines
+// what needs replacement; within one admission, retries use the same receipt.
+fn fixture_gear_claim(session: crate::foundation::GameSessionId, item: &str) -> String {
+    let session = u128::from_be_bytes(*session.as_bytes());
+    format!("oteryn:qualification.gear.{item}:{session:032x}")
+}
+
+struct FixtureItemContent<'a>(&'a NativeGameplayState);
+
+impl crate::durability::item_transfer::ItemWeightLookup for FixtureItemContent<'_> {
+    fn generation_digest(&self) -> [u8; 32] {
+        self.0.source_digest()
+    }
+
+    fn weight_of(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        use crate::durability::item_transfer::ItemWeightRefused;
+        oteryn_gameplay_items::item_ref_admission::generation_item_facts(self.0, definition)
+            .map_err(|_| ItemWeightRefused::DefinitionMismatch)?
+            .weight
+            .ok_or(ItemWeightRefused::Unknown)
+    }
+}
+
+impl crate::durability::item_loop_move::ItemLoopContent for FixtureItemContent<'_> {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        self.0.source_digest()
+    }
+
+    fn loop_facts(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Option<crate::durability::item_transfer::ItemDefinitionFacts> {
+        oteryn_gameplay_items::item_ref_admission::generation_item_facts(self.0, definition).ok()
+    }
+}
+
 fn fixture_item_committed(
     outcome: crate::durability::reward_claim_mint::RewardClaimMintOutcome,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -636,6 +734,78 @@ mod tests {
             .or_else(|| source.find("realize_creature_in_transaction("))
             .ok_or("missing durable read")?;
         assert!(release < read);
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_spawn_keeps_collision_fence_until_publication() -> Result<(), &'static str> {
+        let source = control_spawn_source()?;
+        let guard = source
+            .find("keep_collision_fence(&mut collision_guard)")
+            .ok_or("server can expire collision guard")?;
+        let fresh = source
+            .rfind("read_spawn_tiles(")
+            .ok_or("missing fresh collision read")?;
+        let publish = source.find("publish_spawn(").ok_or("missing publish")?;
+        let commit = source
+            .find("tx.commit()")
+            .ok_or("missing first fence commit")?;
+        let release = source
+            .find("collision_guard\n            .rollback()")
+            .ok_or("missing collision rollback")?;
+        assert!(commit < guard && guard < fresh && fresh < publish && publish < release);
+        assert!(source[fresh..publish].contains(">= deadline"));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn qualification_collision_guard_outlives_server_transaction_timeout()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use sqlx::Connection as _;
+        let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        let mut reader = sqlx::PgConnection::connect(&url).await?;
+        let mut writer = sqlx::PgConnection::connect(&url).await?;
+        let mut tx = reader.begin().await?;
+        let key: i64 = sqlx::query_scalar("SELECT pg_backend_pid()::bigint")
+            .fetch_one(&mut *tx)
+            .await?;
+        sqlx::query("SET LOCAL transaction_timeout = '250ms'")
+            .execute(&mut *tx)
+            .await?;
+        keep_collision_fence(&mut tx).await?;
+        sqlx::query("SELECT pg_advisory_xact_lock($1)")
+            .bind(key)
+            .execute(&mut *tx)
+            .await?;
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        let mut ground = writer.begin().await?;
+        let lock = "SELECT pg_try_advisory_xact_lock($1)";
+        let could_write: bool = sqlx::query_scalar(lock)
+            .bind(key)
+            .fetch_one(&mut *ground)
+            .await?;
+        assert!(!could_write, "Ground writer bypassed the publishing fence");
+        tx.rollback().await?;
+        let released: bool = sqlx::query_scalar(lock)
+            .bind(key)
+            .fetch_one(&mut *ground)
+            .await?;
+        assert!(released);
+        Ok(())
+    }
+
+    #[test]
+    fn qualification_fixture_restores_missing_carried_gear() -> Result<(), &'static str> {
+        let source = include_str!("qualification_fixture.rs");
+        let prepared = source
+            .split_once("async fn prepare_items(")
+            .and_then(|(_, body)| body.split_once("fn fixture_item_committed("))
+            .map(|(body, _)| body)
+            .ok_or("missing fixture equipment preparation")?;
+        assert!(prepared.contains("grant_starter_items("));
+        assert!(prepared.contains("fixture_gear_claim("));
         Ok(())
     }
 

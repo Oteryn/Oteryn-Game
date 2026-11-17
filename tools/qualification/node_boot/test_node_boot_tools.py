@@ -88,6 +88,23 @@ class KnobTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertEqual(result.stdout, '0')
 
+    def test_pvp_boot_reads_the_structured_listener_event(self):
+        for requested in ('0', '17191'):
+            for trace in ('', ' trace=01a1eafe-2553'):
+                with self.subTest(requested=requested, trace=trace), tempfile.TemporaryDirectory() as work:
+                    Path(work, 'pvp-node.log').write_text(
+                        f'oteryn-game-server ts=1 level=info module=node event=listener_bound{trace} '
+                        'detail="address=127.0.0.1:17191"\n'
+                    )
+                    script = ('set -Eeuo pipefail\n'
+                              'fail() { echo "$*" >&2; return 1; }\n'
+                              'remember() { printf "%s=%s" "$1" "$2"; }\n'
+                              'local() { :; }\n'
+                              + section('  local bound_address', '  local epoch_result'))
+                    result = bash(script, {'WORK': work, 'PVP_GAME_PORT': requested})
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout, 'PVP_GAME_PORT=17191')
+
     def test_parallel_stack_overrides_are_accepted(self):
         with tempfile.TemporaryDirectory() as temp:
             temp = os.path.realpath(temp)
