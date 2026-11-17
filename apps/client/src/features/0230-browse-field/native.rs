@@ -164,5 +164,3 @@ pub(super) fn item_command(
     panel.feedback = None;
     Some(command)
 }
-
-

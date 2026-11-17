@@ -32,5 +32,3 @@ pub(in crate::play) fn panel_text(panel: &HotkeyEquipPanel) -> String {
         |outcome| lfmt!("Equip result: {outcome:?}", outcome = outcome),
     )
 }
-
-

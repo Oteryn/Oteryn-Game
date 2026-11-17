@@ -93,4 +93,3 @@ impl PresentationCache {
         (self.graphics.clone(), self.icon_cells)
     }
 }
-

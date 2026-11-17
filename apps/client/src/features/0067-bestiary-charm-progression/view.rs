@@ -4,4 +4,3 @@ impl PlayLink {
         lock(&self.mailbox).properties.charm_progression.clone()
     }
 }
-

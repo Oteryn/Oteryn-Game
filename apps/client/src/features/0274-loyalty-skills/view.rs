@@ -33,4 +33,3 @@ impl PlayLink {
         lock(&self.mailbox).loyalty_skills.clone()
     }
 }
-

@@ -52,4 +52,3 @@ BEGIN
  body:=replace(body,needle,needle||E'\n     OR game_player_trade_contents(l.item_instance_id) IS DISTINCT FROM l.before_contents');
  EXECUTE body;
 END $migration$;
-

@@ -209,4 +209,3 @@ pub(in crate::play) fn visual_submit(
     ];
     submit(p, id, values.each_ref().map(String::as_str), clear)
 }
-

@@ -7,4 +7,3 @@ impl PlayLink {
         lock(&self.mailbox).prey.clone()
     }
 }
-

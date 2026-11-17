@@ -61,5 +61,3 @@ pub(in crate::play) fn submit(
     }
     request(panel, intent)
 }
-
-

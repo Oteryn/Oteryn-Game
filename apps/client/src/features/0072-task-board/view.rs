@@ -24,4 +24,3 @@ impl PlayLink {
         lock(&self.mailbox).task_board.soulseals_open = true;
     }
 }
-
