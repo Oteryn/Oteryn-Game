@@ -52,7 +52,7 @@ game_platform_cleanup() {
     [[ ! -f "$node_log" ]] || cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
     [[ ! -f "$WORK/portal-harness.log" ]] || cp "$WORK/portal-harness.log" "$NODE_BOOT_FAILURE_LOG_DIR/portal-harness.log"
   fi
-  [[ -z "$GP_PG_CONTAINER" ]] || timeout --foreground --kill-after=5s 45s docker rm --force --volumes "$GP_PG_CONTAINER" >/dev/null 2>&1 || true
+  cleanup_owned_postgres "$WP5_PROJECT-portal-postgres" "$GP_PG_CONTAINER"
 }
 game_platform_start() {
   local password port deadline ready=0
@@ -60,25 +60,27 @@ game_platform_start() {
   port="${GAME_PLATFORM_PLATFORM_PG_PORT:-15436}"
   [[ "$port" =~ ^[1-9][0-9]{3,4}$ && "$port" -le 65535 && "$port" != "$PG_PORT" ]] \
     || game_platform_fail preflight invalid_platform_pg_port
-  GP_PG_CONTAINER="$(docker create --name "$WP5_PROJECT-portal-postgres" --publish "127.0.0.1:$port:5432" \
+  run_interruptible docker create --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --name "$WP5_PROJECT-portal-postgres" --publish "127.0.0.1:$port:5432" \
     --env POSTGRES_USER=game_platform_admin --env POSTGRES_PASSWORD="$password" \
-    --env POSTGRES_DB=postgres "$PG_IMAGE")"
-  docker start "$GP_PG_CONTAINER" >/dev/null
+    --env POSTGRES_DB=postgres "$PG_IMAGE" > "$WORK/portal-postgres.id"
+  GP_PG_CONTAINER="$(<"$WORK/portal-postgres.id")"
+  run_interruptible docker start "$GP_PG_CONTAINER" >/dev/null
   deadline=$((SECONDS + 60))
-  until docker exec "$GP_PG_CONTAINER" pg_isready -h 127.0.0.1 -U game_platform_admin >/dev/null 2>&1; do
+  until run_interruptible timeout --foreground --kill-after=1s 4s docker exec "$GP_PG_CONTAINER" pg_isready -h 127.0.0.1 -U game_platform_admin >/dev/null 2>&1; do
     (( SECONDS < deadline )) || game_platform_fail platform postgres_readiness_timeout
     sleep 0.2
   done
-  [[ "$(docker exec "$GP_PG_CONTAINER" psql -U game_platform_admin -d postgres -qAt -c 'SHOW server_version_num')" == 180006 ]] \
+  run_interruptible timeout --foreground --kill-after=2s 20s docker exec "$GP_PG_CONTAINER" psql -U game_platform_admin -d postgres -qAt -c 'SHOW server_version_num' > "$WORK/portal-pg-version"
+  [[ "$(<"$WORK/portal-pg-version")" == 180006 ]] \
     || game_platform_fail platform wrong_postgres_version
   export PORTAL_E2E_ADMIN_DATABASE_URL="postgresql://game_platform_admin:$password@127.0.0.1:$port/postgres"
   export PORTAL_E2E_OUT="$WORK/portal"
   # The harness intentionally forwards only test.env names. A private exec-only
   # launcher supplies identity/OAuth configuration absent from that whitelist;
   # every migrate/seed/serve/worker/gateway invocation is the real built binary.
-  run_interruptible timeout --foreground --kill-after=5s 3600s cargo build --locked --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" -p oteryn-portal > "$WORK/portal-build.log" 2>&1 \
+  run_interruptible timeout --kill-after=5s 3600s cargo build --locked --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" -p oteryn-portal > "$WORK/portal-build.log" 2>&1 \
     || game_platform_fail platform binary_build_failed
-  run_interruptible timeout --foreground --kill-after=5s 120s cargo metadata --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" --no-deps --format-version 1 > "$WORK/portal-meta.json"
+  run_interruptible timeout --kill-after=5s 120s cargo metadata --manifest-path "$PLATFORM_SOURCE/portal-rs/Cargo.toml" --no-deps --format-version 1 > "$WORK/portal-meta.json"
   local prepare_code=0
   python3 "$GAME_SOURCE/tools/qualification/game_platform/prepare.py" "$WORK" "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID" \
     "$WORLD_ID" "$CHANNEL_ID" "$FRESH_PUBLIC_HEX" "$RECOVERY_PUBLIC_HEX" "$FRESH_KEY_ID" "$RECOVERY_KEY_ID" \
@@ -123,7 +125,7 @@ game_platform_identity() {
   result=NODE_BOOT_IDENTITY_ONLY
   ACTIVE_STAGE=web_identity
   # Compile before the node's bounded assignment wait and journey budget begin.
-  run_interruptible timeout --foreground --kill-after=5s 3600s cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation \
+  run_interruptible timeout --kill-after=5s 3600s cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation \
     --test native_ticket_and_gateway_fail_closed --test native_device_rotation_replay --no-run \
     > "$WORK/identity-build.log" 2>&1 || game_platform_fail web_identity driver_build_failed
   stage operator_setup -- operator_setup
@@ -135,7 +137,7 @@ game_platform_identity() {
   evidence "game_platform_provenance game=$(git rev-parse HEAD) platform=$GAME_PLATFORM_SHA game_pg=18.6 platform_pg=18.6 bundle=$WORLD_DIGEST"
   GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
     GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" \
-    run_interruptible timeout --foreground --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation \
+    run_interruptible timeout --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation \
       web_identity_pkce_isolation -- --exact --nocapture > "$WORK/identity.log" 2>&1 \
     || game_platform_fail web_identity journey_assertion_failed
   signal_node_process 0 "$NODE_PROCESS_DIR" 2>/dev/null || game_platform_fail game node_exited_during_identity
@@ -148,7 +150,7 @@ game_platform_identity() {
     [[ "$target" != native_device_rotation_replay ]] || budget=120
     GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
       GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" LOCALAPPDATA="$WORK/native-client" \
-      run_interruptible timeout --foreground --kill-after=1s "${budget}s" cargo test --locked -p oteryn-security-auth-tests --test "$target" \
+      run_interruptible timeout --kill-after=1s "${budget}s" cargo test --locked -p oteryn-security-auth-tests --test "$target" \
         "$target" -- --exact --nocapture > "$WORK/$target.log" 2>&1 \
       || game_platform_fail "$target" journey_assertion_failed
     signal_node_process 0 "$NODE_PROCESS_DIR" 2>/dev/null || game_platform_fail game node_exited_during_native
@@ -169,25 +171,27 @@ game_platform_identity() {
   local process_directory
   process_directory="$(source "$VARS"; printf '%s' "$NODE_PROCESS_DIR")"
   ACTIVE_STAGE=character_bootstrap
-  python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap "$WORK" "$SECOND_ACCOUNT_ID" "$WORLD_ID" "${INTENT_OPERATIONS[1]}" "${INTERPRETATION[@]}" \
+  run_interruptible python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap "$WORK" "$SECOND_ACCOUNT_ID" "$WORLD_ID" "${INTENT_OPERATIONS[1]}" "${INTERPRETATION[@]}" \
     || game_platform_fail character_bootstrap intent_issue_failed
   local first receipt_sql
-  first="$(ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "${INTENT_OPERATIONS[1]}")" \
+  run_interruptible ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "${INTENT_OPERATIONS[1]}" > "$WORK/platform-bootstrap.out" \
     || game_platform_fail character_bootstrap operator_refused
+  first="$(<"$WORK/platform-bootstrap.out")"
   [[ "$first" == 'character_bootstrap=committed' ]] || game_platform_fail character_bootstrap unexpected_outcome
   receipt_sql="SELECT row_to_json(r) FROM game_character_operation_receipts r WHERE operation_id='${INTENT_OPERATIONS[1]}' AND account_id='$SECOND_ACCOUNT_ID'"
-  assert_operator_replay oteryn_node_boot "$receipt_sql" "$first" \
+  run_interruptible assert_operator_replay oteryn_node_boot "$receipt_sql" "$first" \
     ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "${INTENT_OPERATIONS[1]}" \
     || game_platform_fail character_bootstrap replay_refused
   local character
-  character="$(echo "SELECT character_id FROM game_character_operation_receipts WHERE operation_id='${INTENT_OPERATIONS[1]}' AND account_id='$SECOND_ACCOUNT_ID'" | psql_admin oteryn_node_boot)"
+  run_interruptible psql_admin oteryn_node_boot <<< "SELECT character_id FROM game_character_operation_receipts WHERE operation_id='${INTENT_OPERATIONS[1]}' AND account_id='$SECOND_ACCOUNT_ID'" > "$WORK/platform-character.id"
+  character="$(<"$WORK/platform-character.id")"
   [[ "$character" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$ ]] \
     || game_platform_fail character_bootstrap owner_binding_missing
   ACTIVE_STAGE=native_ticket_gateway_admits
   GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
     GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" GAME_PLATFORM_CHARACTER_ID="$character" \
     GAME_PLATFORM_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
-    run_interruptible timeout --foreground --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test native_ticket_and_gateway_fail_closed \
+    run_interruptible timeout --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test native_ticket_and_gateway_fail_closed \
       native_ticket_gateway_admits -- --exact --nocapture > "$WORK/native_ticket_gateway_admits.log" 2>&1 \
     || game_platform_fail native_ticket_gateway_admits journey_assertion_failed
   signal_node_process 0 "$process_directory" 2>/dev/null || game_platform_fail game node_exited_during_admission

@@ -248,13 +248,16 @@ class ReuseTests(unittest.TestCase):
     def test_platform_caller_does_not_claim_a_conflicting_postgres_container(self):
         platform = (HERE.parent / 'game_platform' / 'lifecycle.sh').read_text()
         start = re.search(r'(?ms)^game_platform_start\(\).*?^}', platform).group(0)
-        result = bash('''
+        with tempfile.TemporaryDirectory() as temp:
+            result = bash('''
             set -Eeuo pipefail
             PG_PORT=15433; PG_IMAGE=fixture; WP5_PROJECT=fixture; GP_PG_CONTAINER=""
+            COMPOSE_OWNER=fixture
+            run_interruptible() { "$@"; }
             openssl() { echo fixture; }
             docker() { return 1; }
             trap 'printf "owned=%s\\n" "$GP_PG_CONTAINER"' EXIT
-        ''' + start + '\ngame_platform_start')
+        ''' + start + '\ngame_platform_start', {'WORK': temp})
         self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout.strip(), 'owned=')
 
@@ -374,7 +377,15 @@ class RoundTwoCallerTests(unittest.TestCase):
                     fi
                     echo character_bootstrap=committed
                 }
-                psql_admin() { cat "$WORK/receipt"; }
+                run_interruptible() { "$@"; }
+                psql_admin() {
+                    read -r sql
+                    if [[ "$sql" == "SELECT row_to_json(r) FROM game_character_operation_receipts r WHERE operation_id='second' AND account_id='account'" ]]; then
+                        cat "$WORK/receipt"
+                    else
+                        echo constant-character-id
+                    fi
+                }
                 fail() { return 1; }
                 game_platform_fail() { echo "$*"; exit 1; }
             """
@@ -390,8 +401,12 @@ class RoundTwoCallerTests(unittest.TestCase):
         self.assertIn('run_interruptible compose up ', RUN_TEXT)
 
     def test_entry_term_interrupts_setup_and_stage_diagnostics(self):
+        lifecycle = Path(os.environ.get('NODE_BOOT_PLATFORM_LIFECYCLE',
+                                        HERE.parent / 'game_platform/lifecycle.sh')).read_text()
+        portal = re.search(r'(?ms)^game_platform_start\(\).*?^}', lifecycle).group(0)
+        bootstrap = lifecycle.split('  ACTIVE_STAGE=character_bootstrap\n')[1].split('  local character\n')[0]
         with tempfile.TemporaryDirectory() as temp:
-            for phase in ('setup', 'dump'):
+            for phase in ('setup', 'dump', 'secret', 'portal', 'bootstrap', 'replay'):
                 with self.subTest(phase=phase):
                     setup = r"""
                         set -Eeuo pipefail
@@ -402,27 +417,116 @@ class RoundTwoCallerTests(unittest.TestCase):
                         declare -A STATUS=(); ORDER=()
                         evidence() { echo "$*"; }
                         stop_runtime_diagnostics() { :; }
-                        blocked() { echo blocked; command sleep 3; }
+                        blocked() { echo blocked >&2; command sleep 3; }
                         pg_observe() { blocked; }
+                        timeout() { blocked; }
                     """
-                    functions = ('interrupted', 'pg_observability_dump', 'stage')
+                    functions = ('interrupted', 'pg_observability_dump', 'stage', 'secret_to')
                     helper = function('run_interruptible')
                     invocation = ('run_interruptible blocked' if 'set -m' in helper else 'blocked') if phase == 'setup' else 'stage sample -- true'
+                    if phase == 'secret':
+                        invocation = 'secret_to root input output'
+                    if phase == 'portal':
+                        setup += r'''
+                            PG_PORT=15433 PG_IMAGE=fixture WP5_PROJECT=fixture COMPOSE_OWNER=fixture
+                            docker() { blocked; }
+                        ''' + portal + '\n'
+                        invocation = 'game_platform_start'
+                    if phase in ('bootstrap', 'replay'):
+                        setup += r'''
+                            GAME_SOURCE=. BASE=. SECOND_ACCOUNT_ID=account WORLD_ID=world
+                            INTENT_OPERATIONS=(first second) INTERPRETATION=()
+                            python3() { :; }
+                            psql_admin() { echo retained; }
+                            ops() {
+                                if [[ "$PHASE" == bootstrap || -f "$WORK/operator-called" ]]; then
+                                    blocked
+                                fi
+                                : > "$WORK/operator-called"
+                                echo character_bootstrap=committed
+                            }
+                        ''' + function('assert_operator_replay') + '\nbootstrap_fixture() {\n' + bootstrap + '}\n'
+                        invocation = 'bootstrap_fixture'
                     script = setup + '\n'.join(map(function, functions)) + '\n' + helper
                     script += "\ntrap 'interrupted TERM 143' TERM\n" + invocation
-                    with subprocess.Popen(['bash', '-c', script], env=dict(os.environ, WORK=temp),
+                    with subprocess.Popen(['bash', '-c', script], env=dict(os.environ, WORK=temp, PHASE=phase),
                                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                           text=True, start_new_session=True) as proc:
                         try:
                             deadline = time.monotonic() + 4
-                            while proc.stdout.readline().strip() != 'blocked':
-                                self.assertLess(time.monotonic(), deadline)
+                            received = b''
+                            while b'blocked\n' not in received:
+                                self.assertTrue(select.select([proc.stdout], [], [], max(0, deadline - time.monotonic()))[0])
+                                chunk = os.read(proc.stdout.fileno(), 4096)
+                                self.assertTrue(chunk, received)
+                                received += chunk
                             proc.send_signal(signal.SIGTERM)
                             output, _ = proc.communicate(timeout=1.5)
                             self.assertEqual(proc.returncode, 143, output)
                         finally:
                             if proc.poll() is None:
                                 os.killpg(proc.pid, signal.SIGKILL)
+
+    def test_spell_timeout_closes_descendant_output(self):
+        budget = next(line for line in RUN_TEXT.splitlines()
+                      if '3600s bash "$GAME_SOURCE/tools/qualification/spells/run.sh"' in line)
+        budget = budget.strip().split('bash "$GAME_SOURCE', 1)[0].replace('3600s', '0.2s')
+        script = function('run_interruptible') + "\n" + budget + "bash -c 'sleep 4 & wait'"
+        started = time.monotonic()
+        self.assertEqual(bash(script).returncode, 124)
+        self.assertLess(time.monotonic() - started, 3)
+
+    def test_base_identity_is_recorded_before_publication(self):
+        result = bash(r"""
+            set -eu
+            BASE=$WORK/base
+            BASE_PENDING=$WORK/pending
+            sudo() { "$@"; }
+            timeout() { shift 3; "$@"; }
+            stat() {
+                [[ ! -e "$BASE" || -s "$WORK/base.identity" ]] || return 23
+                command stat "$@"
+            }
+        """ + function('acquire_base') + '\nacquire_base\ntest -d "$BASE"', self.base_fixture())
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_container_created_without_cid_is_removed_by_ownership(self):
+        with tempfile.TemporaryDirectory() as temp:
+            docker = Path(temp, 'docker')
+            docker.write_text(r"""#!/bin/bash
+if [[ "$1 $2" == 'container ls' &&
+      "$*" == *'name=^/fixture-postgres$'* &&
+      "$*" == *'label=org.oteryn.node-boot.owner=0123456789abcdef0123456789abcdef'* ]]; then
+    echo owned-container-id
+elif [[ "$1" == rm ]]; then
+    echo "${@: -1}" > "$AUDIT"
+fi
+""")
+            docker.chmod(0o755)
+            setup = """
+                set -Eeuo pipefail
+                mkdir "$WORK"
+                BASE=$WORK/base PG_CONTAINER=fixture-postgres WP5_PROJECT=fixture
+                NODE_PID="" SERVICE_USER=fixture NODE_BOOT_WORLD=1 NODE_BOOT_SPELLS=0 ACTIVE_STAGE=setup
+                COMPOSE_OWNER=0123456789abcdef0123456789abcdef
+                PG_CONTAINER_ID="" result=NODE_BOOT_FAIL
+                stop_runtime_diagnostics() { :; }
+                stop_pg_sampler() { :; }
+                evidence() { :; }
+            """
+            result = bash(setup + function('cleanup_owned_postgres') + '\n' + function('cleanup')
+                          + '\ntrap cleanup EXIT\nexit 143', {
+                              'PATH': f'{temp}:{os.environ["PATH"]}', 'WORK': f'{temp}/work',
+                              'AUDIT': f'{temp}/removed',
+                          })
+            self.assertEqual(result.returncode, 143, result.stderr)
+            self.assertTrue(Path(temp, 'removed').exists(), 'the ownership-labelled container leaked')
+            self.assertEqual(Path(temp, 'removed').read_text().strip(), 'owned-container-id')
+
+    def base_fixture(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        return {'WORK': temp.name}
 
     def test_basic_parent_waits_for_cleanup_to_finish(self):
         recursion = section('# A kept or reused stack is one topology', 'if [[ "$NODE_BOOT_SPELLS" == 1 ]];')
@@ -440,6 +544,7 @@ class RoundTwoCallerTests(unittest.TestCase):
             docker.write_text(r"""#!/bin/bash
 case "$2" in
   ls)
+    [[ "$*" != *"name="* ]] || exit 0
     if [[ "$*" == *"label=org.oteryn.node-boot.owner=$COMPOSE_OWNER"* ]]; then
       [[ "$1" != container ]] || echo retained-id
     else
@@ -463,7 +568,7 @@ esac
                 sudo() { :; }
                 compose() { echo replacement-id >> "$AUDIT"; }
             """
-            result = bash(script + '\n'.join(map(function, ('cleanup_owned_compose', 'cleanup')))
+            result = bash(script + '\n'.join(map(function, ('cleanup_owned_compose', 'cleanup_owned_postgres', 'cleanup')))
                           + '\ntrap cleanup EXIT\nexit 1', {
                               'WORK': str(Path(temp, 'scratch')), 'AUDIT': str(Path(temp, 'removed')),
                               'PATH': f'{temp}:{os.environ["PATH"]}',
@@ -490,17 +595,37 @@ class StageDumpTests(unittest.TestCase):
                 report_character_authority_failures() {{ :; }}
                 ''') + function('pg_observability_dump') + '\n' + function('classify_stage_rows') + '\n' + function('stage') + (
                     f'\n{setup}\nstage {name} -- {command}\nprintf "status=%s\\n" "${{STATUS[{name}]}}"\n'
-                    'if [[ -f $failed_node_log ]]; then cat "$failed_node_log"; fi\n')
+                    'if [[ -f $failed_node_log ]]; then cat "$failed_node_log"; fi\n'
+                    f'if [[ -f "$WORK/failed-stage-{name}.log" ]]; then grep -Fx timeout_incarnation "$WORK/failed-stage-{name}.log" || true; fi\n')
             return bash(script).stdout
 
     def test_failed_evidence_writer_fails_the_stage_with_zero_command_exit(self):
         self.assertIn('status=FAIL', self.run_stage('true', 'tee() { cat > /dev/null; return 1; }'))
+
+    def test_evidence_pipeline_failure_cannot_publish_pass(self):
+        self.assertIn('status=FAIL(evidence)', self.run_stage('true', 'sort() { cat; return 2; }'))
+
+    def test_stage_attempt_ignores_previous_timeout_and_status(self):
+        with self.subTest(stale="timeout"):
+            self.assertIn('status=PASS', self.run_stage('true', ': > "$WORK/stage-sample.deadline"'))
+        with self.subTest(stale="status"):
+            setup = r'''printf "0\nPASS\n" > "$WORK/stage-sample.status"
+                kill_worker() { kill -KILL -- "$(ps -o pgid= -p "$BASHPID" | tr -d " ")"; }
+            '''
+            self.assertIn('status=FAIL(evidence)', self.run_stage('kill_worker', setup))
 
     def test_stage_deadline_fails_a_stalled_command(self):
         setup = 'NODE_BOOT_STAGE_TIMEOUT_SECONDS=1; stall() { command sleep 5; }'
         started = time.monotonic()
         self.assertIn('status=FAIL(exit 124)', self.run_stage('stall', setup))
         self.assertLess(time.monotonic() - started, 4)
+
+    def test_timeout_snapshots_its_own_incarnation_after_an_earlier_failure(self):
+        setup = ('NODE_BOOT_STAGE_TIMEOUT_SECONDS=1; echo earlier > "$failed_node_log"; '
+                 'echo timeout_incarnation > "$node_log"; stall() { command sleep 4; }')
+        lines = self.run_stage('stall', setup).splitlines()
+        self.assertIn('earlier', lines)
+        self.assertIn('timeout_incarnation', lines)
 
     def test_stage_deadline_includes_pg_dump(self):
         setup = "NODE_BOOT_STAGE_TIMEOUT_SECONDS=1; pg_observe() { trap '' TERM; command sleep 4; }"

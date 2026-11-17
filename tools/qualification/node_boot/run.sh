@@ -218,6 +218,7 @@ PG_SAMPLER_PID=""
 WORLD_CAPTURE_DIR=""
 STACK_KEPT=0
 BASE_OWNED=0
+BASE_PENDING=""
 BASE_IDENTITY=""
 COMPOSE_OWNED=0
 COMPOSE_OWNER="$(openssl rand -hex 16)"
@@ -373,11 +374,20 @@ save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
   STACK_KEPT=1
 }
 interrupted() {
-  [[ -z "${STAGE_TIMER_PID:-}" ]] || kill -KILL -- "-$STAGE_TIMER_PID" 2>/dev/null || true
-  if [[ -n "${STAGE_PID:-}" ]]; then
-    kill -TERM -- "-$STAGE_PID" 2>/dev/null || true
+  trap '' INT TERM
+  local worker=${STAGE_PID:-} timer=${STAGE_TIMER_PID:-}
+  # A child can receive work before Bash assigns the PID on the next line.
+  if [[ -n "${launching:-}" && "${!:-}" != "$previous_pid" ]]; then
+    case "$launching" in
+      worker) worker=$! ;;
+      timer) timer=$! ;;
+    esac
+  fi
+  [[ -z "$timer" ]] || kill -KILL -- "-$timer" 2>/dev/null || true
+  if [[ -n "$worker" ]]; then
+    kill -TERM -- "-$worker" 2>/dev/null || true
     sleep 0.2
-    kill -KILL -- "-$STAGE_PID" 2>/dev/null || true
+    kill -KILL -- "-$worker" 2>/dev/null || true
   fi
   result=NODE_BOOT_FAIL
   evidence "interrupted signal=$1 stage=$ACTIVE_STAGE world_bundle=$NODE_BOOT_WORLD"
@@ -388,18 +398,41 @@ run_interruptible() {
     "$@"
     return
   fi
+  local launching=worker previous_pid=${!:-}
   set -m
-  ( set +m; "$@" ) <&0 &
+  (
+    set +m
+    # GNU timeout must lead the same process group the entry shell tracks.
+    if [[ "$1" == timeout && $(type -t timeout) == file ]]; then
+      exec "$@"
+    fi
+    "$@"
+  ) <&0 &
   STAGE_PID=$!
+  launching=""
   set +m
   local rc=0
   wait "$STAGE_PID" || rc=$?
+  if [[ $rc == 124 || $rc == 137 ]]; then
+    kill -KILL -- "-$STAGE_PID" 2>/dev/null || true
+  fi
   STAGE_PID=""
   return "$rc"
 }
 acquire_base() {
-  timeout --foreground --kill-after=2s 10s sudo mkdir -- "$BASE" || return
-  stat -c '%d:%i' -- "$BASE" > "$WORK/base.identity"
+  timeout --foreground --kill-after=2s 10s sudo mkdir -- "$BASE_PENDING" || return
+  stat -c '%d:%i' -- "$BASE_PENDING" > "$WORK/base.identity" || return
+  # The same-filesystem rename publishes the already recorded inode.
+  timeout --foreground --kill-after=2s 10s sudo mv -nT -- "$BASE_PENDING" "$BASE" || return
+  [[ "$(stat -c '%d:%i' -- "$BASE")" == "$(<"$WORK/base.identity")" ]]
+}
+cleanup_owned_postgres() {
+  local name=$1 id=$2
+  if [[ -z "$id" && "${COMPOSE_OWNER:-}" =~ ^[a-f0-9]{32}$ ]]; then
+    id=$(timeout --foreground --kill-after=2s 10s docker container ls --all --no-trunc -q \
+      --filter "name=^/$name$" --filter "label=org.oteryn.node-boot.owner=$COMPOSE_OWNER") || return 0
+  fi
+  [[ -z "$id" ]] || timeout --foreground --kill-after=5s 45s docker rm --force --volumes "$id" >/dev/null 2>&1 || true
 }
 cleanup_owned_compose() {
   [[ "${COMPOSE_OWNER:-}" =~ ^[a-f0-9]{32}$ ]] || return 0
@@ -454,7 +487,12 @@ cleanup() {
     if [[ -z "${PG_CONTAINER_ID:-}" && -s "$WORK/game-postgres.cid" ]]; then
       PG_CONTAINER_ID="$(<"$WORK/game-postgres.cid")"
     fi
-    [[ -z "${PG_CONTAINER_ID:-}" ]] || timeout --foreground --kill-after=5s 45s docker rm --force --volumes "$PG_CONTAINER_ID" >/dev/null 2>&1 || true
+    if [[ -n "${PG_CONTAINER_ID:-}" || -n "${COMPOSE_OWNER:-}" ]]; then
+      cleanup_owned_postgres "$PG_CONTAINER" "${PG_CONTAINER_ID:-}"
+    fi
+    if [[ -n "${BASE_PENDING:-}" ]]; then
+      timeout --foreground --kill-after=2s 10s sudo rmdir -- "$BASE_PENDING" 2>/dev/null || true
+    fi
     if [[ ${BASE_OWNED:-0} != 1 && -s "$WORK/base.identity" ]]; then
       BASE_IDENTITY="$(<"$WORK/base.identity")"
       BASE_OWNED=1
@@ -508,7 +546,7 @@ fi
 if [[ "$NODE_BOOT_SPELLS" == 1 && "$NODE_BOOT_REUSE_STACK" == 0 ]]; then
   # Execute the existing compile/decode/stage qualification before creating services.
   RUST_MIN_STACK="${RUST_MIN_STACK:-16777216}" \
-    run_interruptible timeout --foreground --kill-after=5s 3600s bash "$GAME_SOURCE/tools/qualification/spells/run.sh" map "$NODE_BOOT_SPELL_MANIFEST"
+    run_interruptible timeout --kill-after=5s 3600s bash "$GAME_SOURCE/tools/qualification/spells/run.sh" map "$NODE_BOOT_SPELL_MANIFEST"
 fi
 
 # A reused stack keeps its provisioning, characters and node: only the seam stage runs again.
@@ -559,17 +597,19 @@ evidence "pins platform=$NODE_BOOT_PLATFORM_PIN topology=$NODE_BOOT_TOPOLOGY gam
 # (after 200 ms), deadlocks and statements of 500 ms or more without parameter values,
 # and loads pg_stat_statements, so every run carries its own database evidence.
 chmod 644 "$WP5_PKI/db.crt" "$WP5_PKI/db.key"
-run_interruptible docker create --cidfile "$WORK/game-postgres.cid" --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
+run_interruptible docker create --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --cidfile "$WORK/game-postgres.cid" --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
   --env POSTGRES_DB=postgres --volume "$WP5_PKI/db.crt:/tls/db.crt:ro" \
   --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
   'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key -c log_lock_waits=on -c deadlock_timeout=200ms -c log_min_duration_statement=500 -c log_parameter_max_length=0 -c log_parameter_max_length_on_error=0 -c shared_preload_libraries=pg_stat_statements -c "log_line_prefix=%m [%p] %u "' >/dev/null
 PG_CONTAINER_ID="$(<"$WORK/game-postgres.cid")"
+BASE_PENDING="$(dirname -- "$BASE")/.oteryn-node-boot-$COMPOSE_OWNER"
 if ! run_interruptible acquire_base; then
   fail "base acquisition failed: $BASE"
 fi
 BASE_OWNED=1
 BASE_IDENTITY="$(<"$WORK/base.identity")"
+BASE_PENDING=""
 run_interruptible docker start "$PG_CONTAINER_ID" >/dev/null
 chmod 600 "$WP5_PKI/db.key"
 # Probe over TCP: the entrypoint's temporary init server listens on the unix socket only
@@ -617,9 +657,9 @@ if [[ "$NODE_BOOT_WORLD" == 1 && "$OTERYN_NODE_BOOT_REAL_CLOCK" == 0 ]]; then
   NODE_CLOCK_FEATURES=(--features qualification-clock)
 fi
 # Shipped binaries and the SEAM client harness.
-run_interruptible timeout --foreground --kill-after=5s 3600s cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
-run_interruptible timeout --foreground --kill-after=5s 3600s cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
-run_interruptible timeout --foreground --kill-after=2s 120s cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$WORK/cargo-metadata.json"
+run_interruptible timeout --kill-after=5s 3600s cargo +1.100.0 build --locked -p oteryn-game-server --bins "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
+run_interruptible timeout --kill-after=5s 3600s cargo +1.100.0 test --locked -p oteryn-game-server --lib --no-run "${NODE_CLOCK_FEATURES[@]}" "${NODE_SPAWN_FEATURES[@]}"
+run_interruptible timeout --kill-after=2s 120s cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$WORK/cargo-metadata.json"
 TARGET="$(python3 -c 'import json, sys; print(json.load(sys.stdin)["target_directory"])' < "$WORK/cargo-metadata.json")/debug"
 
 # Deployment administration: service user, directories, roles, migration.
@@ -687,7 +727,7 @@ if [[ "$NODE_BOOT_WORLD" == 1 ]]; then
   # Real Thais/town outskirts and the default-start region for ordinary home respawns.
   # Match the first-entry fixture below to its authored Thais hometown (8).
   # The committed full-world pin defaults to Newhaven (33), on another island.
-  run_interruptible timeout --foreground --kill-after=5s 3600s cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" '126,125;126,126;127,127' 8 > "$WORK/world-compile.json"
+  run_interruptible timeout --kill-after=5s 3600s cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- compile-regions "$GAME_SOURCE" "$GAME_SOURCE/content/world/pins/oteryn.identity.json" "$WORK/world.otwb" '126,125;126,126;127,127' 8 > "$WORK/world-compile.json"
   PIN="$WORK/world.json"
   run_interruptible timeout --foreground --kill-after=2s 300s python3 - "$GAME_SOURCE/content/world/pins/oteryn.json" "$WORK/world-compile.json" "$PIN" <<'PY_REGION_PIN'
 import json, sys
@@ -714,7 +754,7 @@ CREATE ROLE nb_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_ru
 GRANT CONNECT ON DATABASE oteryn_node_boot TO nb_control, nb_runtime;
 SQL
 secret_to() { # owner source destination
-  timeout --foreground --kill-after=2s 120s sudo install -o "$1" -m 0600 "$2" "$3"
+  run_interruptible timeout --foreground --kill-after=2s 120s sudo install -o "$1" -m 0600 "$2" "$3"
 }
 printf '%s\n' "$CONTROL_PASSWORD" > "$WORK/control-password"
 printf '%s\n' "$RUNTIME_PASSWORD" > "$WORK/runtime-password"
@@ -1191,8 +1231,18 @@ stage() { # name prerequisite... -- function
   # Failure reports and snapshots follow the node used by the stage.
   local node_log="$node_log"
   [[ "$name" != pvp_* ]] || node_log="$WORK/pvp-node.log"
-  local deadline_marker="$WORK/stage-$name.deadline"
-  local status_file="$WORK/stage-$name.status"
+  local attempt
+  if ! attempt=$(mktemp -d "$WORK/stage-$name.XXXXXX"); then
+    STATUS[$name]="FAIL(evidence)"
+    stop_runtime_diagnostics
+    set -e
+    evidence "stage=$name state=finish world_bundle=$NODE_BOOT_WORLD exit=1"
+    echo "::endgroup::"
+    return 0
+  fi
+  local deadline_marker="$attempt/deadline"
+  local status_file="$attempt/status"
+  local launching=worker previous_pid=${!:-}
   set -m
   (
     set +m
@@ -1236,7 +1286,6 @@ stage() { # name prerequisite... -- function
     pg_observability_dump "$name" "$rc"
     set -e
     if [[ $rc == 0 ]]; then
-      STATUS[$name]=PASS
       # A FAIL row fails its stage even when the stage process exits 0, unless the row is
       # listed in known_fail_rows.txt (debt that every run prints).
       local known_fail="$GAME_SOURCE/tools/qualification/node_boot/known_fail_rows.txt" classified new_rows known_hit stale_rows
@@ -1247,6 +1296,7 @@ stage() { # name prerequisite... -- function
       new_rows=$(awk '$1 == "new" {print $2}' <<< "$classified" | sort -u | paste -sd, -)
       known_hit=$(awk '$1 == "known" {print $2}' <<< "$classified" | sort -u | paste -sd, -)
       stale_rows=$(awk '$1 == "stale" {print $2}' <<< "$classified" | sort -u | paste -sd, -)
+      STATUS[$name]=PASS
       [[ -z $known_hit ]] || echo "NODE_BOOT_KNOWN_FAIL $name rows=$known_hit"
       [[ -z $stale_rows ]] || echo "NODE_BOOT_KNOWN_FAIL_STALE $name rows=$stale_rows"
       if [[ -n $new_rows ]]; then
@@ -1342,6 +1392,7 @@ SQL
     fi
   ) &
   STAGE_PID=$!
+  previous_pid=$! launching=timer
   (
     set +m
     command sleep "${NODE_BOOT_STAGE_TIMEOUT_SECONDS:-10800}" || exit
@@ -1351,8 +1402,10 @@ SQL
     kill -KILL -- "-$STAGE_PID" 2>/dev/null || true
   ) &
   STAGE_TIMER_PID=$!
+  launching=""
   set +m
-  wait "$STAGE_PID" 2>/dev/null || true
+  local worker_status=0
+  wait "$STAGE_PID" 2>/dev/null || worker_status=$?
   kill -KILL -- "-$STAGE_TIMER_PID" 2>/dev/null || true
   wait "$STAGE_TIMER_PID" 2>/dev/null || true
   STAGE_TIMER_PID=""
@@ -1362,8 +1415,14 @@ SQL
     echo "NODE_BOOT_FAILURE stage=$name deadline=exceeded"
     rc=124
     STATUS[$name]="FAIL(exit 124)"
-    [[ ! -f "$node_log" || -f "$failed_node_log" ]] || cp "$node_log" "$failed_node_log" || true
-  elif [[ -s "$status_file" ]]; then
+    if [[ -f "$node_log" ]]; then
+      cp "$node_log" "$WORK/failed-stage-$name.log" || true
+      [[ -f "$failed_node_log" ]] || cp "$node_log" "$failed_node_log" || true
+    fi
+    if [[ "$name" == seam_stages && -f "$WORK/pvp-node.log" ]]; then
+      cp "$WORK/pvp-node.log" "$WORK/failed-stage-$name-pvp.log" || true
+    fi
+  elif [[ $worker_status == 0 && -s "$status_file" ]]; then
     { read -r rc; read -r "STATUS[$name]"; } < "$status_file"
   else
     STATUS[$name]="FAIL(evidence)"
