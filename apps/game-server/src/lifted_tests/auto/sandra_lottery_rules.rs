@@ -240,7 +240,15 @@ fn sandra_lottery_refuses_unrelated_rewards_before_inventory_mutation() -> TestR
 fn sandra_lottery_ticket_issuance_matches_donor_same_kind_vials() -> TestResult {
     use oteryn_gameplay_quests::quest::npc_rules::{NpcRuleCatalog, NpcRuleEffect, NpcRuleGuard};
     let source = NpcRuleCatalog::runtime()?;
-    let rules = &source.programs()[0].document.rules;
+    let program = source
+        .programs()
+        .iter()
+        .find(|program| {
+            program.document.program_key.as_deref()
+                == Some("oteryn:quest-npc-program.sandra-lottery")
+        })
+        .ok_or("Sandra source programme")?;
+    let rules = &program.document.rules;
     for item in [283, 284, 285] {
         let key = format!("oteryn:item.tibia.i{item}");
         let rule = rules
