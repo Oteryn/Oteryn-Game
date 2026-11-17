@@ -139,6 +139,71 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn actor_motion_and_native_icons_share_an_entry_without_colliding()
+    -> Result<(), WorldSpatialError> {
+        use crate::{
+            world_spatial::{ActorPosition, StepDirection},
+            world_spatial_entities::*,
+        };
+        let icon = NativeCreatureIcon {
+            category: 0,
+            id: 22,
+            count: 5,
+        };
+        let entity = WorldSpatialEntity {
+            motion: Some(ActorMotion {
+                translation_revision: 3,
+                step_duration_ms: 200,
+                mount_look_type: 0,
+                prewalk_ms: [550; 8],
+            }),
+            display_name: None,
+            kind: EntityKind::Player,
+            entity: EntityRef {
+                identity: [2; 16],
+                generation: 1,
+            },
+            position: ActorPosition {
+                x: 1,
+                y: 2,
+                floor: -7,
+            },
+            detail: EntityDetail::ActorWithIcons {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+                icons: NativeCreatureIcons::new(&[icon])?,
+            },
+        };
+        let own = WorldSpatialEntity {
+            entity: EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+            ..entity
+        };
+        let snapshot = WorldSpatialEntitiesSnapshot {
+            content_generation: [0; 32],
+            actor_position: own.position,
+            own_identity: [1; 16],
+            entities: vec![own, entity],
+        };
+        let fields = EntityFields::selected(&[6, CAPABILITY_NATIVE_CREATURE_ICONS_V1, 502]);
+        let bytes = encode_world_spatial_entities_snapshot_with_fields(
+            &snapshot,
+            fields,
+            &EntityLights::new(),
+        )?;
+        let (decoded, _) = decode_world_spatial_entities_snapshot_with_fields(&bytes, fields)?;
+        assert_eq!(decoded.entities, snapshot.entities);
+        Ok(())
+    }
+    #[test]
     fn actor_motion_wire_bounds_and_mount_boolean_are_strict() -> Result<(), WorldSpatialError> {
         let motion = ActorMotion {
             translation_revision: u64::MAX,

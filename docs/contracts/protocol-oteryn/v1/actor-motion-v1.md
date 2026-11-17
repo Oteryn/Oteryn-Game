@@ -1,7 +1,7 @@
 # Actor motion v1
 
 Optional capability 502 requires visibility 6, paced movement 13 and appearance
-25. Only selected sessions receive optional visibility-entry field 14 (length-delimited,
+25. Only selected sessions receive optional visibility-entry field 16 (length-delimited,
 exactly 48 bytes). Objects never carry it. An absent field means the presentation source is unavailable; clients do not predict it. Unselected payloads are unchanged.
 
 The payload is little endian: u64 last translation revision, u32 step duration

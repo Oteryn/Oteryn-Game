@@ -370,7 +370,7 @@ fn encode_entity(
         && actor_kind(entity.kind)
         && let Some(motion) = entity.motion
     {
-        push_message(&mut output, 14, &motion.encode()?);
+        push_message(&mut output, 16, &motion.encode()?);
     }
     if output.len() > entry_limit(fields) {
         return Err(WorldSpatialError::LimitExceeded);
@@ -380,7 +380,7 @@ fn encode_entity(
 
 fn entry_limit(fields: EntityFields) -> usize {
     MAX_ENTITY_ENTRY_BYTES
-        + if fields.actor_motion { 50 } else { 0 }
+        + if fields.actor_motion { 51 } else { 0 }
         + if fields.display_names {
             crate::entity_names::MAX_ENTITY_DISPLAY_NAME_BYTES + 2
         } else {
@@ -478,7 +478,8 @@ fn decode_entity(
             0x72 if fields.native_icons => {
                 native_icons.push(native_icons::decode(read_bytes(input, &mut cursor)?)?)?
             }
-            0x72 if fields.actor_motion => once(
+            // Field 16: field 14 is capability 372's repeated native icons.
+            0x82 if fields.actor_motion => once(
                 &mut motion,
                 crate::actor_motion::ActorMotion::decode(read_bytes(input, &mut cursor)?)?,
             )?,

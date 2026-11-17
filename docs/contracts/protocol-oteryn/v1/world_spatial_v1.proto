@@ -110,10 +110,10 @@ message EntityRefV1 {
   uint64 generation = 2;
 }
 
-// At most 128 encoded bytes, or 194 under capability 286; capability 502 adds at most 50.
+// At most 128 encoded bytes, or 194 under capability 286; capability 502 adds at most 51.
 // Players, creatures and NPCs carry
 // fields 5-7 and no fields 8-10; corpses and ground items carry fields 8-9 (and 10 under
-// capability 4) and no fields 3, 5-7 or 11-14.
+// capability 4) and no fields 3, 5-7, 11-14 or 16.
 // Players and creatures also carry fields 11-12 under capability 19; NPCs never do.
 message WorldSpatialEntityV1 {
   EntityKind kind = 1;
@@ -152,10 +152,11 @@ message WorldSpatialEntityV1 {
   // Exactly 48 bytes; the strict little-endian profile is actor-motion-v1.md.
   // Includes last translation revision, authoritative step duration (zero for a
   // teleport), active mount look type and own-actor adjacent prewalk forecasts.
-  bytes actor_motion = 14;
   // Capability386 only; objects only, exact source-pinned native resource1..65535.
   // The generation-local item_definition_ref and canonical handle remain unchanged.
   uint32 native_object_appearance_id = 15;
+  // Field 14 is capability 372's repeated native creature icons.
+  bytes actor_motion = 16;
 }
 
 // StateDomainSnapshot.payload of domain 1, snapshot type 2. At most 256 entities (MOVE-RL-11),
