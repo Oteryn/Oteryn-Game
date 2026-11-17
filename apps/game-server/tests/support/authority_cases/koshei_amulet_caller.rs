@@ -73,7 +73,6 @@ fn koshei_current_ground_handles_real_use_with_refusals_door_and_replay() -> Tes
 
 async fn exercise(h: &fixture::Harness) -> TestResult {
     super::engnpc2_live_transport::fresh(h).await?;
-    let ram = true;
     let scope = fixture::fence(1)?.runtime_scope;
     let world = scope.world_id();
     let channel = crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?;
@@ -88,29 +87,12 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
         crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
             .current_session_at(session)
             .await?;
-    let (source, region, bounds, start) = if ram {
-        (
-            include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../content/world/placements/region-z07-x124-y124.b3"
-            ))
-            .as_slice(),
-            (7, 124, 124),
-            (31926, 31895, 31928, 31897),
-            (31927, 31895),
-        )
-    } else {
-        (
-            include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../content/world/placements/region-z07-x125-y121.b3"
-            ))
-            .as_slice(),
-            (7, 125, 121),
-            (32000, 31164, 32003, 31168),
-            (32000, 31165),
-        )
-    };
+    let source = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../content/world/placements/region-z07-x124-y124.b3"
+    ))
+    .as_slice();
+    let (region, bounds, start) = ((7, 124, 124), (31926, 31895, 31928, 31897), (31927, 31895));
     let scene = world::native_scene(
         native,
         vec![world::NativeCrop {
@@ -118,18 +100,14 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
             region,
             bounds,
             start,
-            expected: if ram {
-                vec![world::ExpectedTile {
-                    position: (31926, 31896),
-                    ids: vec![4515, 5485, 53439],
-                    counted_entry: None,
-                }]
-            } else {
-                vec![]
-            },
+            expected: vec![world::ExpectedTile {
+                position: (31926, 31896),
+                ids: vec![4515, 5485, 53439],
+                counted_entry: None,
+            }],
         }],
         &[],
-        &[7252],
+        &[7535, 7537],
         world,
         channel,
     )?;
@@ -600,20 +578,7 @@ async fn wire(
         };
         Ok::<_, Box<dyn std::error::Error>>((next, result, actual))
     };
-    let maintenance = async {
-        loop {
-            if owner.root.has_ready_demand() {
-                owner.root.maintain_ready_once().await.map_err(debug)?;
-            }
-            tokio::task::yield_now().await;
-        }
-        #[allow(
-            unreachable_code,
-            reason = "the node maintenance loop ends only on a durability error"
-        )]
-        Ok::<(), Box<dyn std::error::Error>>(())
-    };
-    tokio::time::timeout(std::time::Duration::from_secs(30),async {tokio::select! {result=exchange=>result,result=maintenance=>{result?;Err("maintenance stopped".into())}}}).await?
+    tokio::time::timeout(std::time::Duration::from_secs(30),async {tokio::select! {result=exchange=>result,result=maintain_ready(owner)=>{result?;Err("maintenance stopped".into())}}}).await?
 }
 
 async fn read_frame(stream: &mut tokio::io::DuplexStream) -> TestResult<Vec<u8>> {
@@ -624,4 +589,13 @@ async fn read_frame(stream: &mut tokio::io::DuplexStream) -> TestResult<Vec<u8>>
     let mut bytes = vec![0; length];
     stream.read_exact(&mut bytes).await?;
     Ok(bytes)
+}
+
+async fn maintain_ready(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    loop {
+        if owner.root.has_ready_demand() {
+            owner.root.maintain_ready_once().await.map_err(debug)?;
+        }
+        tokio::task::yield_now().await;
+    }
 }
