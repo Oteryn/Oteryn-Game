@@ -315,9 +315,9 @@ fn platform_world(
                     depth: 0,
                     attrs: Attrs::default(),
                 }];
-                if x == 32777 && y == 32908 && scenario == Scenario::Fall {
+                if x == 32777 && y == 32908 {
                     items.push(Item {
-                        palette: 1,
+                        palette: if scenario == Scenario::Fall { 1 } else { 2 },
                         depth: 0,
                         attrs: Attrs::default(),
                     });
@@ -366,7 +366,7 @@ fn platform_world(
             let id = key.rsplit_once(".i")?.1.parse::<u32>().ok()?;
             Some(crate::map::facts::ItemDefinition {
                 reference: std::num::NonZeroU32::new(id + 1)?,
-                solid: Some(false),
+                solid: Some(true),
                 blocks_projectile: false,
                 pickupable: false,
                 door: false,

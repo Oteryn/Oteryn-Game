@@ -331,10 +331,11 @@ pub(super) fn mirror_step(
     let Ok(expected) = runtime.read_actor_position(partner) else {
         return;
     };
-    if let NativeMovementCollisionIndex::Bundle(index) = cells.index()
-        && platform_at(index.map(), destination)
-            .is_some_and(|(_, appearance)| is_submerged(appearance))
-    {
+    let platform = match cells.index() {
+        NativeMovementCollisionIndex::Bundle(index) => platform_at(index.map(), destination),
+        _ => None,
+    };
+    if platform.is_some_and(|(_, appearance)| is_submerged(appearance)) {
         if let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
             runtime,
             cells,
@@ -347,6 +348,28 @@ pub(super) fn mirror_step(
         {
             states.observer_eye_pair = None;
             states.observer_eye_fall_notice = Some(partner_session);
+        }
+        return;
+    }
+    if platform.is_some() {
+        // Crystal's platform graphics are blocking borders over water. The
+        // ornament's scripted step can land on a visible platform without
+        // opening the tile to ordinary movement.
+        if runtime.player_step_allowed(partner, partner_session, direction.delta())
+            && let Ok(proof) = crate::map::floor::prepare_scripted_quest_teleport_facing(
+                runtime,
+                cells,
+                partner,
+                partner_session,
+                expected,
+                destination,
+                false,
+                blocking,
+                Some(direction.facing()),
+                true,
+            )
+        {
+            let _ = runtime.commit_source_step(proof);
         }
         return;
     }
