@@ -54,6 +54,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Err(UseDisposition::Rejected);
                 }
                 if first.is_none() {
+                    if edit.create.is_none() {
+                        let visible = map.facts.movement_items(at);
+                        let mut added = visible.iter().filter_map(|item| match item.source {
+                            crate::map::view::EntrySource::Added(entry)
+                                if item.facts.appearance_id == appearance =>
+                            {
+                                Some(entry)
+                            }
+                            _ => None,
+                        });
+                        if let Some(entry) = added.next() {
+                            if added.next().is_some() {
+                                return Err(UseDisposition::Rejected);
+                            }
+                            mutations.push(QuestSceneMutation::RemoveCreated {
+                                position: at,
+                                entry,
+                            });
+                            continue;
+                        }
+                    }
                     if edit.allow_missing {
                         continue;
                     }

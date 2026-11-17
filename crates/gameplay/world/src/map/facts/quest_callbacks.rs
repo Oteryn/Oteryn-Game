@@ -159,6 +159,7 @@ pub(super) struct CallbackStates {
     movement_decays: BTreeMap<(u64, u64), MovementDecay>,
     portals: BTreeMap<TilePos, DynamicPortal>,
     solid_items: BTreeSet<TilePos>,
+    scene_items: BTreeMap<TilePos, BTreeMap<EntryId, (u64, bool)>>,
     batch_blockers: BTreeSet<TilePos>,
     presences: BTreeMap<u64, (TilePos, EntryId)>,
     naginata_picks: Vec<NaginataPick>,
@@ -499,8 +500,15 @@ impl CallbackStates {
             })
         })
     }
+    fn scene_blocks(&self, pos: TilePos) -> bool {
+        self.scene_items
+            .get(&pos)
+            .is_some_and(|items| items.values().any(|(_, passable)| !passable))
+    }
     pub(super) fn phase_has_dynamic_blocker(&self, pos: TilePos) -> bool {
-        self.solid_items.contains(&pos) || self.batch_blockers.contains(&pos)
+        self.solid_items.contains(&pos)
+            || self.scene_blocks(pos)
+            || self.batch_blockers.contains(&pos)
     }
 
     pub(super) fn clear_feroxa_scenery(&mut self, inside: impl Fn(TilePos) -> bool) {
@@ -514,6 +522,7 @@ impl CallbackStates {
         };
         self.movement_items.retain(|p, _| !cleared(p));
         self.solid_items.retain(|p| !cleared(p));
+        self.scene_items.retain(|p, _| !cleared(p));
         self.batch_blockers.retain(|p| !inside(*p));
         self.portals.retain(|p, _| !cleared(p));
         self.presences.retain(|_, (p, _)| !cleared(p));
@@ -535,6 +544,7 @@ impl CallbackStates {
             + self.movement_speech.len()
             + self.portals.len()
             + self.solid_items.len()
+            + self.scene_items.values().map(BTreeMap::len).sum::<usize>()
             + self.batch_blockers.len()
             + self.movement_items.values().map(Vec::len).sum::<usize>();
         used.saturating_add(additional) < super::super::overlay::OVERLAY_BUDGET_BYTES / 512
@@ -1669,7 +1679,8 @@ impl BundleFacts {
                         QuestSceneMutation::Restore { key, .. }
                         | QuestSceneMutation::Remove { key, .. }
                         | QuestSceneMutation::Replace { key, .. } => states.key_reserved(*key),
-                        QuestSceneMutation::Create { position, .. } => {
+                        QuestSceneMutation::Create { position, .. }
+                        | QuestSceneMutation::RemoveCreated { position, .. } => {
                             states.position_reserved(*position)
                         }
                     })
@@ -1805,6 +1816,7 @@ impl BundleFacts {
         };
         if !tile.walkable()
             || states.solid_items.contains(&pos)
+            || states.scene_blocks(pos)
             || states.changed.contains_key(&key)
             || states.hidden.contains(&key)
             || states.passable.contains_key(&key)
@@ -1892,10 +1904,7 @@ impl BundleFacts {
         let Ok(states) = self.callbacks.lock() else {
             return true;
         };
-        if states.solid_items.contains(&pos)
-            || states.batch_blockers.contains(&pos)
-            || states.arena_pillar_closed_at(pos)
-        {
+        if states.phase_has_dynamic_blocker(pos) || states.arena_pillar_closed_at(pos) {
             return true;
         }
         if states.phase_entry(pos, 0).is_some() {
@@ -1983,6 +1992,10 @@ pub enum QuestSceneMutation {
         facts: EntryFacts,
         passable: bool,
     },
+    RemoveCreated {
+        position: TilePos,
+        entry: EntryId,
+    },
     Create {
         position: TilePos,
         facts: EntryFacts,
@@ -2024,6 +2037,20 @@ fn project_scene(
             return false;
         }
     }
+    let mut removals = BTreeSet::new();
+    for edit in edits {
+        if let QuestSceneMutation::RemoveCreated { position, entry } = edit
+            && (!removals.insert((*position, *entry))
+                || states
+                    .scene_items
+                    .get(position)
+                    .and_then(|items| items.get(entry))
+                    .is_none_or(|(source, _)| *source != owner)
+                || states.movement_item(entry.get()) != Some((*position, *entry)))
+        {
+            return false;
+        }
+    }
     for edit in edits {
         match edit {
             QuestSceneMutation::Restore {
@@ -2049,6 +2076,22 @@ fn project_scene(
                 states.changed.insert(*key, (revision + 1, *facts));
                 states.passable.insert(*key, *passable);
             }
+            QuestSceneMutation::RemoveCreated { position, entry } => {
+                let Some(items) = states.scene_items.get_mut(position) else {
+                    return false;
+                };
+                items.remove(entry);
+                if items.is_empty() {
+                    states.scene_items.remove(position);
+                }
+                let Some(items) = states.movement_items.get_mut(position) else {
+                    return false;
+                };
+                items.retain(|item| item.source != view::EntrySource::Added(*entry));
+                if items.is_empty() {
+                    states.movement_items.remove(position);
+                }
+            }
             QuestSceneMutation::Create {
                 position,
                 facts,
@@ -2069,9 +2112,11 @@ fn project_scene(
                         source: view::EntrySource::Added(entry),
                         facts: *facts,
                     });
-                if !passable {
-                    states.solid_items.insert(*position);
-                }
+                states
+                    .scene_items
+                    .entry(*position)
+                    .or_default()
+                    .insert(entry, (owner, *passable));
             }
         }
     }
