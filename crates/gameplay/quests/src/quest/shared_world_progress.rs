@@ -109,6 +109,26 @@ pub const BINDINGS: [NativeBinding; 10] = [
     },
 ];
 
+/// Existing character tracks retain their binding identities for replay.
+pub fn retired_deepling_object(key: &str) -> bool {
+    binding(key).is_some_and(|entry| !matches!(entry.action, SharedAction::HiveTask(_)))
+}
+
+#[cfg(test)]
+mod retired_deepling_tests {
+    #[test]
+    fn retired_deepling_objects_exclude_crystal_routes_and_hive() {
+        for (binding, retired) in super::BINDINGS.iter().zip([
+            false, false, false, false, false, false, true, true, true, true,
+        ]) {
+            assert_eq!(super::retired_deepling_object(binding.key), retired);
+        }
+        assert!(!super::retired_deepling_object(
+            "oteryn:quest-callback/deeplings-ramp-1106"
+        ));
+    }
+}
+
 pub fn binding(key: &str) -> Option<&'static NativeBinding> {
     BINDINGS.iter().find(|binding| binding.key == key)
 }
