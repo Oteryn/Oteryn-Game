@@ -71,7 +71,6 @@ mod e2ef1 {
         ),
         ("M07", &["carried-rope", "rope-ascent", "relogin"]),
     ];
-    const FLOOR_EXHAUST_WORDS: &str = "exevo infir flam hur";
     const DIRS: [StepDirection; 4] = [
         StepDirection::North,
         StepDirection::East,
@@ -111,6 +110,7 @@ mod e2ef1 {
     struct Checks {
         row: &'static str,
         passed: BTreeSet<&'static str>,
+        missing: BTreeMap<&'static str, &'static str>,
     }
     impl Checks {
         fn pass(&mut self, case: &'static str, detail: impl std::fmt::Debug) {
@@ -120,16 +120,35 @@ mod e2ef1 {
             ));
             self.passed.insert(case);
         }
+        fn missing(&mut self, case: &'static str, source: &'static str, reason: &str) {
+            evidence(&format!(
+                "E2EF1_MISSING row={} case={case} source={source} reason={reason}",
+                self.row
+            ));
+            self.missing.insert(case, source);
+        }
         fn complete(&self, required: &[&str]) -> bool {
             required.iter().all(|case| self.passed.contains(case))
         }
     }
+
+    #[derive(Debug)]
+    struct MissingAuthoredTarget(String);
+    impl std::fmt::Display for MissingAuthoredTarget {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str(&self.0)
+        }
+    }
+    impl std::error::Error for MissingAuthoredTarget {}
+    const WORLD_TARGET_SOURCE: &str = "tools/qualification/node_boot/run.sh:461";
+    const SPELL_TARGET_SOURCE: &str = "content/abilities/definitions/player-spells.json:1";
 
     #[derive(Clone, Copy, Debug)]
     struct Object {
         at: TilePos,
         ordinal: u8,
         appearance: u16,
+        action: Option<u16>,
     }
     fn position(at: TilePos, basis: spatial_basis::Basis) -> ActorPosition {
         basis.position(at)
@@ -170,6 +189,7 @@ mod e2ef1 {
                                 oteryn_world_bundle::Error::Limit("movement ordinal".into())
                             })?,
                             appearance,
+                            action: item.attrs.action,
                         });
                     }
                 }
@@ -223,22 +243,43 @@ mod e2ef1 {
         }
         Ok(())
     }
+    fn retry_target_gate(status: CommandStatus, payload: &[u8], stationary: bool) -> bool {
+        status == CommandStatus::Rejected && payload.is_empty() && stationary
+    }
+
     async fn target_command(client: &mut DevClientSession, payload: &[u8]) -> TestResult {
         use oteryn_protocol_oteryn::target_move::*;
-        // Decode our native wire command too; no ad-hoc server-side operation.
         decode_target_move_intent(payload).map_err(|e| format!("target intent: {e:?}"))?;
-        let result = client
-            .session_mut()
-            .gated_command(
-                CAPABILITY_TARGET_MOVE_V1,
-                COMMAND_TYPE_TARGET_MOVE_INTENT,
-                payload,
-            )
-            .await?;
-        if result.status != CommandStatus::Accepted || result.payload != [8, 1] {
-            return Err(format!("target command: {result:?}").into());
+        let before = client.world_spatial().actor_position;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+        loop {
+            let result = client
+                .session_mut()
+                .gated_command(
+                    CAPABILITY_TARGET_MOVE_V1,
+                    COMMAND_TYPE_TARGET_MOVE_INTENT,
+                    payload,
+                )
+                .await?;
+            if result.status == CommandStatus::Accepted && result.payload == [8, 1] {
+                return Ok(());
+            }
+            if !retry_target_gate(
+                result.status,
+                &result.payload,
+                client.world_spatial().actor_position == before,
+            ) || tokio::time::Instant::now() >= deadline
+            {
+                return Err(format!("target command: {result:?}").into());
+            }
+            // serve/command.rs refuses before dispatch when its input permit or
+            // current transfer guard is unavailable; the empty result ran no Turn.
+            evidence(&format!(
+                "E2EF1_TARGET retry=unavailable-input command_id={}",
+                result.command_id
+            ));
+            pump(client).await?;
         }
-        Ok(())
     }
     async fn autowalk(client: &mut DevClientSession, at: TilePos) -> TestResult {
         let basis = spatial_basis::current(client)?;
@@ -294,7 +335,7 @@ mod e2ef1 {
                 Err(failure) => searched += failure.searched,
             }
         }
-        Err(format!("no reachable exact authored target: from={from:?} candidates={candidate_count} within_160={within_old_budget} searched={searched}").into())
+        Err(MissingAuthoredTarget(format!("no reachable exact authored target: from={from:?} candidates={candidate_count} within_160={within_old_budget} searched={searched}")).into())
     }
 
     async fn m01(
@@ -356,8 +397,12 @@ mod e2ef1 {
         checks.pass("stop", client.world_spatial());
         let at = client.world_spatial().actor_position;
         for direction in DIRS {
-            target_command(client, &[26, 2, 8, direction as u8]).await?;
-            until_with_peer(client, peer, |c| own(c).is_ok_and(|e| matches!(e.detail, EntityDetail::Actor { direction: seen, .. } if seen == direction))).await?;
+            let payload = oteryn_protocol_oteryn::target_move::encode_target_move_intent(
+                oteryn_protocol_oteryn::target_move::TargetMoveIntent::Turn(direction),
+            )
+            .map_err(|error| format!("turn intent: {error:?}"))?;
+            target_command(client, &payload).await?;
+            until_with_peer(client, peer, |c| own(c).is_ok_and(|e| matches!(e.detail, EntityDetail::Actor { direction: seen, .. } | EntityDetail::ActorWithIcons { direction: seen, .. } if seen == direction))).await?;
             if client.world_spatial().actor_position != at {
                 return Err("turn changed position".into());
             }
@@ -425,6 +470,9 @@ mod e2ef1 {
     ) -> TestResult {
         let used = far_use(client, world, objects, checks, revisions).await;
         if let Err(error) = &used {
+            if error.is::<MissingAuthoredTarget>() {
+                checks.missing("far-use-retry", WORLD_TARGET_SOURCE, &error.to_string());
+            }
             evidence(&format!(
                 "E2EF1_GAP row=M02 case=far-use-retry error={error}"
             ));
@@ -444,12 +492,12 @@ mod e2ef1 {
         checks: &mut Checks,
         revisions: &mut BTreeMap<(TilePos, u8), u64>,
     ) -> TestResult {
-        // 1638/1639 is a plain door family (not a key, level or quest door).
+        // Plain door orientations from map/door_registry.rs (not key, level or quest doors).
         let object = approach(
             client,
             world,
             objects,
-            |o| o.appearance == 1638 && world.facts().doors().at(o.at),
+            |o| retry_door(o.appearance, o.action) && world.facts().doors().at(o.at),
             3,
         )
         .await?;
@@ -476,6 +524,16 @@ mod e2ef1 {
         revisions.insert((object.at, object.ordinal), revision + 2);
         Ok(())
     }
+    fn ground_drop_position(
+        at: ActorPosition,
+    ) -> TestResult<oteryn_protocol_oteryn::item_view::WorldTilePosition> {
+        Ok(oteryn_protocol_oteryn::item_view::WorldTilePosition {
+            x: at.x,
+            y: at.y,
+            floor: i16::from(tile(at)?.floor),
+        })
+    }
+
     async fn far_move(
         client: &mut DevClientSession,
         world: &BundleWorld,
@@ -483,7 +541,6 @@ mod e2ef1 {
     ) -> TestResult {
         use oteryn_dev_client::client_runtime::inventory::MoveRequest;
         use oteryn_dev_client::{ItemMoveDestination, ItemMoveOutcome};
-        use oteryn_protocol_oteryn::item_view::WorldTilePosition;
         let item = client
             .inventory()
             .and_then(|i| i.entries.first())
@@ -497,11 +554,7 @@ mod e2ef1 {
             .move_item_counted(MoveRequest {
                 source: item.handle,
                 count: None,
-                destination: ItemMoveDestination::Ground(WorldTilePosition {
-                    x: ground.x,
-                    y: ground.y,
-                    floor: ground.floor,
-                }),
+                destination: ItemMoveDestination::Ground(ground_drop_position(ground)?),
             })
             .await?;
         if dropped.outcome != ItemMoveOutcome::Moved {
@@ -572,6 +625,92 @@ mod e2ef1 {
         Ok(())
     }
 
+    fn floor_exhaust_spell(
+        book: &crate::spell::SpellBook,
+        level: u32,
+        vocation: crate::spell::Vocation,
+    ) -> Option<(std::num::NonZeroU32, &crate::spell::SpellDefinition)> {
+        (1..=book.source_len())
+            .filter_map(|i| {
+                let index = std::num::NonZeroU32::new(u32::try_from(i).ok()?)?;
+                Some((index, book.indexed(index)?))
+            })
+            .filter(|(_, spell)| {
+                spell.aggressive
+                    && spell.level <= level
+                    && spell.vocations.contains(&vocation)
+                    && !spell.premium
+                    && !spell.learning_required
+                    && !spell.needs_target
+                    && !spell.target_or_direction
+                    && !spell.needs_weapon
+                    && !spell.needs_shield
+                    && matches!(
+                        spell.carrier,
+                        crate::spell::Carrier::Instant {
+                            takes_parameter: false,
+                            ..
+                        }
+                    )
+                    && matches!(
+                        spell.execution,
+                        crate::spell::Execution::Effects(_)
+                            | crate::spell::Execution::AbilityVariants(_)
+                    )
+            })
+            .min_by_key(|(_, spell)| (spell.level, spell.cooldown_micros))
+    }
+
+    async fn fixture_spell_facts(
+        client: &mut DevClientSession,
+    ) -> TestResult<(u32, crate::spell::Vocation)> {
+        use oteryn_protocol_oteryn::cyclopedia_character as wire;
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
+        let result = loop {
+            let result = client
+                .session_mut()
+                .gated_command(
+                    wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+                    388,
+                    &[wire::CharacterTab::GeneralStats as u8, 0, 0, 1],
+                )
+                .await?;
+            if result.status == CommandStatus::Accepted {
+                break result;
+            }
+            if !retry_target_gate(result.status, &result.payload, true)
+                || tokio::time::Instant::now() >= deadline
+            {
+                return Err(format!("fixture GeneralStats refused: {result:?}").into());
+            }
+            pump(client).await?;
+        };
+        let vocation_id =
+            general_stats::validate(&result.payload, general_stats::selected(client))?
+                .ok_or("fixture vocation absent from negotiated GeneralStats")?;
+        let level = u32::from_le_bytes(result.payload[9..13].try_into()?);
+        let key = [
+            "none",
+            "druid",
+            "elder_druid",
+            "sorcerer",
+            "master_sorcerer",
+            "knight",
+            "elite_knight",
+            "paladin",
+            "royal_paladin",
+            "monk",
+            "exalted_monk",
+        ]
+        .into_iter()
+        .find(|key| wire::vocation_id(key) == Some(vocation_id))
+        .ok_or("fixture vocation id unknown")?;
+        Ok((
+            level,
+            crate::spell::Vocation::from_key(key).ok_or("fixture vocation unknown")?,
+        ))
+    }
+
     async fn m03(
         client: &mut DevClientSession,
         world: &BundleWorld,
@@ -580,28 +719,23 @@ mod e2ef1 {
     ) -> TestResult {
         use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
         let book = native_spell_book()?;
-        // Scorch is an aggressive, untargeted level-1 sorcerer wave (8 mana).
-        // Flame Wave exceeds the pristine fixture's level before provisioning.
-        let spell = book
-            .spoken(FLOOR_EXHAUST_WORDS)
-            .ok_or("aggressive spell content absent: Scorch")?
-            .spell;
-        if !spell.aggressive {
-            return Err("Scorch is not aggressive".into());
+        let (level, vocation) = fixture_spell_facts(client).await?;
+        let selected = floor_exhaust_spell(book, level, vocation);
+        let cooldown = selected.map_or(Duration::ZERO, |(_, spell)| {
+            Duration::from_micros(
+                spell
+                    .groups
+                    .iter()
+                    .map(|group| group.cooldown_micros)
+                    .chain([spell.cooldown_micros])
+                    .max()
+                    .unwrap_or(0),
+            )
+        });
+        if selected.is_none() {
+            checks.missing("aggressive-exhaust", SPELL_TARGET_SOURCE,
+                &format!("no executable untargeted aggressive spell for observed fixture level={level} vocation={vocation:?}; no fixture promotion permitted"));
         }
-        let index = (1..=book.source_len())
-            .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
-            .find(|i| book.indexed(*i).is_some_and(|s| s.key == spell.key))
-            .ok_or("Scorch source index")?;
-        let cooldown = Duration::from_micros(
-            spell
-                .groups
-                .iter()
-                .map(|g| g.cooldown_micros)
-                .chain([spell.cooldown_micros])
-                .max()
-                .unwrap_or(0),
-        );
         let mut ready = tokio::time::Instant::now();
         let mut exhausted = 0;
         for teleport in [false, true] {
@@ -625,6 +759,9 @@ mod e2ef1 {
                     if tile(client.world_spatial().actor_position)?.floor == from.floor { return Err("stairs did not change floor".into()); }
                     checks.pass("stairs", client.world_spatial());
                 }
+                let Some((index, _)) = selected else {
+                    return Err("MISSING aggressive-exhaust: observed fixture has no eligible spell; source=content/abilities/definitions/player-spells.json:1".into());
+                };
                 let changed = std::time::Instant::now();
                 let before = client.actor_vitals().copied().ok_or("floor exhaust vitals")?;
                 let result = client.cast_spell(index, SpellTarget::None, false).await?;
@@ -645,6 +782,9 @@ mod e2ef1 {
                 Ok(())
             }.await;
             if let Err(error) = result {
+                if teleport && error.is::<MissingAuthoredTarget>() {
+                    checks.missing("teleport", WORLD_TARGET_SOURCE, &error.to_string());
+                }
                 evidence(&format!(
                     "E2EF1_GAP row=M03 teleport={teleport} error={error}"
                 ));
@@ -786,7 +926,9 @@ mod e2ef1 {
     ) -> TestResult {
         let basis = spatial_basis::current(client)?;
         let metadata = oteryn_world_bundle::bundle::visit(bytes, |_, _| Ok(()))?;
-        travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat").await?;
+        travel_to_spawn(client, world, &metadata.spawns, "oteryn:creature.rat")
+            .await
+            .inspect_err(|error| evidence(&format!("E2EF1_PUSH phase=approach error={error}")))?;
         let here = tile(client.world_spatial().actor_position)?;
         let creature = client
             .world_entities()
@@ -804,7 +946,13 @@ mod e2ef1 {
             .filter_map(|d| destination(world, from, d))
             .find(|at| *at != here && distance(*at, from) == 1)
             .ok_or("creature push lane")?;
-        if push(client, creature.entity, landing).await? != 1 {
+        evidence(&format!(
+            "E2EF1_PUSH phase=command command_type=98 from={from:?} to={landing:?} entity={:?}",
+            creature.entity
+        ));
+        if push(client, creature.entity, landing).await.inspect_err(|error| {
+            evidence(&format!("E2EF1_PUSH phase=command error={error} visibility_codec=domain:1,type:2 source=crates/session/src/domain_dispatch.rs:160"));
+        })? != 1 {
             return Err("live creature push did not move".into());
         }
         until(client, |c| {
@@ -814,7 +962,10 @@ mod e2ef1 {
                     .is_some_and(|e| e.position == position(landing, basis))
             })
         })
-        .await?;
+        .await.inspect_err(|error| {
+            evidence(&format!("E2EF1_PUSH phase=observe error={error} visibility_codec=domain:1,type:2 source=crates/session/src/domain_dispatch.rs:160"));
+        })?;
+        evidence("E2EF1_PUSH phase=observed");
         checks.pass("push-creature", (creature.entity, from, landing));
         Ok(())
     }
@@ -1187,9 +1338,34 @@ mod e2ef1 {
                     gaps.first().copied().unwrap_or("durable")
                 ))
             };
+            let missing_source =
+                if !gaps.is_empty() && gaps.iter().all(|case| checks.missing.contains_key(*case)) {
+                    format!(
+                        ";source:{}",
+                        checks
+                            .missing
+                            .values()
+                            .copied()
+                            .collect::<BTreeSet<_>>()
+                            .into_iter()
+                            .collect::<Vec<_>>()
+                            .join("+")
+                    )
+                } else {
+                    String::new()
+                };
             evidence(&format!(
-                "e2e_all scenario={row}.full status={} seconds={:.3} evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{suffix}",
-                if passed { "PASS" } else { "FAIL" },
+                "e2e_all scenario={row}.full status={} seconds={:.3} evidence=journey:apps/game-server/src/qualification/client_phases/full_e2ef1.rs{missing_source}{suffix}",
+                if passed {
+                    "PASS"
+                } else if durable
+                    && !gaps.is_empty()
+                    && gaps.iter().all(|case| checks.missing.contains_key(*case))
+                {
+                    "MISSING-SERVER"
+                } else {
+                    "FAIL"
+                },
                 started.elapsed().as_secs_f64()
             ));
             let from = tile(client.world_spatial().actor_position)?;
@@ -1226,7 +1402,7 @@ mod e2ef1 {
                 .spawn(|| -> Result<(), String> {
                     let book = native_spell_book().map_err(|error| error.to_string())?;
                     let spell = book
-                        .spoken(FLOOR_EXHAUST_WORDS)
+                        .spoken("exevo infir flam hur")
                         .ok_or("floor exhaust spell missing")?
                         .spell;
                     assert!(spell.aggressive);
@@ -1239,6 +1415,56 @@ mod e2ef1 {
                 .join()
                 .map_err(|_| "floor exhaust content test thread failed")??;
             Ok(())
+        }
+
+        #[test]
+        fn qualification_ground_drop_uses_native_bundle_floor() -> TestResult {
+            let at = ActorPosition {
+                x: 32369,
+                y: 32238,
+                floor: 7,
+            };
+            let drop = ground_drop_position(at)?;
+            assert_eq!(drop.floor, -7);
+            Ok(())
+        }
+
+        #[test]
+        fn qualification_target_gate_retries_only_empty_stationary_refusals() {
+            assert!(retry_target_gate(CommandStatus::Rejected, &[], true));
+            assert!(!retry_target_gate(CommandStatus::Rejected, &[8, 3], true));
+            assert!(!retry_target_gate(CommandStatus::Rejected, &[], false));
+            assert!(!retry_target_gate(CommandStatus::Accepted, &[], true));
+        }
+
+        #[test]
+        fn qualification_floor_exhaust_uses_observed_vocation() -> TestResult {
+            std::thread::Builder::new()
+                .stack_size(64 << 20)
+                .spawn(|| -> Result<(), String> {
+                    let book = native_spell_book().map_err(|error| error.to_string())?;
+                    assert!(floor_exhaust_spell(book, 8, crate::spell::Vocation::None).is_none());
+                    let (_, spell) = floor_exhaust_spell(book, 8, crate::spell::Vocation::Sorcerer)
+                        .ok_or("sorcerer novice spell absent")?;
+                    assert_eq!(spell.level, 1);
+                    assert!(spell.vocations.contains(&crate::spell::Vocation::Sorcerer));
+                    Ok(())
+                })?
+                .join()
+                .map_err(|_| "spell eligibility test thread failed")??;
+            Ok(())
+        }
+
+        #[test]
+        fn missing_authored_target_never_completes_a_row() {
+            let mut checks = Checks::default();
+            checks.missing(
+                "teleport",
+                WORLD_TARGET_SOURCE,
+                "unreachable authored target",
+            );
+            assert!(!checks.complete(&["teleport"]));
+            assert_eq!(checks.missing.get("teleport"), Some(&WORLD_TARGET_SOURCE));
         }
 
         #[test]

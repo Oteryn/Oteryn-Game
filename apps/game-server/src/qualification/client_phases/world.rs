@@ -500,8 +500,8 @@ impl std::fmt::Display for ReachFailure {
     }
 }
 
-// Newhaven's tutorial temple is not a hometown catalogue entry. Its authored
-// protection-zone flags, like the catalogue temples' flags, remain authoritative.
+// Authored PZ flags remain authoritative for a safe return, independently of
+// which hometown is currently recorded for the Character.
 fn return_protection_zone(world: &BundleWorld, at: TilePos) -> bool {
     world
         .base()
@@ -530,6 +530,50 @@ async fn return_to_protection_zone(
         );
     }
     Ok(at)
+}
+
+// Closed, non-key plain door orientations from map/door_registry.rs.
+fn retry_door(appearance: u16, action: Option<u16>) -> bool {
+    [
+        1638, 1640, 1642, 1644, 1656, 1658, 1660, 1662, 1674, 1676, 1685, 1689, 1694, 1698,
+    ]
+    .contains(&appearance)
+        && !matches!(action, Some(101 | 1001))
+}
+
+// Resolve the configured entry against authored hometown temples, independently
+// of the production pin default. The qualification bundle must agree.
+#[cfg(test)]
+fn fixture_home_town(world: &BundleWorld) -> TestResult<&oteryn_world_bundle::subarea::Area> {
+    let temples: BTreeMap<_, _> = world
+        .base()
+        .subareas
+        .areas
+        .iter()
+        .filter(|area| area.hometown)
+        .filter_map(|area| {
+            let temple = area.temple?;
+            let at = TilePos {
+                x: temple.x,
+                y: temple.y,
+                floor: temple.floor,
+            };
+            return_protection_zone(world, at).then_some((at, area))
+        })
+        .collect();
+    // The entry may be a few cells from the catalogue's temple (Thais is three
+    // cells south). Resolve the nearest reachable temple from the fixture ENTRY,
+    // never from the post-death position or the source pin's default town.
+    let path = route(world, TOWN, |at| temples.contains_key(&at))
+        .ok_or("configured fixture start has no reachable authored hometown temple")?;
+    let mut at = TOWN;
+    for direction in path {
+        at = destination(world, at, direction).ok_or("fixture temple route")?;
+    }
+    temples
+        .get(&at)
+        .copied()
+        .ok_or_else(|| "fixture hometown temple absent".into())
 }
 
 fn home_temple_return(at: TilePos, failure: ReachFailure) -> String {
@@ -3276,10 +3320,13 @@ fn smoke_with(
     use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
     let started = std::time::Instant::now();
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let project = match regions {
+    let mut project = match regions {
         Some(regions) => source::project_regions(&root, regions)?,
         None => source::project(&root)?,
     };
+    if regions.is_some() {
+        project.families.subareas.select_default_town(8)?;
+    }
     let (registry, palette) = source::registry(&root, &project)?;
     let identity = serde_json::from_slice(&std::fs::read(
         root.join("content/world/pins/oteryn.identity.json"),
@@ -3574,5 +3621,60 @@ fn qualification_profile_return_reaches_home_temple_after_m04_respawn() -> TestR
         })?
         .join()
         .map_err(|_| "profile return test thread failed")??;
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_fixture_hometown_follows_fixture_start() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            smoke_with(Some(&[(126, 125), (126, 126), (127, 127)]), |world| {
+                let temple = fixture_home_town(world)?
+                    .temple
+                    .ok_or("fixture temple absent")?;
+                assert_eq!(fixture_home_town(world)?.town_id, Some(8));
+                assert_eq!(
+                    fixture_home_town(world)?.town_id,
+                    world.base().subareas.default_town
+                );
+                let temple = TilePos {
+                    x: temple.x,
+                    y: temple.y,
+                    floor: temple.floor,
+                };
+                assert!(return_protection_zone(world, temple));
+                assert!(route(world, temple, |at| at == TOWN).is_some());
+                let target = world
+                    .facts()
+                    .doors()
+                    .keys()
+                    .find_map(|key| {
+                        let (at, ordinal) = crate::map::view::placement_of(key)?;
+                        let appearance = world
+                            .base()
+                            .tile(at.x, at.y, at.floor)?
+                            .appearance(ordinal)?;
+                        if !retry_door(appearance, world.facts().action_at(key)) {
+                            return None;
+                        }
+                        let path = route(world, TOWN, |next| {
+                            next.floor == at.floor
+                                && next.x.abs_diff(at.x).max(next.y.abs_diff(at.y)) == 3
+                        })?;
+                        Some((at, appearance, path.len()))
+                    })
+                    .ok_or("fixture bundle has no reachable plain far-USE door")?;
+                evidence(&format!(
+                    "fixture_world_targets far_use={target:?} default_town={:?}",
+                    world.base().subareas.default_town
+                ));
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "fixture hometown test thread failed")??;
     Ok(())
 }

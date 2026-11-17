@@ -95,6 +95,16 @@ struct Position {
 }
 
 impl Source {
+    /// Select an authored hometown for an explicitly configured fixture bundle.
+    /// Ordinary source loading retains the production pin's default.
+    pub fn select_default_town(&mut self, town: u32) -> Result<(), Error> {
+        if self.table.town(town).and_then(|area| area.temple).is_none() {
+            return Err(fail(format!("unknown hometown or missing temple: {town}")));
+        }
+        self.table.default_town = Some(town);
+        Ok(())
+    }
+
     /// Decode and verify the source assets before native World admission in `compile`.
     pub fn load(root: &Path) -> Result<Self, Error> {
         let mut source = Self::default();
@@ -602,6 +612,26 @@ pub(super) fn realize(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fixture_default_town_requires_authored_temple() -> Result<(), Error> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut source = Source::load(&root)?;
+        assert_eq!(source.table.default_town, Some(33));
+        assert!(source.select_default_town(u32::MAX).is_err());
+        assert_eq!(source.table.default_town, Some(33));
+        source.select_default_town(8)?;
+        assert_eq!(source.table.default_town, Some(8));
+        assert_eq!(
+            source.table.town(8).and_then(|area| area.temple),
+            Some(subarea::Temple {
+                x: 32369,
+                y: 32241,
+                floor: -7,
+            })
+        );
+        Ok(())
+    }
 
     #[test]
     fn hometown_lookup_retains_temples_and_resolves_newhaven_start() -> Result<(), Error> {
