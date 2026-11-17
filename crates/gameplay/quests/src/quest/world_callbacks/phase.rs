@@ -65,16 +65,27 @@ pub fn exclusive(left: &Callback, right: &Callback) -> bool {
         && left.effects.target_transform.is_some()
         && left.effects.target_transform == right.effects.target_transform
         && left.item_on_target == right.item_on_target;
+    // actions_coral.lua:8-14 uses one physical action for successive personal states.
+    let coral_mine = left.trigger == Trigger::Use
+        && left.selector.action == Some(28572)
+        && [left, right].iter().all(|callback| {
+            matches!(
+                callback.key.as_str(),
+                "oteryn:quest-callback/deeplings-coral-crate"
+                    | "oteryn:quest-callback/deeplings-coral-fail"
+            )
+        });
+    let writable_phase = source_trial || coral_mine;
     left.actor_kind == ActorKind::Player
         && right.actor_kind == ActorKind::Player
-        && (source_trial || matches!(left.trigger, Trigger::StepIn | Trigger::StepOut))
+        && (writable_phase || matches!(left.trigger, Trigger::StepIn | Trigger::StepOut))
         && left.trigger == right.trigger
         && left.selector == right.selector
         && left.quest == right.quest
         && left.storage.iter().any(|a| {
-            (a.preserve || source_trial)
+            (a.preserve || writable_phase)
                 && right.storage.iter().any(|b| {
-                    (b.preserve || source_trial)
+                    (b.preserve || writable_phase)
                         && a.track == b.track
                         && (a.maximum < b.minimum || b.maximum < a.minimum)
                 })
