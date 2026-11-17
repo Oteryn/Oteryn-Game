@@ -288,17 +288,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if interpretation.revisions()[3]
                 == oteryn_gameplay_items::starter_grant::NEWHAVEN_STARTER_TEMPLATE_REVISION
             {
-                // Newhaven roots use the original plain backpack component, then their own
-                // profession kit. Never also execute the legacy send_first_items loadout.
+                // Newhaven roots get the donor's first-login backpack (send_first_items for a
+                // Character without vocation: rope and shovel), then their own profession kit.
+                // Never also execute a vocation's legacy send_first_items loadout.
                 phase.set("starter_backpack");
+                let Some(first_items) =
+                    crate::durability::starter_grant::StartingLoadout::resolve("none", |id| {
+                        let key = format!("oteryn:item.tibia.i{id}");
+                        let revision = native.item_index()?.revision(&key)?.to_owned();
+                        Some(crate::durability::item_mint::TypedDefinitionRef {
+                            family: "Item".into(),
+                            production_key: key,
+                            revision_ref: revision,
+                        })
+                    })
+                else {
+                    return (FirstEntryOutcome::RefusedUnavailable, None, None);
+                };
                 let backpack_result = self
                     .root
-                    .grant_starter_items(
+                    .grant_newhaven_backpack(
                         self.character,
                         self.holder,
                         &fence,
                         &item_ref_admission::NativeItemWeights(native),
-                        &crate::durability::starter_grant::StarterTemplate::main(),
+                        &first_items,
                     )
                     .await;
                 #[cfg(test)]
