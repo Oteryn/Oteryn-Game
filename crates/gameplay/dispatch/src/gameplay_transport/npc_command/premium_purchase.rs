@@ -9,12 +9,17 @@ use crate::durability::npc_purchase::{
 use crate::foundation::{CommandId, CommandRef};
 
 pub(super) struct PendingPurchase {
-    service: PremiumNpcService,
+    service: Service,
     context: (u64, u64, String),
     npc: EntityRef,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     opened: u64,
     node: ([u8; 16], u64),
+}
+
+enum Service {
+    HorseRental,
+    Premium(PremiumNpcService),
 }
 
 pub(super) enum Step {
@@ -62,13 +67,28 @@ pub(super) fn prepare(
         }
         return None;
     }
-    let service =
-        oteryn_gameplay_npc::npc_promotion::select(&intent.text, &entry.premium_services)?;
+    let keyword = intent.text.trim().to_ascii_lowercase();
+    let (service, line) = if matches!(
+        context.2.as_str(),
+        "oteryn:npc.appaloosa" | "oteryn:npc.palomino"
+    ) && matches!(keyword.as_str(), "rent" | "horses")
+    {
+        (
+            Service::HorseRental,
+            "Do you want to rent a horse for one day at a price of 500 gold?".into(),
+        )
+    } else {
+        let service =
+            oteryn_gameplay_npc::npc_promotion::select(&intent.text, &entry.premium_services)?;
+        (
+            Service::Premium(service.clone()),
+            oteryn_gameplay_npc::npc_promotion::prompt(service),
+        )
+    };
     let fence = command.item_fence?;
-    let line = oteryn_gameplay_npc::npc_promotion::prompt(service);
     state.bank = None;
     state.premium = Some(PendingPurchase {
-        service: service.clone(),
+        service,
         context,
         npc: intent.npc_actor,
         fence,
@@ -161,7 +181,54 @@ pub(super) async fn apply(
     else {
         return rejected();
     };
-    let service = match &pending.service {
+    let Service::Premium(premium_service) = &pending.service else {
+        use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest};
+        use oteryn_gameplay_world_change::horse_station::RENTAL_PRICE_GOLD;
+        let derive = |slot: u8| {
+            let tag = format!("oteryn:npc-horse-rental:v1:{slot}");
+            super::super::npc_trade_command::derived(
+                tag.as_bytes(),
+                command.game_session_id,
+                command.command_id,
+            )
+        };
+        let fee = FeeBurnRequest {
+            cause: FeeBurnCause::HorseRental {
+                occurrence: derive(0),
+            },
+            fee_gold_units: RENTAL_PRICE_GOLD,
+            transaction_id: derive(1),
+            event_id: derive(2),
+            occurred_at_unix_ms: super::super::npc_trade_command::unix_ms_now(),
+            server_build_id: "oteryn-game-server".into(),
+            change: FeeChangeFacts {
+                item_instance_ids: [derive(3), derive(4)],
+                gold,
+                platinum,
+                crystal,
+                backpack,
+            },
+        };
+        return match admission
+            .root
+            .rent_horse(
+                admission.character,
+                admission.holder,
+                fence,
+                admission.reset_epoch,
+                fee,
+            )
+            .await
+        {
+            Ok(Some(_)) => NpcConversations::bank_reply(
+                &intent,
+                "I'll give you one of our experienced ones. Take care!".into(),
+            ),
+            Ok(None) => NpcConversations::bank_reply(&intent, "Sorry, not possible.".into()),
+            Err(_) => unknown(),
+        };
+    };
+    let service = match premium_service {
         PremiumNpcService::PhoenixPreparation => PurchaseService::Blessing(
             crate::content::npc_catalogue::premium_services::PHOENIX_PREPARATION.into(),
         ),

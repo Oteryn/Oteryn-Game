@@ -10,6 +10,7 @@ impl FeeBurnCause {
             Self::Forge { .. } => 14,
             Self::QuestAccessPurchase { .. } => 15,
             Self::QuestRewardPayment { .. } => 18,
+            Self::HorseRental { .. } => 19,
             Self::HirelingService { .. } => 472,
             Self::BosstiarySlot { .. } => 16,
             Self::PreyListReroll { .. } | Self::PreyPickAgain { .. } => 12,
@@ -33,7 +34,7 @@ impl FeeBurnCause {
             Self::TaskBoardTalisman { occurrence } | Self::BosstiarySlot { occurrence } => {
                 occurrence
             }
-            Self::HirelingService { occurrence, .. } => occurrence,
+            Self::HorseRental { occurrence } | Self::HirelingService { occurrence, .. } => occurrence,
             Self::Forge { occurrence, .. } => occurrence,
             Self::QuestRewardPayment { occurrence, .. }
             | Self::QuestAccessPurchase { occurrence }
@@ -65,6 +66,7 @@ impl FeeBurnCause {
             Self::Forge { .. } => "oteryn:service.forge",
             Self::QuestAccessPurchase { .. } => "oteryn:service.quest.rotten-blood.access",
             Self::QuestRewardPayment { callback, .. } => callback,
+            Self::HorseRental { .. } => "oteryn:service.horse_station.rent",
             Self::HirelingService { service, .. } => service,
             Self::BosstiarySlot { .. } => "oteryn:bosstiary.slot_remove",
             Self::PreyListReroll { slot, .. } => match slot {
@@ -95,7 +97,7 @@ impl FeeBurnCause {
     pub(super) fn validate(&self) -> Result<()> {
         check_uuid_v7(self.occurrence()).map_err(|_| FeeBurnError::InvalidInput)?;
         match self {
-            Self::ArenaEntry { .. } => Ok(()),
+            Self::ArenaEntry { .. } | Self::HorseRental { .. } => Ok(()),
             Self::TaskBoardTalisman { .. } | Self::BosstiarySlot { .. } => Ok(()),
             Self::Forge { occurrence, proof } => {
                 let value = crate::durability::character_forge_dust::live::audit::decode(proof)
@@ -161,6 +163,11 @@ impl FeeBurnCause {
     }
     pub(in super::super) fn audit(&self) -> FeeBurnCauseV1 {
         match self {
+            Self::HorseRental { occurrence } => FeeBurnCauseV1::HorseRental(OneItemNpcPurchaseV1 {
+                service_key: self.key().into(),
+                occurrence: occurrence.to_vec(),
+                atelier_proof: Vec::new(),
+            }),
             Self::ArenaEntry { occurrence } => FeeBurnCauseV1::ArenaEntry(OneItemNpcPurchaseV1 {
                 service_key: self.key().into(),
                 occurrence: occurrence.to_vec(),

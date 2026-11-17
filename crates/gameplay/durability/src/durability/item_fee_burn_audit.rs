@@ -114,6 +114,8 @@ pub enum FeeBurnCauseV1 {
     ArenaEntry(OneItemNpcPurchaseV1),
     #[prost(message, tag = "18")]
     QuestRewardPayment(OneItemQuestRewardPaymentV1),
+    #[prost(message, tag = "19")]
+    HorseRental(OneItemNpcPurchaseV1),
     #[prost(message, tag = "472")]
     HirelingService(OneItemNpcPurchaseV1),
     // Winter Update 2026 Mod Reshaping, paired with the same-transaction Atelier receipt.
@@ -154,6 +156,7 @@ pub struct OneItemFeeBurnCauseV1 {
             16, // Bosstiary slot removal
             17, // Svargrond arena entry
             18, // Source-bound Quest reward payment
+            19, // HorseRental
             472, // HirelingService
             483, // GemReshape
         )
@@ -383,6 +386,7 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
                         | FeeBurnCauseV1::HirelingService(_)
                         | FeeBurnCauseV1::Imbuement(_)
                         | FeeBurnCauseV1::NpcTravel(_)
+                        | FeeBurnCauseV1::HorseRental(_)
                         | FeeBurnCauseV1::Forge(_)
                         | FeeBurnCauseV1::BosstiarySlot(_)
                 )

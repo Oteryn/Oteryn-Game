@@ -24,6 +24,7 @@ pub struct OneItemQuestRewardPaymentV1 {
 pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
     if let Some(
         FeeBurnCauseV1::ArenaEntry(cause)
+        | FeeBurnCauseV1::HorseRental(cause)
         | FeeBurnCauseV1::HirelingService(cause)
         | FeeBurnCauseV1::PromotionPurchase(cause)
         | FeeBurnCauseV1::BlessingPurchase(cause)
@@ -38,6 +39,12 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         return Err(AuditError::InvalidInput);
     }
     match value.cause.as_ref().and_then(|value| value.cause.as_ref()) {
+        Some(FeeBurnCauseV1::HorseRental(cause))
+            if cause.service_key == "oteryn:service.horse_station.rent"
+                && value.fee_gold_units == oteryn_gameplay_world_change::horse_station::RENTAL_PRICE_GOLD =>
+        {
+            check_uuid_v7(&cause.occurrence)
+        }
         Some(FeeBurnCauseV1::QuestRewardPayment(cause))
             if cause.fee_gold_units == value.fee_gold_units
                 && (1..=1_000_000_000_000).contains(&cause.fee_gold_units)

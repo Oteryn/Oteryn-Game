@@ -90,6 +90,7 @@ pub enum FeeBurnCause {
     /// Exact source-bound Quest payment, atomic with the Quest's value grant.
     QuestRewardPayment { callback: String, occurrence: [u8;16], gold: u64, include_bank: bool },
     /// Crystal E12 cooking and imbuement-package purchases.
+    HorseRental { occurrence: [u8; 16] },
     HirelingService {
         service: String,
         occurrence: [u8; 16],
@@ -470,6 +471,7 @@ async fn burn_fee_at_channel(
                 | FeeBurnCause::HirelingService { .. }
                 | FeeBurnCause::Imbuement { .. }
                 | FeeBurnCause::NpcTravel { .. }
+                | FeeBurnCause::HorseRental { .. }
                 | FeeBurnCause::Forge { .. }
                 | FeeBurnCause::BosstiarySlot { .. }
         )))

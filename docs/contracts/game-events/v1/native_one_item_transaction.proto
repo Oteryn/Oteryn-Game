@@ -457,6 +457,7 @@ message OneItemFeeBurnCauseV1 {
     OneItemForgeV1 forge = 14; // P18; operation kind and occurrence in the bounded proof
     OneItemNpcPurchaseV1 quest_access_purchase = 15; // Rotten Blood access, fixed 5m source
     OneItemNpcPurchaseV1 bosstiary_slot = 16; // WB2/P02; oteryn:bosstiary.slot_remove, same-transaction slot operation
+    OneItemNpcPurchaseV1 horse_rental = 19; // 500 gold, paired with the same-transaction rental receipt
     // Closed named-House Hireling food purchase through the existing fee owner.
     OneItemNpcPurchaseV1 hireling_service = 472;
     // Winter Update 2026 Mod Reshaping: oteryn:atelier.reshape, 125000/1000000/5000000 gold
