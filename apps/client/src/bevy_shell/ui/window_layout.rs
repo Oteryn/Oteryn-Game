@@ -72,6 +72,14 @@ pub(in crate::bevy_shell) const WINDOWS: &[(&str, Geometry)] = &[
     ("item_details", geometry(482., None, [340., 300.])),
     ("journal", geometry(785., Some(620.), [550., 430.])),
     ("market", geometry(1000., Some(634.), [800., 480.])),
+    (
+        "module.analytics_selector",
+        geometry(176., None, [176., 38.]),
+    ),
+    ("module.battle_list", geometry(176., None, [176., 38.])),
+    ("module.containers", geometry(176., None, [176., 38.])),
+    ("module.skills", geometry(176., None, [176., 38.])),
+    ("module.vip", geometry(176., None, [176., 38.])),
     ("npc", geometry(600., None, [420., 350.])),
     ("options", geometry(685., Some(534.), [560., 420.])),
     ("outfit", geometry(760., None, [530., 300.])),
@@ -262,6 +270,10 @@ impl WindowLayouts {
         std::fs::rename(staging, path)
     }
 }
+
+/// The window menu's Reset window layout, for layout state kept outside `WindowLayouts`.
+#[derive(Event, Clone, Copy, Debug)]
+pub(in crate::bevy_shell) struct LayoutReset;
 
 /// Marks a window root whose node follows its `WindowLayouts` entry.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]

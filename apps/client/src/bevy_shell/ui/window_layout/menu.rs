@@ -135,6 +135,7 @@ fn choose(
             if let Err(error) = layouts.reset(path.as_deref()) {
                 leprintln!("Could not save window layout: {error}", error = error);
             }
+            commands.trigger(super::LayoutReset);
         }
     }
     for menu in &menus {

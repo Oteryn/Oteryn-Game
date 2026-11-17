@@ -75,6 +75,18 @@ impl HostOwner {
             .as_ref()
             .map(|path| path.with_extension("windows.json"))
     }
+    /// The dock layout is saved per character beside the client preferences file.
+    pub(in crate::bevy_shell) fn dock_layout_path(&self) -> Option<PathBuf> {
+        let character = self.scope.character?;
+        let hex: String = character.iter().map(|byte| format!("{byte:02x}")).collect();
+        self.preferences_path
+            .as_ref()
+            .map(|path| path.with_extension(format!("dock.{hex}.json")))
+    }
+    #[cfg(test)]
+    pub(in crate::bevy_shell) fn enter_character(&mut self, character: Option<[u8; 16]>) {
+        self.change_scope(character);
+    }
     pub fn new(path: Option<PathBuf>) -> Result<Self, Box<dyn std::error::Error>> {
         let client = ClientBootstrap::new()?.with_shared_frontend();
         let (selection, selector) = super::selection::SelectionBridge::new();

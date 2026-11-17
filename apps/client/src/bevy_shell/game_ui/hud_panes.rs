@@ -3,7 +3,13 @@
 //! and a bottom edge that resizes the content. Widgets live in the widget pane of a sidebar
 //! column; the 9x27 arrows beside the game window add and remove the optional sidebars.
 use super::{
-    super::{owner::HostOwner, ui::Skins},
+    super::{
+        owner::HostOwner,
+        ui::{
+            Skins,
+            window_layout::{Scaled, WindowId, WindowLayouts},
+        },
+    },
     art,
     modal::ModalGuard,
 };
@@ -16,6 +22,8 @@ use bevy::{
     ui_widgets::{Activate, Button},
 };
 use oteryn_client_ui_bevy as source;
+
+mod dock;
 
 /// SidebarWidget.qml geometry.
 pub(super) const HEADER: f32 = 15.;
@@ -85,7 +93,8 @@ impl Widget {
     }
 }
 /// The column a widget is docked in.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub(super) enum Dock {
     Left,
     Extra,
@@ -226,8 +235,16 @@ pub(super) struct SidebarArrow {
 pub(super) fn install(app: &mut App) {
     art::install(app);
     app.init_resource::<SidebarWidgets>()
-        .add_systems(Update, (project, super::super::ui::toolbar::grid::project))
+        .add_systems(
+            Update,
+            (
+                dock::persist,
+                project,
+                super::super::ui::toolbar::grid::project,
+            ),
+        )
         .add_observer(activate)
+        .add_observer(dock::reset)
         .add_observer(cancel);
 }
 
@@ -242,6 +259,8 @@ pub(super) fn frame(
         .spawn((
             WidgetFrame(widget),
             Name::new(widget.title()),
+            WindowId(widget.window_id()),
+            Scaled::default(),
             source::frame(skins.frame.clone(), [BORDER; 4]),
             Node {
                 width: percent(100.),
@@ -487,6 +506,7 @@ fn resize_start(
     mut event: On<PointerDragStart>,
     mut handles: Query<&mut Resize>,
     bodies: Query<(&Body, &ComputedNode)>,
+    layouts: Option<Res<WindowLayouts>>,
     guard: ModalGuard,
 ) {
     if event.button != PointerButton::Primary || !guard.allows(event.entity) {
@@ -500,6 +520,7 @@ fn resize_start(
         .iter()
         .find(|(body, _)| body.0 == widget)
         .map(|(_, node)| node.size().y * node.inverse_scale_factor)
+        .map(|height| height / dock::zoom(layouts.as_deref(), widget))
         .filter(|height| height.is_finite())
     else {
         return;
@@ -511,6 +532,7 @@ fn resize(
     mut event: On<PointerDrag>,
     handles: Query<&Resize>,
     scale: Res<UiScale>,
+    layouts: Option<Res<WindowLayouts>>,
     mut state: ResMut<SidebarWidgets>,
 ) {
     let Ok(handle) = handles.get(event.entity) else {
@@ -527,7 +549,9 @@ fn resize(
         return;
     }
     if let Some(entry) = state.entry_mut(handle.widget) {
-        entry.height = Some((start + event.distance.y / scale.0).clamp(MIN_CONTENT, MAX_CONTENT));
+        let zoom = dock::zoom(layouts.as_deref(), handle.widget);
+        entry.height =
+            Some((start + event.distance.y / (scale.0 * zoom)).clamp(MIN_CONTENT, MAX_CONTENT));
     }
     event.propagate(false);
 }
@@ -568,6 +592,7 @@ fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     state: Res<SidebarWidgets>,
+    layouts: Option<Res<WindowLayouts>>,
     sidebar: Option<Res<super::Sidebar>>,
     frames: Query<(Entity, &WidgetFrame)>,
     mut nodes: ParamSet<(
@@ -601,7 +626,8 @@ fn project(
         } else {
             Display::Flex
         };
-        let height = entry.height.map_or(Val::Auto, px);
+        let zoom = dock::zoom(layouts.as_deref(), body.0);
+        let height = entry.height.map_or(Val::Auto, |height| px(height * zoom));
         if node.display != display || node.height != height {
             node.display = display;
             node.height = height;
@@ -629,6 +655,9 @@ fn project(
             }
         }
     }
+    // `replace_children` skips the relationship hook for added children, so a widget moving
+    // between panes leaves its old pane first; otherwise the old pane's replace detaches it.
+    let mut replaced = Vec::with_capacity(3);
     for (pane, dock) in [
         (sidebar.left_widgets, Dock::Left),
         (sidebar.extra_widgets, Dock::Extra),
@@ -656,8 +685,14 @@ fn project(
         );
         desired.extend(current.iter().filter(|entity| fills.contains(**entity)));
         if desired != current {
-            commands.entity(pane).replace_children(&desired);
+            for arriving in desired.iter().filter(|entity| !current.contains(entity)) {
+                commands.entity(*arriving).remove::<ChildOf>();
+            }
+            replaced.push((pane, desired));
         }
+    }
+    for (pane, desired) in replaced {
+        commands.entity(pane).replace_children(&desired);
     }
 }
 
