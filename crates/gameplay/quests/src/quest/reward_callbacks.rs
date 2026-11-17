@@ -28,6 +28,8 @@ mod peer_tests;
 #[cfg(test)]
 mod qready1_craft_tests;
 #[cfg(test)]
+mod rcauth_exchange_tests;
+#[cfg(test)]
 mod recipe_tests;
 mod state_ops;
 mod temporal_binding;
@@ -481,6 +483,7 @@ const DOCUMENTS: &[&str] = &[
     include_str!("../../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-slug-sample.json"),
     include_str!("../../../../../content/quests/npc-callbacks/m13-siflind-paint.json"),
+    include_str!("../../../../../content/quests/npc-callbacks/rcauth-exchanges.json"),
     // Keep the shared document at DOCUMENTS[0]; Oramond is the final extension.
     include_str!("../../../../../content/quests/npc-callbacks/oramond-native-roots.json"),
     include_str!("../../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
@@ -2167,8 +2170,8 @@ mod tests {
 
     #[test]
     fn registered_shards_preserve_each_original_record_bound() -> Result<(), String> {
-        // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal.
-        assert_eq!(load()?.len(), 207 + 59 + 121 + 1 + 1);
+        // Shared, QuestPC7, other registered shards, M43 peer, Kingsday journal, RCAUTH exchanges.
+        assert_eq!(load()?.len(), 207 + 59 + 121 + 1 + 1 + 3);
         let mut document: serde_json::Value =
             serde_json::from_str(DOCUMENTS[0]).map_err(|error| error.to_string())?;
         let callbacks = document["callbacks"].as_array_mut().ok_or("callbacks")?;

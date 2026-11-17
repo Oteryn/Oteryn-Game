@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/rcauth/wyda/blood_herb",
+      "quest": "oteryn:quest.blood_herb_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:104-106:sha256:050e67f4379e4ea89c8ad0ce4c7293ef433fa4e5fec01ec1f1b08a286c7a4d14",
+        "RCAUTH: Wyda's one blood herb delivery; the donor writes Storage.BloodHerbQuest 1 -> 2, which the claimed chest track (0..1) cannot hold."
+      ],
+      "writable": true
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/rcauth/lee-delle-honey-flower",
+      "quest": "oteryn:quest.studded_legs_quest",
+      "npc": "oteryn:npc.lee_delle",
+      "keywords": [
+        "honey flower"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i2984",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3362",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Oh, thank you so much! Please take this piece of armor as reward."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/lee_delle.lua:141-148:sha256:06c004a8e47e860ee41de95c25cdd7420ce0f1a28d76c62fd4abac9b3eebf8e3"
+      ],
+      "requires": [],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i2984",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "Honey flowers are my favourites <sighs>."
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/rcauth/willie-banana",
+      "quest": "oteryn:quest.studded_shield_quest",
+      "npc": "oteryn:npc.willie",
+      "keywords": [
+        "banana"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3587",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3426",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "A banana! Great. Here, take this shield, I don't need it anyway."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/willie.lua:257-281:sha256:f1afafbec633d3f2fcc156a8fab8623d77f99923016ab163f548004b1fdae5f0",
+        "RCAUTH: the donor's banana prompt and yes confirmation are one keyword; a reward callback cannot open a topic without a storage write."
+      ],
+      "requires": [],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i3587",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "Are you trying to mess with me?!"
+      ],
+      "repeatable": true
+    },
+    {
+      "key": "oteryn:quest-reward/rcauth/wyda-blood-herb",
+      "quest": "oteryn:quest.blood_herb_quest",
+      "npc": "oteryn:npc.wyda",
+      "keywords": [
+        "blood herb",
+        "bloodherb"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rcauth/wyda/blood_herb",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3734",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i3454",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you -SOOO- much! No, I really mean it! Really! Here, let me give you a reward..."
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/wyda.lua:75-120:sha256:050e67f4379e4ea89c8ad0ce4c7293ef433fa4e5fec01ec1f1b08a286c7a4d14",
+        "RCAUTH: the donor's prompt and yes confirmation are one keyword; the donor's 30% torn teddy (12617) branch is not authored, the witchesbroom branch is."
+      ],
+      "requires": [
+        {
+          "track": "oteryn:quest-progress/kv/bloodherb/claimed",
+          "minimum": 1,
+          "maximum": 1
+        }
+      ],
+      "inventory": [
+        {
+          "item": "oteryn:item.tibia.i3734",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      ],
+      "failure_reply": [
+        "No, you don't have any..."
+      ]
+    }
+  ]
+}

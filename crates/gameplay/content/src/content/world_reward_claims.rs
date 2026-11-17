@@ -7,6 +7,8 @@
 //! placements that did not bind and the records left out, so the caller can gate boot on it.
 
 mod native_state;
+#[cfg(test)]
+mod plain_authored_tests;
 
 use crate::content::{
     ContentError, DefinitionFamily, DefinitionRevisionRef, PlacementKey, ProductionKey,
@@ -1031,7 +1033,7 @@ fn candidate_placement(
     let reward_fields: &[&str] = if key_variant {
         &["items", "key_binding"]
     } else {
-        &["items"]
+        &["container", "items", "written_text"]
     };
     if !only(
         binding,
@@ -1069,6 +1071,9 @@ fn candidate_placement(
         .get("items")
         .and_then(Value::as_array)
         .ok_or(bad.clone())?;
+    if reward.get("container").is_some() || reward.get("written_text").is_some() {
+        return plain_authored_placement(placement, appearance, binding, reward, items);
+    }
     let Some((entry, rest)) = items.split_first() else {
         return Ok(None);
     };
@@ -1133,6 +1138,131 @@ fn candidate_placement(
         achievement: None,
         contents: Vec::new(),
         root_text: None,
+        root_fluid_subtype: None,
+        root_charges_remaining: None,
+    }))
+}
+
+/// Authored text and filled-container terms of a plain (non-key) claim: either one leaf of
+/// count 1 with `written_text`, or a `container` root whose 1..=20 `items` are its direct
+/// children, each optionally carrying its own `written_text` on a single item.
+fn plain_authored_placement(
+    placement: &Value,
+    appearance: u64,
+    binding: &Value,
+    reward: &Value,
+    items: &[Value],
+) -> Result<Option<CandidatePlacement>, ClaimsError> {
+    let bad = ClaimsError("placement is not in the shard shape");
+    if binding.get("native_ordinal").is_some() || placement.get("quest_transition").is_some() {
+        return Ok(None);
+    }
+    let authored_text = |entry: &Value| -> Result<Option<Option<String>>, ClaimsError> {
+        let Some(written) = entry.get("written_text") else {
+            return Ok(Some(None));
+        };
+        if !only(written, &["text"]) {
+            return Ok(None);
+        }
+        let body = written
+            .get("text")
+            .and_then(Value::as_str)
+            .ok_or(bad.clone())?;
+        let valid = !body.is_empty()
+            && body.len() <= 7996
+            && body.chars().count() <= 4000
+            && !body.contains('\0');
+        Ok(valid.then(|| Some(body.to_owned())))
+    };
+    let leaf = |entry: &Value| -> Result<Option<(RewardClaimItem, Option<String>)>, ClaimsError> {
+        let mut plain = entry.clone();
+        if let Some(object) = plain.as_object_mut() {
+            object.remove("written_text");
+        }
+        let Some(item) = candidate_reward_item(&plain)? else {
+            return Ok(None);
+        };
+        let Some(text) = authored_text(entry)? else {
+            return Ok(None);
+        };
+        if text.is_some() && item.count != 1 {
+            return Ok(None);
+        }
+        Ok(Some((item, text)))
+    };
+    let (root, root_text, contents) = match reward.get("container") {
+        Some(container) => {
+            if reward.get("written_text").is_some() || items.is_empty() || items.len() > 20 {
+                return Ok(None);
+            }
+            let Some(root) =
+                candidate_reward_item(&serde_json::json!({"count": 1, "item": container}))?
+            else {
+                return Ok(None);
+            };
+            let mut contents = Vec::with_capacity(items.len());
+            for entry in items {
+                let Some((child, text)) = leaf(entry)? else {
+                    return Ok(None);
+                };
+                contents.push(RewardContainerItem {
+                    fluid_subtype: None,
+                    item: child.item,
+                    count: child.count,
+                    key_number: None,
+                    text,
+                    charges_remaining: None,
+                });
+            }
+            (root, None, contents)
+        }
+        None => {
+            let [entry] = items else {
+                return Ok(None);
+            };
+            if entry.get("written_text").is_some() {
+                return Ok(None);
+            }
+            let Some(root) = candidate_reward_item(entry)? else {
+                return Ok(None);
+            };
+            let Some(Some(text)) = authored_text(reward)? else {
+                return Ok(None);
+            };
+            if root.count != 1 {
+                return Ok(None);
+            }
+            (root, Some(text), Vec::new())
+        }
+    };
+    let crystal_unique_id = binding
+        .get("legacy_unique_ids")
+        .and_then(Value::as_array)
+        .ok_or(bad.clone())?
+        .iter()
+        .find(|id| id.get("server").and_then(Value::as_str) == Some("crystalserver"))
+        .map(|id| {
+            id.get("unique_id")
+                .and_then(Value::as_u64)
+                .ok_or(bad.clone())
+        })
+        .transpose()?;
+    let position = binding.get("project_position").ok_or(bad)?;
+    Ok(Some(CandidatePlacement {
+        appearance,
+        cell: native_cell(position),
+        crystal_unique_id,
+        native_ordinal: None,
+        extra_items: Vec::new(),
+        reward_callback: None,
+        item: root.item,
+        count: 1,
+        additional_items: Vec::new(),
+        quest_transition: None,
+        key_number: None,
+        achievement: None,
+        contents,
+        root_text,
         root_fluid_subtype: None,
         root_charges_remaining: None,
     }))

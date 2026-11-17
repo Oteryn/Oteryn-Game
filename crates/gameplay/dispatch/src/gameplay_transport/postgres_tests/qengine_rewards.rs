@@ -701,24 +701,32 @@ pub(super) async fn seed(
     callback: &RewardCallback,
     ordinal: u64,
 ) -> TestResult {
-    let canonical = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
-    let tracks = callback
+    // A source prerequisite is arranged at its lower bound beside the callback's own stage.
+    let arranged = callback
         .storage
         .iter()
-        .map(|s| canonical.track(&s.track).cloned().ok_or("track"))
+        .map(|s| (&s.track, s.minimum))
+        .chain(callback.requires.iter().map(|r| (&r.track, r.minimum)))
+        .collect::<Vec<_>>();
+    if arranged.is_empty() {
+        return Ok(());
+    }
+    let canonical = owner.quest_catalogue.as_ref().ok_or("quest catalogue")?;
+    let tracks = arranged
+        .iter()
+        .map(|(track, _)| canonical.track(track).cloned().ok_or("track"))
         .collect::<Result<Vec<_>, _>>()?;
     let setup = "oteryn:quest-transition/qengine-rewards-fixture-ready";
     let mut transitions = vec![QuestTransition {
         world_change: None,
         key: setup.into(),
         quest: callback.quest.clone(),
-        effects: callback
-            .storage
+        effects: arranged
             .iter()
-            .map(|s| QuestEffect {
-                track: s.track.clone(),
+            .map(|(track, value)| QuestEffect {
+                track: (*track).clone(),
                 from: QuestComparison::Any,
-                effect: QuestEffectKind::Set(s.minimum),
+                effect: QuestEffectKind::Set(*value),
             })
             .collect(),
         completes: false,
@@ -1207,6 +1215,9 @@ pub(super) async fn exercise(
         "qengine-rewards-hallowed" => "hallowed-holy-water",
         "qengine-rewards-outfox" => "outfox-helmet",
         "qengine-rewards-backpack" => "sam-backpack",
+        "qengine-rewards-rcauth-lee-delle" => "rcauth/lee-delle-honey-flower",
+        "qengine-rewards-rcauth-willie" => "rcauth/willie-banana",
+        "qengine-rewards-rcauth-wyda" => "rcauth/wyda-blood-herb",
         _ => return Err("unknown reward scenario".into()),
     };
     let callback = oteryn_gameplay_quests::quest::reward_callbacks::load()?
