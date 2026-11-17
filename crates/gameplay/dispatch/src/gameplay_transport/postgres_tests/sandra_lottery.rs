@@ -102,3 +102,12 @@ fn sandra_lottery_dialogue_is_registered_for_production() -> super::TestResult {
     assert!(source.item_exchange_keys(&rule.npc).is_some());
     Ok(())
 }
+
+#[test]
+fn sandra_lottery_claim_is_repeatable_per_ticket_and_stable_on_replay() {
+    use crate::durability::quest_state::npc_program::sandra_lottery::claim_key;
+    let first = claim_key([1; 16], 1);
+    assert_eq!(first, claim_key([1; 16], 1));
+    assert_ne!(first, claim_key([1; 16], 2));
+    assert_ne!(first, claim_key([2; 16], 1));
+}

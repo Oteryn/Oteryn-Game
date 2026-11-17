@@ -59,3 +59,10 @@ pub(super) fn resolve(
     }
     Ok(Some(resolved))
 }
+
+/// Each ticket command owns one MINT claim; separate tickets remain repeatable.
+/// The existing command receipt still handles replay before any RNG or minting.
+pub fn claim_key(session: [u8; 16], command: u64) -> String {
+    let session: String = session.iter().map(|byte| format!("{byte:02x}")).collect();
+    format!("oteryn:reward.sandra-lottery.{session}.{command}")
+}
