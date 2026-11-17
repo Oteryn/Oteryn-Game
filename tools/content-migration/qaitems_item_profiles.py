@@ -56,6 +56,9 @@ def capture(root):
 
 
 def apply_admissions(definitions, root):
+    selected = {f'oteryn:item.tibia.i{i}' for i in IDS}
+    if not any(definition['identity']['key'] in selected for definition in definitions):
+        return
     profiles = {r['production_definition']['production_key']: r for r in capture(root)['records']}
     for definition in definitions:
         if definition['identity']['key'] in profiles:
