@@ -33,6 +33,7 @@
       "failure_message": null,
       "success_message": "You have found a rapier.",
       "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/rookgaard/rapier_quest.lua:4-15",
         "https://tibia.fandom.com/index.php?curid=3334&oldid=1043841",
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/actions/rookgaard/rapier_quest.lua#L4-L15",
         "https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/startup/tables/chest.lua#L3454-L3457"
