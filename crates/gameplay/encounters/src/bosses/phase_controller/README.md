@@ -55,3 +55,10 @@ those cases intentionally return successfully for route-less lanes and provide
 no database evidence. The additional literal wave-clock assertion runs in
 both lanes. `cargo test --locked -p oteryn-gameplay-quests --lib cults` also
 checks that registering Court Warlock preserves the established phase schema.
+
+CWARLOCK local content validation (2026-11-17):
+
+| Check | Result |
+| --- | --- |
+| `validate_full_game_content_tree.py` | PASS: 19 domains, 39 systems, 100 nodes, none unassigned |
+| `validate_materialized_game_tree.py` | PASS: 97/97 materialized files, 10 World markers, 1,261 successor files |
