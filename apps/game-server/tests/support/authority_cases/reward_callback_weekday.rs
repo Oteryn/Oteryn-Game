@@ -64,7 +64,10 @@ fn catalogue() -> TestResult<QuestStateCatalogue> {
     });
     let recipe_sha256 = {
         use sha2::{Digest, Sha256};
-        format!("{:x}", Sha256::digest(serde_json::to_vec(&callback)?))
+        Sha256::digest(serde_json::to_vec(&callback)?)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
     };
     let bindings: Bindings = serde_json::from_value(serde_json::json!({
         "schema": 1,
