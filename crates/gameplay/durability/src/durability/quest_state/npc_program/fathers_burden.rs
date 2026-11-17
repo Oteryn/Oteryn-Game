@@ -142,7 +142,10 @@ pub(super) async fn apply<C: ItemLoopContent>(
                 _ => None,
             })
             .collect::<Vec<_>>();
-        if money != [8000] || !takes.is_empty() || gives != [CAPE] || experience(plan)? != 8000 {
+        let [gold] = money.as_slice() else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        if *gold != 8_000 || !takes.is_empty() || gives != [CAPE] || experience(plan)? != 8000 {
             return Err(DurabilityError::InvalidStoredState);
         }
         return match crate::durability::reward_claim_mint::fathers_burden::claim(
@@ -151,7 +154,7 @@ pub(super) async fn apply<C: ItemLoopContent>(
             fence.item_fence(),
             request.command,
             content,
-            80,
+            u32::try_from(gold / 100).map_err(|_| DurabilityError::InvalidStoredState)?,
         )
         .await?
         {

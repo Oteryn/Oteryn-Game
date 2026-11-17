@@ -405,11 +405,15 @@ impl LoopGroundOverlay {
         self.overlay.ground_entry(item)
     }
 
-    pub(super) fn plain_corpse_position(&self, item: &[u8; 16]) -> Option<TilePos> {
+    pub(super) fn plain_corpse(&self, item: &[u8; 16]) -> Option<(TilePos, NonZeroU32)> {
         if !self.source_plain_corpses.contains(item) {
             return None;
         }
-        self.ground_entry(item).map(|(position, _)| position)
+        let MapDefinition::Item(definition) = self.facts.get(item)?.definition else {
+            return None;
+        };
+        let (position, _) = self.ground_entry(item)?;
+        Some((position, definition))
     }
 
     /// Preserve the durable source bytes while reach is checked in map coordinates.

@@ -717,7 +717,7 @@ pub(super) fn map_look_target<F: MapFacts>(
         look_distance(at, target),
     ))
 }
-pub(super) async fn observe_map_look(
+async fn observe_map_look(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     key: ItemKey,

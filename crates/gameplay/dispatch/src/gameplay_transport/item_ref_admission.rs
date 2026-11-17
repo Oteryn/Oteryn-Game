@@ -176,14 +176,19 @@ pub(super) async fn use_quest_corpse(
     let candidate = async {
         let map = admission.bundle_map()?;
         let native = admission.active_generation?.native_gameplay()?;
+        let index = native.item_index()?;
         let ground =
-            super::loop_move::loop_ground(admission, map.overlay.base(), native.item_index()).await?;
-        let corpse = ground.plain_corpse_position(&item)?;
-        let (definition, _, _) = super::item_look::observe_map_look(admission, actor, key)
-            .await
-            .ok()?;
-        Some((father_corpse_reward(&definition.production_key)?, corpse, ground, native))
-    }.await;
+            super::loop_move::loop_ground(admission, map.overlay.base(), Some(index)).await?;
+        let (corpse, reference) = ground.plain_corpse(&item)?;
+        let definition = super::item_look::typed_definition(index, reference)?;
+        Some((
+            father_corpse_reward(&definition.production_key)?,
+            corpse,
+            ground,
+            native,
+        ))
+    }
+    .await;
     let Some((rule, corpse, ground, native)) = candidate else {
         return Ok(None);
     };
@@ -241,7 +246,10 @@ pub(super) async fn use_quest_corpse(
     match result {
         Ok(fresh) => {
             if fresh {
-                admission.states.chat.push_quest_feedback(command.game_session_id, rule.feedback);
+                admission
+                    .states
+                    .chat
+                    .push_quest_feedback(command.game_session_id, rule.feedback);
             }
             Ok(Some(UseOutcome {
                 disposition: UseDisposition::Committed,
