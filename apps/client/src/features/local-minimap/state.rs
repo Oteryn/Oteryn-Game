@@ -381,6 +381,7 @@ impl Minimap {
                 "Use map coordinates 0-65535, floor -15 to 0 and a label of 1-128 bytes"
             )));
         }
+        let previous = self.markers.clone();
         if let Some(marker) = self
             .markers
             .iter_mut()
@@ -402,8 +403,7 @@ impl Minimap {
                 color,
             });
         }
-        self.dirty = true;
-        self.save()
+        self.save_marker_change(previous)
     }
     /// `Misc.: Create Mark`: adds a default-labelled marker at `own`. Returns `false` and leaves
     /// the map unchanged when a marker already sits there, so the caller opens it for editing.
@@ -429,10 +429,17 @@ impl Minimap {
         {
             return Err(io::Error::other("Quest markers are supplied by the server"));
         }
+        let previous = self.markers.clone();
         self.markers
             .retain(|m| (m.x, m.y, m.floor) != (x, y, floor));
-        self.dirty = true;
-        self.save()
+        self.save_marker_change(previous)
+    }
+    fn save_marker_change(&mut self, previous: Vec<Marker>) -> io::Result<()> {
+        let was_dirty = std::mem::replace(&mut self.dirty, true);
+        self.save().inspect_err(|_| {
+            self.markers = previous;
+            self.dirty = was_dirty;
+        })
     }
     pub fn save(&mut self) -> io::Result<()> {
         if !self.dirty {

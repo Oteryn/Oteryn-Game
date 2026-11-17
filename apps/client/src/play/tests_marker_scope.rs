@@ -25,6 +25,24 @@ impl Stepper for AutomaticQueryHandoff {
         );
         self.changed = true;
         if self.activity {
+            if self.capability == 450 {
+                let mut admission = self.scope.clone();
+                admission.session = self.scope.source_session;
+                self.pending.push(SessionEvent::ActivityScope(AppliedDelta {
+                    server_sequence: 1,
+                    base_revision: 0,
+                    new_revision: 1,
+                    value: admission,
+                }));
+            }
+            self.pending.push(SessionEvent::ServerMessage(AppliedDelta {
+                server_sequence: 1000,
+                base_revision: 0,
+                new_revision: 1,
+                value: oteryn_session::ServerMessage::Warning("source".into()),
+            }));
+            // The destination spatial domain can precede domain 99.
+            self.pending.push(spatial_event(0, 32000));
             let payload = encode_activity_scope(&self.scope)
                 .map_err(|_| SessionError::ActivityScopeChanged)?;
             self.pending
@@ -47,7 +65,15 @@ impl Stepper for AutomaticQueryHandoff {
                 value: self.scope.clone(),
             }));
         }
-        self.pending.push(spatial_event(2, 32000));
+        if !self.activity {
+            self.pending.push(spatial_event(2, 32000));
+        }
+        self.pending.push(SessionEvent::ServerMessage(AppliedDelta {
+            server_sequence: 2,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::ServerMessage::StatusText("destination".into()),
+        }));
         Err(if self.activity {
             SessionError::ActivityScopeChanged
         } else {
@@ -73,7 +99,7 @@ impl Stepper for AutomaticQueryHandoff {
         Ok(CombatReport::Stop(AttackIntentDisposition::Ok))
     }
     async fn step(&mut self, _: StepDirection) -> Result<StepOutcome, SessionError> {
-        Ok(moved_to(32000, 200, 0))
+        Ok(moved_to(32003, 200, 0))
     }
     async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
         Ok(Some(LogoutResult::Busy))
@@ -130,36 +156,35 @@ fn query_handoff_continues(
             outbox,
         ))
         .map_err(|error| error.to_string())?;
-    let mut published = false;
+    let mut view = view().map_err(|error| error.to_string())?;
+    let namespace = view.message_namespace;
+    let mut requested = false;
     for _ in 0..200 {
-        match link.poll() {
-            Some(PlayEvent::Pushed(pushed)) if pushed.activity_scope.is_some() => {
-                assert_eq!(
-                    pushed.activity_scope.as_ref().map(|scope| scope.session),
-                    Some(destination)
-                );
-                assert_eq!(pushed.own.map(|position| position.x), Some(32000));
-                published = true;
-                link.scope_presented(destination);
-            }
-            Some(PlayEvent::Ended(error)) => {
-                return Err(format!("automatic query handoff ended play: {error:?}"));
-            }
-            _ => {}
+        view.tick(&link).map_err(|error| format!("{error:?}"))?;
+        if !requested && view.own().x == 32000 {
+            assert_ne!(view.message_namespace, namespace);
+            view.arrow(StepDir::East);
+            requested = true;
         }
-        if published && serves.load(Ordering::SeqCst) > 1 {
+        if view.own().x == 32003 && serves.load(Ordering::SeqCst) > 1 {
             break;
         }
         std::thread::sleep(Duration::from_millis(5));
     }
-    assert!(
-        published,
-        "automatic refresh must publish its committed destination"
+    assert!(requested);
+
+    assert_eq!(
+        view.own().x,
+        32003,
+        "destination step must reach the session"
     );
-    assert!(
-        serves.load(Ordering::SeqCst) > 1,
-        "destination session must continue servicing liveness"
+    assert_eq!(
+        view.server_messages()
+            .map(|m| m.server_sequence)
+            .collect::<Vec<_>>(),
+        [2]
     );
+    assert!(serves.load(Ordering::SeqCst) > 1);
     runtime.shutdown(Duration::from_millis(250));
     Ok(())
 }
