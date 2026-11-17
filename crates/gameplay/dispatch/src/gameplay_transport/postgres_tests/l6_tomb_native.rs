@@ -397,6 +397,9 @@ fn boss_portal_crops(unique: u16) -> Option<Vec<super::l6_world_pickups::NativeC
         expected: vec![tile((x, y), vec![ground])],
     };
     Some(vec![
+        // The bundle validator needs a walkable entry. The scenario separately
+        // positions the actor one tile north to exercise the actual forcefield.
+        landing(reward, reward_region, 417),
         NativeCrop {
             bytes: portal,
             region: (z, x / 256, y / 256),
@@ -407,7 +410,6 @@ fn boss_portal_crops(unique: u16) -> Option<Vec<super::l6_world_pickups::NativeC
                 tile((x, y - 1), north.to_vec()),
             ],
         },
-        landing(reward, reward_region, 417),
         landing(destination, exit_region, exit_ground),
     ])
 }

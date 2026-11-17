@@ -201,43 +201,41 @@ fn run(name: &'static str, rewards: bool) -> TestResult {
                 .map_err(debug)?,
             )
             .map_err(debug)?;
-        if rewards {
-            sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
-                .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
-            sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
-                .bind(id(42).as_slice()).bind(id(43).as_slice())
-                .bind(generation.identity().server_artifact_digest().as_slice())
-                .bind(generation.identity().client_artifact_digest().as_slice())
-                .bind(frame.as_slice()).execute(&h.pool).await?;
-            let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
-            h.root
-                .initialize_admission_equipment(
-                    &authority,
-                    &h.node,
-                    &fence.item_fence(),
-                    generation.identity().server_artifact_digest(),
-                    fresh.operation(),
-                )
-                .await
-                .map_err(debug)?;
-            h.root
-                .grant_starter_items(
-                    &authority,
-                    &h.node,
-                    &fence.item_fence(),
-                    &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
-                    &crate::durability::starter_grant::StarterTemplate {
-                        definition: crate::durability::item_mint::TypedDefinitionRef {
-                            family: "Item".into(),
-                            production_key: "oteryn:item.tibia.i2854".into(),
-                            revision_ref: "definition-r1".into(),
-                        },
-                        ..crate::durability::starter_grant::StarterTemplate::main()
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+            .bind(id(42).as_slice()).bind(id(43).as_slice())
+            .bind(generation.identity().server_artifact_digest().as_slice())
+            .bind(generation.identity().client_artifact_digest().as_slice())
+            .bind(frame.as_slice()).execute(&h.pool).await?;
+        let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
+        h.root
+            .initialize_admission_equipment(
+                &authority,
+                &h.node,
+                &fence.item_fence(),
+                generation.identity().server_artifact_digest(),
+                fresh.operation(),
+            )
+            .await
+            .map_err(debug)?;
+        h.root
+            .grant_starter_items(
+                &authority,
+                &h.node,
+                &fence.item_fence(),
+                &crate::gameplay_transport::item_ref_admission::NativeItemWeights(native),
+                &crate::durability::starter_grant::StarterTemplate {
+                    definition: crate::durability::item_mint::TypedDefinitionRef {
+                        family: "Item".into(),
+                        production_key: "oteryn:item.tibia.i2854".into(),
+                        revision_ref: "definition-r1".into(),
                     },
-                )
-                .await
-                .map_err(debug)?;
-        }
+                    ..crate::durability::starter_grant::StarterTemplate::main()
+                },
+            )
+            .await
+            .map_err(debug)?;
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
