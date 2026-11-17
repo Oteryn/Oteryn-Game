@@ -50,7 +50,7 @@ pub(super) async fn exercise(
             .root
             .read_bestiary_progress(
                 owner.character,
-                crate::domain::CharacterId::decode(&id(41)).map_err(debug)?,
+                crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?,
                 RACE,
             )
             .await
