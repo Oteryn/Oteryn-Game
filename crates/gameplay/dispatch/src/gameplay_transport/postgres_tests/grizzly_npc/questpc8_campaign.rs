@@ -1,5 +1,5 @@
 //! Native Grizzly progression for the three selected task/boss pairs.
-//! The chosen campaign adds its own once-only 10,000 XP and 5,000 gold completion.
+//! Completing the selected itinerary preserves source payouts without an extra bonus.
 //! No task counters, boss victories, points or quest receipts are seeded.
 use super::*;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, MovementLocalPosition};
@@ -193,47 +193,24 @@ pub(super) async fn exercise(
         ]
     );
     let before_campaign_xp = experience(h).await?;
-    eprintln!("QUESTPC8_CAMPAIGN POSTGRES_FINAL_PAYOUT_CHECK");
-    command += 1;
-    let greeting = command;
-    command += 1;
-    wire::talk_refused(
-        owner,
-        admitted,
-        npc,
-        &[(greeting, "hi"), (command, "campaign")],
-    )
-    .await?;
+    // Completion has no inventory delivery and must succeed without a backpack.
+    say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
     assert_eq!(
         experience(h).await?,
         before_campaign_xp,
-        "missing backpack refuses the complete reward transaction"
+        "the itinerary must not add XP to the earned source task rewards"
     );
     let phase: i64 = sqlx::query_scalar("SELECT value FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2")
         .bind(id(41).as_slice()).bind(quest::campaign::PHASE).fetch_one(&h.pool).await?;
-    assert_eq!(phase, 10, "failed delivery cannot complete the campaign");
-    super::super::item_look::seed_main_backpack(h, &[]).await?;
-    say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
-    assert_eq!(
-        experience(h).await? - before_campaign_xp,
-        10_000,
-        "the complete chosen campaign owes its authored XP exactly once"
-    );
-    let minted: (String, i64, bool) = sqlx::query_as("SELECT i.definition_production_key,m.quantity,m.created_xact_id=q.created_xact_id FROM game_reward_claim_mint_receipts m JOIN game_item_instances i USING(item_instance_id) JOIN game_character_quest_receipts q ON q.character_id=m.character_id AND q.cause_id=m.game_session_id AND q.cause_ordinal=m.command_id AND q.transition_key=m.claim_production_key WHERE q.character_id=encode($1,'hex')::uuid AND q.transition_key=$2")
-        .bind(id(41).as_slice()).bind("oteryn:quest-reward/chosen/hunting-campaign").fetch_one(&h.pool).await?;
-    assert_eq!(
-        minted,
-        ("oteryn:item.tibia.i3035".into(), 50, true),
-        "exact 5,000 gold value (50 platinum) shares the completion transaction"
-    );
+    assert_eq!(phase, 11, "completion succeeds without a backpack");
     let completed: bool = sqlx::query_scalar("SELECT completed_character_revision IS NOT NULL FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2")
         .bind(id(41).as_slice()).bind(quest::QUEST).fetch_one(&h.pool).await?;
     assert!(completed);
     say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
     assert_eq!(
         experience(h).await? - before_campaign_xp,
-        10_000,
-        "fresh-command replay grants no XP twice"
+        0,
+        "fresh-command replay cannot add campaign XP"
     );
     owner
         .states
@@ -243,7 +220,7 @@ pub(super) async fn exercise(
         .remove(&admitted.game_session_id);
     owner.admit_quest_session(admitted).await;
     say(owner, admitted, npc, &mut command, &["hi", "campaign"]).await?;
-    assert_eq!(experience(h).await? - before_campaign_xp, 10_000);
+    assert_eq!(experience(h).await? - before_campaign_xp, 0);
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_reward_claim_mint_receipts WHERE claim_production_key=$1",
     )
@@ -251,8 +228,13 @@ pub(super) async fn exercise(
     .fetch_one(&h.pool)
     .await?;
     assert_eq!(
-        receipts, 1,
-        "fresh-command replay cannot mint currency twice"
+        receipts, 0,
+        "completion, replay and readmission must never mint campaign currency"
+    );
+    assert_eq!(
+        campaign_receipts(h).await?,
+        1,
+        "completion is recorded once"
     );
     Ok(())
 }
