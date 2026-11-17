@@ -44,4 +44,19 @@ Guide execution, Eclipse start/use/report and travel, Vampire Hunt, Haunted Ruin
 
 The Grimoire regression ran red through live USE dispatch with the original alias registry (36.04 s). Both commands returned `NothingToUse`. The fixture uses the exact committed chest position, appearance, ordinal and absence of UID in a cropped world.
 
+PG via shard (pgsplit build files applied on `c8b9f843adcc0fa56c07d7487b33ec87fd5757af`) with only the blessing gate temporarily restored to its prior behavior returned RC 101. Grimoire passed in 17.04 s with its placement alias present. The blessing case failed in 22.83 s because the old gate rejected the report state before checking funds.
+
+The run with the Rust eligibility change alone returned RC 101. Grimoire passed in 15.14 s. The blessing case reached the funded purchase, where the original migration 0315 receipt trigger still required state 25 (25.49 s). Migration 2897 updates only that quest-specific predicate to 23–25.
+
 The quest authoring runner completed 44 check commands successfully. Pin refresh retained the original world digest `0676b1568f55a55fbe994f344a8e0c60debf766751d12849f56c19f60c93aae5`.
+
+### Cases for the Server session
+
+- Demon Forge entrance at level 100 after the Ungreez report, with any one Pits throne.
+- Demon Forge boss exits, including the shared Latrivan and Golgordan clear, the two-minute exit window, retreat on expiry, and permanent shortcut unlock.
+- Ungreez most-damage credit and the room's post-report access.
+- Vampire Hunt coffin selection of The Count or The Weakened Count from the three necklace offerings.
+- Haunted Ruin holy-water use, Pirate Ghost summon, and timed door reopening.
+- Shadow Nexus shared wall decay and per-cycle completion capacity.
+
+The local cases use two independent boundaries: a chest USE against the native placement alias and a blessing purchase given the durable final-report state. The blessing fixture seeds that state at the same boundary where the existing purchase tests seed the post-claim state.
