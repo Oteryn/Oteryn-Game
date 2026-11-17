@@ -14,14 +14,22 @@ SPAWNED = re.compile(rb"spawned [0-9a-f]{32} [0-9]+\n")
 
 # The server bounds each accepted control request at 30 seconds.
 CONTROL_REPLY_TIMEOUT = 40
+CONTROL_QUEUE_TIMEOUT = 40
 
 
 def _request(socket_path, line, limit):
     """One control exchange; returns up to `limit` answer bytes plus one overflow-detecting byte."""
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
+        queue_deadline = time.monotonic() + CONTROL_QUEUE_TIMEOUT
+        control.settimeout(CONTROL_QUEUE_TIMEOUT)
+        control.connect(socket_path)
+        control.settimeout(max(0.001, queue_deadline - time.monotonic()))
+        control.sendall(b"!")
+        control.settimeout(max(0.001, queue_deadline - time.monotonic()))
+        if control.recv(1) != b"!" or time.monotonic() >= queue_deadline:
+            raise TimeoutError("qualification control was not ready in time")
         deadline = time.monotonic() + CONTROL_REPLY_TIMEOUT
         control.settimeout(CONTROL_REPLY_TIMEOUT)
-        control.connect(socket_path)
         control.sendall(line.encode("ascii"))
         control.shutdown(socket.SHUT_WR)
         answer = bytearray()

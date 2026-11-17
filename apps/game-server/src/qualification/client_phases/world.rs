@@ -1030,6 +1030,11 @@ mod travel {
         )
     }
 
+    // The Naginata owner requires object revision to equal the channel hit count.
+    fn remaining_pick_hits(hits: u8, revision: u64) -> u8 {
+        hits.saturating_sub(u8::try_from(revision).unwrap_or(u8::MAX))
+    }
+
     fn missing_fixture_tool(tool: u32) -> String {
         if tool == 3456 {
             "fixture has no pick 3456".into()
@@ -1459,6 +1464,11 @@ mod travel {
                         observed_revision(client, &self.placement(spot, ordinal)?, spot, ordinal)?
                     } else {
                         0
+                    };
+                    let hits = if tool == Some(3456) {
+                        remaining_pick_hits(hits, revision)
+                    } else {
+                        hits
                     };
                     for hit in 1..=hits {
                         verdict::Harness::global().progress("travel descent");
@@ -2057,6 +2067,14 @@ mod travel {
             };
             assert_eq!(tool_revision(&[event(2, 9)], spot, 1), None);
             assert_eq!(tool_revision(&[event(1, 4), event(2, 9)], spot, 1), Some(4));
+        }
+
+        #[test]
+        fn qualification_partial_pick_remaining_hits() {
+            assert_eq!(remaining_pick_hits(6, 0), 6);
+            assert_eq!(remaining_pick_hits(6, 1), 5);
+            assert_eq!(remaining_pick_hits(6, 5), 1);
+            assert_eq!(remaining_pick_hits(6, 6), 0);
         }
 
         include!("travel_tests.rs");
@@ -5232,12 +5250,12 @@ pub(super) fn fixture_command(script: &Path) -> std::process::Command {
     command
         .args([
             "--kill-after=2s",
-            "55s",
+            "100s",
             "sudo",
             "-n",
             "timeout",
             "--kill-after=2s",
-            "50s",
+            "95s",
             "python3",
         ])
         .arg(script);
@@ -5253,6 +5271,53 @@ pub(super) async fn await_fixture_workers() {
     for worker in workers {
         let _ = worker.await;
     }
+}
+
+async fn fixture_timeout<T>(
+    limit: Duration,
+    operation: impl std::future::Future<Output = T>,
+) -> Result<T, tokio::time::error::Elapsed> {
+    let run = async {
+        let result = tokio::time::timeout(limit, operation).await;
+        await_fixture_workers().await;
+        result
+    };
+    if FIXTURE_WORKERS.try_with(|_| ()).is_ok() {
+        run.await
+    } else {
+        FIXTURE_WORKERS.scope(Default::default(), run).await
+    }
+}
+
+#[test]
+fn qualification_encounter_timeout_waits_for_fixture_completion() -> TestResult {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()?
+        .block_on(async {
+            let (release, gate) = std::sync::mpsc::sync_channel(1);
+            let mut encounter = Box::pin(fixture_timeout(Duration::from_secs(1), async {
+                let _task = FixtureCommand::start(move || {
+                    gate.recv_timeout(Duration::from_secs(2)).map_err(|error| error.to_string())
+                })?;
+                std::future::pending::<TestResult>().await
+            }));
+            tokio::select! {
+                biased;
+                _ = &mut encounter => return Err("encounter completed before deadline".into()),
+                () = tokio::task::yield_now() => {}
+            }
+            tokio::time::advance(Duration::from_secs(2)).await;
+            tokio::select! {
+                biased;
+                _ = &mut encounter => return Err("encounter released a pending fixture worker".into()),
+                () = tokio::task::yield_now() => {}
+            }
+            release.send(())?;
+            assert!(encounter.await.is_err());
+            Ok(())
+        })
 }
 
 pub(super) struct FixtureCommand<T> {
@@ -6380,7 +6445,8 @@ fn qualification_fixture_command_joins_writer_when_wait_is_cancelled() -> TestRe
         .block_on(FIXTURE_WORKERS.scope(Default::default(), async {
             let (release, gate) = std::sync::mpsc::sync_channel(1);
             let task = FixtureCommand::start(move || {
-                gate.recv().map_err(|error| error.to_string())?;
+                gate.recv_timeout(Duration::from_secs(2))
+                    .map_err(|error| error.to_string())?;
                 Ok(())
             })?;
             drop(task);
@@ -6424,12 +6490,12 @@ fn qualification_spawn_and_fixture_command_have_outer_process_deadlines() -> Tes
         args,
         [
             "--kill-after=2s",
-            "55s",
+            "100s",
             "sudo",
             "-n",
             "timeout",
             "--kill-after=2s",
-            "50s",
+            "95s",
             "python3",
             "provision.py"
         ]
@@ -6481,4 +6547,28 @@ fn qualification_round_two_caller_contracts() {
         .filter_map(|(source, needle)| (!implementation(source).contains(needle)).then_some(needle))
         .collect();
     assert!(missing.is_empty(), "missing contracts: {missing:?}");
+}
+
+#[test]
+fn qualification_retries_and_encounter_cleanup_keep_their_owners() {
+    let q02 = include_str!("full_row_q02.rs");
+    let s10 = include_str!("full_row_s10.rs");
+    let c09 = include_str!("client_row_c09.rs");
+    let mp09 = include_str!("mp/mp09_party_xp.rs");
+    let combat = c09
+        .split_once("for _ in 0..3 {")
+        .map_or("", |(_, combat)| combat);
+    let missing: Vec<_> = [
+        ("Q02", q02.contains("hunt_target(client, Some(target))")),
+        ("S10", s10.contains("hunt_target(client, Some(target))")),
+        (
+            "C09",
+            combat.contains("let target = travel_to_spawn_target("),
+        ),
+        ("MP09", mp09.contains("fixture_timeout(")),
+    ]
+    .into_iter()
+    .filter_map(|(name, ok)| (!ok).then_some(name))
+    .collect();
+    assert!(missing.is_empty(), "missing caller behavior: {missing:?}");
 }

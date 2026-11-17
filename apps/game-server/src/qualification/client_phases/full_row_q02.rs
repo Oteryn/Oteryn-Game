@@ -302,7 +302,11 @@ async fn warlock(
         &mut passages,
     )
     .await?;
-    client_hunt::hunt(client).await?;
+    let here = client.world_spatial().actor_position;
+    let target = client.world_entities()
+        .and_then(|entities| nearest_spawn(entities.iter(), here, "Court Warlock"))
+        .ok_or("Q02 has no visible Court Warlock after routing")?.entity;
+    client_hunt::hunt_target(client, Some(target)).await?;
     Ok(format!("killed at {}", show(point)))
 }
 

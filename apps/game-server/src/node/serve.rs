@@ -2840,7 +2840,19 @@ fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
 
 async fn handle_control(stream: &mut UnixStream) -> Option<Vec<u8>> {
     let mut request = Vec::with_capacity(CONTROL_REQUEST_BYTES);
-    let mut limited = (&mut *stream).take(CONTROL_REQUEST_BYTES as u64 + 1);
+    let mut first = [0];
+    if stream.read(&mut first).await.ok()? == 0 {
+        return Some(request);
+    }
+    if first[0] == b'!' {
+        // A queued fixture client submits the mutating request only after this
+        // accepted connection has a server-side deadline.
+        stream.write_all(b"!").await.ok()?;
+    } else {
+        request.push(first[0]);
+    }
+    let remaining = CONTROL_REQUEST_BYTES + 1 - request.len();
+    let mut limited = (&mut *stream).take(remaining as u64);
     limited.read_to_end(&mut request).await.ok()?;
     if request.len() > CONTROL_REQUEST_BYTES {
         return None;

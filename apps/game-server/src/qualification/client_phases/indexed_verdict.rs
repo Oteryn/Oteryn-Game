@@ -214,8 +214,10 @@ mod tests {
             let watch = new_watch(harness);
             let (release, gate) = std::sync::mpsc::sync_channel(1);
             let error = run_indexed(&watch, async {
-                let _worker =
-                    FixtureCommand::start(move || gate.recv().map_err(|error| error.to_string()))?;
+                let _worker = FixtureCommand::start(move || {
+                    gate.recv_timeout(Duration::from_secs(2))
+                        .map_err(|error| error.to_string())
+                })?;
                 std::future::pending::<TestResult>().await
             })
             .await
