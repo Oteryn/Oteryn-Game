@@ -277,7 +277,15 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
         .bind(level)
         .execute(&mut *tx)
         .await?;
-    sqlx::query("UPDATE game_item_instances SET quantity=3 WHERE definition_production_key='oteryn:item.tibia.i11544'").execute(&mut *tx).await?;
+    if spirit {
+        // Faded wills are non-stackable: carry three distinct legal instances.
+        for (seed, ordinal) in [(93, 2), (94, 3)] {
+            sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) SELECT encode($1,'hex')::uuid,world_id,definition_family,definition_production_key,definition_revision_ref,1,lifecycle,encode($2,'hex')::uuid FROM game_item_instances WHERE item_instance_id=encode($3,'hex')::uuid")
+                .bind(id(seed).as_slice()).bind(id(seed + 10).as_slice()).bind(id(92).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
+                .bind(id(41).as_slice()).bind(id(91).as_slice()).bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(ordinal).bind(id(seed + 20).as_slice()).execute(&mut *tx).await?;
+        }
+    }
     for s in &callback.storage {
         sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,value,quest_key,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,1) ON CONFLICT(character_id,track_key) DO UPDATE SET value=excluded.value")
             .bind(id(41).as_slice()).bind(&s.track).bind(s.minimum).bind(&callback.quest).execute(&mut *tx).await?;
