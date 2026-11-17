@@ -42,9 +42,34 @@ pub struct ItemDisguiseRequirement {
     pub condition: String,
 }
 
+/// Select one of two outcomes of the same command-scoped USE roll.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct CallbackChance {
+    pub success_permille: u16,
+    pub success: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_appearance: Option<u16>,
+}
+
+impl CallbackChance {
+    pub fn accepts(self, draw: u64) -> bool {
+        self.success_permille <= 1000
+            && (((u128::from(draw) * 1000) >> 64) < u128::from(self.success_permille))
+                == self.success
+    }
+
+    pub(super) fn excludes(self, other: Self) -> bool {
+        matches!((self.source_appearance, other.source_appearance), (Some(left), Some(right)) if left != right)
+            || (self.success_permille == other.success_permille && self.success != other.success)
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CallbackEffects {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chance: Option<CallbackChance>,
     /// Distinct carried definitions consumed atomically by the Quest receipt owner.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub carried_inputs: Vec<super::super::reward_callbacks::ItemAmount>,
@@ -88,6 +113,8 @@ pub struct CallbackEffects {
     /// Restore the exact pre-transform source revision after this delay.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reset_after_ms: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reset_appearance: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub target_transform: Option<TargetTransform>,
     /// Restore remote passage objects independently of the source object.
@@ -393,6 +420,14 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
 
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
+    if effects.chance.is_some_and(|chance| {
+        chance.success_permille > 1000
+            || chance.source_appearance == Some(0)
+            || callback.trigger != Trigger::Use
+            || callback.actor_kind != ActorKind::Player
+    }) {
+        return false;
+    }
     let inputs = &effects.carried_inputs;
     let unique: BTreeSet<_> = inputs.iter().map(|input| &input.item).collect();
     if inputs.len() > 8
@@ -632,6 +667,9 @@ pub(super) fn valid(callback: &Callback) -> bool {
                                 .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
                     })
         })
+        || effects
+            .reset_appearance
+            .is_some_and(|appearance| appearance == 0 || effects.reset_after_ms.is_none())
         || effects.reset_after_ms.is_some_and(|delay| {
             !(1..=3_600_000).contains(&delay)
                 || callback.actor_kind != ActorKind::Player
@@ -1105,4 +1143,37 @@ mod phase_tests {
         assert_eq!(encoded["phase"], "cults_boss_phase_closures");
         Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn callback_chance_selects_one_side_at_the_threshold() {
+    let mut success = CallbackChance {
+        success_permille: 100,
+        success: true,
+        source_appearance: None,
+    };
+    let threshold = ((1_u128 << 64).div_ceil(10)) as u64;
+    let failure = CallbackChance {
+        success: false,
+        ..success
+    };
+    assert!(success.excludes(failure));
+    assert!(success.accepts(threshold - 1));
+    assert!(!failure.accepts(threshold - 1));
+    assert!(!success.accepts(threshold));
+    assert!(failure.accepts(threshold));
+    success.success_permille = 0;
+    assert!(!success.accepts(0));
+    success.success_permille = 1000;
+    assert!(success.accepts(u64::MAX));
+    success.success_permille = 1001;
+    assert!(!success.accepts(0));
+    assert!(
+        !CallbackChance {
+            success: false,
+            ..success
+        }
+        .accepts(0)
+    );
 }

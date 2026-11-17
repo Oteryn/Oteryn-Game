@@ -405,6 +405,10 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             .facts
             .quest_callback_matches(key, None, None, selector.appearance)
             || ((selector.position.is_some()
+                || callback
+                    .effects
+                    .chance
+                    .is_some_and(|chance| chance.source_appearance.is_some())
                 || callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE
                 || oteryn_gameplay_quests::quest::rotten_blood::flames::by_key(&callback.key)
                     .is_some())
@@ -994,6 +998,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && conditional_cells::matches(map, c)
             })
             .collect::<Vec<_>>();
+        if selected
+            .iter()
+            .any(|callback| callback.effects.chance.is_some())
+        {
+            use sha2::{Digest, Sha256};
+            // All alternatives for this placement see the same draw. Wire replay
+            // retains its original result and pending work retains its callback key.
+            let digest = Sha256::new()
+                .chain_update(b"oteryn:quest-world-use-chance:v1")
+                .chain_update(self.world_id.as_bytes())
+                .chain_update(self.reset_epoch.to_be_bytes())
+                .chain_update(command.game_session_id.as_bytes())
+                .chain_update(command.command_id.to_be_bytes())
+                .chain_update(resolved.placement_key.to_be_bytes())
+                .finalize();
+            let draw = u64::from_be_bytes(*digest.first_chunk::<8>()?);
+            let appearance = map
+                .overlay
+                .base()
+                .tile(resolved.pos.x, resolved.pos.y, resolved.pos.floor)
+                .and_then(|tile| {
+                    tile.ids()
+                        .iter()
+                        .zip(tile.depths())
+                        .filter(|(_, depth)| **depth == 0)
+                        .nth(usize::from(resolved.ordinal))
+                        .and_then(|(id, _)| {
+                            map.facts.base_entry(resolved.pos, resolved.ordinal, *id)
+                        })
+                })
+                .map(|facts| facts.appearance_id);
+            selected.retain(|callback| {
+                callback.effects.chance.is_none_or(|chance| {
+                    chance.accepts(draw)
+                        && chance
+                            .source_appearance
+                            .is_none_or(|expected| appearance == Some(expected))
+                })
+            });
+            if selected.is_empty() {
+                return Some(UseOutcome::rejected());
+            }
+        }
         let source_trial = selected
             .iter()
             .any(|c| c.effects.target_transform.is_some());
