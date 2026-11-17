@@ -636,7 +636,11 @@ impl NodeConfig {
             }
         }
         if self.qualification_fixture
-            && (self.database.database != "oteryn_node_boot"
+            // The disposable node-boot store, and the second (Open PvP) World's store.
+            && (!matches!(
+                self.database.database.as_str(),
+                "oteryn_node_boot" | "oteryn_node_boot_pvp"
+            )
                 || self.readiness.source_authority != "oteryn:runtime:node-boot")
         {
             return reject("qualification_fixture");
@@ -1477,6 +1481,16 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
                 "oteryn:runtime:node-boot",
             );
         assert!(NodeConfig::parse(disposable.as_bytes()).is_ok());
+        let pvp = disposable.replace(
+            "database = \"oteryn_node_boot\"",
+            "database = \"oteryn_node_boot_pvp\"",
+        );
+        assert!(NodeConfig::parse(pvp.as_bytes()).is_ok());
+        let other = disposable.replace(
+            "database = \"oteryn_node_boot\"",
+            "database = \"oteryn_node_boot_other\"",
+        );
+        assert!(NodeConfig::parse(other.as_bytes()).is_err());
     }
 
     #[test]

@@ -1,8 +1,8 @@
 //! C04 full-row journey, derived from the matrix, re-audit, and the cast gate owner.
 //!
 //! 1. Admit the provisioned Character in the temple PZ; send an aggressive indexed CAST and
-//!    require an accepted command carrying a rejected cast disposition, no vitals delta, and no
-//!    mana change.
+//!    require the refusal (command status Rejected with a rejected cast disposition), no vitals
+//!    delta, and no mana change.
 //! 2. Walk out of the PZ using native STEP commands; send the same CAST and require `Cast`, an
 //!    authoritative vitals delta, and the exact mana debit.
 //! 3. Send that spell again immediately; require `CoolingDown`, no vitals delta, and no debit.
@@ -165,13 +165,15 @@ async fn journey(
 
     let before = mana(&client)?;
     let pz = cast(&mut client, aggressive).await?;
-    if pz.status != CommandStatus::Accepted
+    // The server answers an aggressive cast in a protection zone with the refusal pairing:
+    // command status Rejected carrying the Rejected cast disposition (`serve/result.rs`).
+    if pz.status != CommandStatus::Rejected
         || pz.disposition != SpellCastDisposition::Rejected
         || pz.actor_vitals_delta.is_some()
         || mana(&client)? != before
     {
         return Err(format!(
-            "PZ CAST expected accepted/rejected/no-delta reply={pz:?} mana={before}->{}",
+            "PZ CAST expected rejected/rejected/no-delta reply={pz:?} mana={before}->{}",
             mana(&client)?
         )
         .into());

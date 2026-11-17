@@ -3,10 +3,11 @@
 //!
 //! Player scenario:
 //! 1. Admit the node-boot character, walk to a real rat spawn, ATTACK and loot
-//!    until the character has the shop price; expect movement/combat/inventory deltas.
+//!    until the character has the catalogue price of one bag (`full_gold::earn`, deadline sized
+//!    from that price); expect movement/combat/inventory deltas.
 //! 2. Walk to the compiled Messenger of Santa, TALK "hi" and "trade", then BUY
-//!    two blue surprise bags; expect accepted talk replies, a trade-window delta,
-//!    an accepted purchase reply, and an inventory delta containing both bags.
+//!    one blue surprise bag; expect accepted talk replies, a trade-window delta,
+//!    an accepted purchase reply, and an inventory delta containing the bag.
 //! 3. Send USE-WITH-POSITION for one bag; expect Accepted/NothingToUse and no
 //!    inventory change (the refusal must not consume or mint anything).
 //! 4. Send ordinary USE for one bag; expect Accepted/Committed and an inventory
@@ -19,6 +20,8 @@ use oteryn_protocol_oteryn::{npc_service as npc, world_object as use_wire};
 use std::collections::{BTreeMap, BTreeSet};
 
 const BAG_ID: u32 = 6506;
+/// One bag is all the row consumes: USE-WITH refuses without consuming and ordinary USE takes one.
+const BAG_QUANTITY: u32 = 1;
 const OWNER_GAP: &str =
     "source:crates/gameplay/dispatch/src/gameplay_transport/reward_bag_use.rs:167";
 
@@ -28,50 +31,6 @@ fn quantities(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
         *result.entry(entry.item_definition_ref.get()).or_default() += u64::from(entry.count.get());
     }
     Ok(result)
-}
-
-fn carried_gold(client: &DevClientSession) -> TestResult<u64> {
-    let index = provisioning::item_index()?;
-    let coins = [(3031, 1), (3035, 100), (3043, 10_000)];
-    let references: Vec<_> = coins
-        .into_iter()
-        .map(|(id, value)| provisioning::item_reference(&index, id).map(|key| (key, value)))
-        .collect::<TestResult<_>>()?;
-    Ok(client
-        .inventory()
-        .ok_or("step 1: inventory absent")?
-        .entries
-        .iter()
-        .map(|entry| {
-            references
-                .iter()
-                .find(|(key, _)| *key == entry.item_definition_ref)
-                .map_or(0, |(_, value)| u64::from(entry.count.get()) * value)
-        })
-        .sum())
-}
-
-async fn earn_price(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    spawns: &oteryn_world_bundle::spawn::Table,
-) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
-    verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    while carried_gold(client)? < 160 {
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "step 1: rat ATTACK/loot deadline with carried_gold={}",
-                carried_gold(client)?
-            )
-            .into());
-        }
-        travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
-        client_hunt::hunt(client)
-            .await
-            .map_err(|error| { verdict::record_error(verdict::IndexedError::as_error(&error)); verdict::context(format!("step 1: rat ATTACK/loot observed={error}"), error) })?;
-    }
-    Ok(())
 }
 
 async fn wait_quantities(
@@ -221,21 +180,22 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
             catalogue_revision: window.open.ok_or("step 2: trade window closed")?.1,
             offer_index: u32::try_from(offer_index)?,
             side: offer.side,
-            quantity: 2,
+            quantity: BAG_QUANTITY,
             expected_unit_price: offer.unit_price,
         },
     )
     .await?;
     if reply != npc::NpcIntentDisposition::Ok {
         return Err(format!(
-            "step 2: BUY two bags observed={reply:?} unit_price={}",
+            "step 2: BUY bag observed={reply:?} unit_price={}",
             offer.unit_price
         )
         .into());
     }
     let mut wanted = before;
-    *wanted.entry(reference.get()).or_default() += u64::from(offer.count) * 2;
-    wait_quantities(client, &wanted, "2 BUY").await
+    *wanted.entry(reference.get()).or_default() +=
+        u64::from(offer.count) * u64::from(BAG_QUANTITY);
+    wait_quantities(client, &wanted, "BUY").await
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -250,7 +210,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         ChannelId::decode(&clients.channel)?,
     )?;
     let mut client = connect_world(clients, 0xa9).await?;
-    earn_price(&mut client, world, &metadata.spawns).await?;
+    full_gold::earn(
+        &mut client,
+        world,
+        &metadata.spawns,
+        "W19A",
+        full_gold::price(BAG_ID, BAG_QUANTITY)?,
+    )
+    .await?;
     let purchase_sequence = acquire(&mut client, world).await?;
     let before_refusal = quantities(&client)?;
     let position = client.world_spatial().actor_position;
@@ -349,7 +316,14 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients))).await;
+    // Earning the price is real hunting, so its budget is part of the row's own deadline; a
+    // catalogue error surfaces from the journey itself.
+    let price = full_gold::price(BAG_ID, BAG_QUANTITY).unwrap_or_default();
+    let result = verdict::indexed_timeout(
+        full_gold::allowance(price) + Duration::from_secs(180),
+        verdict::observe(journey(clients)),
+    )
+    .await;
     match result {
         Ok(Ok(())) => evidence(&format!(
             "SEAM_EVIDENCE e2e_all scenario=W19a.full status=PASS seconds={:.3}",

@@ -2,7 +2,7 @@
 use super::*;
 use crate::map::boot::BundleWorld;
 use crate::map::overlay::TilePos;
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::path::Path;
 
 #[path = "general_stats.rs"]
@@ -13,6 +13,7 @@ include!("character_release.rs");
 include!("e2e_row_batch.rs");
 include!("floor_journey.rs");
 include!("full_e2ef7_mount.rs");
+include!("full_gold_mount.rs");
 include!("full_row_c03_mount.rs");
 include!("full_row_c12_mount.rs");
 include!("client_row_c01_mount.rs");
@@ -481,6 +482,60 @@ fn route(
     None
 }
 
+const REACH_SEARCH_NODES: usize = 3_000_000;
+const REACH_CHUNK: usize = 20_000;
+
+/// Like `route` without its 160-tile and two-floor window: it searches the whole bundle (stairs,
+/// ladders and floor changes included) up to `REACH_SEARCH_NODES` tiles. The search yields to the
+/// connection every `REACH_CHUNK` expansions so liveness is served and the harness sees progress.
+/// `Ok(Err(searched))` means the goal is not reachable (or the cap was hit) after `searched` tiles.
+pub(super) async fn reach_route(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+) -> TestResult<Result<Vec<StepDirection>, usize>> {
+    let mut queue = VecDeque::from([from]);
+    let mut parents = BTreeMap::from([(from, None)]);
+    let mut expanded = 0usize;
+    while let Some(at) = queue.pop_front() {
+        if goal(at) {
+            let mut path = Vec::new();
+            let mut cursor = at;
+            while let Some(Some((previous, direction))) = parents.get(&cursor) {
+                path.push(*direction);
+                cursor = *previous;
+            }
+            path.reverse();
+            return Ok(Ok(path));
+        }
+        if parents.len() > REACH_SEARCH_NODES {
+            break;
+        }
+        expanded += 1;
+        if expanded.is_multiple_of(REACH_CHUNK) {
+            verdict::Harness::global().progress("route-search");
+            client.service_liveness(Duration::from_millis(1)).await?;
+        }
+        for direction in [
+            StepDirection::North,
+            StepDirection::East,
+            StepDirection::South,
+            StepDirection::West,
+        ] {
+            let Some(next) = destination(world, at, direction) else {
+                continue;
+            };
+            if parents.contains_key(&next) {
+                continue;
+            }
+            parents.insert(next, Some((at, direction)));
+            queue.push_back(next);
+        }
+    }
+    Ok(Err(parents.len()))
+}
+
 /// Use the production floor resolver over the production bundle's collision facts.
 fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> Option<TilePos> {
     use crate::map::floor::{Ground, resolve_landing};
@@ -552,6 +607,47 @@ fn town_route_retry_delay(
         .then_some(Duration::from_millis(500))
 }
 
+/// `spawn <session> <key>` through `provision.py --spawn`; Err carries the rejected token.
+/// Shared by `creature_sweep` and MP09 (both reach it through `use super::*`).
+async fn request_spawn(session: String, key: String) -> Result<String, String> {
+    let socket = required("NODE_BOOT_CONTROL_SOCKET").map_err(|error| error.to_string())?;
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let output = tokio::task::spawn_blocking(move || {
+        std::process::Command::new("sudo")
+            .args(["-n", "python3"])
+            .arg(script)
+            .args(["--socket", &socket, "--session", &session, "--spawn", &key])
+            .output()
+    })
+    .await
+    .map_err(|error| error.to_string())?
+    .map_err(|error| error.to_string())?;
+    if output.status.success() {
+        return Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned());
+    }
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    Err(match stderr.split_once("reason=") {
+        Some((_, rest)) => rest
+            .chars()
+            .take_while(|character| character.is_ascii_alphanumeric() || *character == '_')
+            .collect(),
+        None => format!(
+            "status={};stderr_tail={}",
+            output.status,
+            stderr
+                .replace('\n', " | ")
+                .chars()
+                .rev()
+                .take(400)
+                .collect::<String>()
+                .chars()
+                .rev()
+                .collect::<String>()
+        ),
+    })
+}
+
 async fn walk(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
@@ -610,17 +706,35 @@ pub(super) async fn logout_retrying_busy(
     usize,
     bool,
 )> {
+    logout_retrying_busy_observed(client, None).await
+}
+
+type LogoutObserver<'a> = dyn FnMut(usize, &str) + 'a;
+
+pub(super) async fn logout_retrying_busy_observed(
+    client: &mut oteryn_dev_client::DevClientSession,
+    mut observe: Option<&mut LogoutObserver<'_>>,
+) -> TestResult<(
+    Option<oteryn_protocol_oteryn::logout::LogoutResult>,
+    String,
+    usize,
+    bool,
+)> {
     use oteryn_protocol_oteryn::logout::LogoutResult;
 
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let mut attempts = 0;
     loop {
         attempts += 1;
-        let outcome = client
-            .session_mut()
-            .logout()
-            .await
-            .map_err(|error| format!("logout attempt {attempts} failed: {error}"))?;
+        let outcome = client.session_mut().logout().await.map_err(|error| {
+            if let Some(observe) = observe.as_mut() {
+                observe(attempts, &format!("command_error={error}"));
+            }
+            format!("logout attempt {attempts} failed: {error}")
+        })?;
+        if let Some(observe) = observe.as_mut() {
+            observe(attempts, &format!("reply={outcome:?}"));
+        }
         if outcome.result != Some(LogoutResult::Busy) {
             return Ok((outcome.result, format!("{outcome:?}"), attempts, false));
         }
@@ -628,7 +742,12 @@ pub(super) async fn logout_retrying_busy(
             return Ok((outcome.result, format!("{outcome:?}"), attempts, true));
         }
         client.service_liveness(Duration::from_millis(250)).await
-            .map_err(|error| format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}"))?;
+            .map_err(|error| {
+                if let Some(observe) = observe.as_mut() {
+                    observe(attempts, &format!("busy_liveness_error={error}"));
+                }
+                format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}")
+            })?;
     }
 }
 
@@ -2802,6 +2921,16 @@ pub(super) async fn journeys(
             clients.accounts.len()
         ));
     }
+    if groups.runs("creature_sweep") {
+        #[path = "creature_sweep.rs"]
+        mod creature_sweep;
+        creature_sweep::run(clients, world, &metadata.spawns).await?;
+    }
+    if groups.runs("mp") {
+        #[path = "mp/mount.rs"]
+        mod mp;
+        mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await;
+    }
     // The core/profile pair has not inherited packet movement, loot or death.
     if !groups.runs("core") {
         evidence("e2e_groups core=skipped");
@@ -3077,16 +3206,44 @@ async fn travel_to_spawn(
                 .is_some_and(|entry| entry.key == creature)
         })
         .collect();
-    let path = route(world, from, |at| {
+    let authored: BTreeSet<TilePos> = points
+        .iter()
+        .map(|(floor, point)| TilePos {
+            x: point.x,
+            y: point.y,
+            floor: *floor,
+        })
+        .collect();
+    if authored.is_empty() {
+        return Err(format!("the served bundle authors no {creature} spawn point").into());
+    }
+    let path = reach_route(client, world, from, |at| {
         !world
             .base()
             .tile(at.x, at.y, at.floor)
             .is_none_or(|tile| tile.protection_zone())
-            && points.iter().any(|(floor, point)| {
-                at.floor == *floor && at.x.abs_diff(point.x) <= 1 && at.y.abs_diff(point.y) <= 1
+            && (-1i16..=1).any(|dx| {
+                (-1i16..=1).any(|dy| {
+                    at.x.checked_add_signed(dx)
+                        .zip(at.y.checked_add_signed(dy))
+                        .is_some_and(|(x, y)| {
+                            authored.contains(&TilePos {
+                                x,
+                                y,
+                                floor: at.floor,
+                            })
+                        })
+                })
             })
     })
-    .ok_or_else(|| format!("no reachable {creature} spawn within town route budget"))?;
+    .await?
+    .map_err(|searched| {
+        format!(
+            "no walkable route from {from:?} to any of {} authored {creature} spawn points \
+             (searched {searched} tiles, cap {REACH_SEARCH_NODES})",
+            authored.len()
+        )
+    })?;
     walk(client, world, &path).await?;
     for _ in 0..32 {
         let here = client.world_spatial().actor_position;

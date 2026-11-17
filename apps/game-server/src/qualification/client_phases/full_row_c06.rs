@@ -28,7 +28,9 @@ const CONJURED_ID: u32 = 21470;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let started = std::time::Instant::now();
-    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients))).await;
+    let result =
+        verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(journey(clients)))
+            .await;
     let result = result.unwrap_or_else(|_| {
         Err("step=journey observed=timeout-240s need=all-native-replies-and-deltas".into())
     });
@@ -39,10 +41,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
         "SEAM_EVIDENCE e2e_all scenario=C06.full status={} seconds={:.3}{}",
         if result.is_ok() { "PASS" } else { "FAIL" },
         started.elapsed().as_secs_f64(),
-        if result.is_ok() {
-            ""
-        } else {
-            " evidence=required-actions-unproven-see-C06_GAP"
+        match &result {
+            Ok(()) => String::new(),
+            Err(error) => format!(" evidence={}", verdict::sanitize_cause(&error.to_string())),
         }
     ));
 }
