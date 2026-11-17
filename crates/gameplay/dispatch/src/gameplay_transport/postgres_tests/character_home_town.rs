@@ -142,7 +142,7 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
                 .bind(channel_pin.client_artifact_digest().as_slice())
                 .bind(channel_pin.frame_binding_digest().as_slice()).execute(&h.pool).await?;
         }
-        let deps = Dependencies::with_content(
+        let mut deps = Dependencies::with_content(
             channel_pin,
             room,
             active
@@ -151,6 +151,7 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
                 .spell_book()
                 .clone(),
         )?;
+        deps.combat_room = Some(deps.room.clone());
         let (consumer, coordinator) = premium_reads(&h);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
@@ -499,8 +500,9 @@ async fn premium_ended<'a>(
     sqlx::raw_sql("CREATE FUNCTION p20_fail_position() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'P20 injected position failure'; END; $$; CREATE TRIGGER p20_fail_position BEFORE INSERT OR UPDATE ON game_character_last_positions FOR EACH ROW EXECUTE FUNCTION p20_fail_position()")
         .execute(&h.pool).await?;
     for attempt in 0..3 {
-        let fresh =
+        let mut fresh =
             Dependencies::with_content(pin.clone(), deps.room.clone(), deps.spells.clone())?;
+        fresh.combat_room = deps.combat_room.clone();
         // The nominal temple is occupied. Persist the owner's actual radius fallback cell.
         {
             let mut runtime = fresh.runtime.lock().await;

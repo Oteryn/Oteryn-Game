@@ -6,20 +6,25 @@ pub(super) fn mutates(operation: &StateOperation) -> bool {
     !matches!(operation.effect, StateMutation::Add { value: 0 })
 }
 pub(super) fn refreshes_clock(callback: &Callback) -> bool {
-    callback.state_operations.iter().any(|operation| {
+    callback.operations().any(|operation| {
         matches!(operation.from, StateCondition::ElapsedAtLeast { seconds } if seconds > 0)
             && matches!(operation.effect, StateMutation::SetNow)
     })
 }
 pub(super) fn valid(callback: &Callback) -> bool {
-    callback.state_operations.iter().all(StateOperation::valid)
-        && (callback.state_operations.is_empty() || callback.native_rule.is_none())
+    callback.operations().all(StateOperation::valid)
+        // The main spelling keeps its original Add/SetNow binding vocabulary.
+        // QMECH's floor operation remains admitted through state_ops.
+        && callback.state_operations.iter().all(|operation| {
+            !matches!(operation.effect, StateMutation::AddAtLeast { .. })
+        })
+        && (callback.operation_count() == 0 || callback.native_rule.is_none())
 }
 pub(super) fn extend_tracks(
     callback: &Callback,
     tracks: &mut Vec<QuestTrack>,
 ) -> Result<(), String> {
-    for operation in &callback.state_operations {
+    for operation in callback.operations() {
         if let Some(track) = tracks.iter().find(|track| track.key == operation.track) {
             if track.quest != callback.quest {
                 return Err("world clock track owner mismatch".into());
@@ -41,6 +46,7 @@ pub(super) fn append_effects(
     mut binding: Option<[u8; 32]>,
     effects: &mut Vec<QuestEffect>,
 ) {
+    effects.extend(callback.state_ops.iter().map(StateOperation::quest_effect));
     for operation in &callback.state_operations {
         let mut effect = operation.quest_effect();
         if mutates(operation)
@@ -52,6 +58,9 @@ pub(super) fn append_effects(
                     delta,
                     binding: value,
                 },
+                // Rejected for this spelling by valid(); state_ops above owns
+                // the floor operation and keeps its original unbound lowering.
+                StateMutation::AddAtLeast { .. } => effect.effect,
             };
         }
         effects.push(effect);

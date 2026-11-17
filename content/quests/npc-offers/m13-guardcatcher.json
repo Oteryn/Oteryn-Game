@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "guards"
+      ],
+      "topic": 0,
+      "next_topic": 17,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/guard_offer",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "requires": [],
+      "reply": [
+        "Me think when something bad would happen to them, that would teach them. Are you helping poor me?"
+      ]
+    }
+  ]
+}

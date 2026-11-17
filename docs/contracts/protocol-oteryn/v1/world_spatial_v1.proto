@@ -51,9 +51,9 @@ message WorldActorStepResultV1 {
   // STEP-PACE-WIRE-0 (OQ-1 R1): the pacing receipt, sent only to a session that selected
   // capability 13; without it, field 2 fails closed.
   // - MOVED: the authoritative duration of the step just committed, the exact value the server
-  //   pacer records: a multiple of 50 in 50..=111,150 (step-speed table maximum: speed 10, ground
+  //   pacer records: a multiple of 50 in 50..=333,450 (step-speed table maximum: speed 10, ground
   //   speed 1000).
-  // - TOO_EARLY: the milliseconds left until the server deadline, rounded up, 1..=111,150.
+  // - TOO_EARLY: the milliseconds left until the server deadline, rounded up, 1..=333,450.
   // - BLOCKED, REJECTED: never present.
   // Written only when non-zero: an explicit zero, any other value and a repeated field fail
   // closed. Absent means no receipt, and the client may send its next step on receipt of this
@@ -147,6 +147,9 @@ message WorldSpatialEntityV1 {
   // at most 64 bytes, no control characters. Never on objects. Unknown to old
   // decoders, so omitted unless negotiated. Named entries allow at most 194 bytes.
   string display_name = 13;
+  // Capability386 only; objects only, exact source-pinned native resource1..65535.
+  // The generation-local item_definition_ref and canonical handle remain unchanged.
+  uint32 native_object_appearance_id = 15;
 }
 
 // StateDomainSnapshot.payload of domain 1, snapshot type 2. At most 256 entities (MOVE-RL-11),

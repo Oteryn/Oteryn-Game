@@ -358,6 +358,18 @@ async fn stages(
             command_id,
             item_fence: Some(fence),
         };
+        let schedules_before: Vec<serde_json::Value> = sqlx::query_scalar(
+            "SELECT to_jsonb(t) FROM game_spell_field_temporal_schedules t WHERE item_instance_id=encode($1,'hex')::uuid ORDER BY source_stage",
+        ).bind(corpse.as_slice()).fetch_all(&harness.pool).await?;
+        if species == "demon" {
+            assert_eq!(schedules_before.len(), 3);
+            let wrong_spent: bool = sqlx::query_scalar("SELECT game_corpse_skinning_temporal_allowed(encode($1,'hex')::uuid,'oteryn:item.tibia.i4099','definition-r1')")
+                .bind(corpse.as_slice()).fetch_one(&harness.pool).await?;
+            assert!(
+                !wrong_spent,
+                "the temporal exception admits only the donor spent body"
+            );
+        }
         let intent = skinning_intent()?;
         let result = owner
             .use_cooking_conversion(
@@ -373,6 +385,13 @@ async fn stages(
             result.disposition,
             UseDisposition::Committed,
             "stage{stage} {species}"
+        );
+        let schedules_after: Vec<serde_json::Value> = sqlx::query_scalar(
+            "SELECT to_jsonb(t) FROM game_spell_field_temporal_schedules t WHERE item_instance_id=encode($1,'hex')::uuid ORDER BY source_stage",
+        ).bind(corpse.as_slice()).fetch_all(&harness.pool).await?;
+        assert_eq!(
+            schedules_after, schedules_before,
+            "skinning preserves original decay provenance and deadlines"
         );
         let (actual_spent,revision):(String,i64)=sqlx::query_as("SELECT definition_production_key,state_revision::bigint FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(corpse.as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(
@@ -829,11 +848,12 @@ async fn entity_target(
         .row("oteryn:creature.minotaur")
         .map_err(debug)?;
     let race = row.race.clone().ok_or("canonical minotaur race")?;
+    let corpse = row.corpse_item.as_ref().ok_or("canonical minotaur corpse")?;
     seed_scavenge(h, 3, race.key()).await?;
     let definition = TypedDefinitionRef {
-        family: row.corpse_item.family.clone(),
-        production_key: row.corpse_item.production_key.clone(),
-        revision_ref: row.corpse_item.revision_ref.clone(),
+        family: corpse.family.clone(),
+        production_key: corpse.production_key.clone(),
+        revision_ref: corpse.revision_ref.clone(),
     };
     let cause = ItemMintCause::from_creature_death(
         death,
@@ -966,3 +986,6 @@ async fn provenance_refuses_late_binding(h: &Harness, unregistered: [u8; 16]) ->
     assert_eq!(after, before);
     Ok(())
 }
+
+#[path = "srx2_scavenge/m41.rs"]
+mod m41;

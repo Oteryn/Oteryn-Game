@@ -1,5 +1,6 @@
 import copy
 import json
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 
@@ -7,6 +8,35 @@ import source_gate_item_profiles as gate
 
 
 class SourceGateItemProfiles(unittest.TestCase):
+    def test_approved_addition_preserves_exact_historical_capture(self):
+        current = gate.capture()
+        binding_path = gate.ROOT / gate.BINDINGS
+        historical = gate.historical_binding_bytes(binding_path.read_bytes(), gate.BINDINGS_SHA)
+        read_bytes = Path.read_bytes
+
+        def historical_read(path):
+            return historical if path == binding_path else read_bytes(path)
+
+        with patch.object(Path, 'read_bytes', historical_read):
+            self.assertEqual(gate.capture(), current)
+        self.assertIn({'path': gate.BINDINGS, 'sha256': gate.BINDINGS_SHA}, current['sources'])
+
+    def test_unrelated_historical_binding_change_remains_refused(self):
+        binding_path = gate.ROOT / gate.BINDINGS
+        document = json.loads(binding_path.read_bytes())
+        unrelated = next(row for row in document['bindings'] if row['external_id'] == '3031')
+        self.assertNotIn(3031, gate.IDS)
+        unrelated['source_revision'] = '0' * 40
+        changed = (json.dumps(document, sort_keys=True, separators=(',', ':')) + '\n').encode()
+        read_bytes = Path.read_bytes
+
+        def changed_read(path):
+            return changed if path == binding_path else read_bytes(path)
+
+        with patch.object(Path, 'read_bytes', changed_read):
+            with self.assertRaisesRegex(ValueError, 'Item binding table digest mismatch'):
+                gate.capture()
+
     def test_source_pair_is_exact_ground_only_door_with_level_base(self):
         packet = gate.capture()
         self.assertEqual({r['production_definition']['production_key'] for r in packet['records']},

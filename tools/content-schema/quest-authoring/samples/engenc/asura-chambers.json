@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.authored.asura_palace_quest",
+  "basis": "authored per owner rule",
+  "chambers": [
+    {"stage":"s2","creature":"oteryn:creature.destroyer","entry":[32959,32675,3],"staging":[32958,32675,3],"landing":[32959,32675,4],"defenders":[[32959,32674,4],[32958,32677,4]],"door":[32963,32677,4],"door_appearance":5736,"room_min":[32957,32673,4],"room_max":[32962,32678,4]},
+    {"stage":"s3","creature":"oteryn:creature.greater_fire_elemental","entry":[32960,32679,2],"landing":[32958,32679,2],"defenders":[[32958,32677,2],[32958,32680,2]],"door":[32959,32679,2],"door_appearance":1674,"room_min":[32953,32677,2],"room_max":[32958,32681,2]},
+    {"stage":"s4","creature":"oteryn:creature.greater_energy_elemental","entry":[32948,32679,2],"landing":[32946,32679,2],"defenders":[[32944,32677,2],[32945,32680,2]],"door":[32947,32679,2],"door_appearance":1674,"room_min":[32943,32676,2],"room_max":[32946,32681,2]}
+  ]
+}

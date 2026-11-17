@@ -6,6 +6,27 @@ use serde::{Deserialize, Serialize};
 
 pub const MAX_KILL_BINDINGS: usize = 128;
 
+/// Inclusive victim bounds in native carrier coordinates (positive Tibia floor).
+/// Eligibility is frozen from the original lethal facts, never the recipient's later position.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DeathArea {
+    pub minimum: [i32; 3],
+    pub maximum: [i32; 3],
+}
+impl DeathArea {
+    fn valid(self) -> bool {
+        (0..3).all(|axis| {
+            self.minimum[axis] >= 0
+                && self.minimum[axis] <= self.maximum[axis]
+                && self.maximum[axis] <= if axis == 2 { 15 } else { 65535 }
+        })
+    }
+    pub fn contains(self, position: [i32; 3]) -> bool {
+        (0..3).all(|axis| (self.minimum[axis]..=self.maximum[axis]).contains(&position[axis]))
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct KillCounter {
@@ -19,6 +40,13 @@ pub struct KillCounter {
     pub maximum: i64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub advance_gate_to: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub death_area: Option<DeathArea>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub world_change: Option<String>,
+    /// Exact native encounter callback; absent for ordinary party hunts.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub encounter_source: Option<String>,
 }
 
 impl KillCounter {
@@ -32,6 +60,7 @@ impl KillCounter {
             || !self.creature.starts_with("oteryn:creature.")
             || self.track == self.gate
             || self.minimum >= self.maximum
+            || self.death_area.is_some_and(|area| !area.valid())
             || count
                 .is_none_or(|track| track.minimum > self.minimum || track.maximum < self.maximum)
             || gate.is_none_or(|track| {
@@ -43,10 +72,46 @@ impl KillCounter {
         {
             return Err("authored kill identity/owner/bounds".into());
         }
+        if let Some(source) = &self.encounter_source {
+            let encounter = quest
+                .stages
+                .iter()
+                .find_map(|stage| match &stage.trigger {
+                    super::Trigger::MapUse { callback } if callback.key == *source => {
+                        callback.effects.encounter.as_ref()
+                    }
+                    _ => None,
+                })
+                .ok_or("authored encounter counter source")?;
+            let defenders = encounter
+                .monsters
+                .iter()
+                .filter(|monster| monster.creature == self.creature)
+                .count();
+            if self.minimum != 0
+                || encounter.timing.is_some()
+                || encounter.players.is_empty()
+                || encounter.players.len() > 8
+                || encounter.monsters.is_empty()
+                || encounter.monsters.len() > 8
+                || i64::try_from(defenders) != Ok(self.maximum)
+            {
+                return Err("authored encounter counter roster/bounds".into());
+            }
+        }
         Ok(())
     }
 
     pub(super) fn effects(&self) -> Vec<QuestEffect> {
+        if self.encounter_source.is_some() && self.advance_gate_to.is_none() {
+            // The source/epoch owner checks the gate without rewriting its revision
+            // for every death queued from the same admission.
+            return vec![QuestEffect {
+                track: self.track.clone(),
+                from: QuestComparison::Between(self.minimum, self.maximum - 1),
+                effect: QuestEffectKind::Add(1),
+            }];
+        }
         vec![
             QuestEffect {
                 track: self.gate.clone(),
@@ -82,6 +147,8 @@ impl KillCounter {
             gate_value: self.gate_value,
             minimum: self.minimum,
             maximum: self.maximum,
+            death_area: self.death_area,
+            encounter_source: self.encounter_source.as_deref(),
         }
     }
 }
@@ -137,7 +204,7 @@ mod tests {
         };
         let state = BTreeMap::from([(counter.gate.clone(), 4)]);
         assert_eq!(
-            crate::quest::native_kills::active_for(&catalogue, &state),
+            crate::quest::native_kills::active_for(&catalogue, &state).as_slice(),
             std::slice::from_ref(&counter.key)
         );
         assert!(crate::quest::native_kills::active_for(&catalogue, &BTreeMap::new()).is_empty());

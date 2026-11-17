@@ -54,22 +54,44 @@ impl InboxAuthority {
         let current = match (self, fence.runtime_scope) {
             (Self::Hireling(_), RuntimeScopeRefV1::Instance { .. }) => {
                 crate::durability::house_hireling::fence::assert_house_inventory_fence(
-                    tx, node, fence, *plan.channel_id.as_bytes(),
-                ).await?
+                    tx,
+                    node,
+                    fence,
+                    *plan.channel_id.as_bytes(),
+                )
+                .await?
             }
-            _ => character_item_fence_is_current(
-                tx, node, fence, plan.command, plan.character_id,
-                *plan.world_id.as_bytes(), *plan.channel_id.as_bytes(),
-            ).await?,
+            _ => {
+                character_item_fence_is_current(
+                    tx,
+                    node,
+                    fence,
+                    plan.command,
+                    plan.character_id,
+                    *plan.world_id.as_bytes(),
+                    *plan.channel_id.as_bytes(),
+                )
+                .await?
+            }
         };
-        if !current { return Ok(None); }
-        let house = if matches!((self, fence.runtime_scope),
-            (Self::Hireling(_), RuntimeScopeRefV1::Instance { .. })) {
+        if !current {
+            return Ok(None);
+        }
+        let house = if matches!(
+            (self, fence.runtime_scope),
+            (Self::Hireling(_), RuntimeScopeRefV1::Instance { .. })
+        ) {
             let house: String = sqlx::query_scalar(
                 "SELECT runtime_scope_house_key FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND runtime_scope_house_key IS NOT NULL",
             ).bind(fence.game_session_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-            Some(HouseAuditAuthority { house, generation: fence.scope_ownership_generation.get(), kind: 1 })
-        } else { None };
+            Some(HouseAuditAuthority {
+                house,
+                generation: fence.scope_ownership_generation.get(),
+                kind: 1,
+            })
+        } else {
+            None
+        };
         Ok(Some(ReceiptGenerations {
             connection: fence.connection_generation.get(),
             character_lease: fence.character_lease_generation,
@@ -90,15 +112,20 @@ async fn recall_current(
     plan: &RewardClaimInboxPlan,
     request: &HirelingRecallRequest,
 ) -> Result<Option<ReceiptGenerations>, DurabilityError> {
-    let Some(house) = HouseId::new(plan.world_id, &request.house) else { return Ok(None); };
+    let Some(house) = HouseId::new(plan.world_id, &request.house) else {
+        return Ok(None);
+    };
     if request.scope_ownership_generation == 0 || !prove_current_incarnation(tx, node).await? {
         return Ok(None);
     }
     // Houses have their own assignment namespace. An origin Channel or an
     // activity Instance never substitutes for this current server authority.
     let history: bool = sqlx::query_scalar("SELECT game_runtime_scope_assignment_history_valid()")
-        .fetch_one(&mut **tx).await?;
-    if !history { return Ok(None); }
+        .fetch_one(&mut **tx)
+        .await?;
+    if !history {
+        return Ok(None);
+    }
     let fact = node.fact();
     let assigned: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM game_runtime_scope_assignments \
@@ -106,23 +133,45 @@ async fn recall_current(
            AND house_key=$3 AND state=1 AND ownership_generation=$4::text::numeric \
            AND holder_node_id=encode($5,'hex')::uuid \
            AND holder_registration_revision=$6::text::numeric FOR SHARE)",
-    ).bind(house.scope_key()).bind(plan.world_id.as_bytes().as_slice()).bind(&request.house)
-     .bind(request.scope_ownership_generation.to_string()).bind(fact.node_id().as_bytes().as_slice())
-     .bind(fact.registration_revision().to_string()).fetch_one(&mut **tx).await?;
-    if !assigned { return Ok(None); }
+    )
+    .bind(house.scope_key())
+    .bind(plan.world_id.as_bytes().as_slice())
+    .bind(&request.house)
+    .bind(request.scope_ownership_generation.to_string())
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
+    .fetch_one(&mut **tx)
+    .await?;
+    if !assigned {
+        return Ok(None);
+    }
     let root = sqlx::query(
         "SELECT profile_revision,ruleset_revision,content_revision,starter_template_revision \
          FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid \
            AND world_id=encode($2,'hex')::uuid AND lifecycle=1 FOR UPDATE",
-    ).bind(plan.character_id.as_bytes().as_slice()).bind(plan.world_id.as_bytes().as_slice())
-     .fetch_optional(&mut **tx).await?;
+    )
+    .bind(plan.character_id.as_bytes().as_slice())
+    .bind(plan.world_id.as_bytes().as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
     let current = sqlx::query(
         "SELECT profile_revision,ruleset_revision,content_revision,starter_template_revision \
          FROM game_character_interpretations ORDER BY interpretation_revision DESC LIMIT 1",
-    ).fetch_optional(&mut **tx).await?;
-    let (Some(root), Some(current)) = (root, current) else { return Ok(None); };
-    for column in ["profile_revision", "ruleset_revision", "content_revision", "starter_template_revision"] {
-        if root.try_get::<String,_>(column)? != current.try_get::<String,_>(column)? { return Ok(None); }
+    )
+    .fetch_optional(&mut **tx)
+    .await?;
+    let (Some(root), Some(current)) = (root, current) else {
+        return Ok(None);
+    };
+    for column in [
+        "profile_revision",
+        "ruleset_revision",
+        "content_revision",
+        "starter_template_revision",
+    ] {
+        if root.try_get::<String, _>(column)? != current.try_get::<String, _>(column)? {
+            return Ok(None);
+        }
     }
     // Migration0700 seals the genuine0405 receipt's identity association before
     // making it immutable. The old reconnect session may be gone or elsewhere;
@@ -148,31 +197,46 @@ async fn recall_current(
      .bind(plan.world_id.as_bytes().as_slice()).bind(&request.house)
      .bind(plan.command.game_session_id().as_bytes().as_slice()).bind(plan.command.command_id().get().to_string())
      .bind(plan.channel_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-    row.map(|row| Ok(ReceiptGenerations {
-        connection: numeric_u64(&row, "connection_generation")?,
-        character_lease: numeric_u64(&row, "character_lease_generation")?,
-        house: Some(HouseAuditAuthority { house: request.house.clone(),
-            generation: request.scope_ownership_generation, kind: 2 }),
-    })).transpose()
+    row.map(|row| {
+        Ok(ReceiptGenerations {
+            connection: numeric_u64(&row, "connection_generation")?,
+            character_lease: numeric_u64(&row, "character_lease_generation")?,
+            house: Some(HouseAuditAuthority {
+                house: request.house.clone(),
+                generation: request.scope_ownership_generation,
+                kind: 2,
+            }),
+        })
+    })
+    .transpose()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::foundation::{CommandId, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
+    use crate::foundation::{
+        CommandId, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration,
+    };
 
     #[test]
-    fn hireling_inbox_plan_cannot_substitute_session_character_or_world() -> Result<(), Box<dyn std::error::Error>> {
+    fn hireling_inbox_plan_cannot_substitute_session_character_or_world()
+    -> Result<(), Box<dyn std::error::Error>> {
         let id = |tag: u8| {
-            let mut bytes = [tag; 16]; bytes[6] = 0x70 | (tag & 15); bytes[8] = 0x80 | (tag & 63); bytes
+            let mut bytes = [tag; 16];
+            bytes[6] = 0x70 | (tag & 15);
+            bytes[8] = 0x80 | (tag & 63);
+            bytes
         };
-        fn invalid<T>(_: T) -> &'static str { "invalid fixture identity" }
+        fn invalid<T>(_: T) -> &'static str {
+            "invalid fixture identity"
+        }
         let session = GameSessionId::decode(&id(1)).map_err(invalid)?;
         let world = WorldId::decode(&id(2)).map_err(invalid)?;
         let channel = ChannelId::decode(&id(3)).map_err(invalid)?;
         let character = CharacterId::from_bytes(id(4)).map_err(invalid)?;
         let fence = CurrentCharacterItemFence {
-            character_id: character, game_session_id: session,
+            character_id: character,
+            game_session_id: session,
             connection_generation: ConnectionGeneration::new(1).map_err(invalid)?,
             character_lease_generation: 1,
             runtime_scope: RuntimeScopeRefV1::channel(world, channel),
@@ -180,9 +244,13 @@ mod tests {
         };
         let command = CommandId::new(1).map_err(invalid)?;
         let plan = RewardClaimInboxPlan {
-            command: CommandRef::new(session, command), character_id: character,
-            world_id: world, channel_id: channel, transaction_id: id(5),
-            source_binding: [7;32], item_instance_ids: vec![id(6)],
+            command: CommandRef::new(session, command),
+            character_id: character,
+            world_id: world,
+            channel_id: channel,
+            transaction_id: id(5),
+            source_binding: [7; 32],
+            item_instance_ids: vec![id(6)],
         };
         assert!(live_plan_matches(&fence, &plan));
         let mut other = plan.clone();

@@ -15,8 +15,17 @@
 //! `_with_fields` codecs. They are carried beside the entries as [`EntityLights`], so an entry
 //! built without them is unchanged.
 
+mod native_icons;
+pub use native_icons::{
+    CAPABILITY_NATIVE_CREATURE_ICONS_V1, NativeCreatureIcon, NativeCreatureIcons,
+};
+mod soulpit_icons;
+pub use soulpit_icons::SoulpitCreatureIcon;
+
 use std::collections::{BTreeMap, BTreeSet};
-use std::num::NonZeroU64;
+use std::num::{NonZeroU16, NonZeroU64};
+
+pub const CAPABILITY_NATIVE_OBJECT_APPEARANCE_V1: u32 = 386;
 
 use crate::item_view::{CAPABILITY_ITEM_VIEW_MOVE_V1, ItemHandle};
 use crate::world_clock::CAPABILITY_WORLD_LIGHT_V1;
@@ -65,11 +74,15 @@ pub struct EntityFields {
     pub item_handles: bool,
     pub light: bool,
     pub party_icons: bool,
+    pub native_icons: bool,
+    pub native_objects: bool,
 }
 
 impl EntityFields {
     pub fn selected(selected_capabilities: &[u32]) -> Self {
         Self {
+            native_icons: selected_capabilities.contains(&CAPABILITY_NATIVE_CREATURE_ICONS_V1),
+            native_objects: selected_capabilities.contains(&CAPABILITY_NATIVE_OBJECT_APPEARANCE_V1),
             display_names: selected_capabilities
                 .contains(&crate::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2),
             item_handles: selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1),
@@ -85,6 +98,8 @@ impl EntityFields {
             item_handles,
             light: false,
             party_icons: false,
+            native_icons: false,
+            native_objects: false,
         }
     }
 }
@@ -113,12 +128,26 @@ pub enum EntityDetail {
         appearance_ref: u32,
         health_percent: u8,
     },
+    /// Full native icon list; an icon count of zero remains visible.
+    ActorWithIcons {
+        direction: StepDirection,
+        appearance_ref: u32,
+        health_percent: u8,
+        icons: NativeCreatureIcons,
+    },
     /// Corpses and ground items; a stack shows its quantity (at least 1).
     Object {
         item_definition_ref: u32,
         quantity: u32,
         /// The session's handle for the item, sent only under capability 4.
         item_handle: Option<ItemHandle>,
+    },
+    /// Exact pinned native Item resource, independent of its generation-local definition ref.
+    ObjectWithAppearance {
+        item_definition_ref: u32,
+        quantity: u32,
+        item_handle: Option<ItemHandle>,
+        appearance_id: NonZeroU16,
     },
 }
 
@@ -169,19 +198,35 @@ fn validate_entity(entity: &WorldSpatialEntity) -> Result<(), WorldSpatialError>
             direction,
             ..
         } if actor_kind(entity.kind)
-            && matches!(
-                direction,
-                StepDirection::North
-                    | StepDirection::East
-                    | StepDirection::South
-                    | StepDirection::West
-            )
+            && !direction.is_diagonal()
             && health_percent <= MAX_HEALTH_PERCENT
             && (entity.kind != EntityKind::Npc || health_percent == MAX_HEALTH_PERCENT) =>
         {
             Ok(())
         }
+        EntityDetail::ActorWithIcons {
+            health_percent,
+            direction,
+            icons,
+            ..
+        } if actor_kind(entity.kind)
+            && !direction.is_diagonal()
+            && health_percent <= MAX_HEALTH_PERCENT
+            && (entity.kind != EntityKind::Npc || health_percent == MAX_HEALTH_PERCENT)
+            && icons.iter().all(|icon| match icon.category {
+                0 => entity.kind == EntityKind::Player,
+                1 => entity.kind == EntityKind::Creature,
+                _ => false,
+            }) =>
+        {
+            Ok(())
+        }
         EntityDetail::Object {
+            item_definition_ref,
+            quantity,
+            ..
+        }
+        | EntityDetail::ObjectWithAppearance {
             item_definition_ref,
             quantity,
             ..
@@ -217,6 +262,9 @@ fn encode_entity(
     light: Option<EntityLight>,
 ) -> Result<Vec<u8>, WorldSpatialError> {
     validate_entity(entity)?;
+    if fields.native_objects && !fields.item_handles {
+        return Err(WorldSpatialError::Malformed);
+    }
     let mut output = Vec::with_capacity(96);
     push_tag(&mut output, 1, 0);
     push_varint(&mut output, entity.kind as u64);
@@ -236,6 +284,12 @@ fn encode_entity(
             direction,
             appearance_ref,
             health_percent,
+        }
+        | EntityDetail::ActorWithIcons {
+            direction,
+            appearance_ref,
+            health_percent,
+            ..
         } => {
             push_tag(&mut output, 5, 0);
             push_varint(&mut output, direction as u64);
@@ -243,6 +297,13 @@ fn encode_entity(
                 if value != 0 {
                     push_tag(&mut output, field, 0);
                     push_varint(&mut output, u64::from(value));
+                }
+            }
+            if fields.native_icons
+                && let EntityDetail::ActorWithIcons { icons, .. } = entity.detail
+            {
+                for icon in icons.iter() {
+                    push_message(&mut output, 14, &native_icons::encode(icon));
                 }
             }
             if let Some(light) = light {
@@ -258,6 +319,12 @@ fn encode_entity(
             item_definition_ref,
             quantity,
             item_handle,
+        }
+        | EntityDetail::ObjectWithAppearance {
+            item_definition_ref,
+            quantity,
+            item_handle,
+            ..
         } => {
             push_tag(&mut output, 8, 0);
             push_varint(&mut output, u64::from(item_definition_ref));
@@ -269,6 +336,12 @@ fn encode_entity(
                 push_varint(&mut output, handle.get());
             }
         }
+    }
+    if fields.native_objects
+        && let EntityDetail::ObjectWithAppearance { appearance_id, .. } = entity.detail
+    {
+        push_tag(&mut output, 15, 0);
+        push_varint(&mut output, u64::from(appearance_id.get()));
     }
     if fields.display_names && actor_kind(entity.kind) {
         let name = entity.display_name.ok_or(WorldSpatialError::Malformed)?;
@@ -336,6 +409,9 @@ fn decode_entity(
     input: &[u8],
     fields: EntityFields,
 ) -> Result<(WorldSpatialEntity, Option<EntityLight>), WorldSpatialError> {
+    if fields.native_objects && !fields.item_handles {
+        return Err(WorldSpatialError::Malformed);
+    }
     if input.len() > entry_limit(fields) {
         return Err(WorldSpatialError::LimitExceeded);
     }
@@ -343,8 +419,10 @@ fn decode_entity(
     let (mut kind, mut identity, mut generation, mut position) = (None, None, None, None);
     let (mut direction, mut appearance, mut health) = (None, None, None);
     let (mut item, mut quantity, mut handle) = (None, None, None);
+    let mut native_appearance = None;
     let (mut light_level, mut light_color) = (None, None);
     let mut display_name = None;
+    let mut native_icons = NativeCreatureIcons::default();
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
             0x08 => once(&mut kind, varint_u32(input, &mut cursor)?)?,
@@ -365,6 +443,16 @@ fn decode_entity(
             0x50 if fields.item_handles => once(&mut handle, read_varint(input, &mut cursor)?)?,
             0x58 if fields.light => once(&mut light_level, varint_u32(input, &mut cursor)?)?,
             0x60 if fields.light => once(&mut light_color, varint_u32(input, &mut cursor)?)?,
+            0x78 if fields.native_objects => {
+                let id = u16::try_from(varint_u32(input, &mut cursor)?)
+                    .ok()
+                    .and_then(NonZeroU16::new)
+                    .ok_or(WorldSpatialError::Malformed)?;
+                once(&mut native_appearance, id)?;
+            }
+            0x72 if fields.native_icons => {
+                native_icons.push(native_icons::decode(read_bytes(input, &mut cursor)?)?)?
+            }
             0x6a if fields.display_names => {
                 let bytes = read_bytes(input, &mut cursor)?;
                 if bytes.len() > crate::entity_names::MAX_ENTITY_DISPLAY_NAME_BYTES {
@@ -402,6 +490,9 @@ fn decode_entity(
         return Err(WorldSpatialError::Malformed);
     }
     let detail = if actor_kind(kind) {
+        if native_appearance.is_some() {
+            return Err(WorldSpatialError::Malformed);
+        }
         if item.is_some() || quantity.is_some() || handle.is_some() {
             return Err(WorldSpatialError::Malformed);
         }
@@ -412,14 +503,29 @@ fn decode_entity(
             Some(4) => StepDirection::West,
             _ => return Err(WorldSpatialError::Malformed),
         };
-        EntityDetail::Actor {
-            direction,
-            appearance_ref: appearance.unwrap_or(0),
-            health_percent: u8::try_from(health.unwrap_or(0))
-                .map_err(|_| WorldSpatialError::Malformed)?,
+        let appearance_ref = appearance.unwrap_or(0);
+        let health_percent =
+            u8::try_from(health.unwrap_or(0)).map_err(|_| WorldSpatialError::Malformed)?;
+        if native_icons.iter().next().is_some() {
+            EntityDetail::ActorWithIcons {
+                direction,
+                appearance_ref,
+                health_percent,
+                icons: native_icons,
+            }
+        } else {
+            EntityDetail::Actor {
+                direction,
+                appearance_ref,
+                health_percent,
+            }
         }
     } else {
-        if direction.is_some() || appearance.is_some() || health.is_some() {
+        if direction.is_some()
+            || appearance.is_some()
+            || health.is_some()
+            || native_icons.iter().next().is_some()
+        {
             return Err(WorldSpatialError::Malformed);
         }
         let item_handle = match handle {
@@ -427,10 +533,21 @@ fn decode_entity(
             None if fields.item_handles => return Err(WorldSpatialError::Malformed),
             None => None,
         };
-        EntityDetail::Object {
-            item_definition_ref: item.ok_or(WorldSpatialError::Malformed)?,
-            quantity: quantity.ok_or(WorldSpatialError::Malformed)?,
-            item_handle,
+        let item_definition_ref = item.ok_or(WorldSpatialError::Malformed)?;
+        let quantity = quantity.ok_or(WorldSpatialError::Malformed)?;
+        if let Some(appearance_id) = native_appearance {
+            EntityDetail::ObjectWithAppearance {
+                item_definition_ref,
+                quantity,
+                item_handle,
+                appearance_id,
+            }
+        } else {
+            EntityDetail::Object {
+                item_definition_ref,
+                quantity,
+                item_handle,
+            }
         }
     };
     let entity = WorldSpatialEntity {
@@ -505,6 +622,10 @@ fn unique_item_handles<'a>(
     let mut seen = BTreeSet::new();
     for entity in entities {
         if let EntityDetail::Object {
+            item_handle: Some(handle),
+            ..
+        }
+        | EntityDetail::ObjectWithAppearance {
             item_handle: Some(handle),
             ..
         } = entity.detail
@@ -963,6 +1084,25 @@ mod tests {
                 health_percent: 100,
             };
             assert!(encode_entity(&entity, false).is_err());
+            entity.detail = EntityDetail::ActorWithIcons {
+                direction,
+                appearance_ref: 1,
+                health_percent: 100,
+                icons: NativeCreatureIcons::new(&[NativeCreatureIcon {
+                    category: 1,
+                    id: 6,
+                    count: 1,
+                }])
+                .expect("qualified creature icon"),
+            };
+            assert!(
+                super::encode_entity(
+                    &entity,
+                    EntityFields::selected(&[CAPABILITY_NATIVE_CREATURE_ICONS_V1]),
+                    None,
+                )
+                .is_err()
+            );
         }
     }
 
@@ -1139,6 +1279,8 @@ mod tests {
             item_handles: true,
             light: true,
             party_icons: false,
+            native_icons: false,
+            native_objects: false,
         };
         let mut entities = vec![own()];
         entities.extend((1..256).map(|n| actor(EntityKind::Creature, n)));
@@ -1569,6 +1711,8 @@ mod tests {
         item_handles: false,
         light: true,
         party_icons: false,
+        native_icons: false,
+        native_objects: false,
     };
     const BRIGHTEST: EntityLight = EntityLight {
         level: u8::MAX,
@@ -1690,3 +1834,9 @@ mod tests {
 #[cfg(test)]
 #[path = "world_spatial_entities_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[cfg(test)]
+mod soulpit_icon_tests;
+
+#[cfg(test)]
+mod native_object_tests;

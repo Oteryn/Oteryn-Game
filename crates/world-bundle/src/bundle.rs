@@ -23,7 +23,7 @@ pub const MAGIC: &[u8; 4] = b"OTWB";
 pub const RUNTIME_VERSION: u32 = 4;
 /// The sorted, unique capabilities the node implements. A PR adds a value only with the runtime
 /// code that implements it. Empty today.
-pub const SUPPORTED_CAPABILITIES: &[&str] = &[];
+pub const SUPPORTED_CAPABILITIES: &[&str] = &["source-static-surfaces-v1"];
 /// Header bytes: `"OTWB" | version u16 | reserved u16 | manifest_length u32 | sector_count u32`.
 pub const HEADER: usize = 16;
 /// Sector table row bytes.

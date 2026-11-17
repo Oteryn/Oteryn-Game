@@ -120,6 +120,18 @@ fn definition(key: &str) -> TypedDefinitionRef {
     }
 }
 
+/// A legacy once claim served by its exact World callback (legacy_world_claims.rs)
+/// commits through the quest writer, which needs the admitted quest session.
+pub(super) fn legacy_world_owned(claim: &str) -> TestResult<bool> {
+    use oteryn_gameplay_quests::quest::world_callbacks::{legacy_world_claim, load};
+    for callback in load()?.iter() {
+        if legacy_world_claim(callback)?.is_some_and(|binding| binding.key == claim) {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
     let choices: Vec<_> = cohort
         .iter()
@@ -163,13 +175,15 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 .filter(|(key, _)| key == &chest.claim)
                 .collect::<Vec<_>>()
         );
+        let world_owned = legacy_world_owned(&chest.claim)?;
         let catalogue = if bound.served.iter().any(|claim| {
             claim.key.as_str() == chest.claim
                 && claim
                     .placements
                     .iter()
                     .any(|placement| placement.placement.quest_transition.is_some())
-        }) {
+        }) || world_owned
+        {
             let lowered =
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?;
@@ -185,6 +199,21 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             y: i32::from(chest.position.1),
             floor: -i16::from(chest.position.2),
         };
+        deps.combat_room = Some(
+            activated
+                .qualified_room()
+                .bundle_view(
+                    cells.clone(),
+                    activated.frame_binding().digest(),
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor,
+                    },
+                )
+                .ok_or("qualified source reward Bundle room")?,
+        );
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -340,10 +369,19 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             let expected = if cold {
                 vec![(CommandStatus::Accepted, UseDisposition::Committed)]
             } else {
+                // Crystal answers a repeated use of a claimed World-owned
+                // chest with its "it is empty" refusal, a Rejected command
+                // with a Rejected disposition (as quest_container_chests
+                // asserts); a RewardClaim chest owner reports NothingToUse.
+                let repeated = if world_owned {
+                    (CommandStatus::Rejected, UseDisposition::Rejected)
+                } else {
+                    (CommandStatus::Accepted, UseDisposition::NothingToUse)
+                };
                 vec![
                     (CommandStatus::Accepted, UseDisposition::Committed),
                     (CommandStatus::DuplicateReplay, UseDisposition::Committed),
-                    (CommandStatus::Accepted, UseDisposition::NothingToUse),
+                    repeated,
                 ]
             };
             let commands = if cold {
@@ -506,7 +544,10 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 )
                 .fetch_one(&h.pool)
                 .await?;
-                assert_eq!(quest_counts, (1, 1, 0), "{}", chest.claim);
+                // A World callback's storage write is one receipt; only a
+                // placement quest transition consumes a claim obligation.
+                let obligations = i64::from(!world_owned);
+                assert_eq!(quest_counts, (1, obligations, 0), "{}", chest.claim);
             }
         }
         drop(authority);

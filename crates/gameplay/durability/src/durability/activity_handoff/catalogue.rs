@@ -9,6 +9,38 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         templates: &[QualifiedActivityRoomTemplate],
     ) -> Result<()> {
+        self.publish_qualified_boss_rooms_with_origin(node, templates, None)
+            .await
+    }
+
+    pub(super) async fn publish_qualified_boss_rooms_from_world(
+        &self,
+        node: &NodeIncarnationProof,
+        templates: &[QualifiedActivityRoomTemplate],
+        active: &crate::content::ActiveGeneration,
+        origin: &crate::content::QualifiedNativeEntryRoom,
+        pin: &crate::foundation::ChannelContentPin,
+    ) -> Result<()> {
+        if active
+            .qualify_published_world_context(origin, pin)
+            .is_none()
+            || templates.iter().any(|template| {
+                template.issue_runtime_pin(active).is_err()
+                    || template.room().movement_cells().scope().world_id != pin.world_id()
+            })
+        {
+            return Err(DurabilityError::Unavailable);
+        }
+        self.publish_qualified_boss_rooms_with_origin(node, templates, Some(pin))
+            .await
+    }
+
+    async fn publish_qualified_boss_rooms_with_origin(
+        &self,
+        node: &NodeIncarnationProof,
+        templates: &[QualifiedActivityRoomTemplate],
+        origin: Option<&crate::foundation::ChannelContentPin>,
+    ) -> Result<()> {
         let cell = |p: oteryn_gameplay_content::content::LogicalCell| serde_json::json!({"x": p.x, "y": p.y, "floor": p.z});
         let mut rows = Vec::with_capacity(templates.len());
         for t in templates {
@@ -28,8 +60,14 @@ impl ActivityHandoffOwner {
                 t.boss_key().to_owned(),
                 t.room().movement_cells().scope().world_id,
                 ActivityContentPin {
-                    coordinate_frame_digest: t.room().frame_binding().digest(),
-                    map_revision_digest: t.room().map_revision_digest(),
+                    coordinate_frame_digest: origin.map_or_else(
+                        || t.room().frame_binding().digest(),
+                        |pin| pin.frame_binding_digest(),
+                    ),
+                    map_revision_digest: origin.map_or_else(
+                        || t.room().map_revision_digest(),
+                        |pin| pin.map_revision_digest(),
+                    ),
                     server_artifact_digest: t.room().compiled().server_digest(),
                 },
                 t.activation_frame_binding_digest(),

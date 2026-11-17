@@ -24,6 +24,8 @@ use super::item_transfer_audit::{ITEM_LIFECYCLE_RETIRED, OneItemCorpseSourceV1};
 use prost::Message;
 
 mod activity_retirement;
+mod arena_reset;
+pub use arena_reset::OneItemArenaResetV1;
 mod world_reset;
 pub use activity_retirement::OneItemActivityRetirementV1;
 use sha2::{Digest, Sha256};
@@ -65,6 +67,9 @@ pub struct OneItemDecayRetireV1 {
     /// Absent in every existing Channel encoding.
     #[prost(message, optional, tag = "9")]
     pub activity_retirement: Option<OneItemActivityRetirementV1>,
+    /// Exact Channel pit/run reset; absent from all legacy encodings.
+    #[prost(message, optional, tag = "10")]
+    pub arena_reset: Option<OneItemArenaResetV1>,
 }
 
 /// Which of the N+1 steps one event records.
@@ -129,6 +134,9 @@ fn scope_ground(value: &OneItemDecayRetireV1) -> Result<&OneItemGroundV1, AuditE
 /// Complete closed `DECAY_RETIRE` shape, conservation (the whole before
 /// quantity retires to exactly 0) and every registered bound.
 pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, AuditError> {
+    if value.arena_reset.is_some() {
+        return arena_reset::check(value);
+    }
     if value.activity_retirement.is_some() {
         return activity_retirement::check(value);
     }
@@ -219,6 +227,7 @@ pub fn decode_decay_retire_envelope(
         .map(|cause| cause.deadline_unix_ms)
         .or_else(|| retire.world_reset.as_ref().map(|_| 0))
         .or_else(|| retire.activity_retirement.as_ref().map(|_| 0))
+        .or_else(|| retire.arena_reset.as_ref().map(|_| 0))
         .ok_or(AuditError::InvalidInput)?;
     if value.world_id.as_deref() != Some(ground.world_id.as_slice())
         || value.channel_id.as_deref() != (!ground.channel_id.is_empty()).then_some(ground.channel_id.as_slice())
@@ -227,7 +236,10 @@ pub fn decode_decay_retire_envelope(
         || value.command_id.is_some()
         || value.connection_generation.is_some()
         || value.causation.is_some()
-        // The retirement is never earlier than the deadline that authorized it.
+        // Arena cleanup is authorized only before its original pit deadline.
+        || retire.arena_reset.as_ref().is_some_and(|cause|
+            u64::try_from(value.occurred_at_unix_ms).map_or(true, |at| at >= cause.deadline_unix_ms))
+        // Corpse retirement is never earlier than its decay deadline.
         || u64::try_from(value.occurred_at_unix_ms).map_or(true, |at| at < deadline)
     {
         return Err(AuditError::InvalidInput);
@@ -366,6 +378,7 @@ mod tests {
         OneItemDecayRetireV1 {
             world_reset: None,
             activity_retirement: None,
+            arena_reset: None,
             ground_container_entry: None,
             before: Some(state(ENTRY, 3, ITEM_LIFECYCLE_LIVE)),
             after: Some(state(ENTRY, 0, ITEM_LIFECYCLE_RETIRED)),
@@ -387,6 +400,7 @@ mod tests {
         OneItemDecayRetireV1 {
             world_reset: None,
             activity_retirement: None,
+            arena_reset: None,
             ground_container_entry: None,
             before: Some(state(CORPSE, 1, ITEM_LIFECYCLE_LIVE)),
             after: Some(state(CORPSE, 0, ITEM_LIFECYCLE_RETIRED)),

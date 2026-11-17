@@ -24,6 +24,11 @@ pub struct SpawnDefinition {
     points: Vec<SpawnPointDefinition>,
     /// D115: 5,000,000 (5 s).
     occupancy_retry_interval_micros: u64,
+    /// Only the full-pin Content XML qualifier can select source warning phases.
+    /// Ordinary D115 definitions retain their accepted warning policy.
+    pub(super) xml_source: Option<
+        oteryn_gameplay_content::content::bosses::activity_template::QualifiedAmbientXmlSpawns,
+    >,
 }
 
 /// SPAWN-1b: what one spawn point realizes and when it respawns.
@@ -117,6 +122,7 @@ impl SpawnDefinition {
             population,
             points: definitions,
             occupancy_retry_interval_micros,
+            xml_source: None,
         })
     }
 
@@ -489,7 +495,7 @@ impl ChannelRuntimeV1 {
     /// fence, no realized or pending activation, every registered ceiling and the slot
     /// capacity, which keeps [`SPAWN_ACTIVATION_PLAYER_HEADROOM`] slots free for player
     /// admission. Returns the total points.
-    fn check_spawn_activation(
+    pub(super) fn check_spawn_activation(
         &self,
         definitions: &[SpawnDefinition],
     ) -> Result<usize, CarrierError> {

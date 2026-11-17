@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "rules": [
+    "An item exists because the same failure reached a PR gate or main at least twice; `source` names where that is recorded.",
+    "A trigger is readable from the diff alone: changed paths (globs) or added/removed lines (regex).",
+    "`examples` are paths or diff lines that must trigger the item; test_reliability_checklist.py runs them.",
+    "An item that has not matched a real failure for a quarter is removed in the monthly review."
+  ],
+  "items": [
+    {
+      "id": "migration-number",
+      "title": "Migration number taken on main in the meantime",
+      "paths": ["apps/game-server/migrations/**"],
+      "diff": [],
+      "check": "bash .claude/skills/oteryn-dev/scripts/dup-migrations.sh origin/main  (any output: renumber above main and every open PR)",
+      "source": ".claude/skills/oteryn-dev/references/ci-merge.md#reading-a-red-check",
+      "examples": {"paths": ["apps/game-server/migrations/0999_example.sql"], "diff": []}
+    },
+    {
+      "id": "content-pins",
+      "title": "Generated content, pins and digests stale",
+      "paths": ["content/**", "imports/**"],
+      "diff": [],
+      "check": "python3 tools/content-migration/regenerate_content.py --resolve, then a second run must leave no diff; never hand-edit generated files",
+      "source": ".claude/skills/oteryn-dev/references/content-world.md",
+      "examples": {"paths": ["content/items/items-0001.json"], "diff": []}
+    },
+    {
+      "id": "post-merge-blind-spot",
+      "title": "Node startup, stack size or dispatch runtime: node boot and integration shards run only after merge",
+      "paths": ["apps/game-server/src/main.rs", "apps/game-server/src/node/**", "crates/gameplay/dispatch/**"],
+      "diff": ["RUST_MIN_STACK|stack_size\\(|thread::Builder|recursion_limit"],
+      "check": "run node boot (bash tools/qualification/node_boot/run.sh, NODE_BOOT_RESULT=NODE_BOOT_PASS) or the matching integration shard locally, or dispatch node-boot-qualification.yml on the branch",
+      "source": ".claude/skills/oteryn-dev/references/ci-merge.md#blind-spot",
+      "examples": {"paths": ["apps/game-server/src/node/serve.rs"], "diff": ["+    let builder = std::thread::Builder::new().stack_size(8 << 20);"]}
+    },
+    {
+      "id": "test-support-features",
+      "title": "gameplay-dispatch or gameplay-entities test-support only compiles with --all-features",
+      "paths": ["crates/gameplay/dispatch/**", "crates/gameplay/entities/**"],
+      "diff": [],
+      "check": "cargo clippy --locked -p <package> --all-targets --all-features -- -D warnings and cargo test --locked -p <package> --all-features",
+      "source": ".claude/skills/oteryn-dev/references/local-checks.md#order-cheapest-first",
+      "examples": {"paths": ["crates/gameplay/entities/src/lib.rs"], "diff": []}
+    },
+    {
+      "id": "postgres-case-executed",
+      "title": "A PostgreSQL case that passes without a database proves nothing",
+      "paths": ["apps/game-server/tests/support/authority_cases/**"],
+      "diff": ["_postgres(_cases)?\\b|#\\[tokio::test\\].*postgres"],
+      "check": "run the one filtered PostgreSQL target against a real database and show it executed (its marker and a non-trivial duration); otherwise report it as not run",
+      "source": ".claude/skills/oteryn-dev/references/local-checks.md#postgresql-tests",
+      "examples": {"paths": ["apps/game-server/tests/support/authority_cases/combat_death.rs"], "diff": ["+fn combat_death_reward_postgres_cases() {"]}
+    },
+    {
+      "id": "nextest-isolation",
+      "title": "Test relies on state left by another test (passes under cargo test, fails under nextest)",
+      "paths": [],
+      "diff": ["static\\s+(mut\\s+)?[A-Z_]+\\s*:|OnceLock|lazy_static|std::env::set_var"],
+      "check": "cargo nextest run -p <package> (one process per test, as CI) when nextest is installed",
+      "source": ".claude/skills/oteryn-dev/references/local-checks.md#order-cheapest-first",
+      "examples": {"paths": [], "diff": ["+static CACHE: OnceLock<Registry> = OnceLock::new();"]}
+    },
+    {
+      "id": "duplicate-mod-after-merge",
+      "title": "Additive merge driver left a duplicated mod line or block (E0428)",
+      "paths": [],
+      "diff": ["^\\+\\s*(pub(\\([a-z]+\\))?\\s+)?mod\\s+\\w+;"],
+      "check": "after merging origin/main: grep the touched files for duplicated mod lines, imports and test bodies, then cargo fmt --all and build",
+      "source": ".claude/skills/oteryn-dev/references/ci-merge.md#merge-conflicts",
+      "examples": {"paths": [], "diff": ["+pub(crate) mod corpse_admission;"]}
+    },
+    {
+      "id": "ci-control-plane",
+      "title": "Workflow or repository-tool change",
+      "paths": [".github/workflows/**", "tools/repository/**", ".github/repository-policy.json"],
+      "diff": [],
+      "check": "python3 tools/repository/validate_repository_policy.py and every tools/repository/test_*.py; timeouts, budgets and recursion limits change only with the owner's consent",
+      "source": ".claude/skills/oteryn-dev/references/ci-merge.md#how-the-gate-works-now",
+      "examples": {"paths": [".github/workflows/merge-gate.yml"], "diff": []}
+    },
+    {
+      "id": "shell-exit-status",
+      "title": "Pipeline hides the exit status (tee, tail) or errexit stops before evidence is written",
+      "paths": [],
+      "diff": ["\\|\\s*(tee|tail|head)\\b"],
+      "check": "set -o pipefail or read ${PIPESTATUS[0]}; on a step that must record evidence after a failure, turn errexit off and capture the status inside each branch; simulate the step with a failing stub",
+      "source": ".claude/skills/oteryn-dev/references/local-checks.md#build-hygiene",
+      "examples": {"paths": [], "diff": ["+          bash tools/qualification/node_boot/run.sh | tee \"$evidence\""]}
+    },
+    {
+      "id": "log-redaction",
+      "title": "Logs or evidence published without redaction",
+      "paths": [],
+      "diff": ["actions/upload-artifact|GITHUB_STEP_SUMMARY"],
+      "check": "drop lines matching password|postgres://|mysql://|secret|token|key|grant before upload; never print a database URL or password",
+      "source": ".claude/skills/oteryn-dev/references/local-checks.md#postgresql-tests",
+      "examples": {"paths": [], "diff": ["+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1"]}
+    },
+    {
+      "id": "node-boot-harness",
+      "title": "Node boot harness change",
+      "paths": ["tools/qualification/node_boot/**", "tools/qualification/game_platform/**"],
+      "diff": [],
+      "check": "bash -n tools/qualification/node_boot/run.sh, python3 tools/qualification/node_boot/test_diagnostics.py, python3 tools/qualification/node_boot/test_matrix.py when present, and python3 tools/repository/test_heavy_gate.py",
+      "source": ".claude/skills/oteryn-dev/references/local-checks.md#jobs-that-only-run-after-the-merge",
+      "examples": {"paths": ["tools/qualification/node_boot/run.sh"], "diff": []}
+    },
+    {
+      "id": "governance",
+      "title": "Agent governance files",
+      "paths": ["docs/agents/**", "tools/agents/**", ".claude/**", "AGENTS.md"],
+      "diff": [],
+      "check": "python3 tools/agents/validate_governance.py and python3 -m unittest discover -s tools/agents/tests",
+      "source": ".claude/skills/oteryn-dev/references/local-checks.md#order-cheapest-first",
+      "examples": {"paths": [".claude/skills/oteryn-verify/SKILL.md"], "diff": []}
+    }
+  ]
+}

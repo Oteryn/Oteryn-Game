@@ -2,6 +2,21 @@
 use super::{CardinalStep, CreatureAiState, MovementLocalPosition};
 
 impl CreatureAiState {
+    pub(super) fn read_physical_facing(
+        &mut self,
+        facing: Option<crate::foundation::MovementFacing>,
+    ) {
+        use crate::foundation::MovementFacing;
+        if let Some(facing) = facing {
+            self.attack_facing = match facing {
+                MovementFacing::North => CardinalStep::North,
+                MovementFacing::East => CardinalStep::East,
+                MovementFacing::South => CardinalStep::South,
+                MovementFacing::West => CardinalStep::West,
+            };
+        }
+    }
+
     /// The current creature-facing fact used by directional attack geometry.
     #[must_use]
     pub const fn attack_facing(&self) -> CardinalStep {

@@ -1,0 +1,10 @@
+{
+  "id": 741,
+  "name": "PERSONAL_MAP_MARKS_QUERY",
+  "owner_decision": "QMECH M16 owner assignment to questpc5, 2026-11-08",
+  "capability": 451,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/personal-map-marks-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/personal-map-marks-v1.md#reply",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 100866
+}

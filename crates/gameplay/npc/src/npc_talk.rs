@@ -10,7 +10,9 @@ use std::collections::HashMap;
 mod caller_scope;
 mod dark_trails;
 mod isle_of_evil;
+mod literal_contacts;
 mod questpc7_reward_bounds;
+mod world_change_journals;
 
 use crate::content::{NpcServiceModel, ProjectV2ServiceOffer};
 use crate::foundation::speech::ChatPosition;
@@ -26,16 +28,29 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
 const REWARD_CALLBACKS: &[&str] = &[
     include_str!("../../../../content/quests/chosen-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qnpcfx-koshei.json"),
+    include_str!("../../../../content/quests/npc-callbacks/qnpcfx-m10.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m39-stories.json"),
     include_str!("../../../../content/quests/shared-reward-callbacks.json"),
+    include_str!("../../../../content/quests/npc-callbacks/questpc7-programmes.json"),
     include_str!("../../../../content/quests/npc-callbacks/fibula.json"),
     include_str!("../../../../content/quests/npc-callbacks/l2-ready-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/l6-stories.json"),
     include_str!("../../../../content/quests/npc-callbacks/l13-outfits.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m09-rookie.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m16-targuna-marker.json"),
+    include_str!("../../../../content/quests/npc-callbacks/m13-goblin-capture.json"),
 ];
+#[cfg(test)]
+mod m09_rookie_tests;
 const REWARD_GREETINGS: &[&str] = &[
     include_str!("../../../../content/dialogues/quests/chosen-reward-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/qnpcfx-m10-greetings.json"),
     include_str!("../../../../content/dialogues/quests/shared-reward-greetings.json"),
     include_str!("../../../../content/dialogues/quests/l6-story-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/m09-rookie-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/questpc5-targuna-map-greetings.json"),
+    include_str!("../../../../content/dialogues/quests/m13-goblin-greetings.json"),
 ];
 
 mod quest_merchant;
@@ -313,9 +328,18 @@ impl NpcTalkBook {
     /// Admit only the caller's native quest NPCs' existing literal greetings.
     /// Stateful keywords and durable writes remain with the native dispatcher.
     pub fn from_model_with_native_quests(model: &NpcServiceModel, native_npcs: &[&str]) -> Self {
+        Self::from_model_with_journal_source(model, native_npcs, world_change_journals::SOURCE)
+    }
+
+    fn from_model_with_journal_source(
+        model: &NpcServiceModel,
+        native_npcs: &[&str],
+        source: &str,
+    ) -> Self {
+        let journal_npcs = world_change_journals::npc_keys(source).unwrap_or_default();
         let mut book = Self {
             catalogue_revision: revision_of(&format!(
-                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
+                "npc-trade-3:v1|npc-marriage-1|oriental-trader-v1|al-dee-exchange-v1|uzgod-knife-v1|seymour-present-v1\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}\0{}",
                 crate::content::npc_catalogue::quest_access::book_digest(
                     &crate::content::npc_catalogue::quest_shops::book_digest(
                         &crate::content::npc_catalogue::grizzly_shop::book_digest(
@@ -332,7 +356,7 @@ impl NpcTalkBook {
                     OROCKLE_TRADE
                 ),
                 isle_of_evil::revision_material(),
-                REWARD_CALLBACKS.join("\0"),
+                format_args!("{}\0{}", REWARD_CALLBACKS.join("\0"), source),
                 REWARD_GREETINGS.join("\0"),
                 crate::content::npc_catalogue::healing::DATA,
                 crate::content::npc_catalogue::travel::revision_material(),
@@ -342,6 +366,7 @@ impl NpcTalkBook {
                 YASIR_JOB,
                 YASIR_NAME,
                 YASIR_PASSAGE,
+                literal_contacts::REVISION_MATERIAL,
             )),
             ..Self::default()
         };
@@ -392,6 +417,7 @@ impl NpcTalkBook {
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
+            let mut journal_fallback = false;
             let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if native_quest
                 && matches!(
                     reference.key.as_str(),
@@ -626,6 +652,31 @@ impl NpcTalkBook {
                     None,
                     dialogue.keywords.clone(),
                 )
+            } else if literal_contacts::admitted(&reference.key) && npc.services.is_empty() {
+                // The historical `bank_dialogue` carrier also holds these explicitly
+                // qualified lore contacts. Per-contact topic scope and the literal
+                // matcher keep quest callbacks and exchange topics outside this path.
+                let Some(dialogue) = &npc.bank_dialogue else {
+                    continue;
+                };
+                if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
+                    continue;
+                }
+                (
+                    literal_contacts::greeting(&reference.key)
+                        .unwrap_or(&dialogue.greet[0])
+                        .to_owned(),
+                    dialogue.farewell[0].clone(),
+                    None,
+                    dialogue
+                        .keywords
+                        .iter()
+                        .filter(|keyword| {
+                            literal_contacts::keyword_allowed(&reference.key, keyword)
+                        })
+                        .cloned()
+                        .collect(),
+                )
             } else if crate::content::npc_catalogue::healing::profile(&reference.key).is_some() {
                 (
                     format!(
@@ -661,6 +712,16 @@ impl NpcTalkBook {
                     .cloned()
                     .unwrap_or_else(|| "Farewell.".into());
                 (greeting, farewell, None, Vec::new())
+            } else if journal_npcs.contains(&reference.key) {
+                // The authored personal programme owns subsequent choices. Use the
+                // pinned default handler's focus text, never a generic value-bearing topic.
+                journal_fallback = true;
+                (
+                    YASIR_GREET.into(),
+                    "Good bye, |PLAYERNAME|.".into(),
+                    None,
+                    Vec::new(),
+                )
             } else {
                 continue;
             };
@@ -668,7 +729,8 @@ impl NpcTalkBook {
                 reference.key.clone(),
                 NpcTalkEntry {
                     name: npc.name.clone(),
-                    admitted_dialogue: !matches!(reference.key.as_str(), YASIR | OROCKLE)
+                    admitted_dialogue: !journal_fallback
+                        && !matches!(reference.key.as_str(), YASIR | OROCKLE)
                         && npc.dialogue.is_some()
                         && premium_services.is_empty()
                         && travel_routes.is_empty(),
@@ -683,6 +745,7 @@ impl NpcTalkBook {
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank
+                        || literal_contacts::greeting(&reference.key).is_some()
                         || reference.key == "oteryn:npc.lynda"
                         || matches!(reference.key.as_str(), YASIR | OROCKLE | DEEP_SEAS_GUARDIAN)
                         || dark_messages.is_some()
@@ -694,7 +757,8 @@ impl NpcTalkBook {
                             "oteryn:npc.al_dee" | "oteryn:npc.seymour" | "oteryn:npc.uzgod"
                         )
                         || quest_merchant::contains(&reference.key)
-                        || native_npcs.contains(&reference.key.as_str()),
+                        || native_npcs.contains(&reference.key.as_str())
+                        || journal_fallback,
                     source_walkaway: if dark_messages.is_some() {
                         Some(dark_trails::WALKAWAY.into())
                     } else {
@@ -901,6 +965,46 @@ mod tests {
     use super::*;
 
     #[test]
+    fn m04_native_terminal_npcs_have_talk_entries_without_static_keyword_authority()
+    -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|e| format!("{e:?}"))?;
+        let keys = [
+            "oteryn:npc.tereban",
+            "oteryn:npc.malor",
+            "oteryn:npc.gabel",
+            "oteryn:npc.pemaret",
+            "oteryn:npc.costello",
+        ];
+        let book = NpcTalkBook::from_model_with_native_quests(&model, &keys);
+        for key in keys {
+            let entry = book
+                .get(key)
+                .ok_or_else(|| format!("missing native terminal NPC: {key}"))?;
+            assert!(
+                entry.dialogue_keywords.is_empty(),
+                "native terminal rules own {key}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn goblin_capture_intro_has_source_rafzan_greeting() -> Result<(), String> {
+        assert!(reward_callback_npc("oteryn:npc.rafzan"));
+        let greeting = reward_messages("oteryn:npc.rafzan").ok_or("Rafzan greeting")?;
+        assert_eq!(greeting.greet, "Greetings, |PLAYERNAME|.");
+        Ok(())
+    }
+
+    #[test]
     fn qengine_reward_npcs_open_only_source_conversations() -> Result<(), String> {
         let catalogue = crate::content::NpcDataCatalogue::load(
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
@@ -947,6 +1051,7 @@ mod tests {
             "sam",
             "oldrak",
             "zoltan",
+            "rafzan",
         ] {
             let key = format!("oteryn:npc.{name}");
             let entry = book
@@ -1822,3 +1927,27 @@ mod s10_tests {
 #[cfg(test)]
 #[path = "npc_talk/questpc8_source_tests.rs"]
 mod questpc8_source_tests;
+
+#[cfg(test)]
+mod qnpcfx_m10_greeting_tests {
+    use super::*;
+    #[test]
+    fn production_reward_greetings_admit_all_m10_npcs_without_fixture_overrides() {
+        for key in [
+            "oldrak",
+            "henricus",
+            "kulag_the_guard",
+            "grof_the_guard",
+            "tim_the_guard",
+            "walter_the_guard",
+            "miles_the_guard",
+        ] {
+            let key = format!("oteryn:npc.{key}");
+            assert!(reward_callback_npc(&key));
+            assert!(
+                reward_messages(&key)
+                    .is_some_and(|r| !r.greet.is_empty() && !r.farewell.is_empty())
+            );
+        }
+    }
+}

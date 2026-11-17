@@ -1,0 +1,260 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/m07/too-hot-column-01",
+      "quest": "oteryn:quest.too_hot_to_handle_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32593,
+          "y": 31841,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 36541,
+        "native": {
+          "position": {
+            "x": 32593,
+            "y": 31841,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 36541
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32593,
+            "y": 31841,
+            "floor": -9
+          },
+          "appearance": 36541
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/too_hot/column_01",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/too_hot/columns_repaired",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 2
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i36543",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "requires_world_admission": true,
+      "minimum_level": 80,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The chisel repairs this column. Your tool remains usable.",
+      "effects": {},
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:67137-67143",
+        "content/world/placements/region-z09-x127-y124.b3:sha256=2bfe818ad305727097f0672cb8164a72702e1f8d4591f5f6688ef1b5fbd5c07e",
+        "docs/reference/content-prep/questpc4-M07-too-hot-columns.md",
+        "OTERYN_CHOSEN_REPAIR_TRIAL:three native north columns; personal one-time credit; retain original visual and chisel; no commission or completion admission"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m07/too-hot-column-02",
+      "quest": "oteryn:quest.too_hot_to_handle_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32601,
+          "y": 31841,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 36541,
+        "native": {
+          "position": {
+            "x": 32601,
+            "y": 31841,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 36541
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32601,
+            "y": 31841,
+            "floor": -9
+          },
+          "appearance": 36541
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/too_hot/column_02",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/too_hot/columns_repaired",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 2
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i36543",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "requires_world_admission": true,
+      "minimum_level": 80,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The chisel repairs this column. Your tool remains usable.",
+      "effects": {},
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:67137-67143",
+        "content/world/placements/region-z09-x127-y124.b3:sha256=2bfe818ad305727097f0672cb8164a72702e1f8d4591f5f6688ef1b5fbd5c07e",
+        "docs/reference/content-prep/questpc4-M07-too-hot-columns.md",
+        "OTERYN_CHOSEN_REPAIR_TRIAL:three native north columns; personal one-time credit; retain original visual and chisel; no commission or completion admission"
+      ],
+      "admission": {
+        "premium": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m07/too-hot-column-03",
+      "quest": "oteryn:quest.too_hot_to_handle_quest",
+      "actor_kind": "player",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32610,
+          "y": 31841,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 36541,
+        "native": {
+          "position": {
+            "x": 32610,
+            "y": 31841,
+            "floor": -9
+          },
+          "ordinal": 1,
+          "appearance": 36541
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32610,
+            "y": 31841,
+            "floor": -9
+          },
+          "appearance": 36541
+        }
+      ],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m07/too_hot/column_03",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "state_ops": [
+        {
+          "track": "oteryn:quest-progress/m07/too_hot/columns_repaired",
+          "from": {
+            "kind": "between",
+            "minimum": -1,
+            "maximum": 2
+          },
+          "effect": {
+            "kind": "add_at_least",
+            "value": 1,
+            "minimum": 1
+          }
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i36543",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true
+      },
+      "requires_world_admission": true,
+      "minimum_level": 80,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "The chisel repairs this column. Your tool remains usable.",
+      "effects": {},
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data/items/items.xml:67137-67143",
+        "content/world/placements/region-z09-x127-y124.b3:sha256=2bfe818ad305727097f0672cb8164a72702e1f8d4591f5f6688ef1b5fbd5c07e",
+        "docs/reference/content-prep/questpc4-M07-too-hot-columns.md",
+        "OTERYN_CHOSEN_REPAIR_TRIAL:three native north columns; personal one-time credit; retain original visual and chisel; no commission or completion admission"
+      ],
+      "admission": {
+        "premium": true
+      }
+    }
+  ]
+}

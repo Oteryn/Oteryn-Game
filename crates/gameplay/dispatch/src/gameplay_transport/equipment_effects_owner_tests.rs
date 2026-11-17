@@ -9,14 +9,22 @@ use std::path::Path;
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 
 fn input() -> Result<NativeGameplayInput, Box<dyn Error>> {
-    let mut input = NativeGameplayInput::from_manifest(
-        &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/spells.manifest.json"),
-    )?;
-    // These fixtures exercise the production item profiles in the accepted entry room.
-    // Compiling the unrelated source-world carrier in every ability case adds contention
-    // to the concurrent PostgreSQL owners without exercising another equipment path.
-    input.source_world = None;
-    Ok(input)
+    // The pinned manifest is read once per test process; every caller gets its own copy,
+    // which `fixture_input` may then change without affecting any other case.
+    static INPUT: std::sync::LazyLock<Result<NativeGameplayInput, String>> =
+        std::sync::LazyLock::new(|| -> Result<NativeGameplayInput, String> {
+            let mut input = NativeGameplayInput::from_manifest(
+                &Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../../content/spells.manifest.json"),
+            )
+            .map_err(|error| format!("{error:?}"))?;
+            // These fixtures exercise the production item profiles in the accepted entry room.
+            // Compiling the unrelated source-world carrier in every ability case adds contention
+            // to the concurrent PostgreSQL owners without exercising another equipment path.
+            input.source_world = None;
+            Ok(input)
+        });
+    Ok(INPUT.clone()?)
 }
 
 fn native(input: &NativeGameplayInput) -> Result<NativeGameplayState, Box<dyn Error>> {

@@ -20,6 +20,14 @@ pub(super) async fn step<A: FreshAdmissionAuthority>(
         match decode_step_intent_selected(session.selected_capabilities.as_slice(), command.payload)
         {
             Err(_) => Dispatch::Step(StepOutcome::rejected(), 0),
+            Ok(direction)
+                if direction.is_diagonal()
+                    && !session.selected_capabilities.contains(
+                        oteryn_protocol_oteryn::world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+                    ) =>
+            {
+                Dispatch::Step(StepOutcome::rejected(), 0)
+            }
             // STEP-PACE-WIRE-1: the receipt is the time left until the pacing clock is due,
             // after the buffered step ran; none when that step did not move.
             Ok(_) if arrived_while_buffered => {
@@ -66,6 +74,11 @@ pub(super) async fn step<A: FreshAdmissionAuthority>(
                     duration,
                 )
                 .await;
+                if outcome.disposition == StepDisposition::Moved {
+                    authority
+                        .committed_paced_movement(session.admitted, outcome.moved_to)
+                        .await;
+                }
                 // STEP-PACE-WIRE-1: a moved step's receipt is the duration just recorded.
                 let wait = if outcome.disposition == StepDisposition::Moved {
                     moved_step_wait_ms(duration)

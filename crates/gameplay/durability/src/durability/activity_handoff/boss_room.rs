@@ -214,9 +214,10 @@ impl ActivityHandoffOwner {
             .record_for(&self.root)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
+        let root = self.root.clone();
         self.root.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;assert_recovery_fence(&mut tx,&recovery).await?;lock_admission_relations(&mut tx).await?;
-            let now=now_ms(&mut tx).await?;
+            let now=quest_activity_now_ms(&mut tx,&root).await?;
             if !prove_current_incarnation(&mut tx,&node).await? {return Err(DurabilityError::Unavailable);}
             let fact=node.fact();
             let rows=sqlx::query("SELECT uuid_send(a.admission) AS id,uuid_send(a.instance_id) AS instance,g.ownership_generation::text AS generation,a.state \
@@ -286,6 +287,23 @@ impl ActivityHandoffOwner {
             })
             .await
     }
+}
+
+/// Whether this World/boss is served by a source publication. The legacy
+/// catalogue fallback keeps its own fixture lever cells, so the Crystal lever
+/// partitions apply only to published source rooms.
+async fn published_source_room(
+    tx: &mut Transaction<'_, Postgres>,
+    r: &ActivityEnterRequest,
+) -> Result<bool> {
+    let world = r
+        .participants
+        .iter()
+        .find(|p| p.source.character_id.as_bytes() == r.initiating_character_id.as_bytes())
+        .map(|p| p.source.runtime_scope.world_id())
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_room_publications WHERE world_id=encode($1,'hex')::uuid AND boss_key=$2)")
+        .bind(world.as_bytes().as_slice()).bind(&r.activity_key).fetch_one(&mut **tx).await?)
 }
 
 async fn read_definition(
@@ -395,10 +413,13 @@ fn parse_entry_cells(value: &serde_json::Value) -> Option<Vec<LastPositionCell>>
     rows.iter().map(parse_cell).collect()
 }
 
-pub(super) async fn prepare_in_transaction(
+pub(super) async fn prepare_in_transaction<
+    G: super::super::quest_state::grizzly::GrizzlyPremiumGate,
+>(
     tx: &mut Transaction<'_, Postgres>,
     r: &ActivityEnterRequest,
     now: i64,
+    premium: &G,
 ) -> Result<std::result::Result<BossAdmissionPlan, ActivityRefusal>> {
     let Some(initiator) = r
         .participants
@@ -466,6 +487,16 @@ pub(super) async fn prepare_in_transaction(
     }
     let mut facts = Vec::with_capacity(r.participants.len());
     for p in &r.participants {
+        if !super::quest_encounter::permits_entry(
+            tx,
+            &r.activity_key,
+            p.source.character_id,
+            premium,
+        )
+        .await?
+        {
+            return Ok(Err(ActivityRefusal::AuthorityRejected));
+        }
         let Some(ordinal) = definition
             .lever_positions
             .iter()
@@ -523,6 +554,17 @@ pub(super) async fn prepare_in_transaction(
                 ActivityRefusal::InvalidInput
             }
         }));
+    }
+    if super::soul_war::is_soul_war(&r.activity_key)
+        && !super::soul_war::validate_entry(tx, r, now).await?
+    {
+        return Ok(Err(ActivityRefusal::AuthorityRejected));
+    }
+    if super::rotten_blood::is_rotten(&r.activity_key) {
+        let source_room = published_source_room(tx, r).await?;
+        if !super::rotten_blood::validate_entry(tx, r, now, source_room).await? {
+            return Ok(Err(ActivityRefusal::AuthorityRejected));
+        }
     }
     let reset: Option<String> = sqlx::query_scalar(
         "SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)",
@@ -679,33 +721,41 @@ pub(crate) async fn classify_and_record_defeat_in_transaction(
     Ok(BossRoomDefeatDecision::Recorded)
 }
 
-/// Native Instance progression consumes the exact W02 victory, not merely a
-/// matching creature name. The party-XP caller independently proves its current
-/// scope and Character fences in this transaction. A late death may earn normal
-/// XP, but cannot acquire the timed encounter's Quest/Hazard entitlement.
-pub async fn native_defeat_earned_in_transaction(
+/// Record the exact W02 victory before consuming its Quest/Hazard entitlement.
+/// Source onDeath XP can precede loot settlement, so both owners classify the
+/// same captured death time. Current scope and Character fences are independently
+/// proved by the party-XP caller; late deaths still earn only normal XP.
+pub async fn record_native_defeat_earned_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     creature: &str,
     death: [u8; 16],
+    captured_at_unix_ms: Option<i64>,
 ) -> Result<bool> {
-    let RuntimeScopeRefV1::Instance {
-        world_id,
-        instance_id,
-    } = scope
-    else {
+    if !matches!(scope, RuntimeScopeRefV1::Instance { .. }) {
         return Ok(true);
-    };
-    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_room_activities a JOIN game_activity_handoff_groups g ON g.handoff_id=a.admission WHERE a.world_id=encode($1,'hex')::uuid AND a.instance_id=encode($2,'hex')::uuid AND g.ownership_generation=$3::text::numeric AND g.state=2 AND a.boss_creature_key=$4 AND a.defeat_id=encode($5,'hex')::uuid AND a.state IN (2,4))")
-        .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice())
-        .bind(generation.get().to_string()).bind(creature).bind(death.as_slice())
-        .fetch_one(&mut **tx).await.map_err(Into::into)
+    }
+    let captured_at = captured_at_unix_ms.ok_or(DurabilityError::InvalidStoredState)?;
+    match classify_and_record_defeat_in_transaction(
+        tx,
+        scope,
+        generation,
+        creature,
+        death,
+        captured_at,
+    )
+    .await?
+    {
+        BossRoomDefeatDecision::Recorded => Ok(true),
+        BossRoomDefeatDecision::Late | BossRoomDefeatDecision::Unrelated => Ok(false),
+        BossRoomDefeatDecision::Conflict => Err(DurabilityError::InvalidStoredState),
+    }
 }
 
 /// Compatibility for the existing nonreward death owner: a deterministic late
 /// room kill is handled, while uncertain/conflicting authority remains refused.
-pub(crate) async fn record_defeat_in_transaction(
+pub async fn record_defeat_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
@@ -749,3 +799,7 @@ mod tests {
         assert!(parse_cell(&serde_json::json!({"x":2147483648_i64,"y":2,"floor":7})).is_none());
     }
 }
+
+#[path = "boss_room/source_prefix.rs"]
+mod source_prefix;
+pub use source_prefix::{QualifiedBossPadExtra, QualifiedBossPadPrefix, SourceBossLeverExtra};

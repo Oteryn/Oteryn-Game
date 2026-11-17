@@ -214,7 +214,7 @@ fn a_full_batch_round_trips_within_its_bound() {
     push_message_field(
         &mut last,
         1,
-        &encode_event(&small[MAX_PRESENTATION_EVENTS]).expect("event"),
+        &encode_event(&small[MAX_PRESENTATION_EVENTS], false).expect("event"),
     );
     over.extend_from_slice(&last);
     assert!(over.len() <= MAX_PRESENTATION_BATCH_BYTES);
@@ -740,7 +740,7 @@ fn malformed_cooldowns_fail_closed() {
 }
 
 #[test]
-fn registry_binds_the_presentation_wire_ids_and_limits() {
+fn registry_binds_the_presentation_wire_ids_and_limits() -> Result<(), Box<dyn std::error::Error>> {
     let protocol: Value = serde_json::from_str(PROTOCOL_REGISTRY).expect("protocol registry");
     let only = |section: &str, id: u32| {
         let matches: Vec<&Value> = protocol[section]
@@ -762,6 +762,27 @@ fn registry_binds_the_presentation_wire_ids_and_limits() {
                     && *requires == CAPABILITY_PRESENTATION_V1_REQUIRES
             })
     );
+    let native = only("capabilities", 385);
+    assert_eq!(native["requires"], serde_json::json!([23, 30]));
+    let native_domain = only("state_domains", STATE_DOMAIN_WORLD_PRESENTATION);
+    for (section, name, bound) in [
+        ("snapshot_types", "NATIVE_MAP_CUE_BASIS_V1", 0),
+        (
+            "delta_types",
+            "NATIVE_MAP_PRESENTATION_BATCH_V1",
+            MAX_PRESENTATION_BATCH_BYTES,
+        ),
+    ] {
+        let row = native_domain[section]
+            .as_array()
+            .ok_or("native presentation type collection")?
+            .iter()
+            .find(|row| row["id"] == 2)
+            .ok_or("native presentation type2 row")?;
+        assert_eq!(row["name"], name);
+        assert_eq!(row["capability"], 385);
+        assert_eq!(row["max_payload_bytes"], bound);
+    }
     let capability = only("capabilities", CAPABILITY_PRESENTATION_V1);
     assert_eq!(capability["name"], "PRESENTATION_V1");
     assert_eq!(capability["offered"], false);
@@ -786,14 +807,26 @@ fn registry_binds_the_presentation_wire_ids_and_limits() {
             [("delta_types", delta), ("snapshot_types", snapshot)]
         {
             let entries = domain[section].as_array().expect(section);
-            assert_eq!(entries.len(), 1, "{section}");
-            assert_eq!(entries[0]["id"], id);
-            assert_eq!(entries[0]["name"], type_name);
             assert_eq!(
-                entries[0]["payload_schema"],
+                entries.len(),
+                if domain_id == STATE_DOMAIN_WORLD_PRESENTATION {
+                    2
+                } else {
+                    1
+                },
+                "{section}"
+            );
+            let entry = entries
+                .iter()
+                .find(|entry| entry["id"] == id)
+                .expect("unchanged legacy row");
+            assert_eq!(entry["id"], id);
+            assert_eq!(entry["name"], type_name);
+            assert_eq!(
+                entry["payload_schema"],
                 format!("{SCHEMA_PATH}#{message}").as_str()
             );
-            assert_eq!(entries[0]["max_payload_bytes"], bytes);
+            assert_eq!(entry["max_payload_bytes"], bytes);
             assert!(
                 SCHEMA.contains(&format!("message {message} {{")),
                 "{message}"
@@ -855,13 +888,14 @@ fn registry_binds_the_presentation_wire_ids_and_limits() {
     ] {
         let entry = row(id);
         assert_eq!(entry["hard_maximum"], maximum, "{id}");
-        assert!(
-            entry["owner_contract"]
-                .as_str()
-                .expect("owner contract")
-                .ends_with("OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md")
-        );
+        assert!(entry["owner_contract"]
+            .as_str()
+            .expect("owner contract")
+            .ends_with(
+                "OTERYN_GAME_SPELL_PRESENT0_SPELL_AND_COMBAT_PRESENTATION_DECISION_2026-09-30.md"
+            ));
     }
+    Ok(())
 }
 
 #[cfg(test)]

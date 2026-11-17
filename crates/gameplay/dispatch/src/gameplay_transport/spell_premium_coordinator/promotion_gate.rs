@@ -135,38 +135,3 @@ impl crate::durability::npc_travel::NpcTravelGate for SpellPremiumCoordinator {
         .await
     }
 }
-
-impl crate::durability::quest_state::grizzly::GrizzlyPremiumGate for QuestRewardPremium<'_> {
-    async fn task_permitted(
-        &self,
-        tx: &mut PremiumGateTx<'_>,
-        account: [u8; 16],
-    ) -> Result<bool, DurabilityError> {
-        match self.0 {
-            Some(owner) => {
-                owner
-                    .transaction_permission(tx, account, |status| status.gate().premium_current())
-                    .await
-            }
-            None => Ok(false),
-        }
-    }
-}
-
-impl crate::durability::quest_state::grizzly::GrizzlyPremiumGate for super::QuestPremium<'_> {
-    async fn task_permitted(
-        &self,
-        tx: &mut PremiumGateTx<'_>,
-        account: [u8; 16],
-    ) -> Result<bool, DurabilityError> {
-        match self.0 {
-            Some(owner) => {
-                crate::durability::quest_state::grizzly::GrizzlyPremiumGate::task_permitted(
-                    owner, tx, account,
-                )
-                .await
-            }
-            None => Ok(false),
-        }
-    }
-}

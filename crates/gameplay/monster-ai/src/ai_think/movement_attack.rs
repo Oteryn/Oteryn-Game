@@ -34,13 +34,13 @@ impl AttackObservation {
                 == previous.target_position.last_translation_revision()
     }
 
-    fn still_visible_from(self, previous: Self) -> bool {
+    fn still_visible_from(self, previous: Self, native: bool) -> bool {
         let issuer = self.issuer.position();
         let target = self.target_position.position();
         issuer.floor == previous.issuer.position().floor
             && target.floor == previous.target_position.position().floor
             && issuer.floor == target.floor
-            && targeting::sees(issuer, target)
+            && targeting::perceives(native, issuer, target)
     }
 }
 
@@ -133,7 +133,8 @@ impl CreatureAiTable {
             // this movement event. Repeated owner polls cannot redraw it.
             state.attack_observation = current;
             self.window_started += 1;
-            let Some(current) = current.filter(|current| current.still_visible_from(previous))
+            let Some(current) = current
+                .filter(|current| current.still_visible_from(previous, state.profile.is_native()))
             else {
                 state.target = None;
                 state.schedule.native_target_disappeared();
@@ -200,6 +201,7 @@ impl CreatureAiTable {
                 },
             );
             entry.sequence = sequence;
+            state.read_physical_facing(current.issuer.facing());
             state.update_attack_facing(position, target_position);
             if plan.is_ok_and(|plan| !plan.native_melee_selected.is_empty()) {
                 selected.push(state.actor);

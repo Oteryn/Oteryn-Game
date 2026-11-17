@@ -102,6 +102,23 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             },
             self.result["summary"]["implementation_state"],
         )
+        # Crystal201189f's complete bag captures close SOURCE gaps for these
+        # three quests. They remain implementation-pending, never promoted to USE.
+        import sys
+        sys.path.insert(0, str(self.root / 'tools/content-schema/reward-claim-authoring'))
+        import container_native
+        container_native.source()  # Verify the immutable donor packet bytes/cohort.
+        claims = matrix.load_reward_claims(self.root)
+        for title in ('Draconia Quest', 'Fire Axe Quest', 'Goblin Temple Quest'):
+            owner = by_title[title]['reward_claim_owner']
+            self.assertEqual(owner['state'], 'REWARD_CLAIM_IMPLEMENTATION_PENDING')
+            selected = [claims[key] for key in owner['claim_keys']]
+            self.assertTrue(all(not claim.get('data_holds') for claim in selected))
+            containers = [claim['native_contents'] for claim in selected if 'native_contents' in claim]
+            self.assertTrue(containers, title)
+            for capture in containers:
+                self.assertEqual(capture['revision'], container_native.REVISION)
+                self.assertEqual(capture['source_sha256'], container_native.SOURCE_SHA256)
         # Native Item qualification can resolve a live claim without rewriting
         # its historical SOURCE witness or declaring the whole quest playable.
         draconia = by_title["Draconia Quest"]

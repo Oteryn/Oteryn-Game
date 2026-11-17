@@ -121,6 +121,8 @@ fn background_quest_sweep_yields_between_sessions_postgres() -> TestResult {
                 owner.states.quest_sessions.lock().map_err(debug)?.insert(
                     session,
                     crate::gameplay_transport::quest_admission::QuestSession {
+                        map_marks_world: None,
+                        map_marks: Vec::new(),
                         copy: None,
                         experience_deferred: false,
                         version: 0,

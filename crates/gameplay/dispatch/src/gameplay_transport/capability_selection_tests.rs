@@ -368,7 +368,17 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
             .ok_or("bundle-only capability")?;
         assert_eq!(entry["offered"].as_bool(), Some(false));
         let gate = entry["offer_gate"].as_str().ok_or("offer_gate")?;
-        assert!(gate.contains("BUNDLE_WORLD_OFFERED_CAPABILITIES"), "{id}");
+        if id == oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_OBJECT_APPEARANCE_V1 {
+            // SRX-3: this optional object field has a qualified native Bundle gate,
+            // independently of the generic Bundle offer-list gate.
+            assert_eq!(ids(&entry["requires"])?, [4, 6]);
+            assert_eq!(ids(&entry["command_types"])?, Vec::<u32>::new());
+            assert_eq!(ids(&entry["state_domains"])?, Vec::<u32>::new());
+            assert!(gate.starts_with("Qualified native Bundle offer;"));
+            assert!(gate.contains("optional domain1 object field15"));
+        } else {
+            assert!(gate.contains("BUNDLE_WORLD_OFFERED_CAPABILITIES"), "{id}");
+        }
     }
     let entry = registry
         .iter()

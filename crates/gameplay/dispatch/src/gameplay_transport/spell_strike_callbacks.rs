@@ -130,6 +130,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: &crate::durability::item_transfer::CurrentCharacterItemFence,
         casters: &[QualifiedCaster],
         access: &(impl crate::gameplay_transport::spell_access_facts::CurrentSpellAccessOwner + Sync),
+        native_health_observations: &[oteryn_gameplay_entities::NativeHealthChangeObservation],
     ) -> Result<FireReport, Error> {
         let objects = self.door.lock().await;
         let pass = self
@@ -155,9 +156,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.root, self.character, self.holder, fence, saved.binding.command, content.source_digest(), &evidence)
                 .await.map_err(|_|DurabilityError::Unavailable)?;
             let state = states.get(runtime, saved.binding.caster, saved.binding.command.game_session_id()).ok_or(DurabilityError::Unavailable)?;
-            let owned = crate::gameplay_transport::spell_access_facts::load_owned_cast_facts_in_transaction(&mut tx,
+            let mut owned = crate::gameplay_transport::spell_access_facts::load_owned_cast_facts_in_transaction(&mut tx,
                 self.root, self.character, self.holder, fence, saved.binding.command, runtime, saved.binding.caster,
                 state, active, access, self.owner_now().get()).await.map_err(|_|DurabilityError::Unavailable)?;
+            owned.set_native_health_observations(native_health_observations.to_vec());
             if let Some(resolved) = &saved.resolved {
                 if resolved.owned.binding() != owned.binding() || resolved.owned.durable_build() != owned.durable_build()
                     || resolved.owned.equipment() != owned.equipment() || resolved.owned.magnitude() != owned.magnitude() {

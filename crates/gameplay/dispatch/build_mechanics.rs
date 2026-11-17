@@ -208,7 +208,7 @@ fn write_outputs(
     offers.push_str("}\n");
     std::fs::write(out.join("mechanic_offers.rs"), offers)?;
     let mut routes = String::from(
-        "pub(super) async fn execute<S, A>(stream: &mut S, authority: &A, session: &mut ServeState, command: oteryn_protocol_oteryn::ClientCommandView<'_>, outcome: &mut CommandOutcome) -> Result<Dispatch, ServeEnd>\nwhere S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority {\nroute_registered(stream, authority, session, command, outcome).await\n}\n\nasync fn route_registered<S, A>(stream: &mut S, authority: &A, session: &mut ServeState, command: oteryn_protocol_oteryn::ClientCommandView<'_>, outcome: &mut CommandOutcome) -> Result<Dispatch, ServeEnd>\nwhere S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority {\nOk(match command.command_type {\n",
+        "pub(super) async fn execute<S, A>(stream: &mut S, authority: &A, session: &mut ServeState, command: oteryn_protocol_oteryn::ClientCommandView<'_>, outcome: &mut CommandOutcome) -> Result<Dispatch, ServeEnd>\nwhere S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority {\nroute_registered(stream, authority, session, command, outcome).await\n}\n\nasync fn route_registered<S, A>(stream: &mut S, authority: &A, session: &mut ServeState, command: oteryn_protocol_oteryn::ClientCommandView<'_>, outcome: &mut CommandOutcome) -> Result<Dispatch, ServeEnd>\nwhere S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAuthority {\nmatch command.command_type {\n",
     );
     let mut table = String::from("#[cfg(test)]\nconst REGISTERED_ROUTES: &[(u32, &str)] = &[\n");
     for mechanic in mechanics {
@@ -227,12 +227,19 @@ fn write_outputs(
             })
             .collect::<Vec<_>>()
             .join(" | ");
-        writeln!(routes, "{pattern} => {{\n{}\n}},", mechanic.route)?;
+        // Each handler owns its future on the heap. Otherwise every command's router
+        // carries the largest handler inline, including while constructing the future
+        // before the caller can box it. Keep return/`?` inside the Result boundary.
+        writeln!(
+            routes,
+            "{pattern} => Box::pin(async move {{\nOk({{\n{}\n}})\n}}).await,",
+            mechanic.route
+        )?;
         for command in &mechanic.commands {
             writeln!(table, "({command}, {:?}),", mechanic.name)?;
         }
     }
-    routes.push_str("_ => Dispatch::Unregistered,\n})\n}\n");
+    routes.push_str("_ => Ok(Dispatch::Unregistered),\n}\n}\n");
     table.push_str("] ;\n");
     routes.push_str(&table);
     std::fs::write(out.join("mechanic_routes.rs"), routes)?;

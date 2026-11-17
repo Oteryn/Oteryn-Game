@@ -162,5 +162,46 @@ fn summon_ranges_are_16_for_mushrooms_and_15_for_bloodjaws() {
 
 #[test]
 fn murcion_creature_key_is_exported_for_the_follow_up_hook() {
-    assert_eq!(Murcion_KEY, "oteryn:creature.murcion");
+    assert_eq!(MURCION_KEY, "oteryn:creature.murcion");
+}
+
+#[test]
+fn source_first_think_tops_up_four_then_attempts_three_wave_placements() {
+    // Crystal 201189f murcion.lua:140-141 initializes the interval to zero;
+    // :191-215 executes ensureSummons before the immediate wave.
+    let mut initial = facts();
+    initial.nearby_mushrooms = 0;
+    initial.nearby_bloodjaws = 0;
+    let effects = MurcionThinkOwner::default()
+        .think(&initial, || 8_000)
+        .expect("source first wave");
+    assert_eq!(effects.len(), 9);
+    assert_eq!(
+        effects
+            .iter()
+            .filter(|effect| matches!(
+                effect,
+                MurcionEffect::Spawn {
+                    creature_key: MUSHROOM_KEY,
+                    placement: Placement::Close { offset_tiles: 1 },
+                    ..
+                }
+            ))
+            .count(),
+        4
+    );
+    assert_eq!(
+        effects
+            .iter()
+            .filter(|effect| matches!(
+                effect,
+                MurcionEffect::Spawn {
+                    creature_key: MUSHROOM_KEY,
+                    placement: Placement::Random { offset_tiles: 1 },
+                    ..
+                }
+            ))
+            .count(),
+        3
+    );
 }

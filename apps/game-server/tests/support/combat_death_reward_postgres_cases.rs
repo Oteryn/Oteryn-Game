@@ -615,8 +615,8 @@ fn input(
 ) -> TestResult<CreatureDeathRewardInput<2>> {
     Ok(CreatureDeathRewardInput {
         tutorial_corruptor: None,
-        corpse_item: corpse_item_ref(),
-        loot_table_ref: rat_loot_table_ref(),
+        corpse_item: Some(corpse_item_ref()),
+        loot_table_ref: Some(rat_loot_table_ref()),
         loot_table,
         ground: ground(),
         inflight_loot_mints_before_this_death: 0,
@@ -777,7 +777,10 @@ fn one_creature_death_mints_the_plan_and_awards_xp_once() -> TestResult {
         .map_err(debug)?;
 
         // One corpse with the loot inside, and nothing loot on Ground.
-        let minted = outcome.loot.map_err(debug)?;
+        let minted = outcome
+            .loot
+            .map_err(debug)?
+            .ok_or("fixture physical corpse")?;
         assert_eq!(minted.entries.len(), 1);
         let ExperienceCommitOutcome::Committed(award) = outcome.xp.map_err(debug)? else {
             return Err("first XP award must be freshly committed".into());
@@ -860,7 +863,12 @@ fn replay_is_idempotent_with_no_duplicate_mint_or_xp() -> TestResult {
             )
             .await
             .map_err(debug)?;
-            settled.push(outcome.loot.map_err(debug)?);
+            settled.push(
+                outcome
+                    .loot
+                    .map_err(debug)?
+                    .ok_or("fixture physical corpse")?,
+            );
             outcome.xp.map_err(debug)?;
         }
 
@@ -1012,7 +1020,15 @@ fn a_stale_xp_fence_rejects_xp_without_blocking_loot() -> TestResult {
         .await
         .map_err(debug)?;
 
-        assert_eq!(outcome.loot.map_err(debug)?.entries.len(), 1);
+        assert_eq!(
+            outcome
+                .loot
+                .map_err(debug)?
+                .ok_or("fixture physical corpse")?
+                .entries
+                .len(),
+            1
+        );
         assert!(matches!(
             outcome.xp,
             Err(CombatDeathRewardXpError::Progression(
@@ -1127,7 +1143,10 @@ fn a_damage_free_death_names_the_reward_principal_as_the_window_winner() -> Test
         )
         .await
         .map_err(debug)?;
-        let minted = outcome.loot.map_err(debug)?;
+        let minted = outcome
+            .loot
+            .map_err(debug)?
+            .ok_or("fixture physical corpse")?;
         let (winner, materialized) = harness
             .corpse_receipt(minted.corpse.item_instance_id)
             .await?;
@@ -1180,7 +1199,10 @@ fn a_death_with_no_loot_entries_still_materializes_a_corpse() -> TestResult {
         )
         .await
         .map_err(debug)?;
-        let minted = outcome.loot.map_err(debug)?;
+        let minted = outcome
+            .loot
+            .map_err(debug)?
+            .ok_or("fixture physical corpse")?;
         assert!(minted.entries.is_empty());
         assert_eq!(harness.count("game_item_instances").await?, 1);
         assert_eq!(harness.ground_items().await?, 1);
@@ -1230,7 +1252,8 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
         .await
         .map_err(debug)?
         .loot
-        .map_err(debug)?;
+        .map_err(debug)?
+        .ok_or("fixture physical corpse")?;
         assert_eq!(first.entries.len(), 1);
 
         // D52: the scope moves to another node, ending generation 1.
@@ -1573,8 +1596,8 @@ mod kill_reward_live {
                 .await;
             let input = CreatureDeathRewardInput {
                 tutorial_corruptor: None,
-                corpse_item: pin.corpse,
-                loot_table_ref: pin.table_ref,
+                corpse_item: Some(pin.corpse),
+                loot_table_ref: Some(pin.table_ref),
                 loot_table: pin.admitted,
                 ground: ground(),
                 inflight_loot_mints_before_this_death: 0,
@@ -1586,7 +1609,10 @@ mod kill_reward_live {
                 settle_on_fresh_lane(capture(&mut fixture, actor)?, &session, &mut slot, input)
                     .await
                     .map_err(debug)?;
-            let minted = outcome.loot.map_err(debug)?;
+            let minted = outcome
+                .loot
+                .map_err(debug)?
+                .ok_or("fixture physical corpse")?;
             assert_eq!(minted.entries.len(), 1);
             let ExperienceCommitOutcome::Committed(award) = outcome.xp.map_err(debug)? else {
                 return Err("the rat's XP award must be freshly committed".into());

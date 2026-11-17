@@ -143,17 +143,26 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         use_with_map_item: None,
         use_with_position: None,
     }) = &decoded
-        && admitted.continuity.selected_capabilities.contains(CAPABILITY_ITEM_USE_V1)
+        && admitted
+            .continuity
+            .selected_capabilities
+            .contains(CAPABILITY_ITEM_USE_V1)
         && let Some(key @ (ItemKey::MapBase { .. } | ItemKey::MapAdded(_))) =
             item_view.as_ref().and_then(|view| view.resolve(*handle))
         && let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
-            authority.use_map_item(actor, UseCommand {
-                game_session_id: admitted.game_session_id,
-                command_id: command.command_id,
-                item_fence: admitted.item_fence,
-            }, key),
-        ).await.ok()?
+            authority.use_map_item(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                key,
+            ),
+        )
+        .await
+        .ok()?
     {
         return Some(Dispatch::Use(outcome));
     }
@@ -204,9 +213,43 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             return Some(Dispatch::Use(outcome));
         }
     }
+    if let Ok(intent) = &decoded {
+        let source = match intent.target {
+            UseTarget::Item(handle) => item_view.as_ref().and_then(|view| view.resolve(handle)),
+            _ => None,
+        };
+        let target = match intent.use_with_map_item {
+            Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(handle)) => {
+                item_view.as_ref().and_then(|view| view.resolve(handle))
+            }
+            _ => None,
+        };
+        if let Some(outcome) = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            authority.use_soul_war_source_items(
+                actor,
+                UseCommand {
+                    game_session_id: admitted.game_session_id,
+                    command_id: command.command_id,
+                    item_fence: admitted.item_fence,
+                },
+                intent.clone(),
+                source,
+                target,
+            ),
+        )
+        .await
+        .ok()?
+        .ok()?
+        {
+            return Some(Dispatch::Use(outcome));
+        }
+    }
     if let Ok(intent) = &decoded
-        && (intent.use_with.is_some() || intent.use_with_map_item.is_some()
-            || (intent.use_with_position.is_none() && matches!(intent.target, UseTarget::ItemByDefinition(_))))
+        && (intent.use_with.is_some()
+            || intent.use_with_map_item.is_some()
+            || (intent.use_with_position.is_none()
+                && matches!(intent.target, UseTarget::ItemByDefinition(_))))
     {
         let source = match intent.target {
             UseTarget::Item(handle) => item_view.as_ref().and_then(|v| v.resolve(handle)),
@@ -218,6 +261,29 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             }
             _ => None,
         };
+        // Probe the quest receipt before fresh handle/custody admission. A
+        // committed sample remains replayable after either handle disappears.
+        if transport::cosmetic_item_use::quest_targets::probes(intent)
+            && let Some(outcome) = tokio::time::timeout(
+                std::time::Duration::from_secs(10),
+                authority.use_quest_tool(
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    intent.clone(),
+                    source,
+                    item_target,
+                ),
+            )
+            .await
+            .ok()?
+            .ok()?
+        {
+            return Some(Dispatch::Use(outcome));
+        }
         if let Some(outcome) = tokio::time::timeout(
             std::time::Duration::from_secs(10),
             authority.tame_mount(

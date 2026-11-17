@@ -330,3 +330,6 @@ mod visual_sprites;
 
 #[path = "boss_area.rs"]
 mod boss_area;
+
+#[path = "native_missile_merged.rs"]
+mod native_missile_merged;
