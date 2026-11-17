@@ -23,6 +23,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         read_only_gate: Option<&ReadOnlyGate>,
         selected_tool: Option<&([u8; 16], Vec<u8>)>,
     ) -> UseDisposition {
+        // Crystal defines item 14020 but registers no Deeplings Soul Net action.
+        if callback.key == "oteryn:quest-callback/deeplings-native-soul-net" {
+            return UseDisposition::Rejected;
+        }
         if callback.effects.encounter.is_none()
             && let Some(catalogue) = self.quest_catalogue.as_deref()
             && let Some(bindings) = catalogue.authored_bindings()

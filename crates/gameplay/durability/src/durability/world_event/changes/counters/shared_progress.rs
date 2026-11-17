@@ -123,7 +123,7 @@ pub(crate) async fn credit_completed(
     let (kind, credit) = match action {
         SharedAction::HiveTask(task) => (CounterKind::HiveBorn, Credit::Task(task)),
         SharedAction::HeartDestroyed => (CounterKind::Deeplings, Credit::HeartDestroyed),
-        SharedAction::SoulNetDestroyed => (CounterKind::Deeplings, Credit::SoulNetDestroyed),
+        SharedAction::SoulNetDestroyed => return Ok(CreditOutcome::Refused),
         SharedAction::CoralPathCompleted => (CounterKind::Deeplings, Credit::CoralPathCompleted),
         SharedAction::StairPathCompleted => (CounterKind::Deeplings, Credit::StairPathCompleted),
     };
