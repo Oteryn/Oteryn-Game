@@ -81,12 +81,14 @@ async fn exercise(h: &Harness) -> TestResult {
         );
         assert_eq!(progress(&owner, admitted, &authority, track).await?, 0);
     }
-    let quest_receipts: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1")
-            .bind("oteryn:quest.the_postman_missions_quest")
-            .fetch_one(&h.pool)
-            .await?;
-    assert_eq!(quest_receipts, 0);
+    let quest_receipts = || {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1",
+        )
+        .bind("oteryn:quest.the_postman_missions_quest")
+        .fetch_one(&h.pool)
+    };
+    assert_eq!(quest_receipts().await?, 0);
     assert!(
         !talk(&mut owner, admitted, kevin, 9, "yes")
             .await?
@@ -114,6 +116,11 @@ async fn exercise(h: &Harness) -> TestResult {
                 "UPDATE game_newhaven_travel_receipts SET arrived_at=arrived_at-interval '4 seconds' WHERE arrived_at IS NOT NULL",
             ).execute(&h.pool).await?;
     }
+    assert_eq!(
+        quest_receipts().await?,
+        5,
+        "briefing and four matching arrivals"
+    );
     assert_fares(h, &mut owner, &deps, [captain, technomancer]).await
 }
 
