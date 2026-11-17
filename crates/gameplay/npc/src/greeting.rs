@@ -53,16 +53,24 @@ pub fn contains_words(haystack: &[String], needle: &[String]) -> bool {
             .any(|window| window == needle)
 }
 
+pub const BAA_LEAL: &str = "oteryn:npc.baa_leal";
+
 /// The Efreet transcript specifies 150 delayed fire ticks over twelve and a half minutes.
-pub fn soulfire_on_greeting(npc: &str, text: &str) -> Option<(u32, u32, u32)> {
-    if npc != "oteryn:npc.baa_leal" {
+pub fn soulfire_on_greeting(
+    npc: &str,
+    text: &str,
+    passwords: &[String],
+) -> Option<(u32, u32, u32)> {
+    if npc != BAA_LEAL || passwords.is_empty() {
         return None;
     }
     let said = words(text);
     (said
         .iter()
         .any(|word| matches!(word.as_str(), "hi" | "hello" | "hail"))
-        && !contains_words(&said, &words("djanni'hah")))
+        && !passwords
+            .iter()
+            .any(|password| contains_words(&said, &words(password))))
     .then_some((1_500, 10, 5_000))
 }
 
@@ -109,10 +117,20 @@ mod efreet_tests {
 
     #[test]
     fn baa_leal_punishes_only_the_wrong_greeting() {
-        let npc = "oteryn:npc.baa_leal";
-        assert_eq!(soulfire_on_greeting(npc, "hello"), Some((1_500, 10, 5_000)));
-        assert_eq!(soulfire_on_greeting(npc, "Hi, DJANNI'HAH"), None);
-        assert_eq!(soulfire_on_greeting(npc, "mission"), None);
-        assert_eq!(soulfire_on_greeting("oteryn:npc.alesar", "hi"), None);
+        let npc = BAA_LEAL;
+        let passwords = ["djanni'hah".to_owned()];
+        assert_eq!(
+            soulfire_on_greeting(npc, "hello", &passwords),
+            Some((1_500, 10, 5_000))
+        );
+        assert_eq!(
+            soulfire_on_greeting(npc, "Hi, DJANNI'HAH", &passwords),
+            None
+        );
+        assert_eq!(soulfire_on_greeting(npc, "mission", &passwords), None);
+        assert_eq!(
+            soulfire_on_greeting("oteryn:npc.alesar", "hi", &passwords),
+            None
+        );
     }
 }

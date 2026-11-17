@@ -61,6 +61,8 @@ struct RewardMessages {
     greet: String,
     farewell: String,
     walkaway: String,
+    #[serde(default)]
+    greeting_aliases: Vec<String>,
 }
 
 fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
@@ -89,6 +91,11 @@ fn reward_messages(key: &str) -> Option<&'static RewardMessages> {
     });
     (reward_callback_npc(key) || quest_merchant::contains(key)).then_some(())?;
     rows.as_ref()?.iter().find(|r| r.npc == key)
+}
+
+/// Custom source greetings admitted by the generated quest dialogue.
+pub fn quest_greeting_aliases(npc: &str) -> &'static [String] {
+    reward_messages(npc).map_or(&[], |row| row.greeting_aliases.as_slice())
 }
 
 // Project only the identities here. The Quest loader owns validation of the
@@ -741,7 +748,11 @@ impl NpcTalkBook {
                         .iter()
                         .filter_map(|reference| model.services().get(reference))
                         .any(|service| service.bank),
-                    greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
+                    greetings: GREETINGS
+                        .iter()
+                        .map(|word| (*word).to_owned())
+                        .chain(quest_greeting_aliases(&reference.key).iter().cloned())
+                        .collect(),
                     greeting_reply,
                     farewell_reply,
                     source_name_templates: bank

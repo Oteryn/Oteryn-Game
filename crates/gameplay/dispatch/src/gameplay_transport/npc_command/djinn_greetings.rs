@@ -4,6 +4,7 @@ use crate::domain::condition::{ConditionValues, DotElement};
 use oteryn_gameplay_foundation::foundation::condition::{
     ApplicationFacts, ConditionDefinition, ConditionProvenance, ConditionSourceKind,
 };
+use oteryn_gameplay_npc::greeting::{BAA_LEAL, soulfire_on_greeting};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 use sha2::{Digest, Sha256};
 
@@ -26,8 +27,14 @@ pub(super) async fn soulfire(
 ) -> Option<()> {
     let session = command.game_session_id;
     let npc = service_context::live_npc(runtime, actor, session, intent.npc_actor)?;
-    let (total, per_tick, interval_ms) =
-        oteryn_gameplay_npc::greeting::soulfire_on_greeting(&npc.key, &intent.text)?;
+    if npc.key != BAA_LEAL {
+        return None;
+    }
+    let (total, per_tick, interval_ms) = soulfire_on_greeting(
+        &npc.key,
+        &intent.text,
+        oteryn_gameplay_npc::npc_talk::quest_greeting_aliases(&npc.key),
+    )?;
     let speaker = service_context::speaker_position(runtime, actor, session)?;
     if speaker.floor != npc.position.floor
         || speaker.x.abs_diff(npc.position.x) > TALK_RANGE_TILES
@@ -42,6 +49,14 @@ pub(super) async fn soulfire(
     }
     let mut states = admission.states.spell_states.lock().await;
     if !states.spell_idle(runtime, actor, session) {
+        return None;
+    }
+    let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
+    let dialogue = sessions.get_mut(&session)?;
+    if dialogue
+        .soulfire_command
+        .is_some_and(|previous| previous >= command.command_id)
+    {
         return None;
     }
     let before = states.get(runtime, actor, session)?;
@@ -82,7 +97,11 @@ pub(super) async fn soulfire(
         DotElement::Fire,
         |_, _, _, _| None,
     )?;
-    states.commit(runtime, actor, session, next).then_some(())
+    if next != *before && !states.commit(runtime, actor, session, next) {
+        return None;
+    }
+    dialogue.soulfire_command = Some(command.command_id);
+    Some(())
 }
 
 /// The donor tries the King's tile and its eight immediate neighbors.

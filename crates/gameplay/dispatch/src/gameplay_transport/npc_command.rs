@@ -82,6 +82,7 @@ pub(super) use premium_purchase::resume_npc_talk;
 struct SessionNpc {
     recent: RecentIntents,
     healing_command: Option<u64>,
+    soulfire_command: Option<u64>,
     /// The NPC whose trade window the session was shown (domain 8).
     window: Option<EntityRef>,
     /// The exact bounded offer list shown in this window, including its rank filter.
