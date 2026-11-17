@@ -255,6 +255,20 @@ pub(super) async fn exercise(
     assert!(feedback.iter().any(|line| matches!(line,
         oteryn_protocol_oteryn::chat::ChatLine::Private {text,..} if text == expected_refusal)));
     assert_eq!(counts(h).await?, (1, 0, 0), "missing input must roll back");
+    let state = owner
+        .root
+        .read_character_quest_state(owner.character, fence.character_id)
+        .await
+        .map_err(debug)?;
+    assert_eq!(
+        state
+            .tracks()
+            .get(&callback.storage[1].track)
+            .copied()
+            .unwrap_or(0),
+        0,
+        "missing input must not advance Mission09"
+    );
     super::quest_world_callbacks::input_item(owner, fence.item_fence(), second, 8702, false)
         .await?;
     if name.ends_with("-full") {
@@ -280,6 +294,20 @@ pub(super) async fn exercise(
     if name.ends_with("-wrong") {
         assert_eq!(use_(owner, admitted, 2, 0).await?, UseDisposition::Rejected);
         assert_eq!(counts(h).await?, (2, 0, 0));
+        let state = owner
+            .root
+            .read_character_quest_state(owner.character, fence.character_id)
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            state
+                .tracks()
+                .get(&callback.storage[1].track)
+                .copied()
+                .unwrap_or(0),
+            0,
+            "wrong quest state must not advance Mission09"
+        );
         return Ok(());
     }
     assert_eq!(
