@@ -242,12 +242,25 @@ pub(super) async fn exercise(
                 &mut occurrence,
             )
             .await?;
+            assert_eq!(
+                quantity(h, TOKEN).await?,
+                i64::from(count - 1),
+                "rank {reached} short supply"
+            );
+            assert_eq!(stage(h, &rank).await?, Some(reached - 1));
             let before = xp(h).await?;
             let (result, _, _) =
                 super::qengine_rewards::wire_reward(owner, admitted, storkus, callback, false)
                     .await?;
-            assert_eq!(result, NpcIntentDisposition::Rejected, "rank {reached} short");
-            assert_eq!(quantity(h, TOKEN).await?, i64::from(count - 1));
+            assert_eq!(
+                (result, quantity(h, TOKEN).await?, stage(h, &rank).await?),
+                (
+                    NpcIntentDisposition::Rejected,
+                    i64::from(count - 1),
+                    Some(reached - 1)
+                ),
+                "rank {reached} short"
+            );
             assert_eq!(xp(h).await?, before);
             assert_eq!(stage(h, &rank).await?, Some(reached - 1));
             let one = ItemAmount {
