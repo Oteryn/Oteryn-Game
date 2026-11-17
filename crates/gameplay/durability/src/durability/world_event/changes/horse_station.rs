@@ -102,7 +102,7 @@ impl DurabilityRoot {
     {
         use crate::durability::db::begin_type2_transaction;
         use crate::durability::item_fee_burn::{
-            FeeBurnCause, FeeBurnError, burn_fee_in_transaction,
+            FeeBurnCause, FeeBurnError, FeeBurnOutcome, burn_fee_in_transaction,
         };
         use oteryn_gameplay_world_change::horse_station::{HorseRental, RENTAL_PRICE_GOLD};
         use sha2::{Digest, Sha256};
@@ -149,22 +149,23 @@ impl DurabilityRoot {
             let Some(lease) = phase.rental(now, None, RENTAL_PRICE_GOLD, usize::from(draw[0]) % 3).filter(|_| !held) else {
                 return Ok(None);
             };
-            match burn_fee_in_transaction(&mut tx, &fence, &fee).await {
-                Ok(_) => {}
+            let burned = match burn_fee_in_transaction(&mut tx, &fence, &fee).await {
+                Ok(FeeBurnOutcome::Burned(receipt)) => receipt,
                 Err(FeeBurnError::InsufficientFunds | FeeBurnError::ChangeDoesNotFit | FeeBurnError::CapacityExceeded) => return Ok(None),
                 Err(FeeBurnError::Unavailable(error)) => return Err(error),
-                Err(_) => return Err(DurabilityError::InvalidStoredState),
-            }
+                Ok(FeeBurnOutcome::AlreadyBurned(_)) | Err(_) => return Err(DurabilityError::InvalidStoredState),
+            };
             sqlx::query("INSERT INTO game_horse_rental_receipts(character_id,world_id,occurrence_id,fee_transaction_id,mount_id,rented_at_ms,expires_at_ms,
                     original_character_revision,committed_character_revision,level,experience,profile_revision,ruleset_revision,
                     content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision)
                 SELECT character_id,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7,
-                    character_revision,character_revision+1,level,total_experience,profile_revision,ruleset_revision,
+                    character_revision,$8::text::numeric,level,total_experience,profile_revision,ruleset_revision,
                     content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision
                 FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
                 .bind(character).bind(world.as_bytes().as_slice()).bind(occurrence.as_slice()).bind(fee.transaction_id.as_slice())
                 .bind(i16::try_from(lease.mount_id).map_err(|_| DurabilityError::InvalidStoredState)?)
-                .bind(now).bind(lease.expires_at_ms).execute(&mut **tx).await?;
+                .bind(now).bind(lease.expires_at_ms).bind(burned.committed_character_revision.get().to_string())
+                .execute(&mut **tx).await?;
             for query in [
                 "UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid AND character_revision=$2::text::numeric",
                 "UPDATE game_character_progression_state SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid AND character_revision=$2::text::numeric",
