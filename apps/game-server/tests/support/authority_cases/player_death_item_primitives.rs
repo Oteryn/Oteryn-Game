@@ -2194,10 +2194,6 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     );
     let reset = prepare_nested_reset(&h, &h.root).await?;
     let audits_before = h.count("game_item_audit_outbox").await?;
-    // The fixture assembles the tree with hundreds of real moves in a fresh
-    // database. Refresh their table statistics and clear dead tuples before
-    // the timed reset so it does not race autovacuum on this setup workload.
-    sqlx::query("VACUUM (ANALYZE)").execute(&h.pool).await?;
     // Every attempt uses the production deadline and durable retry ceiling.
     // Only retry a timed-out statement or a definite rejection near the deadline.
     use crate::durability::item_decay_retire::DecayRetireError;
@@ -2205,6 +2201,9 @@ async fn run_maximum_nested_death_reset(admin: String) -> TestResult {
     use crate::durability::{DB_PASS_DEADLINE, DurabilityError, SqlxFailureClass};
     let mut remaining = RL08_RETRY_WORK_UNITS_MAX;
     let retirement_elapsed = loop {
+        // The fixture's hundreds of moves and each rolled-back batch leave
+        // dead tuples. Refresh this private database before the timed attempt.
+        sqlx::query("VACUUM (ANALYZE)").execute(&h.pool).await?;
         h.root.await_ready().await?;
         // PostgreSQL function tracking adds timing work to every call in the
         // 501-item transaction. Keep that instrumentation opt-in for diagnosis.
