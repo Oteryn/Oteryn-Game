@@ -234,10 +234,10 @@ class HeavyGateTests(unittest.TestCase):
         source = (ROOT / "apps/game-server/src/qualification/client_phases/full_e2ef7.rs").read_text()
         observation_seconds = 0
         for journey in ("clock_journey", "light_journey"):
-            # The deadline wraps the journey call, directly or through a watch with a message.
-            deadline = re.search(r"qualification_deadline\(([0-9_]+)\),[^;]*?\b" + journey + r"\(", source)
-            self.assertIsNotNone(deadline, journey)
-            observation_seconds += int(deadline[1].replace("_", ""))
+            # The deadline bounds the statement that calls the journey; no `;` lies between them.
+            deadlines = re.findall(r"qualification_deadline\(([0-9_]+)\),[^;]*?\b" + journey + r"\(", source)
+            self.assertEqual(len(deadlines), 1, journey)
+            observation_seconds += int(deadlines[0].replace("_", ""))
         budgets = []
         for filename, job_name in (("pr-postgres-harness.yml", "node_boot_shard"),
                                    ("merge-group-gate.yml", "node_boot_shard"),
