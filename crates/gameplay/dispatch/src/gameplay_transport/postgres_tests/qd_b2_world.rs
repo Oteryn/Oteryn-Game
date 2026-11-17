@@ -1,7 +1,7 @@
 //! Quest lane qd, batch 2: door, body and hand-in routes over the shared world scenario.
 //! Each case names its TibiaWiki source; the route is driven through NPC talk, the
 //! placed quest door, a real step and USE on the production placement.
-use super::fixture::{debug, Harness};
+use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::map::view::MapFacts;
@@ -11,6 +11,7 @@ use oteryn_protocol_oteryn::world_object::*;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 pub(super) const PREFIX: &str = "qd-b2-";
+const TROLL_SABOTAGE: &str = "qd-b2-troll-sabotage";
 const WHITE_RAVEN: &str = "qd-b2-white-raven-monastery";
 const RAVEN_TRACK: &str = "oteryn:quest-progress/quest/u7_24/the_white_raven_monastery";
 const RAVEN_START: Position = Position {
@@ -35,6 +36,11 @@ const FUGIO_STAND: Position = Position {
 };
 
 #[test]
+fn qd_b2_troll_sabotage_grarkharok_lady_name_and_elvenhair_rope() -> TestResult {
+    run(TROLL_SABOTAGE)
+}
+
+#[test]
 fn qd_b2_white_raven_monastery_warded_door_fugio_body_and_ankh() -> TestResult {
     run(WHITE_RAVEN)
 }
@@ -50,14 +56,15 @@ fn run(name: &'static str) -> TestResult {
 
 pub(super) fn start(name: &str) -> TestResult<Position> {
     match name {
-        WHITE_RAVEN => Ok(RAVEN_START),
+        TROLL_SABOTAGE | WHITE_RAVEN => Ok(RAVEN_START),
         _ => Err(format!("unknown qd-b2 world case {name}").into()),
     }
 }
 
 pub(super) fn callback(name: &str) -> TestResult<Callback> {
     let key = match name {
-        WHITE_RAVEN => "oteryn:quest-callback/qd-white-raven-fugio-body",
+        // The NPC-only Troll Sabotage case reuses the White Raven scene.
+        TROLL_SABOTAGE | WHITE_RAVEN => "oteryn:quest-callback/qd-white-raven-fugio-body",
         _ => return Err(format!("unknown qd-b2 world case {name}").into()),
     };
     let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
@@ -72,9 +79,9 @@ pub(super) fn world(
     name: &str,
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<crate::map::boot::BundleWorld> {
-    use super::l6_world_pickups::{native_scene, ExpectedTile, NativeCrop};
+    use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_scene};
     match name {
-        WHITE_RAVEN => native_scene(
+        TROLL_SABOTAGE | WHITE_RAVEN => native_scene(
             native,
             vec![
                 NativeCrop {
@@ -120,6 +127,7 @@ pub(super) async fn exercise(
     name: &str,
 ) -> TestResult {
     match name {
+        TROLL_SABOTAGE => troll_sabotage(owner, admitted, h, authority).await,
         WHITE_RAVEN => white_raven(owner, admitted, h, authority).await,
         _ => Err(format!("unknown qd-b2 world case {name}").into()),
     }
@@ -335,6 +343,103 @@ async fn white_raven(
     );
     assert!(completed(h, "oteryn:quest.the_white_raven_monastery_quest").await?);
     Ok(())
+}
+
+/// TibiaWiki Troll_Sabotage_Quest: Jerom's mission, Chief Grarkharok's threat, troll lady
+/// and name exchange for Jerom's Family Necklace, and the Elvenhair Rope from Jerom.
+async fn troll_sabotage(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult {
+    const QUESTLINE: &str = "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline";
+    const NECKLACE: &str = "oteryn:item.tibia.i7754";
+    const ROPE: &str = "oteryn:item.tibia.i646";
+    let [jerom, chief] = super::classic_quests::install_positions(
+        owner,
+        admitted,
+        ["oteryn:npc.jerom", "oteryn:npc.chief_grarkharok"],
+        [
+            Position {
+                x: 32173,
+                y: 31935,
+                floor: -7,
+            },
+            Position {
+                x: 32173,
+                y: 31937,
+                floor: -7,
+            },
+        ],
+    )
+    .await?;
+    let name = owner
+        .states
+        .chat
+        .speaker_name(admitted.game_session_id)
+        .ok_or("speaker name")?;
+    let mut command = admitted.continuity.next_command_id + 1000;
+    let progress = super::classic_quests::progress;
+    // Grarkharok ignores a threat before Jerom's mission.
+    for text in ["hi", "kill", "lady", "yes", name.as_str(), "bye"] {
+        say(owner, admitted, &mut command, chief, text).await?;
+    }
+    assert_eq!(count(h, NECKLACE).await?, 0);
+    for text in ["hi", "mission", "yes", "bye"] {
+        say(owner, admitted, &mut command, jerom, text).await?;
+    }
+    assert_eq!(progress(owner, admitted, authority, QUESTLINE).await?, 1);
+    // A name that is not the speaker's own is not an answer.
+    for text in ["hi", "kill", "lady", "yes", "Nobody Here"] {
+        say(owner, admitted, &mut command, chief, text).await?;
+    }
+    assert_eq!(count(h, NECKLACE).await?, 0);
+    assert_eq!(progress(owner, admitted, authority, QUESTLINE).await?, 1);
+    say(owner, admitted, &mut command, chief, "kill").await?;
+    let lady = say(owner, admitted, &mut command, chief, "lady").await?;
+    assert!(
+        lady.iter()
+            .any(|line| line.contains("troll lady for Grarkharok")),
+        "{lady:?}"
+    );
+    say(owner, admitted, &mut command, chief, "yes").await?;
+    let named = say(owner, admitted, &mut command, chief, &name).await?;
+    assert!(
+        named
+            .iter()
+            .any(|line| line.starts_with(&format!("{name}?!?"))),
+        "{named:?}"
+    );
+    assert_eq!(
+        count(h, NECKLACE).await?,
+        1,
+        "Grarkharok hands over the necklace"
+    );
+    assert_eq!(progress(owner, admitted, authority, QUESTLINE).await?, 2);
+    say(owner, admitted, &mut command, chief, "bye").await?;
+    say(owner, admitted, &mut command, jerom, "hi").await?;
+    let thanks = say(owner, admitted, &mut command, jerom, "mission").await?;
+    assert!(
+        thanks.iter().any(|line| line.contains("strange rope")),
+        "{thanks:?}"
+    );
+    assert_eq!(count(h, NECKLACE).await?, 0);
+    assert_eq!(count(h, ROPE).await?, 1, "Jerom gives the Elvenhair Rope");
+    assert_eq!(progress(owner, admitted, authority, QUESTLINE).await?, 3);
+    assert!(completed(h, "oteryn:quest.troll_sabotage_quest").await?);
+    Ok(())
+}
+
+async fn say(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    command: &mut u64,
+    npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    text: &str,
+) -> TestResult<Vec<String>> {
+    *command += 1;
+    super::classic_quests::talk(owner, admitted, npc, *command, text).await
 }
 
 /// Selects NPC talk capabilities the way the generic reward flow does.
