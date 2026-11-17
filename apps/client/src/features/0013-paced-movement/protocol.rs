@@ -1,8 +1,8 @@
 use crate::input::StepDir;
 use crate::play::PlayView;
-use oteryn_renderer::BatchError;
 use oteryn_client_simulation::movement::{DEFAULT_GROUND_SPEED, StepSpeedTable};
 use oteryn_client_simulation::walk::{Glide, glide_duration};
+use oteryn_renderer::BatchError;
 use oteryn_session::{StepDirection, StepDisposition, StepOutcome};
 use std::time::{Duration, Instant};
 
@@ -26,24 +26,35 @@ pub(in crate::play) const fn step_direction(direction: StepDir) -> StepDirection
     }
 }
 
+/// The own walk as the camera shows it, between server step outcomes.
+#[derive(Debug, Clone, Copy, Default)]
+pub(in crate::play) struct WalkFeel {
+    /// The own step being smoothed, and when it began.
+    pub(in crate::play) glide: Option<(Glide, Instant)>,
+    /// When the last step landed, to pace the next glide by.
+    landed: Option<Instant>,
+    /// Arrow keys held now, for diagonal chords.
+    chord: oteryn_client_ui::diagonal_movement::ArrowChord,
+}
+
 impl PlayView {
     /// When the own step now being smoothed began; `None` at rest or after a snap.
     #[cfg(test)]
     #[must_use]
     pub(crate) fn walk_started(&self) -> Option<Instant> {
-        self.walk.map(|(_, started)| started)
+        self.walk.glide.map(|(_, started)| started)
     }
 
     #[cfg(test)]
     #[must_use]
     pub(crate) fn walk_duration(&self) -> Option<Duration> {
-        self.walk.map(|(glide, _)| glide.duration())
+        self.walk.glide.map(|(glide, _)| glide.duration())
     }
 
     /// Screen pixels the world scrolls by at `now` while the camera follows the own step.
     #[must_use]
     pub fn camera_offset(&self, now: Instant) -> Option<[f32; 2]> {
-        let (glide, started) = self.walk?;
+        let (glide, started) = self.walk.glide?;
         let elapsed = now.saturating_duration_since(started);
         (!glide.finished(elapsed))
             .then(|| glide.camera_offset(elapsed, self.scene.view().tile_px() as f32))
@@ -59,12 +70,12 @@ impl PlayView {
             let (from, floor) = (self.own, self.floor);
             self.place(delta.value.actor_position);
             if moved && floor == self.floor {
-                let gap = self.walk_landed.map(|landed| now.duration_since(landed));
+                let gap = self.walk.landed.map(|landed| now.duration_since(landed));
                 let duration = glide_duration(gap, default_step_duration());
-                self.walk = Glide::new(from, self.own, duration).map(|glide| (glide, now));
+                self.walk.glide = Glide::new(from, self.own, duration).map(|glide| (glide, now));
             }
         }
-        self.walk_landed = moved.then_some(now);
+        self.walk.landed = moved.then_some(now);
         if let Some(delta) = &outcome.world_object_overlay_delta {
             self.set_marker(&delta.value);
         }
@@ -88,7 +99,7 @@ impl PlayView {
             mailbox.diagonal_movement_selected && !mailbox.world_input_blocked()
         };
         // Held state follows every event, selected or not, so a release is never missed.
-        let chord = self.chord.step(events);
+        let chord = self.walk.chord.step(events);
         if !selected {
             return false;
         }
