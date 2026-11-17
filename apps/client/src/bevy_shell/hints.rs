@@ -4,7 +4,7 @@ use crate::play::HoverTooltip;
 use bevy::prelude::*;
 use bevy::window::SystemCursorIcon;
 use oteryn_client_ui_bevy as source;
-mod projection;
+pub(in crate::bevy_shell) mod projection;
 
 #[derive(Component)]
 struct HintRoot;

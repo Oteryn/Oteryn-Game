@@ -6,12 +6,14 @@ use bevy::{
 };
 use std::time::{Duration, Instant};
 
-pub(super) fn track_inputs(
+pub(in crate::bevy_shell) fn track_inputs(
     mut commands: Commands,
     fields: Query<Entity, (Added<EditableText>, Without<Hovered>)>,
 ) {
     for entity in &fields {
-        commands.entity(entity).insert(Hovered::default());
+        // The field belongs to another window's projection, which may despawn it (a rebuild or
+        // a close) in the same command flush; a field that no longer exists needs no tracker.
+        commands.entity(entity).try_insert(Hovered::default());
     }
 }
 
