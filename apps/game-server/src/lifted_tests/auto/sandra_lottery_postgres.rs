@@ -178,10 +178,6 @@ async fn exercise(h: &f::Harness, case: Case) -> f::TestResult {
     let has_ticket = !matches!(case, Case::Missing | Case::Odds);
     let full = matches!(case, Case::Full);
     seed_inventory(h, &content, has_ticket, full).await?;
-    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,1,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-        .bind(f::id(f::CHARACTER).as_slice())
-        .bind("oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt")
-        .bind("oteryn:quest.outfit_and_addon_quests").execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)")
         .bind(f::id(f::WORLD).as_slice()).bind(f::id(f::CHANNEL).as_slice()).execute(&h.pool).await?;
     let identity = generation.identity();
@@ -199,6 +195,36 @@ async fn exercise(h: &f::Harness, case: Case) -> f::TestResult {
     let permit = SpellLanePermit::of_fresh_scope(fence.runtime_scope)
         .await
         .map_err(f::debug)?;
+    let enrollment = h
+        .root
+        .commit_character_npc_program(
+            &authority,
+            &h.node,
+            &permit,
+            fence,
+            NpcProgramRequest {
+                command: CommandRef::new(
+                    fence.game_session_id,
+                    CommandId::new(6275).map_err(f::debug)?,
+                ),
+                npc: "oteryn:npc.sandra".into(),
+                trigger: NpcRuleTrigger::Say,
+                message: "yes".into(),
+                topic: 2,
+                transition_key: "oteryn:quest-npc/sandra/bonus-join".into(),
+            },
+            catalogue.clone(),
+            &content,
+            &premium,
+        )
+        .await
+        .map_err(f::debug)?;
+    assert!(
+        matches!(enrollment.transition, QuestTransitionOutcome::Committed(_)),
+        "{enrollment:?}"
+    );
+    assert_eq!(h.root_revision().await?, "2");
+    let fence = f::fence(2)?;
     let before = snapshot(h).await?;
     let draws: &[bool] = if full {
         &[true, false]
@@ -207,7 +233,7 @@ async fn exercise(h: &f::Harness, case: Case) -> f::TestResult {
     };
     for &win in draws {
         let mut selected = None;
-        for ordinal in 6275..16275 {
+        for ordinal in 6276..16276 {
             let request = NpcProgramRequest {
                 command: CommandRef::new(
                     fence.game_session_id,
@@ -333,7 +359,7 @@ async fn seed_inventory(
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($4,'hex')::uuid)")
             .bind(item.as_slice()).bind(f::id(f::WORLD).as_slice()).bind(key).bind(f::id(180).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)")
-            .bind(f::id(f::CHARACTER).as_slice()).bind(f::id(90).as_slice()).bind(item.as_slice()).bind(f::id(f::WORLD).as_slice()).bind(i64::from(ordinal)).bind(f::id(180).as_slice()).execute(&mut *tx).await?;
+            .bind(f::id(f::CHARACTER).as_slice()).bind(f::id(90).as_slice()).bind(item.as_slice()).bind(f::id(f::WORLD).as_slice()).bind(i64::from(ordinal) + 1).bind(f::id(180).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
     let entries: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries")
