@@ -2938,7 +2938,13 @@ fn scenario_case(
             ))
             .await?;
         } else if name == "qfather-corpses" {
-            super::super::qfather_corpses::exercise(&mut owner, &mut admitted, &h, trigger).await?;
+            Box::pin(super::super::qfather_corpses::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                trigger,
+            ))
+            .await?;
         } else if matches!(
             name,
             "catalogue-npc-father"
