@@ -1,0 +1,548 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/blood-brothers-lersatio-mirror-1-first",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32965,
+          "y": 31457,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 8667
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission08",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/mirror_counter",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "STOP THAT, YOU WORM, OR I'LL SHOW YOU THE BEAUTY OF DEATH.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
+      ],
+      "effects": {
+        "transform": 8721,
+        "reset_after_ms": 30000,
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32967,
+                "y": 31457,
+                "floor": -2
+              },
+              "remove": 8325,
+              "create": 8326,
+              "passable": false,
+              "allow_missing": true
+            }
+          ],
+          "close": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/blood-brothers-lersatio-mirror-1-second",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32965,
+          "y": 31457,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 8667
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission08",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/mirror_counter",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0
+        }
+      ],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "FINE. DIE PRETTY!",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
+      ],
+      "effects": {
+        "transform": 8721,
+        "reset_after_ms": 30000,
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32967,
+                "y": 31457,
+                "floor": -2
+              },
+              "remove": 8325,
+              "create": 8326,
+              "passable": false,
+              "allow_missing": true
+            }
+          ],
+          "close": []
+        },
+        "encounter": {
+          "minimum_level": 0,
+          "players": [],
+          "spectators": {
+            "minimum": {
+              "x": 32954,
+              "y": 31447,
+              "floor": -2
+            },
+            "maximum": {
+              "x": 32972,
+              "y": 31465,
+              "floor": -2
+            },
+            "destination": {
+              "x": 32967,
+              "y": 31459,
+              "floor": -1
+            }
+          },
+          "room_min": {
+            "x": 32963,
+            "y": 31456,
+            "floor": -1
+          },
+          "room_max": {
+            "x": 32972,
+            "y": 31465,
+            "floor": -1
+          },
+          "monsters": [
+            {
+              "creature": "oteryn:creature.lersatio",
+              "position": {
+                "x": 32967,
+                "y": 31459,
+                "floor": -1
+              }
+            },
+            {
+              "creature": "oteryn:creature.vampire",
+              "position": {
+                "x": 32966,
+                "y": 31459,
+                "floor": -1
+              }
+            },
+            {
+              "creature": "oteryn:creature.vampire",
+              "position": {
+                "x": 32968,
+                "y": 31459,
+                "floor": -1
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/blood-brothers-lersatio-mirror-2-first",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32966,
+          "y": 31456,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 8667
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission08",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/mirror_counter",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "STOP THAT, YOU WORM, OR I'LL SHOW YOU THE BEAUTY OF DEATH.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
+      ],
+      "effects": {
+        "transform": 8721,
+        "reset_after_ms": 30000,
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32967,
+                "y": 31457,
+                "floor": -2
+              },
+              "remove": 8325,
+              "create": 8326,
+              "passable": false,
+              "allow_missing": true
+            }
+          ],
+          "close": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/blood-brothers-lersatio-mirror-2-second",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32966,
+          "y": 31456,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 8667
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission08",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/mirror_counter",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0
+        }
+      ],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "FINE. DIE PRETTY!",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
+      ],
+      "effects": {
+        "transform": 8721,
+        "reset_after_ms": 30000,
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32967,
+                "y": 31457,
+                "floor": -2
+              },
+              "remove": 8325,
+              "create": 8326,
+              "passable": false,
+              "allow_missing": true
+            }
+          ],
+          "close": []
+        },
+        "encounter": {
+          "minimum_level": 0,
+          "players": [],
+          "spectators": {
+            "minimum": {
+              "x": 32954,
+              "y": 31447,
+              "floor": -2
+            },
+            "maximum": {
+              "x": 32972,
+              "y": 31465,
+              "floor": -2
+            },
+            "destination": {
+              "x": 32967,
+              "y": 31459,
+              "floor": -1
+            }
+          },
+          "room_min": {
+            "x": 32963,
+            "y": 31456,
+            "floor": -1
+          },
+          "room_max": {
+            "x": 32972,
+            "y": 31465,
+            "floor": -1
+          },
+          "monsters": [
+            {
+              "creature": "oteryn:creature.lersatio",
+              "position": {
+                "x": 32967,
+                "y": 31459,
+                "floor": -1
+              }
+            },
+            {
+              "creature": "oteryn:creature.vampire",
+              "position": {
+                "x": 32966,
+                "y": 31459,
+                "floor": -1
+              }
+            },
+            {
+              "creature": "oteryn:creature.vampire",
+              "position": {
+                "x": 32968,
+                "y": 31459,
+                "floor": -1
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/blood-brothers-lersatio-mirror-3-first",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32968,
+          "y": 31456,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 8667
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission08",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/mirror_counter",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "STOP THAT, YOU WORM, OR I'LL SHOW YOU THE BEAUTY OF DEATH.",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
+      ],
+      "effects": {
+        "transform": 8721,
+        "reset_after_ms": 30000,
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32967,
+                "y": 31457,
+                "floor": -2
+              },
+              "remove": 8325,
+              "create": 8326,
+              "passable": false,
+              "allow_missing": true
+            }
+          ],
+          "close": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/blood-brothers-lersatio-mirror-3-second",
+      "quest": "oteryn:quest.blood_brothers_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32968,
+          "y": 31456,
+          "floor": -2
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 8667
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_4/blood_brothers/mission08",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/crystalserver/quest/u8_4/blood_brothers/mirror_counter",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 0
+        }
+      ],
+      "requires_world_admission": true,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "FINE. DIE PRETTY!",
+      "sources": [
+        "https://github.com/zimbadev/crystalserver/blob/201189f871d23597b82caf88fd611454a2ddefb8/data-global/scripts/quests/blood_brothers_quest/actions_lersatio_mirrors.lua:33-81"
+      ],
+      "effects": {
+        "transform": 8721,
+        "reset_after_ms": 30000,
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32967,
+                "y": 31457,
+                "floor": -2
+              },
+              "remove": 8325,
+              "create": 8326,
+              "passable": false,
+              "allow_missing": true
+            }
+          ],
+          "close": []
+        },
+        "encounter": {
+          "minimum_level": 0,
+          "players": [],
+          "spectators": {
+            "minimum": {
+              "x": 32954,
+              "y": 31447,
+              "floor": -2
+            },
+            "maximum": {
+              "x": 32972,
+              "y": 31465,
+              "floor": -2
+            },
+            "destination": {
+              "x": 32967,
+              "y": 31459,
+              "floor": -1
+            }
+          },
+          "room_min": {
+            "x": 32963,
+            "y": 31456,
+            "floor": -1
+          },
+          "room_max": {
+            "x": 32972,
+            "y": 31465,
+            "floor": -1
+          },
+          "monsters": [
+            {
+              "creature": "oteryn:creature.lersatio",
+              "position": {
+                "x": 32967,
+                "y": 31459,
+                "floor": -1
+              }
+            },
+            {
+              "creature": "oteryn:creature.vampire",
+              "position": {
+                "x": 32966,
+                "y": 31459,
+                "floor": -1
+              }
+            },
+            {
+              "creature": "oteryn:creature.vampire",
+              "position": {
+                "x": 32968,
+                "y": 31459,
+                "floor": -1
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
