@@ -51,9 +51,15 @@ Validation recorded so far:
 | `cargo fmt --all` | Passed; include-mounted leaf files also formatted with Rust 2024 rustfmt |
 | `python3 tools/content-schema/validate_full_game_content_tree.py` | Passed: 19 domains, 39 systems, 100 nodes; no unassigned entries |
 | Initial focused dispatch regression | Build killed by SIGKILL before tests; no behavioral red result claimed |
-| Focused retry | Dispatch outputs cleaned; running with `CARGO_BUILD_JOBS=1` and normal profiles |
-| Quest-authoring checks and unit-tests runner | Running |
+| Focused retry | Fixed a test calling a private parser by using the public binding validator; corrected build running with `CARGO_BUILD_JOBS=1` and normal profiles |
+| Quest-authoring checks | First run ended with a killed subprocess; rerun separately after Rust build |
+| Quest-authoring unit-tests runner | Running serially; no reported failure yet |
 | Clippy, full regeneration and pin verification | Pending |
+
+The cancelled compiler was explicitly terminated after Cargo exited, leaving only
+one active compiler for the corrected run. No profile, lint, assertion or test
+selection was weakened. The public schema test first validates the unmodified
+production plan, then rejects the four individually mutated invalid plans.
 
 Status: implementation authored; PostgreSQL red/green qualification and remaining
 validation are pending. This branch is WIP and has no PR.
