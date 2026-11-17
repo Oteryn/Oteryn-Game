@@ -11,6 +11,16 @@
       "note": "First-entry retry decision and pre-snapshot callback phase completion. Outcome is phase-local playable, unplayable or retries_exhausted; attempts counts actual first-entry calls (one for each callback phase); elapsed_ms covers the retry loop or named callback phase. Phase identifies the last first-entry participant or callback phase. Connection trace when available; no player identity or raw errors."
     },
     {
+      "event": "appearance_companion_unavailable",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "error"
+      ],
+      "codes": [],
+      "note": "GCOREFIX A: a companion in the observer's census has no actionable creature snapshot (NotCreature or CreatureNotActionable); the entity is skipped, not fenced. Error is the closed carrier error variant. No player identifiers or payloads."
+    },
+    {
       "event": "appearance_initial_failed",
       "level": "warn",
       "span": false,
@@ -29,6 +39,19 @@
       ],
       "codes": [],
       "note": "PR3106: logical appearance observation refusal; class is content, fence, revision, state, visibility or conditions. Durable failures retain the existing retry diagnostics. No player identifiers, payloads or raw errors."
+    },
+    {
+      "event": "appearance_observation_skipped",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "class",
+        "reason",
+        "identity",
+        "generation"
+      ],
+      "codes": [],
+      "note": "GCOREFIX A: one census entity skipped during appearance observation instead of failing the live connection; class is visibility, reason is entity_left_census or companion_snapshot_unavailable. Identity and generation are the opaque wire entity reference (hex), not an account or character name."
     },
     {
       "event": "attack_target_condition_gated",
