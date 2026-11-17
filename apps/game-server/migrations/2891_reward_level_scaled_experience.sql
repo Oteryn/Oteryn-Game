@@ -18,10 +18,10 @@ BEGIN
             OR p.plan->>'experience_per_level' !~ '^[1-9][0-9]*$'
             OR (p.plan->>'experience_per_level')::numeric NOT BETWEEN 1 AND 9223372036854775807
         THEN RETURN FALSE; END IF;
-        SELECT (p.plan->>'experience_per_level')::numeric * r.level_before INTO scaled_xp
-          FROM game_character_quest_receipts r
-         WHERE r.character_id=p.character_id AND r.cause_id=p.cause_id
-           AND r.cause_ordinal=p.cause_ordinal AND r.transition_key=p.transition_key;
+        SELECT (p.plan->>'experience_per_level')::numeric * receipt.level_before INTO scaled_xp
+          FROM game_character_quest_receipts receipt
+         WHERE receipt.character_id=p.character_id AND receipt.cause_id=p.cause_id
+           AND receipt.cause_ordinal=p.cause_ordinal AND receipt.transition_key=p.transition_key;
         IF scaled_xp IS NULL OR scaled_xp NOT BETWEEN 1 AND 100000000
         THEN RETURN FALSE; END IF;
         expected_xp_amount := scaled_xp::bigint;
