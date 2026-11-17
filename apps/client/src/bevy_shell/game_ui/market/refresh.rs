@@ -41,6 +41,7 @@ pub(super) fn own(owner: NonSend<HostOwner>, time: Res<Time>, mut refresh: ResMu
     if refresh.due
         && panel.selected
         && panel.pending.is_none()
+        && panel.details.pending.is_none()
         && let Some(play) = &owner.play
     {
         play.link.market_request(Intent::Refresh);

@@ -36,7 +36,12 @@ enum Kind {
     OnlyOwned,
     OpenBackpack,
 }
-type RenderedOffers = (Vec<(Quote, String)>, Option<Quote>);
+type RenderedOffers = (
+    oteryn_client_ui::npc_shop::LiveShop,
+    Option<NpcTradeSide>,
+    String,
+    Option<Quote>,
+);
 
 #[derive(Resource, Default)]
 struct State {
@@ -227,8 +232,11 @@ fn project(
         };
         state.widgets = Some(widgets::build(&mut commands, &skins, generation));
     }
-    let quotes = panel.live.quotes();
-    if !quotes.is_empty() && !quotes.iter().any(|quote| Some(quote.side) == state.side) {
+    let quotes = &panel.live.window.offers;
+    if panel.live.window.open.is_some()
+        && !quotes.is_empty()
+        && !quotes.iter().any(|quote| Some(quote.side) == state.side)
+    {
         state.side = Some(
             if quotes.iter().any(|quote| quote.side == NpcTradeSide::Buy) {
                 NpcTradeSide::Buy
@@ -250,10 +258,26 @@ fn project(
             }
         }
     }
-    let rows = panel.live.filtered_quotes(state.side, &state.query);
-    if state.selection.is_some_and(|quote| !rows.contains(&quote)) {
-        state.selection = None;
-    }
+    let Some(widgets) = state.widgets else {
+        return;
+    };
+    let changed_rows = if !state
+        .rendered
+        .as_ref()
+        .is_some_and(|(shop, side, query, selected)| {
+            shop == &panel.live
+                && *side == state.side
+                && query == &state.query
+                && *selected == state.selection
+        }) {
+        let rows = panel.live.filtered_quotes(state.side, &state.query);
+        if state.selection.is_some_and(|quote| !rows.contains(&quote)) {
+            state.selection = None;
+        }
+        Some(rows)
+    } else {
+        None
+    };
     for (caption, mut text) in &mut options {
         let checked = match caption.0 {
             Kind::IgnoreCapacity => panel.live.options.ignore_capacity,
@@ -299,16 +323,7 @@ fn project(
             }
         }
     }
-    let Some(widgets) = state.widgets else {
-        return;
-    };
-    let snapshot = (
-        rows.iter()
-            .map(|quote| (*quote, panel.live.quote_text(*quote)))
-            .collect(),
-        state.selection,
-    );
-    if state.rendered.as_ref() != Some(&snapshot) {
+    if let Some(rows) = changed_rows {
         commands.entity(widgets.rows).despawn_children();
         widgets::rows(
             &mut commands,
@@ -319,7 +334,12 @@ fn project(
             &panel.live,
             state.selection,
         );
-        state.rendered = Some(snapshot);
+        state.rendered = Some((
+            panel.live.clone(),
+            state.side,
+            state.query.clone(),
+            state.selection,
+        ));
     }
     let status = if !play.link.npc_shop_is_open() {
         String::new()

@@ -129,22 +129,6 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             .filter(|_| !options.smoke)
             .map(|path| path.with_file_name("client-window-layout.json")),
     );
-    let mut window = Window {
-        title: "Oteryn".into(),
-        resolution: (1024, 720).into(),
-        resize_constraints: bevy::window::WindowResizeConstraints {
-            min_width: 1020.,
-            min_height: 650.,
-            ..default()
-        },
-        ..default()
-    };
-    if let Some([x, y, width, height]) = layout.window()
-        && let (Ok(width), Ok(height)) = (u32::try_from(width), u32::try_from(height))
-    {
-        window.position = bevy::window::WindowPosition::At(IVec2::new(x, y));
-        window.resolution = (width, height).into();
-    }
     app.add_plugins(
         DefaultPlugins
             .set(AssetPlugin {
@@ -155,11 +139,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
                 run_on_any_thread: cfg!(test),
             })
             .set(ImagePlugin::default_nearest())
-            .set(WindowPlugin {
-                close_when_requested: false,
-                primary_window: Some(window),
-                ..default()
-            })
+            .set(layout.primary_window_plugin())
             .set(diagnostics::log_plugin(&owner)),
     )
     .add_plugins((

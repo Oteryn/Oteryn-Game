@@ -676,12 +676,26 @@ fn outfit_search_filters_names_without_changing_draft() -> Result<(), Box<dyn st
         .ok_or("play")?
         .link
         .appearance_panel();
-    let mut fields = app.world_mut().query::<&mut bevy::text::EditableText>();
-    {
-        let mut text = fields.single_mut(app.world_mut())?;
-        *text = bevy::text::EditableText::new(" MaGe ");
-    }
+    let editor = app
+        .world_mut()
+        .query_filtered::<Entity, With<search::Field>>()
+        .single(app.world())?;
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(editor, bevy::input_focus::FocusCause::Navigated);
+    app.world_mut()
+        .get_mut::<bevy::text::EditableText>(editor)
+        .ok_or("search")?
+        .editor_mut()
+        .set_text(" MaGe ");
     app.update();
+    assert!(app.world().get::<search::Field>(editor).is_some());
+    assert_eq!(
+        app.world()
+            .resource::<bevy::input_focus::InputFocus>()
+            .get(),
+        Some(editor)
+    );
     let actions: Vec<_> = app
         .world_mut()
         .query::<&Action>()

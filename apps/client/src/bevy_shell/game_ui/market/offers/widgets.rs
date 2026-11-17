@@ -178,26 +178,21 @@ pub(in super::super) fn editor(
         "market.create.sell",
     );
     let form = row(commands, parent);
-    for (kind, caption, name, initial) in [
-        (
-            Field::Amount,
-            "Amount",
-            "market.create.amount",
-            panel.amount.to_string(),
-        ),
+    for (kind, caption, name) in [
+        (Field::Amount, "Amount", "market.create.amount"),
         (
             Field::Price,
             "Price per piece (gold)",
             "market.create.price",
-            panel.price.to_string(),
         ),
     ] {
+        let initial = "1";
         label(commands, skin, form, caption);
         let editor = drafts.field(
             commands,
             DraftRole::Offer(ware.map(|ware| ware.definition), kind),
-            &initial,
-            |commands| field(commands, skin, kind, &initial, name),
+            initial,
+            |commands| field(commands, skin, kind, initial, name),
         );
         commands.entity(form).add_child(editor);
     }

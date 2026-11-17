@@ -495,3 +495,26 @@ fn atomic_market_purchase_rejects_server_modal_published_after_the_ui_snapshot()
     drop(modal);
     Ok(())
 }
+
+#[test]
+fn market_rebuild_restores_current_offset() -> TestResult {
+    use crate::bevy_shell::game_ui::install::{RememberScroll, install_scroll_memory};
+    let (mut app, mut commands, outbox, _) = app()?;
+    install_scroll_memory(&mut app);
+    super::super::offers::install(&mut app);
+    book(&mut app, &mut commands, &outbox)?;
+    let mut areas = app
+        .world_mut()
+        .query::<(&RememberScroll, &mut ScrollPosition)>();
+    for (key, mut position) in areas.iter_mut(app.world_mut()) {
+        position.y = 13. * (key.1 + 1) as f32;
+    }
+    let select = find(&mut app, "market.offer.select.0")?;
+    app.world_mut().trigger(Activate { entity: select });
+    app.update();
+    assert!(app.world().get_entity(select).is_err());
+    for (key, position) in areas.iter(app.world()) {
+        assert_eq!(position.y, 13. * (key.1 + 1) as f32);
+    }
+    Ok(())
+}

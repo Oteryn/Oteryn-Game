@@ -189,9 +189,11 @@ pub(super) fn render(
     }
     let filters = commands
         .spawn((
+            ScrollArea,
             source::frame(skins.inset.clone(), [1.; 4]),
             Node {
                 width: px(234.),
+                overflow: Overflow::scroll_y(),
                 max_width: percent(45.),
                 padding: UiRect::all(px(6.)),
                 flex_direction: FlexDirection::Column,
@@ -252,6 +254,7 @@ pub(super) fn render(
             panel,
         );
     }
+    let choices = column(commands, filters);
     for (mode, name, entries) in [
         (Mode::Skip, "skip", &panel.skipped),
         (Mode::Accept, "accept", &panel.accepted),
@@ -261,7 +264,7 @@ pub(super) fn render(
             skins,
             filters,
             key,
-            FilterAction::Choose(mode),
+            FilterAction::Choose(mode, choices),
             &format!("Add item to {name} list"),
             &format!("quick_loot.add.{name}"),
         );
@@ -415,7 +418,7 @@ struct FilterControl {
 }
 #[derive(Clone, Copy)]
 enum FilterAction {
-    Choose(Mode),
+    Choose(Mode, Entity),
     Add(Mode, oteryn_session::ItemEntry),
     Remove(Mode, u32),
 }
@@ -491,8 +494,8 @@ fn filter_activate(
         return;
     }
     match control.action {
-        FilterAction::Choose(mode) => {
-            let choices = column(&mut commands, event.entity);
+        FilterAction::Choose(mode, choices) => {
+            commands.entity(choices).despawn_children();
             let items = carried(&owner);
             if items.is_empty() {
                 text(&mut commands, &skins, choices, "No carried items available");

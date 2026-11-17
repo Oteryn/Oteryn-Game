@@ -148,12 +148,12 @@ fn project(
             flex_shrink: 0.,
             flex_direction: FlexDirection::Column,
             align_items: AlignItems::Center,
-            row_gap: px(2.),
+            row_gap: px(0.),
             ..default()
         })
         .id();
     commands.entity(panel).add_children(&[viewport, controls]);
-    navigation_controls(&mut commands, &skins, controls, generation);
+    navigation_controls(&mut commands, &skins, controls, viewport, generation);
     commands.entity(regions.minimap).add_child(panel);
     state.panel = Some(panel);
 }
@@ -211,7 +211,13 @@ const VIEWPORT: Vec2 = Vec2::new(108., 111.);
 const ROSE: f32 = 43.;
 /// The columns cropped from each side of the rendered map to fit the viewport width.
 const CROP: f32 = (SIZE.x as f32 - VIEWPORT.x) / 2.;
-fn navigation_controls(commands: &mut Commands, skins: &Skins, panel: Entity, generation: u64) {
+fn navigation_controls(
+    commands: &mut Commands,
+    skins: &Skins,
+    panel: Entity,
+    viewport: Entity,
+    generation: u64,
+) {
     use crate::play::MinimapNavigation as Nav;
     // The rose: its eight points pan five tiles that way and its centre resumes following.
     let rose = art::fixed(commands, &skins.font, "minimap-rose", Vec2::splat(ROSE));
@@ -272,7 +278,15 @@ fn navigation_controls(commands: &mut Commands, skins: &Skins, panel: Entity, ge
         bevy::ui_widgets::Button,
         super::hud_panes::float::FloatToggle(super::hud_panes::float::MINIMAP),
     ));
-    commands.entity(buttons).add_child(float);
+    commands
+        .entity(float)
+        .entry::<Node>()
+        .and_modify(|mut node| {
+            node.position_type = PositionType::Absolute;
+            node.top = px(0.);
+            node.left = px(0.);
+        });
+    commands.entity(viewport).add_child(float);
     for (key, action) in [
         ("minimap-floor-up", Some(Nav::FloorUp)),
         ("minimap-zoom-in", Some(Nav::ZoomIn)),

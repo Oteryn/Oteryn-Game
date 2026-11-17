@@ -216,7 +216,13 @@ fn project(
     let root = *state
         .root
         .get_or_insert_with(|| widgets::build(&mut commands, &skin, overlay));
-    let previous_body = state.body.take();
+    if let Some(body) = state.body.take() {
+        // Retain live editors while the old scroll areas publish their final offsets.
+        for (field, _) in &drafts.0 {
+            commands.entity(*field).remove::<ChildOf>();
+        }
+        commands.entity(body).despawn();
+    }
     state.body = Some(widgets::render(
         &mut commands,
         &skin,
@@ -228,9 +234,8 @@ fn project(
         state.sell.unwrap_or(panel.sell),
         &mut drafts,
     ));
-    if let Some(body) = previous_body {
-        // Reused fields have already been reparented by render.
-        commands.entity(body).despawn();
+    for (obsolete, _) in drafts.0 {
+        commands.entity(obsolete).despawn();
     }
     if let Some(entity) = focus.get().filter(|id| fields.contains(*id)) {
         commands.queue(move |world: &mut World| {

@@ -430,7 +430,26 @@ fn quick_loot_can_add_carried_item_and_remove_confirmed_filter_entry() -> TestRe
     let add = named(&mut app, "quick_loot.add.accept")?;
     app.world_mut().trigger(Activate { entity: add });
     app.update();
+    app.world_mut().trigger(Activate { entity: add });
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query::<&Name>()
+            .iter(app.world())
+            .filter(|name| name.as_str() == "quick_loot.pick.7")
+            .count(),
+        1
+    );
     let pick = named(&mut app, "quick_loot.pick.7")?;
+    let column = app
+        .world()
+        .get::<ChildOf>(pick)
+        .ok_or("choices column")?
+        .parent();
+    assert_eq!(
+        app.world().get::<ChildOf>(column),
+        app.world().get::<ChildOf>(add)
+    );
     app.world_mut().trigger(Activate { entity: pick });
     let wire = request(&mut commands)?;
     assert_eq!(wire.action, QuickLootAction::FilterAdd);

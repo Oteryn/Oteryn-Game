@@ -126,6 +126,34 @@ fn the_minimap_is_a_tibia_viewport_with_a_rose_and_icon_buttons() -> TestResult 
     app.update();
     let point = pointer_layout::center(&app, rose)?;
     pointer_layout::hit(&mut app, point, centre_button)?;
+    let mut names = app.world_mut().query::<(Entity, &Name)>();
+    let mut named = |name: &str| {
+        names
+            .iter(app.world())
+            .find_map(|(id, n)| (n.as_str() == name).then_some(id))
+            .ok_or("missing control")
+    };
+    let full = named("minimap-full-map")?;
+    let map = named("Minimap")?;
+    let bottom = pointer_layout::center(&app, map)?.y
+        + app
+            .world()
+            .get::<ComputedNode>(map)
+            .ok_or("map layout")?
+            .size()
+            .y
+            / 2.;
+    let point = pointer_layout::center(&app, full)?;
+    assert!(point.y + 10. <= bottom);
+    let pointers: Vec<_> = app
+        .world_mut()
+        .query_filtered::<Entity, With<bevy::picking::pointer::PointerId>>()
+        .iter(app.world())
+        .collect();
+    for entity in pointers {
+        app.world_mut().despawn(entity);
+    }
+    pointer_layout::hit(&mut app, point, full)?;
     // No compass text buttons and no camera prose.
     let texts: Vec<String> = app
         .world_mut()

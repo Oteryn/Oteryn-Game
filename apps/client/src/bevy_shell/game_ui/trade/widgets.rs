@@ -47,7 +47,7 @@ pub(super) fn build(
     let grids = row(commands, root);
     commands.entity(grids).insert((
         ScrollArea,
-        crate::bevy_shell::game_ui::install::RememberScroll("trade", 1),
+        crate::bevy_shell::game_ui::install::RememberScroll("trade", 2),
         Node {
             max_height: px(240.),
             overflow: Overflow::scroll_y(),

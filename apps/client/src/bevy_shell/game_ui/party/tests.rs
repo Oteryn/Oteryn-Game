@@ -177,6 +177,19 @@ fn actual_member_and_invitation_controls_send_exact_handles_without_optimistic_m
         Kind::Shared,
     ] {
         let (mut app, mut commands, outbox) = app()?;
+        let roles: Vec<_> = app
+            .world_mut()
+            .query::<&crate::bevy_shell::game_ui::install::RememberScroll>()
+            .iter(app.world())
+            .map(|key| (key.0, key.1))
+            .collect();
+        assert_eq!(
+            roles
+                .iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            roles.len()
+        );
         let before = app
             .world()
             .non_send::<HostOwner>()

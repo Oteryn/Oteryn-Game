@@ -77,9 +77,13 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
     let expected_panel_text = panels::configure(&link, &outbox)?;
     owner.play = Some(ActivePlay { view, link });
     owner.phase = Phase::Playing;
+    let dir = std::env::temp_dir().join(format!("native-layout-{}", std::process::id()));
+    let mut layout = crate::window_layout::WindowLayout::default();
+    layout.record("window.logical", [40, 80, 1200, 700])?;
+    layout.save(&dir.join("client-window-layout.json"))?;
     let options = bevy_shell::Options {
         ui_assets: PathBuf::from(assets),
-        preferences: None,
+        preferences: Some(dir.join("preferences.json")),
         login_settings: None,
         ui_audit: None,
         smoke: false,
@@ -91,10 +95,13 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
         let mut windows = app
             .world_mut()
             .query_filtered::<&mut Window, With<bevy::window::PrimaryWindow>>();
-        windows
-            .single_mut(app.world_mut())?
-            .resolution
-            .set(1280., 720.);
+        let mut window = windows.single_mut(app.world_mut())?;
+        assert_eq!(window.size(), Vec2::new(1200., 700.));
+        assert_eq!(
+            window.position,
+            bevy::window::WindowPosition::At(IVec2::new(40, 80))
+        );
+        window.resolution.set(1280., 720.);
     }
     app.insert_resource(Capture {
         path: path.clone(),
@@ -109,6 +116,7 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
         return Err("native game shell failed".into());
     }
     // The screenshot observer writes before sending AppExit. A native timeout never creates it.
+    std::fs::remove_dir_all(dir)?;
     if !path.is_file() {
         return Err("native game shell capture missing".into());
     }

@@ -3,11 +3,12 @@ use super::*;
 use crate::play::GemControl;
 use oteryn_client_ui::wheel_allocation::{self as model, Intent, gems};
 use oteryn_client_ui_bevy as source;
+use std::sync::Arc;
 #[derive(Resource, Default)]
 struct State {
     open: bool,
     generation: u64,
-    seen: Option<WheelPanel>,
+    seen: Option<Arc<WheelPanel>>,
     root: Option<Entity>,
 }
 #[derive(Clone, Copy)]
@@ -19,7 +20,7 @@ enum Kind {
 #[derive(Component)]
 struct Action {
     generation: u64,
-    expected: WheelPanel,
+    expected: Arc<WheelPanel>,
     kind: Kind,
 }
 pub(super) fn install(app: &mut App) {
@@ -37,7 +38,7 @@ pub(super) fn entry(
         skin,
         parent,
         key.generation,
-        panel,
+        &Arc::new(panel.clone()),
         Kind::Open,
         "Gem Atelier / Workshop",
     );
@@ -53,7 +54,7 @@ fn button(
     skin: &Skins,
     parent: Entity,
     generation: u64,
-    expected: &WheelPanel,
+    expected: &Arc<WheelPanel>,
     kind: Kind,
     label: &str,
 ) {
@@ -89,7 +90,7 @@ fn activate(
     };
     if action.generation != owner.generation()
         || play.view.gameplay_input_blocked(&play.link)
-        || action.expected != play.link.wheel_panel()
+        || *action.expected != play.link.wheel_panel()
     {
         return;
     }
@@ -136,7 +137,7 @@ fn project(
         play.link.gem_control_bound(panel, None);
     }
     let panel = play.link.wheel_panel();
-    if state.seen.as_ref() == Some(&panel) {
+    if state.seen.as_deref() == Some(&panel) {
         return;
     }
     if let Some(root) = state.root.take() {
@@ -170,6 +171,7 @@ fn project(
         "Gem Atelier and fragment workshop",
     );
     text(&mut commands, &skin, root, gems::view::details(&panel));
+    let panel = Arc::new(panel);
     let mut add = |kind, label: &str| {
         button(
             &mut commands,
@@ -251,4 +253,17 @@ fn project(
     }
     state.root = Some(root);
     state.seen = Some(panel);
+}
+
+#[cfg(test)]
+pub(super) fn shared_button_catalogue(app: &mut App) -> bool {
+    use std::borrow::Borrow;
+    let mut actions = app.world_mut().query::<&Action>();
+    let mut panels = actions
+        .iter(app.world())
+        .filter(|action| matches!(action.kind, Kind::Action(_)))
+        .map(|action| -> &WheelPanel { action.expected.borrow() });
+    panels
+        .next()
+        .is_some_and(|first| panels.all(|other| std::ptr::eq(first, other)))
 }
