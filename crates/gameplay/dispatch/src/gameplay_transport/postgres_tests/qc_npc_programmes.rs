@@ -1,6 +1,7 @@
 //! Lane qc: Obsidian Knife and Sinatuki through native NPC wire commands.
 use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::reward_callbacks::RewardCallback;
 use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
