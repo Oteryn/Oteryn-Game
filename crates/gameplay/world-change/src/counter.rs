@@ -692,6 +692,27 @@ mod deepling_tests {
     }
 
     #[test]
+    fn deepling_guard_credit_preserves_whole_points_and_checks_overflow() -> Result<(), CounterError>
+    {
+        let kind = CounterKind::Deeplings;
+        let parameters = Parameters::default();
+        let mut state = CounterState::new(kind, 1, false);
+        state.counts = [7, 9, 0];
+        let credited = state.credit(kind, Credit::DeeplingGuard(12), &parameters, 0)?;
+        assert_eq!(credited.counts, [9, 1, 0]);
+        assert_eq!(
+            state.credit(kind, Credit::DeeplingGuard(0), &parameters, 0),
+            Err(CounterError::InvalidCredit)
+        );
+        state.counts[0] = u64::MAX;
+        assert_eq!(
+            state.credit(kind, Credit::DeeplingGuard(1), &parameters, 0),
+            Err(CounterError::Overflow)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn deepling_guard_fractions_cross_threshold_only_on_save() -> Result<(), CounterError> {
         let kind = CounterKind::Deeplings;
         let parameters = Parameters {
