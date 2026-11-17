@@ -1428,7 +1428,7 @@ pub(super) async fn exercise(
             "the real connection must publish the earned outfit/addon in its client catalogue delta"
         );
     }
-    let after = counts(h).await?;
+    let mut after = counts(h).await?;
     assert_eq!(after.0, original.0 + 1);
     assert_eq!(after.2, original.2 + i64::from(callback.give.is_some()));
     if callback.outfit.is_some() {
@@ -1555,6 +1555,14 @@ pub(super) async fn exercise(
         );
         assert_eq!(quantity(&input.item).await?, i64::from(!repeatable));
         assert_eq!(quantity(&reward.item).await?, 1 + i64::from(repeatable));
+        let grants = i64::from(repeatable);
+        after = (
+            after.0 + grants,
+            after.1 + grants,
+            after.2 + grants,
+            after.3,
+        );
+        assert_eq!(counts(h).await?, after);
     }
     if name == "qengine-rewards-l1-yalaharian-base-palimuth-villain" {
         assert_eq!(
