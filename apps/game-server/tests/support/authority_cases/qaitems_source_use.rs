@@ -285,7 +285,7 @@ async fn exercise(
             &authority,
             &h.node,
             &fence,
-            &super::engitem_reward_text::Weights(native),
+            &oteryn_gameplay_items::item_ref_admission::NativeItemWeights(native),
             &template,
         )
         .await
