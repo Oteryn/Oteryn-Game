@@ -103,8 +103,9 @@ ordinary custody owner facts. The atomic/replay PG case subsequently passed.
 | Clippy, dispatch/server | Pending; redundant test adapter bound fixed without a lint allowance |
 | Full World regeneration | Running; canonical World package reproduced the base |
 | No-URL guards and public schema | Passed: 6 filtered tests in 0.11 seconds without the admin URL |
-| Atomic/replay PG | Passed through production USE in 57.40 seconds; missing-input/storage rollback, Ground reward, Mission09 and replay assertions all passed |
-| Remaining PG cases and pin verification | Pending |
+| Full focused PG suite | Passed: 6 tests, including 5 real PG cases, in 198.58 seconds; all requested assertions plus east control and whole stacks |
+| Quest source-cohort loader | Passed: focused owner-scope test in 9.66 seconds |
+| Pin verification | Pending |
 
 Status: implementation and generated Item admission committed; final qualification
 is still in progress. No PR. Migration 2889 is used; no new capability or command
