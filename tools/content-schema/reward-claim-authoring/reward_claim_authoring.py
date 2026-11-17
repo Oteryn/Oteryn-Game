@@ -44,6 +44,7 @@ from pathlib import Path
 
 import container_native
 import charge_native
+from qaitems_rewards import selected_claims
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -294,6 +295,7 @@ def chest_transitions() -> set[str]:
 def build_records(claims: list, manifest: dict, items: dict,
                   charge_evidence: list | None = None,
                   transitions: set | None = None) -> tuple[list, list]:
+    claims = selected_claims(claims)
     transitions = chest_transitions() if transitions is None else transitions
     charge_evidence = load_source_charge_evidence() if charge_evidence is None else charge_evidence
     bindings: dict[tuple, list] = {}
@@ -451,6 +453,7 @@ def validate(records: list, items: dict, source_checks: list | None = None,
     committed validation supply the actual source list: a missing binding in an
     explicit list is an error and never falls back to evidence raw arguments.
     """
+    source_claims = selected_claims(source_claims) if source_claims is not None else None
     errors = []
     expected_charge_checks = []
     charge_evidence = load_source_charge_evidence() if charge_evidence is None else charge_evidence
