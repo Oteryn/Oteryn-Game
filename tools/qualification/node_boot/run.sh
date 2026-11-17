@@ -1158,7 +1158,13 @@ graceful_shutdown() { # ready=false first, socket removed
   grep -q "event=readiness .*ready=false" "$node_log" || fail "no ready=false on shutdown"
   grep -q "event=shutdown .*state=complete" "$node_log" || fail "no clean shutdown"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after graceful shutdown"
-  [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard still ready"
+  [[ "$(echo 'SELECT count(*) > 0 AND count(*) FILTER (WHERE ready) = 0 FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == t ]] || {
+    # Distinguish an actual ready scope from an invalid empty guard table. Scope
+    # keys and generations identify the guard without exposing Character data.
+    echo 'NODE_BOOT_GUARD_DIAGNOSTIC ready_scopes:' >&2
+    echo "SELECT encode(scope_key,'hex') AS scope_key,ownership_generation,publication_revision FROM game_durability_admission_runtime_guards WHERE ready ORDER BY scope_key LIMIT 16" | psql_admin oteryn_node_boot >&2 || true
+    fail "guard still ready"
+  }
   evidence "shutdown ready=false socket=removed"
 }
 
@@ -1210,7 +1216,7 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   grep -q 'event=shutdown .*signal before ready' "$node_log" || fail "no pre-ready shutdown event"
   ! grep -q "event=readiness .*ready=true" "$node_log" || fail "ready published after the signal"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after a pre-ready signal"
-  [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard became ready"
+  [[ "$(echo 'SELECT count(*) > 0 AND count(*) FILTER (WHERE ready) = 0 FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == t ]] || fail "guard became ready"
   evidence "signal_in_assignment_wait exit=0 ready=never socket=absent"
 }
 

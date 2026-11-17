@@ -137,7 +137,7 @@ async fn journey(clients: &SeamClients<'_>, chest: &Chest) -> TestResult {
         .into());
     }
     let reference = provisioning::item_reference(&provisioning::item_index()?, chest.item)?;
-    from_town(planner, chest, &label);
+    from_town(planner, chest, &label)?;
     if chest.row == "Q03a" {
         return Err(Q03A_MISSING.into());
     }
@@ -265,7 +265,7 @@ pub(super) async fn provision(
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
-    let status = tokio::task::spawn_blocking(move || {
+    let task = tokio::task::spawn_blocking(move || {
         std::process::Command::new("sudo")
             .args(["-n", "python3"])
             .arg(script)
@@ -277,9 +277,12 @@ pub(super) async fn provision(
                 "--profile",
                 &profile,
             ])
-            .status()
-    })
-    .await??;
+            .status().map_err(|error| error.to_string())
+    });
+    let status = wait_fixture_command(task, async || {
+        client.service_liveness(Duration::from_millis(100)).await?;
+        Ok(())
+    }).await?;
     if !status.success() {
         return Err(format!("{label} node-boot fenced build provisioning failed").into());
     }
@@ -295,7 +298,7 @@ pub(super) async fn provision(
 
 /// Evidence only: the route from town with the fixture starter rope.
 /// Tool legs name their inventory requirement.
-fn from_town(planner: &travel::Planner<'_>, chest: &Chest, label: &str) {
+fn from_town(planner: &travel::Planner<'_>, chest: &Chest, label: &str) -> TestResult {
     verdict::Harness::global().progress("walk");
     let goal = planner.reward_goal(chest.at);
     let planned = planner.plan(TOWN, chest.at, &goal, true, &travel::Passages::default());
@@ -310,13 +313,29 @@ fn from_town(planner: &travel::Planner<'_>, chest: &Chest, label: &str) {
                 evidence(&format!("TRAVEL_ROUTE {label} from-town {line}"));
             }
         }
-        Err(reason) => evidence(&format!(
-            "TRAVEL_ROUTE {label} from-town {TOWN:?} unreached: {reason}"
-        )),
+        Err(reason) => {
+            evidence(&format!("TRAVEL_ROUTE {label} from-town {TOWN:?} unreached: {reason}"));
+            match chest.row {
+                "Q03a" => return Err(Q03A_MISSING.into()),
+                "Q01a" | "Q01b" => {
+                    let entries = [(32558,31960,7), (32546,31969,8), (32411,32008,7),
+                        (32441,32016,8), (32453,32039,9), (32453,32040,8), (32448,32042,8)]
+                        .map(|(x,y,z)| planner.tile_evidence(TilePos { x,y,floor:-z }));
+                    for entry in &entries { evidence(&format!("TRAVEL_MAP_GAP {label} {entry}")); }
+                    return Err(format!("MISSING served bundle has no supported route into noble_armor; confirmed full-bundle entrance waypoints: [{}]; {reason}", entries.join("; ")).into());
+                },
+                "Q01c" => {
+                    let entries = [8, 11, 12].map(|z| planner.tile_evidence(TilePos { x:33178, y:31870, floor:-z }));
+                    return Err(format!("MISSING served bundle has no supported route into dark_armor; target column: [{}]; {reason}", entries.join("; ")).into());
+                },
+                _ => {}
+            }
+        },
     }
     for line in planner.offers_near(chest.at, 200) {
         evidence(&format!("TRAVEL_OFFERS {label} {line}"));
     }
+    Ok(())
 }
 
 /// Walk to the chest, USE it and require the reward item in the backpack.
