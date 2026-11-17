@@ -31,6 +31,8 @@ fn koshei_definition_validator_keeps_appearance_only_closed() -> TestResult {
     let mut bad = valid;
     bad.selector.target_definition = None;
     bad.selector.appearance = Some(7535);
+    // Isolate the selector guard from the target-only effect guard.
+    bad.effects.target_magic = None;
     assert!(world_callbacks::validate_callbacks(&[bad]).is_err());
     Ok(())
 }
