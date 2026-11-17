@@ -1,6 +1,7 @@
 //! Exercise the production revision-fenced mirror reset projection owner.
 use crate::map::facts::{BundleFacts, QuestCallbackProjection};
-use crate::map::view::{EntryFacts, MapDefinition};
+use crate::map::view::EntryFacts;
+use oteryn_protocol_oteryn::world_map::MapDefinition;
 
 fn mirror(appearance_id: u16) -> EntryFacts {
     EntryFacts {

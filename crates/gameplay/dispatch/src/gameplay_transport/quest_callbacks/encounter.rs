@@ -113,6 +113,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
             }
         }
+        // An admitted reset must be published by the same atomic map operation as
+        // the cohort. Refuse callers that lost its prepared revision-fenced proof.
+        if !preflight
+            && callback.effects.reset_after_ms.is_some()
+            && !matches!(
+                projection,
+                Some(crate::map::facts::QuestCallbackProjection::TimedTransform { .. })
+            )
+        {
+            return UseDisposition::Rejected;
+        }
         if callback.has_personal_state() && !preflight && reservation.is_none() {
             return UseDisposition::Rejected;
         }
