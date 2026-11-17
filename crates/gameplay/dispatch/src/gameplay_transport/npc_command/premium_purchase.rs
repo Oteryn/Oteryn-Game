@@ -202,7 +202,7 @@ pub(super) async fn apply(
                 backpack,
             },
         };
-        return match admission
+        let result = admission
             .root
             .rent_horse(
                 admission.character,
@@ -211,8 +211,9 @@ pub(super) async fn apply(
                 admission.reset_epoch,
                 fee,
             )
-            .await
-        {
+            .await;
+        slot.observe_horse_rental();
+        return match result {
             Ok(Some(_)) => NpcTalkOutcome {
                 inventory_changed: true,
                 ..NpcConversations::bank_reply(
@@ -221,7 +222,10 @@ pub(super) async fn apply(
                 )
             },
             Ok(None) => NpcConversations::bank_reply(&intent, "Sorry, not possible.".into()),
-            Err(_) => unknown(),
+            Err(error) => {
+                super::super::operator_event(&format!("npc_horse_rental_refused reason={error}"));
+                unknown()
+            }
         };
     };
     let service = match premium_service {

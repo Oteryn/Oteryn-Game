@@ -471,7 +471,6 @@ async fn burn_fee_at_channel(
                 | FeeBurnCause::HirelingService { .. }
                 | FeeBurnCause::Imbuement { .. }
                 | FeeBurnCause::NpcTravel { .. }
-                | FeeBurnCause::HorseRental { .. }
                 | FeeBurnCause::Forge { .. }
                 | FeeBurnCause::BosstiarySlot { .. }
         )))

@@ -45,10 +45,15 @@ impl DurabilityRoot {
         epoch: u64,
         draw: u8,
     ) -> Result<bool, DurabilityError> {
-        if epoch == 0 || draw >= 30 || !matches!(scope, crate::foundation::RuntimeScopeRefV1::Channel { .. }) {
+        if epoch == 0
+            || draw >= 30
+            || !matches!(scope, crate::foundation::RuntimeScopeRefV1::Channel { .. })
+        {
             return Ok(false);
         }
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| Box::pin(async move {
@@ -93,9 +98,12 @@ impl DurabilityRoot {
         fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
         epoch: u64,
         fee: crate::durability::item_fee_burn::FeeBurnRequest,
-    ) -> Result<Option<oteryn_gameplay_world_change::horse_station::HorseRental>, DurabilityError> {
+    ) -> Result<Option<oteryn_gameplay_world_change::horse_station::HorseRental>, DurabilityError>
+    {
         use crate::durability::db::begin_type2_transaction;
-        use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnError, burn_fee_in_transaction};
+        use crate::durability::item_fee_burn::{
+            FeeBurnCause, FeeBurnError, burn_fee_in_transaction,
+        };
         use oteryn_gameplay_world_change::horse_station::{HorseRental, RENTAL_PRICE_GOLD};
         use sha2::{Digest, Sha256};
 
@@ -105,7 +113,9 @@ impl DurabilityRoot {
         if fee.fee_gold_units != RENTAL_PRICE_GOLD {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
@@ -145,11 +155,26 @@ impl DurabilityRoot {
                 Err(FeeBurnError::Unavailable(error)) => return Err(error),
                 Err(_) => return Err(DurabilityError::InvalidStoredState),
             }
-            sqlx::query("INSERT INTO game_horse_rental_receipts(character_id,world_id,occurrence_id,fee_transaction_id,mount_id,rented_at_ms,expires_at_ms)
-                VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7)")
+            sqlx::query("INSERT INTO game_horse_rental_receipts(character_id,world_id,occurrence_id,fee_transaction_id,mount_id,rented_at_ms,expires_at_ms,
+                    original_character_revision,committed_character_revision,level,experience,profile_revision,ruleset_revision,
+                    content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision)
+                SELECT character_id,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7,
+                    character_revision,character_revision+1,level,total_experience,profile_revision,ruleset_revision,
+                    content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision
+                FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
                 .bind(character).bind(world.as_bytes().as_slice()).bind(occurrence.as_slice()).bind(fee.transaction_id.as_slice())
                 .bind(i16::try_from(lease.mount_id).map_err(|_| DurabilityError::InvalidStoredState)?)
                 .bind(now).bind(lease.expires_at_ms).execute(&mut **tx).await?;
+            for query in [
+                "UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid AND character_revision=$2::text::numeric",
+                "UPDATE game_character_progression_state SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid AND character_revision=$2::text::numeric",
+            ] {
+                if sqlx::query(query).bind(character).bind(fence.expected_character_revision.get().to_string())
+                    .execute(&mut **tx).await?.rows_affected() != 1
+                {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+            }
             if let HorseStation::LooseUntil(until) = phase.after_rental(now, draw[1] % 10) {
                 sqlx::query("UPDATE game_horse_stations SET loose_until_ms=$2 WHERE world_id=encode($1,'hex')::uuid")
                     .bind(world.as_bytes().as_slice()).bind(until).execute(&mut **tx).await?;
@@ -169,24 +194,38 @@ impl DurabilityRoot {
         fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
         occurrence: [u8; 16],
     ) -> Result<bool, DurabilityError> {
-        let recovery = authority.record_for(self).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         let node = node.clone();
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_admission_relations(&mut tx).await?;
-            if crate::durability::character_progression::assert_gameplay_fence(&mut tx, &fence, &node).await?.is_err() {
-                return Ok(false);
-            }
-            let committed = sqlx::query_scalar(
-                "SELECT EXISTS(SELECT 1 FROM game_horse_rental_receipts
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if crate::durability::character_progression::assert_gameplay_fence(
+                        &mut tx, &fence, &node,
+                    )
+                    .await?
+                    .is_err()
+                    {
+                        return Ok(false);
+                    }
+                    let committed = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_horse_rental_receipts
                  WHERE occurrence_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid
                    AND world_id=encode($3,'hex')::uuid)",
-            ).bind(occurrence.as_slice()).bind(fence.character_id.as_bytes().as_slice())
-             .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
-             .fetch_one(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(committed)
-        })).await
+                    )
+                    .bind(occurrence.as_slice())
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(committed)
+                })
+            })
+            .await
     }
 }

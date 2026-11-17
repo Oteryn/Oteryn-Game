@@ -16,6 +16,18 @@ CREATE TABLE game_horse_rental_receipts (
     mount_id SMALLINT NOT NULL CHECK (mount_id IN (22,25,26)),
     rented_at_ms BIGINT NOT NULL CHECK (rented_at_ms > 0),
     expires_at_ms BIGINT NOT NULL CHECK (expires_at_ms-rented_at_ms=86400000),
+    original_character_revision NUMERIC(20,0) NOT NULL CHECK (original_character_revision >= 1),
+    committed_character_revision NUMERIC(20,0) NOT NULL CHECK (committed_character_revision=original_character_revision+1),
+    level BIGINT NOT NULL,
+    experience BIGINT NOT NULL,
+    profile_revision TEXT NOT NULL,
+    ruleset_revision TEXT NOT NULL,
+    content_revision TEXT NOT NULL,
+    simulation_revision TEXT NOT NULL,
+    evidence_revision TEXT NOT NULL,
+    declaration_revision TEXT NOT NULL,
+    policy_revision TEXT NOT NULL,
+    reward_revision TEXT NOT NULL,
     created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id()
 );
 CREATE INDEX game_horse_rental_character_expiry
@@ -32,6 +44,7 @@ BEGIN
         WHERE f.transaction_id=NEW.fee_transaction_id AND f.cause_kind=19
           AND f.character_id=NEW.character_id AND f.world_id=NEW.world_id
           AND f.cause_occurrence_id=NEW.occurrence_id AND f.fee_gold_units=500
+          AND f.committed_character_revision=NEW.committed_character_revision
           AND f.created_xact_id=pg_current_xact_id()
     ) THEN
         RAISE EXCEPTION 'Horse Station rental requires its atomic fee' USING ERRCODE='23514';
@@ -42,10 +55,17 @@ CREATE CONSTRAINT TRIGGER game_horse_rental_receipt_consistent
     AFTER INSERT ON game_horse_rental_receipts DEFERRABLE INITIALLY DEFERRED
     FOR EACH ROW EXECUTE FUNCTION game_horse_rental_receipt_guard();
 REVOKE ALL ON FUNCTION game_horse_rental_receipt_guard() FROM PUBLIC;
+CREATE CONSTRAINT TRIGGER game_horse_rental_revision_chain
+    AFTER INSERT ON game_horse_rental_receipts DEFERRABLE INITIALLY DEFERRED
+    FOR EACH ROW EXECUTE FUNCTION game_character_progression_consistency_guard();
 
 DO $migration$
 DECLARE rule RECORD; body TEXT; target TEXT;
 BEGIN
+    SELECT regexp_replace(pg_get_viewdef('game_character_premium_revision_chain'::regclass,true),
+                          ';[[:space:]]*$','') INTO STRICT body;
+    EXECUTE 'CREATE OR REPLACE VIEW game_character_premium_revision_chain WITH(security_invoker=true) AS '
+        ||body||' UNION ALL SELECT character_id,original_character_revision,committed_character_revision,level,level,experience,experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision FROM game_horse_rental_receipts';
     FOR rule IN
         SELECT conname, regexp_replace(pg_get_constraintdef(oid),' NOT VALID$','') AS definition
         FROM pg_constraint WHERE conrelid='game_item_fee_burns'::regclass
