@@ -95,3 +95,59 @@ local process or a linker deadlock.
 From the fresh game-server test binary,
 `bundle_spawn_owner_tests::a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn`
 passed in 30.16s.
+
+## Serial retry and proposed hosted trial
+
+The one-job exact-base retry took 11m20.993s before exiting 101. Dispatch's
+lib-test rustc reached 15,871,096 KiB RSS before SIGKILL, and the cgroup OOM
+kill counter increased from two to three. No linker child was observed
+during the memory climb. There was 41 GiB of free disk when the retry was
+prepared, so cleaning targets would discard usable dependencies without
+increasing the memory limit. Neither workspace run reached test
+execution, so there are no full-workspace test timings or reproduced
+culprit tests.
+
+Owner approval is required for the proposed protected-workflow trial.
+Serialize Cargo compilation in both steps, retaining the existing swap
+and shard selection. This is a mitigation to validate on a hosted runner,
+where swap is already available, and has not yet been shown to bring
+every shard under the job deadline. The hash below was calculated from
+the exact proposed merge-gate file.
+
+```diff
+--- a/.github/workflows/merge-gate.yml
++++ b/.github/workflows/merge-gate.yml
+@@ -969,6 +969,7 @@
+         if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true'
+         env:
+           SHARD: ${{ matrix.shard }}
++          CARGO_BUILD_JOBS: "1"
+           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
+         run: |
+           set -euo pipefail
+--- a/.github/workflows/pr-postgres-harness.yml
++++ b/.github/workflows/pr-postgres-harness.yml
+@@ -332,6 +332,7 @@
+         if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib'
+         env:
+           LIB_PACKAGES: ${{ steps.scope.outputs.lib_packages }}
++          CARGO_BUILD_JOBS: "1"
+           LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
+         run: |
+           set -euo pipefail
+--- a/.github/workflows/merge-authority-audit.yml
++++ b/.github/workflows/merge-authority-audit.yml
+@@ -28,7 +28,7 @@
+     env:
+       EXPECTED_MERGE_GROUP_GATE_BLOB: "e4ea46443d56c4694cca57fae102eed44dbf8a44"
+       EXPECTED_AGENT_GOVERNANCE_BLOB: "42d84c9089cdef928c6cb17268269156c87c0abb"
+-      EXPECTED_MERGE_GATE_BLOB: "4a947aa6da7702ba8f7f002cd506b44815c144b4"
++      EXPECTED_MERGE_GATE_BLOB: "0f72c838a4a374f2b18da314c0b72ac74038a0f0"
+     steps:
+       - name: Validate control-plane candidate as inert data
+         shell: bash
+```
+
+Final notes-only checks passed: cargo fmt --all --check, governance
+validation, all 135 agent-tool tests, and git diff --check. No Cargo
+build or test process was left running.
