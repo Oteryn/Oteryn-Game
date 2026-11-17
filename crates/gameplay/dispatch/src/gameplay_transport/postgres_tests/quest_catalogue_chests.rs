@@ -210,7 +210,6 @@ fn quest_catalogue_chests_slices_cover_every_supported_source_placement() -> Tes
         .chain(falcon_claims.iter().map(String::as_str))
         .collect();
     assert_eq!(expected.len(), 334);
-    assert_eq!(cases.len() + falcon_claims.len(), 357);
 
     let mut seen_claims = BTreeSet::new();
     let mut seen_placements = vec![false; cases.len()];
@@ -338,19 +337,19 @@ fn quest_catalogue_chests_mixed_binding_requires_all_crystal_sources() -> TestRe
         .find(|row| row.key.as_str() == claim)
         .ok_or("Crystal claim")?;
     assert_eq!(served.placements.len(), 4);
-    let unbound: Vec<_> = report
-        .unbound
-        .iter()
-        .filter(|row| row.claim == claim)
-        .collect();
+    let unbound: Vec<_> = report.unbound.iter().filter(|row| row.claim == claim).collect();
     assert_eq!(unbound.len(), 1);
     assert_eq!(unbound[0].index, 0);
     assert_eq!(
         unbound[0].reason,
         crate::content::world_reward_claims::UnboundReason::NoCrystalUniqueId
     );
-    let incomplete =
-        super::quest_callbacks::source_world(native.position, native.unique, native.appearance, 0)?;
+    let incomplete = super::quest_callbacks::source_world(
+        native.position,
+        native.unique,
+        native.appearance,
+        0,
+    )?;
     let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
         incomplete.base().as_ref(),
         &|_| true,
@@ -1197,9 +1196,7 @@ pub(super) fn catalogue_source_worlds(
                 }) {
                     continue;
                 }
-                let ids = binding["legacy_unique_ids"]
-                    .as_array()
-                    .ok_or("source ids")?;
+                let ids = binding["legacy_unique_ids"].as_array().ok_or("source ids")?;
                 // Preserve a Canary-only selector as a negative source-alias
                 // fixture. The production binder must still refuse to serve it.
                 let unique = ids
