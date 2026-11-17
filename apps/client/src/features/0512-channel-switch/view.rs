@@ -59,6 +59,7 @@ fn uuid_text(bytes: &[u8; 16]) -> String {
 }
 
 /// The current wall clock for the window's cooldown countdown.
+#[cfg(any(feature = "bevy-shell", test))]
 #[must_use]
 pub fn now_ms() -> i64 {
     super::protocol::now_ms()

@@ -5,6 +5,9 @@ mod account_services_tests;
 mod admitted;
 mod authorize;
 mod challenge;
+#[cfg(test)]
+#[path = "native_entry/tests/channel_switch.rs"]
+mod channel_switch_tests;
 mod coin_shop_entry;
 mod config;
 pub(crate) use coin_shop_entry::open as open_coin_shop;

@@ -138,7 +138,7 @@ fn a_player_switches_between_two_live_channels_and_reenters_the_other_one() -> T
                 }
                 first.admitted.first_entry = FirstEntryOutcome::Positioned;
                 // Channel 44 on a second node of the same World, with its own admitted player.
-                let (_node, _second) = world::admit_second_node(&h).await?;
+                let (node, _second) = world::admit_second_node(&h).await?;
                 let mut owner = first.owner(&h, &authority);
                 first.initialize(&owner).await;
                 // The fixture entered long enough ago that no fresh-login fight block holds.
@@ -226,6 +226,43 @@ fn a_player_switches_between_two_live_channels_and_reenters_the_other_one() -> T
                     (there.to_vec(), 1, true),
                     "the admission counted the switch and started the cooldown"
                 );
+
+                // A second switch inside the cooldown, back to 43: the durable preflight that
+                // 6248 reads refuses it for the session now current on Channel 44.
+                let (connection, lease, ownership): (String, String, String) = sqlx::query_as(
+                    "SELECT current_generation::text, character_lease_generation::text, \
+                     scope_ownership_generation::text FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id=encode($1,'hex')::uuid",
+                )
+                .bind(entered.as_bytes().as_slice())
+                .fetch_one(&h.pool)
+                .await?;
+                let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+                let fence = crate::durability::item_transfer::CurrentCharacterItemFence {
+                    character_id: crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?,
+                    game_session_id: entered,
+                    connection_generation: crate::foundation::ConnectionGeneration::new(
+                        connection.parse()?,
+                    )
+                    .map_err(debug)?,
+                    character_lease_generation: lease.parse()?,
+                    runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
+                        world_id,
+                        ChannelId::decode(&there).map_err(debug)?,
+                    ),
+                    scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(
+                        ownership.parse()?,
+                    )
+                    .map_err(debug)?,
+                };
+                let again = h
+                    .root
+                    .read_channel_switch_preflight(&authority, &node, fence, id(42), Some(here))
+                    .await
+                    .map_err(debug)?
+                    .ok_or("the re-entered session is current")?;
+                assert_eq!(again.lock, SwitchLock::Cooldown, "{again:?}");
+                assert!(again.cooldown_left_ms > 0, "{again:?}");
                 drop(owner);
                 drop(authority);
                 drop(seal);

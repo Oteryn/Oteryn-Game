@@ -14,12 +14,14 @@ use tokio_rustls::TlsAcceptor;
 const WORLD_REF: &str = "w-alpha";
 const CHARACTER: &str = "01890a5d-ac96-774b-bcce-b302099a8058";
 const WORLD: &str = "01890a5d-ac96-774b-bcce-b302099a8059";
-const CHANNEL: &str = "01890a5d-ac96-774b-bcce-b302099a805a";
+pub(super) const CHANNEL: &str = "01890a5d-ac96-774b-bcce-b302099a805a";
 const JWS: &str = "eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl";
 
 #[path = "test_support/admitted.rs"]
 mod admitted;
 pub(super) use admitted::admitted_frames;
+#[path = "test_support/channel_node.rs"]
+pub(super) mod channel_node;
 
 /// A local Platform + Gateway (one response per connection) and a TLS game endpoint
 /// that answers with scripted refusals or joins and drops each admitted stream.
@@ -30,6 +32,7 @@ pub(super) struct Stack {
     pub(super) admissions: Arc<AtomicUsize>,
     pub(super) root_path: PathBuf,
     pub(super) game_port: u16,
+    pub(super) node: Arc<channel_node::Node>,
 }
 
 impl Stack {
@@ -49,15 +52,20 @@ impl Stack {
         admitted_frames: Vec<Vec<u8>>,
         empty: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        Self::start_variant(refusals, admitted_frames, empty, false, false)
+        Self::start_variant(refusals, admitted_frames, empty, false, false, false)
     }
 
     pub(super) fn start_with_challenge() -> Result<Self, Box<dyn std::error::Error>> {
-        Self::start_variant(Vec::new(), admitted_frames(), false, true, false)
+        Self::start_variant(Vec::new(), admitted_frames(), false, true, false, false)
     }
 
     pub(super) fn start_training() -> Result<Self, Box<dyn std::error::Error>> {
-        Self::start_variant(Vec::new(), admitted_frames(), false, false, true)
+        Self::start_variant(Vec::new(), admitted_frames(), false, false, true, false)
+    }
+
+    /// chsw: one World with two Channels behind one Gateway and one scripted node.
+    pub(super) fn start_two_channels() -> Result<Self, Box<dyn std::error::Error>> {
+        Self::start_variant(Vec::new(), Vec::new(), false, false, false, true)
     }
 
     fn start_variant(
@@ -66,6 +74,7 @@ impl Stack {
         empty: bool,
         challenge: bool,
         hold_joined: bool,
+        two_channels: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let servers = ClientRuntime::new()?;
         let generated = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
@@ -90,6 +99,8 @@ impl Stack {
         let game_port = game.local_addr()?.port();
         let admissions = Arc::new(AtomicUsize::new(0));
         let counter = Arc::clone(&admissions);
+        let node = Arc::new(channel_node::Node::default());
+        let game_node = Arc::clone(&node);
         servers.spawn(async move {
             while let Ok((tcp, _peer)) = game.accept().await {
                 let index = counter.fetch_add(1, Ordering::SeqCst);
@@ -101,6 +112,11 @@ impl Stack {
                 let Ok(mut stream) = acceptor.accept(tcp).await else {
                     continue;
                 };
+                if two_channels {
+                    let _ = channel_node::serve(&mut stream, &game_node, index).await;
+                    let _ = stream.shutdown().await;
+                    continue;
+                }
                 let _ = oteryn_session::read_frame(&mut stream).await;
                 if !admitted_frames.is_empty() {
                     for frame in &admitted_frames {
@@ -125,6 +141,7 @@ impl Stack {
         let http_url = format!("http://127.0.0.1:{}/", http.local_addr()?.port());
         let requests = Arc::new(Mutex::new(Vec::new()));
         let log = Arc::clone(&requests);
+        let http_node = two_channels.then(|| Arc::clone(&node));
         servers.spawn(async move {
             let mut verifier = challenge.then(MockChallengeVerifier::default);
             while let Ok((stream, _peer)) = http.accept().await {
@@ -135,6 +152,7 @@ impl Stack {
                     empty,
                     hold_joined,
                     verifier.as_mut(),
+                    http_node.as_deref(),
                 )
                 .await;
             }
@@ -146,6 +164,7 @@ impl Stack {
             admissions,
             root_path,
             game_port,
+            node,
         })
     }
 
@@ -244,6 +263,7 @@ async fn serve_http(
     empty: bool,
     training: bool,
     verifier: Option<&mut MockChallengeVerifier>,
+    node: Option<&channel_node::Node>,
 ) {
     let mut request = Vec::new();
     let mut chunk = [0_u8; 4096];
@@ -284,7 +304,30 @@ async fn serve_http(
         ).as_bytes()).await;
         return;
     }
+    let channel = match (node, target.as_str()) {
+        (Some(node), "POST /v1/login") => {
+            let requested = body
+                .split_once(r#""channel_id":""#)
+                .and_then(|(_, rest)| rest.get(..36))
+                .unwrap_or(CHANNEL)
+                .to_owned();
+            if let Ok(mut admitted) = node.login_channel.lock() {
+                admitted.clone_from(&requested);
+            }
+            requested
+        }
+        _ => CHANNEL.to_owned(),
+    };
     let response = match target.as_str() {
+        "GET /v1/client/directory" if node.is_some() => format!(
+            r#"{{"epoch":1,"worlds":[{{"id":"{WORLD}","name":"Alpha","channels":[{{"id":"{CHANNEL}","name":"First","pvp_type":"OPTIONAL_PVP","region":"EU"}},{{"id":"{}","name":"Second","pvp_type":"OPEN_PVP","region":"EU"}}],"characters":[]}}]}}"#,
+            channel_node::CHANNEL_B
+        ),
+        // A probe edge is plain https on port 443; nothing answers it here, so the ping is "—".
+        "GET /v1/client/channel-probes" if node.is_some() => format!(
+            r#"{{"epoch":1,"probes":[{{"channel_id":"{CHANNEL}","probe_url":"https://localhost/probe"}},{{"channel_id":"{}","probe_url":"https://localhost/probe"}}]}}"#,
+            channel_node::CHANNEL_B
+        ),
         "GET /v1/client/directory" => format!(
             r#"{{"epoch":1,"worlds":[{{"id":"{WORLD}","name":"Alpha","channels":[{{"id":"{CHANNEL}","name":"First","pvp_type":"OPTIONAL_PVP","region":"EU"}}],"characters":[]}}]}}"#
         ),
@@ -303,7 +346,7 @@ async fn serve_http(
                 .and_then(|(_, rest)| rest.get(..36))
                 .unwrap_or_default();
             format!(
-                r#"{{"protocol_version":2,"attempt_ref":"{attempt_ref}","world_id":"{WORLD}","channel_id":"{CHANNEL}","endpoint":{{"host":"127.0.0.1","port":{game_port},"tls_server_name":"localhost","alpn":"oteryn-game/1","protocol_major":1,"transport_profile":1}},"grant":{{"profile":"oteryn-pre-admission-v1","token":"{JWS}","valid_for_seconds":30}}}}"#
+                r#"{{"protocol_version":2,"attempt_ref":"{attempt_ref}","world_id":"{WORLD}","channel_id":"{channel}","endpoint":{{"host":"127.0.0.1","port":{game_port},"tls_server_name":"localhost","alpn":"oteryn-game/1","protocol_major":1,"transport_profile":1}},"grant":{{"profile":"oteryn-pre-admission-v1","token":"{JWS}","valid_for_seconds":30}}}}"#
             )
         }
         _ => String::new(),
