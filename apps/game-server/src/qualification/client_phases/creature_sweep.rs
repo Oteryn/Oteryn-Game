@@ -567,7 +567,10 @@ async fn hunt(
     let name = definition.name.as_str();
     let named = |entry: &oteryn_dev_client::WorldSpatialEntity| {
         entry.kind == EntityKind::Creature
-            && matches!(entry.detail, EntityDetail::Actor { .. })
+            && matches!(
+                entry.detail,
+                EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. }
+            )
             && entry.display_name.is_some_and(|label| {
                 label
                     .as_str()
@@ -667,8 +670,9 @@ async fn hunt(
         .collect();
     let mut last_position = target.position;
     let mut last_health = match target.detail {
-        EntityDetail::Actor { health_percent, .. } => health_percent,
-        EntityDetail::Object { .. } => 100,
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => health_percent,
+        EntityDetail::Object { .. } | EntityDetail::ObjectWithAppearance { .. } => 100,
     };
     let mut damaged = false;
     client.take_events();
@@ -702,7 +706,9 @@ async fn hunt(
             None => break true,
             Some(now) => {
                 last_position = now.position;
-                if let EntityDetail::Actor { health_percent, .. } = now.detail {
+                if let EntityDetail::Actor { health_percent, .. }
+                | EntityDetail::ActorWithIcons { health_percent, .. } = now.detail
+                {
                     damaged |= health_percent < last_health;
                     last_health = health_percent;
                 }
@@ -831,10 +837,14 @@ async fn hunt(
         "corpse",
         &format!("entity:{:?};at:{last_position:?}", corpse.entity),
     );
-    let EntityDetail::Object {
+    let (EntityDetail::Object {
         item_handle: Some(handle),
         ..
-    } = corpse.detail
+    }
+    | EntityDetail::ObjectWithAppearance {
+        item_handle: Some(handle),
+        ..
+    }) = corpse.detail
     else {
         rows.fail(
             "loot",

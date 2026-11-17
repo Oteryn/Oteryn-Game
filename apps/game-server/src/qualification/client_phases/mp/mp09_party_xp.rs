@@ -602,6 +602,9 @@ async fn encounter(
                             oteryn_dev_client::EntityDetail::Actor {
                                 health_percent: 100,
                                 ..
+                            } | oteryn_dev_client::EntityDetail::ActorWithIcons {
+                                health_percent: 100,
+                                ..
                             }
                         )
                 })
@@ -658,7 +661,7 @@ async fn encounter(
             }
         }
         if let Some(shown) = bots[0].session.as_ref().and_then(|c| c.world_entities()).and_then(|e| e.get(&target).copied())
-            && let oteryn_dev_client::EntityDetail::Actor { health_percent, .. } = shown.detail
+            && let (oteryn_dev_client::EntityDetail::Actor { health_percent, .. } | oteryn_dev_client::EntityDetail::ActorWithIcons { health_percent, .. }) = shown.detail
         {
             last_health = Some((health_percent, shown.position));
         }
