@@ -397,7 +397,7 @@ pub(super) async fn exercise_outcome(
                         y: 31677,
                         floor: -15,
                     },
-                    item: "oteryn:item.tibia.i3577".into(),
+                    item: "oteryn:item.tibia.i3264".into(),
                     count: 1,
                 },
                 7000 + u64::from(index),
@@ -405,6 +405,11 @@ pub(super) async fn exercise_outcome(
             )
             .await?;
         }
+        let mut tx = h.pool.begin().await?;
+        let entries =
+            crate::durability::item_transfer::load_entries(&mut tx, slot.item_instance_id).await?;
+        tx.rollback().await?;
+        assert_eq!(u32::try_from(entries.len())?, capacity);
     }
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
@@ -449,7 +454,9 @@ pub(super) async fn exercise_outcome(
     if full {
         assert!(matches!(
             result.transition,
-            QuestTransitionOutcome::Refused(_)
+            QuestTransitionOutcome::Refused(
+                crate::durability::quest_state::QuestRefusal::CapacityExceeded
+            )
         ));
         assert!(!result.inventory_changed);
         let remaining: i64 = sqlx::query_scalar("SELECT coalesce(sum(quantity),0)::bigint FROM game_item_instances WHERE lifecycle=1 AND definition_production_key=$1")
