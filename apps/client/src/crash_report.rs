@@ -2,10 +2,11 @@
 //!
 //! A panic writes `crashes/crash-<UTC timestamp>.log` in the client user-data directory: the
 //! panic message and location, a backtrace, the build, OS and graphics adapter, the lifecycle
-//! state, the open windows and the last 200 log lines. Every text passes [`redact`] first, and
-//! the file stays on this computer. The consent-gated delivery report (`pending-crash.txt`)
-//! still carries only the build, OS and source location: no panic text, account data, memory or
-//! environment values.
+//! state and the last 200 log lines. Every text passes [`redact`] before it is written. These
+//! files and the rolling `logs/` files stay on this computer: nothing here uploads or exports
+//! them, and nothing leaves the computer without the consent dialog below. The consent-gated
+//! delivery report (`pending-crash.txt`) still carries only the build, OS and source location:
+//! no panic text, account data, memory or environment values.
 use std::{
     fs::OpenOptions,
     io::{self, Write},

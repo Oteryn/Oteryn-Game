@@ -1,6 +1,6 @@
 use super::{
-    super::{game_ui::GameModal, owner::HostOwner},
-    overlay::{self, Overlay, OverlayBody, OverlayText},
+    super::owner::{ActivePlay, HostOwner, Phase},
+    overlay::{self, DiagnosticsText, Overlay, OverlayBody},
     *,
 };
 use bevy::{
@@ -24,14 +24,13 @@ fn temp_preferences() -> std::path::PathBuf {
     ))
 }
 
-/// The diagnostics plugin over a real host owner, a primary window and real time, without a
+/// The diagnostics systems over a real host owner, a primary window and real time, without a
 /// renderer or the event loop.
 fn app(preferences: Option<std::path::PathBuf>) -> Result<App, Box<dyn std::error::Error>> {
     let mut app = App::new();
     app.insert_non_send(HostOwner::new(preferences)?)
         .insert_resource(Time::<Real>::default())
-        .insert_resource(UiScale(1.25))
-        .init_resource::<ButtonInput<KeyCode>>();
+        .insert_resource(UiScale(1.25));
     app.world_mut().spawn((
         Window {
             resolution: WindowResolution::new(1024, 720),
@@ -48,15 +47,46 @@ fn overlay_display(app: &mut App) -> Result<Display, Box<dyn std::error::Error>>
     Ok(panels.single(app.world())?.display)
 }
 
-fn press_ctrl_shift_d(app: &mut App) {
-    let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-    keys.press(KeyCode::ControlLeft);
-    keys.press(KeyCode::ShiftRight);
-    keys.press(KeyCode::KeyD);
-    app.update();
-    let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-    keys.release_all();
-    keys.clear();
+/// Ctrl+Shift+D is the depot search default, so the overlay action has no default chord; the
+/// player assigns one. These tests assign Ctrl+Shift+F9.
+fn bind_overlay_hotkey(owner: &mut HostOwner) -> Result<(), Box<dyn std::error::Error>> {
+    let mut preferences = owner.settings.preferences.clone();
+    preferences.assign_custom_hotkey(
+        "CTRL+SHIFT+F9",
+        crate::play::CustomAction::Utility {
+            action: crate::play::UtilityAction::ToggleDiagnosticsOverlay,
+        },
+    )?;
+    owner.settings.apply(preferences);
+    Ok(())
+}
+
+/// The assigned chord through the real input route, pressed and released.
+fn press_overlay_hotkey(owner: &mut HostOwner) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    for state in [ButtonState::Pressed, ButtonState::Released] {
+        owner.route_input(
+            &[NormalizedInputEvent::Key {
+                // The USB HID usage of F9.
+                code: KeyCode::new(66)?,
+                state,
+                modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+                repeat: false,
+            }],
+            false,
+        );
+    }
+    Ok(())
+}
+
+fn play_on(owner: &mut HostOwner) -> Result<crate::play::Outbox, Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = crate::play::play_channel();
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    link.use_shared_frontend();
+    owner.play = Some(ActivePlay { view, link });
+    owner.phase = Phase::Playing;
+    Ok(outbox)
 }
 
 #[test]
@@ -74,41 +104,31 @@ fn the_overlay_follows_the_saved_option_and_is_hidden_by_default() -> TestResult
 }
 
 #[test]
-fn ctrl_shift_d_toggles_the_overlay_and_persists_the_choice() -> TestResult {
+fn the_overlay_utility_hotkey_toggles_and_persists_the_choice() -> TestResult {
     let path = temp_preferences();
-    let mut app = app(Some(path.clone()))?;
-    app.update();
-    assert_eq!(overlay_display(&mut app)?, Display::None);
-    // D alone, or Ctrl+D, is not the chord.
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::KeyD);
-    app.update();
-    assert_eq!(overlay_display(&mut app)?, Display::None);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .release_all();
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .clear();
-
-    press_ctrl_shift_d(&mut app);
-    assert_eq!(overlay_display(&mut app)?, Display::Flex);
-    let saved = crate::play::PreferenceStore::read_transfer(&path)?;
-    assert!(saved.diagnostics.overlay);
+    let mut owner = HostOwner::new(Some(path.clone()))?;
+    let _outbox = play_on(&mut owner)?;
+    bind_overlay_hotkey(&mut owner)?;
+    assert!(!owner.settings.preferences.diagnostics.overlay);
+    press_overlay_hotkey(&mut owner)?;
+    assert!(owner.settings.preferences.diagnostics.overlay);
+    assert!(
+        crate::play::PreferenceStore::read_transfer(&path)?
+            .diagnostics
+            .overlay
+    );
     // A new owner over the same file starts with the overlay shown.
     let reopened = HostOwner::new(Some(path.clone()))?;
     assert!(reopened.settings.preferences.diagnostics.overlay);
     drop(reopened);
-
-    press_ctrl_shift_d(&mut app);
-    assert_eq!(overlay_display(&mut app)?, Display::None);
+    press_overlay_hotkey(&mut owner)?;
+    assert!(!owner.settings.preferences.diagnostics.overlay);
     assert!(
         !crate::play::PreferenceStore::read_transfer(&path)?
             .diagnostics
             .overlay
     );
-    drop(app);
+    drop(owner);
     if let Some(directory) = path.parent() {
         std::fs::remove_dir_all(directory)?;
     }
@@ -116,18 +136,51 @@ fn ctrl_shift_d_toggles_the_overlay_and_persists_the_choice() -> TestResult {
 }
 
 #[test]
-fn overlay_lines_come_from_the_window_scale_owner_modals_and_frame_time() -> TestResult {
+fn the_overlay_hotkey_does_not_fire_while_the_chat_input_has_focus() -> TestResult {
+    let mut owner = HostOwner::new(None)?;
+    let _outbox = play_on(&mut owner)?;
+    bind_overlay_hotkey(&mut owner)?;
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    link.open_chat();
+    // Cycle the composer to typing mode, the state in which the chat input has focus.
+    for _ in 0..3 {
+        if link.preference_chat_open() {
+            break;
+        }
+        link.chat_console_mode();
+    }
+    assert!(link.preference_chat_open());
+    press_overlay_hotkey(&mut owner)?;
+    assert!(!owner.settings.preferences.diagnostics.overlay);
+    Ok(())
+}
+
+#[test]
+fn the_overlay_panel_follows_the_hotkey() -> TestResult {
     let mut app = app(None)?;
-    app.world_mut()
-        .spawn((GameModal, Name::new("options"), Node::default()));
-    app.world_mut().spawn((
-        GameModal,
-        Name::new("closed dialog"),
-        Node {
-            display: Display::None,
-            ..default()
-        },
-    ));
+    app.update();
+    assert_eq!(overlay_display(&mut app)?, Display::None);
+    let _outbox = play_on(&mut app.world_mut().non_send_mut::<HostOwner>())?;
+    bind_overlay_hotkey(&mut app.world_mut().non_send_mut::<HostOwner>())?;
+    press_overlay_hotkey(&mut app.world_mut().non_send_mut::<HostOwner>())?;
+    app.update();
+    assert_eq!(overlay_display(&mut app)?, Display::Flex);
+    Ok(())
+}
+
+#[test]
+fn overlay_lines_come_from_the_pacer_window_scale_owner_and_log() -> TestResult {
+    let mut app = app(None)?;
+    // Five frames 250 ms apart, the last one just now, through the frame pacer.
+    let mut pacer = crate::play::PerformancePacer::default();
+    let now = std::time::Instant::now();
+    for step in (0..=4u64).rev() {
+        pacer.presented(
+            now.checked_sub(Duration::from_millis(step * 250))
+                .ok_or("clock")?,
+        );
+    }
+    app.insert_non_send(pacer);
     {
         let mut owner = app.world_mut().non_send_mut::<HostOwner>();
         let mut preferences = owner.settings.preferences.clone();
@@ -136,21 +189,18 @@ fn overlay_lines_come_from_the_window_scale_owner_modals_and_frame_time() -> Tes
         owner.settings.apply(preferences);
     }
     app.insert_resource(LastCrash(Some("crashes/crash-x.log".into())));
-    // Two 20 ms frames, then enough time for the next refresh.
-    for step in [20, 20, 600] {
-        app.world_mut()
-            .resource_mut::<Time<Real>>()
-            .update_with_duration(Duration::from_millis(step));
-        app.update();
-    }
-    let text = app.world().resource::<OverlayText>().0.clone();
+    app.update();
+    let text = app.world().resource::<DiagnosticsText>().0.clone();
     let lines: Vec<&str> = text.lines().collect();
+    assert!(
+        lines.contains(&"FPS 4  frame avg 250.0 ms  max 250.0 ms"),
+        "{text}"
+    );
     assert!(
         text.contains("Window 1024x720  scale 1.00  UI 125%"),
         "{text}"
     );
     assert!(text.contains("Connection offline  (login)"), "{text}");
-    assert!(text.contains("Open windows 1"), "{text}");
     assert!(text.contains("Log debug  warnings "), "{text}");
     assert!(
         text.contains(&format!("Build {}", crate::CLIENT_BUILD)),
@@ -165,16 +215,7 @@ fn overlay_lines_come_from_the_window_scale_owner_modals_and_frame_time() -> Tes
         .find_map(|line| line.strip_prefix("Entities "))
         .ok_or("entity line")?
         .parse::<u32>()?;
-    assert!(
-        entities >= 7,
-        "panel, caption, body, grip, window and two modals: {entities}"
-    );
-    assert!(
-        lines
-            .iter()
-            .any(|line| line.starts_with("FPS ") && line.contains("max 600.0 ms")),
-        "{text}"
-    );
+    assert!(entities >= 3, "panel, text and window: {entities}");
     // Without play, a renderer or an adapter, those lines are left out, not invented.
     for absent in [
         "Position",
@@ -191,27 +232,43 @@ fn overlay_lines_come_from_the_window_scale_owner_modals_and_frame_time() -> Tes
 }
 
 #[test]
-fn the_overlay_refreshes_at_most_twice_a_second() -> TestResult {
+fn dock_content_shows_the_same_text_while_the_panel_is_hidden() -> TestResult {
     let mut app = app(None)?;
     app.update();
-    let first = app.world().resource::<OverlayText>().0.clone();
-    assert!(!first.is_empty());
-    app.world_mut().spawn((GameModal, Node::default()));
-    app.world_mut()
-        .resource_mut::<Time<Real>>()
-        .update_with_duration(Duration::from_millis(100));
-    app.update();
-    assert_eq!(app.world().resource::<OverlayText>().0, first);
+    let docked = content(&mut app.world_mut().commands());
+    app.world_mut().flush();
     app.world_mut()
         .resource_mut::<Time<Real>>()
         .update_with_duration(overlay::REFRESH);
     app.update();
-    assert!(
-        app.world()
-            .resource::<OverlayText>()
-            .0
-            .contains("Open windows 1")
+    assert_eq!(overlay_display(&mut app)?, Display::None);
+    let text = app.world().resource::<DiagnosticsText>().0.clone();
+    assert!(!text.is_empty());
+    assert_eq!(
+        app.world().get::<Text>(docked).ok_or("docked text")?.0,
+        text
     );
+    Ok(())
+}
+
+#[test]
+fn the_text_refreshes_at_most_twice_a_second() -> TestResult {
+    let mut app = app(None)?;
+    app.update();
+    let first = app.world().resource::<DiagnosticsText>().0.clone();
+    assert!(first.contains("Connection offline"), "{first}");
+    app.world_mut().non_send_mut::<HostOwner>().phase = Phase::Closed;
+    app.world_mut()
+        .resource_mut::<Time<Real>>()
+        .update_with_duration(Duration::from_millis(100));
+    app.update();
+    assert_eq!(app.world().resource::<DiagnosticsText>().0, first);
+    app.world_mut()
+        .resource_mut::<Time<Real>>()
+        .update_with_duration(overlay::REFRESH);
+    app.update();
+    let next = &app.world().resource::<DiagnosticsText>().0;
+    assert!(next.contains("Connection closed  (closing)"), "{next}");
     Ok(())
 }
 
@@ -263,7 +320,7 @@ fn a_panicking_ecs_error_is_logged_with_its_context_and_still_panics() -> TestRe
         logging::KEEP_FILES,
         logging::TOTAL_CAP,
     ));
-    let subscriber = logging::test_subscriber(&file);
+    let subscriber = logging::test_subscriber(&file, "info");
     let outcome = bevy::log::tracing::subscriber::with_default(subscriber, || {
         // A warning-severity error is logged by Bevy and does not panic.
         ecs_error(

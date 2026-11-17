@@ -103,16 +103,13 @@ impl Options {
 
 /// Called only by the executable. Headless tests never install WinitPlugin or run this loop.
 pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::error::Error>> {
-    diagnostics::start_logging();
     let options = Options::parse(args)?;
     crate::desktop_startup::prepare(options.preferences.clone(), options.smoke);
     let mut owner = HostOwner::new(options.preferences.clone())?;
     owner.configure_login(options.login_settings.clone(), |name| {
         std::env::var(name).ok()
     });
-    let last_crash = diagnostics::detect_last_crash();
     let mut app = build_app(options, owner);
-    app.insert_resource(last_crash);
     // App::run transfers the app into its runner. HostOwner::drop owns shutdown there.
     match app.run() {
         AppExit::Success => Ok(()),
@@ -163,8 +160,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
                 primary_window: Some(window),
                 ..default()
             })
-            // `diagnostics::start_logging` owns the process subscriber: stderr, file and ring.
-            .disable::<bevy::log::LogPlugin>(),
+            .set(diagnostics::log_plugin(&owner)),
     )
     .add_plugins((
         oteryn_client_ui_bevy::GlobalUiPlugin,
@@ -226,7 +222,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     account_services::install(&mut app);
     audio::install(&mut app);
     creature_bars::install(&mut app);
-    diagnostics::install(&mut app);
+    app.add_plugins(diagnostics::DiagnosticsPlugin);
     exit::install(&mut app);
     frame_pacing::install(&mut app);
     game_ui::install(&mut app);

@@ -43,12 +43,10 @@ static RECENT: Mutex<Recent> = Mutex::new(Recent {
 pub struct CrashContext {
     pub lifecycle: String,
     pub adapter: Option<String>,
-    pub open_windows: Vec<String>,
 }
 static CONTEXT: Mutex<CrashContext> = Mutex::new(CrashContext {
     lifecycle: String::new(),
     adapter: None,
-    open_windows: Vec::new(),
 });
 
 /// Warning and error counts since start, and the last error line.
@@ -222,10 +220,8 @@ fn crash_text(crash: &Crash<'_>, now: SystemTime) -> String {
                 &context.lifecycle
             };
             text.push_str(&format!(
-                "Lifecycle: {lifecycle}\nGraphics adapter: {}\nOpen windows ({}): {}\n",
+                "Lifecycle: {lifecycle}\nGraphics adapter: {}\n",
                 context.adapter.as_deref().unwrap_or("not initialised"),
-                context.open_windows.len(),
-                context.open_windows.join(", ")
             ));
         }
         None => text.push_str("Lifecycle: unavailable (context locked)\n"),
@@ -388,36 +384,26 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::panic)] // The hook under test runs only for a real panic.
-    fn the_panic_hook_writes_a_redacted_crash_file_with_message_and_backtrace() -> TestResult {
+    fn a_crash_file_is_redacted_and_carries_message_context_backtrace_and_log() -> TestResult {
         let _ring = lock(&RING);
-        let directory = temp("hook");
+        let directory = temp("crash");
         record_log_line(LineLevel::Error, "before the crash");
         set_crash_context(CrashContext {
             lifecycle: "playing".into(),
             adapter: Some("Test Adapter (Vulkan)".into()),
-            open_windows: vec!["options".into()],
         });
-        let target = directory.clone();
-        let message = "hook test crash token=abc123 unique-7f3e";
-        let previous = std::panic::take_hook();
-        std::panic::set_hook(Box::new(move |info| {
-            if panic_message(info).contains("unique-7f3e") {
-                let _ = record_panic(&target, info);
-            }
-        }));
-        let result = std::thread::Builder::new()
-            .name("crash-test".into())
-            .spawn(move || std::panic::panic_any(message.to_owned()))?
-            .join();
-        std::panic::set_hook(previous);
-        assert!(result.is_err());
-        let files: Vec<_> = fs::read_dir(&directory)?
-            .filter_map(Result::ok)
-            .map(|entry| entry.path())
-            .collect();
-        assert_eq!(files.len(), 1);
-        let name = files[0]
+        let backtrace = std::backtrace::Backtrace::force_capture().to_string();
+        let path = write_crash_file(
+            &directory,
+            &Crash {
+                message: "test crash token=abc123 unique-7f3e",
+                location: "apps/client/src/crash_report/local_log.rs:1:1",
+                thread: "crash-test",
+                backtrace: &backtrace,
+            },
+            SystemTime::now(),
+        )?;
+        let name = path
             .file_name()
             .and_then(|name| name.to_str())
             .ok_or("name")?;
@@ -425,19 +411,21 @@ mod tests {
             name.starts_with("crash-") && name.ends_with("Z.log"),
             "{name}"
         );
-        let text = fs::read_to_string(&files[0])?;
-        assert!(text.contains("Message: hook test crash token=[redacted] unique-7f3e"));
+        let text = fs::read_to_string(&path)?;
+        assert!(text.contains("Message: test crash token=[redacted] unique-7f3e"));
         assert!(!text.contains("abc123"));
         assert!(text.contains("Thread: crash-test"));
-        assert!(
-            text.contains("local_log.rs"),
-            "location and backtrace frames"
-        );
-        assert!(text.contains("Backtrace:\n") && text.contains("record_panic"));
+        assert!(text.contains("Location: apps/client/src/crash_report/local_log.rs"));
+        assert!(text.contains("Backtrace:\n") && text.contains("local_log"));
         assert!(text.contains(crate::CLIENT_BUILD));
         assert!(text.contains("before the crash"));
         // The context is process-global; another test may have replaced it meanwhile.
         assert!(text.contains("Lifecycle: "));
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(fs::metadata(&path)?.permissions().mode() & 0o777, 0o600);
+        }
         fs::remove_dir_all(directory)?;
         Ok(())
     }

@@ -1,11 +1,14 @@
 //! Client log output: one redacted formatter feeding stderr, a rolling daily file and the
 //! in-memory ring a crash file reads.
 use crate::crash_report::{LineLevel, Utc, record_log_line, redact};
-use bevy::log::{
-    Level,
-    tracing::Metadata,
-    tracing_subscriber::{
-        EnvFilter, Registry, fmt, layer::SubscriberExt, reload, util::SubscriberInitExt,
+#[cfg(test)]
+use bevy::log::tracing_subscriber::layer::SubscriberExt;
+use bevy::{
+    app::App,
+    log::{
+        BoxedFmtLayer, BoxedLayer, Level, LogPlugin,
+        tracing::Metadata,
+        tracing_subscriber::{EnvFilter, Layer, Registry, fmt, reload},
     },
 };
 use std::{
@@ -127,6 +130,7 @@ impl RollingFile {
 pub(super) struct Sink {
     file: Option<Arc<RollingFile>>,
     stderr: bool,
+    ring: bool,
 }
 pub(super) struct SinkWriter {
     sink: Sink,
@@ -177,6 +181,9 @@ impl Drop for SinkWriter {
             // A full disk must not take the game down with it; the ring still keeps the line.
             let _ = file.write_text(SystemTime::now(), &text);
         }
+        if !self.sink.ring {
+            return;
+        }
         let mut level = self.level;
         for line in text.lines() {
             record_log_line(level, line);
@@ -185,9 +192,43 @@ impl Drop for SinkWriter {
     }
 }
 
-/// The filter for an Options level (`warn`, `info` or `debug`) over Bevy's noise defaults.
-pub(super) fn level_filter(level: &str) -> EnvFilter {
-    EnvFilter::builder().parse_lossy(format!("{level},{}", bevy::log::DEFAULT_FILTER))
+/// Third-party targets that can carry request, token or handshake detail. They stay at `warn`
+/// whatever the level, unless `OTERYN_LOG` names them; redaction is only the backstop.
+const CAPPED_TARGETS: [&str; 15] = [
+    "h2",
+    "hyper",
+    "hyper_util",
+    "naga",
+    "oauth2",
+    "reqwest",
+    "rustls",
+    "tokio_rustls",
+    "tokio_tungstenite",
+    "tungstenite",
+    "ureq",
+    "webpki",
+    "wgpu",
+    "wgpu_core",
+    "wgpu_hal",
+];
+
+/// The filter for an Options level (`warn`, `info` or `debug`), or for an `OTERYN_LOG` value,
+/// with every capped target not named in it held at `warn`.
+pub(super) fn level_filter(directives: &str) -> EnvFilter {
+    let mut text = directives.trim().to_owned();
+    for target in CAPPED_TARGETS {
+        let named = directives.split(',').any(|directive| {
+            directive
+                .trim()
+                .split(['=', '['])
+                .next()
+                .is_some_and(|name| name == target || name.starts_with(&format!("{target}::")))
+        });
+        if !named {
+            text.push_str(&format!(",{target}=warn"));
+        }
+    }
+    EnvFilter::builder().parse_lossy(text)
 }
 
 /// The formatter every sink shares: UTC timestamp, level, target, thread name and id.
@@ -204,36 +245,70 @@ where
         .with_writer(sink)
 }
 
-/// The production formatter over one file sink at info, for tests that read what was logged.
+/// The production filter and file formatter, for tests that read what was logged.
 #[cfg(test)]
-pub(super) fn test_subscriber(file: &Arc<RollingFile>) -> impl bevy::log::tracing::Subscriber {
+pub(super) fn test_subscriber(
+    file: &Arc<RollingFile>,
+    directives: &str,
+) -> impl bevy::log::tracing::Subscriber {
     Registry::default()
-        .with(level_filter("info"))
+        .with(level_filter(directives))
         .with(format_layer(Sink {
             file: Some(Arc::clone(file)),
             stderr: false,
+            ring: true,
         }))
 }
 
+/// What `prepare` hands the `LogPlugin` layer hooks, which are plain function pointers.
+struct Setup {
+    base: Option<PathBuf>,
+    level: &'static str,
+}
+static SETUP: Mutex<Option<Setup>> = Mutex::new(None);
+
 struct Control {
     handle: reload::Handle<EnvFilter, Registry>,
-    environment: bool,
     directory: Option<PathBuf>,
 }
 static CONTROL: OnceLock<Control> = OnceLock::new();
 
-/// Installs the process-wide subscriber once; the file sink lives in `base/logs`. Returns the
-/// filter source, for the startup line.
-pub(in crate::bevy_shell) fn install(base: Option<&Path>, level: &str) -> &'static str {
-    let environment = std::env::var(ENV_OVERRIDE)
+fn environment() -> Option<String> {
+    std::env::var(ENV_OVERRIDE)
         .ok()
-        .filter(|value| !value.trim().is_empty());
-    let filter = match &environment {
-        Some(value) => EnvFilter::builder().parse_lossy(value),
-        None => level_filter(level),
-    };
-    let (filter, handle) = reload::Layer::new(filter);
-    let file = base.map(|base| {
+        .filter(|value| !value.trim().is_empty())
+}
+
+/// Bevy's `LogPlugin` with the Oteryn layers: a reloadable filter, the rolling file and crash
+/// ring (custom layer) and a redacted stderr formatter (replacing Bevy's unredacted one). The
+/// Options level comes from the saved preferences, read before the plugin starts.
+pub(in crate::bevy_shell) fn plugin(base: Option<PathBuf>, level: &'static str) -> LogPlugin {
+    *SETUP.lock().unwrap_or_else(PoisonError::into_inner) = Some(Setup { base, level });
+    let environment = environment();
+    LogPlugin {
+        // Bevy's own gate stays wide; the reloadable Oteryn filter decides.
+        level: if environment.is_some() {
+            Level::TRACE
+        } else {
+            Level::DEBUG
+        },
+        filter: environment.map_or_else(
+            || bevy::log::DEFAULT_FILTER.to_owned(),
+            |value| format!("{},{value}", bevy::log::DEFAULT_FILTER),
+        ),
+        custom_layer,
+        fmt_layer,
+    }
+}
+
+fn custom_layer(_: &mut App) -> Option<BoxedLayer> {
+    let setup = SETUP
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .take()?;
+    let directives = environment().unwrap_or_else(|| setup.level.to_owned());
+    let (filter, handle) = reload::Layer::new(level_filter(&directives));
+    let file = setup.base.map(|base| {
         Arc::new(RollingFile::new(
             base.join(crate::crash_report::LOG_DIRECTORY),
             KEEP_FILES,
@@ -241,30 +316,36 @@ pub(in crate::bevy_shell) fn install(base: Option<&Path>, level: &str) -> &'stat
         ))
     });
     let directory = file.as_ref().map(|file| file.directory().to_path_buf());
-    let sink = Sink { file, stderr: true };
-    let installed = Registry::default()
-        .with(filter)
-        .with(format_layer(sink))
-        .try_init()
-        .is_ok();
-    if installed {
-        let _ = CONTROL.set(Control {
-            handle,
-            environment: environment.is_some(),
-            directory,
-        });
-    }
-    if environment.is_some() {
+    let _ = CONTROL.set(Control { handle, directory });
+    let sink = Sink {
+        file,
+        stderr: false,
+        ring: true,
+    };
+    Some(Box::new(filter.and_then(format_layer(sink))))
+}
+
+fn fmt_layer(_: &mut App) -> Option<BoxedFmtLayer> {
+    Some(Box::new(format_layer(Sink {
+        file: None,
+        stderr: true,
+        ring: false,
+    })))
+}
+
+/// Where the active filter came from, for the startup line.
+pub(in crate::bevy_shell) fn filter_source() -> &'static str {
+    if environment().is_some() {
         ENV_OVERRIDE
     } else {
         "Options"
     }
 }
 
-/// Applies an Options level unless `OTERYN_LOG` set the filter.
+/// Applies an Options level at once, unless `OTERYN_LOG` set the filter.
 pub(in crate::bevy_shell) fn set_level(level: &str) {
     if let Some(control) = CONTROL.get()
-        && !control.environment
+        && environment().is_none()
     {
         let _ = control.handle.reload(level_filter(level));
     }
@@ -370,7 +451,7 @@ mod tests {
     fn formatted_lines_carry_time_level_target_thread_and_are_redacted() -> TestResult {
         let directory = temp("format");
         let file = Arc::new(RollingFile::new(directory.clone(), KEEP_FILES, TOTAL_CAP));
-        let subscriber = test_subscriber(&file);
+        let subscriber = test_subscriber(&file, "info");
         std::thread::Builder::new()
             .name("format-test".into())
             .spawn(move || {
@@ -392,6 +473,27 @@ mod tests {
         assert!(line.contains("oteryn_test:"), "{line}");
         assert!(line.contains("password=[redacted]") && !line.contains("hunter2"));
         assert!(!text.contains("hidden at info"));
+        fs::remove_dir_all(directory)?;
+        Ok(())
+    }
+
+    #[test]
+    fn third_party_targets_stay_at_warn_unless_named() -> TestResult {
+        let directory = temp("caps");
+        let file = Arc::new(RollingFile::new(directory.clone(), KEEP_FILES, TOTAL_CAP));
+        for (directives, shown) in [("debug", false), ("debug,hyper=debug", true)] {
+            tracing::subscriber::with_default(test_subscriber(&file, directives), || {
+                tracing::debug!(target: "hyper::client", "hyper detail {directives}");
+                tracing::warn!(target: "hyper::client", "hyper warning {directives}");
+                tracing::debug!(target: "oteryn_client::play", "client detail {directives}");
+            });
+            let text = fs::read_to_string(
+                directory.join(format!("client-{}.log", Utc::at(SystemTime::now()).date())),
+            )?;
+            assert_eq!(text.contains(&format!("hyper detail {directives}")), shown);
+            assert!(text.contains(&format!("hyper warning {directives}")));
+            assert!(text.contains(&format!("client detail {directives}")));
+        }
         fs::remove_dir_all(directory)?;
         Ok(())
     }

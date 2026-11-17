@@ -141,6 +141,10 @@ impl HostOwner {
                 crate::play::CustomAction::Utility {
                     action: crate::play::UtilityAction::ShowOptionsHotkeys,
                 } => hotkey_options = true,
+                // Diagnostics never take a chord from the player's typing.
+                crate::play::CustomAction::Utility {
+                    action: crate::play::UtilityAction::ToggleDiagnosticsOverlay,
+                } if chat => {}
                 crate::play::CustomAction::Utility { action } => {
                     self.settings.run_utility(&play.link, *action);
                 }

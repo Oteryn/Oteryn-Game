@@ -13,7 +13,7 @@ pub(super) const ROWS: [Row; 2] = [
     },
     check!(
         "diagnostics.overlay",
-        "Show diagnostics overlay (Ctrl+Shift+D)",
+        "Show diagnostics overlay",
         diagnostics.overlay
     ),
 ];

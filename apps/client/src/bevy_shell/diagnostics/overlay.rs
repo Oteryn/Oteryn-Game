@@ -1,97 +1,53 @@
-//! The diagnostics overlay: a movable, resizable monospace panel refreshed twice a second from
-//! the client's own state, plus the Options > Diagnostics buttons.
+//! The diagnostics text provider and its plain fixed panel, refreshed twice a second from the
+//! client's own state, plus the Options > Diagnostics buttons. The panel content can be
+//! registered in a window dock through [`content`].
 use super::super::{
-    game_ui::{GameModal, modal::ModalGuard},
+    game_ui::modal::ModalGuard,
     owner::{HostOwner, Phase},
     ui::Skins,
-    window_drag::DraggableDialog,
 };
+use crate::play::PerformancePacer;
 use bevy::{
     ecs::entity::Entities,
     log::{info, warn},
-    picking::events::PointerDrag,
     prelude::*,
     render::renderer::RenderAdapterInfo,
     ui_widgets::Activate,
     window::PrimaryWindow,
 };
 use oteryn_client_ui_bevy as source;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-/// Overlay text refresh period.
+/// Text refresh period.
 pub(super) const REFRESH: Duration = Duration::from_millis(500);
 /// Log lines added to "Copy diagnostics".
 pub(super) const COPIED_LOG_LINES: usize = 50;
-const MIN_SIZE: Vec2 = Vec2::new(220., 120.);
 
+/// The fixed panel the overlay option shows.
 #[derive(Component)]
-pub(super) struct Overlay;
+pub(in crate::bevy_shell) struct Overlay;
+/// A text node that shows [`DiagnosticsText`]; [`content`] spawns one.
 #[derive(Component)]
-pub(super) struct OverlayBody;
-#[derive(Component)]
-struct ResizeGrip;
+pub(in crate::bevy_shell) struct OverlayBody;
 #[derive(Component, Clone, Copy)]
 pub(super) enum DiagnosticsButton {
     OpenLogFolder,
     CopyDiagnostics,
 }
 
-/// Frame times since the last refresh.
-#[derive(Resource, Default)]
-pub(super) struct Samples {
-    frames: u32,
-    total: Duration,
-    max: Duration,
-    since_refresh: Duration,
-    refreshed: bool,
-}
-/// The current overlay text; "Copy diagnostics" copies the same text.
+/// The current diagnostics lines, one per row; "Copy diagnostics" copies the same text.
 #[derive(Resource, Default, Clone, Debug, PartialEq, Eq)]
-pub(super) struct OverlayText(pub String);
+pub(in crate::bevy_shell) struct DiagnosticsText(pub String);
 
-pub(super) fn setup(mut commands: Commands) {
-    let font = TextFont::from_font_size(11.);
-    let panel = commands
-        .spawn((
-            Overlay,
-            DraggableDialog,
-            Name::new("diagnostics.overlay"),
-            Node {
-                position_type: PositionType::Absolute,
-                left: px(8.),
-                top: px(24.),
-                width: px(380.),
-                height: px(330.),
-                flex_direction: FlexDirection::Column,
-                overflow: Overflow::clip(),
-                display: Display::None,
-                ..default()
-            },
-            BackgroundColor(Color::srgba(0.02, 0.02, 0.02, 0.82)),
-            BorderColor::all(Color::srgb(0.35, 0.35, 0.35)),
-            GlobalZIndex(400),
-        ))
-        .id();
-    let caption = commands
-        .spawn((
-            Text::new("Diagnostics — Ctrl+Shift+D"),
-            font.clone(),
-            TextColor(Color::srgb(0.9, 0.8, 0.5)),
-            Node {
-                height: px(17.),
-                flex_shrink: 0.,
-                padding: UiRect::horizontal(px(4.)),
-                ..default()
-            },
-            BackgroundColor(Color::srgb(0.12, 0.12, 0.12)),
-            Pickable::IGNORE,
-        ))
-        .id();
-    let body = commands
+/// Spawns the monospace text content that shows [`DiagnosticsText`], for the fixed panel here
+/// or a dock window.
+pub(in crate::bevy_shell) fn content(commands: &mut Commands) -> Entity {
+    commands
         .spawn((
             OverlayBody,
+            Name::new("diagnostics.text"),
             Text::new(""),
-            font,
+            TextFont::from_font_size(11.),
             TextColor(Color::srgb(0.85, 0.95, 0.85)),
             Node {
                 padding: UiRect::all(px(4.)),
@@ -99,66 +55,36 @@ pub(super) fn setup(mut commands: Commands) {
             },
             Pickable::IGNORE,
         ))
-        .id();
-    let grip = commands
+        .id()
+}
+
+pub(super) fn setup(mut commands: Commands) {
+    let body = content(&mut commands);
+    commands
         .spawn((
-            ResizeGrip,
-            Name::new("diagnostics.overlay.resize"),
+            Overlay,
+            Name::new("diagnostics.overlay"),
             Node {
                 position_type: PositionType::Absolute,
-                right: px(0.),
-                bottom: px(0.),
-                width: px(12.),
-                height: px(12.),
+                right: px(8.),
+                top: px(24.),
+                width: px(380.),
+                flex_direction: FlexDirection::Column,
+                display: Display::None,
                 ..default()
             },
-            BackgroundColor(Color::srgb(0.45, 0.45, 0.45)),
+            BackgroundColor(Color::srgba(0.02, 0.02, 0.02, 0.82)),
+            GlobalZIndex(400),
+            Pickable::IGNORE,
         ))
-        .observe(resize)
-        .id();
-    commands.entity(panel).add_children(&[caption, body, grip]);
-}
-
-fn resize(
-    mut event: On<PointerDrag>,
-    scale: Res<UiScale>,
-    parents: Query<&ChildOf>,
-    mut panels: Query<(&mut Node, &ComputedNode), With<Overlay>>,
-) {
-    event.propagate(false);
-    let Ok(parent) = parents.get(event.entity) else {
-        return;
-    };
-    let Ok((mut node, computed)) = panels.get_mut(parent.parent()) else {
-        return;
-    };
-    let factor = if scale.0.is_finite() && scale.0 > 0. {
-        scale.0
-    } else {
-        1.
-    };
-    let current = computed.size * computed.inverse_scale_factor;
-    let size = (current + event.delta / factor).max(MIN_SIZE);
-    if size.is_finite() {
-        node.width = px(size.x);
-        node.height = px(size.y);
-    }
-}
-
-/// Counts every frame's real duration.
-pub(super) fn sample(time: Res<Time<Real>>, mut samples: ResMut<Samples>) {
-    let delta = time.delta();
-    samples.frames = samples.frames.saturating_add(1);
-    samples.total += delta;
-    samples.max = samples.max.max(delta);
-    samples.since_refresh += delta;
+        .add_child(body);
 }
 
 /// The values the overlay shows; a value the client does not have is `None` and its line is
 /// left out.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(super) struct Snapshot {
-    pub frames: Option<(f32, f32, f32)>,
+    pub frames: Option<(u64, Duration)>,
     pub entities: u32,
     pub connection: &'static str,
     pub lifecycle: &'static str,
@@ -171,16 +97,17 @@ pub(super) struct Snapshot {
     pub adapter: Option<String>,
     pub memory: Option<u64>,
     pub counters: crate::crash_report::LogCounters,
-    pub open_windows: Vec<String>,
     pub log_level: &'static str,
     pub last_crash: Option<String>,
 }
 impl Snapshot {
     pub fn lines(&self) -> Vec<String> {
         let mut lines = Vec::new();
-        if let Some((fps, average, max)) = self.frames {
+        if let Some((fps, max)) = self.frames {
             lines.push(format!(
-                "FPS {fps:.0}  frame avg {average:.1} ms  max {max:.1} ms"
+                "FPS {fps}  frame avg {:.1} ms  max {:.1} ms",
+                1000. / fps.max(1) as f64,
+                max.as_secs_f64() * 1000.
             ));
         }
         lines.push(format!("Entities {}", self.entities));
@@ -224,7 +151,6 @@ impl Snapshot {
         if let Some(error) = &self.counters.last_error {
             lines.push(format!("Last error {error}"));
         }
-        lines.push(format!("Open windows {}", self.open_windows.len()));
         if let Some(crash) = &self.last_crash {
             lines.push(crash.clone());
         }
@@ -268,48 +194,25 @@ fn character_text(identity: [u8; 16]) -> String {
     )
 }
 
-/// A dialog's layout, visibility and name, for the open-windows line.
-type ModalRow = (
-    &'static Node,
-    Option<&'static Visibility>,
-    Option<&'static Name>,
-);
-
 #[allow(clippy::too_many_arguments)] // One read of each real source the overlay names.
-/// Rebuilds the text and the crash context every [`REFRESH`].
+/// Rebuilds the text and the crash context every [`REFRESH`] of real time.
 pub(super) fn refresh(
     owner: NonSend<HostOwner>,
+    pacer: Option<NonSend<PerformancePacer>>,
     entities: &Entities,
+    time: Res<Time<Real>>,
     windows: Query<&Window, With<PrimaryWindow>>,
     scale: Option<Res<UiScale>>,
     adapter: Option<Res<RenderAdapterInfo>>,
-    modals: Query<ModalRow, With<GameModal>>,
     last_crash: Res<super::LastCrash>,
-    mut samples: ResMut<Samples>,
-    mut text: ResMut<OverlayText>,
+    mut refreshed: Local<Option<Duration>>,
+    mut text: ResMut<DiagnosticsText>,
 ) {
-    if samples.refreshed && samples.since_refresh < REFRESH {
+    let now = time.elapsed();
+    if refreshed.is_some_and(|at| now.saturating_sub(at) < REFRESH) {
         return;
     }
-    let frames = (samples.frames > 0 && !samples.total.is_zero()).then(|| {
-        let seconds = samples.total.as_secs_f32();
-        (
-            samples.frames as f32 / seconds,
-            seconds * 1000. / samples.frames as f32,
-            samples.max.as_secs_f32() * 1000.,
-        )
-    });
-    *samples = Samples {
-        refreshed: true,
-        ..default()
-    };
-    let open_windows: Vec<String> = modals
-        .iter()
-        .filter(|(node, visibility, _)| {
-            node.display != Display::None && *visibility != Some(&Visibility::Hidden)
-        })
-        .map(|(_, _, name)| name.map_or_else(|| "unnamed".to_owned(), |name| name.to_string()))
-        .collect();
+    *refreshed = Some(now);
     let adapter = adapter.map(|info| {
         format!(
             "{} ({:?}, {} {})",
@@ -318,7 +221,7 @@ pub(super) fn refresh(
     });
     let play = owner.play.as_ref();
     let snapshot = Snapshot {
-        frames,
+        frames: pacer.and_then(|pacer| pacer.measured(Instant::now())),
         entities: entities.count_spawned(),
         connection: connection(owner.phase),
         lifecycle: super::lifecycle(&owner),
@@ -341,7 +244,6 @@ pub(super) fn refresh(
         adapter: adapter.clone(),
         memory: resident_memory(),
         counters: crate::crash_report::log_counters(),
-        open_windows: open_windows.clone(),
         log_level: owner.settings.preferences.diagnostics.level_name(),
         last_crash: last_crash.message(),
     };
@@ -352,13 +254,12 @@ pub(super) fn refresh(
     crate::crash_report::set_crash_context(crate::crash_report::CrashContext {
         lifecycle: snapshot.lifecycle.to_owned(),
         adapter,
-        open_windows,
     });
 }
 
 pub(super) fn project(
     owner: NonSend<HostOwner>,
-    text: Res<OverlayText>,
+    text: Res<DiagnosticsText>,
     mut panels: Query<&mut Node, With<Overlay>>,
     mut bodies: Query<&mut Text, With<OverlayBody>>,
 ) {
@@ -371,9 +272,6 @@ pub(super) fn project(
         if node.display != display {
             node.display = display;
         }
-    }
-    if display == Display::None {
-        return;
     }
     for mut body in &mut bodies {
         if body.0 != text.0 {
@@ -444,7 +342,7 @@ fn activate(
     event: On<Activate>,
     buttons: Query<&DiagnosticsButton>,
     guard: ModalGuard,
-    text: Res<OverlayText>,
+    text: Res<DiagnosticsText>,
     clipboard: Option<ResMut<bevy::clipboard::Clipboard>>,
 ) {
     if !guard.allows(event.entity) {
