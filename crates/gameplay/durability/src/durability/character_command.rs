@@ -21,6 +21,7 @@ use crate::native_admission_source::character_commands::{
     counter, source_authority_valid, uuid_v7,
 };
 pub mod account_deletion;
+mod retained_receipts;
 
 use oteryn_gameplay_characters::character_authority_audit::{
     EVENT_SCHEMA_REVISION, EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED, RETENTION_PROFILE,

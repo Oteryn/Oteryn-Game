@@ -471,6 +471,14 @@ pub enum Decision {
 
 /// The Character Authority side of the consumer.
 pub trait Decider: Send {
+    /// Fenced immutable create receipts, independent of the retired intent feed.
+    fn next_retained_create_receipt(
+        &mut self,
+        _after: Option<&str>,
+    ) -> impl Future<Output = Result<Option<(String, Vec<u8>)>, ()>> + Send {
+        async { Ok(None) }
+    }
+
     /// Legacy implementations have no v2 receipt to stop.
     fn stop_services_receipt(
         &mut self,
@@ -1025,7 +1033,29 @@ pub async fn run_account_closure_publications<C: ReportClock, S: CommandSource, 
     event: fn(&str),
 ) {
     let mut backoff = POLL;
+    let mut create_cursor: Option<String> = None;
+    let mut creates_drained = false;
     loop {
+        if !creates_drained {
+            match decider
+                .next_retained_create_receipt(create_cursor.as_deref())
+                .await
+            {
+                Ok(Some((operation, receipt))) => {
+                    if let Ok(body) = std::str::from_utf8(&receipt)
+                        && let Ok(raw) = source
+                            .exchange(Operation::PublishCharacterCommandReceiptV1, body)
+                            .await
+                        && decode_receipt_response(&raw).is_ok()
+                    {
+                        create_cursor = Some(operation);
+                    }
+                }
+                Ok(None) => creates_drained = true,
+                Err(()) => {}
+            }
+        }
+
         let mut delay = POLL;
         if let Some(publication) = decider.next_closure_publication().await {
             match source
