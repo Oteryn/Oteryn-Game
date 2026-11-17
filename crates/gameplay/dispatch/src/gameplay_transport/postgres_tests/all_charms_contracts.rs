@@ -553,11 +553,20 @@ fn all25_critical_charms_use_actual_assignment_with_intrinsic_critical_and_no_eq
 }
 
 fn enrage_fixture(base_health: i64) -> TestResult<(Fixture, ExactActorRef)> {
+    enrage_fixture_with_identity(base_health, None)
+}
+fn enrage_fixture_with_identity(
+    base_health: i64,
+    identity: Option<(crate::foundation::WorldId, GameSessionId, CharacterLease)>,
+) -> TestResult<(Fixture, ExactActorRef)> {
     use crate::foundation::{ChannelContentPin, NodeId, RuntimeScopeRefV1, WorldId};
     use oteryn_gameplay_domain::domain::soulpit::BossAbility;
     use oteryn_gameplay_entities::carrier::soulpit::SoulpitWaveRequest;
     let id = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
-    let world = WorldId::decode(&id(72)).map_err(|e| format!("{e:?}"))?;
+    let world = identity.map_or_else(
+        || WorldId::decode(&id(72)).map_err(|e| format!("{e:?}")),
+        |(world, _, _)| Ok(world),
+    )?;
     let pin = ChannelContentPin::from_activation(
         world,
         1,
@@ -578,7 +587,10 @@ fn enrage_fixture(base_health: i64) -> TestResult<(Fixture, ExactActorRef)> {
         pin,
     )
     .map_err(|e| format!("{e:?}"))?;
-    let session = GameSessionId::decode(&id(75)).map_err(|e| format!("{e:?}"))?;
+    let session = identity.map_or_else(
+        || GameSessionId::decode(&id(75)).map_err(|e| format!("{e:?}")),
+        |(_, session, _)| Ok(session),
+    )?;
     let reservation = runtime
         .reserve_fresh_session(session)
         .map_err(|e| format!("{e:?}"))?;
@@ -588,13 +600,19 @@ fn enrage_fixture(base_health: i64) -> TestResult<(Fixture, ExactActorRef)> {
     runtime
         .initialize_first_entry_position(actor)
         .map_err(|e| format!("{e:?}"))?;
-    let character = CharacterId::decode(&id(76)).map_err(|e| format!("{e:?}"))?;
+    let lease = identity.map_or_else(
+        || {
+            CharacterLease::new(
+                CharacterId::decode(&id(76)).map_err(|e| format!("{e:?}"))?,
+                1,
+            )
+            .map_err(|e| format!("{e:?}"))
+        },
+        |(_, _, lease)| Ok(lease),
+    )?;
+    let character = lease.character_id();
     runtime
-        .bind_attacker_lease(
-            actor,
-            session,
-            CharacterLease::new(character, 1).map_err(|e| format!("{e:?}"))?,
-        )
+        .bind_attacker_lease(actor, session, lease)
         .map_err(|e| format!("{e:?}"))?;
     let policy = CompiledCreaturePolicy {
         definition_key: RACE.into(),
@@ -1053,4 +1071,307 @@ fn incoming_order_enrage_parry_uses_actual_source_survival_for_numb() -> TestRes
         "Numb must use the actual still-living source, not raw Parry >= source HP prediction"
     );
     Ok(())
+}
+
+#[test]
+fn charm_gaps_overdue_cleanse_settles_before_second_tick() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("charm-gaps-cleanse", || {
+        charm_gaps_periodic("cleanse")
+    })
+}
+#[test]
+fn charm_gaps_overdue_parry_is_sequential() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("charm-gaps-parry", || {
+        charm_gaps_periodic("parry")
+    })
+}
+#[test]
+fn charm_gaps_periodic_numb_uses_reduced_source_health() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("charm-gaps-numb", || charm_gaps_periodic("numb"))
+}
+
+fn charm_gaps_periodic(mode: &str) -> TestResult {
+    charm_gaps_periodic_fixture(mode, enrage_fixture(100)?)
+}
+fn charm_gaps_periodic_fixture(
+    mode: &str,
+    (mut f, source): (Fixture, ExactActorRef),
+) -> TestResult {
+    use crate::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, DamageSchedule, DamageSegment, TickFacts,
+    };
+    use oteryn_gameplay_domain::domain::condition::{ConflictKey, DotElement};
+    let maximum = f
+        .runtime
+        .companion_snapshot(source)
+        .map_err(|e| format!("{e:?}"))?
+        .maximum_health;
+    let health = if mode == "numb" {
+        maximum * 3 / 10
+    } else {
+        maximum * 41 / 100
+    };
+    f.runtime
+        .set_test_creature_health(source, health)
+        .map_err(|e| format!("{e:?}"))?;
+    f.states
+        .get_mut(&f.runtime, f.actor, f.session)
+        .ok_or("player")?
+        .restore_saved_vitals(if mode == "cleanse" { 15 } else { 185 }, 30);
+    let names: &[&str] = if mode == "cleanse" {
+        &["cleanse"]
+    } else {
+        &["parry", "numb"]
+    };
+    let catalogue = super::all_charms_incoming_order::assign_charms(
+        &mut f.states,
+        &f.runtime,
+        source,
+        f.actor,
+        f.session,
+        names,
+    );
+    let amount = if mode == "cleanse" {
+        10
+    } else if mode == "numb" {
+        u32::try_from(health * 4 / 3)?
+    } else {
+        u32::try_from(maximum / 10)?
+    };
+    let definition = ConditionDefinition::new_damage_schedule(
+        "fixture:gaps-poison",
+        1,
+        DotElement::Poison,
+        DamageSchedule::Fixed {
+            delayed: true,
+            segments: vec![DamageSegment {
+                count: 3,
+                interval_ms: 1000,
+                amount,
+            }],
+        },
+    )
+    .ok_or("poison")?;
+    let facts = ApplicationFacts {
+        now: 100_000,
+        base_speed: 220,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &f.root,
+        occurrence: DecisionOccurrenceId::from_bytes([92; 16]),
+    };
+    assert!(f.states.install_owned_source_condition_fixture(
+        &f.runtime,
+        f.actor,
+        f.session,
+        source,
+        &[definition],
+        &facts
+    ));
+    let now = 2_100_000;
+    let result = f
+        .states
+        .tick_source_player_conditions_with_charms(
+            &mut f.runtime,
+            f.actor,
+            f.session,
+            TickFacts::default(),
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
+            Some(&catalogue),
+        )
+        .ok_or("periodic settlement")?;
+    if mode == "cleanse" {
+        assert_eq!(result.damage, 10);
+        assert!(result.death.is_none());
+        let state = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .ok_or("player")?;
+        assert_eq!(state.vitals().health, 5);
+        assert!(
+            state
+                .owned_conditions()
+                .cleanse_immunity_remaining(ConflictKey::Element(DotElement::Poison), now)
+                > 0
+        );
+    } else {
+        let tag = f.runtime.soulpit_variant(source).ok_or("Enrage")?;
+        let first = tag
+            .incoming_health_change(i64::from(amount), health, maximum)
+            .map_err(|e| format!("{e:?}"))?;
+        let after_first = health - first;
+        let expected = if mode == "numb" {
+            after_first
+        } else {
+            after_first
+                - tag
+                    .incoming_health_change(i64::from(amount), after_first, maximum)
+                    .map_err(|e| format!("{e:?}"))?
+        };
+        assert_eq!(
+            f.runtime
+                .companion_snapshot_including_dead(source)
+                .map_err(|e| format!("{e:?}"))?
+                .health,
+            expected
+        );
+        assert!(
+            f.runtime
+                .actor_active_speed_delta(source, None, SemanticTimeMicros::from_micros(now))
+                .map_err(|e| format!("{e:?}"))?
+                < 0,
+            "Numb follows authoritative source survival"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn charm_gaps_native_bite_reflections_are_sequential() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("charm-gaps-native", || {
+        charm_gaps_native(true, false)
+    })
+}
+#[test]
+fn charm_gaps_equipment_first_reflections_are_sequential() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("charm-gaps-equipment", || {
+        charm_gaps_native(false, false)
+    })
+}
+#[test]
+fn charm_gaps_nonlethal_raw_parry_keeps_equipment_and_numb() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("charm-gaps-alive", || {
+        charm_gaps_native(true, true)
+    })
+}
+
+fn charm_gaps_native(native_bite: bool, raw_lethal: bool) -> TestResult {
+    charm_gaps_native_fixture(native_bite, raw_lethal, enrage_fixture(10_000)?)
+}
+fn charm_gaps_native_fixture(
+    native_bite: bool,
+    raw_lethal: bool,
+    (mut f, source): (Fixture, ExactActorRef),
+) -> TestResult {
+    use crate::player_lethal::{PlayerHitKind, PlayerLethalVitals, SourceHitEquipment};
+    use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
+    let maximum = f
+        .runtime
+        .companion_snapshot(source)
+        .map_err(|e| format!("{e:?}"))?
+        .maximum_health;
+    let health = if raw_lethal {
+        maximum * 3 / 10
+    } else if native_bite {
+        maximum * 41 / 100
+    } else {
+        maximum * 405 / 1000
+    };
+    f.runtime
+        .set_test_creature_health(source, health)
+        .map_err(|e| format!("{e:?}"))?;
+    let catalogue = super::all_charms_incoming_order::assign_charms(
+        &mut f.states,
+        &f.runtime,
+        source,
+        f.actor,
+        f.session,
+        &["parry", "numb"],
+    );
+    let parry = u32::try_from(if raw_lethal {
+        health * 4 / 3
+    } else {
+        maximum / 10
+    })?;
+    let offence = EquippedOffence {
+        reflect_percent: 10_000,
+        ..Default::default()
+    };
+    let equipment = offence.reflected(10_000, true, 1, u64::try_from(maximum)?);
+    f.states
+        .get_mut(&f.runtime, f.actor, f.session)
+        .ok_or("player")?
+        .install_equipped_offence(offence);
+    let tag = f.runtime.soulpit_variant(source).ok_or("Enrage")?;
+    let mut expected = health;
+    for amount in if native_bite {
+        [parry, equipment]
+    } else {
+        [equipment, parry]
+    } {
+        expected -= tag
+            .incoming_health_change(i64::from(amount), expected, maximum)
+            .map_err(|e| format!("{e:?}"))?;
+    }
+    assert!(expected > 0);
+    let mut attack = crate::gameplay_transport::attack::ChannelAttackStates::default();
+    let mut vitals = charm_combat::source_vitals::CharmSourceVitals {
+        states: &mut f.states,
+        attack: &mut attack,
+        catalogue: &catalogue,
+        root: GameplayDecisionRoot::from_bytes(f.runtime.content_pin().server_artifact_digest()),
+    };
+    let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000);
+    vitals
+        .apply_source_incoming_hit(
+            &mut f.runtime,
+            source,
+            f.actor,
+            f.session,
+            10,
+            parry,
+            None,
+            PlayerHitKind::Mitigated,
+            "charm-gaps-native",
+            now,
+            None,
+            Some(SourceHitEquipment {
+                native_bite,
+                magnitude: 10_000,
+                element: Some("physical"),
+                stream: b"charm-gaps-native",
+            }),
+        )
+        .ok_or("native hit")?;
+    assert_eq!(
+        f.runtime
+            .companion_snapshot(source)
+            .map_err(|e| format!("{e:?}"))?
+            .health,
+        expected,
+        "each occurrence uses the preceding reduced successor"
+    );
+    assert!(
+        f.runtime
+            .actor_active_speed_delta(source, None, SemanticTimeMicros::from_micros(now.get()))
+            .map_err(|e| format!("{e:?}"))?
+            < 0,
+        "living source receives Numb"
+    );
+    Ok(())
+}
+
+pub(super) fn charm_gaps_durable_player(
+    world: crate::foundation::WorldId,
+    session: GameSessionId,
+    lease: CharacterLease,
+    mode: &str,
+) -> TestResult {
+    let base_health = if mode.starts_with("native") {
+        10_000
+    } else {
+        100
+    };
+    let fixture = enrage_fixture_with_identity(base_health, Some((world, session, lease)))?;
+    if mode.starts_with("native") {
+        charm_gaps_native_fixture(
+            mode != "native-equipment-first",
+            mode == "native-raw-lethal",
+            fixture,
+        )
+    } else {
+        charm_gaps_periodic_fixture(mode, fixture)
+    }
 }
