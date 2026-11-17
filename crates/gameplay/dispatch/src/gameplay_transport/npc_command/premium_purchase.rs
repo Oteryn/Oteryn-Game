@@ -220,10 +220,13 @@ pub(super) async fn apply(
             )
             .await
         {
-            Ok(Some(_)) => NpcConversations::bank_reply(
-                &intent,
-                "I'll give you one of our experienced ones. Take care!".into(),
-            ),
+            Ok(Some(_)) => NpcTalkOutcome {
+                inventory_changed: true,
+                ..NpcConversations::bank_reply(
+                    &intent,
+                    "I'll give you one of our experienced ones. Take care!".into(),
+                )
+            },
             Ok(None) => NpcConversations::bank_reply(&intent, "Sorry, not possible.".into()),
             Err(_) => unknown(),
         };
