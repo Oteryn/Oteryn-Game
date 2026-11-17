@@ -120,15 +120,6 @@ async fn exercise(admin: String) -> TestResult {
     let at = selector.position;
     let key = oteryn_world_bundle::bundle::placement_key(at.floor, at.x, at.y, selector.ordinal)
         .ok_or("telescope placement")?;
-    let map = owner.bundle_map().ok_or("published World map")?;
-    let mut placement = map.overlay.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    let payload = encode_use_intent(&WorldObjectTarget {
-        placement,
-        expected_revision: map.facts.object_revision(key),
-    })
-    .map_err(debug)?;
-
     let mut saw_water = false;
     let mut found_spot = false;
     for attempt in 0_u8..96 {
@@ -149,6 +140,14 @@ async fn exercise(admin: String) -> TestResult {
             .clock_origin
             .checked_sub(std::time::Duration::from_secs(2))
             .ok_or("world-use cooldown")?;
+        let map = owner.bundle_map().ok_or("published World map")?;
+        let mut placement = map.overlay.base().digest().to_vec();
+        placement.extend_from_slice(&key.to_be_bytes());
+        let payload = encode_use_intent(&WorldObjectTarget {
+            placement,
+            expected_revision: map.facts.object_revision(key),
+        })
+        .map_err(debug)?;
         let command = admitted.continuity.next_command_id;
         let reply =
             super::quest_world_callbacks::wire(&owner, &mut admitted, command, 2, payload.clone())
