@@ -425,7 +425,8 @@ async fn shop(
         .npcs
         .iter()
         .find(|n| n.key == "oteryn:npc.sam")
-        .ok_or("MP03 compiled Sam NPC absent")?;
+        // The bundle NPC table holds only placed NPCs; Sam is not in the placement scope.
+        .ok_or("MP03 CONTENT_GAP compiled Sam NPC absent; oteryn:npc.sam absent from tools/content-schema/npc-authoring/npc_placement_scope.json:4 npcs, so content/world/npc-placements has no Sam record")?;
     let from = tile(players[side].client()?.world_spatial().actor_position)?;
     let path = route(world, from, |at| {
         merchant
