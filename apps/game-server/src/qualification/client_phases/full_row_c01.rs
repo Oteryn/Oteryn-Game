@@ -68,7 +68,7 @@ impl Row {
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
     // Earning the club and armour is real rat hunting; its budget joins the 900 s of combat.
-    let earning = full_gold::budget(needed_gold(&[(CLUB, oteryn_protocol_oteryn::item_view::EquipmentSlot::RightHand), (LEATHER_ARMOR, oteryn_protocol_oteryn::item_view::EquipmentSlot::Armor)]).unwrap_or_default());
+    let earning = full_gold::allowance(needed_gold(&[(CLUB, oteryn_protocol_oteryn::item_view::EquipmentSlot::RightHand), (LEATHER_ARMOR, oteryn_protocol_oteryn::item_view::EquipmentSlot::Armor)]).unwrap_or_default());
     let result = match verdict::indexed_timeout(earning + Duration::from_secs(900), verdict::observe(journey(&mut row, clients))).await {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout need=responsive-combat-lifecycle".into()),

@@ -3436,7 +3436,8 @@ async fn continuation_rows(clients: &SeamClients<'_>) {
         let mut completed = false;
         let mut result = watch
             .bound(
-                Duration::from_secs(1_800),
+                // P21 earns its imbuing gold by real hunting, which S08 never does.
+                Duration::from_secs(if id == "P21" { 3_600 } else { 1_800 }),
                 format!("{id}: journey deadline; required observations incomplete"),
                 async {
                     let result = result.await;
@@ -5548,33 +5549,24 @@ async fn earn_gold(
 async fn earn_gold_inner(
     client: &mut DevClientSession,
     world: &BundleWorld,
-    required: u64,
+    target: u64,
 ) -> TestResult {
-    let started = tokio::time::Instant::now();
-    let start_gold = player_gold(client).await?;
-    // Honest budget: the rat kills the missing gold takes at the ordinary yield floor.
-    let budget = full_gold::budget(required.saturating_sub(start_gold));
-    let deadline = started + budget;
-    let mut hunts = 0u64;
-    loop {
-        let served = player_gold(client).await?;
-        evidence(&format!(
-            "E2EF7_GOLD observed={served} needed={required} gained={} hunts={hunts} elapsed_s={} budget_s={}",
-            served.saturating_sub(start_gold),
-            started.elapsed().as_secs(),
-            budget.as_secs()
-        ));
-        if served >= required {
-            return Ok(());
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("player-money-acquisition-blocked:required-gold={required};served-bank-plus-carried={served};ordinary-hunt-budget={}s;hunts={hunts}", budget.as_secs()).into());
-        }
-        let hunt = acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await;
-        hunt.map_err(|e|format!("player-money-acquisition-blocked:required-gold={required};served-bank-plus-carried={served};ordinary-hunt={e}"))?;
-        hunts += 1;
-        verdict::Harness::global().progress("gold");
+    let served = player_gold(client).await?;
+    if served >= target {
+        return Ok(());
     }
+    // Bank gold stays banked; the shared hunt earns the carried part still missing.
+    let bank = served.saturating_sub(full_gold::coin_value(client)?);
+    let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let meta = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
+    full_gold::earn(client, world, &meta.spawns, "P21", target - bank)
+        .await
+        .map_err(|e| {
+            format!(
+                "player-money-acquisition-blocked:required-gold={target};served-bank-plus-carried={served};ordinary-hunt={e}"
+            )
+        })?;
+    Ok(())
 }
 fn verify_gold_payment(before: u64, after: u64, charge: u64) -> TestResult {
     if before.checked_sub(after) != Some(charge) {

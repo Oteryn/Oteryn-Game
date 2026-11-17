@@ -1,33 +1,211 @@
-//! Shared real-play gold for full rows: hunt rats, loot every coin stack, buy from a catalogue
-//! seller and equip, with a target the caller computes from what its row actually buys.
+//! Shared real-play gold for full rows: pick the reachable creature that pays best for this
+//! character, hunt it, loot every coin stack, buy from a catalogue seller and equip, with a
+//! target the caller computes from what its row actually buys.
 //!
-//! Every kill and loot move counts as progress of the running row (the 90 s no-progress watchdog),
-//! and every step logs observed against needed gold.
+//! The creature is chosen from the bundle's spawns, the loot tables and the creature profiles:
+//! expected coin gold per kill over the seconds a kill takes, among creatures whose health the
+//! character's level can safely kill. Every kill and loot move counts as progress of the running
+//! row (the 90 s no-progress watchdog), and every step logs observed against needed gold.
 use super::*;
 use oteryn_dev_client::{DevClientSession, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::{
     item_view::{self as items, EquipmentSlot},
     npc_service as npc,
 };
-use std::{collections::BTreeSet, num::NonZeroU32};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    num::NonZeroU32,
+};
 
 const COINS: [(u32, u64); 3] = [(3031, 1), (3035, 100), (3043, 10_000)];
-/// Lower bound of gold per rat kill: `oteryn:loot.creature.rat` rolls 1-4 gold at 90.3 %
-/// (mean 2.26), so two is what an ordinary hunt reliably yields.
-pub(super) const GOLD_PER_KILL: u64 = 2;
-/// Walk to the spawn, kill, open the corpse and loot, per rat.
-pub(super) const SECONDS_PER_KILL: u64 = 12;
+/// A creature is safe to hunt when its health is at most this many times the character's level
+/// (never below [`MIN_HEALTH_CAP`]).
+const HEALTH_PER_LEVEL: u64 = 10;
+const MIN_HEALTH_CAP: u64 = 20;
+/// Overhead of one kill (walk to the spawn, corpse, loot) before the damage time.
+const KILL_OVERHEAD_SECONDS: u64 = 12;
+/// Health the character removes per second is taken as `2 + level`.
 const SETUP_SECONDS: u64 = 60;
+/// Wall time a row grants its outer deadline for earning, whatever the need.
+const ALLOWANCE_CEILING_SECONDS: u64 = 900;
+/// Seconds per gold of a level-1 character hunting rats (2.3 gold in about 19 s).
+const FRESH_SECONDS_PER_GOLD: u64 = 9;
 
-/// Honest wall budget for earning `needed` gold from rats: the kills it takes at the yield floor.
-pub(super) fn budget(needed: u64) -> Duration {
+/// A creature the character can hunt: its spawn key, health and expected gold per kill.
+#[derive(Debug, Clone)]
+struct Candidate {
+    key: String,
+    health: u64,
+    milli_gold: u64,
+    kill_seconds: u64,
+}
+
+impl Candidate {
+    /// Wall budget for earning `needed` gold from this creature: the kills it takes.
+    fn budget(&self, needed: u64) -> Duration {
+        let kills = needed.saturating_mul(1000).div_ceil(self.milli_gold.max(1));
+        Duration::from_secs(SETUP_SECONDS.saturating_add(kills.saturating_mul(self.kill_seconds)))
+    }
+}
+
+/// What a row adds to its own outer deadline for earning `needed` gold, sized for a fresh
+/// character on rats and capped; the real budget is the picked creature's own.
+pub(super) fn allowance(needed: u64) -> Duration {
     Duration::from_secs(
-        SETUP_SECONDS.saturating_add(
-            needed
-                .div_ceil(GOLD_PER_KILL)
-                .saturating_mul(SECONDS_PER_KILL),
-        ),
+        SETUP_SECONDS
+            .saturating_add(needed.saturating_mul(FRESH_SECONDS_PER_GOLD))
+            .min(ALLOWANCE_CEILING_SECONDS),
     )
+}
+
+/// The `records` of every `<dir>/<prefix>*.json`, each unwrapped to its declaration/definition.
+fn records(dir: &str, prefix: &str) -> TestResult<Vec<serde_json::Value>> {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join(dir);
+    let mut found = Vec::new();
+    for entry in std::fs::read_dir(&root)? {
+        let path = entry?.path();
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default();
+        if !name.starts_with(prefix) || !name.ends_with(".json") {
+            continue;
+        }
+        let document: serde_json::Value = serde_json::from_slice(&std::fs::read(&path)?)?;
+        for record in document["records"].as_array().into_iter().flatten() {
+            let inner = record
+                .get("declaration")
+                .or_else(|| record.get("definition"))
+                .unwrap_or(record);
+            found.push(inner.clone());
+        }
+    }
+    Ok(found)
+}
+
+/// Creatures of the bundle's spawns (never bosses) the level can safely kill, best gold per
+/// second first.
+fn candidates(
+    spawns: &oteryn_world_bundle::spawn::Table,
+    level: u64,
+) -> TestResult<Vec<Candidate>> {
+    let spawned: BTreeSet<&str> = spawns
+        .sources
+        .iter()
+        .flat_map(|source| source.points.iter())
+        .filter(|point| point.boss_policy.is_none())
+        .filter_map(|point| spawns.creatures.get(point.creature as usize))
+        .map(|creature| creature.key.as_str())
+        .collect();
+    let mut health = BTreeMap::new();
+    let profiles: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../content/test-packs/spells/r25/creature_profiles.json"),
+    )?)?;
+    for record in profiles["records"]
+        .as_array()
+        .ok_or("creature-profiles-absent")?
+    {
+        let (Some(key), Some(points)) = (
+            record["profile"]["target"]["key"].as_str(),
+            record["profile"]["data"]["profile"]["health"].as_u64(),
+        ) else {
+            continue;
+        };
+        let name = key
+            .strip_prefix("canary:creature/")
+            .or_else(|| key.strip_prefix("oteryn:creature."))
+            .unwrap_or(key);
+        health.insert(name.to_owned(), points);
+    }
+    let loot: BTreeMap<String, serde_json::Value> = records("content/loot", "loot-")?
+        .into_iter()
+        .filter_map(|loot| Some((loot["identity"]["key"].as_str()?.to_owned(), loot)))
+        .collect();
+    let loot_of: BTreeMap<String, String> = records("content/creatures/definitions", "creatures-")?
+        .into_iter()
+        .filter_map(|creature| {
+            Some((
+                creature["identity"]["key"].as_str()?.to_owned(),
+                creature["loot"]["key"].as_str()?.to_owned(),
+            ))
+        })
+        .collect();
+    let cap = level.saturating_mul(HEALTH_PER_LEVEL).max(MIN_HEALTH_CAP);
+    let mut ranked = Vec::new();
+    for key in spawned {
+        let Some(name) = key.strip_prefix("oteryn:creature.") else {
+            continue;
+        };
+        let (Some(&points), Some(table)) = (
+            health.get(name),
+            loot_of.get(key).and_then(|loot_key| loot.get(loot_key)),
+        ) else {
+            continue;
+        };
+        if points > cap {
+            continue;
+        }
+        let mut milli_gold = 0u128;
+        for entry in table["entries"].as_array().into_iter().flatten() {
+            let Some(item) = entry["item"]["key"].as_str() else {
+                continue;
+            };
+            let Some(&(_, value)) = COINS
+                .iter()
+                .find(|(id, _)| item == format!("oteryn:item.tibia.i{id}"))
+            else {
+                continue;
+            };
+            let (ppm, low, high) = (
+                entry["probability_ppm"].as_u64().unwrap_or(0),
+                entry["min_count"].as_u64().unwrap_or(0),
+                entry["max_count"].as_u64().unwrap_or(0),
+            );
+            milli_gold += u128::from(ppm) * u128::from(low + high) * u128::from(value) / 2000;
+        }
+        let milli_gold = u64::try_from(milli_gold).unwrap_or(u64::MAX);
+        if milli_gold == 0 {
+            continue;
+        }
+        ranked.push(Candidate {
+            key: key.to_owned(),
+            health: points,
+            milli_gold,
+            kill_seconds: KILL_OVERHEAD_SECONDS + points / (2 + level),
+        });
+    }
+    // Gold per second, best first; the key keeps the order deterministic.
+    ranked.sort_by(|a, b| {
+        (u128::from(b.milli_gold) * u128::from(a.kill_seconds))
+            .cmp(&(u128::from(a.milli_gold) * u128::from(b.kill_seconds)))
+            .then_with(|| a.key.cmp(&b.key))
+    });
+    Ok(ranked)
+}
+
+/// The character's level from the CYCLOPEDIA general stats, as the rows query it.
+async fn level(client: &mut DevClientSession) -> TestResult<u64> {
+    use oteryn_protocol_oteryn::cyclopedia_character as wire;
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_CYCLOPEDIA_CHARACTER_V1,
+            wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
+            &[1, 0, 0, 1],
+        )
+        .await?;
+    if reply.status != CommandStatus::Accepted
+        || general_stats::validate(&reply.payload, general_stats::selected(client)).is_err()
+        || reply.payload[0] != 1
+    {
+        return Err(format!("gold-level-query:{reply:?}").into());
+    }
+    Ok(u64::from(u32::from_le_bytes(
+        reply.payload[9..13].try_into()?,
+    )))
 }
 
 fn reference(id: u32) -> TestResult<NonZeroU32> {
@@ -138,9 +316,10 @@ async fn loot_coins(client: &mut DevClientSession) -> TestResult {
     Ok(())
 }
 
-/// Hunt rats and loot their gold until the character carries `needed`; returns the carried gold.
+/// Hunt the best-paying reachable creature and loot its gold until the character carries
+/// `needed`; returns the carried gold.
 ///
-/// The deadline is [`budget`] for the gold still missing, never a larger fixed number.
+/// The deadline is the picked creature's own budget for the gold still missing.
 pub(super) async fn earn(
     client: &mut DevClientSession,
     world: &BundleWorld,
@@ -150,7 +329,13 @@ pub(super) async fn earn(
 ) -> TestResult<u64> {
     let started = tokio::time::Instant::now();
     let start_gold = coin_value(client)?;
-    let deadline = started + budget(needed.saturating_sub(start_gold));
+    let level = level(client).await?;
+    let ranked = candidates(spawns, level)?;
+    if ranked.is_empty() && needed > start_gold {
+        return Err(format!("{row}: no spawned creature pays coin gold at level {level}").into());
+    }
+    let mut unreachable = BTreeSet::new();
+    let mut deadline = None;
     let mut kills = 0u64;
     loop {
         let observed = coin_value(client)?;
@@ -162,22 +347,56 @@ pub(super) async fn earn(
         if observed >= needed {
             return Ok(observed);
         }
-        if tokio::time::Instant::now() >= deadline {
+        if deadline.is_some_and(|limit| tokio::time::Instant::now() >= limit) {
             return Err(format!(
-                "{row}: gold-earning-budget observed={observed} needed={needed} kills={kills} budget_s={}",
-                budget(needed.saturating_sub(start_gold)).as_secs()
+                "{row}: gold-earning-budget observed={observed} needed={needed} kills={kills} level={level}"
             )
             .into());
         }
+        let mut picked = None;
+        for (index, candidate) in ranked.iter().enumerate() {
+            if unreachable.contains(&index) {
+                continue;
+            }
+            match travel_to_spawn(client, world, spawns, &candidate.key).await {
+                Ok(()) => {
+                    picked = Some(candidate);
+                    break;
+                }
+                Err(error) => {
+                    evidence(&format!(
+                        "{row}_GOLD skip creature={} observed={error}",
+                        candidate.key
+                    ));
+                    unreachable.insert(index);
+                }
+            }
+        }
+        let candidate =
+            picked.ok_or_else(|| format!("{row}: no reachable gold creature at level {level}"))?;
+        if deadline.is_none() {
+            let budget = candidate.budget(needed.saturating_sub(observed));
+            deadline = Some(tokio::time::Instant::now() + budget);
+            evidence(&format!(
+                "{row}_GOLD target creature={} health={} expected_milli_gold_per_kill={} kill_s={} level={level} budget_s={}",
+                candidate.key,
+                candidate.health,
+                candidate.milli_gold,
+                candidate.kill_seconds,
+                budget.as_secs()
+            ));
+        }
         let hunted = async {
-            travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
             client_hunt::hunt(client).await?;
             loot_coins(client).await
         }
         .await;
         hunted.map_err(|error| {
             verdict::record_error(verdict::IndexedError::as_error(&error));
-            verdict::context(format!("{row}: rat ATTACK/loot observed={error}"), error)
+            verdict::context(
+                format!("{row}: {} ATTACK/loot observed={error}", candidate.key),
+                error,
+            )
         })?;
         kills += 1;
         verdict::Harness::global().progress("gold");

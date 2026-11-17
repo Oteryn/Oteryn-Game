@@ -320,7 +320,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     // catalogue error surfaces from the journey itself.
     let price = full_gold::price(BAG_ID, BAG_QUANTITY).unwrap_or_default();
     let result = verdict::indexed_timeout(
-        full_gold::budget(price) + Duration::from_secs(180),
+        full_gold::allowance(price) + Duration::from_secs(180),
         verdict::observe(journey(clients)),
     )
     .await;

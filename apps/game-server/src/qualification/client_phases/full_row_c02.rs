@@ -71,7 +71,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     };
     // Earning the purchases is real rat hunting; its budget (sized from the catalogue prices)
     // joins the 420 s the rest of the row needs.
-    let earning = full_gold::budget(needed_gold().unwrap_or_default());
+    let earning = full_gold::allowance(needed_gold().unwrap_or_default());
     let result = verdict::indexed_timeout(
         earning + Duration::from_secs(420),
         verdict::observe(journey(&mut row, clients)),
