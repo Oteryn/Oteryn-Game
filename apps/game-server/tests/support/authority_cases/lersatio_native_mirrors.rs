@@ -155,6 +155,12 @@ async fn exercise(h: &fixture::Harness) -> TestResult {
         .map_err(debug)?
         .position();
     assert_eq!((at.x, at.y, at.floor), (start.x, start.y, 2));
+    native
+        .install_companion_policies(&mut runtime)
+        .map_err(debug)?;
+    for key in ["oteryn:creature.lersatio", "oteryn:creature.vampire"] {
+        runtime.companion_policy(key).map_err(debug)?;
+    }
     runtime.use_classic_creature_deaths().map_err(debug)?;
     let runtime = Mutex::new(runtime);
     let content =
