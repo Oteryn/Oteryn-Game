@@ -481,6 +481,16 @@ pub(super) async fn seed_quest_prerequisites(
     values: &[(String, i64)],
     occurrence: u8,
 ) -> TestResult {
+    seed_quest_prerequisites_in_pool(&h.pool, owner, admitted, values, occurrence).await
+}
+
+pub(super) async fn seed_quest_prerequisites_in_pool(
+    pool: &sqlx::PgPool,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &AdmittedSession,
+    values: &[(String, i64)],
+    occurrence: u8,
+) -> TestResult {
     use crate::durability::character_progression::{
         ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
     };
@@ -541,7 +551,7 @@ pub(super) async fn seed_quest_prerequisites(
         fence.expected_character_revision.get() + 1
     );
     assert_eq!(receipt.level_after, receipt.level_before);
-    let mut tx = h.pool.begin().await?;
+    let mut tx = pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;

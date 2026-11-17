@@ -32,7 +32,7 @@ pub(super) async fn exercise(
         .map_err(debug)?;
     owner.quest_catalogue = Some(Arc::new(loaded.catalogue().clone()));
     let mut characters = Vec::new();
-    for &(actor, session) in players {
+    for (index, &(actor, session)) in players.iter().enumerate() {
         let admitted = AdmittedSession {
             game_session_id: session,
             world_id: owner.world_id,
@@ -49,15 +49,14 @@ pub(super) async fn exercise(
             .map_err(|_| "fence")?
             .ok_or("quest fence")?;
         characters.push(fence.character_id);
-        for (ordinal, step) in [(100, "npc_1"), (101, "npc_3")] {
-            super::qengine_outfit_stories::commit_fixture(
-                owner,
-                &admitted,
-                &format!("oteryn:quest-transition/quest/u8_1/tower_defence_quest/questline/{step}"),
-                ordinal,
-            )
-            .await?;
-        }
+        super::qengine_outfit_stories::seed_quest_prerequisites_in_pool(
+            &h.pool,
+            owner,
+            &admitted,
+            &[(TRACK.into(), 2)],
+            0xac + u8::try_from(index)?,
+        )
+        .await?;
         owner.admit_quest_session(&admitted).await;
         assert_eq!(stage(h, fence.character_id).await?, 2);
     }
