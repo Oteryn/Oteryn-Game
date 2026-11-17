@@ -187,6 +187,8 @@ Read a red node boot run from its causes, not its last lines.
 | `busy` holder, lock timeout in one PG partition | contention or a missing retry of a busy durable holder (DEFLAKE-2..4) |
 | passes locally, fails in CI only | nextest per-process isolation, runner stack size, or `main` moved (CI tests the merge with `main`) |
 | integration count or file-family test red after a content change | a new import batch or spawn file nobody counted (#2684, #2691) |
+| hosted runner job killed, exit 143, only on one branch | out of memory on the runner; at the first death, compare the same job on another branch, then fix the build's memory or escalate; do not re-run it a third time |
+| node boot shard green, scenario rows red | the job only proves the node started; read the rows (`SEAM_EVIDENCE ... status=FAIL`, `failure_summary.py`) |
 | red only on the post-merge run | a job the PR gate never runs (`oteryn-dev` `references/ci-merge.md`, *Blind spot*) |
 | post-merge red for several commits, mixed with cancelled runs | the culprit is the first red after the last green of that job; bisect with dispatched runs (section 6) |
 
