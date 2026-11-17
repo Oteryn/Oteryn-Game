@@ -86,6 +86,7 @@ pub fn is_active(day: &DailyWorldChanges, key: &str) -> bool {
         return match kind {
             crate::counter::CounterKind::FireEarth => day.counter_stages[kind.index()] == 1,
             crate::counter::CounterKind::FireFeathered => day.counter_stages[kind.index()] == 3,
+            crate::counter::CounterKind::MagesTower => day.mage_tower_portal_open(),
             crate::counter::CounterKind::Overhunting => day.counter_stages[kind.index()] == 2,
             crate::counter::CounterKind::DemonWars => {
                 (1..=5).contains(&day.counter_stages[kind.index()])

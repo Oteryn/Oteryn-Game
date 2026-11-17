@@ -193,11 +193,25 @@ pub(super) async fn project(
     if !day.world_counters {
         return Ok(());
     }
-    let now_ms: i64 =
-        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint")
-            .fetch_one(&mut **tx)
-            .await?;
+    let (now_ms, activated_ms): (i64, i64) = sqlx::query_as(
+        "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint,
+                floor(extract(epoch FROM activated_at) * 1000)::bigint
+         FROM game_world_reset_epochs
+         WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(day.reset_epoch.to_string())
+    .fetch_one(&mut **tx)
+    .await?;
     let now_ms = u64::try_from(now_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let activated_ms =
+        u64::try_from(activated_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
+    day.mage_tower_portal_waiting = now_ms
+        < oteryn_gameplay_world_change::counter::mage_tower_portal_open_at_ms(
+            world.as_bytes(),
+            day.reset_epoch,
+            activated_ms,
+        );
     day.shared_used_sources_mask =
         shared_objects::used_sources_mask(tx, world, day.reset_epoch).await?;
     let values = states(tx, world, false).await?;

@@ -461,6 +461,7 @@ fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldC
         counter_quest_occurrences: [0; 8],
         counter_progress: [[0; 3]; 8],
         shared_used_sources_mask: 0,
+        mage_tower_portal_waiting: false,
     }
 }
 #[cfg(test)]

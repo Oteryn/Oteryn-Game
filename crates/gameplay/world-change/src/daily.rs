@@ -196,6 +196,9 @@ pub struct DailyWorldChanges {
     pub counter_progress: [[u64; 3]; 8],
     #[serde(skip)]
     pub shared_used_sources_mask: u8,
+    /// Live projection of the post-save delay, derived from the active epoch.
+    #[serde(skip)]
+    pub mage_tower_portal_waiting: bool,
 }
 
 impl DailyWorldChanges {
@@ -261,6 +264,7 @@ impl DailyWorldChanges {
             counter_quest_occurrences: [0; 8],
             counter_progress: [[0; 3]; 8],
             shared_used_sources_mask: 0,
+            mage_tower_portal_waiting: false,
             reset_epoch,
             fury_gates,
             fury_exit,
@@ -271,6 +275,12 @@ impl DailyWorldChanges {
             grimvale_full_moon: day == GRIMVALE_DAY,
             flower_month: FLOWER_MONTH.contains(month, day),
         }
+    }
+
+    pub fn mage_tower_portal_open(&self) -> bool {
+        !self.mage_tower_portal_waiting
+            && (1..=3)
+                .contains(&self.counter_stages[crate::counter::CounterKind::MagesTower.index()])
     }
 
     /// Compiled entrance layers selected for this epoch, never paths loaded by the runtime.

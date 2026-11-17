@@ -182,7 +182,7 @@ pub(in crate::node) fn project_map_parts(
     // source still has to satisfy its exact appearance/revision checks.
     if counter_admitted(K::MagesTower)
         && base.tile(33143, 31527, -2).is_some()
-        && !facts.project_mage_tower_entry(base, day.counter_stages[K::MagesTower.index()] == 4)
+        && !facts.project_mage_tower_entry(base, !day.mage_tower_portal_open())
     {
         return Err(refused());
     }
