@@ -328,7 +328,7 @@ async fn exercise(h: &Harness) -> TestResult {
     .execute(&h.pool)
     .await?;
     owner.reset_epoch = 6;
-    owner.refresh_krailos_lake().await;
+    owner.refresh_terrain_tools().await;
     assert_eq!(appearance_at(&owner, pour)?, 22420);
     assert_eq!(appearance_at(&owner, purify)?, 22414);
     Ok(())
