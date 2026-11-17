@@ -532,13 +532,25 @@ pub(super) async fn apply_build_in_transaction(
     binding: Vec<u8>,
     offline: Option<super::offline_training_state::OfflineChange>,
 ) -> std::result::Result<Result<BuildCommitOutcome>, DurabilityError> {
-    apply_build_with_fence(tx, BuildFence::Gameplay(node), fence, request, policy_digest,
-        content_revision, binding, offline).await
+    apply_build_with_fence(
+        tx,
+        BuildFence::Gameplay(node),
+        fence,
+        request,
+        policy_digest,
+        content_revision,
+        binding,
+        offline,
+    )
+    .await
 }
 
 /// Only the native explicit House logout participant can supply this proof.
 /// No general Character build caller acquires House write authority here.
-#[allow(clippy::too_many_arguments, reason = "the existing build participant plus its closed House logout proof")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the existing build participant plus its closed House logout proof"
+)]
 pub(super) async fn apply_house_logout_in_transaction(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     house: super::loop_training::HouseLogout<'_>,
@@ -549,13 +561,24 @@ pub(super) async fn apply_house_logout_in_transaction(
     binding: Vec<u8>,
     offline: super::offline_training_state::OfflineChange,
 ) -> std::result::Result<Result<BuildCommitOutcome>, DurabilityError> {
-    if house.fence() != *fence || request.cause != BuildCause::Logout
-        || request.before != request.after || request.pruned_stance.is_some()
+    if house.fence() != *fence
+        || request.cause != BuildCause::Logout
+        || request.before != request.after
+        || request.pruned_stance.is_some()
     {
         return Ok(Err(CharacterProgressionError::InvalidInput));
     }
-    apply_build_with_fence(tx, BuildFence::HouseLogout(house), fence, request, policy_digest,
-        content_revision, binding, Some(offline)).await
+    apply_build_with_fence(
+        tx,
+        BuildFence::HouseLogout(house),
+        fence,
+        request,
+        policy_digest,
+        content_revision,
+        binding,
+        Some(offline),
+    )
+    .await
 }
 
 enum BuildFence<'a> {
@@ -563,7 +586,10 @@ enum BuildFence<'a> {
     HouseLogout(super::loop_training::HouseLogout<'a>),
 }
 
-#[allow(clippy::too_many_arguments, reason = "the unchanged native build transaction participant")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the unchanged native build transaction participant"
+)]
 async fn apply_build_with_fence(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     authority: BuildFence<'_>,

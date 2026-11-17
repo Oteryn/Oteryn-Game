@@ -817,9 +817,19 @@ async fn wardrobe(
         required_receipts: vec![],
         experience: None,
         per_occurrence_mint: false,
+        map_mark: None,
+        world_claim: None,
+        magic_effects: vec![],
         carried_item: None,
         carried_exchange: false,
         requires_completed_quests: vec![],
+        carried_target: None,
+        peer_requires: None,
+        corpse_target: None,
+        creature_target: None,
+        fresh_corpse: false,
+        capture_creature: false,
+        self_target: None,
         minimum_level: None,
         requires_addons: vec![],
         forbids_outfits: vec![],
@@ -841,6 +851,7 @@ async fn wardrobe(
         take: vec![],
         fee: None,
         present: vec![],
+        inventory: vec![],
         give: None,
         outfit: Some(reward.clone()),
         outfits: vec![],
@@ -848,6 +859,9 @@ async fn wardrobe(
         achievement: None,
         achievement_progress: vec![],
         reply: vec![],
+        failure_reply: vec![],
+
+
         sources: vec![],
     };
     super::qengine_rewards::seed(owner, admitted, &seed, 9000).await?;

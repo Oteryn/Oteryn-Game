@@ -41,7 +41,16 @@ impl DurabilityRoot {
             super::super::character_progression::uuid_text(&text)
         })).await?;
         if request.kind == "guildhall" {
-            return run(self,None,&recovery,node,Work::Bid(fence,request),&[account],&BTreeSet::new()).await;
+            return run(
+                self,
+                None,
+                &recovery,
+                node,
+                Work::Bid(fence, request),
+                &[account],
+                &BTreeSet::new(),
+            )
+            .await;
         }
         let root = self.clone();
         let node = node.clone();

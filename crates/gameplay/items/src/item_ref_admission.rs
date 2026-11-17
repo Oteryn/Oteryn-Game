@@ -31,7 +31,11 @@ pub fn generation_item_facts(
     native: &NativeGameplayState,
     definition: &TypedDefinitionRef,
 ) -> Result<ItemDefinitionFacts, PickupContentError> {
-    generation_destination_facts(native, definition, false)
+    generation_destination_facts(
+        native,
+        definition,
+        NativeItemDestination::CharacterInventory,
+    )
 }
 
 /// Native Inbox may receive a carried Item or a definition with an explicit
@@ -41,13 +45,21 @@ pub fn generation_inbox_item_facts(
     native: &NativeGameplayState,
     definition: &TypedDefinitionRef,
 ) -> Result<ItemDefinitionFacts, PickupContentError> {
-    generation_destination_facts(native, definition, true)
+    generation_destination_facts(native, definition, NativeItemDestination::CharacterInbox)
+}
+
+/// Facts for relocation on Ground. This grants no carried-inventory admission.
+pub fn generation_ground_item_facts(
+    native: &NativeGameplayState,
+    definition: &TypedDefinitionRef,
+) -> Result<ItemDefinitionFacts, PickupContentError> {
+    generation_destination_facts(native, definition, NativeItemDestination::Ground)
 }
 
 fn generation_destination_facts(
     native: &NativeGameplayState,
     definition: &TypedDefinitionRef,
-    inbox: bool,
+    destination: NativeItemDestination,
 ) -> Result<ItemDefinitionFacts, PickupContentError> {
     let record = native
         .item_policy(&definition.production_key, &definition.revision_ref)
@@ -59,16 +71,30 @@ fn generation_destination_facts(
                 && production.revision_ref == definition.revision_ref
         })
         .ok_or(PickupContentError::DefinitionNotFound)?;
+    profile_item_facts(record, definition, destination)
+}
+
+fn profile_item_facts(
+    record: &oteryn_gameplay_content::content::native_gameplay::ItemProfileRecord,
+    definition: &TypedDefinitionRef,
+    destination: NativeItemDestination,
+) -> Result<ItemDefinitionFacts, PickupContentError> {
+    let legal = &record.admission.legal_destinations;
     let admitted = record.admission.materializable
-        && (record
-            .admission
-            .legal_destinations
-            .contains(&NativeItemDestination::CharacterInventory)
-            || inbox
-                && record
-                    .admission
-                    .legal_destinations
-                    .contains(&NativeItemDestination::CharacterInbox));
+        && match destination {
+            NativeItemDestination::CharacterInventory => legal.contains(&destination),
+            NativeItemDestination::CharacterInbox => {
+                legal.contains(&destination)
+                    || legal.contains(&NativeItemDestination::CharacterInventory)
+            }
+            NativeItemDestination::Ground => {
+                legal.contains(&destination)
+                    && matches!(
+                        &record.semantics.physical,
+                        ReferenceItemField::Known(physical) if physical.movable == ReferenceItemField::Known(true)
+                    )
+            }
+        };
     let stack = match record.admission.stack_class {
         _ if !admitted => ItemStackClass::Unknown,
         NativeItemStackClass::NonStackable => ItemStackClass::NonStackable,
@@ -131,6 +157,54 @@ fn normalized_item_weight(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn native_amphora_ground_facts_do_not_grant_inventory_or_immovable_admission()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_content::content::native_gameplay::ItemProfileRecord;
+        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/items/definitions/spell-native-profiles.json"
+        )))?;
+        let value = document["records"]
+            .as_array()
+            .ok_or("records")?
+            .iter()
+            .find(|r| r["production_definition"]["production_key"] == "oteryn:item.tibia.i2904")
+            .ok_or("native amphora")?;
+        let mut record: ItemProfileRecord = serde_json::from_value(value.clone())?;
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "oteryn:item.tibia.i2904".into(),
+            revision_ref: "definition-r1".into(),
+        };
+        let ground = profile_item_facts(&record, &definition, NativeItemDestination::Ground)?;
+        assert_eq!(
+            ground.stack,
+            ItemStackClass::NonStackable,
+            "the native movable amphora must relocate on Ground"
+        );
+        assert_eq!(
+            profile_item_facts(
+                &record,
+                &definition,
+                NativeItemDestination::CharacterInventory
+            )?
+            .stack,
+            ItemStackClass::Unknown
+        );
+        assert_eq!(
+            profile_item_facts(&record, &definition, NativeItemDestination::CharacterInbox)?.stack,
+            ItemStackClass::Unknown
+        );
+        if let ReferenceItemField::Known(physical) = &mut record.semantics.physical {
+            physical.movable = ReferenceItemField::Known(false);
+        }
+        assert_eq!(
+            profile_item_facts(&record, &definition, NativeItemDestination::Ground)?.stack,
+            ItemStackClass::Unknown
+        );
+        Ok(())
+    }
     #[test]
     fn native_weight_normalization_never_guesses_unknown_physical_or_weight() {
         use ReferenceItemField::{Conflict, Known, NotApplicable, Unknown};

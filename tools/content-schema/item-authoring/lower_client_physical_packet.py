@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -85,7 +86,19 @@ def build(root=ROOT):
                 if pointer:
                     routed.add(pointer["key"])
     bound = {}
-    for b in json.loads((root / BINDINGS).read_text())["bindings"]:
+    # This closed client capture predates the separately qualified Cake item.
+    # Reconstruct its exact historical table; never admit a new source revision
+    # into this physical-fact proof merely because it has an exact identity.
+    sys.path.insert(0, str(root / "tools/content-schema/native-gameplay"))
+    from build_spell_item_identities import (
+        PRE_CAKE_BINDINGS_SHA,
+        historical_binding_bytes,
+    )
+
+    historical = historical_binding_bytes(
+        (root / BINDINGS).read_bytes(), PRE_CAKE_BINDINGS_SHA
+    )
+    for b in json.loads(historical)["bindings"]:
         if b["disposition"] != "EXACT":
             continue
         if (

@@ -41,7 +41,7 @@ BEGIN
  END IF;
  IF with_audit THEN
   SELECT * INTO STRICT r FROM game_spell_field_temporal_receipts WHERE transaction_id=t;
-  body:=convert_to(jsonb_build_object('receipt',to_jsonb(r),'schedule',to_jsonb(p))::TEXT,'UTF8');
+  body:=convert_to(jsonb_build_object('receipt',game_spell_field_temporal_receipt_json(r),'schedule',to_jsonb(p))::TEXT,'UTF8');
   INSERT INTO game_spell_field_temporal_audit(event_id,transaction_id,envelope,envelope_sha256) VALUES(e,t,body,sha256(body));
  END IF;
  RETURN t;
@@ -59,6 +59,24 @@ DO $$ DECLARE i UUID:=(SELECT item_instance_id FROM game_spell_field_temporal_sc
  IF EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=i) OR (SELECT count(*) FROM game_spell_field_temporal_receipts WHERE item_instance_id=i)<>2 THEN RAISE EXCEPTION 'chain custody/history incomplete';END IF;
  BEGIN PERFORM fixture_chain_mint(302,TRUE);SET CONSTRAINTS ALL IMMEDIATE;RAISE EXCEPTION 'wrong cumulative deadline accepted';EXCEPTION WHEN check_violation THEN NULL; END;
  IF EXISTS(SELECT 1 FROM game_spell_item_receipts WHERE command_id=302) THEN RAISE EXCEPTION 'rejected chain source did not rollback';END IF;
+END $$;
+-- Post-2200 receipts preserve the pre-extension Channel JSON shape. This is
+-- a legacy-shape guard case, not a claimed pre-2200 database upgrade run.
+DO $$ BEGIN
+ IF (SELECT count(*) FROM game_spell_field_temporal_receipts WHERE channel_id IS NOT NULL)<>2
+ THEN RAISE EXCEPTION 'Channel audit compatibility requires two committed stages'; END IF;
+ IF EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts r
+   WHERE r.channel_id IS NOT NULL AND (r.instance_id IS NOT NULL
+     OR game_spell_field_temporal_receipt_json(r) ? 'instance_id'
+     OR game_spell_field_temporal_receipt_json(r) IS DISTINCT FROM to_jsonb(r)-'instance_id'))
+ THEN RAISE EXCEPTION 'Channel temporal receipt changed historical JSON shape'; END IF;
+ IF EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts r
+   JOIN game_spell_field_temporal_schedules p ON p.item_instance_id=r.item_instance_id AND p.source_stage=r.source_stage
+   JOIN game_spell_field_temporal_audit a USING(transaction_id)
+   WHERE r.channel_id IS NOT NULL AND (sha256(a.envelope)<>a.envelope_sha256
+     OR convert_from(a.envelope,'UTF8')::jsonb IS DISTINCT FROM
+       jsonb_build_object('receipt',game_spell_field_temporal_receipt_json(r),'schedule',to_jsonb(p))))
+ THEN RAISE EXCEPTION 'Channel temporal immutable audit body changed'; END IF;
 END $$;
 SELECT fixture_chain_mint(303) AS wrongstage \gset
 SELECT pg_sleep(0.005);

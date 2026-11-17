@@ -1260,7 +1260,6 @@ async fn cast_through_retired_holder(
         release
     );
     released?;
-    eprintln!("[DBG-charmzero] first={:?}", outcome.as_ref().map(|o| o.disposition));
     assert!(outcome.is_none(), "the blocked cast pass retires and stays pending");
     Ok(())
 }

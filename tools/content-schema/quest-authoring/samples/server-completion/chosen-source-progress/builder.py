@@ -16,6 +16,7 @@ TOOL_DIR = pathlib.Path(__file__).resolve().parents[3]
 if str(TOOL_DIR) not in sys.path:
     sys.path.insert(0, str(TOOL_DIR))
 import quest_terminal_stage_refinements as terminal_refinements
+import galthen_native_kills
 
 BASIS = "CHOSEN_OTERYN_APPROXIMATION"
 PROFILE = "chosen_source_completion_v1"
@@ -372,6 +373,44 @@ def validate_packet(packet):
         validate_projected(quest, OVERLAY_STATE)
 
 
+def _pending_native_galthen_overlay(source, overlay):
+    """Preserve the exact two already-owned kills when projecting remaining stages."""
+    if source['quest'] != galthen_native_kills.QUEST:
+        return overlay
+    native_tracks = {galthen_native_kills.TRACK + key for row in galthen_native_kills.ROWS for key in row[:2]}
+    native_transitions = {galthen_native_kills.TRANSITION + row[0] for row in galthen_native_kills.ROWS}
+    tracks = {row['key']: row for row in source['tracks']}
+    transitions = {row['key']: row for row in source['transitions']}
+    track_overlap = tracks.keys() & {row['key'] for row in overlay['tracks']}
+    transition_overlap = transitions.keys() & {row['key'] for row in overlay['transitions']}
+    if not track_overlap and not transition_overlap:
+        return overlay
+    if track_overlap != native_tracks or transition_overlap != native_transitions:
+        raise ValueError('Galthen overlay collides outside the complete native kill subset')
+    projected_tracks = {row['key']: row for row in overlay['tracks']}
+    for key in native_tracks:
+        if tracks[key] != projected_tracks[key]:
+            raise ValueError('Galthen native track changed: ' + key)
+    projected = {row['key']: row for row in overlay['transitions']}
+    for stage, _, _, creature in galthen_native_kills.ROWS:
+        native = transitions[galthen_native_kills.TRANSITION + stage]
+        chosen = projected[galthen_native_kills.TRANSITION + stage]
+        if {k: v for k, v in native.items() if k != 'source'} != {
+            k: v for k, v in chosen.items() if k != 'source'
+        } or native['source'] != {
+            'basis': galthen_native_kills.BASIS, 'owner': 'native_kills', 'key': stage, 'callback': None,
+            'chosen_stage': chosen['source']['chosen_stage'],
+            'native_dispatch_binding': {'owner': 'native_kills', 'creature': {
+                'family': 'Creature', 'key': creature, 'revision': 'definition-r1'}},
+            'source_equivalence': False,
+        }:
+            raise ValueError('Galthen native transition changed: ' + stage)
+    return dict(overlay,
+                tracks=[row for row in overlay['tracks'] if row['key'] not in native_tracks],
+                transitions=[row for row in overlay['transitions']
+                             if row['key'] not in native_transitions])
+
+
 def merge(source, packet):
     validate_packet(packet)
     result = copy.deepcopy(source)
@@ -384,6 +423,7 @@ def merge(source, packet):
     for overlay in packet["overlays"]:
         target = by_owner.get(overlay["quest"])
         req(target is not None, "Overlay owner missing")
+        overlay = _pending_native_galthen_overlay(target, overlay)
         source_state = completion_state(target)
         req(
             source_state == overlay["completion"]["source_completion_state"],

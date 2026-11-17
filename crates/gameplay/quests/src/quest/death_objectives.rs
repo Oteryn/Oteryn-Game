@@ -54,6 +54,28 @@ impl GuardianSpawn {
 }
 
 impl DeathObjective {
+    pub(crate) fn transition(&self) -> QuestTransition {
+        QuestTransition {
+            key: self.key.clone(),
+            quest: self.quest.clone(),
+            completes: false,
+            experience: None,
+            world_change: None,
+            effects: vec![
+                QuestEffect {
+                    track: self.stage.clone(),
+                    from: QuestComparison::Eq(self.stage_value),
+                    effect: QuestEffectKind::Add(0),
+                },
+                QuestEffect {
+                    track: self.counter.clone(),
+                    from: QuestComparison::Between(0, i64::from(self.required) - 1),
+                    effect: QuestEffectKind::Add(1),
+                },
+            ],
+        }
+    }
+
     pub fn active(&self, tracks: &BTreeMap<String, i64>) -> bool {
         tracks.get(&self.stage) == Some(&self.stage_value)
             && tracks
@@ -216,25 +238,7 @@ pub fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalogue, Str
             experience: None,
             world_change: None,
         });
-        transitions.push(QuestTransition {
-            key: objective.key.clone(),
-            quest: objective.quest.clone(),
-            completes: false,
-            experience: None,
-            world_change: None,
-            effects: vec![
-                QuestEffect {
-                    track: objective.stage.clone(),
-                    from: QuestComparison::Eq(objective.stage_value),
-                    effect: QuestEffectKind::Add(0),
-                },
-                QuestEffect {
-                    track: objective.counter.clone(),
-                    from: QuestComparison::Between(0, i64::from(objective.required) - 1),
-                    effect: QuestEffectKind::Add(1),
-                },
-            ],
-        });
+        transitions.push(objective.transition());
     }
     let mut extended = QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
         .map_err(|e| format!("{e:?}"))?;

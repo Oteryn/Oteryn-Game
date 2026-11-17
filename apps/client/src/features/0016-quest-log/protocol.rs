@@ -38,8 +38,7 @@ impl Outbox {
         {
             if result.status == oteryn_client_runtime::CommandStatus::Accepted {
                 match oteryn_client_runtime::quest_log::decode_quest_log(&result.payload) {
-                    Ok(QuestLog {
-                        view: Some(oteryn_client_runtime::quest_log::QuestLogView::List(list)),
+                    Ok(QuestLog { map_marks: _, view: Some(oteryn_client_runtime::quest_log::QuestLogView::List(list)),
                         tracked,
                     }) if tracked.is_empty() => {
                         let panel = &mut mailbox.quest;

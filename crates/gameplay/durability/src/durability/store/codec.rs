@@ -44,8 +44,15 @@ pub struct DeliveryIdentity {
 }
 impl DeliveryIdentity {
     pub fn validate(&self) -> Result<(), StoreValidationError> {
-        if !uuid_v7(&self.account_id) || !uuid_v7(&self.character_id) || !uuid_v7(&self.world_id) { return Err(StoreValidationError::InvalidUuid); }
-        if self.fulfilment_unit_id.is_empty() || self.fulfilment_unit_id.len() > 512 || self.fulfilment_unit_id.chars().any(char::is_control) { return Err(StoreValidationError::InvalidText); }
+        if !uuid_v7(&self.account_id) || !uuid_v7(&self.character_id) || !uuid_v7(&self.world_id) {
+            return Err(StoreValidationError::InvalidUuid);
+        }
+        if self.fulfilment_unit_id.is_empty()
+            || self.fulfilment_unit_id.len() > 512
+            || self.fulfilment_unit_id.chars().any(char::is_control)
+        {
+            return Err(StoreValidationError::InvalidText);
+        }
         Ok(())
     }
 }
@@ -65,7 +72,12 @@ pub struct DeliveryPlan {
 }
 impl DeliveryPlan {
     pub(super) fn identity(&self) -> DeliveryIdentity {
-        DeliveryIdentity { account_id: self.account_id, character_id: self.character_id, world_id: self.world_id, fulfilment_unit_id: self.fulfilment_unit_id.clone() }
+        DeliveryIdentity {
+            account_id: self.account_id,
+            character_id: self.character_id,
+            world_id: self.world_id,
+            fulfilment_unit_id: self.fulfilment_unit_id.clone(),
+        }
     }
     pub fn validate(&self) -> Result<(), StoreValidationError> {
         if !uuid_v7(&self.account_id)

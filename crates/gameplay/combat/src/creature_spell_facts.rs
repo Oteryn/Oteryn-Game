@@ -34,6 +34,31 @@ impl SpellCombatFacts {
 }
 
 pub trait SpellWorldReader {
+    /// A sealed source callback may supply its donor magnitude distribution.
+    /// None retains the existing draw for every ordinary spell caller.
+    fn source_damage_draw(
+        &mut self,
+        _minimum: u32,
+        _maximum: u32,
+        _draw: u64,
+        _target: Option<ExactActorRef>,
+    ) -> Result<Option<u32>, crate::creature_auto_attack::AttackError> {
+        Ok(None)
+    }
+    /// One already-drawn source component, before armor or elemental resistance.
+    /// The native production reader resolves any applicable scene callback from
+    /// its current qualified facts; missing applicable facts return None.
+    fn source_combat_component_damage(
+        &mut self,
+        _runtime: &ChannelRuntimeV1,
+        _issuer: ExactActorRef,
+        _target: ExactActorRef,
+        magnitude: u32,
+        _now: u64,
+        _stamp: RuntimeWorkStamp,
+    ) -> Option<u32> {
+        Some(magnitude)
+    }
     /// Actual immutable current loader owner. Missing membership fails closed before
     /// RNG, cast occurrence or condition mutation; source JSON is never this owner.
     fn native_gameplay<'a>(

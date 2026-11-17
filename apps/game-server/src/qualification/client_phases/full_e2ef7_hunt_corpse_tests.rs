@@ -5,6 +5,7 @@ fn position(x: i32) -> ActorPosition {
     ActorPosition {
         x: x - 98,
         y: 0,
+        // Forge uses the legacy wire basis; tile() maps this to bundle floor -8.
         floor: 8,
     }
 }

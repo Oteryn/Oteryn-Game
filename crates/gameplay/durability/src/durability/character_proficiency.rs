@@ -24,7 +24,9 @@ pub use oteryn_gameplay_progression::proficiency::MAX_PROFICIENCY_PROGRESS;
 
 /// Checked track values, with the existing durability error API.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DurableProficiencyState(oteryn_gameplay_progression::proficiency::DurableProficiencyState);
+pub struct DurableProficiencyState(
+    oteryn_gameplay_progression::proficiency::DurableProficiencyState,
+);
 
 impl DurableProficiencyState {
     pub fn new(
@@ -94,7 +96,11 @@ impl ProficiencyLineCandidate {
         before: DurableProficiencyState,
         after: DurableProficiencyState,
     ) -> Result<Self> {
-        let legal = oteryn_gameplay_progression::proficiency::legal_change(cause, track_values(&before), track_values(&after));
+        let legal = oteryn_gameplay_progression::proficiency::legal_change(
+            cause,
+            track_values(&before),
+            track_values(&after),
+        );
         if !legal {
             return Err(CharacterProgressionError::InvalidInput);
         }
@@ -274,15 +280,21 @@ mod tests {
             let before = state(100, &[None]);
             let mut after = before.clone();
             match cause {
-                Training | ProficiencyCause::Catalyst => mutate_state(&mut after, |state| state.3 += 1),
+                Training | ProficiencyCause::Catalyst => {
+                    mutate_state(&mut after, |state| state.3 += 1)
+                }
                 PerkSelection => mutate_state(&mut after, |state| state.4[0] = Some(0)),
                 Migration => mutate_state(&mut after, |state| state.2 = "r2".into()),
                 PerkModification => {}
             }
             let mut other_item = after.clone();
-            mutate_state(&mut other_item, |state| state.0 = "oteryn:item.tibia.i3305".into());
+            mutate_state(&mut other_item, |state| {
+                state.0 = "oteryn:item.tibia.i3305".into()
+            });
             invalid(line(cause, before.clone(), other_item));
-            mutate_state(&mut after, |state| state.1 = "oteryn:proficiency.tibia.p2".into());
+            mutate_state(&mut after, |state| {
+                state.1 = "oteryn:proficiency.tibia.p2".into()
+            });
             invalid(line(cause, before, after));
         }
     }
@@ -332,13 +344,11 @@ impl ProficiencyChangeRequest {
         expected_track_revision: Option<CharacterRevision>,
         policy_digest: [u8; 32],
     ) -> Result<Self> {
-        let lines = normalize_request_lines(
-            cause,
-            lines,
-            expected_track_revision.is_some(),
-            |line| (line.cause(), line.before().item_key()),
-        )
-        .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let lines =
+            normalize_request_lines(cause, lines, expected_track_revision.is_some(), |line| {
+                (line.cause(), line.before().item_key())
+            })
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         Ok(Self {
             occurrence,
             cause,
@@ -874,22 +884,37 @@ mod writer {
                 .record_for(self)
                 .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
             let node = node.clone();
-            self.try_issue_semantic_pass()?.run(move |holder, deadline| { Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            lock_admission_relations(&mut tx).await?;
-            if let Some(replayed) = replay_change(&mut tx, &request, &binding, policy.as_ref()).await? {
-                if matches!(replayed, Ok(ProficiencyCommitOutcome::AlreadyCommitted(_))) {
-                    commit_semantic_transaction(tx, deadline).await?;
-                }
-                return Ok(replayed);
-            }
-            let outcome = apply_change(&mut tx, &fence, &node, &request, policy.as_ref(), &binding).await?;
-            if matches!(outcome, Ok(ProficiencyCommitOutcome::Committed(_))) {
-                commit_semantic_transaction(tx, deadline).await?;
-            }
-            Ok(outcome)
-        }) }).await?
+            self.try_issue_semantic_pass()?
+                .run(move |holder, deadline| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        assert_recovery_fence(&mut tx, &recovery).await?;
+                        lock_admission_relations(&mut tx).await?;
+                        if let Some(replayed) =
+                            replay_change(&mut tx, &request, &binding, policy.as_ref()).await?
+                        {
+                            if matches!(replayed, Ok(ProficiencyCommitOutcome::AlreadyCommitted(_)))
+                            {
+                                commit_semantic_transaction(tx, deadline).await?;
+                            }
+                            return Ok(replayed);
+                        }
+                        let outcome = apply_change(
+                            &mut tx,
+                            &fence,
+                            &node,
+                            &request,
+                            policy.as_ref(),
+                            &binding,
+                        )
+                        .await?;
+                        if matches!(outcome, Ok(ProficiencyCommitOutcome::Committed(_))) {
+                            commit_semantic_transaction(tx, deadline).await?;
+                        }
+                        Ok(outcome)
+                    })
+                })
+                .await?
         }
 
         /// Reconcile one supplied pending intent, including its original global/track revision and
@@ -961,15 +986,21 @@ mod writer {
         binding: &[u8; 33],
         policy: &dyn ProficiencyDefinitions,
     ) -> StoredResult<Option<Result<ProficiencyCommitOutcome>>> {
-        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(\
-            'oteryn:character-proficiency:' || encode($1,'hex'),0))")
-            .bind(request.occurrence().as_bytes().as_slice()).execute(&mut **tx).await?;
+        sqlx::query(
+            "SELECT pg_advisory_xact_lock(hashtextextended(\
+            'oteryn:character-proficiency:' || encode($1,'hex'),0))",
+        )
+        .bind(request.occurrence().as_bytes().as_slice())
+        .execute(&mut **tx)
+        .await?;
         if let Some(row) = load_receipt(tx, request.occurrence()).await? {
-            if row.try_get::<Vec<u8>,_>("command_binding")? != binding.as_slice() {
+            if row.try_get::<Vec<u8>, _>("command_binding")? != binding.as_slice() {
                 return Ok(Some(Err(CharacterProgressionError::ConflictingOccurrence)));
             }
             let committed = decode_receipt(tx, &row, request, Some(policy)).await?;
-            return Ok(Some(Ok(ProficiencyCommitOutcome::AlreadyCommitted(committed))));
+            return Ok(Some(Ok(ProficiencyCommitOutcome::AlreadyCommitted(
+                committed,
+            ))));
         }
         if has_modification_terminal(tx, request.occurrence()).await? {
             return Ok(Some(Err(CharacterProgressionError::ConflictingOccurrence)));
@@ -988,57 +1019,109 @@ mod writer {
         binding: &[u8; 33],
     ) -> StoredResult<Result<ProficiencyCommitOutcome>> {
         let root = match assert_gameplay_fence(tx, fence, node).await? {
-            Ok(root) => root, Err(error) => return Ok(Err(error)),
+            Ok(root) => root,
+            Err(error) => return Ok(Err(error)),
         };
         let character = fence.character_id.as_bytes().as_slice();
-        let state = sqlx::query("SELECT character_revision::text,profile_revision,ruleset_revision,\
+        let state = sqlx::query(
+            "SELECT character_revision::text,profile_revision,ruleset_revision,\
             content_revision FROM game_character_progression_state \
-            WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
-            .bind(character).fetch_optional(&mut **tx).await?;
-        let Some(state) = state else { return Ok(Err(CharacterProgressionError::MissingProgressionState)); };
-        if numeric_u64(&state,"character_revision")? != root.revision {
+            WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
+        )
+        .bind(character)
+        .fetch_optional(&mut **tx)
+        .await?;
+        let Some(state) = state else {
+            return Ok(Err(CharacterProgressionError::MissingProgressionState));
+        };
+        if numeric_u64(&state, "character_revision")? != root.revision {
             return Err(DurabilityError::InvalidStoredState);
         }
-        if !state_matches_root(&state,&root) {
+        if !state_matches_root(&state, &root) {
             return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
         }
         // Current semantic source is consulted only for a previously unseen occurrence.
         let digest = policy.digest();
-        if policy.content_revision() != state.try_get::<String,_>("content_revision")? || request.policy_digest() != &digest {
-            return Ok(Ok(ProficiencyCommitOutcome::Refused(ProficiencyWriteRefusal::PolicyMismatch)));
+        if policy.content_revision() != state.try_get::<String, _>("content_revision")?
+            || request.policy_digest() != &digest
+        {
+            return Ok(Ok(ProficiencyCommitOutcome::Refused(
+                ProficiencyWriteRefusal::PolicyMismatch,
+            )));
         }
-        let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns \
-            WHERE character_id=encode($1,'hex')::uuid)").bind(character).fetch_one(&mut **tx).await?;
-        if pending { return Ok(Err(CharacterProgressionError::RespawnPending)); }
+        let pending: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns \
+            WHERE character_id=encode($1,'hex')::uuid)",
+        )
+        .bind(character)
+        .fetch_one(&mut **tx)
+        .await?;
+        if pending {
+            return Ok(Err(CharacterProgressionError::RespawnPending));
+        }
         if request.lines().len() > policy.active_weapon_count() {
-            return Ok(Ok(ProficiencyCommitOutcome::Refused(ProficiencyWriteRefusal::LineCountExceeded)));
+            return Ok(Ok(ProficiencyCommitOutcome::Refused(
+                ProficiencyWriteRefusal::LineCountExceeded,
+            )));
         }
         for line in request.lines() {
-            let target = if request.cause() == ProficiencyCause::Migration { line.after() } else { line.before() };
+            let target = if request.cause() == ProficiencyCause::Migration {
+                line.after()
+            } else {
+                line.before()
+            };
             let current = policy.resolve_weapon(target.item_key());
             let migration = if request.cause() == ProficiencyCause::Migration {
                 match verify_migration(Some(policy), policy.content_revision(), &digest, line) {
                     Ok(declaration) => Some(declaration),
-                    Err(DurabilityError::Unavailable) => return Ok(Ok(ProficiencyCommitOutcome::Refused(
-                        ProficiencyWriteRefusal::MigrationDeclarationUnavailable))),
-                    Err(DurabilityError::InvalidStoredState) => return Ok(Err(CharacterProgressionError::InvalidInput)),
+                    Err(DurabilityError::Unavailable) => {
+                        return Ok(Ok(ProficiencyCommitOutcome::Refused(
+                            ProficiencyWriteRefusal::MigrationDeclarationUnavailable,
+                        )));
+                    }
+                    Err(DurabilityError::InvalidStoredState) => {
+                        return Ok(Err(CharacterProgressionError::InvalidInput));
+                    }
                     Err(error) => return Err(error),
                 }
-            } else { None };
-            let retained = migration.as_ref().map(|declaration| declaration.old_shape).or_else(||
-                policy.retained_definition(line.before().item_key(), line.before().definition_key(),
-                    line.before().definition_revision()));
-            let (Some(current),Some(retained)) = (current,retained) else {
-                return Ok(Ok(ProficiencyCommitOutcome::Refused(ProficiencyWriteRefusal::UnknownTrackDefinition)));
+            } else {
+                None
+            };
+            let retained = migration
+                .as_ref()
+                .map(|declaration| declaration.old_shape)
+                .or_else(|| {
+                    policy.retained_definition(
+                        line.before().item_key(),
+                        line.before().definition_key(),
+                        line.before().definition_revision(),
+                    )
+                });
+            let (Some(current), Some(retained)) = (current, retained) else {
+                return Ok(Ok(ProficiencyCommitOutcome::Refused(
+                    ProficiencyWriteRefusal::UnknownTrackDefinition,
+                )));
             };
             if current.canonical_item_key != target.item_key()
                 || current.definition_key != target.definition_key()
-                || current.definition_revision != target.definition_revision() {
-                return Ok(Ok(ProficiencyCommitOutcome::Refused(ProficiencyWriteRefusal::DefinitionRevisionMismatch)));
+                || current.definition_revision != target.definition_revision()
+            {
+                return Ok(Ok(ProficiencyCommitOutcome::Refused(
+                    ProficiencyWriteRefusal::DefinitionRevisionMismatch,
+                )));
             }
-            if current.shape != migration.as_ref().map_or(retained, |declaration| declaration.new_shape) { return Ok(Err(CharacterProgressionError::ProgressionContextMismatch)); }
-            if let Err(error) = line.before().validate_shape(retained)
-                .and_then(|()| line.after().validate_shape(current.shape)) {
+            if current.shape
+                != migration
+                    .as_ref()
+                    .map_or(retained, |declaration| declaration.new_shape)
+            {
+                return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
+            }
+            if let Err(error) = line
+                .before()
+                .validate_shape(retained)
+                .and_then(|()| line.after().validate_shape(current.shape))
+            {
                 return Ok(Err(error));
             }
             let stored = sqlx::query("SELECT *, committed_character_revision::text AS track_revision,\
@@ -1047,11 +1130,17 @@ mod writer {
                 AND item_key=$2 FOR UPDATE").bind(character).bind(line.before().item_key())
                 .fetch_optional(&mut **tx).await?;
             if let Some(row) = &stored {
-                if read::decode_state(row,"")? != *line.before() {
-                    return Ok(Ok(ProficiencyCommitOutcome::Refused(ProficiencyWriteRefusal::TrackStateMismatch)));
+                if read::decode_state(row, "")? != *line.before() {
+                    return Ok(Ok(ProficiencyCommitOutcome::Refused(
+                        ProficiencyWriteRefusal::TrackStateMismatch,
+                    )));
                 }
-            } else if line.before().progress() != 0 || line.before().selections().iter().any(Option::is_some) {
-                return Ok(Ok(ProficiencyCommitOutcome::Refused(ProficiencyWriteRefusal::TrackStateMismatch)));
+            } else if line.before().progress() != 0
+                || line.before().selections().iter().any(Option::is_some)
+            {
+                return Ok(Ok(ProficiencyCommitOutcome::Refused(
+                    ProficiencyWriteRefusal::TrackStateMismatch,
+                )));
             }
             match request.cause() {
                 ProficiencyCause::Training | ProficiencyCause::Catalyst => {
@@ -1062,50 +1151,112 @@ mod writer {
                 }
                 ProficiencyCause::PerkSelection => {
                     let Some(row) = stored else {
-                        return Ok(Ok(ProficiencyCommitOutcome::Refused(ProficiencyWriteRefusal::UnknownTrackDefinition)));
+                        return Ok(Ok(ProficiencyCommitOutcome::Refused(
+                            ProficiencyWriteRefusal::UnknownTrackDefinition,
+                        )));
                     };
-                    let expected = request.expected_track_revision().ok_or(DurabilityError::InvalidStoredState)?;
-                    if numeric_u64(&row,"track_revision")? != expected.get() {
-                        return Ok(Ok(ProficiencyCommitOutcome::Refused(ProficiencyWriteRefusal::StaleTrackRevision)));
+                    let expected = request
+                        .expected_track_revision()
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    if numeric_u64(&row, "track_revision")? != expected.get() {
+                        return Ok(Ok(ProficiencyCommitOutcome::Refused(
+                            ProficiencyWriteRefusal::StaleTrackRevision,
+                        )));
                     }
-                    let changed = line.before().selections().iter().zip(line.after().selections())
-                        .position(|(before,after)| before != after).ok_or(DurabilityError::InvalidStoredState)?;
+                    let changed = line
+                        .before()
+                        .selections()
+                        .iter()
+                        .zip(line.after().selections())
+                        .position(|(before, after)| before != after)
+                        .ok_or(DurabilityError::InvalidStoredState)?;
                     let threshold = current.shape.track_shape().class().thresholds()[changed];
                     if line.before().progress() < u64::from(threshold) {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     }
-                    if level_has_active_modification(tx, fence.character_id, line.before(),
-                        current.shape, changed).await? {
-                        return Ok(Ok(ProficiencyCommitOutcome::Refused(ProficiencyWriteRefusal::ModifiedLevel)));
+                    if level_has_active_modification(
+                        tx,
+                        fence.character_id,
+                        line.before(),
+                        current.shape,
+                        changed,
+                    )
+                    .await?
+                    {
+                        return Ok(Ok(ProficiencyCommitOutcome::Refused(
+                            ProficiencyWriteRefusal::ModifiedLevel,
+                        )));
                     }
                 }
-                ProficiencyCause::Migration => {},
-                ProficiencyCause::PerkModification => return Ok(Err(CharacterProgressionError::InvalidInput)),
+                ProficiencyCause::Migration => {}
+                ProficiencyCause::PerkModification => {
+                    return Ok(Err(CharacterProgressionError::InvalidInput));
+                }
             }
         }
-        let next = root.revision.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
-        let (original,committed) = (root.revision.to_string(),next.to_string());
+        let next = root
+            .revision
+            .checked_add(1)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let (original, committed) = (root.revision.to_string(), next.to_string());
         for sql in [
             "UPDATE game_character_roots SET character_revision=$2::text::numeric(20,0) \
              WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric(20,0)",
             "UPDATE game_character_progression_state SET character_revision=$2::text::numeric(20,0) \
              WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric(20,0)",
         ] {
-            if sqlx::query(sql).bind(character).bind(&committed).bind(&original)
-                .execute(&mut **tx).await?.rows_affected() != 1 { return Err(DurabilityError::InvalidStoredState); }
-        }
-        insert_header(tx,fence.character_id,request,binding,&original,&committed).await?;
-        for line in request.lines() {
-            insert_track(tx,fence.character_id,request.occurrence(),&committed,line).await?;
-            if request.cause() == ProficiencyCause::Migration {
-                clear_migrated_modifications(tx,fence.character_id,request.occurrence().as_bytes(),
-                    &committed,line).await?;
+            if sqlx::query(sql)
+                .bind(character)
+                .bind(&committed)
+                .bind(&original)
+                .execute(&mut **tx)
+                .await?
+                .rows_affected()
+                != 1
+            {
+                return Err(DurabilityError::InvalidStoredState);
             }
         }
-        let result = CommittedProficiencyChange { character_id:fence.character_id,
-            occurrence_id:*request.occurrence().as_bytes(), original_character_revision:fence.expected_character_revision,
-            committed_character_revision:CharacterRevision::new(next).map_err(|_|DurabilityError::InvalidStoredState)?,
-            cause:request.cause(),command_binding:binding.to_vec(),policy_digest:digest,lines:request.lines().to_vec() };
+        insert_header(
+            tx,
+            fence.character_id,
+            request,
+            binding,
+            &original,
+            &committed,
+        )
+        .await?;
+        for line in request.lines() {
+            insert_track(
+                tx,
+                fence.character_id,
+                request.occurrence(),
+                &committed,
+                line,
+            )
+            .await?;
+            if request.cause() == ProficiencyCause::Migration {
+                clear_migrated_modifications(
+                    tx,
+                    fence.character_id,
+                    request.occurrence().as_bytes(),
+                    &committed,
+                    line,
+                )
+                .await?;
+            }
+        }
+        let result = CommittedProficiencyChange {
+            character_id: fence.character_id,
+            occurrence_id: *request.occurrence().as_bytes(),
+            original_character_revision: fence.expected_character_revision,
+            committed_character_revision: CharacterRevision::new(next)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+            cause: request.cause(),
+            command_binding: binding.to_vec(),
+            policy_digest: digest,
+            lines: request.lines().to_vec(),
+        };
         Ok(Ok(ProficiencyCommitOutcome::Committed(result)))
     }
 
@@ -1368,12 +1519,20 @@ mod writer {
         }
     }
 }
-pub(in crate::durability) use writer::{apply_change, replay_change};
 pub use writer::{
     DeclaredProficiencyMigration, ProficiencyCommitOutcome, ProficiencyDefinitions,
     ProficiencyLevelMigration, ProficiencyWriteRefusal, ResolvedProficiencyDefinition,
 };
+pub(in crate::durability) use writer::{apply_change, replay_change};
 
-fn track_values(state: &DurableProficiencyState) -> oteryn_gameplay_progression::proficiency::TrackValues<'_> {
-    (state.item_key(), state.definition_key(), state.definition_revision(), state.progress(), state.selections())
+fn track_values(
+    state: &DurableProficiencyState,
+) -> oteryn_gameplay_progression::proficiency::TrackValues<'_> {
+    (
+        state.item_key(),
+        state.definition_key(),
+        state.definition_revision(),
+        state.progress(),
+        state.selections(),
+    )
 }

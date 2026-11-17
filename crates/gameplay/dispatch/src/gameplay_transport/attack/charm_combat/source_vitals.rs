@@ -287,7 +287,7 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
                     session,
                     &stream,
                     sequence,
-                    now.get() / 1000,
+                    now.get(),
                     |runtime, results| {
                         // The real source owner has already staged native reductions
                         // (including Enrage). Raw reflection >= HP is not a kill proof.

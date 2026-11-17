@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import sys
 
 import appearance_membership
 import lower_item_name_packet as names
@@ -38,6 +39,14 @@ def pre_overlay_definitions(root, current):
         if key in definitions:
             raise ValueError("duplicate pre-overlay Item identity")
         definitions[key] = row
+    # Tree-first identity owners extend the frozen legacy promotion input.
+    # Reuse their exact source-qualified, nonmaterializable references.
+    sys.path.insert(0, str(root / "tools/content-migration"))
+    from tree_item_references import extend_records
+
+    qualified = list(definitions.values())
+    extend_records(qualified, root)
+    definitions = {row["identity"]["key"]: row for row in qualified}
     if set(definitions) != set(current):
         raise ValueError("pre-overlay/current Item identity set drift")
     return definitions

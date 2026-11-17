@@ -6,6 +6,7 @@ source rows stay rejected. The active Item provider is the trade authority.
 """
 import argparse
 import copy
+import difflib
 import hashlib
 import json
 import subprocess
@@ -293,9 +294,23 @@ def refresh_canonical_input_pins(root, baseline, *, packet_path=PATH, keys=None)
             continue
         previous = subprocess.check_output(
             ['git', '-C', str(root), 'show', f"{baseline}:{descriptor['path']}"])
-        if (hashlib.sha256(previous).hexdigest() != descriptor['sha256']
-                or selected_definitions(previous) != selected_definitions(current)):
-            raise ValueError('GRIZZLY_SHOP_REPIN_SELECTED_DEFINITION_CHANGED')
+        previous_digest = hashlib.sha256(previous).hexdigest()
+        if previous_digest != descriptor['sha256']:
+            raise ValueError(
+                'GRIZZLY_SHOP_REPIN_SELECTED_DEFINITION_CHANGED:'
+                f"{descriptor['path']}:BASE_DIGEST:"
+                f"expected={descriptor['sha256']}:actual={previous_digest}")
+        selected_before = selected_definitions(previous)
+        selected_current = selected_definitions(current)
+        if selected_before != selected_current:
+            difference = ''.join(difflib.unified_diff(
+                encode(selected_before).decode().splitlines(keepends=True),
+                encode(selected_current).decode().splitlines(keepends=True),
+                fromfile=f"{baseline}:{descriptor['path']}",
+                tofile=f"working:{descriptor['path']}"))
+            raise ValueError(
+                'GRIZZLY_SHOP_REPIN_SELECTED_DEFINITION_CHANGED:'
+                f"{descriptor['path']}:SELECTED_ROWS\n{difference}")
         descriptor['sha256'] = digest
     path.write_bytes(encode(packet))
 

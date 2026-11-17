@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/goblin_merchant/guard_offer",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 2,
+      "writable": true,
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Task:Rafzan#Guardian_Angel_-_Kind_Of",
+        "docs/reference/content-prep/engnpc2-m13/rafzan-guards-source.md:first-cycle offer and confirmation"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/goblin-merchant/guards-offer",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "guards"
+      ],
+      "topic": 0,
+      "next_topic": 17,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/guard_offer",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Me think when something bad would happen to them, that would teach them. Are you helping poor me?"
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Task:Rafzan#Guardian_Angel_-_Kind_Of",
+        "docs/reference/content-prep/engnpc2-m13/rafzan-guards-source.md:first-cycle offer and confirmation"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/goblin-merchant/guardcatcher-grant",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 17,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/goblin_merchant/guard_offer",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "requires": [],
+      "take": [],
+      "give": {
+        "item": "oteryn:item.tibia.i17669",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Oh, so thanky me be! Take this bow and secretly shoot them with it. It's only little bow, won't do much harm. Some of them might reconsider becoming me guard."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Task:Rafzan#Guardian_Angel_-_Kind_Of",
+        "docs/reference/content-prep/engnpc2-m13/rafzan-guards-source.md:first-cycle offer and confirmation"
+      ]
+    }
+  ]
+}

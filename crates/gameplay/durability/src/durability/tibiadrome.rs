@@ -18,6 +18,8 @@ use sqlx::Row;
 pub const ROTATION_SECONDS: u32 = 14 * 24 * 3600;
 pub const PREPARATION_SECONDS: u32 = 8;
 pub const WAVE_SECONDS: u32 = 120;
+/// ARENA1-RL-08: reaching this wave ends the battle before it is spawned.
+pub const MAX_WAVE: u32 = 300;
 pub fn monster_count(players: usize) -> Option<usize> {
     [4, 8, 11, 14, 17].get(players.checked_sub(1)?).copied()
 }
@@ -33,8 +35,11 @@ pub fn rank_potions(rank: u32) -> u32 {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Progress {
+    /// None is an explicitly unknown legacy baseline; never infer historical levels.
+    #[serde(default)]
+    pub lifetime_levels: Option<u64>,
     pub rotation: u32,
     pub level: u32,
     pub start: u32,
@@ -42,11 +47,36 @@ pub struct Progress {
     pub cooldown_until: u32,
     pub waves: u32,
 }
+impl Default for Progress {
+    fn default() -> Self {
+        Self {
+            lifetime_levels: Some(0),
+            rotation: 0,
+            level: 0,
+            start: 0,
+            points: 0,
+            cooldown_until: 0,
+            waves: 0,
+        }
+    }
+}
 impl Progress {
-    pub fn wave(&mut self, level: u32) {
-        self.level = self.level.max(level);
-        self.start = self.start.saturating_add(1).max(level);
+    pub fn wave(&mut self, cleared_wave: u32) {
+        if cleared_wave >= MAX_WAVE {
+            return;
+        }
+        let level = cleared_wave + 1;
+        self.reached_level(level);
+        self.start = self.start.max(level);
         self.waves = self.waves.saturating_add(1);
+    }
+    /// Advance the level and preserve an explicitly unknown lifetime baseline.
+    pub fn reached_level(&mut self, level: u32) {
+        let gained = u64::from(level.saturating_sub(self.level));
+        if let Some(lifetime) = &mut self.lifetime_levels {
+            *lifetime = lifetime.saturating_add(gained);
+        }
+        self.level = self.level.max(level);
     }
     pub fn finish(&mut self, now: u32) {
         self.start = self.start.saturating_sub(5);
@@ -81,6 +111,8 @@ pub struct Record {
     pub wave: u32,
     pub completed: u32,
     pub active: bool,
+    #[serde(default)]
+    pub preparing: bool,
     pub expires: u32,
 }
 #[derive(Debug)]
@@ -157,6 +189,7 @@ impl DurabilityRoot {
         after: Record,
         disposition: u32,
         cosmetics: Option<crate::content::native_gameplay::NativeCosmeticsView>,
+        hazards: Option<oteryn_protocol_oteryn::arena::DromeHazards>,
     ) -> Result<Vec<u8>, CharacterProgressionError> {
         if command.game_session_id() != fence.game_session_id {
             return Err(CharacterProgressionError::AuthorityRejected);
@@ -179,7 +212,9 @@ impl DurabilityRoot {
             let mut earned=before.progress.clone();
             if earned.rotation < rotation && !rotation_eligible(&mut tx, fence.character_id, earned.rotation).await? { earned.waves=0; }
             earned.rotate(rotation);
+            let expected_lifetime=earned.lifetime_levels.map(|levels|levels.saturating_add(u64::from(after.progress.level.saturating_sub(earned.level))));
             if after.progress.rotation!=rotation || after.progress.points!=earned.points
+                || after.progress.lifetime_levels!=expected_lifetime
                 || (after.active && (after.session!=*fence.game_session_id.as_bytes() || after.generation!=fence.scope_ownership_generation.get())) {
                 return Err(DurabilityError::InvalidStoredState);
             }
@@ -201,10 +236,13 @@ impl DurabilityRoot {
             let (rank,potions)=standing(&mut tx,fence,rotation).await?;
             let reply=oteryn_protocol_oteryn::arena::DromeResult {
                 disposition,level:after.progress.level,start:after.progress.start,points:after.progress.points,
-                phase:if after.active {1}else{0},wave:after.wave,remaining:if after.active {after.expires.saturating_sub(now)}else{0},
+                phase:if after.active {if after.preparing {1}else{2}}else{0},wave:after.wave,remaining:if after.active {after.expires.saturating_sub(now)}else{0},
                 cooldown:after.progress.cooldown_until.saturating_sub(now),rank,potions,
                 rotation_ends:rotation.saturating_add(1).saturating_mul(ROTATION_SECONDS),
             }.encode();
+            let reply=if after.active {
+                if let Some(hazards)=&hazards {oteryn_protocol_oteryn::arena::append_drome_hazards(reply,hazards).map_err(|_|DurabilityError::InvalidStoredState)?} else {reply}
+            } else {reply};
             save(&mut tx,fence,command,&payload,&after,&reply).await?;
             commit_semantic_transaction(tx,deadline).await?;
             Ok(Ok(reply))
@@ -353,6 +391,8 @@ pub struct RunUpdate {
     pub completed: u32,
     pub level: u32,
     pub ended: bool,
+    /// Actual owner wave retained when the terminal runtime state is removed.
+    pub wave: u32,
 }
 
 impl DurabilityRoot {
@@ -370,6 +410,7 @@ impl DurabilityRoot {
             completed,
             level,
             ended,
+            wave,
         } = update;
         let recovery = authority
             .record_for(self)
@@ -385,9 +426,16 @@ impl DurabilityRoot {
                 if state.progress.rotation==now/ROTATION_SECONDS {
                     if completed>state.completed {
                         let count=completed-state.completed;
-                        state.progress.level=state.progress.level.max(level);
+                        state.progress.reached_level(level);
                         state.progress.start=state.progress.start.saturating_add(count).max(level);
                         state.progress.waves=state.progress.waves.saturating_add(count);
+                    }
+                    // A newer clear carries its actual physical wave; an older
+                    // snapshot cannot rewind a wave already acknowledged here.
+                    if completed>state.completed || ended {
+                        state.wave=wave;
+                    } else if completed==state.completed {
+                        state.wave=state.wave.max(wave);
                     }
                     state.completed=state.completed.max(completed);
                     if state.progress.waves>0 {
@@ -396,7 +444,7 @@ impl DurabilityRoot {
                     }
                 }
                 if ended || state.progress.rotation!=now/ROTATION_SECONDS {
-                    state.active=false;state.progress.finish(now);
+                    state.wave=wave;state.active=false;state.progress.finish(now);
                 }
                 if state.progress.rotation < now/ROTATION_SECONDS && !rotation_eligible(&mut tx, fence.character_id, state.progress.rotation).await? { state.progress.waves=0; }
                 state.progress.rotate(now/ROTATION_SECONDS);

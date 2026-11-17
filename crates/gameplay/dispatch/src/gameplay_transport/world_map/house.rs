@@ -17,6 +17,9 @@ pub(in crate::gameplay_transport) struct DecoratedFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for DecoratedFacts<'_, F> {
+    fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
+        self.base.phase_tile(pos)
+    }
     fn base_hidden(&self, key: u64) -> bool {
         self.base.base_hidden(key)
     }
@@ -59,6 +62,9 @@ impl<F: MapFacts> MapFacts for DecoratedFacts<'_, F> {
 pub(super) struct Facts<'a, F>(pub &'a F);
 
 impl<F: MapFacts> MapFacts for Facts<'_, F> {
+    fn phase_tile(&self, pos: TilePos) -> Result<Option<view::ComposedTile>, view::ViewError> {
+        self.0.phase_tile(pos)
+    }
     // The default movement_item/movement_items methods are deliberately empty.
     // Those items belong to the Channel callback owner, even at the same coordinates.
     fn base_hidden(&self, key: u64) -> bool {

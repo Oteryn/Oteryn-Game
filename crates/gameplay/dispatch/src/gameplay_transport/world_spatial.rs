@@ -133,6 +133,7 @@ pub enum VisibleKind {
     Hireling,
     Corpse {
         item_definition_ref: std::num::NonZeroU32,
+        native_appearance_id: Option<std::num::NonZeroU16>,
     },
     /// An immovable Source-owned volatile Item, never a durable corpse.
     GroundItem {
@@ -143,6 +144,7 @@ pub enum VisibleKind {
 /// VIS-3: one entity of the session's Channel, before the interest query.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ChannelEntity {
+    pub source_icons: NativeCreatureIcons,
     pub display_name: Option<EntityDisplayName>,
     pub health_percent: u8,
     pub direction: StepDirection,
@@ -169,10 +171,19 @@ pub struct ChannelEntities {
 }
 
 fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
-    let actor = EntityDetail::Actor {
-        direction: entity.direction,
-        appearance_ref: PLACEHOLDER_APPEARANCE_REF,
-        health_percent: entity.health_percent,
+    let actor = if entity.source_icons.iter().next().is_some() {
+        EntityDetail::ActorWithIcons {
+            direction: entity.direction,
+            appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+            health_percent: entity.health_percent,
+            icons: entity.source_icons,
+        }
+    } else {
+        EntityDetail::Actor {
+            direction: entity.direction,
+            appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+            health_percent: entity.health_percent,
+        }
     };
     let (kind, detail) = match entity.kind {
         VisibleKind::Player => (EntityKind::Player, actor),
@@ -188,12 +199,21 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
         // The handle is attached per session under capability 4 (`attach`).
         VisibleKind::Corpse {
             item_definition_ref,
+            native_appearance_id,
         } => (
             EntityKind::Corpse,
-            EntityDetail::Object {
-                item_definition_ref: item_definition_ref.get(),
-                quantity: 1,
-                item_handle: None,
+            match native_appearance_id {
+                Some(appearance_id) => EntityDetail::ObjectWithAppearance {
+                    item_definition_ref: item_definition_ref.get(),
+                    quantity: 1,
+                    item_handle: None,
+                    appearance_id,
+                },
+                None => EntityDetail::Object {
+                    item_definition_ref: item_definition_ref.get(),
+                    quantity: 1,
+                    item_handle: None,
+                },
             },
         ),
         VisibleKind::GroundItem {
@@ -491,18 +511,22 @@ impl SessionVisibility {
                 ),
             }
         }
-        // Health, corpse Item and display-name changes do not advance a position revision.
-        // Publish stationary changes through the same interest selection and entity record.
+        // Actor metadata, corpse Item and display-name changes do not advance
+        // a position revision. Publish them through the same selected record.
         for entity in &selected {
             let identity = entity.entity.identity;
             let Some(prior) = self.entities.get(&identity) else {
                 continue;
             };
-            let health_changed = matches!((&prior.detail, &entity.detail),
-                (EntityDetail::Actor { health_percent: before, .. }, EntityDetail::Actor { health_percent: after, .. }) if before != after);
-            let corpse_changed = matches!((&prior.detail, &entity.detail),
-                (EntityDetail::Object { item_definition_ref: before, .. }, EntityDetail::Object { item_definition_ref: after, .. }) if before != after);
-            if (health_changed || corpse_changed || prior.display_name != entity.display_name)
+            let actor_changed = matches!(
+                entity.detail,
+                EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. }
+            ) && prior.detail != entity.detail;
+            let object_changed = matches!(
+                entity.detail,
+                EntityDetail::Object { .. } | EntityDetail::ObjectWithAppearance { .. }
+            ) && prior.detail != entity.detail;
+            if (actor_changed || object_changed || prior.display_name != entity.display_name)
                 && !delta
                     .enter
                     .iter()
@@ -652,6 +676,7 @@ mod tests {
             at(
                 3,
                 VisibleKind::Corpse {
+                    native_appearance_id: None,
                     item_definition_ref: std::num::NonZeroU32::MIN,
                 },
                 103,
@@ -854,6 +879,8 @@ mod tests {
 
     fn at(n: u32, kind: VisibleKind, x: i32, y: i32, floor: i16) -> ChannelEntity {
         ChannelEntity {
+            source_icons:
+                oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
             display_name: None,
             health_percent: 100,
             direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
@@ -1060,6 +1087,7 @@ mod tests {
         let mut corpse = at(
             1,
             VisibleKind::Corpse {
+                native_appearance_id: None,
                 item_definition_ref: std::num::NonZeroU32::MIN,
             },
             101,
@@ -1069,6 +1097,7 @@ mod tests {
         view.snapshot(&channel([corpse]), &mut no_handles)
             .expect("snapshot");
         corpse.kind = VisibleKind::Corpse {
+            native_appearance_id: None,
             item_definition_ref: std::num::NonZeroU32::new(2).expect("spent Item ref"),
         };
         let changed = view
@@ -1332,6 +1361,7 @@ mod tests {
     #[test]
     fn objects_are_shown_only_to_a_session_with_capability_4() {
         let corpse = VisibleKind::Corpse {
+            native_appearance_id: None,
             item_definition_ref: std::num::NonZeroU32::new(4240).expect("ref"),
         };
         let mut corpse_at = at(2, corpse, 101, 100, 7);
@@ -1383,5 +1413,38 @@ mod tests {
             CAPABILITY_ITEM_VIEW_MOVE_V1,
         ];
         assert!(encode_visibility_snapshot(&selected, &with).is_ok());
+    }
+}
+
+#[cfg(test)]
+mod soulpit_icon_projection_tests {
+    use super::*;
+    #[test]
+    fn srx3_soulpit_actual_entity_projection_retains_native_source_icon() -> Result<(), String> {
+        let entity = ChannelEntity {
+            source_icons: NativeCreatureIcons::new(&[NativeCreatureIcon {
+                category: 1,
+                id: 6,
+                count: 15,
+            }])
+            .map_err(|error| format!("source Powerful badge: {error:?}"))?,
+            display_name: None,
+            health_percent: 100,
+            direction: StepDirection::South,
+            kind: VisibleKind::Creature,
+            identity: [9; 16],
+            generation: 1,
+            position: ActorPosition {
+                x: 32373,
+                y: 31151,
+                floor: -8,
+            },
+            revision: 1,
+        };
+        let EntityDetail::ActorWithIcons { icons, .. } = wire_entity(&entity).detail else {
+            return Err("actual entity projection must preserve source icons".into());
+        };
+        assert_eq!(icons, entity.source_icons);
+        Ok(())
     }
 }

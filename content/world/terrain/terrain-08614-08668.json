@@ -2489,10 +2489,12 @@
         "value": false
       },
       "blocks_projectile": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": true
       },
       "blocks_sight": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": true
       },
       "floor_change": {
         "state": "UNKNOWN"
@@ -2542,6 +2544,12 @@
           ],
           "ground_speed": [
             "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ],
+          "blocks_projectile": [
+            "appearance:flags.unsight"
+          ],
+          "blocks_sight": [
+            "appearance:flags.unsight"
           ]
         }
       },
@@ -2565,10 +2573,12 @@
         "value": true
       },
       "blocks_projectile": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "blocks_sight": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "floor_change": {
         "state": "UNKNOWN"
@@ -2618,6 +2628,12 @@
           ],
           "ground_speed": [
             "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ],
+          "blocks_projectile": [
+            "appearance:flags.unsight"
+          ],
+          "blocks_sight": [
+            "appearance:flags.unsight"
           ]
         }
       },
@@ -2641,10 +2657,12 @@
         "value": true
       },
       "blocks_projectile": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "blocks_sight": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "floor_change": {
         "state": "UNKNOWN"
@@ -2694,6 +2712,12 @@
           ],
           "ground_speed": [
             "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ],
+          "blocks_projectile": [
+            "appearance:flags.unsight"
+          ],
+          "blocks_sight": [
+            "appearance:flags.unsight"
           ]
         }
       },
@@ -2717,10 +2741,12 @@
         "value": true
       },
       "blocks_projectile": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "blocks_sight": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "floor_change": {
         "state": "UNKNOWN"
@@ -2770,6 +2796,12 @@
           ],
           "ground_speed": [
             "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ],
+          "blocks_projectile": [
+            "appearance:flags.unsight"
+          ],
+          "blocks_sight": [
+            "appearance:flags.unsight"
           ]
         }
       },
@@ -2793,10 +2825,12 @@
         "value": true
       },
       "blocks_projectile": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "blocks_sight": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "floor_change": {
         "state": "UNKNOWN"
@@ -2846,6 +2880,12 @@
           ],
           "ground_speed": [
             "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ],
+          "blocks_projectile": [
+            "appearance:flags.unsight"
+          ],
+          "blocks_sight": [
+            "appearance:flags.unsight"
           ]
         }
       },
@@ -2869,10 +2909,12 @@
         "value": true
       },
       "blocks_projectile": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "blocks_sight": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "floor_change": {
         "state": "UNKNOWN"
@@ -2922,6 +2964,12 @@
           ],
           "ground_speed": [
             "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ],
+          "blocks_projectile": [
+            "appearance:flags.unsight"
+          ],
+          "blocks_sight": [
+            "appearance:flags.unsight"
           ]
         }
       },
@@ -2945,10 +2993,12 @@
         "value": true
       },
       "blocks_projectile": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "blocks_sight": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "floor_change": {
         "state": "UNKNOWN"
@@ -2998,6 +3048,12 @@
           ],
           "ground_speed": [
             "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ],
+          "blocks_projectile": [
+            "appearance:flags.unsight"
+          ],
+          "blocks_sight": [
+            "appearance:flags.unsight"
           ]
         }
       },
@@ -3769,10 +3825,12 @@
         "value": true
       },
       "blocks_projectile": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "blocks_sight": {
-        "state": "UNKNOWN"
+        "state": "KNOWN",
+        "value": false
       },
       "floor_change": {
         "state": "UNKNOWN"
@@ -3822,6 +3880,12 @@
           ],
           "ground_speed": [
             "official_client:2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.bank.waypoints"
+          ],
+          "blocks_projectile": [
+            "appearance:flags.unsight"
+          ],
+          "blocks_sight": [
+            "appearance:flags.unsight"
           ]
         }
       },

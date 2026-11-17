@@ -9,6 +9,11 @@ import validate_materialized_game_tree as tree
 
 
 class AuthoredPropInventory(unittest.TestCase):
+    def test_static_source_registry_is_a_successor_not_a_legacy_locator(self):
+        registry = 'source-static-definitions.json'
+        self.assertNotIn(registry, tree.legacy_locators())
+        self.assertIn(registry, tree.world_successor_files(tree.directory_nodes()))
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

@@ -24,7 +24,7 @@ fn t060_selected_engine_and_aa_survive_restart_and_live_input_queue()
         repeat: false,
     }]);
     assert!(!opened);
-    play.arrow(crate::input::arrow_step(&events).ok_or("missing movement")?);
+    play.arrow(crate::input::arrow_step(&events, false).ok_or("missing movement")?);
     play.tick(&link).map_err(|_| "tick failed")?;
     assert_eq!(
         commands.try_recv()?,

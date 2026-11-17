@@ -39,6 +39,11 @@ impl<'a> SeamRooms<'a> {
         }
     }
 
+    /// Spatial wire projection reads source-role metadata without granting map initialization.
+    pub fn gate_wire_position(&self) -> Option<&QualifiedNativeEntryRoom> {
+        self.combat.as_deref()
+    }
+
     /// The player attack target.
     pub fn gate_attack_target(&self) -> Option<&QualifiedNativeEntryRoom> {
         self.combat.as_deref()

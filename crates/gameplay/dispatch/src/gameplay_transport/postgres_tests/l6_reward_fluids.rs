@@ -71,6 +71,7 @@ pub(super) async fn exercise(
         backpack_outputs: false,
         root_charges_remaining: None,
         root_fluid_subtype: None,
+            additional_items: Vec::new(),
         command: CommandRef::new(
             admitted.game_session_id,
             CommandId::new(8000).map_err(debug)?,

@@ -234,9 +234,26 @@ fn committed_bindings_requalify_epochs_1_and_2_through_the_alias_table() {
     }
     assert_eq!(unbound, 4_590);
 
+    // M57 adds a source-qualified identity after both immutable allocation epochs.
+    assert!(
+        expected
+            .insert(
+                (
+                    "201189f871d23597b82caf88fd611454a2ddefb8".to_owned(),
+                    "48227".to_owned()
+                ),
+                "oteryn:item.tibia.i48227".to_owned(),
+            )
+            .is_none()
+    );
     let bindings = bindings_file();
     assert_eq!(bindings.len(), expected.len());
-    assert_eq!(bindings.len(), 33_971);
+    // M57's pinned Crystal 201189f8 Cake Bridge capture admits source Item 48227.
+    assert!(
+        bindings.iter().any(|row| row["external_id"] == "48227"
+            && row["target"]["key"] == "oteryn:item.tibia.i48227")
+    );
+    assert_eq!(bindings.len(), 33_972);
     for row in &bindings {
         assert_eq!(row["disposition"], "EXACT");
         assert_eq!(row["identity_namespace"], "ots/item_server_id");

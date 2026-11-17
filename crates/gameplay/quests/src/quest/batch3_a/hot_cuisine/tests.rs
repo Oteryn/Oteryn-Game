@@ -50,11 +50,13 @@ fn input<'a>(
         npc: NPC,
         trigger: NpcRuleTrigger::Say,
         message: "yes",
+        player_name: None,
         topic,
         tracks,
         inventory,
         now_epoch_seconds: 1_785_542_400,
         calendar_month: 8,
+        premium_current: true,
         level: 100,
         vocation: "oteryn:vocation.knight",
         sex: 0,
@@ -197,5 +199,118 @@ fn sauce_completion_grants_one_bonus_use_without_inventing_order_requirement()
     assert_eq!(third.reply, hot.already_cooked_reply);
     assert!(third.track_changes.is_empty());
     assert_eq!(third.inventory_before, third.inventory_after);
+    Ok(())
+}
+
+#[test]
+fn cooking_confirmation_requires_live_level_35_and_premium() -> Result<(), NpcRuleError> {
+    let hot = HotCuisineProgram::load()?;
+    let catalogue = catalogue()?;
+    let generic = catalogue
+        .program(QUEST)
+        .ok_or_else(|| NpcRuleError::Invalid("test program".into()))?;
+    let mut progress = tracks(generic);
+    progress.insert(hot.quest_start_track.clone(), 1);
+    progress.insert(hot.current_dish_track.clone(), 1);
+    let inventory = ingredients(&hot.recipes[0]);
+    let outfits = BTreeMap::new();
+    for (level, premium, accepted) in [(34, true, false), (35, false, false), (35, true, true)] {
+        let mut input = input(&progress, &inventory, &outfits, hot.recipes[0].topic);
+        input.level = level;
+        input.premium_current = premium;
+        assert_eq!(hot.plan(generic, &input, &calendar())?.is_some(), accepted);
+    }
+    Ok(())
+}
+
+#[test]
+fn hot_cuisine_rejects_forged_current_year_before_bonus_grant() -> Result<(), NpcRuleError> {
+    let hot = HotCuisineProgram::load()?;
+    let catalogue = catalogue()?;
+    let generic = catalogue
+        .program(QUEST)
+        .ok_or_else(|| NpcRuleError::Invalid("programme".into()))?;
+    let mut progress = tracks(generic);
+    progress.insert(hot.quest_start_track.clone(), 1);
+    progress.insert(hot.current_dish_track.clone(), 15);
+    let carried = ingredients(&hot.recipes[14]);
+    let outfits = BTreeMap::new();
+    let input = input(&progress, &carried, &outfits, 33);
+    let mut forged = calendar();
+    forged.current.year += 1;
+    assert!(hot.plan(generic, &input, &forged).is_err());
+    let actual = hot.calendar_snapshot_utc(&input)?;
+    assert_eq!(actual.current.year, 2026);
+    let committed = hot
+        .plan(generic, &input, &actual)?
+        .ok_or_else(|| NpcRuleError::Invalid("source year plan".into()))?;
+    assert!(
+        committed
+            .track_changes
+            .iter()
+            .any(|change| change.key == hot.bonus_year_track && change.after == 2026)
+    );
+    Ok(())
+}
+
+#[test]
+fn m42_menu_completion_requires_every_course_and_does_not_complete_repeats()
+-> Result<(), NpcRuleError> {
+    let hot = HotCuisineProgram::load()?;
+    let catalogue = catalogue()?;
+    let generic = catalogue
+        .program(QUEST)
+        .ok_or_else(|| NpcRuleError::Invalid("test program".into()))?;
+    let recipe = &hot.recipes[14];
+    let carried = ingredients(recipe);
+    let outfits = BTreeMap::new();
+    let mut progress = tracks(generic);
+    progress.insert(hot.quest_start_track.clone(), 1);
+    progress.insert(hot.current_dish_track.clone(), 15);
+    for other in &hot.recipes[..14] {
+        progress.insert(other.cook_count_track.clone(), 1);
+    }
+    let plan = hot
+        .plan(
+            generic,
+            &input(&progress, &carried, &outfits, recipe.topic),
+            &calendar(),
+        )?
+        .ok_or_else(|| NpcRuleError::Invalid("terminal cooking plan".into()))?;
+    assert!(
+        plan.completes,
+        "the final course must complete the canonical quest receipt"
+    );
+    progress.insert(hot.recipes[0].cook_count_track.clone(), 0);
+    let incomplete = hot
+        .plan(
+            generic,
+            &input(&progress, &carried, &outfits, recipe.topic),
+            &calendar(),
+        )?
+        .ok_or_else(|| NpcRuleError::Invalid("incomplete menu plan".into()))?;
+    assert!(
+        !incomplete.completes,
+        "missing earlier course cannot complete the quest"
+    );
+    progress.insert(hot.recipes[0].cook_count_track.clone(), 1);
+    progress.insert(hot.quest_start_track.clone(), 2);
+    let repeat = hot
+        .plan(
+            generic,
+            &input(&progress, &carried, &outfits, recipe.topic),
+            &calendar(),
+        )?
+        .ok_or_else(|| NpcRuleError::Invalid("repeat cooking plan".into()))?;
+    assert!(
+        !repeat.completes,
+        "permitted later cooking must not complete twice"
+    );
+    assert!(
+        repeat
+            .effects
+            .iter()
+            .any(|effect| matches!(effect, NpcRuleEffect::GiveItem { .. }))
+    );
     Ok(())
 }

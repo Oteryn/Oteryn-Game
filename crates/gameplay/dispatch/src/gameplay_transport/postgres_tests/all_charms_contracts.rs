@@ -670,14 +670,16 @@ fn enrage_fixture_with_identity(
                     species: RACE.into(),
                     boss_ability: BossAbility::Enrage,
                     now_micros: 0,
-                    positions: std::array::from_fn(|index| MovementLocalPosition {
-                        x: if index == 6 {
-                            32376
-                        } else {
-                            32363 + index as i32
-                        },
-                        y: if index == 6 { 31144 } else { 31133 },
-                        floor: 8,
+                    positions: std::array::from_fn(|index| {
+                        Some(MovementLocalPosition {
+                            x: if index == 6 {
+                                32376
+                            } else {
+                                32363 + index as i32
+                            },
+                            y: if index == 6 { 31144 } else { 31133 },
+                            floor: 8,
+                        })
                     }),
                 },
                 |_| true,
