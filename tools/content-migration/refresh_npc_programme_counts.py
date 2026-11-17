@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""Refresh exact NPC activation count pins from the real runtime catalogue.
+
+Run with the repository environment sourced. The existing quest identity fixture
+and the named duplicate owners remain closed; unexpected programmes are refused.
+"""
+from __future__ import annotations
+
+import argparse
+from collections import Counter
+import json
+from pathlib import Path
+import re
+import subprocess
+
+ROOT = Path(__file__).resolve().parents[2]
+TEST = ROOT / "crates/gameplay/quests/src/quest/npc_rules/tests.rs"
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+    text = TEST.read_text()
+    fixture = re.search(
+        r"let expected_programmes = std::collections::BTreeSet::from\(\[(.*?)\]\);",
+        text, re.S,
+    )
+    if fixture is None:
+        raise SystemExit("missing exact quest identity fixture")
+    expected = set(re.findall(r'"(oteryn:quest\.[^"]+)"', fixture[1]))
+    rows = json.loads(subprocess.check_output(
+        ["cargo", "run", "--quiet", "-p", "oteryn-gameplay-quests",
+         "--example", "npc_programme_inventory"], cwd=ROOT, text=True,
+    ))
+    native = [row for row in rows if row["schema"] == 1]
+    expected_counts = Counter({quest: 1 for quest in expected})
+    expected_counts.update({
+        "oteryn:quest.dangerous_depths_quest": 1,
+        "oteryn:quest.outfit_and_addon_quests": 1,
+    })
+    if Counter(row["quest"] for row in native) != expected_counts:
+        raise SystemExit("runtime quest cohort changed; review its exact identities")
+    for quest, owners in {
+        "oteryn:quest.dangerous_depths_quest": {
+            None, "oteryn:quest-npc-program.questpc2-gnomus-ordnance",
+        },
+        "oteryn:quest.outfit_and_addon_quests": {
+            "oteryn:quest-npc-program.citizen-source-sagas",
+            "oteryn:quest-npc-program.sandra-lottery",
+        },
+    }.items():
+        if {row["program_key"] for row in native if row["quest"] == quest} != owners:
+            raise SystemExit(f"unexpected duplicate programme owners: {quest}")
+    authored = [row for row in rows if row["schema"] != 1]
+    if len(authored) != 1 or authored[0]["schema"] != 2 or authored[0]["quest"] != "oteryn:quest.authored.mystery_of_the_valley_quest":
+        raise SystemExit("unexpected authored programme cohort")
+    rendered, count = re.subn(
+        r"(runtime\.programs\(\)\.len\(\), expected_programmes\.len\(\) \+ )\d+",
+        lambda match: match[1] + str(len(rows) - len(expected)), text,
+    )
+    if count != 1:
+        raise SystemExit("expected one total programme count pin")
+    marker = "fn npc_activation_keeps_exact_legacy_hashes_defaults_and_rejects_incompatible_rollback_main_source()"
+    before, body = rendered.split(marker, 1)
+    body, count = re.subn(
+        r"(\.filter\(\|program\| program\.document\.schema == 1\)\s*\.count\(\),\s*)\d+",
+        lambda match: match[1] + str(len(native)), body, count=1,
+    )
+    if count != 1:
+        raise SystemExit("expected one schema1 programme count pin")
+    rendered = before + marker + body
+    if args.check and rendered != text:
+        raise SystemExit("NPC programme count pins are stale")
+    if not args.check:
+        TEST.write_text(rendered)
+    print(f"NPC programme counts: schema1={len(native)} total={len(rows)} check={args.check}")
+
+
+if __name__ == "__main__":
+    main()
