@@ -372,6 +372,20 @@ mod tests {
                 if purpose == "bored" { sample } else { u64::MAX }
             })
         };
+        let catalogue: serde_json::Value = serde_json::from_str(crate::owner::CATALOGUE_JSON)?;
+        let trigger = catalogue["entries"]
+            .as_array()
+            .and_then(|entries| entries.iter().find(|entry| entry["key"] == "bored"))
+            .map(|entry| &entry["trigger"]);
+        assert_eq!(
+            trigger,
+            Some(&serde_json::json!({
+                "kind": "at_reset",
+                "chance_permille": 82,
+                "duration": "until_next_reset",
+            }))
+        );
+
         let threshold = at(82, 1000);
         let active = serde_json::to_value(roll(7, threshold - 1))?;
         assert_eq!(active["bored"], true);
@@ -397,7 +411,10 @@ mod tests {
             .ok_or("active epoch followed by inactive epoch")?;
         let day = roll_calendar(&world, active_epoch, 1, 1);
         let captured = crate::decision::NativeDecision::capture(&day);
-        let restored = captured.restore().map_err(|e| format!("{e:?}"))?;
+        let bytes = serde_json::to_vec(&captured).map_err(|e| e.to_string())?;
+        let loaded: crate::decision::NativeDecision =
+            serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+        let restored = loaded.restore().map_err(|e| format!("{e:?}"))?;
         assert!(restored.bored);
         let before_next_save = roll_calendar(&world, active_epoch, 1, 2);
         assert!(before_next_save.bored);
