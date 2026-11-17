@@ -35,7 +35,9 @@
   ],
   "crates/gameplay/dispatch": [
     "crates/gameplay/dispatch/build_mechanics.rs:130",
-    "crates/gameplay/dispatch/build_mechanics.rs:138"
+    "crates/gameplay/dispatch/build_mechanics.rs:138",
+    "crates/gameplay/dispatch/build_pg_shard.rs:16",
+    "crates/gameplay/dispatch/build_pg_shard.rs:62"
   ],
   "crates/gameplay/durability": [
     "crates/gameplay/durability/build.rs:4",
