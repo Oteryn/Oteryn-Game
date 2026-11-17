@@ -201,6 +201,7 @@ async fn sams_old_backpack(
         ],
     )
     .await?;
+    select_talk_capabilities(owner, admitted)?;
     let talk = super::qengine_rewards::wire_conversation;
     // Neither the sealed door nor the chest answer before Kroox's permission.
     assert_ne!(
@@ -306,5 +307,28 @@ async fn sams_old_backpack(
         "once per character"
     );
     assert_eq!(count(h, ARMOR).await?, 1);
+    Ok(())
+}
+
+/// Selects the NPC talk capabilities (3, 6, 25) the way the generic reward flow does.
+pub(super) fn select_talk_capabilities(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+) -> TestResult {
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.extend([3, 6, 25]);
+    selected.sort_unstable();
+    selected.dedup();
+    let offered = crate::gameplay_transport::appearance_change::offer::offered(
+        owner.offered_capabilities(),
+        owner.appearance_available(),
+    );
+    admitted.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(&offered, &selected)
+            .ok_or("capabilities")?;
     Ok(())
 }

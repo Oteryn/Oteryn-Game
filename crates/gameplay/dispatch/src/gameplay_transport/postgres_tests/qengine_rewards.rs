@@ -604,7 +604,7 @@ async fn wire_conversation_with_prefix_refusal(
                         oteryn_protocol_oteryn::npc_service::decode_npc_intent_result(
                             command.payload,
                         )
-                        .map_err(|e| format!("{e:?} QDDEBUG {:?} {:?}", command.command_id, command.payload))?;
+                        .map_err(|e| format!("{e:?}"))?;
                     if command.command_id == last {
                         result = Some(disposition);
                     } else {

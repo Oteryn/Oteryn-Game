@@ -30,6 +30,7 @@ pub(super) async fn exercise(
     let start = callbacks.iter().find(|c| c.key == START).ok_or("start")?;
     let finish = callbacks.iter().find(|c| c.key == RETURN).ok_or("return")?;
     let [npc] = super::classic_quests::install(owner, admitted, [start.npc.as_str()]).await?;
+    super::qd_world::select_talk_capabilities(owner, admitted)?;
     let talk = super::qengine_rewards::wire_conversation;
     // The return route is closed before Ahmet hands out the mission.
     let (result, _, _) = talk(owner, admitted, npc, finish, false, vec!["hi", "quest", "yes"]).await?;
