@@ -9,9 +9,7 @@ use oteryn_gameplay_dispatch::gameplay_transport::composed_test_owner::{
 };
 use oteryn_gameplay_dispatch::gameplay_transport::{ComposedFreshAdmission, FreshEvidenceSource};
 use oteryn_gameplay_world::map::view::MapFacts;
-use oteryn_protocol_oteryn::world_object::{
-    UseDisposition, WorldObjectTarget,
-};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 type TestResult<T = ()> = fixture::TestResult<T>;
@@ -19,26 +17,98 @@ type TestResult<T = ()> = fixture::TestResult<T>;
 mod world;
 
 #[derive(Clone, Copy)]
-struct Case { tag: &'static str, claim: &'static str, position: (u16,u16,u8), unique: u16, appearance: u16, item: u16, source: &'static [u8] }
+struct Case {
+    tag: &'static str,
+    claim: &'static str,
+    position: (u16, u16, u8),
+    unique: u16,
+    appearance: u16,
+    item: u16,
+    source: &'static [u8],
+}
 #[test]
 fn qaitems_boots_source_use_inventory_and_replay() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()); };
-    execute(admin, Case { tag: "boots", claim: "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots", position: (32582,31405,15), unique: 6284, appearance: 2472, item: 9019, source: include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../content/world/placements/region-z15-x127-y122.b3")) })
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    execute(
+        admin,
+        Case {
+            tag: "boots",
+            claim: "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
+            position: (32582, 31405, 15),
+            unique: 6284,
+            appearance: 2472,
+            item: 9019,
+            source: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../content/world/placements/region-z15-x127-y122.b3"
+            )),
+        },
+    )
 }
 #[test]
 fn qaitems_hammer_source_use_inventory_and_replay() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()); };
-    execute(admin, Case { tag: "hammer", claim: "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer", position: (32776,32253,8), unique: 6078, appearance: 2472, item: 3208, source: include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../content/world/placements/region-z08-x128-y125.b3")) })
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    execute(
+        admin,
+        Case {
+            tag: "hammer",
+            claim: "oteryn:reward-claim.quest.u7_6.explorer_society.giant_smith_hammer.hammer",
+            position: (32776, 32253, 8),
+            unique: 6078,
+            appearance: 2472,
+            item: 3208,
+            source: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../content/world/placements/region-z08-x128-y125.b3"
+            )),
+        },
+    )
 }
 #[test]
 fn qaitems_lottery_source_use_inventory_and_replay() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()); };
-    execute(admin, Case { tag: "lottery", claim: "oteryn:reward-claim.quest.u8_1.secret_service.lottery_ticket", position: (32872,31958,11), unique: 6250, appearance: 2469, item: 5956, source: include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../content/world/placements/region-z11-x128-y124.b3")) })
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    execute(
+        admin,
+        Case {
+            tag: "lottery",
+            claim: "oteryn:reward-claim.quest.u8_1.secret_service.lottery_ticket",
+            position: (32872, 31958, 11),
+            unique: 6250,
+            appearance: 2469,
+            item: 5956,
+            source: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../content/world/placements/region-z11-x128-y124.b3"
+            )),
+        },
+    )
 }
 #[test]
 fn qaitems_poem_source_use_inventory_and_replay() -> TestResult {
-    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()); };
-    execute(admin, Case { tag: "poem", claim: "oteryn:reward-claim.quest.u8_1.secret_service.poem_scroll", position: (32643,32733,7), unique: 6251, appearance: 2472, item: 347, source: include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../content/world/placements/region-z07-x127-y127.b3")) })
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    execute(
+        admin,
+        Case {
+            tag: "poem",
+            claim: "oteryn:reward-claim.quest.u8_1.secret_service.poem_scroll",
+            position: (32643, 32733, 7),
+            unique: 6251,
+            appearance: 2472,
+            item: 347,
+            source: include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../content/world/placements/region-z07-x127-y127.b3"
+            )),
+        },
+    )
 }
 fn execute(admin: String, case: Case) -> TestResult {
     std::thread::Builder::new().stack_size(128 << 20).spawn(move || -> Result<(),String> {
@@ -55,18 +125,60 @@ fn execute(admin: String, case: Case) -> TestResult {
         }).map_err(debug)
     })?.join().map_err(|_| "qaitems USE PG thread failed")?.map_err(Into::into)
 }
-async fn exercise(h: &fixture::Harness, case: Case, controller: &oteryn_gameplay_content::content::ContentActivationController, pin: &oteryn_gameplay_content::content::NativeEntryContentPin) -> TestResult {
+async fn exercise(
+    h: &fixture::Harness,
+    case: Case,
+    controller: &oteryn_gameplay_content::content::ContentActivationController,
+    pin: &oteryn_gameplay_content::content::NativeEntryContentPin,
+) -> TestResult {
     super::engnpc2_live_transport::fresh(h).await?;
-    let scope=fixture::fence(1)?.runtime_scope;
-    let world=scope.world_id();
-    let channel=crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?;
-    let session=GameSessionId::decode(&id(50)).map_err(debug)?;
-    let generation=controller.active().ok_or("active generation")?;
-    let native=generation.native_gameplay().ok_or("native gameplay")?;
-    let (current,_)=crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone()).current_session_at(session).await?;
-    let (x,y,z)=case.position;
-    let start=(x-1,y);
-    let scene=world::native_scene(native,vec![world::NativeCrop { bytes:case.source,region:(z,x/256,y/256),bounds:(x-2,y-2,x+2,y+2),start,expected:vec![] }], &[], &[case.appearance],world,channel)?;
+    let scope = fixture::fence(1)?.runtime_scope;
+    let world = scope.world_id();
+    let channel = crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?;
+    let session = GameSessionId::decode(&id(50)).map_err(debug)?;
+    let generation = controller.active().ok_or("active generation")?;
+    let native = generation.native_gameplay().ok_or("native gameplay")?;
+    let (current, _) =
+        crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+            .current_session_at(session)
+            .await?;
+    let (x, y, z) = case.position;
+    let region = oteryn_world_bundle_compiler::b3::decode_region(
+        case.source,
+        oteryn_world_bundle::bundle::TILE_LIMITS,
+        &mut oteryn_world_bundle::sector::Budget {
+            tiles: 65536,
+            entries: 1_000_000,
+        },
+    )?;
+    let tile = region
+        .sectors
+        .iter()
+        .flat_map(|(_, _, tiles)| tiles)
+        .find(|tile| (tile.x, tile.y) == (x, y))
+        .ok_or("source chest tile")?;
+    assert_eq!(
+        tile.items
+            .iter()
+            .filter(|item| item.attrs.unique == Some(case.unique))
+            .count(),
+        1
+    );
+    let start = (x - 1, y);
+    let scene = world::native_scene(
+        native,
+        vec![world::NativeCrop {
+            bytes: case.source,
+            region: (z, x / 256, y / 256),
+            bounds: (x - 2, y - 2, x + 2, y + 2),
+            start,
+            expected: vec![],
+        }],
+        &[],
+        &[case.appearance],
+        world,
+        channel,
+    )?;
     let cells = scene
         .movement_cells(pin.qualified_room().movement_cells())
         .map_err(debug)?;
@@ -79,7 +191,7 @@ async fn exercise(h: &fixture::Harness, case: Case, controller: &oteryn_gameplay
             oteryn_gameplay_content::content::NativeEntryStart {
                 x: i32::from(start.0),
                 y: i32::from(start.1),
-                floor: 7,
+                floor: i16::from(z),
             },
         )
         .ok_or("qualified native seal scene")?;
@@ -129,7 +241,7 @@ async fn exercise(h: &fixture::Harness, case: Case, controller: &oteryn_gameplay
         .read_actor_position(actor)
         .map_err(debug)?
         .position();
-    assert_eq!((at.x, at.y, at.floor), (start.x, start.y, 7));
+    assert_eq!((at.x, at.y, at.floor), (start.x, start.y, i16::from(z)));
     let runtime = Mutex::new(runtime);
     let content =
         oteryn_gameplay_world::world_runtime::ReferenceContentGeneration::from_content(room.door())
@@ -195,31 +307,101 @@ async fn exercise(h: &fixture::Harness, case: Case, controller: &oteryn_gameplay
     }
     .build();
     owner.active_generation = Some(generation);
-    owner.quest_catalogue = Some(Arc::new(oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1").map_err(debug)?.catalogue().clone()));
-    super::engitem_reward_text::equip_backpack(h,&authority,native,&super::engitem_reward_text::Weights(native)).await?;
-    let report=oteryn_gameplay_content::content::world_reward_claims::bind_embedded_reward_claims(scene.base().as_ref(),&|_|true)?;
-    let selected=report.served.iter().filter(|row|row.key.as_str()==case.claim).collect::<Vec<_>>();
-    assert_eq!(selected.len(),1,"exact claim must bind");
-    assert_eq!(selected[0].placements.len(),1);
-    let bound=&selected[0].placements[0];
-    assert_eq!((bound.cell.x,bound.cell.y,bound.cell.floor),(x,y,-i8::try_from(z)?));
+    owner.quest_catalogue = Some(Arc::new(
+        oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+            .map_err(debug)?
+            .catalogue()
+            .clone(),
+    ));
+    super::engitem_reward_text::equip_backpack(
+        h,
+        &authority,
+        native,
+        &super::engitem_reward_text::Weights(native),
+    )
+    .await?;
+    let report =
+        oteryn_gameplay_content::content::world_reward_claims::bind_embedded_reward_claims(
+            scene.base().as_ref(),
+            &|_| true,
+        )?;
+    let selected = report
+        .served
+        .iter()
+        .filter(|row| row.key.as_str() == case.claim)
+        .collect::<Vec<_>>();
+    assert_eq!(selected.len(), 1, "exact claim must bind");
+    assert_eq!(selected[0].placements.len(), 1);
+    let bound = &selected[0].placements[0];
+    assert_eq!(
+        (bound.cell.x, bound.cell.y, bound.cell.floor),
+        (x, y, -i8::try_from(z)?)
+    );
     assert!(bound.contents.is_empty());
-    let key=bound.bundle_placement_key;
+    assert_eq!(bound.placement.items.len(), 1);
+    assert_eq!(
+        bound.placement.items[0].item.key().as_str(),
+        format!("oteryn:item.tibia.i{}", case.item)
+    );
+    assert_eq!(bound.placement.items[0].count, 1);
+    if case.item == 5956 {
+        assert_eq!(
+            bound.root_text.as_deref(),
+            Some(
+                "Damn you Thais! Damn you TBI! I am no longer an agent or a noble but a black knight. A dark avenger that will have his revenge!"
+            )
+        );
+    } else {
+        assert!(bound.root_text.is_none());
+    }
+    let key = bound.bundle_placement_key;
     use oteryn_gameplay_world::map::boot::BundleCollisionIndexExt;
-    let oteryn_gameplay_content::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index)=room.movement_cells().index() else { return Err("bundle scene".into()); };
-    let map=index.map();
-    let mut placement=map.overlay.base().digest().to_vec();
+    let oteryn_gameplay_content::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(
+        index,
+    ) = room.movement_cells().index()
+    else {
+        return Err("bundle scene".into());
+    };
+    let map = index.map();
+    let mut placement = map.overlay.base().digest().to_vec();
     placement.extend_from_slice(&key.to_be_bytes());
-    let target=WorldObjectTarget {placement,expected_revision:map.facts.object_revision(key)};
-    let fence=composed_test_owner::load_quests(&owner,session).await?.item_fence();
-    let command=UseCommand {game_session_id:session,command_id:19600,item_fence:Some(fence)};
-    assert_eq!(owner.use_object(actor,command,target.clone()).await.disposition,UseDisposition::Committed);
+    let target = WorldObjectTarget {
+        placement,
+        expected_revision: map.facts.object_revision(key),
+    };
+    let fence = composed_test_owner::load_quests(&owner, session)
+        .await?
+        .item_fence();
+    let command = UseCommand {
+        game_session_id: session,
+        command_id: 19600,
+        item_fence: Some(fence),
+    };
+    assert_eq!(
+        owner
+            .use_object(actor, command, target.clone())
+            .await
+            .disposition,
+        UseDisposition::Committed
+    );
     let inventory:Vec<String>=sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_instances i JOIN game_reward_claim_mint_receipts m USING(item_instance_id) JOIN game_item_container_entries e USING(item_instance_id) WHERE m.claim_production_key=$1 AND e.character_id=m.character_id").bind(case.claim).fetch_all(&h.pool).await?;
-    assert_eq!(inventory,vec![format!("oteryn:item.tibia.i{}",case.item)]);
+    assert_eq!(inventory, vec![format!("oteryn:item.tibia.i{}", case.item)]);
     // The same durable command must replay without a second item or receipt.
-    assert_eq!(owner.use_object(actor,command,target.clone()).await.disposition,UseDisposition::Committed);
-    let next=UseCommand {command_id:19601,..command};
-    assert_eq!(owner.use_object(actor,next,target).await.disposition,UseDisposition::Rejected);
-    assert_eq!(h.count("game_reward_claim_mint_receipts").await?,1);
+    assert_eq!(
+        owner
+            .use_object(actor, command, target.clone())
+            .await
+            .disposition,
+        UseDisposition::Committed
+    );
+    let next = UseCommand {
+        command_id: 19601,
+        ..command
+    };
+    assert_eq!(
+        owner.use_object(actor, next, target).await.disposition,
+        UseDisposition::Rejected
+    );
+    assert_eq!(h.count("game_reward_claim_mint_receipts").await?, 1);
     Ok(())
 }
