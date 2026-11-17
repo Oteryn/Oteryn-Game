@@ -34,8 +34,50 @@ pub(super) async fn prepare(
     };
     match prepare_build(root, authority, proof, config, native, session, profile).await {
         Ok(()) => "qualified",
-        Err(_) => "rejected",
+        Err(error) => {
+            emit(PROCESS, &refusal_warning(&session, profile, error.as_ref()));
+            "rejected"
+        }
     }
+}
+
+/// This fixture emits only classified errors/static context, never request bytes or node proof.
+fn refusal_warning(
+    session: &[u8; 16],
+    profile: &str,
+    error: &(dyn std::error::Error + 'static),
+) -> oteryn_error_codes::Line<'static> {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+    let text = error.to_string();
+    // Suppress common credential-bearing forms if a future adapter adds raw diagnostic text.
+    let lower = text.to_ascii_lowercase();
+    let sensitive = [
+        "://",
+        "password",
+        "token:",
+        "token=",
+        "token(",
+        "secret",
+        "authorization:",
+        "authorization=",
+        "bearer ",
+        "private key",
+        "credential",
+        "seed",
+        "-----begin",
+    ]
+    .iter()
+    .any(|marker| lower.contains(marker));
+    let reason = if sensitive {
+        "redacted_sensitive_error".to_owned()
+    } else {
+        text.chars().take(200).collect()
+    };
+    // Line's token renderer additionally bounds and sanitizes every extension field.
+    Line::new(Level::Warn, "node", "qualification_fixture_refused")
+        .field("reason", FieldValue::Owned(reason))
+        .field("session", FieldValue::Owned(uuid_text(session)))
+        .field("profile", FieldValue::Owned(profile.to_owned()))
 }
 
 async fn prepare_build(
@@ -196,6 +238,58 @@ async fn prepare_items(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn refusal_warning_retains_error_kind_and_validated_context() {
+        let session = [0x12; 16];
+        let error: Box<dyn std::error::Error> = "qualification admission: Unavailable".into();
+        let line = refusal_warning(&session, "knight", error.as_ref());
+        assert_eq!(line.level, oteryn_error_codes::Level::Warn);
+        let rendered = line.render("test", 0);
+        assert!(rendered.contains("event=qualification_fixture_refused"));
+        assert!(rendered.contains("reason=qualification_admission:_Unavailable"));
+        assert!(rendered.contains("session=12121212-1212-1212-1212-121212121212"));
+        assert!(rendered.contains("profile=knight"));
+        let error: Box<dyn std::error::Error> =
+            "qualification admission: SessionUseAuthorization(AuthorityRejected)".into();
+        let rendered = refusal_warning(&session, "knight", error.as_ref()).render("test", 0);
+        assert!(rendered.contains("SessionUseAuthorization_AuthorityRejected_"));
+        assert!(!rendered.contains("redacted_sensitive_error"));
+    }
+
+    #[test]
+    fn refusal_warning_bounds_reason_and_cannot_inject_a_log_line() {
+        let error: Box<dyn std::error::Error> = "invalid\n\r\x1b[31m 世界 ".repeat(100).into();
+        let rendered = refusal_warning(&[0x12; 16], "druid", error.as_ref()).render("test", 0);
+        let reason = rendered
+            .split("reason=")
+            .nth(1)
+            .and_then(|s| s.split_whitespace().next());
+        assert!(reason.is_some_and(|reason| reason.chars().count() <= 200 && reason.is_ascii()));
+        assert_eq!(rendered.lines().count(), 1);
+        assert!(!rendered.contains('\r') && !rendered.contains('\x1b'));
+    }
+
+    #[test]
+    fn refusal_warning_redacts_sensitive_error_text() {
+        for detail in [
+            "postgresql://user:sensitive@host/database",
+            "password=sensitive",
+            "Token: sensitive",
+            "secret=sensitive",
+            "Authorization: Bearer sensitive",
+            "private key sensitive",
+            "credential=sensitive",
+            "seed=sensitive",
+            "-----BEGIN sensitive",
+        ] {
+            let error: Box<dyn std::error::Error> = detail.into();
+            let rendered =
+                refusal_warning(&[0x12; 16], "paladin", error.as_ref()).render("test", 0);
+            assert!(rendered.contains("reason=redacted_sensitive_error"));
+            assert!(!rendered.contains("sensitive@") && !rendered.contains("=sensitive"));
+        }
+    }
 
     #[test]
     fn qualification_items_resolve_from_the_real_served_catalogue()

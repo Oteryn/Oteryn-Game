@@ -87,6 +87,10 @@ async fn connect_into<'p, 'a>(
 
 /// Explicit profile; never mutates NODE_BOOT_PROFILE or provisions the no-vocation victim.
 async fn provision_as(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
+    // Core's E2EF1 wrapper qualifies a reconnection, after a checked first-entry logout.
+    // Match that lifecycle for this Character without running the unrelated movement rows.
+    logout(bot).await?;
+    bot.session = Some(connect_character(bot.pair, 0xa6, bot.index).await?);
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
     let session = uuid_text(bot.client()?.join_snapshot().game_session_id.as_bytes());
     let profile = profile.to_owned();
