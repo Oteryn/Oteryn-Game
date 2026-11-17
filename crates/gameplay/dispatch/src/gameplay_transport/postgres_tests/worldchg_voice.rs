@@ -151,11 +151,12 @@ fn scenario(admin: String, gobbles: i64, expected_stage: u8) -> TestResult {
         deps.admitted.item_fence = Some(item_fence);
         deps.admitted.runtime_actor = Some(deps.actor);
         deps.admitted.first_entry = FirstEntryOutcome::Positioned;
+        let mut admitted = deps.admitted;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = controller.active();
         owner.reset_epoch = epoch;
         deps.initialize(&owner).await;
-        owner.admit_progression_session(&deps.admitted).await;
+        owner.admit_progression_session(&mut admitted).await;
 
         kill(&owner, character, session, deps.actor, target, 20000).await?;
         let day = h
