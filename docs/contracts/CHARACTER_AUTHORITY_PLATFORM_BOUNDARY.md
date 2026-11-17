@@ -371,9 +371,9 @@ strings with no default, numeric form or normalization. New reads request versio
 `starter_template_revision` names `newhaven-starter-r1`; there is no new starter
 member. Game admits the requested context against its current interpretation.
 
-Binding tag 4 preserves tag 3's fields, appends sex byte 1 (`Female`) or 2 (`Male`)
-after the requested name, then a one-byte vocation length and the canonical
-vocation's UTF-8 bytes. Migration 0134 retains immutable creation sex; migration
+Binding tag 4 preserves tag 3's field order, including sex byte 1 (`Female`) or
+2 (`Male`) after the requested name, then appends a one-byte vocation length and
+the canonical vocation's UTF-8 bytes. Migration 0134 retains immutable creation sex; migration
 2890 retains immutable creation vocation as a Game key and creates the initial
 build seed atomically with the root. Historical roots keep NULL choices without
 a guessed backfill. Recovery verifies historical tags 2/3 as well as tag 4;
