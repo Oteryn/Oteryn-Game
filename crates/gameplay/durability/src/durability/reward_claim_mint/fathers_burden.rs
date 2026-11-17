@@ -4,6 +4,10 @@ use super::*;
 use crate::durability::item_loop_move::ItemLoopContent;
 use crate::durability::item_mint_audit::Type2Transaction;
 
+#[path = "fathers_burden_corpse_rule.rs"]
+mod corpse_rule;
+pub use corpse_rule::{FatherCorpseReward, father_corpse_reward};
+
 pub(in crate::durability) async fn claim<C: ItemLoopContent>(
     tx: &mut Type2Transaction<'_>,
     node: &NodeIncarnationProof,
@@ -189,46 +193,11 @@ async fn mint<C: ItemLoopContent>(
     Ok(Ok(true))
 }
 
-/// Donor actions_corpse.lua:2–19. The claim key is character-scoped,
-/// while the physical corpse remains available to everyone in reach.
-#[derive(Clone, Copy)]
-pub struct FatherCorpseReward {
-    creature: &'static str,
-    corpse: &'static str,
-    item: &'static str,
-    claim: &'static str,
-    pub feedback: &'static str,
-}
-
-pub fn father_corpse_reward(corpse: &str) -> Option<FatherCorpseReward> {
-    let (corpse, creature, item, claim, feedback) = match corpse {
-        "oteryn:item.tibia.i11589" => (
-            "oteryn:item.tibia.i11589",
-            "oteryn:creature.glitterscale",
-            "oteryn:item.tibia.i11550",
-            "oteryn:reward-claim.quest.fathers-burden.scale",
-            "You acquired Glitterscale's scale.",
-        ),
-        "oteryn:item.tibia.i11590" => (
-            "oteryn:item.tibia.i11590",
-            "oteryn:creature.heoni",
-            "oteryn:item.tibia.i11548",
-            "oteryn:reward-claim.quest.fathers-burden.sinew",
-            "You acquired Heoni's sinew",
-        ),
-        _ => return None,
-    };
-    Some(FatherCorpseReward {
-        creature,
-        corpse,
-        item,
-        claim,
-        feedback,
-    })
-}
-
 impl FatherCorpseReward {
-    #[allow(clippy::too_many_arguments, reason = "the exact actor fence and Ground operand remain explicit")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the exact actor fence and Ground operand remain explicit"
+    )]
     pub async fn claim<C: ItemLoopContent>(
         self,
         root: &DurabilityRoot,
@@ -287,35 +256,5 @@ impl FatherCorpseReward {
                 Ok(result)
             })
         }).await?
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::father_corpse_reward;
-
-    #[test]
-    fn qfather_exact_corpse_definitions_grant_distinct_materials() {
-        let scale = father_corpse_reward("oteryn:item.tibia.i11589")
-            .map(|rule| (rule.creature, rule.item, rule.claim));
-        let sinew = father_corpse_reward("oteryn:item.tibia.i11590")
-            .map(|rule| (rule.creature, rule.item, rule.claim));
-        assert_eq!(
-            scale,
-            Some((
-                "oteryn:creature.glitterscale",
-                "oteryn:item.tibia.i11550",
-                "oteryn:reward-claim.quest.fathers-burden.scale"
-            ))
-        );
-        assert_eq!(
-            sinew,
-            Some((
-                "oteryn:creature.heoni",
-                "oteryn:item.tibia.i11548",
-                "oteryn:reward-claim.quest.fathers-burden.sinew"
-            ))
-        );
-        assert!(father_corpse_reward("oteryn:item.tibia.i11548").is_none());
     }
 }
