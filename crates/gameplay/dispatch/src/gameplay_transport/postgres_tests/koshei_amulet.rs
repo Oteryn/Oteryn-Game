@@ -115,7 +115,7 @@ pub(super) async fn exercise(
                 .ok_or("key")?;
         let mut placement = map.overlay.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
-        Ok(encode_item_use_intent(&UseIntent {
+        encode_item_use_intent(&UseIntent {
             target: UseTarget::Item(std::num::NonZeroU64::new(3).ok_or("handle")?),
             use_with: None,
             use_with_position: None,
@@ -124,7 +124,7 @@ pub(super) async fn exercise(
                 expected_revision: map.facts.object_revision(key),
             })),
         })
-        .map_err(debug)?)
+        .map_err(debug)
     };
     let wrong_target = payload(1)?;
     let corpse = payload(2)?;
