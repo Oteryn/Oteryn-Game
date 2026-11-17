@@ -149,6 +149,9 @@ async fn scenario(admin: String) -> TestResult {
     {
         let mut runtime = deps.runtime.lock().await;
         runtime
+            .install_companion_policies(native.policies().clone())
+            .map_err(debug)?;
+        runtime
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
         runtime
