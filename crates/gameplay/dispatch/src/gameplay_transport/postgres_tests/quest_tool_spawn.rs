@@ -5,6 +5,7 @@ use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
+use oteryn_gameplay_world::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{
     COMMAND_TYPE_USE_INTENT, MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
     decode_use_result, encode_item_use_intent,
