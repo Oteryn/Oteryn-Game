@@ -400,7 +400,12 @@ struct Skin {
 pub(super) fn install(app: &mut App) {
     app.add_systems(Startup, setup)
         .add_systems(Update, (escape.after(super::input::route), project).chain())
-        .add_systems(Update, (art::project, popup::layout));
+        .init_resource::<scale::ModuleScale>()
+        .add_systems(Update, (art::project, popup::layout, scale::zoom))
+        .add_systems(
+            PostUpdate,
+            scale::apply.before(bevy::ui::UiSystems::Prepare),
+        );
 }
 fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     commands.insert_resource(Skin {
@@ -481,6 +486,7 @@ pub(super) mod art;
 mod npc;
 pub(super) mod popup;
 mod projection;
+pub(super) mod scale;
 use projection::project;
 
 #[cfg(test)]

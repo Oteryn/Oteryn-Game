@@ -554,3 +554,107 @@ fn say_mode_button_cycles_say_whisper_yell_with_art() {
         crate::bevy_shell::gameplay_dialogs::art::ArtSlot::ChatYell
     );
 }
+#[test]
+fn tab_in_the_focused_input_cycles_channels_and_keeps_the_text() -> TestResult {
+    use oteryn_client_ui::chat::ChannelTab;
+    let (mut app, editor, _) = app()?;
+    app.world_mut()
+        .entity_mut(editor)
+        .observe(widgets::tab_cycle);
+    let tab = |app: &App| -> Result<usize, Box<dyn std::error::Error>> {
+        Ok(app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .console
+            .tab_index())
+    };
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        link.chat_open_entry(&ChannelEntry::Local(ChannelTab::ServerLog));
+        link.chat_console_tab(ConsoleTab::All);
+    }
+    let before = tab(&app)?;
+    key(&mut app, KeyCode::Tab, Key::Tab, None);
+    app.update();
+    let after = tab(&app)?;
+    assert_ne!(after, before);
+    assert_eq!(
+        app.world().resource::<InputFocus>().get(),
+        Some(editor),
+        "Tab must not move the focus out of the chat input"
+    );
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("editor")?
+            .value(),
+        "hell"
+    );
+    Ok(())
+}
+#[test]
+fn empty_unfocused_input_shows_the_placeholder() -> TestResult {
+    use bevy::ecs::system::RunSystemOnce;
+    let (mut app, editor, _) = app()?;
+    let hint = app
+        .world_mut()
+        .spawn((widgets::Placeholder, Visibility::Inherited))
+        .id();
+    let visibility = |app: &mut App| -> Result<Visibility, Box<dyn std::error::Error>> {
+        app.world_mut()
+            .run_system_once(widgets::placeholder)
+            .map_err(|error| format!("{error:?}"))?;
+        Ok(*app.world().get::<Visibility>(hint).ok_or("hint")?)
+    };
+    assert_eq!(visibility(&mut app)?, Visibility::Hidden);
+    app.world_mut().resource_mut::<InputFocus>().clear();
+    assert_eq!(visibility(&mut app)?, Visibility::Hidden, "text is present");
+    app.world_mut()
+        .get_mut::<EditableText>(editor)
+        .ok_or("editor")?
+        .queue_edit(bevy::text::TextEdit::SelectAll);
+    app.world_mut()
+        .get_mut::<EditableText>(editor)
+        .ok_or("editor")?
+        .queue_edit(bevy::text::TextEdit::Delete);
+    app.update();
+    app.world_mut().resource_mut::<InputFocus>().clear();
+    assert_eq!(visibility(&mut app)?, Visibility::Inherited);
+    assert_eq!(widgets::PLACEHOLDER, "Type here to chat");
+    Ok(())
+}
+#[test]
+fn selected_tab_caption_is_white_and_the_others_grey() -> TestResult {
+    use bevy::ecs::system::RunSystemOnce;
+    let (mut app, _, _) = app()?;
+    let caption = |checked: bool, app: &mut App| {
+        let caption = app
+            .world_mut()
+            .spawn((source::ButtonCaption, TextColor(Color::BLACK)))
+            .id();
+        let mut tab = app.world_mut().spawn(Control {
+            action: Action::Tab(commands::Tab::Fixed(ConsoleTab::All)),
+            generation: 0,
+        });
+        if checked {
+            tab.insert(bevy::ui::Checked);
+        }
+        tab.add_child(caption);
+        caption
+    };
+    let active = caption(true, &mut app);
+    let inactive = caption(false, &mut app);
+    app.world_mut()
+        .run_system_once(widgets::tab_colors)
+        .map_err(|error| format!("{error:?}"))?;
+    let color = |entity| app.world().get::<TextColor>(entity).map(|color| color.0);
+    assert_eq!(color(active), Some(widgets::ACTIVE_TAB));
+    assert_eq!(color(inactive), Some(widgets::INACTIVE_TAB));
+    Ok(())
+}

@@ -4,7 +4,22 @@ use crate::bevy_shell::game_ui::modal::ModalGuard;
 use crate::bevy_shell::gameplay_dialogs::{
     art::{self, ArtSlot},
     popup,
+    scale::{Module, ModuleScale, Scaled, ScaledFont},
 };
+/// The action-bar module's scale tag for a node of `size` at 100%.
+fn bar_size(size: Vec2) -> Scaled {
+    Scaled {
+        module: Module::ActionBars,
+        size,
+    }
+}
+/// The action-bar module's scale tag for a text of `size` pixels at 100%.
+fn bar_font(size: f32) -> ScaledFont {
+    ScaledFont {
+        module: Module::ActionBars,
+        size,
+    }
+}
 use crate::play::BarGesture;
 use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui_bevy as source;
@@ -44,7 +59,11 @@ enum MenuChoice {
     Clear,
     Lock,
     Hide,
+    ResetZoom,
 }
+/// The hotkey of a slot, drawn small in its top-right corner.
+#[derive(Component)]
+struct SlotHotkey(usize);
 #[derive(Component)]
 struct MenuEntry {
     slot: usize,
@@ -130,6 +149,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
         let row = commands
             .spawn((
                 BarRow(bar),
+                crate::bevy_shell::gameplay_dialogs::scale::ModuleRoot(Module::ActionBars),
                 Node {
                     width: percent(100.),
                     min_height: px(SLOT_SIZE),
@@ -157,6 +177,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                     source::button(skins.buttons.clone(), SLOT_SIZE),
                     ActionControl::Slot(slot),
                     Generation(u64::MAX),
+                    bar_size(Vec2::splat(SLOT_SIZE)),
                 ))
                 .insert(Node {
                     width: px(SLOT_SIZE),
@@ -177,6 +198,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                 .spawn((
                     SlotCaption(slot),
                     source::text("", source::font(skins.font.clone(), true)),
+                    bar_font(8.),
                 ))
                 .insert((
                     TextLayout::default(),
@@ -187,7 +209,20 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                     },
                 ))
                 .id();
-            commands.entity(entity).add_child(caption);
+            let hotkey = commands
+                .spawn((
+                    SlotHotkey(slot),
+                    source::text("", source::font(skins.font.clone(), true)),
+                    bar_font(8.),
+                    Node {
+                        position_type: PositionType::Absolute,
+                        top: px(1.),
+                        right: px(2.),
+                        ..default()
+                    },
+                ))
+                .id();
+            commands.entity(entity).add_children(&[caption, hotkey]);
             commands.entity(row).add_child(entity);
         }
         let next = button(
@@ -203,6 +238,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                 source::button(skins.buttons.clone(), LOCK_SIZE.x),
                 ActionControl::Lock(bar),
                 Generation(u64::MAX),
+                bar_size(LOCK_SIZE),
             ))
             .insert(Node {
                 width: px(LOCK_SIZE.x),
@@ -223,6 +259,9 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
             skins.font.clone(),
             LOCK_SIZE - Vec2::splat(2.),
         );
+        commands
+            .entity(icon)
+            .insert(bar_size(LOCK_SIZE - Vec2::splat(2.)));
         commands.entity(lock).add_child(icon);
         commands.entity(row).add_children(&[next, lock]);
         commands.entity(regions.bars).add_child(row);
@@ -362,6 +401,11 @@ fn menu_items(locked: bool) -> Vec<(popup::Item, Option<MenuChoice>)> {
             popup::Item::entry("Hide Action Bar"),
             Some(MenuChoice::Hide),
         ),
+        (popup::Item::Separator, None),
+        (
+            popup::Item::entry("Reset Zoom"),
+            Some(MenuChoice::ResetZoom),
+        ),
     ]
 }
 
@@ -443,7 +487,12 @@ fn edit_click(
                 choice,
             })
             .observe(menu_action);
-        if row.locked && !matches!(choice, MenuChoice::Lock | MenuChoice::Hide) {
+        if row.locked
+            && !matches!(
+                choice,
+                MenuChoice::Lock | MenuChoice::Hide | MenuChoice::ResetZoom
+            )
+        {
             commands
                 .entity(*entity)
                 .insert(bevy::ui::InteractionDisabled);
@@ -486,7 +535,7 @@ fn menu_action(
     entries: Query<&MenuEntry>,
     owner: NonSend<HostOwner>,
     mut editor: ResMut<editor::EditorState>,
-    mut menu: ResMut<SlotMenu>,
+    (mut menu, mut scale): (ResMut<SlotMenu>, Option<ResMut<ModuleScale>>),
     mut commands: Commands,
 ) {
     if !guard.allows(event.entity) {
@@ -511,6 +560,11 @@ fn menu_action(
     match entry.choice {
         MenuChoice::Lock => configure(&play.link, bar, false, true),
         MenuChoice::Hide => configure(&play.link, bar, true, false),
+        MenuChoice::ResetZoom => {
+            if let Some(scale) = scale.as_mut() {
+                scale.set(Module::ActionBars, 1.);
+            }
+        }
         _ if !row.enabled || row.locked => {}
         // The shared editor holds the spell catalogue, object, text and hotkey fields.
         MenuChoice::AssignSpell

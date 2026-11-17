@@ -222,7 +222,7 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
             assign = Some(entity);
         }
     }
-    assert_eq!(labels.len(), 7);
+    assert_eq!(labels.len(), 8);
     for choice in [
         MenuChoice::AssignSpell,
         MenuChoice::AssignObject,
@@ -231,6 +231,7 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
         MenuChoice::Clear,
         MenuChoice::Lock,
         MenuChoice::Hide,
+        MenuChoice::ResetZoom,
     ] {
         assert!(labels.contains(&choice), "{choice:?}");
     }
@@ -526,6 +527,8 @@ fn slot_menu_lists_tibia_entries_and_the_bar_lock_state() {
             "-",
             "Lock Action Bar [x]",
             "Hide Action Bar",
+            "-",
+            "Reset Zoom",
         ]
     );
     assert_eq!(labels(false)[6], "Lock Action Bar [ ]");
@@ -563,5 +566,41 @@ fn each_bar_has_a_twelve_by_sixteen_lock_and_no_configuration_row() -> TestResul
             .iter()
             .any(|text| text == "Locked" || text.ends_with(" on"))
     );
+    Ok(())
+}
+
+#[test]
+fn hotkey_labels_abbreviate_modifiers_like_the_tibia_bar() {
+    assert_eq!(projection::hotkey_label("F1"), "F1");
+    assert_eq!(projection::hotkey_label("CTRL+F2"), "C+F2");
+    assert_eq!(projection::hotkey_label("SHIFT+ALT+3"), "S+A+3");
+    assert_eq!(projection::hotkey_label("SUPER+J"), "M+J");
+    assert_eq!(projection::hotkey_label(""), "");
+}
+
+#[test]
+fn slots_show_their_bound_hotkey_and_follow_a_150_percent_bar_zoom() -> TestResult {
+    use crate::bevy_shell::gameplay_dialogs::scale::{self, Module, ModuleScale};
+    let (mut app, _) = fixture()?;
+    let mut zoom = ModuleScale::default();
+    zoom.set(Module::ActionBars, 1.5);
+    app.insert_resource(zoom)
+        .add_systems(PostUpdate, scale::apply);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .rebind("local-spell-action-bar-spell-1", "CTRL+F1")?;
+    app.update();
+    let label = app
+        .world_mut()
+        .query::<(&SlotHotkey, &Text)>()
+        .iter(app.world())
+        .find_map(|(hotkey, text)| (hotkey.0 == 0).then(|| text.0.clone()))
+        .ok_or("slot hotkey")?;
+    assert_eq!(label, "C+F1");
+    let first = slot(&mut app, 0)?;
+    let node = app.world().get::<Node>(first).ok_or("slot node")?;
+    assert_eq!((node.width, node.height), (px(51.), px(51.)));
     Ok(())
 }

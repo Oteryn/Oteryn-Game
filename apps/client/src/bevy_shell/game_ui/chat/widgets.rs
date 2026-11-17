@@ -10,7 +10,22 @@ pub(super) const CHAT_MODE_WIDTH: f32 = 64.;
 use crate::bevy_shell::gameplay_dialogs::{
     art::{self, ArtSlot},
     popup,
+    scale::{Module, Scaled, ScaledFont},
 };
+/// The chat module's scale tag for a node of `width` x `height` at 100% (0 = layout's).
+pub(super) fn chat_size(width: f32, height: f32) -> Scaled {
+    Scaled {
+        module: Module::Chat,
+        size: Vec2::new(width, height),
+    }
+}
+/// The chat module's scale tag for a text of `size` pixels at 100%.
+pub(super) fn chat_font(size: f32) -> ScaledFont {
+    ScaledFont {
+        module: Module::Chat,
+        size,
+    }
+}
 use bevy::input_focus::tab_navigation::{TabGroup, TabIndex};
 use bevy::text::TextCursorStyle;
 use bevy::ui_widgets::{ScrollArea, TextInput};
@@ -19,6 +34,7 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
     let root = commands
         .spawn((
             ChatRoot,
+            crate::bevy_shell::gameplay_dialogs::scale::ModuleRoot(Module::Chat),
             TabGroup::new(0),
             Node {
                 width: percent(100.),
@@ -33,6 +49,7 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
     let tab_row = commands
         .spawn((
             TabRow,
+            chat_size(0., TAB_HEIGHT),
             Node {
                 width: percent(100.),
                 min_height: px(TAB_HEIGHT),
@@ -46,6 +63,7 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
         .spawn((
             Tabs,
             ScrollArea,
+            chat_size(0., TAB_HEIGHT),
             Node {
                 flex_grow: 1.,
                 min_width: px(0.),
@@ -128,6 +146,7 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
     let compose = commands
         .spawn((
             ComposeRow,
+            chat_size(0., INPUT_HEIGHT),
             Node {
                 width: percent(100.),
                 height: px(INPUT_HEIGHT),
@@ -158,10 +177,14 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
         skins.font.clone(),
         Vec2::splat(INPUT_HEIGHT - 2.),
     );
+    commands
+        .entity(icon)
+        .insert(chat_size(INPUT_HEIGHT - 2., INPUT_HEIGHT - 2.));
     commands.entity(mode).add_child(icon);
     let frame = commands
         .spawn((
             source::frame(skins.inset.clone(), [1.; 4]),
+            chat_size(0., INPUT_HEIGHT),
             Node {
                 flex_grow: 1.,
                 min_width: px(0.),
@@ -171,7 +194,22 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
         ))
         .id();
     let input = text_input(&mut commands, &skins, Field::Message, 255);
-    commands.entity(frame).add_child(input);
+    commands.entity(input).observe(tab_cycle);
+    let hint = commands
+        .spawn((
+            Placeholder,
+            source::text(PLACEHOLDER, source::font(skins.font.clone(), false)),
+            chat_font(11.),
+            Node {
+                position_type: PositionType::Absolute,
+                left: px(3.),
+                top: px(1.),
+                ..default()
+            },
+        ))
+        .insert(TextColor(INACTIVE_TAB))
+        .id();
+    commands.entity(frame).add_children(&[input, hint]);
     let chat_mode = sized_button(
         &mut commands,
         &skins,
@@ -219,6 +257,76 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
     super::channels::setup(&mut commands, root, &skins);
 }
 
+/// The empty input's hint, shown until the player focuses it or types.
+pub(super) const PLACEHOLDER: &str = "Type here to chat";
+pub(super) const ACTIVE_TAB: Color = Color::WHITE;
+pub(super) const INACTIVE_TAB: Color = Color::srgb(0.56, 0.56, 0.56);
+#[derive(Component)]
+pub(super) struct Placeholder;
+
+/// Tab and Shift+Tab in the chat input switch channels, as in the game view, instead of
+/// moving the focus.
+pub(super) fn tab_cycle(
+    mut event: On<bevy::input_focus::FocusedInput<bevy::input::keyboard::KeyboardInput>>,
+    owner: NonSend<HostOwner>,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+) {
+    let key = &event.input;
+    if key.key_code != KeyCode::Tab || key.state != bevy::input::ButtonState::Pressed || key.repeat
+    {
+        return;
+    }
+    event.propagate(false);
+    if owner.modal_active() {
+        return;
+    }
+    let back = keys.is_some_and(|keys| keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]));
+    if let Some(play) = &owner.play {
+        play.link.chat_channel_cycle(!back);
+    }
+}
+
+/// The selected tab's caption is white and the others grey.
+pub(super) fn tab_colors(
+    controls: Query<(&Control, Has<bevy::ui::Checked>, &Children)>,
+    mut captions: Query<&mut TextColor, With<source::ButtonCaption>>,
+) {
+    for (control, checked, children) in &controls {
+        if !matches!(control.action, Action::Tab(_)) {
+            continue;
+        }
+        let color = if checked { ACTIVE_TAB } else { INACTIVE_TAB };
+        for child in children {
+            if let Ok(mut caption) = captions.get_mut(*child)
+                && caption.0 != color
+            {
+                caption.0 = color;
+            }
+        }
+    }
+}
+
+/// Shows the input hint while the message field is empty and unfocused.
+pub(super) fn placeholder(
+    focus: Res<InputFocus>,
+    fields: Query<(Entity, &Field, &EditableText)>,
+    mut hints: Query<&mut Visibility, With<Placeholder>>,
+) {
+    let shown = fields.iter().any(|(entity, field, text)| {
+        *field == Field::Message && focus.get() != Some(entity) && text.value() == ""
+    });
+    let wanted = if shown {
+        Visibility::Inherited
+    } else {
+        Visibility::Hidden
+    };
+    for mut visibility in &mut hints {
+        if *visibility != wanted {
+            *visibility = wanted;
+        }
+    }
+}
+
 /// A button of exactly `size` logical pixels with a caption.
 fn sized_button(
     commands: &mut Commands,
@@ -231,19 +339,22 @@ fn sized_button(
     commands.entity(entity).insert(fixed(size));
     entity
 }
-/// The node of a fixed-size framed button.
-pub(super) fn fixed(size: Vec2) -> Node {
-    Node {
-        width: px(size.x),
-        min_width: px(size.x),
-        height: px(size.y),
-        min_height: px(size.y),
-        border: UiRect::all(px(1.)),
-        flex_shrink: 0.,
-        align_items: AlignItems::Center,
-        justify_content: JustifyContent::Center,
-        ..default()
-    }
+/// The node of a fixed-size framed button, scaled with the chat module.
+pub(super) fn fixed(size: Vec2) -> (Node, Scaled) {
+    (
+        Node {
+            width: px(size.x),
+            min_width: px(size.x),
+            height: px(size.y),
+            min_height: px(size.y),
+            border: UiRect::all(px(1.)),
+            flex_shrink: 0.,
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            ..default()
+        },
+        chat_size(size.x, size.y),
+    )
 }
 
 pub(super) fn button(
@@ -262,7 +373,10 @@ pub(super) fn button(
         .observe(activate)
         .id();
     let caption = commands
-        .spawn(source::button_caption(caption, skins.font.clone()))
+        .spawn((
+            source::button_caption(caption, skins.font.clone()),
+            chat_font(8.),
+        ))
         .id();
     commands.entity(entity).add_child(caption);
     entity
@@ -284,6 +398,8 @@ pub(super) fn text_input(
                 ..default()
             },
             source::font(skins.font.clone(), false),
+            chat_font(11.),
+            chat_size(0., INPUT_HEIGHT),
             TextColor(source::TEXT_COLOR),
             TextLayout::no_wrap(),
             TextCursorStyle::default(),
@@ -477,6 +593,7 @@ pub(super) fn message_row(
             },
         ))
         .insert((
+            chat_font(f32::from(row.font_px)),
             Pickable::default(),
             TextColor(speech_color(row.line.as_ref())),
             bevy::text::LineHeight::RelativeToFont(1.2),

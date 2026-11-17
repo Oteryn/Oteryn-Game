@@ -15,6 +15,8 @@ use oteryn_client_ui_bevy as source;
 mod channels;
 mod commands;
 #[cfg(test)]
+mod layout_tests;
+#[cfg(test)]
 mod mirror_tests;
 mod submission;
 #[cfg(test)]
@@ -210,7 +212,17 @@ pub(super) fn install(app: &mut App) {
     app.init_resource::<ChatState>()
         .init_resource::<bevy::clipboard::Clipboard>()
         .add_systems(Startup, widgets::setup.after(super::setup))
-        .add_systems(Update, (keyboard, project, mirror).chain())
+        .add_systems(
+            Update,
+            (
+                keyboard,
+                project,
+                mirror,
+                widgets::tab_colors,
+                widgets::placeholder,
+            )
+                .chain(),
+        )
         .add_systems(
             PostUpdate,
             submission::finish.after(bevy::text::EditableTextSystems),
@@ -413,16 +425,19 @@ fn project(
             }
         }
         play.link.open_chat();
-        // Tibia Global opens Local Chat and Server Log; Local Chat stays selected.
+        // Tibia Global opens Local Chat, Server Log and Loot; Local Chat stays selected.
         let panel = play.link.chat_panel();
-        if !panel
-            .console
-            .channels
-            .contains(&oteryn_client_ui::chat::ChannelTab::ServerLog)
-        {
-            play.link.chat_open_entry(&ChannelEntry::Local(
-                oteryn_client_ui::chat::ChannelTab::ServerLog,
-            ));
+        let mut opened = false;
+        for tab in [
+            oteryn_client_ui::chat::ChannelTab::ServerLog,
+            oteryn_client_ui::chat::ChannelTab::Loot,
+        ] {
+            if !panel.console.channels.contains(&tab) {
+                play.link.chat_open_entry(&ChannelEntry::Local(tab));
+                opened = true;
+            }
+        }
+        if opened {
             play.link.chat_console_tab(ConsoleTab::All);
         }
     }
@@ -514,16 +529,9 @@ fn project(
                     Action::Tab(tab.clone()),
                     owner.generation(),
                 );
-                commands.entity(button).insert(Node {
-                    width: px(width),
-                    height: px(widgets::TAB_HEIGHT),
-                    min_height: px(widgets::TAB_HEIGHT),
-                    border: UiRect::all(px(1.)),
-                    flex_shrink: 0.,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    ..default()
-                });
+                commands
+                    .entity(button)
+                    .insert(widgets::fixed(Vec2::new(width, widgets::TAB_HEIGHT)));
                 if selected(tab) {
                     commands.entity(button).insert(bevy::ui::Checked);
                 }
