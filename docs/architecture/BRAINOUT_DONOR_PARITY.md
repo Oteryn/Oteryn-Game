@@ -70,5 +70,10 @@ World fixture and uses typed fresh admission and ordinary item mint/transfer. Th
 keeps the bounded PG qualification separate from the oversized dispatch lib-test
 monolith without dropping a case or changing an assertion.
 
-Status: implementation authored; PostgreSQL red/green qualification and remaining
+The first real PostgreSQL red result ran for 35.38 seconds: one-input refusal
+passed, but the two-input production USE returned Rejected instead of Committed.
+The east control independently reproduced the same failure in 27.25 seconds.
+Assertions are retained while the transaction refusal is diagnosed.
+
+Status: implementation authored; PostgreSQL green qualification and remaining
 validation are pending. This branch is WIP and has no PR.
