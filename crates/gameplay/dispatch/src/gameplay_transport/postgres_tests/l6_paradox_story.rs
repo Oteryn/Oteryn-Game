@@ -25,6 +25,7 @@ const STORY: &str = "oteryn:quest-progress/l6/paradox/story";
 const ACHIEVEMENT: &str = "oteryn:achievement/mathemagician";
 const SOURCE_HUGO: &str = "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo";
 const SOURCE_MATH: &str = "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics";
+const SOURCE_SYNCED: &str = "oteryn:quest-progress/l6/paradox/source-synced";
 #[derive(Clone, Copy)]
 struct Contact {
     key: &'static str,
@@ -403,9 +404,10 @@ async fn source_tracks(h: &Harness) -> TestResult<std::collections::BTreeMap<Str
 async fn legacy_source_gap(h: &Harness) -> TestResult {
     // Prior main wrote the same trusted personal story and receipts, but no
     // source tracks. Recreate that stored gap without changing those receipts.
-    sqlx::query("DELETE FROM game_character_quest_tracks WHERE track_key IN ($1,$2)")
+    sqlx::query("DELETE FROM game_character_quest_tracks WHERE track_key IN ($1,$2,$3)")
         .bind(SOURCE_HUGO)
         .bind(SOURCE_MATH)
+        .bind(SOURCE_SYNCED)
         .execute(&h.pool)
         .await?;
     Ok(())
@@ -659,6 +661,7 @@ pub(super) async fn exercise(
         assert_eq!(after["achievements"], before["achievements"]);
         assert_eq!(after["grants"], before["grants"]);
         assert_eq!(progress(h).await?, 5);
+        assert_riddler_accepts_learned_story(h).await?;
         // A later source finale must survive a repeated compatibility contact.
         sqlx::query("UPDATE game_character_quest_tracks SET value=2 WHERE track_key=$1")
             .bind(SOURCE_MATH)

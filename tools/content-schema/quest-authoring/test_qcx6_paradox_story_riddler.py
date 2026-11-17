@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 PREFIX = "oteryn:quest-progress/quest/u7_24/the_paradox_tower/"
+SYNC = "oteryn:quest-progress/l6/paradox/source-synced"
 
 
 class ParadoxStoryRiddlerTests(unittest.TestCase):
@@ -71,6 +72,14 @@ class ParadoxStoryRiddlerTests(unittest.TestCase):
             self.assertEqual(values[story], 5)
             self.assertEqual(values[PREFIX + "the_feared_hugo"], 4)
             self.assertEqual(values[PREFIX + "mathemagics"], existing.get(PREFIX + "mathemagics", 1))
+        complete = {story: 4}
+        self.assertTrue(self.apply(self.callbacks()["prisoner-lesson"], complete))
+        self.assertEqual(complete[SYNC], 1)
+        self.assertFalse(self.apply(callback, complete), "fresh lesson replay must create no catch-up receipt")
+        legacy = {story: 5}
+        self.assertTrue(self.apply(callback, legacy))
+        self.assertEqual(legacy[SYNC], 1)
+        self.assertFalse(self.apply(callback, legacy), "legacy repair is once-only")
         self.assertEqual(callback["npc"], "oteryn:npc.a_prisoner")
         self.assertEqual(callback["keywords"], ["math"])
         self.assertEqual(callback["topic"], 0)
