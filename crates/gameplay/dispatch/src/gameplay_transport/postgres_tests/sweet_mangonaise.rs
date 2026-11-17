@@ -119,7 +119,7 @@ fn scenario(admin: String) -> TestResult {
                 selected_capabilities:
                     crate::gameplay_transport::capabilities::SelectedCapabilities::select(
                         crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-                        &[4, 6, 11, 12, 15, 18],
+                        &[4, 6, 11, 12, 15],
                     )
                     .ok_or("capabilities")?,
                 ..SessionContinuity::FRESH
