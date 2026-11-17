@@ -50,8 +50,16 @@ pub(super) async fn exercise(
     )
     .await?;
     owner.refresh_quest_session(admitted.game_session_id, false).await;
-    let [thanita] = super::classic_quests::install(owner, admitted, [super::qtowerdef_password::NPC]).await?;
-    let code = super::qtowerdef_password::issue(owner, admitted, thanita).await?;
+    let [npc, thanita] =
+        super::classic_quests::install(owner, admitted, [NPC, super::qtowerdef_password::NPC]).await?;
+    let code = super::qtowerdef_password::issue(owner, admitted, thanita, 9002).await?;
+    if name.ends_with("-password") {
+        owner.refresh_quest_session(admitted.game_session_id, false).await;
+        assert_eq!(
+            super::qtowerdef_password::issue(owner, admitted, thanita, 9005).await?,
+            code,
+        );
+    }
     let full = name.ends_with("-full");
     if full {
         for n in 0..17 {
@@ -85,7 +93,6 @@ pub(super) async fn exercise(
     owner
         .refresh_quest_session(admitted.game_session_id, false)
         .await;
-    let [npc] = super::classic_quests::install(owner, admitted, [NPC]).await?;
     // The callback value is only the existing wire driver's word sequence.
     // The runtime selects the real native source programme, not this fixture.
     let mut conversation = oteryn_gameplay_quests::quest::reward_callbacks::load()?

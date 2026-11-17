@@ -67,6 +67,7 @@ pub(super) enum Case {
     CharmParry,
     T94,
     CharmSecondary,
+    TowerDefence,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -321,6 +322,9 @@ async fn scenario(
     native
         .install_companion_policies(&mut runtime)
         .map_err(debug)?;
+    if matches!(case, Case::TowerDefence) {
+        runtime.use_classic_creature_deaths().map_err(debug)?;
+    }
     // Explicit qualification placement through the normal activation owner. Policies and
     // health come from the active artifact; distinct sources permit two pending deaths.
     let mut sources = Vec::new();
@@ -602,6 +606,9 @@ async fn scenario(
     }
     if matches!(case, Case::SoulWarTerminal) {
         return super::soul_war::terminal_expiry_case(&owner, &h.pool, &players).await;
+    }
+    if matches!(case, Case::TowerDefence) {
+        return super::qtowerdef_top_xp::exercise(&mut owner, h, &players).await;
     }
     if matches!(case, Case::Stamina) {
         return super::hunting_stamina::qualify(&mut owner, h, &players).await;

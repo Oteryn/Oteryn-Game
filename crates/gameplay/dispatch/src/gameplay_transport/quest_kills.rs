@@ -60,9 +60,11 @@ pub(super) async fn settle(
     let Ok(occurrence) = ExperienceRewardOccurrence::from_bytes(entry.facts.occurrence) else {
         return false;
     };
-    for recipient in frozen.native.iter().filter(|recipient| {
-        recipient.requires_awarded_experience() == after_experience
-    }) {
+    for recipient in frozen
+        .native
+        .iter()
+        .filter(|recipient| recipient.requires_awarded_experience() == after_experience)
+    {
         let fence = match owner.current_quest_fence(recipient.session).await {
             Ok(Some(fence)) => fence,
             Ok(None) => continue,

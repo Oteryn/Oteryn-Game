@@ -86,9 +86,7 @@ impl NativeQuestDeath {
                 NativeDeathSource::Source(_) | NativeDeathSource::TopExperience { .. } => {
                     self.definition_hash.is_none()
                         && oteryn_gameplay_quests::quest::source_deaths::rule(&self.transition)
-                            .is_some_and(|rule| rule.creature == self.creature
-                                && rule.top_experience_only
-                                    == matches!(self.source, NativeDeathSource::TopExperience { .. }))
+                            .is_some_and(|rule| rule.creature == self.creature)
                 }
             }
     }
@@ -180,11 +178,18 @@ impl NativeQuestDeath {
         catalogue: &QuestStateCatalogue,
     ) -> StoredResult<bool> {
         if let NativeDeathSource::Source(source) = &self.source {
+            if oteryn_gameplay_quests::quest::source_deaths::rule(&self.transition)
+                .is_some_and(|rule| rule.top_experience_only)
+            {
+                return Ok(false);
+            }
             return source.admit(tx, fence, self).await;
         }
         if let NativeDeathSource::TopExperience { source, death } = &self.source {
             let key = super::super::party_kill_xp::encode_death_key(*death);
-            if !super::super::party_kill_xp::death_matches_fence(&key, &fence)
+            if !oteryn_gameplay_quests::quest::source_deaths::rule(&self.transition)
+                .is_some_and(|rule| rule.top_experience_only)
+                || !super::super::party_kill_xp::death_matches_fence(&key, &fence)
                 || !source.admit(tx, fence, self).await?
             {
                 return Ok(false);

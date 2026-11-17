@@ -197,6 +197,13 @@ pub fn rules() -> Result<&'static [Rule], &'static str> {
 pub fn rule(key: &str) -> Option<&'static Rule> {
     rules().ok()?.iter().find(|rule| rule.transition == key)
 }
+pub fn tracks_top_experience(creature: &str) -> bool {
+    rules().is_ok_and(|rules| {
+        rules
+            .iter()
+            .any(|rule| rule.creature == creature && rule.top_experience_only)
+    })
+}
 pub fn tracks_creature(creature: &str) -> bool {
     rules().is_ok_and(|rules| rules.iter().any(|rule| rule.creature == creature))
 }
@@ -261,11 +268,13 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
 
 /// Zero XP never earns credit. Prefer the reward principal on a tie, then use
 /// Character identity so selection remains stable after transaction replay.
-pub fn top_experience(
-    awards: impl IntoIterator<Item = ([u8; 16], i64, bool)>,
-) -> Option<[u8; 16]> {
-    awards.into_iter().filter(|(_, xp, _)| *xp > 0)
-        .max_by_key(|(character, xp, is_principal)| (*xp, *is_principal, std::cmp::Reverse(*character)))
+pub fn top_experience(awards: impl IntoIterator<Item = ([u8; 16], i64, bool)>) -> Option<[u8; 16]> {
+    awards
+        .into_iter()
+        .filter(|(_, xp, _)| *xp > 0)
+        .max_by_key(|(character, xp, is_principal)| {
+            (*xp, *is_principal, std::cmp::Reverse(*character))
+        })
         .map(|(character, _, _)| character)
 }
 
@@ -277,8 +286,17 @@ mod tower_defence_tests {
     fn qtowerdef_top_experience_uses_awarded_xp_and_selects_one_winner() {
         let principal = [1; 16];
         let second = [2; 16];
-        assert_eq!(top_experience([(principal, 25, true), (second, 50, false)]), Some(second));
-        assert_eq!(top_experience([(second, 50, false), (principal, 50, true)]), Some(principal));
-        assert_eq!(top_experience([(principal, 0, true), (second, 0, false)]), None);
+        assert_eq!(
+            top_experience([(principal, 25, true), (second, 50, false)]),
+            Some(second)
+        );
+        assert_eq!(
+            top_experience([(second, 50, false), (principal, 50, true)]),
+            Some(principal)
+        );
+        assert_eq!(
+            top_experience([(principal, 0, true), (second, 0, false)]),
+            None
+        );
     }
 }

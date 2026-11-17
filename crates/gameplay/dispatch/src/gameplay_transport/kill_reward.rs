@@ -2238,10 +2238,10 @@ pub fn record_creature_kill(
                 }) || oteryn_gameplay_quests::quest::kill_objectives::OBJECTIVES
                     .iter()
                     .any(|objective| objective.creature == creature);
-            if top.present().is_some()
-                && (tracks_native_progression(&creature) || personal_objective)
-            {
-                let amount = if tracks_native_progression(&creature) {
+            let source_experience = tracks_native_progression(&creature)
+                || oteryn_gameplay_quests::quest::source_deaths::tracks_top_experience(&creature);
+            if top.present().is_some() && (source_experience || personal_objective) {
+                let amount = if source_experience {
                     let Some(amount) = source
                         .and_then(|facts| facts.experience)
                         .and_then(|amount| i64::try_from(amount).ok())
