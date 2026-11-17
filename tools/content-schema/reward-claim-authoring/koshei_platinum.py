@@ -1,10 +1,18 @@
 """Exact Koshei platinum quantity overlay; immutable donor evidence stays unchanged.
 
-The donor records 100 platinum coins. The coordinator's live community
-cross-check of Tibiopedia's Koshei reward section identifies 50 platinum coins
-(the linked item is Platinum Coin). This is community corroboration, not a
-rechecked pinned raw Global source body. Apply only to the allocated binding;
-any donor drift requires a fresh source ruling.
+The donor records 100 platinum coins. CP PR3259 decision #6956822717 accepts
+the scalar 50 using these three community witnesses (not three independent
+sources or a rechecked pinned raw Global source body):
+- https://tibiopedia.pl/quests/Koshei_the_Deathless_Quest : the live reward
+  section shows 50 linked to https://tibiopedia.pl/items/Platinum_Coin . Its
+  "lub"/"or" reward wording remains OPEN-FACT; this overlay settles quantity only.
+- https://tibia.fandom.com/wiki/Koshei_The_Deathless_Quest/Spoiler : indexed
+  current text says "If you plan to complete the quest you will receive 5,000
+  gold back." This witness is not a pinned raw-body recheck.
+- https://forum.portaltibia.com.br/topic/7471-blue-legs-quest/ : the 2008 guide
+  says "Voce ira pegar os 5000gp de volta no final da quest." The guide is
+  copied wiki material, so it is not an independent source.
+Apply only to the allocated binding; donor drift requires a fresh source ruling.
 """
 
 PILOT = "canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum"
