@@ -3310,7 +3310,19 @@ fn scenario_case(
             let step = oteryn_protocol_oteryn::world_spatial::encode_step_intent(
                 oteryn_protocol_oteryn::world_spatial::StepDirection::East,
             );
+            let saved = || {
+                h.root
+                    .read_character_quest_state(&authority, fence.character_id)
+            };
+            let receipts = || {
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_quest_receipts")
+                    .fetch_one(&h.pool)
+            };
+            let initial = saved().await.map_err(debug)?;
+            let initial_receipts = receipts().await?;
             wire(&owner, &mut admitted, 1, 1, step.clone()).await?;
+            assert_eq!(saved().await.map_err(debug)?, initial);
+            assert_eq!(receipts().await?, initial_receipts);
             assert!(owner.states.chat.drain(admitted.game_session_id).iter().any(|line|
                 matches!(line, oteryn_protocol_oteryn::chat::ChatLine::Private { text, .. } if text == "Finish the visitor mission first.")));
             assert_eq!(
@@ -3359,7 +3371,8 @@ fn scenario_case(
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
                 .ok_or("clock")?;
-            wire(&owner, &mut admitted, 2, 1, step).await?;
+            let before_shortcut = receipts().await?;
+            wire(&owner, &mut admitted, 2, 1, step.clone()).await?;
             assert_eq!(
                 deps.runtime
                     .lock()
@@ -3375,6 +3388,22 @@ fn scenario_case(
                 .await
                 .map_err(debug)?;
             assert_eq!(copy.tracks().get(&callback.storage[0].track), Some(&5));
+            assert_eq!(receipts().await?, before_shortcut + 1);
+
+            // Redelivery of the successful STEP must not execute a second transition.
+            wire(&owner, &mut admitted, 2, 1, step).await?;
+            assert_eq!(saved().await.map_err(debug)?, copy);
+            assert_eq!(receipts().await?, before_shortcut + 1);
+            assert_eq!(
+                deps.runtime
+                    .lock()
+                    .await
+                    .read_actor_position(deps.actor)
+                    .map_err(debug)?
+                    .position(),
+                local(callback.teleport.ok_or("teleport")?)
+            );
+            eprintln!("LIQUID_BLACK_SHORTCUT POSTGRES_CASE_COMPLETED replay_checked");
         } else {
             let key =
                 oteryn_world_bundle::bundle::placement_key(trigger.floor, trigger.x, trigger.y, 1)
