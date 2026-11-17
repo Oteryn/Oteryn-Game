@@ -144,6 +144,8 @@ pub(crate) async fn record_wolf_draw(
     Ok(())
 }
 
+type PlaceThornfireWolf<C> = fn(&mut C, [u8; 16], (i32, i32, i16)) -> Result<(), DurabilityError>;
+
 impl DurabilityRoot {
     /// Reconcile the committed winning USE with the still-current Channel owner.
     /// A repeated projection uses the same runtime occurrence even after an unknown commit.
@@ -158,7 +160,7 @@ impl DurabilityRoot {
         fence: super::super::CurrentCharacterItemFence,
         command: crate::foundation::CommandRef,
         context: &mut C,
-        place: fn(&mut C, [u8; 16], (i32, i32, i16)) -> Result<(), DurabilityError>,
+        place: PlaceThornfireWolf<C>,
     ) -> Result<(), DurabilityError> {
         let RuntimeScopeRefV1::Channel {
             world_id,
