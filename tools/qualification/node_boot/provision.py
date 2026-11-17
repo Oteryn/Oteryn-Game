@@ -2,6 +2,7 @@
 
 import argparse
 import json
+from pathlib import Path
 import re
 import secrets
 import socket
@@ -43,13 +44,54 @@ def run_capture(command, stage, timeout):
     return result.stdout
 
 
+def node_log_offset(node_log):
+    try:
+        return Path(node_log).stat().st_size if node_log else 0
+    except OSError:
+        return 0
+
+
+def report_node_failures(node_log, offset):
+    if not node_log:
+        return
+    try:
+        with Path(node_log).open("rb") as log:
+            # Bound the read, exclude boot/previous-operation failures, and
+            # tolerate log truncation on node replacement.
+            end = log.seek(0, 2)
+            log.seek(max(offset if offset <= end else 0, end - 65536))
+            lines = log.read(65536).decode("utf-8", errors="replace").splitlines()
+    except OSError:
+        print("C17 node failure diagnostics unavailable", file=sys.stderr)
+        return
+    events = []
+    for line in lines:
+        header, separator, detail = line.partition(" detail=")
+        event = re.search(r"(?:^| )event=(character_bootstrap_failure|qualification_fixture_failure)(?= |$)", header)
+        if not event:
+            continue
+        # The structured renderer separates event from quoted detail (and may
+        # put a trace between them). Never copy that trace or the whole detail.
+        tokens = re.search(
+            r"stage=[a-z_]+ reason=[a-z_]+"
+            r'(?: step=[a-z_]+ cause=[a-z_]+(?: replay=[a-z_]+)?)?(?= |"|$)',
+            detail if separator else header[event.end():])
+        if tokens:
+            safe = f"event={event[1]} {tokens[0]}"
+            if safe not in events:
+                events.append(safe)
+    for event in events[-10:]:
+        print(event, file=sys.stderr)
+
+
 def fresh_character_name(operation):
     # Both pinned naming contracts allow 2..29 ASCII letters with single spaces;
     # neither imposes a per-word limit. This name is 26 characters long.
     return "Spell " + "".join(chr(ord("a") + int(c, 16)) for c in operation.hex[-20:])
 
 
-def provision(socket_path, session, profile):
+def provision(socket_path, session, profile, node_log=None):
+    offset = node_log_offset(node_log)
     identifier = uuid.UUID(session)
     if identifier.version != 7 or str(identifier) != session or profile not in PROFILES:
         raise ValueError("invalid qualification request")
@@ -69,10 +111,11 @@ def provision(socket_path, session, profile):
                 break
             answer.extend(chunk)
         if answer != b"qualified\n":
+            report_node_failures(node_log, offset)
             raise RuntimeError(f"node refused qualification provisioning: answer={sanitized_text(answer.decode(errors='replace')) or '<empty or filtered>'!r}")
 
 
-def fresh_character(socket_path, project, request):
+def fresh_character(socket_path, project, request, node_log=None):
     """Issue a real Platform intent, then ask the existing node bootstrap owner."""
     operation = uuid.UUID(int=(int(time.time() * 1000) << 80)
                           | (7 << 76) | (secrets.randbits(12) << 64)
@@ -101,45 +144,62 @@ exit($code);'''
     run_capture(["docker", "exec", "--user", "www-data", containers[0],
                     "php", "-r", php, json.dumps(request)],
                    "Platform bootstrap intent", timeout=30)
-    commit_character_bootstrap(socket_path, operation)
+    commit_character_bootstrap(socket_path, operation, node_log)
     return name
 
 
-def commit_character_bootstrap(socket_path, operation):
+def commit_character_bootstrap(socket_path, operation, node_log=None):
     # D2's unavailable result is ambiguous, not a rejection. As game-ops instructs,
     # reconcile the SAME operation: a committed receipt wins before any external
     # reads, and the Platform intent must never be reissued on this path.
+    offset = node_log_offset(node_log)
     deadline = time.monotonic() + 60
+    last_answer = "unavailable"
     while True:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            raise RuntimeError("fresh spell character bootstrap deadline exceeded; answer='unavailable'")
-        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
-            control.settimeout(remaining)
-            control.connect(socket_path)
-            control.sendall(f"{operation}\n".encode("ascii"))
-            control.shutdown(socket.SHUT_WR)
+            report_node_failures(node_log, offset)
+            raise RuntimeError(f"fresh spell character bootstrap deadline exceeded; answer={last_answer!r}")
+        # serve.rs CONTROL_DEADLINE is 30s. Leave part of the original 60s
+        # budget to reconcile a commit whose acknowledgement was lost.
+        exchange_deadline = min(deadline, time.monotonic() + 30)
+        answer = bytearray()
+        try:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as control:
+                control.settimeout(min(30, remaining))
+                control.connect(socket_path)
+                control.sendall(f"{operation}\n".encode("ascii"))
+                control.shutdown(socket.SHUT_WR)
+                while len(answer) <= 64:
+                    remaining = exchange_deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise TimeoutError("bootstrap acknowledgement deadline exceeded")
+                    control.settimeout(remaining)
+                    chunk = control.recv(65 - len(answer))
+                    if not chunk:
+                        break
+                    answer.extend(chunk)
+        except (TimeoutError, ConnectionError):
+            # The node may have committed already. No new intent or operation.
             answer = bytearray()
-            while len(answer) <= 64:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    raise TimeoutError("fresh spell character bootstrap deadline exceeded")
-                control.settimeout(remaining)
-                chunk = control.recv(65 - len(answer))
-                if not chunk:
-                    break
-                answer.extend(chunk)
         if answer == b"committed\n":
             return
-        if answer != b"unavailable\n":
+        if answer == b"unavailable\n":
+            last_answer = "unavailable"
+        elif any(len(answer) < len(reply) and reply.startswith(answer)
+                 for reply in (b"committed\n", b"unavailable\n", b"rejected\n")):
+            last_answer = "acknowledgement_unknown"
+        else:
             raise RuntimeError(f"node refused fresh spell character bootstrap: answer={sanitized_text(answer.decode(errors='replace')) or '<empty or filtered>'!r}")
-        print("C17 bootstrap unavailable; reconciling the same operation id", file=sys.stderr)
+        print(f"C17 bootstrap {last_answer}; reconciling the same operation id", file=sys.stderr)
+        report_node_failures(node_log, offset)
         time.sleep(min(0.5, max(0, deadline - time.monotonic())))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
+    parser.add_argument("--node-log")
     parser.add_argument("--session")
     parser.add_argument("--fresh-character")
     parser.add_argument("--project")
@@ -148,8 +208,8 @@ if __name__ == "__main__":
     if args.fresh_character:
         if not args.project:
             parser.error("--fresh-character requires --project")
-        print(fresh_character(args.socket, args.project, json.loads(args.fresh_character)))
+        print(fresh_character(args.socket, args.project, json.loads(args.fresh_character), args.node_log))
     else:
         if not args.session or not args.profile:
             parser.error("provisioning requires --session and --profile")
-        provision(args.socket, args.session, args.profile)
+        provision(args.socket, args.session, args.profile, args.node_log)

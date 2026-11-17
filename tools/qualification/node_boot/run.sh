@@ -1134,6 +1134,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   env "${NODE_GAMEPLAY_ENV[@]}" "${test_env[@]}" \
   NODE_BOOT_SPELL_MANIFEST="$staged_manifest" \
   NODE_BOOT_CONTROL_SOCKET="$BASE/run/control.sock" \
+  NODE_BOOT_NODE_LOG="${node_log:-}" \
   NODE_BOOT_ADDRESS="127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}" \
   NODE_BOOT_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
   NODE_BOOT_DATABASE_URL="$ADMIN_URL" \

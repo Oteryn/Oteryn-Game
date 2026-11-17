@@ -2782,9 +2782,10 @@ async fn bootstrap_one(
 /// that background passes also take, so a busy holder fails the step at once, before any SQL
 /// runs; the bootstrap commit is idempotent by its operation id. Any other outcome is final.
 ///
-/// With a `root`, a retry starts as soon as the busy holder is returned, not before
-/// [`HOLDER_RETRY_FLOOR`] and not after the backoff (NODEBOOT-1): a step sleeping its
-/// backoff lost the holder to the background passes that poll it on their own cadence.
+/// With a `root`, the first retry joins the holder queue. Once older owners have
+/// finished, it takes its turn ahead of later foreground work. Waiting only for
+/// a return notification leaves it behind every queued gameplay owner. Without
+/// a live holder, the bounded notification/backoff path still applies.
 async fn retry_busy<T, E>(
     root: Option<&DurabilityRoot>,
     budget: tokio::time::Instant,
@@ -2792,6 +2793,7 @@ async fn retry_busy<T, E>(
     mut step: impl AsyncFnMut() -> Result<T, E>,
 ) -> Result<T, E> {
     let mut attempt = 0;
+    let mut waiter = None;
     loop {
         let outcome = step().await;
         match &outcome {
@@ -2800,8 +2802,17 @@ async fn retry_busy<T, E>(
                     let now = tokio::time::Instant::now();
                     let delay = retry_delay(attempt, Some(budget.saturating_duration_since(now)));
                     attempt = attempt.saturating_add(1);
-                    root.wait_holder_retry(now + HOLDER_RETRY_FLOOR, now + delay)
-                        .await;
+                    // Serving foreground owners reserve their FIFO turn. Merely
+                    // waking on return leaves an unqueued bootstrap behind every
+                    // later queued gameplay request, even when the holder is idle.
+                    let _ = waiter.get_or_insert_with(|| root.holder_waiter());
+                    if !root
+                        .wait_holder_turn(now + HOLDER_RETRY_FLOOR, now + delay)
+                        .await
+                    {
+                        root.wait_holder_retry(now + HOLDER_RETRY_FLOOR, now + delay)
+                            .await;
+                    }
                 }
                 None => backoff_within(&mut attempt, Some(budget)).await,
             },
@@ -2932,7 +2943,7 @@ async fn control_loop(
         // One trace per accepted connection, minted here and never read from the peer.
         let connection = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
         let connection = connection.as_deref();
-        let served = tokio::time::timeout(CONTROL_DEADLINE, async {
+        let served = async {
             let request = handle_control(&mut stream).await;
             let (answer, event_name) = match request {
                 Some(request) if request == b"health\n" => (control_health(root), "ops_health"),
@@ -2975,8 +2986,9 @@ async fn control_loop(
             }
             let _ = stream.write_all(format!("{answer}\n").as_bytes()).await;
             let _ = stream.shutdown().await;
-        })
-        .await;
+        };
+        let served =
+            tokio::time::timeout(CONTROL_DEADLINE, DurabilityRoot::with_holder_owner(served)).await;
         if served.is_err() {
             event_traced(
                 "event=character_bootstrap result=unavailable reason=deadline",
@@ -5072,6 +5084,96 @@ mod tests {
             background.await?;
             harness.cleanup().await?;
             assert!(result.is_ok(), "{result:?}");
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn bootstrap_reconcile_keeps_its_turn_ahead_of_later_foreground_work()
+    -> crate::bestiary_postgres_harness::TestResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| bootstrap_holder_turn().map_err(|error| error.to_string()))?
+            .join()
+            .map_err(|_| "bootstrap holder-turn test panicked")?
+            .map_err(Into::into)
+    }
+
+    fn bootstrap_holder_turn() -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{self as fixture, Harness, debug};
+        let Some(admin) = fixture::configured_admin() else {
+            return Ok(());
+        };
+        fixture::runtime()?.block_on(async {
+            let h = Harness::create(admin, "bootstrap_holder_turn", false).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let held = h.root.try_issue_semantic_pass().map_err(debug)?;
+            let (refused_tx, refused_rx) = tokio::sync::oneshot::channel();
+            let mut refused_tx = Some(refused_tx);
+            let checked = tokio::sync::Notify::new();
+            let bootstrap = DurabilityRoot::with_holder_owner(async {
+                retry_busy(
+                    Some(&h.root),
+                    tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW,
+                    holder_busy,
+                    async || {
+                        let outcome = h
+                            .root
+                            .reconcile_character_bootstrap(
+                                &authority,
+                                fixture::id(fixture::SESSION),
+                            )
+                            .await;
+                        if outcome.as_ref().err().is_some_and(holder_busy) {
+                            if let Some(sender) = refused_tx.take() {
+                                let _ = sender.send(());
+                            }
+                        } else if outcome.is_ok() {
+                            // Retain this step's queue position until the later
+                            // owner has checked whether it can overtake it.
+                            checked.notified().await;
+                        }
+                        outcome
+                    },
+                )
+                .await
+            });
+            let later = DurabilityRoot::with_holder_owner(async {
+                refused_rx.await?;
+                let ticket = h.root.holder_waiter().ok_or("later owner queue full")?;
+                held.run(|_, _| Box::pin(async { Ok(()) }))
+                    .await
+                    .map_err(debug)?;
+                let overtook = match h.root.try_issue_semantic_pass() {
+                    Ok(pass) => {
+                        pass.run(|_, _| Box::pin(async { Ok(()) }))
+                            .await
+                            .map_err(debug)?;
+                        true
+                    }
+                    Err(DurabilityError::RootUnavailable) => false,
+                    Err(error) => return Err(debug(error).into()),
+                };
+                checked.notify_one();
+                drop(ticket);
+                Ok::<_, Box<dyn std::error::Error>>(overtook)
+            });
+            let limit = 2 * crate::durability::ROOT_RECOVERY_WINDOW;
+            let (bootstrap, later) =
+                tokio::time::timeout(limit, async { tokio::join!(bootstrap, later) }).await?;
+            assert!(matches!(bootstrap, Ok(None)), "{bootstrap:?}");
+            assert!(
+                !later?,
+                "later queued work overtook the already-refused bootstrap read"
+            );
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
             Ok(())
         })
     }

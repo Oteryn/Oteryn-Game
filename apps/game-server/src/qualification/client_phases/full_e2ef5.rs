@@ -26,13 +26,17 @@ pub(super) async fn spell_characters(clients: &SeamClients<'_>) -> TestResult<[[
     })
     .to_string();
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let node_log = std::env::var("NODE_BOOT_NODE_LOG").ok();
     let project = required("WP5_PROJECT")?;
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
     let output = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
-            .arg(script)
+        let mut command = std::process::Command::new("sudo");
+        command.args(["-n", "python3"]).arg(script);
+        if let Some(path) = node_log {
+            command.args(["--node-log", &path]);
+        }
+        command
             .args([
                 "--socket",
                 &socket,
@@ -104,12 +108,16 @@ pub(super) async fn provision_c17(
     let mut client = connect_world(clients, tag).await?;
     let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
     let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let node_log = std::env::var("NODE_BOOT_NODE_LOG").ok();
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../tools/qualification/node_boot/provision.py");
-    let status = tokio::task::spawn_blocking(move || {
-        std::process::Command::new("sudo")
-            .args(["-n", "python3"])
-            .arg(script)
+    let output = tokio::task::spawn_blocking(move || {
+        let mut command = std::process::Command::new("sudo");
+        command.args(["-n", "python3"]).arg(script);
+        if let Some(path) = node_log {
+            command.args(["--node-log", &path]);
+        }
+        command
             .args([
                 "--socket",
                 &socket,
@@ -118,11 +126,11 @@ pub(super) async fn provision_c17(
                 "--profile",
                 profile,
             ])
-            .status()
+            .output()
     })
     .await??;
-    if !status.success() {
-        return Err("C17 one-shot spell fixture failed".into());
+    if !output.status.success() {
+        return Err(c17_subprocess_failure("one-shot spell fixture", &output).into());
     }
     logout(&mut client).await?;
     drop(client);

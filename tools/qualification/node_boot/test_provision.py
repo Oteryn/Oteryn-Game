@@ -153,6 +153,104 @@ class ProvisionTests(unittest.TestCase):
             self.assertEqual(sockets.call_count, 1)
             self.assertEqual(control.sendall.call_count, 1)
 
+    def test_lost_or_partial_acknowledgement_reconciles_the_same_intent(self):
+        for lost in (b"", b"committed"):
+            with self.subTest(reply=lost), tempfile.TemporaryDirectory() as directory:
+                path = str(Path(directory) / "control.sock")
+                results = [subprocess.CompletedProcess([], 0, "container-id\n", ""),
+                           subprocess.CompletedProcess([], 0, "", "")]
+                received = []
+                with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+                    listener.bind(path)
+                    listener.listen()
+                    listener.settimeout(3)
+                    def serve():
+                        for answer in (lost, b"committed\n"):
+                            try:
+                                connection, _ = listener.accept()
+                            except TimeoutError:
+                                return
+                            with connection:
+                                connection.settimeout(3)
+                                request = bytearray()
+                                while block := connection.recv(128):
+                                    request.extend(block)
+                                received.append(bytes(request))
+                                connection.sendall(answer)
+                    thread = threading.Thread(target=serve, daemon=True)
+                    thread.start()
+                    try:
+                        with patch.object(provision.subprocess, "run", side_effect=results) as commands, \
+                                contextlib.redirect_stderr(io.StringIO()):
+                            provision.fresh_character(path, "test-project", {})
+                    finally:
+                        thread.join(timeout=4)
+                    self.assertFalse(thread.is_alive())
+                self.assertEqual(commands.call_count, 2)
+                self.assertEqual(len(received), 2)
+                self.assertEqual(received[0], received[1])
+
+    def test_read_timeout_reconciles_within_the_original_budget(self):
+        log = io.StringIO()
+        with patch.object(provision.socket, "socket") as sockets, \
+                contextlib.redirect_stderr(log):
+            control = sockets.return_value.__enter__.return_value
+            control.recv.side_effect = [TimeoutError(), b"committed\n", b""]
+            provision.commit_character_bootstrap("control.sock", uuid.uuid4())
+            self.assertEqual(sockets.call_count, 2)
+            self.assertEqual(control.sendall.call_args_list[0], control.sendall.call_args_list[1])
+            self.assertTrue(all(call.args[0] <= 30 for call in control.settimeout.call_args_list))
+
+    def test_unavailable_reports_only_new_node_failure_tokens(self):
+        with tempfile.TemporaryDirectory() as directory:
+            node_log = Path(directory) / "node.log"
+            node_log.write_text("event=character_bootstrap_failure stage=commit reason=old\n")
+            offset = node_log.stat().st_size
+            with node_log.open("a") as log:
+                log.write('node ts=1 level=info module=node event=character_bootstrap_failure trace=private '
+                          'detail="stage=account_security reason=evidence step=publish cause=root_unavailable '
+                          'replay=busy" account=private\n')
+                log.write("event=unrelated secret=hidden\n")
+                log.write('event=chat detail="payload event=character_bootstrap_failure '
+                          'stage=forged reason=forged"\n')
+                log.write("event=qualification_fixture_failure stage=build reason=refused character=private\n")
+            log = io.StringIO()
+            with contextlib.redirect_stderr(log):
+                provision.report_node_failures(node_log, offset)
+            self.assertEqual(log.getvalue().splitlines(), [
+                "event=character_bootstrap_failure stage=account_security reason=evidence "
+                "step=publish cause=root_unavailable replay=busy",
+                "event=qualification_fixture_failure stage=build reason=refused",
+            ])
+            for forbidden in ("private", "hidden", "reason=old"):
+                self.assertNotIn(forbidden, log.getvalue())
+
+    def test_unavailable_appends_node_stage_to_the_deadline_tail(self):
+        now = [0]
+        with tempfile.TemporaryDirectory() as directory:
+            node_log = Path(directory) / "node.log"
+            node_log.write_text("")
+            def receive(_size):
+                with node_log.open("a") as log:
+                    log.write("event=character_bootstrap_failure stage=intent_read reason=source\n")
+                return b"unavailable\n"
+            def expire(_delay):
+                now[0] = 60
+            log = io.StringIO()
+            with patch.object(provision.socket, "socket") as sockets, \
+                    patch.object(provision.time, "monotonic", side_effect=lambda: now[0]), \
+                    patch.object(provision.time, "sleep", side_effect=expire), \
+                    contextlib.redirect_stderr(log):
+                control = sockets.return_value.__enter__.return_value
+                control.recv.side_effect = [b"unavailable\n", b""]
+                # Append at the actual exchange, after the provisioner captures
+                # its log cursor, as the running node does.
+                control.sendall.side_effect = lambda _: receive(65)
+                with self.assertRaisesRegex(RuntimeError, "deadline exceeded"):
+                    provision.commit_character_bootstrap("control.sock", uuid.uuid4(), node_log)
+            self.assertIn("event=character_bootstrap_failure stage=intent_read reason=source",
+                          log.getvalue())
+
     def test_node_refusal_includes_the_actual_answer(self):
         self.assertIn("answer='rejected'", self.node_refusal(b"rejected\n"))
 

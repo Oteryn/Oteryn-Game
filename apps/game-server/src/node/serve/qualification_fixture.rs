@@ -34,7 +34,10 @@ pub(super) async fn prepare(
     };
     match prepare_build(root, authority, proof, config, native, session, profile).await {
         Ok(()) => "qualified",
-        Err(_) => "rejected",
+        Err(_) => {
+            event("event=qualification_fixture_failure stage=prepare reason=refused");
+            "rejected"
+        }
     }
 }
 
@@ -50,10 +53,13 @@ async fn prepare_build(
     let session = crate::foundation::GameSessionId::decode(&session)?;
     // Independently resolve current admission, never synthesize a fence from
     // fixture SQL or expose the node proof to the client process.
-    let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(root.clone())
-        .current_session(session)
-        .await
-        .map_err(|error| format!("qualification admission: {error:?}"))?;
+    let budget = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
+    let admissions =
+        crate::durability::fresh_admission::FreshAdmissionStore::from_root(root.clone());
+    let current = fixture_step(root, budget, "admission", async || {
+        admissions.current_session(session).await
+    })
+    .await?;
     let scope = current.current_runtime_scope();
     if Some(*scope.world_id().as_bytes()) != super::super::uuid_bytes(&config.scope.world_id)
         || scope.channel_id().map(|id| *id.as_bytes())
@@ -65,11 +71,12 @@ async fn prepare_build(
         *current.current_character_lease().character_id().as_bytes(),
     )
     .map_err(|error| format!("qualification character: {error:?}"))?;
-    let interpretation = root
-        .read_character_root_interpretation(authority, character)
-        .await
-        .map_err(|error| format!("qualification interpretation: {error:?}"))?
-        .ok_or("qualification interpretation unavailable")?;
+    let interpretation = fixture_step(root, budget, "interpretation", async || {
+        root.read_character_root_interpretation(authority, character)
+            .await
+    })
+    .await?
+    .ok_or("qualification interpretation unavailable")?;
     let [profile_revision, ruleset_revision, content_revision, _] = interpretation.revisions();
     let progression = native
         .progression()
@@ -104,7 +111,8 @@ async fn prepare_build(
         build_occurrence: uuid_v7()?,
     };
     if matches!(profile, "c17a" | "c17c") {
-        prepare_admitted_spell_character(root, authority, proof, &current, spec, policy).await
+        prepare_admitted_spell_character(root, authority, proof, &current, spec, policy, budget)
+            .await
     } else {
         qualification_build::prepare_character_with_policy(
             root, authority, proof, &current, spec, policy,
@@ -127,6 +135,7 @@ async fn prepare_admitted_spell_character<const N: usize>(
     >,
     spec: qualification_build::QualificationBuildSpec<'_>,
     policy: crate::domain::progression::FiniteProgressionPolicy<String, N>,
+    budget: tokio::time::Instant,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::character_build::{
         BuildCause, BuildChangeRequest, BuildOccurrence, NO_VOCATION, convert_vocation,
@@ -148,14 +157,14 @@ async fn prepare_admitted_spell_character<const N: usize>(
     .map_err(fixture_error)?;
     let sequencer = CharacterRevisionSequencer::new();
     let mut slot = sequencer.acquire(character).await;
-    let before = root
-        .read_character_build_state(authority, character)
-        .await
-        .map_err(fixture_error)?;
-    let progression = root
-        .read_character_progression(authority, character)
-        .await
-        .map_err(fixture_error)?;
+    let before = fixture_step(root, budget, "build_read", async || {
+        root.read_character_build_state(authority, character).await
+    })
+    .await?;
+    let progression = fixture_step(root, budget, "progression_read", async || {
+        root.read_character_progression(authority, character).await
+    })
+    .await?;
     if before.vocation() != NO_VOCATION
         || progression
             .as_ref()
@@ -176,52 +185,46 @@ async fn prepare_admitted_spell_character<const N: usize>(
         character_lease_generation: current.current_character_lease().generation(),
         runtime_scope: current.current_runtime_scope(),
         scope_ownership_generation: current.current_scope_generation(),
-        expected_character_revision: root
-            .read_current_character(authority, character)
-            .await
-            .map_err(fixture_error)?
-            .revision,
+        expected_character_revision: fixture_step(root, budget, "revision_read", async || {
+            root.read_current_character(authority, character).await
+        })
+        .await?
+        .revision,
     };
     // The initializer reconciles an existing admission row only when every
     // context/policy revision matches. A mismatched policy cannot reach XP.
-    root.initialize_character_progression(
-        authority,
-        proof,
-        fence,
-        ProgressionInitializationRequest {
+    let initialization = ProgressionInitializationRequest {
+        context: spec.context.clone(),
+        policy_revision: policy.policy_revision.clone(),
+        reward_revision: policy.reward_revision.clone(),
+        policy: policy.clone(),
+    };
+    fixture_step(root, budget, "initialize", async || {
+        root.initialize_character_progression(authority, proof, fence, initialization.clone())
+            .await
+    })
+    .await?;
+    if spec.level > 1 {
+        let request = ExperienceAwardRequest {
+            occurrence: ExperienceRewardOccurrence::from_bytes(spec.xp_occurrence)
+                .map_err(fixture_error)?,
+            amount: experience,
             context: spec.context.clone(),
             policy_revision: policy.policy_revision.clone(),
             reward_revision: policy.reward_revision.clone(),
-            policy: policy.clone(),
-        },
-    )
-    .await
-    .map_err(fixture_error)?;
-    if spec.level > 1 {
-        slot.commit_experience(
-            root,
-            authority,
-            proof,
-            fence,
-            ExperienceAwardRequest {
-                occurrence: ExperienceRewardOccurrence::from_bytes(spec.xp_occurrence)
-                    .map_err(fixture_error)?,
-                amount: experience,
-                context: spec.context.clone(),
-                policy_revision: policy.policy_revision.clone(),
-                reward_revision: policy.reward_revision.clone(),
-                policy,
-            },
-            None,
-        )
-        .await
-        .map_err(fixture_error)?;
+            policy,
+        };
+        fixture_step(root, budget, "experience", async || {
+            slot.commit_experience(root, authority, proof, fence, request.clone(), None)
+                .await
+        })
+        .await?;
     }
-    fence.expected_character_revision = root
-        .read_current_character(authority, character)
-        .await
-        .map_err(fixture_error)?
-        .revision;
+    fence.expected_character_revision = fixture_step(root, budget, "revision_read", async || {
+        root.read_current_character(authority, character).await
+    })
+    .await?
+    .revision;
     let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
@@ -231,31 +234,99 @@ async fn prepare_admitted_spell_character<const N: usize>(
     )
     .map_err(fixture_error)?;
     let after = convert_vocation(&formula, &before, spec.vocation).map_err(fixture_error)?;
-    slot.commit_build(
-        root,
-        authority,
-        proof,
-        fence,
-        BuildChangeRequest {
-            occurrence: BuildOccurrence::from_bytes(spec.build_occurrence)
-                .map_err(fixture_error)?,
-            cause: BuildCause::VocationChoice,
-            before,
-            after,
-            pruned_stance: None,
-        },
-        &formula,
-        None,
-    )
-    .await
-    .map_err(fixture_error)?;
+    let request = BuildChangeRequest {
+        occurrence: BuildOccurrence::from_bytes(spec.build_occurrence).map_err(fixture_error)?,
+        cause: BuildCause::VocationChoice,
+        before,
+        after,
+        pruned_stance: None,
+    };
+    fixture_step(root, budget, "build", async || {
+        slot.commit_build(
+            root,
+            authority,
+            proof,
+            fence,
+            request.clone(),
+            &formula,
+            None,
+        )
+        .await
+    })
+    .await?;
     if !matches!(crate::gameplay_transport::load_character_cast_facts(root, authority, character).await,
         crate::gameplay_transport::CastFactsLoad::Ready { facts, .. }
         if facts.level == spec.level && facts.vocation == crate::spell::Vocation::Sorcerer)
     {
+        event("event=qualification_fixture_failure stage=cast_facts reason=refused");
         return Err("C17 fenced fixture did not produce the source build".into());
     }
     Ok(())
+}
+
+// Retry only a busy holder, which refuses before SQL. Never replay the whole
+// one-shot fixture: XP/build occurrence identities and completed steps stay fixed.
+async fn fixture_step<T, E: FixtureError>(
+    root: &DurabilityRoot,
+    budget: tokio::time::Instant,
+    stage: &'static str,
+    step: impl AsyncFnMut() -> Result<T, E>,
+) -> Result<T, Box<dyn std::error::Error>> {
+    retry_busy(
+        Some(root),
+        budget,
+        |error: &E| error.reason() == "holder_busy",
+        step,
+    )
+    .await
+    .map_err(|error| {
+        event(&format!(
+            "event=qualification_fixture_failure stage={stage} reason={}",
+            error.reason()
+        ));
+        fixture_error(error).into()
+    })
+}
+
+// Only closed tokens reach stderr; never print an error's database/TLS detail.
+trait FixtureError: std::fmt::Debug {
+    fn reason(&self) -> &'static str;
+}
+
+impl FixtureError for DurabilityError {
+    fn reason(&self) -> &'static str {
+        match self {
+            Self::RootUnavailable => "holder_busy",
+            Self::RootPassDeadlineExceeded => "pass_deadline",
+            Self::CommitOutcomeUnknown => "commit_unknown",
+            Self::Database(_) => "database",
+            Self::InvalidStoredState => "invalid_stored_state",
+            _ => "durability",
+        }
+    }
+}
+
+impl FixtureError for CharacterAuthorityError {
+    fn reason(&self) -> &'static str {
+        match self {
+            Self::Unavailable(error) => error.reason(),
+            _ => "authority_refused",
+        }
+    }
+}
+
+impl FixtureError for crate::durability::character_progression::CharacterProgressionError {
+    fn reason(&self) -> &'static str {
+        match self {
+            Self::Unavailable(error) => error.reason(),
+            Self::CharacterRevisionMismatch => "revision_mismatch",
+            Self::AuthorityRejected => "authority_refused",
+            Self::BuildStateMismatch => "build_mismatch",
+            Self::ProgressionContextMismatch => "context_mismatch",
+            Self::ConflictingOccurrence => "occurrence_conflict",
+            _ => "progression_refused",
+        }
+    }
 }
 
 fn fixture_error(error: impl std::fmt::Debug) -> String {
@@ -367,13 +438,24 @@ mod tests {
     -> crate::bestiary_postgres_harness::TestResult {
         std::thread::Builder::new()
             .stack_size(64 << 20)
-            .spawn(|| c17_admitted_profiles().map_err(|error| error.to_string()))?
+            .spawn(|| c17_admitted_profiles(false).map_err(|error| error.to_string()))?
             .join()
             .map_err(|_| "C17 provisioning test panicked")?
             .map_err(Into::into)
     }
 
-    fn c17_admitted_profiles() -> crate::bestiary_postgres_harness::TestResult {
+    #[test]
+    fn qualification_c17_profiles_wait_for_a_busy_holder_without_reapplying()
+    -> crate::bestiary_postgres_harness::TestResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| c17_admitted_profiles(true).map_err(|error| error.to_string()))?
+            .join()
+            .map_err(|_| "C17 busy-holder test panicked")?
+            .map_err(Into::into)
+    }
+
+    fn c17_admitted_profiles(busy: bool) -> crate::bestiary_postgres_harness::TestResult {
         use crate::bestiary_postgres_harness::{self as fixture, Harness, debug};
         let Some(admin) = fixture::configured_admin() else {
             return Ok(());
@@ -409,8 +491,19 @@ mod tests {
                         reward_revision: policy.reward_revision.clone(), policy,
                     }).await.map_err(debug)?;
                 let request = format!("qualify {} {profile}\n", uuid_text(&fixture::id(fixture::SESSION)));
-                assert_eq!(prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes()).await,
-                    "qualified", "profile={profile}");
+                {
+                let fixture = prepare(&h.root, &authority, &h.node, &config, Some(&native), request.as_bytes());
+                tokio::pin!(fixture);
+                if busy {
+                    let held = h.root.try_issue_semantic_pass().map_err(debug)?;
+                    tokio::time::pause();
+                    let early = tokio::time::timeout(Duration::from_millis(100), &mut fixture).await;
+                    tokio::time::resume();
+                    held.run(|_, _| Box::pin(async { Ok(()) })).await.map_err(debug)?;
+                    assert!(early.is_err(), "busy holder prematurely ended fixture: {early:?}");
+                }
+                assert_eq!(fixture.await, "qualified", "profile={profile}");
+                }
                 let character = crate::domain::CharacterId::from_bytes(fixture::id(fixture::CHARACTER))?;
                 assert!(matches!(crate::gameplay_transport::load_character_cast_facts(&h.root, &authority, character).await,
                     crate::gameplay_transport::CastFactsLoad::Ready { facts, .. }
