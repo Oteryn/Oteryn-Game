@@ -89,23 +89,23 @@ pub(super) async fn exercise(
             admitted.continuity.next_command_id, bytes, Some(reference)).await?;
         *admitted = next;
         assert_ne!(result, UseDisposition::Committed);
-        assert_eq!(snapshot(h).await?, (0, 1, 0));
+        assert_eq!(snapshot(h).await?, (0, 1, 0, 1));
     }
     owner.clock_origin -= std::time::Duration::from_secs(2);
     let command = admitted.continuity.next_command_id;
-    let (next, result, _) = super::item_craft::exchange(owner, *admitted, command, &corpse, Some(amulet)).await?;
+    let (next, result, actual) = super::item_craft::exchange(owner, *admitted, command, &corpse, Some(amulet)).await?;
     *admitted = next;
     assert_eq!(result, UseDisposition::Committed);
-    assert_eq!(snapshot(h).await?, (1, 0, 1));
-    let (_, replay, _) = super::item_craft::exchange(owner, *admitted, command, &corpse, None).await?;
+    assert_eq!(snapshot(h).await?, (1, 0, 1, 1));
+    let (_, replay, _) = super::item_craft::exchange(owner, *admitted, command, &actual, None).await?;
     assert_eq!(replay, UseDisposition::Committed);
-    assert_eq!(snapshot(h).await?, (1, 0, 1));
+    assert_eq!(snapshot(h).await?, (1, 0, 1, 1));
     let state = owner.root.read_character_quest_state(owner.character, fence.character_id).await.map_err(debug)?;
     assert_eq!(state.tracks().get(source::TRACK), Some(&1));
     Ok(())
 }
 
-async fn snapshot(h: &Harness) -> TestResult<(i64, i64, i64)> {
-    Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_tracks WHERE track_key=$1 AND value=1), (SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i7532' AND lifecycle=1), (SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$2)")
+async fn snapshot(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
+    Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_character_quest_tracks WHERE track_key=$1 AND value=1), (SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i7532' AND lifecycle=1), (SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$2), (SELECT count(*) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3031' AND lifecycle=1)")
         .bind(source::TRACK).bind(source::KEY).fetch_one(&h.pool).await?)
 }

@@ -1257,7 +1257,10 @@ fn scenario_case(
             world
         };
         let world = if name == "koshei-amulet" {
-            world_with_native_items(&callback, trigger, &[], generation.native_gameplay().ok_or("native")?, &[(trigger, 7535)])?
+            // A Terrain lookalike and the real Item deliberately share appearance 7535.
+            let mut physical = callback.clone();
+            physical.selector.appearance = Some(7535);
+            world_with_native_items(&physical, trigger, &[], generation.native_gameplay().ok_or("native")?, &[(trigger, 7535)])?
         } else if name == "qengine-rewards-smith-story" {
             world_with_native_items(
                 &callback,
