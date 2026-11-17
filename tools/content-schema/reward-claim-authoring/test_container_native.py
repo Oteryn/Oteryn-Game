@@ -152,7 +152,8 @@ class ContainerNativeTests(unittest.TestCase):
             definition = next(d for d in self.rows if d['identity']['key'].endswith(suffix))
             before = copy.deepcopy(definition)
             with self.subTest(claim=suffix):
-                native = container_native.derive(definition, self.fluid_items(), plain.stack_problem)
+                items = container_native.claim_items(definition['provenance']['pilot_key'], self.fluid_items())
+                native = container_native.derive(definition, items, plain.stack_problem)
                 self.assertIsNotNone(native)
                 self.assertEqual(native['source_difference'], choice)
                 self.assertEqual([p['unique_id'] for p in native['placements']], uids)
@@ -295,7 +296,12 @@ class ContainerNativeTests(unittest.TestCase):
             self.assertIsNotNone(recipe)
             row = recipe['placements'][0]
             self.assertLessEqual(len(row['contents']), min(row['capacity'], 20))
-        native = [d for d in self.rows if container_native.derive(d, self.items, plain.stack_problem)]
+        native = [
+            d for d in self.rows
+            if container_native.derive(
+                d, container_native.claim_items(d['provenance']['pilot_key'], self.items), plain.stack_problem,
+            )
+        ]
         ornament = next(d for d in self.rows
                         if d['identity']['key'] == 'oteryn:reward-claim.kv.ornamentedshield')
         self.assertIsNone(container_native.derive(ornament, self.items, plain.stack_problem))
