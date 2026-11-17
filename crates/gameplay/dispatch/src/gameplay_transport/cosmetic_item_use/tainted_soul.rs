@@ -17,24 +17,6 @@ fn redemption_timing(turn: Duration, has_spawn_room: bool) -> RedemptionTiming {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::redemption_timing;
-    use std::time::Duration;
-
-    #[test]
-    fn tainted_soul_redemption_bounds_actor_lifetimes_with_or_without_room() {
-        let turn = Duration::from_millis(200);
-        let blocked = redemption_timing(turn, false);
-        assert_eq!(blocked.tainted_remove_after, turn);
-        assert_eq!(blocked.redeemed_remove_after, None);
-
-        let open = redemption_timing(turn, true);
-        assert_eq!(open.tainted_remove_after, turn);
-        assert_eq!(open.redeemed_remove_after, Some(Duration::from_secs(30)));
-    }
-}
-
 const TAINTED: &str = "oteryn:creature.tainted_soul";
 const REDEEMED: &str = "oteryn:creature.redeemed_soul";
 const OWNER_TURN: Duration =
@@ -170,5 +152,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             *due = now.saturating_add(crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS);
             true
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::redemption_timing;
+    use std::time::Duration;
+
+    #[test]
+    fn tainted_soul_redemption_bounds_actor_lifetimes_with_or_without_room() {
+        let turn = Duration::from_millis(200);
+        let blocked = redemption_timing(turn, false);
+        assert_eq!(blocked.tainted_remove_after, turn);
+        assert_eq!(blocked.redeemed_remove_after, None);
+
+        let open = redemption_timing(turn, true);
+        assert_eq!(open.tainted_remove_after, turn);
+        assert_eq!(open.redeemed_remove_after, Some(Duration::from_secs(30)));
     }
 }
