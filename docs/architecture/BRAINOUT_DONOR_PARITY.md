@@ -91,6 +91,7 @@ generator now emits it. Temporary diagnostic prints were removed.
 | Quest-authoring checks | Earlier full runner passed; final-input rerun pending |
 | Quest-authoring unit-tests | Earlier 1464 tests passed, 8 existing skips; final-input rerun pending |
 | Quest item-profile unit tests | All 24 passed in 535.43 seconds |
+| Regenerated provider and NPC model | One new profile, no existing-profile changes/removals; NPC service-count test target passed |
 | Content-tree validation | Earlier pass: 19 domains, 39 systems, 100 nodes; final rerun pending |
 | Fmt | Passed; final check pending |
 | Clippy, quests/durability | Earlier all-target passes; rerun after whole-stack change pending |
