@@ -235,6 +235,42 @@ mod tests {
         }
     }
     #[test]
+    fn mage_tower_energized_mage_returns_without_home_delay_or_warning() -> Result<(), CarrierError>
+    {
+        let mut runtime = runtime()?;
+        let energized = "oteryn:creature.energized_raging_mage";
+        runtime.realize_activation_spawns(vec![
+            (vec![(101, 100, 7)], 90_000, 5_000, energized.into(), 20),
+            (vec![(102, 100, 7)], 90_000, 5_000, energized.into(), 20),
+        ])?;
+        runtime.project_world_spawn_points(|_, at| {
+            (at.x == 101).then(|| WorldSpawnProjection {
+                change_key: "the_mage_s_tower".into(),
+                generation: 1,
+                creature: Some((energized.into(), 20, false)),
+            })
+        })?;
+        let points = runtime.spawn_point_creatures();
+        for (_, _, actor) in &points {
+            assert!(runtime.kill_creature_for_test(actor.ok_or(CarrierError::PlanConflict)?));
+        }
+        let now = 50_000;
+        let report = runtime.drive_spawn_respawns(now, |_, _| true)?;
+        assert!(report.warnings.is_empty());
+        assert_eq!(report.admitted.len(), 1);
+        assert_eq!(
+            runtime.spawn_point_creatures()[0].2,
+            Some(report.admitted[0])
+        );
+        assert_ne!(points[0].2, Some(report.admitted[0]));
+        assert_eq!(
+            runtime.pending_respawn(points[1].0).map(|p| p.due_micros),
+            Some(now + 90_000_000)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn worldchg_phased_spawns_suppress_rearm_and_preserve_source_membership()
     -> Result<(), CarrierError> {
         let mut runtime = runtime()?;

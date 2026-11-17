@@ -694,18 +694,28 @@ impl ChannelRuntimeV1 {
                 && spawn.definition.points[cell].enabled
                 && self.spawn_schedule.pending(point).is_none()
             {
-                // W05d: a scheduled event spawn rate shortens or lengthens the respawn delay
-                // (Crystal `spawn_monster.cpp:443-458`).
-                let mut timing = spawn.definition.timing(cell)?;
-                timing.respawn_delay_micros =
-                    oteryn_gameplay_foundation::scheduled_events::scale_respawn_delay_micros(
-                        timing.respawn_delay_micros,
-                        oteryn_gameplay_foundation::scheduled_events::current_rates().spawn,
-                    );
-                let due_micros = self
-                    .spawn_schedule
-                    .creature_gone(point, timing, now_micros)
-                    .map_err(|_| CarrierError::CapacityExceeded)?;
+                let definition = &spawn.definition.points[cell];
+                let due = if definition.creature_target_identity
+                    == "oteryn:creature.energized_raging_mage"
+                    && definition
+                        .world_change
+                        .as_ref()
+                        .is_some_and(|(key, _)| key == "the_mage_s_tower")
+                {
+                    // Crystal raging_mage_tower/creaturescripts_raging_mage_1.lua:7–14.
+                    self.spawn_schedule.resurrect_now(point, now_micros)
+                } else {
+                    // W05d: a scheduled event spawn rate shortens or lengthens the respawn delay
+                    // (Crystal `spawn_monster.cpp:443-458`).
+                    let mut timing = spawn.definition.timing(cell)?;
+                    timing.respawn_delay_micros =
+                        oteryn_gameplay_foundation::scheduled_events::scale_respawn_delay_micros(
+                            timing.respawn_delay_micros,
+                            oteryn_gameplay_foundation::scheduled_events::current_rates().spawn,
+                        );
+                    self.spawn_schedule.creature_gone(point, timing, now_micros)
+                };
+                let due_micros = due.map_err(|_| CarrierError::CapacityExceeded)?;
                 self.spawn_deadlines.insert((due_micros, point));
             }
             cell += 1;
