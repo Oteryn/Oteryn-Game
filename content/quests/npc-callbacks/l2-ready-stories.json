@@ -1,6 +1,18 @@
 {
   "schema": 1,
-  "tracks": [],
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u7_4/djinn_war/orc_king_greeting",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_orc_king.lua:58:sha256:f3150f54d1eaa69191179ce8a78f4d8ce94d10653120f2aa8ff2b969340c5b5a"
+      ]
+    }
+  ],
   "callbacks": [
     {
       "key": "oteryn:quest-reward/l2-efreet-enlist",
@@ -158,6 +170,36 @@
           "minimum": 3,
           "maximum": 3
         }
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-efreet-orc-king-greeting",
+      "quest": "oteryn:quest.the_djinn_war_efreet_faction",
+      "npc": "oteryn:npc.the_orc_king",
+      "keywords": [
+        "hi",
+        "hello",
+        "hail"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_4/djinn_war/orc_king_greeting",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Arrrrgh! A dirty paleskin! To me my children! Kill them my guards!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_orc_king.lua:58:sha256:f3150f54d1eaa69191179ce8a78f4d8ce94d10653120f2aa8ff2b969340c5b5a"
       ]
     },
     {

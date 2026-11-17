@@ -8,9 +8,10 @@ NPCS = ('baa_leal', 'partos', 'alesar', 'yaman', 'bo_ques', 'rata_mari',
         'fa_hradin', 'gabel', 'malor', 'the_orc_king', 'haroun', 'nah_bob')
 ITEMS = {3029, 3035, 3231, 3232, 3233, 3234, 3243, 3607}
 ROOT = 'oteryn:quest-progress/quest/u7_4/djinn_war/'
+ORC_KING_GREETING = ROOT + 'orc_king_greeting'
 
 
-def append(add, state, callbacks, offers, inputs, pin):
+def append(add, state, callbacks, offers, tracks, inputs, pin):
     def path(npc):
         return f'data-global/npc/{npc}.lua'
 
@@ -89,6 +90,13 @@ def append(add, state, callbacks, offers, inputs, pin):
     grant('spy-report', 'marid', 'fa_hradin', ['yes'], [s('marid', 'mission02', 1, 2)],
           'You have the report?', topic=1, take=[(3232, 1)],
           requires=[requirement('marid', 'rata_mari', 2)])
+
+    # Crystal's OrcKingGreeting is shared by both factions and precedes lamp dialogue.
+    grant('orc-king-greeting', 'efreet', 'the_orc_king', ['hi', 'hello', 'hail'],
+          [state(ORC_KING_GREETING, 0, 1)], 'To me my children!')
+    tracks.append({'key': ORC_KING_GREETING, 'quest': callbacks[-1]['quest'],
+                   'initial': 0, 'min': 0, 'max': 1, 'writable': True,
+                   'sources': callbacks[-1]['sources']})
 
     for faction, npc, prior, enemy_door in [
             ('efreet', 'malor', 3, 'door_to_marid_territory'),

@@ -6,6 +6,6 @@ NPCS = tuple(sorted(set(djinn.NPCS) | set(passages.NPCS)))
 ITEMS = djinn.ITEMS | passages.ITEMS
 
 
-def append(add, state, callbacks, offers, inputs, pin):
+def append(add, state, callbacks, offers, tracks, inputs, pin):
     passages.append(add, state, callbacks, offers, inputs, pin)
-    djinn.append(add, state, callbacks, offers, inputs, pin)
+    djinn.append(add, state, callbacks, offers, tracks, inputs, pin)

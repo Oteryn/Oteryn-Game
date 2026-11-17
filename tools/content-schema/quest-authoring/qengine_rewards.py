@@ -76,6 +76,14 @@ def reward_greetings(callbacks, inputs, *, root=None):
             messages[field]=matches[0].group(1)
             line=inputs[origin][:matches[0].start()].count(b'\n')+1
             citations.append(f'crystal:{PIN}:{origin}:{line}:sha256:{sha(inputs[origin])}')
+        if npc == 'oteryn:npc.baa_leal':
+            source = inputs[path].decode()
+            alias = re.search(r'addCustomGreetKeyword\(\{ "([^"]+)" \}', source)
+            if alias is None:
+                raise ValueError("Baa'leal source greeting changed")
+            messages['greeting_aliases'] = [alias[1]]
+            line = source.count('\n', 0, alias.start()) + 1
+            citations.append(f'crystal:{PIN}:{path}:{line}:sha256:{sha(inputs[path])}')
         greetings.append({'npc':npc,**messages,'sources':citations})
     return greetings
 
@@ -1066,7 +1074,8 @@ def build():
             forbids_addons=[{'outfit':'oteryn:outfit.rift_warrior','addons':bit}])
         if bit==2:callbacks[-1]['requires_addons']=[{'outfit':'oteryn:outfit.rift_warrior','addons':1}]
     source_offer('cledwyn',['addon'],0,3,[])
-    questl2_ready.append(add, storage, callbacks, offers, inputs, PIN)
+    ready_tracks = []
+    questl2_ready.append(add, storage, callbacks, offers, ready_tracks, inputs, PIN)
     ready_callbacks = [c for c in callbacks if c['key'].split('/')[-1].startswith(
         ('l2-white-raven-', 'l2-efreet-', 'l2-marid-'))]
     callbacks = [c for c in callbacks if c not in ready_callbacks]
@@ -1089,6 +1098,7 @@ def build():
     validate_callbacks({'schema':1,'callbacks':fibula_callbacks})
     validate_callbacks({'schema':1,'callbacks':l13_callbacks})
     validate_callbacks({'schema':1,'callbacks':programme_callbacks})
+    validate_callbacks({'schema':1,'tracks':ready_tracks,'callbacks':ready_callbacks})
     native_cosmetics = cosmetics.provisioning_input(
         ROOT / cosmetics.AUTHORING, appearance / 'manifest.json', ROOT / cosmetics.OUTPUT,
         authoring_bytes=encoded(author))
@@ -1105,7 +1115,7 @@ def build():
             'content/quests/npc-callbacks/questpc7-programmes.json': encoded({'schema':1,'callbacks':programme_callbacks}),
             'content/quests/shared-reward-offers.json': encoded({'schema':1,'offers':offers})}
     generated['content/quests/npc-callbacks/l2-ready-stories.json'] = encoded({
-        'schema':1,'tracks':[],'callbacks':ready_callbacks})
+        'schema':1,'tracks':ready_tracks,'callbacks':ready_callbacks})
     generated[qmech_m39.SHARD] = encoded({'schema':1,'tracks':m39_tracks,'callbacks':sorted(m39_callbacks,key=lambda callback:callback['key'])})
     generated[qmech_m39.WORLD_SHARD] = encoded(qmech_m39.worlds(inputs))
     # Preserve the source's complete contiguous 1..10001 supply-package table.

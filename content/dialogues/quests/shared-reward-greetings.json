@@ -116,10 +116,14 @@
       "greet": "Greetings, |PLAYERNAME|.",
       "farewell": "Stand down, soldier!",
       "walkaway": "Good bye.",
+      "greeting_aliases": [
+        "djanni'hah"
+      ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:81:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/baa_leal.lua:158:sha256:92c51f8e789a74a87a28ba5f50e9ee570d728885214d349b113d9992d97a38e7",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a"
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data/npclib/npc_system/npc_handler.lua:90:sha256:8479e2aa7904915ef23bcbc50eef3ac9c9a8b2588cc16dc8713f33fa0cfec35a",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/baa_leal.lua:156:sha256:92c51f8e789a74a87a28ba5f50e9ee570d728885214d349b113d9992d97a38e7"
       ]
     },
     {
