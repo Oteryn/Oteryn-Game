@@ -4,6 +4,7 @@ pub mod content;
 pub mod counter;
 pub mod daily;
 pub mod decision;
+pub mod mummys_curse;
 pub mod owner;
 pub mod rules;
 pub mod scheduled;
