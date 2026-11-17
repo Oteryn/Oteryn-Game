@@ -1,0 +1,345 @@
+{
+  "schema": 1,
+  "offers": [
+    {
+      "npc": "oteryn:npc.spectulus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 240,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "An inventor made a magic device that could sail the sea of light. Will you help me find him?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "spare"
+      ],
+      "topic": 0,
+      "next_topic": 241,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Spare a coin and we can talk. What do you say?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "device"
+      ],
+      "topic": 242,
+      "next_topic": 243,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I used to be a scientist. The academy never wanted me around."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "device"
+      ],
+      "topic": 0,
+      "next_topic": 243,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I used to be a scientist. The academy never wanted me around."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "scientist"
+      ],
+      "topic": 243,
+      "next_topic": 244,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I was working on a device of my own. Spare another coin if you want to hear the whole story."
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "device"
+      ],
+      "topic": 0,
+      "next_topic": 245,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I built the Lightboat to explore the worlds beyond the stars. Are you still listening?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 245,
+      "next_topic": 246,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The Lightboat was big enough to sit in. You look doubtful. Do you want me to go on?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 246,
+      "next_topic": 247,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I spent years travelling and trading for every part. Can you imagine how it felt to finish it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 247,
+      "next_topic": 248,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "One part had a tiny crack. It brought the whole experiment down. Still with me?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 248,
+      "next_topic": 249,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The device and my laboratory were destroyed. I barely escaped and had to begin again. Do you know what that means?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "no"
+      ],
+      "topic": 249,
+      "next_topic": 250,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I had no home, money, or purpose. Starting over opens up possibilities too, don't you think?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 250,
+      "next_topic": 251,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Perhaps it was for the best. Yet I kept one copy of the plans. Did I just say that?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 251,
+      "next_topic": 252,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I keep them as a reminder. The world is better off without a device that dangerous, isn't it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.shoddy_beggar",
+      "keywords": [
+        "no"
+      ],
+      "topic": 252,
+      "next_topic": 253,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "Perhaps someone else could finish what I started. Do you know the astronomer Spectulus?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.spectulus",
+      "keywords": [
+        "mission"
+      ],
+      "topic": 0,
+      "next_topic": 254,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "I've built a prototype and found what caused the first one to fail. Do you want to hear what went wrong?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.spectulus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 254,
+      "next_topic": 255,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The inventor damaged the mirror crystal that powers the device. I know where there is another one. Are you up to finding it?"
+      ]
+    },
+    {
+      "npc": "oteryn:npc.spectulus",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 255,
+      "next_topic": 256,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 6,
+          "preserve": true
+        }
+      ],
+      "reply": [
+        "The Collector has the mirror crystal. Its lair opens when a rare crystal is offered at a secret well. Will you bring me one?"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,316 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.sea_of_light_quest",
+      "recipe_sha256": "45e3f721be08fd404c48e1430e6d12f35e6397e4c27c4e7a12ff8c4af4a94ff4",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/qcx-sea-of-light/phase",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 7
+        },
+        {
+          "key": "oteryn:quest-progress/qcx-sea-of-light/study-start",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/qcx-sea-of-light/accept",
+              "quest": "oteryn:quest.sea_of_light_quest",
+              "npc": "oteryn:npc.spectulus",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 240,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "An Edron beggar knows about an inventor who went mad after an experiment. Find him and see what you can learn."
+              ],
+              "sources": [
+                "https://tibia.fandom.com/index.php?curid=41840&oldid=855981",
+                "https://tibia.fandom.com/index.php?curid=41820&oldid=791161"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s2",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/qcx-sea-of-light/first-coin",
+              "quest": "oteryn:quest.sea_of_light_quest",
+              "npc": "oteryn:npc.shoddy_beggar",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 241,
+              "next_topic": 242,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+                  "minimum": 1,
+                  "maximum": 1,
+                  "set": 2
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Thank you for the coin. What are these plans you keep talking about? A magic device, you say?"
+              ],
+              "sources": [
+                "https://tibia.fandom.com/index.php?curid=41840&oldid=855981",
+                "https://tibia.fandom.com/index.php?curid=41820&oldid=791161"
+              ],
+              "fee": {
+                "gold": 1,
+                "include_bank": false
+              }
+            },
+            "alternatives": [
+              {
+                "key": "oteryn:quest-reward/qcx-sea-of-light/second-coin",
+                "quest": "oteryn:quest.sea_of_light_quest",
+                "npc": "oteryn:npc.shoddy_beggar",
+                "keywords": [
+                  "yes"
+                ],
+                "topic": 244,
+                "next_topic": 245,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+                    "minimum": 2,
+                    "maximum": 2,
+                    "set": 3
+                  }
+                ],
+                "requires_premium": true,
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I built the Lightboat to explore the worlds beyond the stars. Are you still listening?"
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/index.php?curid=41840&oldid=855981",
+                  "https://tibia.fandom.com/index.php?curid=41820&oldid=791161"
+                ],
+                "fee": {
+                  "gold": 1,
+                  "include_bank": false
+                }
+              }
+            ]
+          }
+        },
+        {
+          "key": "s3",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/qcx-sea-of-light/receive-plans",
+              "quest": "oteryn:quest.sea_of_light_quest",
+              "npc": "oteryn:npc.shoddy_beggar",
+              "keywords": [
+                "yes"
+              ],
+              "topic": 253,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+                  "minimum": 3,
+                  "maximum": 3,
+                  "set": 4
+                }
+              ],
+              "requires_premium": true,
+              "take": [],
+              "give": {
+                "item": "oteryn:item.tibia.i9696",
+                "count": 1,
+                "contents": []
+              },
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Spectulus still has a laboratory and the equipment to make this work. Give him my remaining copy of the plans."
+              ],
+              "sources": [
+                "https://tibia.fandom.com/index.php?curid=41840&oldid=855981",
+                "https://tibia.fandom.com/index.php?curid=41820&oldid=791161"
+              ]
+            }
+          }
+        },
+        {
+          "key": "s4",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/qcx-sea-of-light/hand-in-plans",
+              "quest": "oteryn:quest.sea_of_light_quest",
+              "npc": "oteryn:npc.spectulus",
+              "keywords": [
+                "mission"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+                  "minimum": 4,
+                  "maximum": 4,
+                  "set": 5
+                }
+              ],
+              "requires_premium": true,
+              "take": [
+                {
+                  "item": "oteryn:item.tibia.i9696",
+                  "count": 1
+                }
+              ],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "The beggar was the inventor? Let me study his plans and work out what went wrong."
+              ],
+              "sources": [
+                "https://tibia.fandom.com/index.php?curid=41840&oldid=855981",
+                "https://tibia.fandom.com/index.php?curid=41820&oldid=791161"
+              ],
+              "experience": 400,
+              "state_ops": [
+                {
+                  "track": "oteryn:quest-progress/qcx-sea-of-light/study-start",
+                  "from": {
+                    "kind": "any"
+                  },
+                  "effect": {
+                    "kind": "set_now"
+                  }
+                }
+              ]
+            },
+            "alternatives": [
+              {
+                "key": "oteryn:quest-reward/qcx-sea-of-light/plans-studied",
+                "quest": "oteryn:quest.sea_of_light_quest",
+                "npc": "oteryn:npc.spectulus",
+                "keywords": [
+                  "mission"
+                ],
+                "topic": 0,
+                "next_topic": 254,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+                    "minimum": 5,
+                    "maximum": 5,
+                    "set": 6
+                  }
+                ],
+                "requires_premium": true,
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "I've built a prototype and found what caused the first one to fail. Do you want to hear what went wrong?"
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/index.php?curid=41840&oldid=855981",
+                  "https://tibia.fandom.com/index.php?curid=41820&oldid=791161"
+                ],
+                "failure_reply": [
+                  "I'm still studying the plans. Come back when I've worked out which component failed."
+                ],
+                "state_ops": [
+                  {
+                    "track": "oteryn:quest-progress/qcx-sea-of-light/study-start",
+                    "from": {
+                      "kind": "elapsed_at_least",
+                      "seconds": 1800
+                    },
+                    "effect": {
+                      "kind": "add",
+                      "value": 0
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "oteryn:quest-reward/qcx-sea-of-light/accept-collector",
+                "quest": "oteryn:quest.sea_of_light_quest",
+                "npc": "oteryn:npc.spectulus",
+                "keywords": [
+                  "yes"
+                ],
+                "topic": 256,
+                "next_topic": 0,
+                "storage": [
+                  {
+                    "track": "oteryn:quest-progress/qcx-sea-of-light/phase",
+                    "minimum": 6,
+                    "maximum": 6,
+                    "set": 7
+                  }
+                ],
+                "requires_premium": true,
+                "take": [],
+                "give": null,
+                "outfit": null,
+                "achievement": null,
+                "reply": [
+                  "Take a pick to the Lost Mines west of Edron. Look for a large cyan crystal deep in the mine, and watch out for the dead miners."
+                ],
+                "sources": [
+                  "https://tibia.fandom.com/index.php?curid=41840&oldid=855981",
+                  "https://tibia.fandom.com/index.php?curid=41820&oldid=791161"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=41840&oldid=855981",
+        "https://tibia.fandom.com/index.php?curid=41820&oldid=791161"
+      ]
+    }
+  ]
+}
