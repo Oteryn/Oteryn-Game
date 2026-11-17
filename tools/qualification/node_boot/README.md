@@ -2,7 +2,7 @@
 
 The default `run.sh` first preserves the native entry room's existing SEAM stages
 in a disposable baseline pass, then creates a fresh topology with real World
-regions `(126,125)`, `(126,126)`, `(126,127)`, `(127,127)`, `(129,123)`, `(129,124)` and `(132,125)` (`(129,123)` and `(129,124)` hold the Edron
+regions `(125,121)`, `(126,124)`, `(126,125)`, `(126,126)`, `(126,127)`, `(127,123)`, `(127,125)`, `(127,126)`, `(127,127)`, `(128,125)`, `(129,123)`, `(129,124)` and `(132,125)` (`(125,121)` holds the Barbarian Test and Arena, `(126,124)` the Paradox Tower, `(127,123)` the Koshei assembly, `(127,125)` the Feaster entry, `(127,126)` and `(128,125)` the Dreamer's Challenge levers and carrot destination; `(129,123)` and `(129,124)` hold the Edron
 quest chests with uniques 6028, 6032 and 6033; `(126,126)` and `(126,127)` hold Bounac, its crypt and the Ada boat; `(132,125)` is the Isle of Ada landing and death-binding area), on every authored floor, and
 `content/spells.manifest.json` content. `compile-regions` uses the production
 compiler and its equivalence proof; the generated qualification digest is passed
