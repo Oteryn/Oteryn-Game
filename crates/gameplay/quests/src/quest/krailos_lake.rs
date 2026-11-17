@@ -1,6 +1,7 @@
 //! World-scoped lifecycle for the lake north of Ghorza's tent.
 
-pub const START: &str = "oteryn:quest-transition/krailos-water-start";
+pub const START: &str = "oteryn:quest-reward/krailos-water-start";
+pub const CAPTURE: &str = "oteryn:quest-reward/krailos-water-capture";
 pub const POUR: &str = "oteryn:quest-callback/krailos-water-pour";
 pub const PURIFY: &str = "oteryn:quest-callback/krailos-water-purify";
 
@@ -14,6 +15,13 @@ pub enum Action {
     Start,
     Pour,
     Purify,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase {
+    Dry,
+    DirtyWater,
+    ShallowWater,
 }
 
 #[derive(Default)]
@@ -31,6 +39,17 @@ impl Lake {
 
     pub fn stored(&self) -> (u64, i16) {
         (self.epoch, self.progress)
+    }
+
+    pub fn phase(&self, epoch: u64) -> Option<Phase> {
+        let age = epoch.checked_sub(self.epoch)?;
+        Some(if age >= WET_SAVES || self.progress < CARAFES {
+            Phase::Dry
+        } else if self.progress < CARAFES + POWDERS {
+            Phase::DirtyWater
+        } else {
+            Phase::ShallowWater
+        })
     }
 
     pub fn advance(&mut self, epoch: u64, action: Action) -> bool {
@@ -57,7 +76,7 @@ impl Lake {
 
 #[cfg(test)]
 mod tests {
-    use super::{Action, Lake};
+    use super::{Action, Lake, Phase};
 
     #[test]
     fn krailos_lake_accepts_the_water_mission_only_while_dry() {
@@ -66,11 +85,14 @@ mod tests {
         for _ in 0..6 {
             assert!(lake.advance(10, Action::Pour));
         }
+        assert_eq!(lake.phase(10), Some(Phase::DirtyWater));
         assert!(!lake.advance(10, Action::Start));
         for _ in 0..30 {
             assert!(lake.advance(10, Action::Purify));
         }
         assert!(!lake.advance(10, Action::Start));
+        assert_eq!(lake.phase(12), Some(Phase::ShallowWater));
+        assert_eq!(lake.phase(13), Some(Phase::Dry));
         assert!(lake.advance(13, Action::Start));
     }
 

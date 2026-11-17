@@ -60,7 +60,8 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             command,
             callback: callback.key.clone(),
             key: Some(callback.creature_target.clone()?),
-            self_target: None, target: Target::FreshCorpse,
+            self_target: None,
+            target: Target::FreshCorpse,
             intent: intent.clone(),
             corpse: Some(CorpseUse {
                 actor: CorpseActorSnapshot::read_current(runtime, actor, fence)?,
@@ -148,6 +149,16 @@ impl<'runtime> QuestCreatureUseProof<'runtime> {
             )
             .await
         {
+            Ok(Some(_)) if callback.key == oteryn_gameplay_quests::quest::krailos_lake::CAPTURE => {
+                let reserved = sqlx::query(
+                    "INSERT INTO game_krailos_captured_corpses VALUES (encode($1,'hex')::uuid)
+                     ON CONFLICT DO NOTHING",
+                )
+                .bind(corpse.operand.item.as_slice())
+                .execute(&mut **tx)
+                .await?;
+                Ok(reserved.rows_affected() == 1)
+            }
             Ok(value) => Ok(value.is_some()),
             Err(SpellItemError::Database(error)) => Err(error.into()),
             Err(SpellItemError::Durability(error)) => Err(error),

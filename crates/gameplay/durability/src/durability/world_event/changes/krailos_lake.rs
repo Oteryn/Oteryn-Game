@@ -1,6 +1,12 @@
 //! Lock the World lake in the same transaction as the quest receipt and item use.
-use crate::{durability::DurabilityError, foundation::WorldId};
-use oteryn_gameplay_quests::quest::krailos_lake::{Action, Lake};
+use crate::{
+    durability::{
+        DurabilityError, DurabilityRoot,
+        db::{begin_semantic_transaction, commit_semantic_transaction},
+    },
+    foundation::WorldId,
+};
+use oteryn_gameplay_quests::quest::krailos_lake::{Action, Lake, Phase};
 use sqlx::{Postgres, Transaction};
 
 pub(crate) async fn advance(
@@ -62,4 +68,46 @@ pub(crate) async fn advance(
         .await?;
     }
     Ok(true)
+}
+
+impl DurabilityRoot {
+    pub async fn krailos_lake_phase(
+        &self,
+        world: WorldId,
+        epoch: u64,
+    ) -> Result<Option<Phase>, DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let (current, stored, progress): (String, String, i16) = sqlx::query_as(
+                        "SELECT coalesce(reset.reset_epoch,0)::text,
+                                coalesce(lake.reset_epoch,0)::text,
+                                coalesce(lake.progress,0::smallint)
+                         FROM (SELECT encode($1,'hex')::uuid AS world_id) scope
+                         LEFT JOIN game_world_reset_active reset USING(world_id)
+                         LEFT JOIN game_krailos_lake lake USING(world_id)",
+                    )
+                    .bind(world.as_bytes().as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    let current = current
+                        .parse::<u64>()
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let stored = stored
+                        .parse::<u64>()
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let lake = Lake::from_stored(stored, progress)
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    let phase = if current == epoch {
+                        lake.phase(epoch)
+                    } else {
+                        None
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(phase)
+                })
+            })
+            .await
+    }
 }
