@@ -100,9 +100,22 @@ impl From<FactsRefusal> for BootRefusal {
     }
 }
 
-/// The production bundle Item lookup. A known pinned reference may have no
-/// native profile: its unknown facts stay blocking/non-pickupable. Terrain-backed
-/// floor classification remains the map owner's existing qualified fallback.
+include!(concat!(env!("OUT_DIR"), "/catalogue_movement.rs"));
+
+fn catalogue_movement(key: &str) -> Option<bool> {
+    let id = key
+        .strip_prefix("oteryn:item.tibia.i")?
+        .parse::<u32>()
+        .ok()?;
+    let index = CATALOGUE_MOVEMENT
+        .binary_search_by_key(&id, |&(id, _)| id)
+        .ok()?;
+    Some(CATALOGUE_MOVEMENT[index].1)
+}
+
+/// The production bundle Item lookup. Without a native profile, appearance catalogue
+/// collision flags govern movement, as in Crystal's type fallback. Unknown flags
+/// retain the map owner's blocking fallback; pickupability still requires a profile.
 pub fn native_item_definition(
     gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
     key: &str,
@@ -129,7 +142,9 @@ pub fn native_item_definition(
     let attributes = profile.map(|profile| &profile.attributes);
     Some(ItemDefinition {
         reference,
-        solid: attributes.and_then(|attributes| attributes.blocks_movement),
+        solid: attributes
+            .and_then(|attributes| attributes.blocks_movement)
+            .or_else(|| profile.is_none().then(|| catalogue_movement(key)).flatten()),
         blocks_projectile: attributes
             .and_then(|attributes| attributes.blocks_projectile)
             .unwrap_or(true),

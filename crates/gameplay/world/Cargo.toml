@@ -38,6 +38,9 @@ sha2.workspace = true
 sqlx.workspace = true
 tokio = { workspace = true, features = ["signal"] }
 
+[build-dependencies]
+serde_json.workspace = true
+
 [dev-dependencies]
 oteryn-gameplay-content-promotion = { version = "=0.1.0", path = "../content-promotion" }
 oteryn-world-bundle = { version = "=0.1.0", path = "../../world-bundle", features = ["writer"] }

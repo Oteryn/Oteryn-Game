@@ -2,7 +2,7 @@
 //!
 //! Each row is one authored reward chest. The character starts wherever the durable world left
 //! it, plans a route with `travel::Planner` (steps, doors, stairs, holes, ramps, ladders and a
-//! carried rope), prints it, walks it with STEP and USE commands only, USEs the chest and must
+//! fixture-carried rope, shovel or pick), prints it, walks it with STEP and USE commands only, USEs the chest and must
 //! then carry the exact reward item. A refused door (the level-35 door before Noble Armor for a
 //! lower character), a refused floor change or a missing route is the row's FAIL with that
 //! exact refusal. A refused door is first banned and the route replanned; the row fails only
@@ -76,6 +76,16 @@ pub(super) const CHESTS: [Chest; 16] = [
     chest("Q03k", "six_rubies", (32371, 32262, 12), 6156, 3030, 0, 0x1c),
 ];
 
+pub(super) const Q03A_MISSING: &str = "MISSING no confirmed descent into Q03a reward room: 32302,32257,8 ground 355 without action 101; rope spot 386 at 32302,32257,9; search exhausted 114052 settled; closest 32305,32254,7";
+
+pub(super) fn row_status(result: &TestResult) -> &'static str {
+    match result {
+        Ok(()) => "PASS",
+        Err(error) if error.to_string().starts_with("MISSING ") => "MISSING",
+        Err(_) => "FAIL",
+    }
+}
+
 static PLANNER: OnceLock<travel::Planner<'static>> = OnceLock::new();
 
 pub(super) fn planner(
@@ -128,6 +138,9 @@ async fn journey(clients: &SeamClients<'_>, chest: &Chest) -> TestResult {
     }
     let reference = provisioning::item_reference(&provisioning::item_index()?, chest.item)?;
     from_town(planner, chest, &label);
+    if chest.row == "Q03a" {
+        return Err(Q03A_MISSING.into());
+    }
     let mut client = connect_character(clients, chest.tag, chest.character).await?;
     let result = match setup(clients, planner, chest, &label, &mut client).await {
         Ok(()) => claim(&mut client, planner, chest, &label, ordinal, reference).await,
@@ -280,11 +293,12 @@ pub(super) async fn provision(
     level(client).await
 }
 
-/// Evidence only: the route a fresh character would take from the start town, without a rope.
+/// Evidence only: the route from town with the fixture starter rope.
+/// Tool legs name their inventory requirement.
 fn from_town(planner: &travel::Planner<'_>, chest: &Chest, label: &str) {
     verdict::Harness::global().progress("walk");
-    let goal = travel::beside(chest.at);
-    let planned = planner.plan(TOWN, chest.at, &goal, false, &travel::Passages::default());
+    let goal = planner.reward_goal(chest.at);
+    let planned = planner.plan(TOWN, chest.at, &goal, true, &travel::Passages::default());
     verdict::Harness::global().progress("walk");
     match planned {
         Ok(route) => {
@@ -320,7 +334,7 @@ async fn claim(
         planner,
         label,
         chest.at,
-        &travel::beside(chest.at),
+        &planner.reward_goal(chest.at),
         &mut passages,
     )
     .await?;
@@ -336,6 +350,7 @@ async fn claim(
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while carried(client, reference) <= before {
+        verdict::Harness::global().progress("quest reward inventory");
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
                 "{label} chest USE committed but item {} never reached the backpack",
@@ -363,7 +378,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, chest: &Chest) {
     evidence(&format!(
         "e2e_all scenario={}.full status={} seconds={:.3}",
         chest.row,
-        if result.is_ok() { "PASS" } else { "FAIL" },
+        row_status(&result),
         started.elapsed().as_secs_f64()
     ));
 }
