@@ -741,16 +741,6 @@ fn source_questpc7_corpse_capacity(creature: &str, corpse: &SectionRef) -> Optio
     }
 }
 
-fn father_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
-    corpse.family == "Item"
-        && corpse.revision == "definition-r1"
-        && matches!(
-            (creature, corpse.key.as_str()),
-            ("oteryn:creature.glitterscale", "oteryn:item.tibia.i11589")
-                | ("oteryn:creature.heoni", "oteryn:item.tibia.i11590")
-        )
-}
-
 fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
     corpse.family == "Item"
         && corpse.revision == "definition-r1"
@@ -806,8 +796,7 @@ fn verified_soul_war_corpses(
             && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(48));
         let source_plain = matches!(definition.production_key.as_str(),
             "oteryn:item.tibia.i33792" | "oteryn:item.tibia.i33793" | "oteryn:item.tibia.i33876"
-            | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984"
-            | "oteryn:item.tibia.i11589" | "oteryn:item.tibia.i11590")
+            | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984")
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;
         let questpc7_capacity = match definition.production_key.as_str() {
@@ -891,12 +880,11 @@ fn row(
     };
     let admitted = |item: &SectionRef| items.get(item).filter(|facts| facts.materializable);
     let source_plain = verified_source_corpses.contains(&corpse.key)
-        && ((loot.is_none() && father_plain_corpse_pair(creature, &corpse))
-            || (source_plain_corpse_pair(creature, &corpse)
-                && profile
-                    .details
-                    .as_ref()
-                    .is_some_and(|details| !details.system_eligibility.reward_boss)));
+        && source_plain_corpse_pair(creature, &corpse)
+        && profile
+            .details
+            .as_ref()
+            .is_some_and(|details| !details.system_eligibility.reward_boss);
     if !source_plain {
         admitted(&corpse)
             .and_then(|facts| facts.container_capacity)

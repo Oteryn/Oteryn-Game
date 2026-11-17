@@ -1741,6 +1741,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             loot.as_ref(),
             items.as_ref(),
         )
+        .with_father_corpses(&creatures, loot.as_ref(), items.as_ref())
         .with_qualified_creature_health(&records)?
         .with_daily_boss_equipment(items.as_ref())
         .with_encounter_items(items.as_ref()),
