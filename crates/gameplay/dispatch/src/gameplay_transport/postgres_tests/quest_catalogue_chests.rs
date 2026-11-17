@@ -175,8 +175,20 @@ fn cases_including(include: impl Fn(&str) -> bool) -> TestResult<Vec<CatalogueCh
 
 const CATALOGUE_SLICE_COUNT: usize = 8;
 
-fn catalogue_slice(index: usize, len: usize) -> std::ops::Range<usize> {
-    index * len / CATALOGUE_SLICE_COUNT..(index + 1) * len / CATALOGUE_SLICE_COUNT
+fn catalogue_slice(index: usize, cases: &[CatalogueChest]) -> std::ops::Range<usize> {
+    // cases() emits every placement for a claim consecutively.
+    let mut boundaries = vec![0];
+    boundaries.extend(
+        cases
+            .windows(2)
+            .enumerate()
+            .filter(|(_, pair)| pair[0].claim != pair[1].claim)
+            .map(|(index, _)| index + 1),
+    );
+    boundaries.push(cases.len());
+    let claims = boundaries.len() - 1;
+    boundaries[index * claims / CATALOGUE_SLICE_COUNT]
+        ..boundaries[(index + 1) * claims / CATALOGUE_SLICE_COUNT]
 }
 
 fn run_catalogue_slice(index: usize) -> TestResult {
@@ -184,24 +196,48 @@ fn run_catalogue_slice(index: usize) -> TestResult {
         return Ok(());
     };
     let mut cases = cases()?;
-    let range = catalogue_slice(index, cases.len());
+    let range = catalogue_slice(index, &cases);
     execute(cases.drain(range).collect())
 }
 
 #[test]
 fn quest_catalogue_chests_slices_cover_every_supported_source_placement() -> TestResult {
     let cases = cases()?;
-    assert_eq!(cases.len(), 334);
-    let mut seen = vec![false; cases.len()];
+    let falcon_claims = oteryn_gameplay_quests::quest::falcon::CHESTS.map(|chest| chest.key());
+    let expected: BTreeSet<_> = cases
+        .iter()
+        .map(|case| case.claim.as_str())
+        .chain(falcon_claims.iter().map(String::as_str))
+        .collect();
+    assert_eq!(expected.len(), 334);
+    assert_eq!(cases.len() + falcon_claims.len(), 357);
+
+    let mut seen_claims = BTreeSet::new();
+    let mut seen_placements = vec![false; cases.len()];
     for index in 0..CATALOGUE_SLICE_COUNT {
-        let range = catalogue_slice(index, cases.len());
+        let range = catalogue_slice(index, &cases);
         assert!(!range.is_empty(), "slice {index} is empty");
+        let mut slice_claims = BTreeSet::new();
         for placement in range {
-            assert!(!seen[placement], "placement {placement} appears twice");
-            seen[placement] = true;
+            assert!(
+                !seen_placements[placement],
+                "placement {placement} appears twice"
+            );
+            seen_placements[placement] = true;
+            slice_claims.insert(cases[placement].claim.as_str());
+        }
+        for claim in slice_claims {
+            assert!(seen_claims.insert(claim), "claim {claim} spans slices");
         }
     }
-    assert!(seen.into_iter().all(|visited| visited));
+    for claim in &falcon_claims {
+        assert!(
+            seen_claims.insert(claim.as_str()),
+            "duplicate Falcon claim {claim}"
+        );
+    }
+    assert!(seen_placements.into_iter().all(|visited| visited));
+    assert_eq!(seen_claims, expected);
     Ok(())
 }
 
