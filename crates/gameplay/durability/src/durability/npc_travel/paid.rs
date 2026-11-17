@@ -56,11 +56,11 @@ impl PaidTravelRequest {
     /// Whether the admitted route can advance the Postman mission on placement.
     #[must_use]
     pub fn has_postman_arrival_rule(&self) -> bool {
-        super::super::quest_state::postman_travel::leg(&format!(
-            "{}/{}",
-            self.route.service, self.route.route.key
-        ))
-        .is_some()
+        super::super::quest_state::postman_travel::leg(&self.receipt_route_key()).is_some()
+    }
+
+    fn receipt_route_key(&self) -> String {
+        format!("{}/{}", self.route.service, self.route.route.key)
     }
 }
 
@@ -213,7 +213,7 @@ impl DurabilityRoot {
             if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {return Ok(Err(error));}
             let arrival = request.arrival;
             let route = &request.route;
-            let key = format!("{}/{}", route.service, route.route.key);
+            let key = request.receipt_route_key();
             let destination = &route.route.destination;
             if request.command.game_session_id()!=fence.game_session_id
                 || arrival.world_id!=fence.runtime_scope.world_id()
