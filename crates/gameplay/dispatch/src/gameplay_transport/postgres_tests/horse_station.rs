@@ -13,7 +13,8 @@ fn horse_station_postgres_server_save_confines_expired_horses() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("horse-station", || {
         run(async |admin| {
             reset();
-            let h = Harness::create_with_admission_seed(admin, "horse_station", true, false).await?;
+            let h =
+                Harness::create_with_admission_seed(admin, "horse_station", true, false).await?;
             let world = WorldId::decode(&id(42)).map_err(debug)?;
             let channel = ChannelId::decode(&id(43)).map_err(debug)?;
             let other_world = WorldId::decode(&id(44)).map_err(debug)?;
@@ -25,12 +26,21 @@ fn horse_station_postgres_server_save_confines_expired_horses() -> TestResult {
                     )),
                 );
             let seal = h.recovery.seal_current().map_err(debug)?;
-            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
             h.root
                 .t94_initialize(&authority, "oteryn:game:primary", &mut T94Bootstrap)
                 .await?;
             h.root
-                .t94_start_world(&authority, world, &Default::default(), "oteryn:game:primary")
+                .t94_start_world(
+                    &authority,
+                    world,
+                    &Default::default(),
+                    "oteryn:game:primary",
+                )
                 .await?;
             sqlx::query("INSERT INTO game_horse_stations(world_id,loose_until_ms) VALUES(encode($1,'hex')::uuid,1),(encode($2,'hex')::uuid,1)")
                 .bind(world.as_bytes().as_slice())
@@ -38,7 +48,12 @@ fn horse_station_postgres_server_save_confines_expired_horses() -> TestResult {
                 .execute(&h.pool)
                 .await?;
             super::world_event::event_fixture::reset_epochs(
-                &h, &authority, pin.qualified_room(), world, channel, 1,
+                &h,
+                &authority,
+                pin.qualified_room(),
+                world,
+                channel,
+                1,
             )
             .await?;
             let deadline: Option<i64> = sqlx::query_scalar(
