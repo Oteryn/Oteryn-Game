@@ -3154,3 +3154,30 @@ mod outfit_reward_predecessor_tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod level_reward_tests {
+    use super::*;
+
+    fn decode(field: &str, value: i64) -> Result<RewardCallback, Box<dyn std::error::Error>> {
+        let callback = load()?.into_iter().next().ok_or("callback")?;
+        let mut row = serde_json::to_value(callback)?;
+        row[field] = value.into();
+        Ok(serde_json::from_value(row)?)
+    }
+
+    #[test]
+    fn reward_callback_maximum_level_schema() -> Result<(), Box<dyn std::error::Error>> {
+        let callback = decode("maximum_level", 24)?;
+        assert_eq!(serde_json::to_value(callback)?["maximum_level"], 24);
+        Ok(())
+    }
+
+    #[test]
+    fn reward_callback_level_scaled_experience_schema() -> Result<(), Box<dyn std::error::Error>> {
+        let mut callback = decode("experience_per_level", 50)?;
+        callback.experience = None;
+        assert_eq!(serde_json::to_value(callback)?["experience_per_level"], 50);
+        Ok(())
+    }
+}
