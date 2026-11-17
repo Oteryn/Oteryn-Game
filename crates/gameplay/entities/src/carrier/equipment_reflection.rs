@@ -104,7 +104,7 @@ impl ChannelRuntimeV1 {
         Ok(Some(receipt))
     }
 
-    /// Compose distinct source owners at `now_us` with one immutable player-owner callback.
+    /// Compose ordered source health changes at `now_us` with one immutable player-owner callback.
     /// Every receipt and attribution allocation is prepared before the player can write.
     #[allow(clippy::too_many_arguments)]
     pub fn commit_source_damage_batch_with_vitals<R>(
@@ -120,36 +120,77 @@ impl ChannelRuntimeV1 {
         if sources.len() > self.actor_slot_capacity() {
             return Err(CarrierError::AllocationFailed);
         }
-        let mut plans = Vec::new();
-        let mut results = Vec::new();
+        let mut plans: Vec<(ExactActorRef, usize, Option<Slot>)> = Vec::new();
+        let mut results: Vec<OwnerDamageResult> = Vec::new();
         plans
             .try_reserve(sources.len())
             .map_err(|_| CarrierError::AllocationFailed)?;
         results
             .try_reserve(sources.len())
             .map_err(|_| CarrierError::AllocationFailed)?;
-        for (source, magnitude) in sources {
-            let (index, next, result) = self.prepare_source_damage_with_clock(
-                *source,
-                reflector,
-                session,
-                stream,
-                sequence,
-                *magnitude,
-                now_us / 1_000,
-                Some(now_us),
-            )?;
-            if plans.iter().any(|(other, _)| *other == index) {
-                return Err(CarrierError::PlanConflict);
+        for (ordinal, (source, magnitude)) in sources.iter().enumerate() {
+            let previous = plans.iter().position(|(actor, _, _)| actor == source);
+            if let Some(previous) = previous {
+                if results
+                    .iter()
+                    .zip(sources)
+                    .rev()
+                    .any(|(result, (actor, _))| actor == source && result.health_after == 0)
+                {
+                    results.push(OwnerDamageResult {
+                        applied: false,
+                        health_before: 0,
+                        health_after: 0,
+                    });
+                    continue;
+                }
+                let (_, index, next) = &mut plans[previous];
+                // A later occurrence observes the preceding native successor, including
+                // Enrage. Restore the live slot before any error or player callback.
+                let staged = next.take();
+                let original =
+                    staged.map(|staged| std::mem::replace(&mut self.carrier.slots[*index], staged));
+                let mut occurrence_stream = stream.to_vec();
+                occurrence_stream.extend_from_slice(b":successor:");
+                occurrence_stream.extend_from_slice(&ordinal.to_be_bytes());
+                let prepared = self.prepare_source_damage_with_clock(
+                    *source,
+                    reflector,
+                    session,
+                    &occurrence_stream,
+                    sequence,
+                    *magnitude,
+                    now_us / 1_000,
+                    Some(now_us),
+                );
+                if let Some(original) = original {
+                    *next = Some(std::mem::replace(&mut self.carrier.slots[*index], original));
+                }
+                let (_, successor, result) = prepared?;
+                if let Some(successor) = successor {
+                    *next = Some(successor);
+                }
+                results.push(result);
+            } else {
+                let (index, next, result) = self.prepare_source_damage_with_clock(
+                    *source,
+                    reflector,
+                    session,
+                    stream,
+                    sequence,
+                    *magnitude,
+                    now_us / 1_000,
+                    Some(now_us),
+                )?;
+                plans.push((*source, index, next));
+                results.push(result);
             }
-            plans.push((index, next));
-            results.push(result);
         }
         let mut notices = Vec::new();
         notices
             .try_reserve(sources.len())
             .map_err(|_| CarrierError::AllocationFailed)?;
-        for ((source, _), (_, next)) in sources.iter().zip(&plans) {
+        for (source, _, next) in &plans {
             if let Some(next) = next
                 && let Some(notice) =
                     self.carrier
@@ -164,7 +205,7 @@ impl ChannelRuntimeV1 {
         let Some(receipt) = commit(self, &results) else {
             return Ok(None);
         };
-        for (index, next) in plans {
+        for (_, index, next) in plans {
             if let Some(next) = next {
                 self.carrier.slots[index] = next;
             }
@@ -477,6 +518,51 @@ mod tests {
             .expect("thread")
             .join()
             .expect("scenario");
+    }
+
+    #[test]
+    fn charm_gaps_sequential_reflections_refuse_atomically_and_replay() {
+        let (mut runtime, player, session, creature) = fixture();
+        let sources = [(creature, 100), (creature, 200)];
+        let refused = runtime
+            .commit_source_damage_batch_with_vitals(
+                &sources,
+                player,
+                session,
+                b"charm-gaps-sequence",
+                1,
+                0,
+                |runtime, results| {
+                    assert_eq!(runtime.live_creature_health(creature), Some(10_000));
+                    assert_eq!(results[0].health_after, 9_900);
+                    assert_eq!(results[1].health_before, 9_900);
+                    assert_eq!(results[1].health_after, 9_700);
+                    None::<()>
+                },
+            )
+            .expect("staged sequence");
+        assert!(refused.is_none());
+        assert_eq!(runtime.live_creature_health(creature), Some(10_000));
+        for replay in [false, true] {
+            runtime
+                .commit_source_damage_batch_with_vitals(
+                    &sources,
+                    player,
+                    session,
+                    b"charm-gaps-sequence",
+                    1,
+                    0,
+                    |_, results| {
+                        assert_eq!(results[0].applied, !replay);
+                        assert_eq!(results[1].applied, !replay);
+                        assert_eq!(results[1].health_after, 9_700);
+                        Some(())
+                    },
+                )
+                .expect("sequence commit or replay")
+                .expect("accepted callback");
+            assert_eq!(runtime.live_creature_health(creature), Some(9_700));
+        }
     }
 
     #[test]
