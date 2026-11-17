@@ -332,18 +332,21 @@ pub async fn credit(
         {
             return Ok(CreditOutcome::Refused);
         }
-        if kind == CounterKind::TheirMastersVoice
-            && credit == Credit::VoiceMage
-            && !voice_eligible(tx, world, authority.epoch, credited_character).await?
-        {
-            return Ok(CreditOutcome::Refused);
-        }
         seen[index] = true;
         let result = match (kind, credit) {
-            (CounterKind::TheirMastersVoice, Credit::VoiceGobble { dungeon_tiles, placement }) => {
+            (
+                CounterKind::TheirMastersVoice,
+                Credit::VoiceGobble {
+                    dungeon_tiles,
+                    placement,
+                },
+            ) => {
                 let epoch = i64::try_from(authority.epoch)
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
-                let deadline = before.deadline_ms.map(i64::try_from).transpose()
+                let deadline = before
+                    .deadline_ms
+                    .map(i64::try_from)
+                    .transpose()
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
                 let cleared: i64 = sqlx::query_scalar("SELECT count(*) FROM (SELECT substring(placement FROM 33) FROM game_terrain_tool_transforms WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2 AND state_item_id=12065 AND decay_at_unix_ms=$3 AND decay_step=0 AND cardinality(decay_states)=1 AND decay_states[1] BETWEEN 12059 AND 12063 UNION SELECT $4::bytea) AS cleared")
                     .bind(world.as_bytes().as_slice()).bind(epoch).bind(deadline).bind(placement.as_slice())
@@ -359,9 +362,22 @@ pub async fn credit(
             }
             _ => before.credit(kind, credit, &bindings()?.parameters, event.occurred_at_ms),
         };
-        let Ok(after) = result else {
+        let Ok(mut after) = result else {
             return Ok(CreditOutcome::Refused);
         };
+        if kind == CounterKind::TheirMastersVoice
+            && credit == Credit::VoiceMage
+            && !voice_eligible(tx, world, authority.epoch, credited_character).await?
+        {
+            // An unqualified kill ends the physical encounter and restores its floor
+            // without recording the completed phase.
+            let deadline = before
+                .deadline_ms
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            after = before
+                .tick(kind, deadline)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+        }
         changed |= after.phase_version != values[index].phase_version;
         values[index] = after;
     }
@@ -543,7 +559,9 @@ async fn restore_voice_fungus(
     channel: Option<crate::foundation::ChannelId>,
 ) -> Result<u64, DurabilityError> {
     let epoch = i64::try_from(epoch).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let channel = channel.as_ref().map(|channel| channel.as_bytes().as_slice());
+    let channel = channel
+        .as_ref()
+        .map(|channel| channel.as_bytes().as_slice());
     let restored = sqlx::query("UPDATE game_terrain_tool_transforms SET state_item_id=decay_states[1],object_revision=object_revision+1,decay_step=1,decay_at_unix_ms=NULL WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2 AND state_item_id=12065 AND decay_step=0 AND cardinality(decay_states)=1 AND decay_states[1] BETWEEN 12059 AND 12063 AND ($3::bytea IS NULL OR channel_id=encode($3,'hex')::uuid)")
         .bind(world.as_bytes().as_slice()).bind(epoch).bind(channel).execute(&mut **tx).await?;
     Ok(restored.rows_affected())

@@ -12,10 +12,13 @@ fn worldchg_voice_mage_qualification_death_and_empty_restoration() -> TestResult
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
-    super::kill_reward_e2e::scenario_thread::run("worldchg-voice", move || scenario(admin))
+    super::kill_reward_e2e::scenario_thread::run("worldchg-voice", move || {
+        scenario(admin.clone(), 24, 1)?;
+        scenario(admin, 25, 4)
+    })
 }
 
-fn scenario(admin: String) -> TestResult {
+fn scenario(admin: String, gobbles: i64, expected_stage: u8) -> TestResult {
     run(async move |_| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "worldchg_voice", false, false).await?;
@@ -56,8 +59,8 @@ fn scenario(admin: String) -> TestResult {
         .bind(serde_json::to_value(state)?)
         .execute(&h.pool)
         .await?;
-        sqlx::query("INSERT INTO game_world_change_personal_counters(world_id,change_key,character_id,counter,period_deadline_ms) VALUES(encode($1,'hex')::uuid,'their_masters_voice',encode($2,'hex')::uuid,24,$3)")
-            .bind(world.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).bind(deadline).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_world_change_personal_counters(world_id,change_key,character_id,counter,period_deadline_ms) VALUES(encode($1,'hex')::uuid,'their_masters_voice',encode($2,'hex')::uuid,$3::bigint,$4)")
+            .bind(world.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).bind(gobbles).bind(deadline).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_terrain_tool_transforms(world_id,channel_id,placement,reset_epoch,map_revision,content_generation,state_item_id,object_revision,decay_states,decay_delays,decay_at_unix_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,'map-1',$5,12065,1,ARRAY[12059]::bigint[],ARRAY[60000]::bigint[],$6)")
             .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
             .bind(placement()?).bind(i64::try_from(epoch)?).bind([7u8; 32].as_slice())
@@ -80,7 +83,7 @@ fn scenario(admin: String) -> TestResult {
             4,
         )?;
         let session = deps.admitted.game_session_id;
-        let targets = {
+        let target = {
             let mut runtime = deps.runtime.lock().await;
             let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
             deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
@@ -107,10 +110,7 @@ fn scenario(admin: String) -> TestResult {
                 .map_err(debug)?
                 .maximum_health;
             let start = pin.qualified_room().entry_start();
-            let cells = vec![
-                (start.x + 1, start.y, start.floor),
-                (start.x + 2, start.y, start.floor),
-            ];
+            let cells = vec![(start.x + 1, start.y, start.floor)];
             assert_eq!(
                 runtime
                     .realize_activation_spawns(vec![(
@@ -121,10 +121,10 @@ fn scenario(admin: String) -> TestResult {
                         u64::try_from(health)?
                     )])
                     .map_err(debug)?,
-                2
+                1
             );
             let points = runtime.spawn_point_creatures();
-            let [(point, _, Some(first)), (_, _, Some(second))] = points.as_slice() else {
+            let [(point, _, Some(target))] = points.as_slice() else {
                 return Err("Mad Mage fixture spawns".into());
             };
             runtime
@@ -143,7 +143,7 @@ fn scenario(admin: String) -> TestResult {
                         .collect(),
                 )
                 .map_err(debug)?;
-            [*first, *second]
+            *target
         };
         let mut item_fence = fence(1)?.item_fence();
         item_fence.character_lease_generation = 2;
@@ -157,34 +157,22 @@ fn scenario(admin: String) -> TestResult {
         deps.initialize(&owner).await;
         owner.admit_progression_session(&deps.admitted).await;
 
-        let mut kill_counts = [0, 0];
-        for (index, target) in targets.into_iter().enumerate() {
-            if index == 1 {
-                sqlx::query("UPDATE game_world_change_personal_counters SET counter=25 WHERE change_key='their_masters_voice'")
-                    .execute(&h.pool).await?;
-            }
-            kill(
-                &owner,
-                character,
-                session,
-                deps.actor,
-                target,
-                20000 + u64::try_from(index)?,
-            )
-            .await?;
-            kill_counts[index] = sqlx::query_scalar::<_, i64>(
-                "SELECT count(*) FROM game_world_change_credit_receipts WHERE source_kind=1",
-            )
-            .fetch_one(&h.pool)
-            .await?;
-        }
-        assert_eq!(kill_counts, [0, 1]);
+        kill(&owner, character, session, deps.actor, target, 20000).await?;
+        let day = h
+            .root
+            .world_changes(world, epoch)
+            .await?
+            .ok_or("voice day after death")?;
+        assert_eq!(day.counter_stages[kind.index()], expected_stage);
         let terrain: (i64, i64, Option<i64>) = sqlx::query_as(
             "SELECT state_item_id,object_revision,decay_at_unix_ms FROM game_terrain_tool_transforms",
         )
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(terrain, (12059, 2, None));
+        if expected_stage == 1 {
+            return Ok(());
+        }
         sqlx::query("UPDATE game_terrain_tool_transforms SET state_item_id=12065,decay_step=0,decay_at_unix_ms=$1")
             .bind(deadline).execute(&h.pool).await?;
         for (empty, expected) in [(false, 12065), (true, 12059)] {
