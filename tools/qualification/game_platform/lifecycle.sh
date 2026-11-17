@@ -60,7 +60,7 @@ game_platform_start() {
   port="${GAME_PLATFORM_PLATFORM_PG_PORT:-15436}"
   [[ "$port" =~ ^[1-9][0-9]{3,4}$ && "$port" -le 65535 && "$port" != "$PG_PORT" ]] \
     || game_platform_fail preflight invalid_platform_pg_port
-  create_owned_postgres --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --name "$WP5_PROJECT-portal-postgres" --publish "127.0.0.1:$port:5432" \
+  create_owned_postgres "$WP5_PROJECT-portal-postgres" --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --publish "127.0.0.1:$port:5432" \
     --env POSTGRES_USER=game_platform_admin --env POSTGRES_PASSWORD="$password" \
     --env POSTGRES_DB=postgres "$PG_IMAGE" > "$WORK/portal-postgres.id"
   GP_PG_CONTAINER="$(<"$WORK/portal-postgres.id")"

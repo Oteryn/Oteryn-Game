@@ -400,7 +400,7 @@ class RoundTwoCallerTests(unittest.TestCase):
             self.assertTrue(line.startswith('run_interruptible '), line)
         self.assertIn('run_interruptible compose up ', RUN_TEXT)
 
-    def test_term_cleans_base_with_unloaded_identity(self):
+    def test_term_cleans_base_during_identity_handoff(self):
         with tempfile.TemporaryDirectory() as temp:
             setup = r"""
                 set -eu
@@ -408,7 +408,7 @@ class RoundTwoCallerTests(unittest.TestCase):
                 BASE=$WORK/../base
                 mkdir "$BASE"
                 stat -c '%d:%i' "$BASE" > "$WORK/base.identity"
-                BASE_OWNED=1 BASE_IDENTITY="" PG_CONTAINER=empty PG_CONTAINER_ID=""
+                BASE_OWNED=0 BASE_IDENTITY="$(<"$WORK/base.identity")" PG_CONTAINER=empty PG_CONTAINER_ID=""
                 ACTIVE_STAGE=setup NODE_BOOT_WORLD=0 NODE_BOOT_SPELLS=0
                 stop_runtime_diagnostics() { :; }
                 stop_pg_sampler() { :; }
@@ -422,51 +422,78 @@ class RoundTwoCallerTests(unittest.TestCase):
             self.assertEqual(result.returncode, 143, result.stderr)
             self.assertFalse(Path(temp, 'base').exists())
 
-    def test_term_drains_postgres_creation_before_cleanup(self):
+    def test_reconciles_postgres_after_create_timeout(self):
         lifecycle = Path(os.environ.get('NODE_BOOT_PLATFORM_LIFECYCLE',
                                         HERE.parent / 'game_platform/lifecycle.sh')).read_text()
-        for service, source in [('game', RUN_TEXT), ('portal', lifecycle)]:
-            with self.subTest(service=service), tempfile.TemporaryDirectory() as temp:
+        for service, source, send_term in [
+            ('game', RUN_TEXT, True), ('portal', lifecycle, True),
+            ('game', RUN_TEXT, False), ('portal', lifecycle, False),
+        ]:
+            with self.subTest(service=service, send_term=send_term), tempfile.TemporaryDirectory() as temp:
                 create = next(line.strip().removesuffix(' \\') for line in source.splitlines()
-                              if 'docker create --label' in line or 'create_owned_postgres --label' in line)
+                              if 'docker create --label' in line or line.lstrip().startswith('create_owned_postgres '))
                 setup = r"""
                     set -Eeuo pipefail
                     WP5_PROJECT=fixture PG_CONTAINER=fixture-postgres PG_PORT=5432 port=5433
-                    COMPOSE_OWNER=fixture ACTIVE_STAGE=setup NODE_BOOT_WORLD=0
+                    COMPOSE_OWNER=0123456789abcdef0123456789abcdef ACTIVE_STAGE=setup NODE_BOOT_WORLD=0
                     evidence() { :; }
+                    timeout() { while [[ $1 == --* ]]; do shift; done; shift; "$@"; }
                     docker() {
-                        python3 -c 'import subprocess, sys; subprocess.Popen(
-                            ["bash", "-c", "sleep 0.5; touch -- \"$1\"", "publisher", sys.argv[1]],
-                            start_new_session=True, stdin=subprocess.DEVNULL,
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)' "$WORK/registered"
-                        echo creating
-                        until [[ -f "$WORK/registered" ]]; do command sleep 0.02; done
+                        case "$1" in
+                          create)
+                            python3 -c 'import subprocess, sys; subprocess.Popen(
+                                ["bash", "-c", "until test -f \"$1/first-lookup\"; do sleep 0.02; done; "
+                                 "touch -- \"$1/registered\"", "publisher", sys.argv[1]],
+                                process_group=0,
+                                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL)' "$WORK"
+                            echo creating
+                            until [[ -f "$WORK/allow-client-timeout" ]]; do command sleep 0.02; done
+                            touch "$WORK/client-timed-out"
+                            return 124 ;;
+                          container)
+                            [[ " $* " == *" --filter name=^/$CONTAINER_NAME$ "* &&
+                               " $* " == *" --filter label=org.oteryn.node-boot.owner=$COMPOSE_OWNER "* ]] || return 1
+                            if [[ -f "$WORK/registered" ]]; then
+                                echo owned-id
+                            else
+                                touch "$WORK/first-lookup"
+                            fi ;;
+                          rm)
+                            [[ "${*: -1}" == owned-id ]] || return 1
+                            mv "$WORK/registered" "$WORK/removed" ;;
+                        esac
                     }
-                    verify_cleanup() {
-                        [[ ! -f "$WORK/registered" ]] || touch "$WORK/removed"
-                    }
-                    trap verify_cleanup EXIT
+                    trap 'cleanup_owned_postgres "$CONTAINER_NAME" ""' EXIT
                     trap 'interrupted TERM 143' TERM
                 """
                 script = '\n'.join(function(name) for name in
-                                   ('interrupted', 'run_interruptible', 'create_owned_postgres'))
+                                   ('interrupted', 'run_interruptible', 'create_owned_postgres', 'cleanup_owned_postgres'))
                 with subprocess.Popen(['bash', '-c', script + '\n' + setup + '\n' + create],
-                                      env=dict(os.environ, WORK=temp), stdout=subprocess.PIPE,
-                                      stderr=subprocess.STDOUT, text=True, start_new_session=True) as proc:
+                                      env=dict(os.environ, WORK=temp, CONTAINER_NAME=(
+                                          'fixture-postgres' if service == 'game' else 'fixture-portal-postgres')),
+                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                      start_new_session=True) as proc:
                     try:
                         self.assertTrue(select.select([proc.stdout], [], [], 3)[0])
                         self.assertEqual(proc.stdout.readline().strip(), 'creating')
-                        proc.send_signal(signal.SIGTERM)
+                        if send_term:
+                            proc.send_signal(signal.SIGTERM)
+                        Path(temp, 'allow-client-timeout').touch()
                         proc.communicate(timeout=3)
-                        self.assertEqual(proc.returncode, 143)
-                        deadline = time.monotonic() + 2
-                        while not Path(temp, 'registered').exists() and time.monotonic() < deadline:
-                            time.sleep(0.02)
-                        self.assertTrue(Path(temp, 'registered').exists())
+                        self.assertEqual(proc.returncode, 143 if send_term else 124)
+                        self.assertTrue(Path(temp, 'client-timed-out').exists())
                         self.assertTrue(Path(temp, 'removed').exists())
                     finally:
-                        if proc.poll() is None:
-                            os.killpg(proc.pid, signal.SIGKILL)
+                        groups = subprocess.run(
+                            ['ps', '-s', str(proc.pid), '-o', 'pgid='],
+                            capture_output=True, text=True, check=False, timeout=3,
+                        ).stdout.split()
+                        for group in set(map(int, groups)):
+                            try:
+                                os.killpg(group, signal.SIGKILL)
+                            except ProcessLookupError:
+                                pass
 
     def test_term_cleans_portal_before_pid_assignment(self):
         lifecycle = Path(os.environ.get('NODE_BOOT_PLATFORM_LIFECYCLE',

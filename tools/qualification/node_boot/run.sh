@@ -217,7 +217,6 @@ PG_OBS="$WORK/postgres"
 PG_SAMPLER_PID=""
 WORLD_CAPTURE_DIR=""
 STACK_KEPT=0
-BASE_OWNED=0
 BASE_PENDING=""
 BASE_IDENTITY=""
 COMPOSE_OWNED=0
@@ -225,6 +224,7 @@ COMPOSE_OWNER="$(openssl rand -hex 16)"
 export COMPOSE_OWNER
 REUSE_STATE_OWNED=0
 PG_CONTAINER_ID=""
+POSTGRES_CREATE_PENDING=""
 REUSE_STATE="${TMPDIR:-/tmp}/node-boot-reuse-$WP5_PROJECT.env"
 # Keep reuse and teardown mutually exclusive. Docker's container name also
 # serializes acquisition across callers using different temporary directories.
@@ -291,7 +291,6 @@ if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
     fi
     STACK_KEPT=1
   fi
-  BASE_OWNED=1
   BASE_IDENTITY=$kept_base_identity
   COMPOSE_OWNED=1
   REUSE_STATE_OWNED=1
@@ -388,7 +387,7 @@ interrupted() {
   if [[ -n "$worker" ]]; then
     if [[ ${drain_postgres_create:-0} == 1 ]]; then
       # The daemon can register the container after the client disconnects.
-      # Drain the bounded create before cleanup looks up the owned container.
+      # Drain the client; cleanup reconciles a create that may still be pending.
       wait "$worker" || true
     else
       kill -TERM -- "-$worker" 2>/dev/null || true
@@ -428,7 +427,15 @@ run_interruptible() {
 }
 create_owned_postgres() {
   local drain_postgres_create=1
-  run_interruptible docker create "$@"
+  local rc=0
+  POSTGRES_CREATE_PENDING=$1
+  shift
+  run_interruptible docker create --name "$POSTGRES_CREATE_PENDING" "$@" || rc=$?
+  # A local timeout cannot tell us whether Docker accepted the request.
+  if [[ $rc != 124 && $rc != 137 ]]; then
+    POSTGRES_CREATE_PENDING=""
+  fi
+  return "$rc"
 }
 acquire_base() {
   timeout --foreground --kill-after=2s 10s sudo mkdir -- "$BASE_PENDING" || return
@@ -440,8 +447,18 @@ acquire_base() {
 cleanup_owned_postgres() {
   local name=$1 id=$2
   if [[ -z "$id" && "${COMPOSE_OWNER:-}" =~ ^[a-f0-9]{32}$ ]]; then
-    id=$(timeout --foreground --kill-after=2s 10s docker container ls --all --no-trunc -q \
-      --filter "name=^/$name$" --filter "label=org.oteryn.node-boot.owner=$COMPOSE_OWNER") || return 0
+    # Only an ambiguous create for this name needs a reconciliation window.
+    local deadline=$((SECONDS + 30))
+    while :; do
+      id=$(timeout --foreground --kill-after=2s 5s docker container ls --all --no-trunc -q \
+        --filter "name=^/$name$" --filter "label=org.oteryn.node-boot.owner=$COMPOSE_OWNER") || id=""
+      [[ -z "$id" && "${POSTGRES_CREATE_PENDING:-}" == "$name" ]] || break
+      if (( SECONDS >= deadline )); then
+        evidence "postgres_create_cleanup=unconfirmed container=$name"
+        break
+      fi
+      sleep 0.25
+    done
   fi
   [[ -z "$id" ]] || timeout --foreground --kill-after=5s 45s docker rm --force --volumes "$id" >/dev/null 2>&1 || true
 }
@@ -506,9 +523,8 @@ cleanup() {
     fi
     if [[ -z "${BASE_IDENTITY:-}" && -s "$WORK/base.identity" ]]; then
       BASE_IDENTITY="$(<"$WORK/base.identity")"
-      BASE_OWNED=1
     fi
-    if [[ ${BASE_OWNED:-0} == 1 && "$(stat -c '%d:%i' -- "$BASE" 2>/dev/null)" == "$BASE_IDENTITY" ]]; then
+    if [[ -n "${BASE_IDENTITY:-}" && "$(stat -c '%d:%i' -- "$BASE" 2>/dev/null)" == "$BASE_IDENTITY" ]]; then
       timeout --foreground --kill-after=5s 60s sudo rm -rf -- "$BASE" || true
     fi
     [[ ${REUSE_STATE_OWNED:-0} != 1 ]] || rm -f -- "$REUSE_STATE"
@@ -608,7 +624,7 @@ evidence "pins platform=$NODE_BOOT_PLATFORM_PIN topology=$NODE_BOOT_TOPOLOGY gam
 # (after 200 ms), deadlocks and statements of 500 ms or more without parameter values,
 # and loads pg_stat_statements, so every run carries its own database evidence.
 chmod 644 "$WP5_PKI/db.crt" "$WP5_PKI/db.key"
-create_owned_postgres --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --cidfile "$WORK/game-postgres.cid" --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
+create_owned_postgres "$PG_CONTAINER" --label "org.oteryn.node-boot.owner=$COMPOSE_OWNER" --cidfile "$WORK/game-postgres.cid" --publish "127.0.0.1:$PG_PORT:5432" \
   --env POSTGRES_USER=oteryn_node_boot_admin --env POSTGRES_PASSWORD="$PG_ADMIN_PASSWORD" \
   --env POSTGRES_DB=postgres --volume "$WP5_PKI/db.crt:/tls/db.crt:ro" \
   --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
@@ -618,8 +634,6 @@ BASE_PENDING="$(dirname -- "$BASE")/.oteryn-node-boot-$COMPOSE_OWNER"
 if ! run_interruptible acquire_base; then
   fail "base acquisition failed: $BASE"
 fi
-BASE_IDENTITY="$(<"$WORK/base.identity")"
-BASE_OWNED=1
 BASE_PENDING=""
 run_interruptible docker start "$PG_CONTAINER_ID" >/dev/null
 chmod 600 "$WP5_PKI/db.key"
