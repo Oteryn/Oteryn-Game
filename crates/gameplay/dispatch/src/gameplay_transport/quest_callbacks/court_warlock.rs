@@ -61,8 +61,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             party.push(fence.item_fence());
         }
+        // A command replay belongs to its immutable physical observation and
+        // exact party fences. A later lever revision or reconnect must still
+        // pay the existing cooldown, even if a client repeats a command number.
+        party.sort_by_key(|fence| *fence.character_id.as_bytes());
+        let mut identity = b"cwarlock:lever:v1".to_vec();
+        identity.extend_from_slice(&key.to_be_bytes());
+        identity.extend_from_slice(&revision.to_be_bytes());
+        identity.extend_from_slice(&self.reset_epoch.to_be_bytes());
+        identity.extend_from_slice(&runtime.content_pin().server_artifact_digest());
+        identity.extend_from_slice(&runtime.content_pin().frame_binding_digest());
+        for fence in &party {
+            identity.extend_from_slice(fence.character_id.as_bytes());
+            identity.extend_from_slice(fence.game_session_id.as_bytes());
+            identity.extend_from_slice(&fence.connection_generation.get().to_be_bytes());
+            identity.extend_from_slice(&fence.character_lease_generation.to_be_bytes());
+            identity.extend_from_slice(&fence.scope_ownership_generation.get().to_be_bytes());
+        }
         let admission = super::super::npc_trade_command::derived(
-            b"cwarlock:lever",
+            &identity,
             session,
             command.command_id().get(),
         );

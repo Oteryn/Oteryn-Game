@@ -356,9 +356,31 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                     .checked_sub(std::time::Duration::from_secs(1))
                     .ok_or("clock")?;
                 let revision = crate::map::view::MapFacts::object_revision(world.facts(), key);
+                assert!(
+                    owner
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .encounter_phases
+                        .active
+                        .lock()
+                        .map_err(|_| "phases")?
+                        .is_empty(),
+                    "the prior room is released before the cooldown check"
+                );
                 assert_eq!(
                     use_lever(&owner, &admitted, &placement, revision, 5).await,
                     UseDisposition::Rejected
+                );
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(1))
+                    .ok_or("clock")?;
+                assert_eq!(
+                    use_lever(&owner, &admitted, &placement, revision, 4).await,
+                    UseDisposition::Rejected,
+                    "an old command number with the later source revision cannot replay admission"
                 );
             } else if mode >= 2 {
                 tick(&owner, before + 2_999_999).await;
