@@ -43,6 +43,10 @@ fn scenario() -> TestResult {
             .bind(serde_json::to_value(state)?).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_world_change_personal_counters(world_id,change_key,character_id,counter,period_deadline_ms) VALUES(encode($1,'hex')::uuid,'their_masters_voice',encode($2,'hex')::uuid,24,$3)")
             .bind(world.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).bind(deadline).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_terrain_tool_transforms(world_id,channel_id,placement,reset_epoch,map_revision,content_generation,state_item_id,object_revision,decay_states,decay_delays,decay_at_unix_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,'map-1',$5,12065,1,ARRAY[12059]::bigint[],ARRAY[60000]::bigint[],$6)")
+            .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+            .bind(placement()?).bind(i64::try_from(epoch)?).bind([7u8; 32].as_slice())
+            .bind(deadline).execute(&h.pool).await?;
         let day = h.root.world_changes(world, epoch).await?.ok_or("active change")?;
         assert!(day.their_masters_voice);
         let mut occurrence = world.as_bytes().to_vec();
@@ -68,6 +72,21 @@ fn scenario() -> TestResult {
             h.root.credit_world_change_event(&authority, &h.node, scope, generation, epoch, event).await?,
             CreditOutcome::Applied { phase_changed: true },
         );
+        let terrain: (i64, i64, Option<i64>) = sqlx::query_as(
+            "SELECT state_item_id,object_revision,decay_at_unix_ms FROM game_terrain_tool_transforms",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(terrain, (12059, 2, None));
         Ok(())
     })
+}
+
+
+fn placement() -> TestResult<Vec<u8>> {
+    let mut placement = vec![7; 32];
+    let key = oteryn_world_bundle::bundle::placement_key(-9, 33312, 31872, 0)
+        .ok_or("fungus placement")?;
+    placement.extend_from_slice(&key.to_be_bytes());
+    Ok(placement)
 }

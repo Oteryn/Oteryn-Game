@@ -349,6 +349,9 @@ pub async fn credit(
         .bind(world.as_bytes().as_slice()).bind(i16::from(event.source_kind)).bind(&event.occurrence).bind(authority.epoch.to_string()).bind(binding).execute(&mut **tx).await?;
     for &(kind, credit) in &event.credits {
         store(tx, world, kind, values[kind.index()]).await?;
+        if kind == CounterKind::TheirMastersVoice && credit == Credit::VoiceMage {
+            restore_voice_fungus(tx, world, authority.epoch).await?;
+        }
         if matches!(kind, CounterKind::MagesTower | CounterKind::FireEarth)
             && credit == Credit::Kill(0)
             && (kind != CounterKind::FireEarth || values[kind.index()].stage == 1)
@@ -494,4 +497,17 @@ pub async fn voice_eligible(
     sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_world_change_personal_counters p JOIN game_world_change_counters c USING(world_id,change_key) WHERE p.world_id=encode($1,'hex')::uuid AND p.change_key='their_masters_voice' AND p.character_id=encode($2,'hex')::uuid AND c.reset_epoch=$3::text::numeric AND p.counter>=25 AND p.period_deadline_ms=(c.state->>'deadline_ms')::bigint AND p.period_deadline_ms>floor(extract(epoch FROM clock_timestamp())*1000)::bigint LIMIT 1)")
         .bind(world.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).bind(epoch.to_string())
         .fetch_one(&mut **tx).await.map_err(Into::into)
+}
+
+/// Restore the original ground and advance its revision so the normal Channel terrain
+/// projection sees the change. Keep placement rows for existing command receipts.
+async fn restore_voice_fungus(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    epoch: u64,
+) -> Result<(), DurabilityError> {
+    let epoch = i64::try_from(epoch).map_err(|_| DurabilityError::InvalidStoredState)?;
+    sqlx::query("UPDATE game_terrain_tool_transforms SET state_item_id=decay_states[1],object_revision=object_revision+1,decay_step=1,decay_at_unix_ms=NULL WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2 AND state_item_id=12065 AND decay_step=0 AND cardinality(decay_states)=1 AND decay_states[1] BETWEEN 12059 AND 12063")
+        .bind(world.as_bytes().as_slice()).bind(epoch).execute(&mut **tx).await?;
+    Ok(())
 }
