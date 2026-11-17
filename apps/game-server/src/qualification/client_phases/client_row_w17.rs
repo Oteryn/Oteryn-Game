@@ -14,7 +14,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W17_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "W17_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -29,13 +31,22 @@ async fn request(
         .gated_command(wire::CAPABILITY_ARENA_V1, kind, payload)
         .await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("step={step} status={:?} payload={:?}", reply.status, reply.payload).into());
+        return Err(format!(
+            "step={step} status={:?} payload={:?}",
+            reply.status, reply.payload
+        )
+        .into());
     }
     Ok(reply.payload)
 }
 
-async fn action(client: &mut DevClientSession, action: ArenaAction, step: &str) -> TestResult<Vec<u8>> {
-    let payload = wire::encode_match_request(action).map_err(|error| format!("step={step} encode: {error:?}"))?;
+async fn action(
+    client: &mut DevClientSession,
+    action: ArenaAction,
+    step: &str,
+) -> TestResult<Vec<u8>> {
+    let payload = wire::encode_match_request(action)
+        .map_err(|error| format!("step={step} encode: {error:?}"))?;
     request(client, wire::COMMAND_TYPE_ARENA_MATCH, &payload, step).await
 }
 
@@ -72,38 +83,94 @@ fn drome_text(result: &DromeResult) -> String {
     )
 }
 
+fn drome_phase_applied(disposition: u32, phase: u32, expected: u32) -> bool {
+    disposition == 1 && phase == expected
+}
+
+#[test]
+fn drome_commit_must_reach_the_requested_phase() {
+    assert!(!drome_phase_applied(1, 0, 1));
+    assert!(!drome_phase_applied(1, 1, 0));
+    assert!(drome_phase_applied(1, 1, 1));
+    assert!(drome_phase_applied(1, 0, 0));
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_world(clients, 0x8d).await?;
-    if !client.selected_capabilities().contains(&wire::CAPABILITY_ARENA_V1) {
+    if !client
+        .selected_capabilities()
+        .contains(&wire::CAPABILITY_ARENA_V1)
+    {
         return Err("step=capability arena-v1 not selected".into());
     }
-    let catalogue = request(&mut client, wire::COMMAND_TYPE_ARENA_CATALOGUE, &[], "catalogue").await?;
-    let challenges = wire::decode_catalogue(&catalogue).map_err(|error| format!("step=catalogue decode: {error:?}"))?;
+    let catalogue = request(
+        &mut client,
+        wire::COMMAND_TYPE_ARENA_CATALOGUE,
+        &[],
+        "catalogue",
+    )
+    .await?;
+    let challenges = wire::decode_catalogue(&catalogue)
+        .map_err(|error| format!("step=catalogue decode: {error:?}"))?;
     if challenges != wire::SVARGROND_CHALLENGES {
         return Err(format!("step=catalogue observed={challenges:?}").into());
     }
     let status = action(&mut client, ArenaAction::Status, "status").await?;
-    let initial = wire::decode_match_result(&status).map_err(|error| format!("step=status decode: {error:?}"))?;
+    let initial = wire::decode_match_result(&status)
+        .map_err(|error| format!("step=status decode: {error:?}"))?;
     if initial.disposition != ArenaDisposition::Applied {
         return Err(format!("step=status observed={initial:?}").into());
     }
     let advance = action(&mut client, ArenaAction::Advance, "advance").await?;
-    let refused = wire::decode_match_result(&advance).map_err(|error| format!("step=advance decode: {error:?}"))?;
+    let refused = wire::decode_match_result(&advance)
+        .map_err(|error| format!("step=advance decode: {error:?}"))?;
     if refused.disposition != ArenaDisposition::WrongState || refused.state != initial.state {
         return Err(format!("step=advance observed={refused:?} before={initial:?}").into());
     }
-    let drome_status = action(&mut client, ArenaAction::Drome(DromeAction::Status), "drome-status").await?;
-    let before = DromeResult::decode(&drome_status).map_err(|error| format!("step=drome-status decode: {error:?}"))?;
-    let drome_enter = action(&mut client, ArenaAction::Drome(DromeAction::Enter), "drome-enter").await?;
-    let entered = DromeResult::decode(&drome_enter).map_err(|error| format!("step=drome-enter decode: {error:?}"))?;
+    let drome_status = action(
+        &mut client,
+        ArenaAction::Drome(DromeAction::Status),
+        "drome-status",
+    )
+    .await?;
+    let before = DromeResult::decode(&drome_status)
+        .map_err(|error| format!("step=drome-status decode: {error:?}"))?;
+    if before.disposition != 1 {
+        return Err(format!("step=drome-status expected applied observation: {before:?}").into());
+    }
+    let drome_enter = action(
+        &mut client,
+        ArenaAction::Drome(DromeAction::Enter),
+        "drome-enter",
+    )
+    .await?;
+    let entered = DromeResult::decode(&drome_enter)
+        .map_err(|error| format!("step=drome-enter decode: {error:?}"))?;
     if entered.disposition == 1 {
+        if before.phase != 0 || !drome_phase_applied(entered.disposition, entered.phase, 1) {
+            return Err(format!(
+                "step=drome-enter did not start preparation: {before:?} -> {entered:?}"
+            )
+            .into());
+        }
         // Leave again so later rows find the Tibiadrome idle.
-        let left = action(&mut client, ArenaAction::Drome(DromeAction::Leave), "drome-leave").await?;
-        let left = DromeResult::decode(&left).map_err(|error| format!("step=drome-leave decode: {error:?}"))?;
-        if left.disposition != 1 {
+        let left = action(
+            &mut client,
+            ArenaAction::Drome(DromeAction::Leave),
+            "drome-leave",
+        )
+        .await?;
+        let left = DromeResult::decode(&left)
+            .map_err(|error| format!("step=drome-leave decode: {error:?}"))?;
+        if !drome_phase_applied(left.disposition, left.phase, 0) {
             return Err(format!("step=drome-leave observed={left:?}").into());
         }
-    } else if entered.disposition != 3 || entered != before {
+    } else if entered.disposition != 3
+        || (DromeResult {
+            disposition: before.disposition,
+            ..entered
+        }) != before
+    {
         return Err(format!("step=drome-enter before={before:?} observed={entered:?}").into());
     }
     let mut expected = String::new();
@@ -134,7 +201,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W17.client status=CAPTURED evidence={observed}"
         )),

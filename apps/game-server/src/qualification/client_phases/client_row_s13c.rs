@@ -46,7 +46,9 @@ pub(super) fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S13_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "S13_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -69,12 +71,45 @@ async fn party(
         parties::decode_party_result(&reply.payload).map_err(|e| format!("party decode: {e:?}"))?;
     if reply.status != CommandStatus::Accepted || state.disposition != parties::PartyDisposition::Ok
     {
-        return Err(format!("step=party status={:?} disposition={:?}", reply.status, state.disposition).into());
+        return Err(format!(
+            "step=party status={:?} disposition={:?}",
+            reply.status, state.disposition
+        )
+        .into());
     }
     Ok(state)
 }
 
-async fn effects(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
+fn party_effect_present(in_party: bool, remaining: &[u32], slot: usize) -> bool {
+    in_party && remaining.get(slot).is_some_and(|ms| *ms > 0)
+}
+
+fn party_mana_paid(before: u32, after: u32, expected: u32) -> bool {
+    before.checked_sub(expected) == Some(after)
+}
+
+fn solo_gate_proven(gate_refusal: bool, cast: bool, unchanged: bool) -> bool {
+    gate_refusal && !cast && unchanged
+}
+
+#[test]
+fn solo_gate_rejects_cooldown_and_unrelated_refusals() {
+    assert!(!solo_gate_proven(false, false, true));
+    assert!(solo_gate_proven(true, false, true));
+}
+
+#[test]
+fn party_spell_requires_exact_cost_and_effect_on_each_participant() {
+    assert!(!party_mana_paid(100, 99, 60));
+    assert!(party_mana_paid(100, 40, 60));
+    assert!(!party_effect_present(true, &[15, 0], 1));
+    assert!(!party_effect_present(false, &[0, 15], 1));
+    assert!(party_effect_present(true, &[0, 15], 1));
+}
+
+async fn effects(
+    client: &mut DevClientSession,
+) -> TestResult<(Vec<u8>, party_effects::PartyEffects)> {
     let reply = client
         .session_mut()
         .gated_command(
@@ -83,12 +118,12 @@ async fn effects(client: &mut DevClientSession) -> TestResult<Vec<u8>> {
             &[],
         )
         .await?;
-    if reply.status != CommandStatus::Accepted
-        || party_effects::PartyEffects::decode(&reply.payload).is_none()
-    {
-        return Err(format!("step=effects status={:?} malformed", reply.status).into());
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("step=effects status={:?}", reply.status).into());
     }
-    Ok(reply.payload)
+    let view = party_effects::PartyEffects::decode(&reply.payload)
+        .ok_or("step=effects malformed reply")?;
+    Ok((reply.payload, view))
 }
 
 fn own_ref(
@@ -102,49 +137,65 @@ fn own_ref(
         .ok_or_else(|| "own entity absent".into())
 }
 
-fn spell_index(words: &str) -> TestResult<std::num::NonZeroU32> {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let input = crate::content::native_gameplay::NativeGameplayInput::from_manifest(
-        &root.join("content/spells.manifest.json"),
-    )?;
-    let catalog =
-        crate::spell::executable_catalog::compile(&input.catalog.bytes, &input.catalog.sha256)?;
-    let selected = crate::spell::executable_catalog::compile_source_selection(
-        &input.source_selection.bytes,
-        &input.source_selection.sha256,
-        &catalog,
-    )?;
-    let book = catalog.into_spell_book_with_selections(&selected)?;
-    let key = &book
+fn spell_parameters(words: &str) -> TestResult<(std::num::NonZeroU32, u32)> {
+    use crate::spell::{Execution, party::PartyBuffSpecExt as _};
+    let book = native_spell_book()?;
+    let spell = &book
         .spoken(words)
         .ok_or_else(|| format!("compiled spell missing: {words}"))?
-        .spell
-        .key;
-    (1..=book.source_len())
+        .spell;
+    let Execution::PartyBuff(buff) = &spell.execution else {
+        return Err(format!("compiled spell is not a party buff: {words}").into());
+    };
+    let mana = buff
+        .mana_cost(2)
+        .map_err(|error| format!("two-member party cost: {error:?}"))?;
+    let index = (1..=book.source_len())
         .filter_map(|n| u32::try_from(n).ok().and_then(std::num::NonZeroU32::new))
-        .find(|n| book.indexed(*n).is_some_and(|s| &s.key == key))
-        .ok_or_else(|| format!("compiled spell has no index: {words}").into())
+        .find(|n| book.indexed(*n).is_some_and(|s| s.key == spell.key))
+        .ok_or_else(|| format!("compiled spell has no index: {words}"))?;
+    Ok((index, mana))
 }
 
-/// Casts until the server stops answering `CoolingDown` (an earlier row may have cast).
+/// A previous row may have cast the same spell. Bound retries and retain the vitals
+/// immediately before the attempt that produced the terminal result.
 async fn cast_through_cooldown(
     client: &mut DevClientSession,
+    peer: &mut DevClientSession,
     index: std::num::NonZeroU32,
-) -> TestResult<oteryn_dev_client::CastOutcome> {
+) -> TestResult<(casts::ActorVitals, oteryn_dev_client::CastOutcome)> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
-    loop {
-        let outcome = client
-            .cast_spell(index, casts::SpellTarget::None, false)
-            .await?;
-        if outcome.disposition != casts::SpellCastDisposition::CoolingDown
-            || tokio::time::Instant::now() >= deadline
-        {
-            return Ok(outcome);
+    tokio::time::timeout_at(deadline, async {
+        loop {
+            let before = client
+                .actor_vitals()
+                .copied()
+                .ok_or("caster vitals absent")?;
+            let (outcome, serviced) = join(
+                client.cast_spell(index, casts::SpellTarget::None, false),
+                peer.service_liveness(Duration::from_millis(50)),
+            )
+            .await;
+            let outcome = outcome?;
+            serviced?;
+            peer.take_events();
+            if outcome.disposition != casts::SpellCastDisposition::CoolingDown {
+                return Ok((before, outcome));
+            }
+            let (caster_idle, peer_idle) = join(
+                client.service_liveness(Duration::from_secs(2)),
+                peer.service_liveness(Duration::from_secs(2)),
+            )
+            .await;
+            caster_idle?;
+            peer_idle?;
+            client.take_events();
+            peer.take_events();
         }
-        client.service_liveness(Duration::from_secs(2)).await?;
-        client.take_events();
-    }
+    })
+    .await
+    .map_err(|_| "step=cast still cooling down after 150s")?
 }
 
 async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
@@ -191,16 +242,7 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         Some("monk") => ("utevo mas sio", 4),
         _ => return Err(format!("step=vocation {} has no party spell", own.vocation).into()),
     };
-    let index = spell_index(words)?;
-
-    // The party gate: the same spell cast while solo must not be cast.
-    let vitals = caster.actor_vitals().copied().ok_or("caster vitals absent")?;
-    let solo = cast_through_cooldown(&mut caster, index).await?;
-    if solo.disposition == casts::SpellCastDisposition::Cast
-        || caster.actor_vitals().copied() != Some(vitals)
-    {
-        return Err(format!("step=solo-gate observed {solo:?}, expected a refusal without a vitals change").into());
-    }
+    let (index, mana_cost) = spell_parameters(words)?;
 
     let caster_start = tile(caster.world_spatial().actor_position)?;
     let peer_start = tile(peer.world_spatial().actor_position)?;
@@ -223,7 +265,30 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     }
     caster.service_liveness(Duration::from_millis(100)).await?;
     peer.service_liveness(Duration::from_millis(100)).await?;
-    party(&mut caster, Some(parties::PartyIntent::Invite(own_ref(&peer)?))).await?;
+    if !party(&mut caster, None).await?.members.is_empty()
+        || !party(&mut peer, None).await?.members.is_empty()
+    {
+        return Err("step=solo-gate the prior party still exists".into());
+    }
+    // The party gate: the same spell cast while solo must not be cast.
+    let (vitals, solo) = cast_through_cooldown(&mut caster, &mut peer, index).await?;
+    if !solo_gate_proven(
+        solo.disposition == casts::SpellCastDisposition::Rejected
+            && solo.status == CommandStatus::Rejected,
+        solo.disposition == casts::SpellCastDisposition::Cast,
+        caster.actor_vitals().copied() == Some(vitals),
+    ) {
+        return Err(format!(
+            "step=solo-gate observed {solo:?}, expected a refusal without a vitals change"
+        )
+        .into());
+    }
+
+    party(
+        &mut caster,
+        Some(parties::PartyIntent::Invite(own_ref(&peer)?)),
+    )
+    .await?;
     let invitation = party(&mut peer, None)
         .await?
         .invitations
@@ -232,16 +297,48 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         .handle;
     party(&mut peer, Some(parties::PartyIntent::Accept(invitation))).await?;
 
-    let before = caster.actor_vitals().copied().ok_or("caster vitals absent")?;
-    let cast = cast_through_cooldown(&mut caster, index).await?;
-    let after = caster.actor_vitals().copied().ok_or("caster vitals lost")?;
-    if cast.disposition != casts::SpellCastDisposition::Cast || after.mana >= before.mana {
-        return Err(format!("step=cast observed {cast:?} before={before:?} after={after:?}").into());
+    let caster_roster = party(&mut caster, None).await?;
+    let peer_roster = party(&mut peer, None).await?;
+    if caster_roster.members.len() != 2
+        || peer_roster.members.len() != 2
+        || !caster_roster.members.iter().all(|member| {
+            peer_roster
+                .members
+                .iter()
+                .any(|peer| peer.name == member.name && peer.leader == member.leader)
+        })
+    {
+        return Err("step=party expected both views of the two-member roster".into());
     }
-    let caster_effects = effects(&mut caster).await?;
-    let member_effects = effects(&mut peer).await?;
+    let (_, caster_before) = effects(&mut caster).await?;
+    let (_, member_before) = effects(&mut peer).await?;
+    let (before, cast) = cast_through_cooldown(&mut caster, &mut peer, index).await?;
+    let after = caster.actor_vitals().copied().ok_or("caster vitals lost")?;
+    if cast.status != CommandStatus::Accepted
+        || cast.disposition != casts::SpellCastDisposition::Cast
+        || cast.actor_vitals_delta.as_ref().map(|delta| delta.value) != Some(after)
+        || !party_mana_paid(before.mana, after.mana, mana_cost)
+    {
+        return Err(
+            format!("step=cast observed {cast:?} before={before:?} after={after:?}").into(),
+        );
+    }
+    let (caster_effects, caster_after) = effects(&mut caster).await?;
+    let (member_effects, member_after) = effects(&mut peer).await?;
+    for (before, after) in [(caster_before, caster_after), (member_before, member_after)] {
+        if !party_effect_present(after.in_party, &after.party_spell_remaining_ms, slot)
+            || after.party_spell_remaining_ms[slot] <= before.party_spell_remaining_ms[slot]
+        {
+            return Err(format!(
+                "step=effects slot {slot} did not refresh: {before:?} -> {after:?}"
+            )
+            .into());
+        }
+    }
     let refused_vitals = caster.actor_vitals().copied();
-    let refused = caster.cast_spell(index, casts::SpellTarget::None, false).await?;
+    let refused = caster
+        .cast_spell(index, casts::SpellTarget::None, false)
+        .await?;
     if refused.disposition != casts::SpellCastDisposition::CoolingDown
         || caster.actor_vitals().copied() != refused_vitals
     {
@@ -284,7 +381,11 @@ pub(super) async fn observed(clients: &SeamClients<'_>) -> &'static Result<Obser
     result
 }
 
-pub(super) fn report(row: &str, observed: &Result<Observed, String>, detail: impl FnOnce(&Observed) -> String) {
+pub(super) fn report(
+    row: &str,
+    observed: &Result<Observed, String>,
+    detail: impl FnOnce(&Observed) -> String,
+) {
     match observed {
         Ok(value) => evidence(&format!(
             "e2e_all scenario={row}.client status=CAPTURED evidence={}",

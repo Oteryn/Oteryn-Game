@@ -14,7 +14,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("S03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "S03_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -30,11 +32,7 @@ fn own_name(client: &DevClientSession) -> TestResult<String> {
         .map_err(|e| format!("invalid display name: {e:?}").into())
 }
 
-async fn raw(
-    client: &mut DevClientSession,
-    kind: u32,
-    payload: Vec<u8>,
-) -> TestResult<Vec<u8>> {
+async fn raw(client: &mut DevClientSession, kind: u32, payload: Vec<u8>) -> TestResult<Vec<u8>> {
     let reply = client
         .session_mut()
         .gated_command(wire::CAPABILITY_GUILD_V1, kind, &payload)
@@ -65,6 +63,17 @@ async fn query(
     let decoded = wire::decode_guild_query_result(&bytes)
         .map_err(|e| format!("query reply undecodable: {e:?}"))?;
     Ok((bytes, decoded))
+}
+
+fn guild_leave_confirmed(code: u8, still_in_guild: bool) -> bool {
+    code == 1 && !still_in_guild
+}
+
+#[test]
+fn guild_cleanup_requires_success_and_absent_membership() {
+    assert!(!guild_leave_confirmed(2, false));
+    assert!(!guild_leave_confirmed(1, true));
+    assert!(guild_leave_confirmed(1, false));
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -121,7 +130,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if invite.code != 1 {
         return Err(format!("Invite refused: {invite:?}").into());
     }
-    let (invitations_bytes, invitations) = query(&mut invitee, &wire::GuildQuery::Invitations).await?;
+    let (invitations_bytes, invitations) =
+        query(&mut invitee, &wire::GuildQuery::Invitations).await?;
     let wire::GuildQueryResult::Invitations(list) = invitations else {
         return Err("invitation reply has the wrong shape".into());
     };
@@ -139,15 +149,54 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         member.level
     );
     capture("s03-expected.txt", expected.as_bytes());
-    // Best-effort cleanup so the founder does not stay in a guild for later rows.
-    let _ = intent(&mut founder, &wire::GuildIntent::Leave { guild: found.guild }).await;
+    // The founder is the guild leader. Guild Bank owns the disband action.
+    use oteryn_protocol_oteryn::guild_bank as bank;
+    let disband = bank::encode_guild_bank_intent(&bank::GuildBankIntent {
+        guild: found.guild,
+        action: bank::GuildBankAction::Disband(GUILD_NAME.into()),
+    })
+    .map_err(|error| format!("disband encode: {error:?}"))?;
+    let disband = founder
+        .session_mut()
+        .gated_command(
+            bank::CAPABILITY_GUILD_BANK_V1,
+            bank::COMMAND_TYPE_GUILD_BANK_INTENT,
+            &disband,
+        )
+        .await?;
+    let receipt = bank::decode_guild_bank_reply(&disband.payload)
+        .map_err(|error| format!("disband decode: {error:?}"))?;
+    if disband.status != CommandStatus::Accepted || receipt.code != 1 {
+        return Err(format!("guild disband refused: {receipt:?}").into());
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(65);
+    verdict::Harness::global().bounded_wait(deadline, "guild-disband");
+    tokio::time::timeout_at(deadline, async {
+        loop {
+            let (_, own) = query(&mut founder, &wire::GuildQuery::Own).await?;
+            if guild_leave_confirmed(
+                receipt.code,
+                !matches!(own, wire::GuildQueryResult::Own(None)),
+            ) {
+                return Ok::<_, Box<dyn std::error::Error>>(());
+            }
+            founder.service_liveness(Duration::from_secs(1)).await?;
+            invitee.service_liveness(Duration::from_millis(50)).await?;
+            founder.take_events();
+            invitee.take_events();
+        }
+    })
+    .await
+    .map_err(|_| format!("guild membership still present after disband: {receipt:?}"))??;
     let _ = founder.session_mut().logout().await?;
     let _ = invitee.session_mut().logout().await?;
     Ok(expected.replace('\n', ";").replace(' ', "_"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=S03.client status=CAPTURED evidence={expected}"
         )),

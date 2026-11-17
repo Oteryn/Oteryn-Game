@@ -11,7 +11,11 @@ use oteryn_dev_client::DevClientSession;
 use oteryn_dev_client::client_runtime::quest_log as journal;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
-const SHRINE: TilePos = TilePos { x: 32454, y: 32292, floor: -7 };
+const SHRINE: TilePos = TilePos {
+    x: 32454,
+    y: 32292,
+    floor: -7,
+};
 const APPEARANCE: u16 = 50242;
 
 fn capture(name: &str, bytes: &[u8]) {
@@ -19,7 +23,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W15D_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "W15D_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -97,6 +103,35 @@ fn shrine_placement(world: &BundleWorld) -> TestResult<(Vec<u8>, u64)> {
     Ok((placement, world.facts().object_revision(key)))
 }
 
+fn shrine_result_matches(
+    eligible: bool,
+    committed: bool,
+    journal_changed: bool,
+    before: i64,
+    after: i64,
+) -> bool {
+    committed == eligible
+        && committed == journal_changed
+        && after == if committed { 1 } else { before }
+}
+
+#[test]
+fn eligible_guidance_shrine_cannot_always_refuse() {
+    assert!(!shrine_result_matches(true, false, false, 0, 0));
+    assert!(!shrine_result_matches(true, true, true, 0, 0));
+    assert!(shrine_result_matches(true, true, true, 0, 1));
+    assert!(shrine_result_matches(false, false, false, 1, 1));
+}
+
+async fn shrine_progress(
+    connection: &mut sqlx::PgConnection,
+    clients: &SeamClients<'_>,
+) -> TestResult<(i64, i64, i64)> {
+    let progress = sqlx::query_as("SELECT p.level::bigint, COALESCE(l.value, 0)::bigint, COALESCE(g.value, 0)::bigint FROM game_character_progression_state p LEFT JOIN game_character_quest_tracks l ON l.character_id = p.character_id AND l.track_key = 'oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline' LEFT JOIN game_character_quest_tracks g ON g.character_id = p.character_id AND g.track_key = 'oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/guidance' WHERE p.character_id = encode($1, 'hex')::uuid")
+        .bind(clients.characters[1].as_slice()).fetch_one(connection).await?;
+    Ok(progress)
+}
+
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
     let mut client = connect_world(clients, 0x88).await?;
     let snapshot = client
@@ -112,8 +147,14 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     .ok_or("step=walk no player route to the guidance shrine")?;
     walk(&mut client, world, &path).await?;
     let (placement, revision) = shrine_placement(world)?;
+    use sqlx::Connection as _;
+    let mut connection = sqlx::PgConnection::connect(clients.url).await?;
+    let (level, questline, guidance) = shrine_progress(&mut connection, clients).await?;
     let before = list(&mut client).await?;
-    let used = client.session_mut().use_object(&placement, revision).await?;
+    let used = client
+        .session_mut()
+        .use_object(&placement, revision)
+        .await?;
     let outcome = match (used.status, used.disposition) {
         (CommandStatus::Accepted, UseDisposition::Committed) => "Committed",
         (CommandStatus::Rejected, UseDisposition::Rejected) => "Rejected",
@@ -121,8 +162,15 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     };
     let after = list(&mut client).await?;
     let changed = after.entries != before.entries;
-    if changed != (outcome == "Committed") {
-        return Err(format!("step=list use={outcome} list_changed={changed}").into());
+    let (_, _, guidance_after) = shrine_progress(&mut connection, clients).await?;
+    if !shrine_result_matches(
+        level >= 6 && questline == 3 && guidance == 0,
+        outcome == "Committed",
+        changed,
+        guidance,
+        guidance_after,
+    ) {
+        return Err(format!("step=list use={outcome} list_changed={changed} level={level} questline={questline} guidance={guidance}->{guidance_after}").into());
     }
     let expected = format!(
         "snapshot_revision={}\nuse={outcome}\nlist_before={}\nbefore_base={}\nbefore_new={}\nbefore_sequence={}\n\
@@ -142,11 +190,20 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     capture("w15d-after.bin", &after.payload);
     capture("w15d-expected.txt", expected.as_bytes());
     let _ = client.session_mut().logout().await;
-    Ok(format!("use={outcome} before={} after={}", list_text(&before.entries), list_text(&after.entries)))
+    Ok(format!(
+        "use={outcome} before={} after={}",
+        list_text(&before.entries),
+        list_text(&after.entries)
+    ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    match verdict::indexed_timeout(Duration::from_secs(180), verdict::observe(journey(clients, world))).await {
+    match verdict::indexed_timeout(
+        Duration::from_secs(180),
+        verdict::observe(journey(clients, world)),
+    )
+    .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W15d.client status=CAPTURED evidence={observed}"
         )),

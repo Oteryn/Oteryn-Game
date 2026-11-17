@@ -19,7 +19,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("N01_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "N01_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -33,8 +35,12 @@ async fn send(
         .await?)
 }
 
-async fn first_page(client: &mut DevClientSession, world: [u8; 16]) -> TestResult<(house::Page, Vec<u8>)> {
-    let request = house::query(world, TOWN_KEY, None).map_err(|error| format!("query encode {error}"))?;
+async fn first_page(
+    client: &mut DevClientSession,
+    world: [u8; 16],
+) -> TestResult<(house::Page, Vec<u8>)> {
+    let request =
+        house::query(world, TOWN_KEY, None).map_err(|error| format!("query encode {error}"))?;
     let reply = send(client, request).await?;
     if reply.status != CommandStatus::Accepted {
         return Err(format!("catalogue status {:?}", reply.status).into());
@@ -66,6 +72,49 @@ fn entrance(key: &str) -> TestResult<TilePos> {
     Err(format!("House catalogue missing {key}").into())
 }
 
+async fn read_guests(
+    client: &mut DevClientSession,
+    world: [u8; 16],
+    house_key: &str,
+) -> TestResult<oteryn_protocol_oteryn::house::HouseAclSnapshot> {
+    use oteryn_protocol_oteryn::house::{
+        HouseAclRead, HouseAclSelector, decode_house_acl_snapshot,
+    };
+    let request = house::acl_query(
+        world,
+        TOWN_KEY,
+        &HouseAclRead {
+            house: house_key.to_owned(),
+            selector: HouseAclSelector::Guest,
+        },
+    )
+    .map_err(|error| format!("guest ACL query encode: {error}"))?;
+    let reply = send(client, request).await?;
+    if reply.status != CommandStatus::Accepted {
+        return Err(format!("guest ACL query refused: {:?}", reply.status).into());
+    }
+    decode_house_acl_snapshot(&reply.payload)
+        .map_err(|error| format!("guest ACL query decode: {error:?}").into())
+}
+
+fn bid_visible(maximum: u64, listed: bool, listed_maximum: Option<u64>) -> bool {
+    listed && listed_maximum == Some(maximum)
+}
+
+fn acl_visible(revision: u64, reread_revision: u64, guest_list_matches: bool) -> bool {
+    revision == reread_revision && guest_list_matches
+}
+
+#[test]
+fn house_bid_and_acl_require_authoritative_rereads() {
+    assert!(!bid_visible(500, true, None));
+    assert!(!bid_visible(500, true, Some(499)));
+    assert!(bid_visible(500, true, Some(500)));
+    assert!(!acl_visible(2, 2, false));
+    assert!(!acl_visible(2, 1, true));
+    assert!(acl_visible(2, 2, true));
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -86,14 +135,32 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     let (private, path) = chosen.ok_or("no reachable private house on the first page")?;
     walk(&mut client, world, &path).await?;
-    let maximum = private.price.max(private.rent).max(1);
-    let bid = house::mutation(world_bytes, &private.house, private.revision, &house::Action::Bid(maximum))
-        .map_err(|error| format!("bid encode {error}"))?;
+    let minimum = private.price.max(private.rent).max(1);
+    let maximum = private
+        .maximum
+        .map(|prior| {
+            prior
+                .checked_add(1)
+                .ok_or("prior bid maximum cannot be increased")
+        })
+        .transpose()?
+        .map_or(minimum, |next| next.max(minimum));
+    let bid = house::mutation(
+        world_bytes,
+        &private.house,
+        private.revision,
+        &house::Action::Bid(maximum),
+    )
+    .map_err(|error| format!("bid encode {error}"))?;
     let bid_reply = send(&mut client, bid).await?;
     let (bid_disposition, _) = house::result(&bid_reply.payload)
         .map_err(|error| format!("bid decode {error}; status {:?}", bid_reply.status))?;
     if bid_reply.status != CommandStatus::Accepted || bid_disposition != 1 {
-        return Err(format!("bid disposition {bid_disposition} status {:?}", bid_reply.status).into());
+        return Err(format!(
+            "bid disposition {bid_disposition} status {:?}",
+            bid_reply.status
+        )
+        .into());
     }
 
     let (page, page_bytes) = first_page(&mut client, world_bytes).await?;
@@ -102,7 +169,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .iter()
         .find(|row| row.house == private.house)
         .ok_or("owned house missing from the first page")?;
+    if !bid_visible(maximum, true, current.maximum) {
+        return Err(format!(
+            "bid not visible in the catalogue: expected maximum={maximum}; actual={current:?}"
+        )
+        .into());
+    }
     let guest = clients.characters[1];
+    let previous_guests = read_guests(&mut client, world_bytes, &private.house).await?;
+    if previous_guests.revision != current.acl_revision || previous_guests.members == [guest] {
+        return Err(
+            format!("guest ACL fixture cannot demonstrate a write: {previous_guests:?}").into(),
+        );
+    }
     let acl = house::mutation(
         world_bytes,
         &private.house,
@@ -127,6 +206,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         return Err(format!("stale reply d={stale_disposition}").into());
     }
 
+    let guests = read_guests(&mut client, world_bytes, &private.house).await?;
+    if !acl_visible(acl_revision, guests.revision, guests.members == [guest]) {
+        return Err(format!("guest ACL write not visible: {guests:?}").into());
+    }
     let expected = format!(
         "world={}\nhouse={}\nmember={}\npage_acl_revision={}\nacl_disposition={acl_disposition}\n\
          acl_revision={acl_revision}\nstale_disposition={stale_disposition}\n",
@@ -148,7 +231,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(150), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=N01.client status=CAPTURED evidence={}",
             observed.replace(' ', "_")

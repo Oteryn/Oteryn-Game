@@ -10,7 +10,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P15_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "P15_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -113,28 +115,34 @@ fn carried_weapon(client: &DevClientSession) -> TestResult<ItemHandle> {
     Err("no carried exercise weapon in inventory".into())
 }
 
-fn visible_dummy(client: &mut DevClientSession) -> TestResult<ItemHandle> {
-    let index = provisioning::item_index()?;
-    let refs: std::collections::BTreeSet<_> = (28558..=28565)
-        .map(|id| provisioning::item_reference(&index, id))
-        .collect::<TestResult<_>>()?;
-    let snapshot = client
-        .session_mut()
-        .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
-        .ok_or("world-map snapshot missing")?;
-    let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
-        .map_err(|error| format!("world-map snapshot: {error:?}"))?;
-    map.tiles
+fn dummy_at_route_destination(matches_definition: bool, at_destination: bool) -> bool {
+    matches_definition && at_destination
+}
+
+#[test]
+fn exercise_dummy_must_be_at_the_route_destination() {
+    assert!(!dummy_at_route_destination(true, false));
+    assert!(!dummy_at_route_destination(false, true));
+    assert!(dummy_at_route_destination(true, true));
+}
+
+fn visible_dummy(
+    view: &oteryn_protocol_oteryn::world_map::MapTile,
+    destination: TilePos,
+    refs: &BTreeSet<std::num::NonZeroU32>,
+) -> Option<ItemHandle> {
+    use oteryn_protocol_oteryn::world_map::{MapDefinition, MapOrigin};
+    let at_destination = tile(view.position).ok() == Some(destination);
+    view.items
         .iter()
-        .flat_map(|tile| &tile.items)
         .find_map(|item| match (item.definition, item.origin) {
-            (
-                oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference),
-                oteryn_protocol_oteryn::world_map::MapOrigin::Handle(handle),
-            ) if refs.contains(&reference) => Some(handle),
+            (MapDefinition::Item(reference), MapOrigin::Handle(handle))
+                if dummy_at_route_destination(refs.contains(&reference), at_destination) =>
+            {
+                Some(handle)
+            }
             _ => None,
         })
-        .ok_or_else(|| "no authored exercise dummy in the admitted map range".into())
 }
 
 fn dummy_positions(bytes: &[u8]) -> TestResult<std::collections::BTreeSet<TilePos>> {
@@ -189,14 +197,56 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
+    let start = tile(client.world_spatial().actor_position)?;
+    let path = route(world, start, |at| {
         positions.iter().any(|dummy| {
             at.floor == dummy.floor && at.x.abs_diff(dummy.x).max(at.y.abs_diff(dummy.y)) <= 1
         })
     })
     .ok_or("no player-walkable route to an authored exercise dummy")?;
-    walk(&mut client, world, &path).await?;
-    let dummy = visible_dummy(&mut client)?;
+    let end = path
+        .iter()
+        .try_fold(start, |at, direction| destination(world, at, *direction))
+        .ok_or("exercise route landing is unavailable")?;
+    let planned = positions
+        .iter()
+        .copied()
+        .find(|at| at.floor == end.floor && at.x.abs_diff(end.x).max(at.y.abs_diff(end.y)) <= 1)
+        .ok_or("route planned no adjacent authored exercise dummy")?;
+    let position = ActorPosition {
+        x: i32::from(planned.x),
+        y: i32::from(planned.y),
+        floor: -i16::from(planned.floor),
+    };
+    let index = provisioning::item_index()?;
+    let refs = (28558..=28565)
+        .map(|id| provisioning::item_reference(&index, id))
+        .collect::<TestResult<BTreeSet<_>>>()?;
+    let mut projected = client
+        .session_mut()
+        .world_map_snapshot()
+        .ok_or("world-map snapshot missing")?
+        .tiles
+        .into_iter()
+        .find(|tile| tile.position == position);
+    walk_observing(&mut client, world, &path, |events| {
+        observe_map_tile(&mut projected, position, events)
+    })
+    .await?;
+    let dummy = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            observe_map_tile(&mut projected, position, client.take_events());
+            if let Some(handle) = projected
+                .as_ref()
+                .and_then(|view| visible_dummy(view, planned, &refs))
+            {
+                return Ok::<_, oteryn_dev_client::DevClientError>(handle);
+            }
+            client.service_liveness(Duration::from_millis(50)).await?;
+        }
+    })
+    .await
+    .map_err(|_| format!("no live handle for the exercise dummy at {position:?}"))??;
     let (running_bytes, running) =
         exercise(&mut client, wire::ExerciseIntent::Start { weapon, dummy }).await?;
     if running.disposition != 1 || running.revision == 0 || running.charges == 0 {
@@ -224,7 +274,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P15.client status=CAPTURED evidence={expected}"
         )),

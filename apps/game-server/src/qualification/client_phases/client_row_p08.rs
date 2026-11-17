@@ -11,7 +11,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P08_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "P08_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -30,6 +32,17 @@ async fn command(
     }
     capture(&format!("p08-{name}.bin"), &reply.payload);
     Ok(reply.payload)
+}
+
+fn perk_selected(accepted: bool, selections: &[Option<u8>]) -> bool {
+    accepted && selections.first() == Some(&Some(0))
+}
+
+#[test]
+fn proficiency_selection_requires_the_requested_perk() {
+    assert!(!perk_selected(false, &[Some(0)]));
+    assert!(!perk_selected(true, &[Some(1)]));
+    assert!(perk_selected(true, &[Some(0)]));
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -68,6 +81,12 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     )
     .await?;
     let select = wire::SelectPerkReply::decode(&select).ok_or("select reply")?;
+    if !perk_selected(
+        select.result == wire::SelectPerkResult::Accepted,
+        &select.selections,
+    ) {
+        return Err(format!("requested level-zero perk was not selected: {select:?}").into());
+    }
     let operation = wire::ModificationOperation::RankUp;
     let stale = command(
         &mut client,
@@ -103,7 +122,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P08.client status=CAPTURED evidence={}",
             expected.replace(' ', "_")

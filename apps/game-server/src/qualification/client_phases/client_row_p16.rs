@@ -4,6 +4,22 @@
 use super::client_row_p20::{approach_npc, capture, hex, talk};
 use super::*;
 
+fn blessing_declined(answer: &[String], expected: &[String]) -> bool {
+    answer == expected
+}
+
+#[test]
+fn blessing_decline_must_match_the_authored_answer() {
+    assert!(!blessing_declined(
+        &["Unrelated".into()],
+        &["Maybe later.".into()]
+    ));
+    assert!(blessing_declined(
+        &["Maybe later.".into()],
+        &["Maybe later.".into()]
+    ));
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -22,13 +38,20 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     capture("P16", "p16-greeting.bin", &greeting_bytes);
     let (quote_bytes, quote) = talk(&mut client, npc, "The Wisdom of Solitude").await?;
-    if quote
-        != ["Do you want to buy The Wisdom of Solitude at the price for your current level?"]
-    {
+    if quote != ["Do you want to buy The Wisdom of Solitude at the price for your current level?"] {
         return Err(format!("blessing quote observed={quote:?}").into());
     }
     capture("P16", "p16-quote.bin", &quote_bytes);
+    let inventory = client
+        .inventory()
+        .cloned()
+        .ok_or("inventory before declining blessing absent")?;
     let (answer_bytes, answer) = talk(&mut client, npc, "no").await?;
+    if !blessing_declined(&answer, &["Maybe later.".to_owned()])
+        || client.inventory() != Some(&inventory)
+    {
+        return Err(format!("blessing offer did not decline unchanged: {answer:?}").into());
+    }
     capture("P16", "p16-answer.bin", &answer_bytes);
     let expected = format!(
         "npc_identity={}\nnpc_generation={}\ngreeting={}\nquote={}\nanswer={}\n",
@@ -44,7 +67,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P16.client status=CAPTURED evidence={expected}"
         )),

@@ -12,8 +12,21 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W11_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "W11_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
+}
+
+fn level_refusal(refused: bool, level: bool) -> bool {
+    refused && level
+}
+
+#[test]
+fn underlevel_boss_lever_requires_level_refusal() {
+    assert!(!level_refusal(false, false));
+    assert!(!level_refusal(true, false));
+    assert!(level_refusal(true, true));
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -38,6 +51,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .await?;
     let reply = wire::decode_boss_activity_reply(&lever.payload)
         .map_err(|error| format!("lever reply malformed: {error:?} status={:?}", lever.status))?;
+    if !level_refusal(
+        lever.status == CommandStatus::Rejected,
+        reply == wire::BossActivityReply::Refused(wire::BossActivityRefusal::Level),
+    ) {
+        return Err(format!(
+            "lever did not return the expected Level refusal: status={:?} reply={reply:?}",
+            lever.status
+        )
+        .into());
+    }
     let activity = match &reply {
         wire::BossActivityReply::Accepted {
             deadline_unix_ms, ..
@@ -71,7 +94,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(observed)) => evidence(&format!(
             "e2e_all scenario=W11.client status=CAPTURED evidence={observed}"
         )),

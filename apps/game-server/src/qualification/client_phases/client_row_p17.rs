@@ -13,7 +13,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P17_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "P17_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -56,6 +58,17 @@ fn own_name(client: &DevClientSession) -> TestResult<String> {
         .as_str()
         .map(str::to_owned)
         .map_err(|error| format!("own name invalid UTF-8: {error:?}").into())
+}
+
+fn settings_restored(receipt: &[u8], same_list: bool) -> bool {
+    receipt == [1] && same_list
+}
+
+#[test]
+fn exiva_restoration_requires_receipt_and_original_list() {
+    assert!(!settings_restored(&[1], false));
+    assert!(!settings_restored(&[], true));
+    assert!(settings_restored(&[1], true));
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
@@ -109,7 +122,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     capture("p17-removed.bin", &removed_bytes);
     // Leave the target's permissions as found.
-    accepted(&mut target, &[0, initial.modes]).await?;
+    let receipt = accepted(&mut target, &[0, initial.modes]).await?;
+    let (_, restored) = list(&mut target).await?;
+    if !settings_restored(&receipt, restored == initial) {
+        return Err(format!("Exiva restoration unconfirmed: initial={initial:?}; restored={restored:?}; receipt={receipt:?}").into());
+    }
     let id_hex: String = caster_id.iter().map(|byte| format!("{byte:02x}")).collect();
     let expected = format!(
         "denied_modes={}\nallowed_modes={}\nplayer={id_hex} {caster_name}\nremoved_modes={}\nrefused_status=Rejected\n",
@@ -121,7 +138,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P17.client status=CAPTURED evidence={expected}"
         )),

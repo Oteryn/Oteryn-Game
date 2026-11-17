@@ -12,12 +12,26 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P09_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "P09_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
+fn shrine_claim_refused(disposition: u8, has_transaction: bool) -> bool {
+    disposition == 4 && !has_transaction
+}
+
+#[test]
+fn unopened_shrine_rejects_grants_and_other_refusals() {
+    assert!(!shrine_claim_refused(1, true));
+    assert!(!shrine_claim_refused(5, false));
+    assert!(shrine_claim_refused(4, false));
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
-    let mut client = connect_world(clients, 0x2b).await?;
+    // The full row claims today's reward on Character one.
+    let mut client = connect_character(clients, 0x2b, 0).await?;
     let query = client
         .session_mut()
         .gated_command(
@@ -34,6 +48,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     else {
         return Err("wall query did not decode as a wall".into());
     };
+    if wall.claimed || wall.claim_enabled {
+        return Err(format!("unopened shrine fixture requires an unclaimed day: {wall:?}").into());
+    }
     let claim = client
         .session_mut()
         .gated_command(
@@ -50,21 +67,28 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     else {
         return Err("claim did not decode as a result".into());
     };
-    let status = if matches!(claim.status, CommandStatus::Accepted) {
-        "accepted"
-    } else {
-        "refused"
-    };
+    if claim.status != CommandStatus::Rejected
+        || !shrine_claim_refused(result.disposition, result.transaction_id.is_some())
+    {
+        return Err(format!("unopened shrine claim result={result:?}").into());
+    }
     let expected = format!(
-        "lane_day={}\nstreak={}\njokers={}\nclaimed={}\nclaim_enabled={}\nclaim_status={status}\nclaim_disposition={}\n",
-        wall.lane_day, wall.streak, wall.jokers, wall.claimed, wall.claim_enabled, result.disposition
+        "lane_day={}\nstreak={}\njokers={}\nclaimed={}\nclaim_enabled={}\nclaim_status=refused\nclaim_disposition={}\n",
+        wall.lane_day,
+        wall.streak,
+        wall.jokers,
+        wall.claimed,
+        wall.claim_enabled,
+        result.disposition
     );
     capture("p09-expected.txt", expected.as_bytes());
     Ok(expected.replace('\n', ";"))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(120), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P09.client status=CAPTURED evidence={expected}"
         )),

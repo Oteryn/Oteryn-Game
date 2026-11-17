@@ -12,7 +12,9 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("P23C_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "P23C_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
@@ -35,6 +37,17 @@ async fn send(
     Ok((result.payload, reply))
 }
 
+fn task_selected(refused: bool, selected: u8) -> bool {
+    !refused && selected == 1
+}
+
+#[test]
+fn task_selection_requires_success_and_requested_slot() {
+    assert!(!task_selected(true, 1));
+    assert!(!task_selected(false, 2));
+    assert!(task_selected(false, 1));
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_character(clients, 0x45, 1).await?;
     let (query_bytes, query) = send(&mut client, 0, 0).await?;
@@ -43,6 +56,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     capture("p23c-query.bin", &query_bytes);
     let (select_bytes, select) = send(&mut client, 1, 1).await?;
+    if !task_selected(select.refused, select.selected) {
+        return Err(format!("task selection did not select slot 1: {select:?}").into());
+    }
     capture("p23c-select.bin", &select_bytes);
     let mut expected = format!(
         "points={}\nbounty_points={}\ntask_count={}\n",
@@ -69,7 +85,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients))).await {
+    match verdict::indexed_timeout(Duration::from_secs(90), verdict::observe(journey(clients)))
+        .await
+    {
         Ok(Ok(expected)) => evidence(&format!(
             "e2e_all scenario=P23c.client status=CAPTURED evidence={expected}"
         )),

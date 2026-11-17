@@ -15,22 +15,29 @@ fn capture(name: &str, bytes: &[u8]) {
         return;
     };
     if let Err(error) = std::fs::write(Path::new(&root).join(name), bytes) {
-        evidence(&format!("W22A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"));
+        evidence(&format!(
+            "W22A_CLIENT_CAPTURE_WRITE_ERROR file={name} error={error}"
+        ));
     }
 }
 
 fn rat_ranges() -> TestResult<BTreeMap<u32, (u32, u32)>> {
     let index = provisioning::item_index()?;
-    [("oteryn:item.tibia.i3607", 1, 1), ("oteryn:item.tibia.i3031", 1, 4)]
-        .into_iter()
-        .map(|(key, min, max)| {
-            let revision = index.revision(key).ok_or("step=table rat item revision missing")?;
-            let reference = index
-                .definition_ref("Item", key, revision)
-                .ok_or("step=table rat item reference missing")?;
-            Ok((reference.get(), (min, max)))
-        })
-        .collect()
+    [
+        ("oteryn:item.tibia.i3607", 1, 1),
+        ("oteryn:item.tibia.i3031", 1, 4),
+    ]
+    .into_iter()
+    .map(|(key, min, max)| {
+        let revision = index
+            .revision(key)
+            .ok_or("step=table rat item revision missing")?;
+        let reference = index
+            .definition_ref("Item", key, revision)
+            .ok_or("step=table rat item reference missing")?;
+        Ok((reference.get(), (min, max)))
+    })
+    .collect()
 }
 
 fn listed(entries: &[ItemEntry]) -> String {
@@ -41,6 +48,18 @@ fn listed(entries: &[ItemEntry]) -> String {
         .join(";")
 }
 
+fn target_corpse(target_removed: bool, already_visible: bool, at_last_position: bool) -> bool {
+    target_removed && !already_visible && at_last_position
+}
+
+#[test]
+fn corpse_must_be_new_and_follow_target_removal() {
+    assert!(!target_corpse(false, false, true));
+    assert!(!target_corpse(true, true, true));
+    assert!(!target_corpse(true, false, false));
+    assert!(target_corpse(true, false, true));
+}
+
 async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContainer> {
     let position = client.world_spatial().actor_position;
     let target = client
@@ -48,32 +67,74 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContaine
         .and_then(|entities| {
             entities.iter().find(|entry| {
                 entry.kind == EntityKind::Creature
+                    && entry.display_name.is_some_and(|name| {
+                        name.as_str()
+                            .is_ok_and(|name| name.eq_ignore_ascii_case("Rat"))
+                    })
                     && entry.position.floor == position.floor
-                    && entry.position.x.abs_diff(position.x).max(entry.position.y.abs_diff(position.y)) <= 1
+                    && entry
+                        .position
+                        .x
+                        .abs_diff(position.x)
+                        .max(entry.position.y.abs_diff(position.y))
+                        <= 1
             })
         })
         .copied()
         .ok_or("step=attack no adjacent rat after the walk")?;
-    let reply = client.session_mut().attack_target(Some(&target.entity)).await?;
+    let mut existing_corpses: BTreeSet<_> = client
+        .world_entities()
+        .ok_or("step=attack no entities")?
+        .iter()
+        .filter(|entry| entry.kind == EntityKind::Corpse)
+        .map(|entry| entry.entity)
+        .collect();
+    client.take_events();
+    let reply = client
+        .session_mut()
+        .attack_target(Some(&target.entity))
+        .await?;
     if reply.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok {
         return Err(format!("step=attack refused {reply:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     verdict::Harness::global().bounded_wait(deadline, "bounded-observation");
     let mut last_position = target.position;
+    let mut target_removed = false;
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
-            if let SessionEvent::WorldSpatialEntities(delta) = event
-                && let Some(update) = delta.value.update.iter().find(|entry| entry.entity == target.entity)
-            {
-                last_position = update.position;
+            if let SessionEvent::WorldSpatialEntities(delta) = event {
+                target_removed |= delta.value.leave.contains(&target.entity);
+                if !target_removed {
+                    existing_corpses.extend(
+                        delta
+                            .value
+                            .enter
+                            .iter()
+                            .filter(|entity| entity.kind == EntityKind::Corpse)
+                            .map(|entity| entity.entity),
+                    );
+                }
+                if let Some(update) = delta
+                    .value
+                    .update
+                    .iter()
+                    .find(|entry| entry.entity == target.entity)
+                {
+                    last_position = update.position;
+                }
             }
         }
         if let Some(corpse) = client.world_entities().and_then(|entities| {
-            entities
-                .iter()
-                .find(|entry| entry.kind == EntityKind::Corpse && entry.position == last_position)
+            entities.iter().find(|entry| {
+                entry.kind == EntityKind::Corpse
+                    && target_corpse(
+                        target_removed,
+                        existing_corpses.contains(&entry.entity),
+                        entry.position == last_position,
+                    )
+            })
         }) {
             break *corpse;
         }
@@ -81,7 +142,11 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContaine
             return Err("step=death no corpse frame".into());
         }
     };
-    let EntityDetail::Object { item_handle: Some(handle), .. } = corpse.detail else {
+    let EntityDetail::Object {
+        item_handle: Some(handle),
+        ..
+    } = corpse.detail
+    else {
         return Err("step=corpse the corpse has no item handle".into());
     };
     let used = client.use_item(handle).await?;
@@ -92,7 +157,10 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContaine
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     loop {
-        if let Some(view) = client.open_container().filter(|view| view.container_handle == Some(handle)) {
+        if let Some(view) = client
+            .open_container()
+            .filter(|view| view.container_handle == Some(handle))
+        {
             return Ok(view.clone());
         }
         if tokio::time::Instant::now() >= deadline {
@@ -101,6 +169,28 @@ async fn kill_and_open(client: &mut DevClientSession) -> TestResult<OpenContaine
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     }
+}
+
+fn looted_into_backpack(corpse_removed: bool, expected: u64, observed: u64) -> bool {
+    corpse_removed && expected == observed
+}
+
+#[test]
+fn corpse_removal_alone_does_not_prove_loot_delivery() {
+    assert!(!looted_into_backpack(true, 4, 3));
+    assert!(!looted_into_backpack(false, 4, 4));
+    assert!(looted_into_backpack(true, 4, 4));
+}
+
+fn backpack_count(client: &DevClientSession, entry: ItemEntry) -> TestResult<u64> {
+    Ok(client
+        .inventory()
+        .ok_or("step=move missing backpack inventory")?
+        .entries
+        .iter()
+        .filter(|item| item.item_definition_ref == entry.item_definition_ref)
+        .map(|item| u64::from(item.count.get()))
+        .sum())
 }
 
 async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<String> {
@@ -116,15 +206,30 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
             break;
         }
     }
-    let first = *before.entries.first().ok_or("step=roll every rat corpse was empty after four kills")?;
+    let first = *before
+        .entries
+        .first()
+        .ok_or("step=roll every rat corpse was empty after four kills")?;
     for entry in &before.entries {
         let (min, max) = ranges
             .get(&entry.item_definition_ref.get())
-            .ok_or_else(|| format!("step=table unexpected definition {}", entry.item_definition_ref))?;
+            .ok_or_else(|| {
+                format!(
+                    "step=table unexpected definition {}",
+                    entry.item_definition_ref
+                )
+            })?;
         if !(*min..=*max).contains(&entry.count.get()) {
-            return Err(format!("step=table count {}:{} outside {min}..={max}", entry.item_definition_ref, entry.count).into());
+            return Err(format!(
+                "step=table count {}:{} outside {min}..={max}",
+                entry.item_definition_ref, entry.count
+            )
+            .into());
         }
     }
+    let expected_backpack = backpack_count(&client, first)?
+        .checked_add(u64::from(first.count.get()))
+        .ok_or("step=move backpack count overflow")?;
     let moved = client
         .move_item(&oteryn_dev_client::ItemMoveIntent {
             source: first.handle,
@@ -137,18 +242,27 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     let after = loop {
         if let Some(view) = client.open_container()
-            && view.entries.iter().all(|entry| entry.handle != first.handle)
+            && view.container_handle == before.container_handle
+            && looted_into_backpack(
+                view.entries
+                    .iter()
+                    .all(|entry| entry.handle != first.handle),
+                expected_backpack,
+                backpack_count(&client, first)?,
+            )
         {
             break view.clone();
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err("step=move no corpse removal delta".into());
+            return Err("step=move no correlated corpse removal and backpack gain".into());
         }
         client.service_liveness(Duration::from_millis(50)).await?;
         client.take_events();
     };
-    let before_payload = item_view::encode_open_container(&before).map_err(|error| format!("encode {error:?}"))?;
-    let after_payload = item_view::encode_open_container(&after).map_err(|error| format!("encode {error:?}"))?;
+    let before_payload =
+        item_view::encode_open_container(&before).map_err(|error| format!("encode {error:?}"))?;
+    let after_payload =
+        item_view::encode_open_container(&after).map_err(|error| format!("encode {error:?}"))?;
     let table = ranges
         .iter()
         .map(|(reference, (min, max))| format!("{reference}:{min}:{max}"))
@@ -158,15 +272,31 @@ async fn journey(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult<S
     capture("w22a-after.bin", &after_payload);
     capture(
         "w22a-expected.txt",
-        format!("before={}\nafter={}\ntable={table}\n", listed(&before.entries), listed(&after.entries)).as_bytes(),
+        format!(
+            "before={}\nafter={}\ntable={table}\n",
+            listed(&before.entries),
+            listed(&after.entries)
+        )
+        .as_bytes(),
     );
     let _ = client.session_mut().logout().await;
-    Ok(format!("before={} after={}", listed(&before.entries), listed(&after.entries)))
+    Ok(format!(
+        "before={} after={}",
+        listed(&before.entries),
+        listed(&after.entries)
+    ))
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    match verdict::indexed_timeout(Duration::from_secs(300), verdict::observe(journey(clients, world))).await {
-        Ok(Ok(observed)) => evidence(&format!("e2e_all scenario=W22a.client status=CAPTURED evidence={observed}")),
+    match verdict::indexed_timeout(
+        Duration::from_secs(300),
+        verdict::observe(journey(clients, world)),
+    )
+    .await
+    {
+        Ok(Ok(observed)) => evidence(&format!(
+            "e2e_all scenario=W22a.client status=CAPTURED evidence={observed}"
+        )),
         Ok(Err(error)) => evidence(&format!(
             "e2e_all scenario=W22a.client status=FAIL evidence={}",
             error.to_string().replace(' ', "_")
