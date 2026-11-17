@@ -164,6 +164,12 @@ async fn earn_gold(
         }
         travel_to_spawn(client, world, spawns, "oteryn:creature.rat").await?;
         client_hunt::hunt(client).await?;
+        // A finished hunt is progress of this row; the gold it earned is evidence.
+        verdict::Harness::global().progress("hunt");
+        evidence(&format!(
+            "C02_CHECK earn-gold hunt observed={}:needed={needed}",
+            value(client)?
+        ));
     }
     Ok(())
 }
