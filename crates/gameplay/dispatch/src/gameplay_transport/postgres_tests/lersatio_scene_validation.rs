@@ -216,6 +216,43 @@ fn lersatio_mirrors_are_registered_with_both_counter_transitions() -> Result<(),
             ));
             assert_eq!(callback.effects.reset_after_ms, Some(30_000));
             assert_eq!(callback.effects.encounter.is_some(), phase == "second");
+            assert_eq!(callback.selector.appearance, Some(8667));
+            assert_eq!(callback.effects.transform, Some(8721));
+            let mission_guard = callback
+                .storage
+                .iter()
+                .find(|storage| storage.track.ends_with("/mission08"))
+                .ok_or("mission guard")?;
+            assert_eq!((mission_guard.minimum, mission_guard.maximum), (0, 1));
+            assert!(mission_guard.preserve);
+            if let Some(encounter) = &callback.effects.encounter {
+                assert_eq!(encounter.monsters.len(), 3);
+                assert_eq!(
+                    encounter
+                        .monsters
+                        .iter()
+                        .filter(|monster| monster.creature.ends_with(".lersatio"))
+                        .count(),
+                    1
+                );
+                assert_eq!(
+                    encounter
+                        .monsters
+                        .iter()
+                        .filter(|monster| monster.creature.ends_with(".vampire"))
+                        .count(),
+                    2
+                );
+                let spectators = encounter.spectators.as_ref().ok_or("spectator room")?;
+                assert_eq!(
+                    (
+                        spectators.destination.x,
+                        spectators.destination.y,
+                        spectators.destination.floor
+                    ),
+                    (32967, 31459, -1)
+                );
+            }
         }
     }
     Ok(())
