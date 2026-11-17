@@ -380,7 +380,7 @@ async fn prepare_items(
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::CurrentCharacterItemFence;
-    use crate::durability::reward_claim_mint::{RewardClaimMintOutcome, RewardClaimMintRequest};
+    use crate::durability::reward_claim_mint::RewardClaimMintRequest;
     use oteryn_gameplay_items::item_ref_admission::generation_item_facts;
 
     let fence = CurrentCharacterItemFence {
@@ -482,9 +482,25 @@ async fn prepare_items(
             .commit_reward_claim_mint_waiting(authority, proof, fence, &mut candidate, deadline)
             .await
             .map_err(|error| format!("qualification Item commit: {error:?}"))?;
-        if !matches!(outcome, RewardClaimMintOutcome::Committed(_)) {
-            return Err(format!("qualification Item not committed: {outcome:?}").into());
-        }
+        fixture_item_committed(outcome)?;
+    }
+    Ok(())
+}
+
+fn fixture_item_committed(
+    outcome: crate::durability::reward_claim_mint::RewardClaimMintOutcome,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::durability::reward_claim_mint::RewardClaimMintOutcome;
+    let receipt = match outcome {
+        RewardClaimMintOutcome::Committed(receipt)
+        | RewardClaimMintOutcome::AlreadyCommitted(receipt) => receipt,
+    };
+    if receipt.quantity != 1 {
+        return Err(format!(
+            "qualification Item receipt has quantity {}",
+            receipt.quantity
+        )
+        .into());
     }
     Ok(())
 }
@@ -492,6 +508,27 @@ async fn prepare_items(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn review_accepts_fixture_item_receipt_replay() {
+        use crate::durability::reward_claim_mint::{
+            CommittedRewardClaimMint, RewardClaimMintOutcome,
+        };
+        let receipt = CommittedRewardClaimMint {
+            transaction_id: [1; 16],
+            event_id: [2; 16],
+            item_instance_id: [3; 16],
+            occurred_at_unix_ms: 1,
+            envelope_sha256: [4; 32],
+            quantity: 1,
+            destination: crate::durability::item_transfer::ContainerEntryPosition {
+                parent_item_instance_id: [5; 16],
+                placement_ordinal: 0,
+            },
+        };
+        assert!(fixture_item_committed(RewardClaimMintOutcome::Committed(receipt.clone())).is_ok());
+        assert!(fixture_item_committed(RewardClaimMintOutcome::AlreadyCommitted(receipt)).is_ok());
+    }
 
     fn assert_early_warning(reason: EarlyRefusal, expected: &str) {
         let line = early_refusal_warning(reason);

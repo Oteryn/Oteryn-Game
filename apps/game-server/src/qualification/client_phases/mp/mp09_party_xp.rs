@@ -7,7 +7,7 @@ use super::observations::{analyser_fact, committed_swing};
 use super::*;
 use bots::{Bot, attack_target, party};
 use oteryn_dev_client::{
-    EntityDetail, EntityKind, EntityRef, SessionEvent, client_ui::cyclopedia_character as panel,
+    EntityDetail, EntityKind, SessionEvent, client_ui::cyclopedia_character as panel,
 };
 use oteryn_protocol_oteryn::{
     analyser::AnalyserFact,
@@ -571,7 +571,7 @@ async fn encounter(
     let answer = request_spawn(session, key.to_owned())
         .await
         .map_err(|reason| format!("hunt target spawn rejected:{reason};source:tools/qualification/node_boot/provision.py"))?;
-    let target = spawned_entity(&answer)?;
+    let target = parse_spawned_entity(&answer)?;
     evidence(&format!(
         "MP_CHECK MP09 hunt-route PASS target={name} base_xp={pool} spawn_answer={answer} leader={leader:?}"
     ));
@@ -684,20 +684,6 @@ async fn encounter(
         bots::pump(bots).await?;
     }
     Ok((start, end, hits, pool))
-}
-
-fn spawned_entity(answer: &str) -> TestResult<EntityRef> {
-    let fields: Vec<_> = answer.split_ascii_whitespace().collect();
-    let ["spawned", identity, generation] = fields.as_slice() else {
-        return Err(format!("invalid hunt spawn response: {answer}").into());
-    };
-    let identity = crate::node::operator_files::hex_bytes::<16>(identity)
-        .map_err(|_| "invalid hunt spawn identity")?;
-    let generation = generation.parse::<std::num::NonZeroU64>()?.get();
-    Ok(EntityRef {
-        identity,
-        generation,
-    })
 }
 
 fn hunt_health(detail: EntityDetail) -> Option<u8> {

@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 import re
+import socket
 import stat
 import subprocess
 import tempfile
@@ -60,6 +61,30 @@ class KnobTests(unittest.TestCase):
         self.assertIn('PG_PORT="${NODE_BOOT_PG_PORT:-15433}"', RUN_TEXT)
         self.assertIn('WP5_PORT="${NODE_BOOT_PLATFORM_PORT:-18463}"', RUN_TEXT)
 
+    def test_pvp_port_can_override_an_unusable_adjacent_port(self):
+        script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
+        result = bash(script, {'NODE_BOOT_GAME_PORT': '65535', 'NODE_BOOT_PVP_GAME_PORT': '17191'})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, '17191')
+
+    def test_pvp_port_falls_back_when_the_adjacent_port_is_busy(self):
+        script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
+        with socket.socket() as listener:
+            listener.bind(('127.0.0.1', 0))
+            listener.listen()
+            adjacent = listener.getsockname()[1]
+            result = bash(script, {'NODE_BOOT_GAME_PORT': str(adjacent - 1)})
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            selected = int(result.stdout)
+            self.assertTrue(1024 <= selected <= 65535)
+            self.assertNotIn(selected, (adjacent - 1, adjacent))
+
+    def test_pvp_port_default_stays_in_range(self):
+        script = 'set -Eeuo pipefail\n' + KNOBS + 'printf "%s" "$PVP_GAME_PORT"\n'
+        result = bash(script, {'NODE_BOOT_GAME_PORT': '65535'})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, '65534')
+
     def test_parallel_stack_overrides_are_accepted(self):
         with tempfile.TemporaryDirectory() as temp:
             temp = os.path.realpath(temp)
@@ -108,6 +133,8 @@ class ReuseTests(unittest.TestCase):
             BASE={temp}/base
             NODE_BOOT_REUSE_STACK={mode}
             NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0
+            NODE_BOOT_E2E_ONLY=rows
+            PVP_GAME_PORT=17182; node_boot_pvp_default=17182
             PG_CONTAINER=fixture-postgres
             STACK_KEPT=0
             REUSE_STATE={temp}/state.env
@@ -122,6 +149,7 @@ class ReuseTests(unittest.TestCase):
             set -Eeuo pipefail
             REUSE_STATE={temp}/state.env
             NODE_BOOT_WORLD=1; NODE_BOOT_SPELLS=0; STACK_KEPT=0
+            PVP_GAME_PORT=17182
             WORK={temp}/kept; node_log="$WORK/node.log"; failed_node_log="$WORK/failed-node.log"
             WP5_PKI="$WORK/pki"; WP5_SCRATCH="$WORK/scratch"; WP5_PORT=18463
             WP5_DB_PASSWORD=a; WP5_DB_ROOT_PASSWORD=b; WP5_APP_KEY=c; PG_PORT=15433
@@ -162,6 +190,17 @@ class ReuseTests(unittest.TestCase):
             # Teardown loads the stack without keeping it, so cleanup removes it.
             result = self.run_guard(temp, 'teardown', 'sudo() { return 1; }')
             self.assertEqual(result.stdout.strip(), f'kept=0 work={temp}/kept pid=4242 fresh=no')
+
+    def test_world_mp_requires_fresh_stack_but_can_teardown(self):
+        with tempfile.TemporaryDirectory() as temp:
+            self.assertEqual(self.save_state(temp).returncode, 0)
+            for groups in ('', 'mp', 'rows, mp'):
+                with self.subTest(groups=groups):
+                    result = self.run_guard(temp, 1, f'NODE_BOOT_E2E_ONLY="{groups}"')
+                    self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                    self.assertEqual(result.stdout.strip(),
+                                     'NODE_BOOT_RESULT=BLOCKED reason=mp_requires_fresh_stack')
+            self.assertEqual(self.run_guard(temp, 'teardown', 'NODE_BOOT_E2E_ONLY=mp').returncode, 0)
 
     def test_kept_or_reused_stack_never_reports_a_pass(self):
         self.assertIn('STATUS[stack_kept]="SKIP(shutdown and restart stages not run)"', RUN_TEXT)

@@ -414,6 +414,13 @@ async fn verify_pvp_state(bot: &mut Bot<'_, '_>) -> TestResult {
     Ok(())
 }
 
+fn expert_update(events: &[SessionEvent], after: u64) -> Option<pvp_expert::ExpertFightModes> {
+    events.iter().find_map(|event| match event {
+        SessionEvent::ExpertFightModes(delta) if delta.server_sequence > after => Some(delta.value),
+        _ => None,
+    })
+}
+
 /// The node-boot World is no-PvP (`tools/qualification/node_boot/run.sh:1021`, `world_type=1`), so
 /// the server pins every expert mode to Dove (`pvp_expert.rs:83-92` set, `:121-131` observe).
 async fn nopvp_expert(bots: &mut [Bot<'_, '_>]) -> TestResult {
@@ -424,6 +431,7 @@ async fn nopvp_expert(bots: &mut [Bot<'_, '_>]) -> TestResult {
         },
         expert: pvp_expert::ExpertMode::RedFist,
     };
+    let after = bots[0].client()?.last_server_sequence();
     let reply = bots[0]
         .client()?
         .session_mut()
@@ -441,16 +449,30 @@ async fn nopvp_expert(bots: &mut [Bot<'_, '_>]) -> TestResult {
         return Err(format!("expert modes status={:?};disposition={disposition:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:83", reply.status).into());
     }
     bots::wait_observation(bots, tokio::time::Instant::now() + Duration::from_secs(5), "expert fight mode update", |_, events| {
-        for event in &events[0] {
-            if let SessionEvent::ExpertFightModes(delta) = event {
-                if delta.value.expert != pvp_expert::ExpertMode::Dove {
-                    return Err(format!("no-PvP World must serve Dove;requested={requested:?};served={:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:83-92;world:tools/qualification/node_boot/run.sh:1021", delta.value).into());
-                }
-                return Ok(true);
+        if let Some(served) = expert_update(&events[0], after) {
+            if served.expert != pvp_expert::ExpertMode::Dove {
+                return Err(format!("no-PvP World must serve Dove;requested={requested:?};served={:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:83-92;world:tools/qualification/node_boot/run.sh:1021", served).into());
             }
+            return Ok(true);
         }
         Ok(false)
     }).await
+}
+
+fn refused_without_damage(
+    status: CommandStatus,
+    disposition: oteryn_protocol_oteryn::attack::AttackIntentDisposition,
+    before: Option<u32>,
+    after: Option<u32>,
+    damaged: bool,
+    hit_seen: bool,
+) -> bool {
+    status == CommandStatus::Rejected
+        && disposition == oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected
+        && before.is_some()
+        && !damaged
+        && !hit_seen
+        && before == after
 }
 
 /// A's attack on player D is refused on a no-PvP World (`pvp_live.rs:184` via
@@ -483,13 +505,19 @@ async fn nopvp_attack_refused(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> 
     bots::approach(bots, 0, 3, world, true).await?;
     let attacker = bots[0].own()?;
     let victim = bots[3].own()?;
-    let before = bots[3].client()?.actor_vitals().copied();
+    let before = bots[3]
+        .client()?
+        .actor_vitals()
+        .copied()
+        .ok_or("D pre-attack vitals absent")?;
     let outcome = bots[0]
         .client()?
         .session_mut()
         .attack_target(Some(&victim))
         .await?;
-    if outcome.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected {
+    if outcome.status != CommandStatus::Rejected
+        || outcome.disposition != oteryn_protocol_oteryn::attack::AttackIntentDisposition::Rejected
+    {
         return Err(format!("attack on a player in a no-PvP World must be Rejected;status={:?};disposition={:?};source:crates/gameplay/dispatch/src/gameplay_transport/composed_admission/combat.rs:62;pvp_live.rs:184;legality.rs:90", outcome.status, outcome.disposition).into());
     }
     let mut damaged = false;
@@ -512,8 +540,19 @@ async fn nopvp_attack_refused(bots: &mut [Bot<'_, '_>], world: &BundleWorld) -> 
             }
         }
     }
-    let after = bots[3].client()?.actor_vitals().copied();
-    if damaged || hit_seen || before.map(|v| v.health) != after.map(|v| v.health) {
+    let after = bots[3]
+        .client()?
+        .actor_vitals()
+        .copied()
+        .ok_or("D post-attack vitals absent")?;
+    if !refused_without_damage(
+        outcome.status,
+        outcome.disposition,
+        Some(before.health),
+        Some(after.health),
+        damaged,
+        hit_seen,
+    ) {
         return Err(format!("D took damage on a no-PvP World;damaged={damaged};hit_seen={hit_seen};before={before:?};after={after:?}").into());
     }
     Ok(())
@@ -683,12 +722,63 @@ async fn pvp_world_rows(
     );
 }
 
-async fn latest_death(bot: &Bot<'_, '_>) -> TestResult<Option<(String, String, String)>> {
+fn victim_death_seen(
+    rows: &[panel::HistoryRow],
+    old: &[panel::HistoryRow],
+    at: i64,
+    level: u32,
+    killer: &str,
+) -> bool {
+    let description = character::death_cause(u64::from(level), &[killer.to_owned()]);
+    let killer = character::bounded_death_name(killer);
+    rows.iter().any(|row| {
+        !old.contains(row)
+            && row.at == at
+            && row.description == description
+            && row.death.as_ref().is_some_and(|death| {
+                death.level == level
+                    && death.killer == killer
+                    && death.most_damage == killer
+                    && death.unjustified
+            })
+    })
+}
+
+#[derive(PartialEq, Eq)]
+struct DeathReceipt {
+    id: String,
+    original_revision: String,
+    committed_revision: String,
+    at: i64,
+    level: u32,
+}
+
+async fn latest_death(bot: &Bot<'_, '_>) -> TestResult<Option<DeathReceipt>> {
     let mut database = sqlx::PgConnection::connect(bot.pair.url).await?;
-    let receipt = sqlx::query_as("SELECT death_occurrence_id::text,original_character_revision::text,committed_character_revision::text FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND death_world_id=encode($2,'hex')::uuid AND death_channel_id=encode($3,'hex')::uuid ORDER BY committed_at DESC,death_occurrence_id DESC LIMIT 1")
-        .bind(bot.character.as_slice()).bind(bot.pair.world.as_slice()).bind(bot.pair.channel.as_slice()).fetch_optional(&mut database).await?;
+    let receipt = sqlx::query_as::<_, (String, String, String, i64, i64)>(
+        "SELECT death_occurrence_id::text, original_character_revision::text, \
+         committed_character_revision::text, committed_at, level_before \
+         FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid \
+         AND death_world_id=encode($2,'hex')::uuid AND death_channel_id=encode($3,'hex')::uuid \
+         ORDER BY committed_at DESC, death_occurrence_id DESC LIMIT 1",
+    )
+    .bind(bot.character.as_slice())
+    .bind(bot.pair.world.as_slice())
+    .bind(bot.pair.channel.as_slice())
+    .fetch_optional(&mut database)
+    .await?;
     database.close().await?;
-    Ok(receipt)
+    receipt
+        .map(|(id, original_revision, committed_revision, at, level)| {
+            Ok(DeathReceipt {
+                id,
+                original_revision,
+                committed_revision,
+                at,
+                level: u32::try_from(level)?,
+            })
+        })
+        .transpose()
 }
 
 /// A's attack, B's damage, death and temple respawn, the durable death receipt, A's frag
@@ -821,6 +911,7 @@ async fn pvp_journey(
         },
         expert: pvp_expert::ExpertMode::RedFist,
     };
+    let after = bots[0].client()?.last_server_sequence();
     let reply = bots[0]
         .client()?
         .session_mut()
@@ -839,13 +930,11 @@ async fn pvp_journey(
     }
     // An Open PvP World serves the requested Red Fist, not the no-PvP Dove.
     bots::wait_observation(bots, tokio::time::Instant::now() + Duration::from_secs(5), "expert fight mode update", |_, events| {
-        for event in &events[0] {
-            if let SessionEvent::ExpertFightModes(delta) = event {
-                if delta.value != mode {
-                    return Err(format!("expert modes requested={mode:?};served={:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:1", delta.value).into());
-                }
-                return Ok(true);
+        if let Some(served) = expert_update(&events[0], after) {
+            if served != mode {
+                return Err(format!("expert modes requested={mode:?};served={:?};source:crates/gameplay/dispatch/src/gameplay_transport/pvp_expert.rs:1", served).into());
             }
+            return Ok(true);
         }
         Ok(false)
     }).await?;
@@ -875,19 +964,17 @@ async fn pvp_journey(
     let death = latest_death(&bots[1])
         .await?
         .ok_or("MP01 respawn missing durable death receipt")?;
-    if Some(&death) == old_death.as_ref() || death.1 == death.2 {
+    if Some(&death) == old_death.as_ref() || death.original_revision == death.committed_revision {
         return Err("MP01 respawn reused old death/revision".into());
     }
     let kills = history(&mut bots[0], character::CharacterTab::RecentPvpKills).await?;
     let description = character::pvp_kill_description(&bots[1].name);
+    let deaths = history(&mut bots[1], character::CharacterTab::RecentDeaths).await?;
     if !kills.iter().any(|k| {
         k.description == description
             && k.status == Some(character::KillStatus::Unjustified)
             && !old_kills.contains(k)
-    }) || !history(&mut bots[1], character::CharacterTab::RecentDeaths)
-        .await?
-        .iter()
-        .any(|d| !old_deaths.contains(d))
+    }) || !victim_death_seen(&deaths, &old_deaths, death.at, death.level, &bots[0].name)
     {
         return Err("MP01 A kill view / B death view lack new attributed death".into());
     }
@@ -901,14 +988,14 @@ async fn pvp_journey(
          AND p.death_occurrence_id=$3::text::uuid AND c.pvp AND c.killer_key='player' \
          AND k.ordinal=0 AND k.kind='player' AND k.character_id=p.character_id",
     )
-        .bind(bots[0].character.as_slice()).bind(bots[1].character.as_slice()).bind(&death.0).fetch_optional(&mut database).await?;
+        .bind(bots[0].character.as_slice()).bind(bots[1].character.as_slice()).bind(&death.id).fetch_optional(&mut database).await?;
     database.close().await?;
     if points
         != Some(i32::from(
             oteryn_gameplay_combat_rules::pvp::skull::DAMAGE_POINTS_MILLI,
         ))
     {
-        return Err(format!("MP01 durable frag points={points:?};death={}", death.0).into());
+        return Err(format!("MP01 durable frag points={points:?};death={}", death.id).into());
     }
     // B has already proved its temple respawn; bring its new incarnation back into interest.
     bots::approach(bots, 1, 0, world, true).await?;
@@ -955,7 +1042,80 @@ async fn pvp_journey(
     }
     evidence(&format!(
         "MP_CHECK MP01 death-frag PASS A=attributed-hit-and-new-kill B=damage-death-and-temple-respawn PG_death={} PG_points={points:?}",
-        death.0
+        death.id
     ));
     Ok(())
+}
+
+#[cfg(test)]
+mod evidence_tests {
+    use super::*;
+    use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+
+    #[test]
+    fn review_expert_observation_ignores_queued_mode() {
+        let mode = |server_sequence, expert| {
+            SessionEvent::ExpertFightModes(oteryn_dev_client::AppliedDelta {
+                server_sequence,
+                base_revision: 1,
+                new_revision: 2,
+                value: pvp_expert::ExpertFightModes {
+                    modes: oteryn_protocol_oteryn::attack::FightModes::DEFAULT,
+                    expert,
+                },
+            })
+        };
+        let stale = mode(8, pvp_expert::ExpertMode::Dove);
+        assert!(expert_update(std::slice::from_ref(&stale), 8).is_none());
+        let fresh = mode(9, pvp_expert::ExpertMode::RedFist);
+        assert_eq!(
+            expert_update(&[stale, fresh], 8).map(|update| update.expert),
+            Some(pvp_expert::ExpertMode::RedFist)
+        );
+    }
+
+    #[test]
+    fn review_new_victim_death_must_match_its_receipt() {
+        let expected = panel::HistoryRow {
+            at: 9_000,
+            status: None,
+            description: "Died at Level 100 by Attacker".into(),
+            death: Some(character::DeathDetails {
+                level: 100,
+                killer: "Attacker".into(),
+                most_damage: "Attacker".into(),
+                unjustified: true,
+            }),
+        };
+        let mut wrong = expected.clone();
+        if let Some(death) = wrong.death.as_mut() {
+            death.killer = "Bystander".into();
+        }
+        assert!(!victim_death_seen(&[wrong], &[], 9_000, 100, "Attacker"));
+        assert!(victim_death_seen(&[expected], &[], 9_000, 100, "Attacker"));
+    }
+
+    #[test]
+    fn review_nopvp_requires_victim_vitals() {
+        assert!(!refused_without_damage(
+            CommandStatus::Rejected,
+            AttackIntentDisposition::Rejected,
+            None,
+            None,
+            false,
+            false,
+        ));
+    }
+
+    #[test]
+    fn review_nopvp_requires_rejected_command_status() {
+        assert!(!refused_without_damage(
+            CommandStatus::Accepted,
+            AttackIntentDisposition::Rejected,
+            Some(100),
+            Some(100),
+            false,
+            false,
+        ));
+    }
 }

@@ -52,14 +52,22 @@ if [[ "$BASE" != "$(realpath -m -- "$BASE")" ]] \
   echo 'NODE_BOOT_RESULT=BLOCKED reason=base_outside_srv_or_tmpdir'; exit 2
 fi
 [[ -z "${NODE_BOOT_PROJECT+x}" || "$NODE_BOOT_PROJECT" =~ ^[a-z0-9][a-z0-9_-]{0,47}$ ]] || { echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_project'; exit 2; }
-for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_PORT; do
+for node_boot_port in NODE_BOOT_PG_PORT NODE_BOOT_PLATFORM_PORT NODE_BOOT_GAME_PORT NODE_BOOT_PVP_GAME_PORT; do
   [[ -z "${!node_boot_port+x}" || ( "${!node_boot_port}" =~ ^[1-9][0-9]{3,4}$ && "${!node_boot_port}" -le 65535 ) ]] \
     || { echo "NODE_BOOT_RESULT=BLOCKED reason=invalid_port_${node_boot_port,,}"; exit 2; }
 done
 readonly SERVICE_USER BASE
-# The Open PvP World's node: its own tree under BASE (cleanup removes it) and the next port.
+# The Open PvP node has its own listener. Allow an override for parallel stacks.
 readonly PVP_BASE="$BASE/pvp"
-readonly PVP_GAME_PORT=$(( ${NODE_BOOT_GAME_PORT:-17181} + 1 ))
+node_boot_game_port="${NODE_BOOT_GAME_PORT:-17181}"
+node_boot_pvp_default=$((node_boot_game_port + 1))
+if (( node_boot_pvp_default > 65535 )); then
+  node_boot_pvp_default=$((node_boot_game_port - 1))
+fi
+PVP_GAME_PORT="${NODE_BOOT_PVP_GAME_PORT:-$node_boot_pvp_default}"
+if (( PVP_GAME_PORT == node_boot_game_port )); then
+  echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_port_node_boot_pvp_game_port'; exit 2
+fi
 # NODE_BOOT_KEEP_STACK=1 leaves the stack up after the seam stage; NODE_BOOT_REUSE_STACK=1
 # reruns only the seam stage against it, =teardown removes it. Local development only.
 NODE_BOOT_KEEP_STACK="${NODE_BOOT_KEEP_STACK:-0}"
@@ -72,6 +80,40 @@ case "$NODE_BOOT_KEEP_STACK/$NODE_BOOT_REUSE_STACK" in
     fi ;;
   *) echo 'NODE_BOOT_RESULT=BLOCKED reason=invalid_stack_reuse_mode'; exit 2 ;;
 esac
+
+if [[ -z "${NODE_BOOT_PVP_GAME_PORT+x}" && "$NODE_BOOT_REUSE_STACK" == 0 \
+  && "${NODE_BOOT_WORLD:-1}/${NODE_BOOT_SPELLS:-0}/${NODE_BOOT_LIFECYCLE:-}" == 1/0/ ]]; then
+  PVP_GAME_PORT="$(python3 - "$PVP_GAME_PORT" "$node_boot_game_port" \
+    "${NODE_BOOT_PG_PORT:-15433}" "${NODE_BOOT_PLATFORM_PORT:-18463}" <<'PY_PVP_PORT'
+from contextlib import ExitStack
+import errno
+import socket
+import sys
+
+preferred, *reserved = map(int, sys.argv[1:])
+if preferred not in reserved:
+    with socket.socket() as probe:
+        try:
+            probe.bind(("127.0.0.1", preferred))
+        except OSError as error:
+            if error.errno != errno.EADDRINUSE:
+                raise
+        else:
+            print(preferred)
+            sys.exit(0)
+
+# Hold rejected ephemeral candidates until selection so the kernel cannot return one again.
+with ExitStack() as probes:
+    while True:
+        probe = probes.enter_context(socket.socket())
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+        if port not in reserved:
+            print(port)
+            break
+PY_PVP_PORT
+)"
+fi
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
 # The separately pinned portal-rs lane owns only Platform lifecycle and its stages.
@@ -195,10 +237,19 @@ if [[ "$NODE_BOOT_REUSE_STACK" != 0 ]]; then
     echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
   fi
   if [[ "$NODE_BOOT_REUSE_STACK" == 1 ]]; then
+    e2e_groups="${NODE_BOOT_E2E_ONLY:-}"
+    e2e_groups="${e2e_groups//[[:space:]]/}"
+    if [[ "$NODE_BOOT_WORLD" == 1 && ( -z "$e2e_groups" || ",$e2e_groups," == *,mp,* ) ]]; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=mp_requires_fresh_stack'; exit 2
+    fi
     if [[ "$(docker inspect -f '{{.State.Running}}' "$PG_CONTAINER" 2>/dev/null)" != true ]] \
       || ! sudo kill -0 "$NODE_PID" 2>/dev/null || ! sudo test -S "$BASE/run/control.sock"; then
       echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_not_running'; exit 2
     fi
+    if [[ -n "${NODE_BOOT_PVP_GAME_PORT+x}" && "${kept_pvp_port:-$node_boot_pvp_default}" != "$PVP_GAME_PORT" ]]; then
+      echo 'NODE_BOOT_RESULT=BLOCKED reason=kept_stack_mode_mismatch'; exit 2
+    fi
+    PVP_GAME_PORT="${kept_pvp_port:-$PVP_GAME_PORT}"
     STACK_KEPT=1
   fi
 fi
@@ -251,6 +302,7 @@ save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
   [[ -z "${OTERYN_QUALIFICATION_CLOCK_FILE:-}" ]] || names+=(OTERYN_QUALIFICATION_CLOCK_FILE)
   ( umask 077
     { declare -p "${names[@]}"
+      printf 'kept_pvp_port=%q\n' "$PVP_GAME_PORT"
       printf 'kept_mode=%q\n' "$NODE_BOOT_WORLD/$NODE_BOOT_SPELLS/${NODE_BOOT_GAME_PORT:-17181}"
     } > "$REUSE_STATE" )
   STACK_KEPT=1

@@ -8,6 +8,11 @@ use std::path::Path;
 #[path = "general_stats.rs"]
 mod general_stats;
 
+#[path = "creature_sweep.rs"]
+mod creature_sweep;
+#[path = "mp/mount.rs"]
+mod mp;
+
 include!("character_core.rs");
 include!("character_release.rs");
 include!("e2e_row_batch.rs");
@@ -335,29 +340,40 @@ pub(crate) const TOWN: TilePos = TilePos {
     floor: -7,
 };
 
-/// One production world per test process: every journey shares it, so the
-/// ~110 s bundle boot runs once instead of once per row.
+struct QualificationWorld {
+    world_id: WorldId,
+    channel_id: ChannelId,
+    bundle: BundleWorld,
+    rewards: std::sync::Arc<crate::content::creature_reward::CreatureRewardTable>,
+}
+
+/// One production generation per test process. Keep its pinned reward table for
+/// the sweep's seeded loot expectation as well as the observed World bundle.
+fn load_world_generation(
+    data: Vec<u8>,
+    pin: &serde_json::Value,
+    world: WorldId,
+    channel: ChannelId,
+) -> TestResult<&'static QualificationWorld> {
+    static LOADED: std::sync::OnceLock<QualificationWorld> = std::sync::OnceLock::new();
+    if LOADED.get().is_none() {
+        let booted = boot_world(data, pin, world, channel)?;
+        let _ = LOADED.set(booted);
+    }
+    match LOADED.get() {
+        Some(loaded) if loaded.world_id == world && loaded.channel_id == channel => Ok(loaded),
+        Some(_) => Err("world loader asked for a different world or channel".into()),
+        None => Err("world loader cache empty".into()),
+    }
+}
+
 pub(crate) fn load_world(
     data: Vec<u8>,
     pin: &serde_json::Value,
     world: WorldId,
     channel: ChannelId,
 ) -> TestResult<&'static BundleWorld> {
-    static LOADED: std::sync::OnceLock<(WorldId, ChannelId, BundleWorld)> =
-        std::sync::OnceLock::new();
-    if LOADED.get().is_none() {
-        let booted = boot_world(data, pin, world, channel)?;
-        let _ = LOADED.set((world, channel, booted));
-    }
-    match LOADED.get() {
-        Some((loaded_world, loaded_channel, booted))
-            if *loaded_world == world && *loaded_channel == channel =>
-        {
-            Ok(booted)
-        }
-        Some(_) => Err("world loader asked for a different world or channel".into()),
-        None => Err("world loader cache empty".into()),
-    }
+    Ok(&load_world_generation(data, pin, world, channel)?.bundle)
 }
 
 fn boot_world(
@@ -365,7 +381,7 @@ fn boot_world(
     pin: &serde_json::Value,
     world: WorldId,
     channel: ChannelId,
-) -> TestResult<BundleWorld> {
+) -> TestResult<QualificationWorld> {
     let digest = hex32(pin["digest"].as_str().ok_or("World digest")?)?;
     let checked = crate::map::boot::check(
         data,
@@ -420,15 +436,14 @@ fn boot_world(
     if rat.loot_table.entries.is_empty() {
         return Err("town hunt has no production loot table".into());
     }
-    crate::node::serve::boot_bundle_world(
-        checked,
-        world,
-        channel,
-        controller
-            .active()
-            .and_then(|active| active.native_gameplay()),
-    )
-    .map_err(|error| format!("production world loader: {error:?}").into())
+    let bundle = crate::node::serve::boot_bundle_world(checked, world, channel, Some(native))
+        .map_err(|error| format!("production world loader: {error:?}"))?;
+    Ok(QualificationWorld {
+        world_id: world,
+        channel_id: channel,
+        bundle,
+        rewards: native.reward_table().clone(),
+    })
 }
 
 fn tile(position: ActorPosition) -> TestResult<TilePos> {
@@ -550,6 +565,20 @@ fn town_route_retry_delay(
 ) -> Option<Duration> {
     (disposition == StepDisposition::Rejected && stationary && attempt <= 5)
         .then_some(Duration::from_millis(500))
+}
+
+fn parse_spawned_entity(answer: &str) -> TestResult<oteryn_dev_client::EntityRef> {
+    let fields: Vec<_> = answer.split_ascii_whitespace().collect();
+    let ["spawned", identity, generation] = fields.as_slice() else {
+        return Err(format!("invalid hunt spawn response: {answer}").into());
+    };
+    let identity = crate::node::operator_files::hex_bytes::<16>(identity)
+        .map_err(|_| "invalid hunt spawn identity")?;
+    let generation = generation.parse::<std::num::NonZeroU64>()?.get();
+    Ok(oteryn_dev_client::EntityRef {
+        identity,
+        generation,
+    })
 }
 
 /// `spawn <session> <key>` through `provision.py --spawn`; Err carries the rejected token.
@@ -705,12 +734,13 @@ pub(super) async fn journeys(
     let bytes = std::fs::read(path)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    let world = load_world(
+    let generation = load_world_generation(
         bytes.clone(),
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
     )?;
+    let world = &generation.bundle;
     evidence(&format!(
         "world_loader state=booted duration_ms={} start={TOWN:?}",
         started.elapsed().as_millis()
@@ -2867,13 +2897,9 @@ pub(super) async fn journeys(
         ));
     }
     if groups.runs("creature_sweep") {
-        #[path = "creature_sweep.rs"]
-        mod creature_sweep;
-        creature_sweep::run(clients, world, &metadata.spawns).await?;
+        creature_sweep::run(clients, world, &generation.rewards).await?;
     }
     if groups.runs("mp") {
-        #[path = "mp/mount.rs"]
-        mod mp;
         mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await;
     }
     // The core/profile pair has not inherited packet movement, loot or death.
