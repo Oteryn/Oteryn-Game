@@ -64,6 +64,44 @@ fn book(app: &mut App, commands: &mut CommandsReceiver, outbox: &Outbox) -> Test
     Ok(())
 }
 #[test]
+fn sell_offer_actions_fit_in_a_wrapping_row() -> TestResult {
+    let (mut app, mut commands, outbox, _) = app()?;
+    use crate::bevy_shell::game_ui::pointer_layout;
+    pointer_layout::install(&mut app, UVec2::new(800, 720));
+    book(&mut app, &mut commands, &outbox)?;
+    let buy = find(&mut app, "market.purchase.row")?;
+    let actions = app
+        .world()
+        .get::<ChildOf>(buy)
+        .ok_or("action row")?
+        .parent();
+    assert_eq!(
+        app.world().get::<Node>(actions).ok_or("row")?.flex_wrap,
+        FlexWrap::Wrap
+    );
+    assert_eq!(
+        app.world().get::<Children>(actions).ok_or("actions")?.len(),
+        2
+    );
+    app.update();
+    app.update();
+    let center = pointer_layout::center(&app, buy)?;
+    let size = app
+        .world()
+        .get::<ComputedNode>(buy)
+        .ok_or("buy layout")?
+        .size();
+    assert!(size.min_element() > 0.);
+    assert!(center.x >= size.x / 2. && center.x + size.x / 2. <= 800.);
+    if let Some(clip) = app.world().get::<bevy::ui::CalculatedClip>(buy) {
+        let inset = size / 2. - Vec2::splat(0.5);
+        assert!(clip.contains_point(center - inset) && clip.contains_point(center + inset));
+    }
+    pointer_layout::hit(&mut app, center, buy)?;
+    Ok(())
+}
+
+#[test]
 fn native_named_sell_row_quantity_confirmation_submits_original_offer_once() -> TestResult {
     let (mut app, mut commands, outbox, _) = app()?;
     book(&mut app, &mut commands, &outbox)?;

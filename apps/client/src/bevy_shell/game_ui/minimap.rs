@@ -176,7 +176,7 @@ fn click(
     if mouse::was_dragged(&mut drag) || node.0 != owner.generation() {
         return;
     }
-    let Some(point) = cursor.normalized else {
+    let Some(point) = image_position(cursor) else {
         return;
     };
     let Some(play) = &mut owner.play else {
@@ -190,6 +190,12 @@ fn click(
         f64::from(point.x) * f64::from(SIZE.x),
         f64::from(point.y) * f64::from(SIZE.y),
     );
+}
+
+/// Convert Bevy's centred node coordinates to the full, uncropped image.
+fn image_position(cursor: &RelativeCursorPosition) -> Option<Vec2> {
+    let point = cursor.normalized? + Vec2::splat(0.5);
+    ((0.0..1.0).contains(&point.x) && (0.0..1.0).contains(&point.y)).then_some(point)
 }
 
 #[cfg(test)]
@@ -209,15 +215,19 @@ fn navigation_controls(commands: &mut Commands, skins: &Skins, panel: Entity, ge
     use crate::play::MinimapNavigation as Nav;
     // The rose: its eight points pan five tiles that way and its centre resumes following.
     let rose = art::fixed(commands, &skins.font, "minimap-rose", Vec2::splat(ROSE));
-    commands.entity(rose).insert(Node {
-        width: px(ROSE),
-        height: px(ROSE),
-        flex_shrink: 0.,
-        display: Display::Grid,
-        grid_template_columns: RepeatedGridTrack::fr(3, 1.),
-        grid_template_rows: RepeatedGridTrack::fr(3, 1.),
-        ..default()
-    });
+    let grid = commands
+        .spawn(Node {
+            position_type: PositionType::Absolute,
+            width: percent(100.),
+            height: percent(100.),
+            flex_shrink: 0.,
+            display: Display::Grid,
+            grid_template_columns: RepeatedGridTrack::fr(3, 1.),
+            grid_template_rows: RepeatedGridTrack::fr(3, 1.),
+            ..default()
+        })
+        .id();
+    commands.entity(rose).add_child(grid);
     for (name, action) in [
         ("Rose NW", Nav::Pan(-5, -5)),
         ("Rose N", Nav::Pan(0, -5)),
@@ -241,7 +251,7 @@ fn navigation_controls(commands: &mut Commands, skins: &Skins, panel: Entity, ge
             ))
             .observe(navigate)
             .id();
-        commands.entity(rose).add_child(point);
+        commands.entity(grid).add_child(point);
     }
     commands.entity(panel).add_child(rose);
     let buttons = commands

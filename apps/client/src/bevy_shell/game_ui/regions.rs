@@ -199,7 +199,7 @@ pub(in crate::bevy_shell) fn setup(mut commands: Commands, skins: Res<Skins>) {
         Name::new("Chat float"),
         bevy::ui_widgets::Button,
         hud_panes::float::FloatToggle(hud_panes::float::CHAT),
-        GlobalZIndex(1),
+        ZIndex(1),
     ));
     commands
         .entity(chat_float)

@@ -16,13 +16,19 @@ use bevy::{
 };
 use std::path::PathBuf;
 
-/// Layout entry of the main window: position and physical size.
+/// Layout entry of the main window: physical desktop position and logical size.
 const WINDOW: &str = "window";
+// The layout format caps rectangle sizes at 4096 but supports desktop coordinates
+// up to 32768. A point in window-local pixels records the full logical extent.
+const WINDOW_EXTENT: &str = "window.extent";
 /// The local layout file and what it holds; without a path the layout stays transient.
 #[derive(Resource, Default)]
 pub(in crate::bevy_shell) struct LayoutStore {
     path: Option<PathBuf>,
     layout: WindowLayout,
+    pending_save: bool,
+    retry_after: std::time::Duration,
+    rejected: std::collections::HashMap<&'static str, [i32; 4]>,
 }
 impl LayoutStore {
     /// Reads the layout file; a missing or invalid file starts from the default layout.
@@ -31,11 +37,58 @@ impl LayoutStore {
             .as_deref()
             .and_then(|path| WindowLayout::load(path).ok())
             .unwrap_or_default();
-        Self { path, layout }
+        Self {
+            path,
+            layout,
+            ..default()
+        }
     }
-    /// The remembered main window position and physical size.
+    /// The remembered main window physical desktop position and logical size.
     pub(in crate::bevy_shell) fn window(&self) -> Option<[i32; 4]> {
-        self.layout.bounds(WINDOW)
+        let [x, y, width, height] = self.layout.bounds(WINDOW)?;
+        if let Some([w, h, 1, 1]) = self.layout.bounds(WINDOW_EXTENT)
+            && w.min(4096) == width
+            && h.min(4096) == height
+        {
+            return Some([x, y, w, h]);
+        }
+        Some([x, y, width, height])
+    }
+
+    fn remember_bounds(&mut self, id: &'static str, bounds: [i32; 4]) {
+        if self.rejected.get(id) == Some(&bounds) {
+            return;
+        }
+        self.rejected.remove(id);
+        let result = if id == WINDOW {
+            if self.window() == Some(bounds) {
+                return;
+            }
+            self.record_window(bounds)
+        } else {
+            if self.layout.bounds(id) == Some(bounds) {
+                return;
+            }
+            self.layout.record(id, bounds)
+        };
+        match result {
+            Ok(()) => self.pending_save = true,
+            Err(error) => {
+                self.rejected.insert(id, bounds);
+                leprintln!("Could not save window layout: {error}", error = error);
+            }
+        }
+    }
+
+    fn record_window(&mut self, bounds: [i32; 4]) -> std::io::Result<()> {
+        let [x, y, width, height] = bounds;
+        let base = [x, y, width.min(4096), height.min(4096)];
+        if base != bounds || self.layout.bounds(WINDOW_EXTENT).is_some() {
+            // Validate the origin before changing the extent of an existing window.
+            WindowLayout::default().record(WINDOW, base)?;
+            self.layout.record(WINDOW_EXTENT, [width, height, 1, 1])?;
+        }
+        self.layout.record(WINDOW, base)
     }
 }
 
@@ -57,6 +110,7 @@ struct Gesture {
 pub(super) fn install(app: &mut App) {
     app.add_message::<WindowFocused>()
         .init_resource::<LayoutStore>()
+        .init_resource::<Time<Real>>()
         .add_observer(cancel)
         .add_systems(Startup, restore.after(super::setup))
         .add_systems(Update, (maintain, remember).chain());
@@ -77,6 +131,7 @@ fn restore(store: Res<LayoutStore>, splitters: Query<&Splitter>, mut nodes: Quer
 /// in progress is written once it ends.
 fn remember(
     mut store: ResMut<LayoutStore>,
+    time: Res<Time<Real>>,
     splitters: Query<&Splitter>,
     nodes: Query<&Node>,
     windows: Query<&Window, With<PrimaryWindow>>,
@@ -84,7 +139,6 @@ fn remember(
     if store.path.is_none() || splitters.iter().any(|splitter| splitter.gesture.is_some()) {
         return;
     }
-    let mut entries = Vec::new();
     for splitter in &splitters {
         let Ok(node) = nodes.get(splitter.target) else {
             continue;
@@ -93,33 +147,32 @@ fn remember(
             continue;
         };
         let size = size.round() as i32;
-        entries.push((splitter.id, [0, 0, 1, size]));
+        let bounds = [0, 0, 1, size];
+        store.remember_bounds(splitter.id, bounds);
     }
     if let Ok(window) = windows.single()
         && window.mode == WindowMode::Windowed
         && let WindowPosition::At(position) = window.position
     {
-        entries.push((
-            WINDOW,
-            [
-                position.x,
-                position.y,
-                window.resolution.physical_width() as i32,
-                window.resolution.physical_height() as i32,
-            ],
-        ));
+        let bounds = [
+            position.x,
+            position.y,
+            window.width().round() as i32,
+            window.height().round() as i32,
+        ];
+        store.remember_bounds(WINDOW, bounds);
     }
-    let mut changed = false;
-    for (id, bounds) in entries {
-        if store.layout.bounds(id) != Some(bounds) {
-            changed |= store.layout.record(id, bounds).is_ok();
-        }
-    }
-    if changed
+    if store.pending_save
+        && time.elapsed() >= store.retry_after
         && let Some(path) = &store.path
-        && let Err(error) = store.layout.save(path)
     {
-        leprintln!("Could not save window layout: {error}", error = error);
+        match store.layout.save(path) {
+            Ok(()) => store.pending_save = false,
+            Err(error) => {
+                store.retry_after = time.elapsed() + std::time::Duration::from_secs(1);
+                leprintln!("Could not save window layout: {error}", error = error);
+            }
+        }
     }
 }
 fn maintain(

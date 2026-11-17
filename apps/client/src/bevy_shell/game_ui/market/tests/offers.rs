@@ -134,13 +134,19 @@ fn market_cancel_own_offer_sends_intent() -> TestResult {
 }
 #[test]
 fn market_accept_clamps_amount() -> TestResult {
-    for (side, input, expected) in [(2, "999", 5), (2, "0", 1), (1, "999", 4)] {
+    for (side, available, input, expected) in [
+        (2, 5, "999", 5),
+        (2, 5, "0", 1),
+        (1, 5, "999", 4),
+        (2, 15, "12", 12),
+    ] {
         let (mut app, mut commands, outbox, root) = setup()?;
         let item = button(&mut app, root, Kind::Item(0))?;
         app.world_mut().trigger(Activate { entity: item });
         let book = feature(&mut commands)?;
         let mut offer = row();
         offer.side = side;
+        offer.amount = available;
         outbox.bevy_market_reply(
             &book,
             &result(&wire::Reply::Book {
@@ -156,8 +162,25 @@ fn market_accept_clamps_amount() -> TestResult {
             })?,
         );
         app.update();
+        edit(&mut app, "market.create.amount", "23")?;
+        edit(&mut app, "market.create.price", "456")?;
         click(&mut app, "market.offer.select.0")?;
+        for (name, draft) in [
+            ("market.create.amount", "23"),
+            ("market.create.price", "456"),
+        ] {
+            let id = find(&mut app, name)?;
+            assert_eq!(
+                app.world()
+                    .get::<EditableText>(id)
+                    .ok_or("editor")?
+                    .value()
+                    .to_string(),
+                draft
+            );
+        }
         edit(&mut app, "market.offer.quantity", input)?;
+        click(&mut app, "market.offer.select.0")?;
         click(&mut app, "market.offer.accept")?;
         let request = command(&mut commands)?;
         assert_eq!(request.action, 8);
@@ -167,6 +190,83 @@ fn market_accept_clamps_amount() -> TestResult {
     }
     Ok(())
 }
+#[test]
+fn market_drafts_switch_with_the_selected_catalogue_item() -> TestResult {
+    let (mut app, mut commands, outbox, root) = setup()?;
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    assert!(link.market_query(MarketQuery::Catalogue {
+        filter: Filter::default(),
+        page: 0
+    }));
+    let query = feature(&mut commands)?;
+    let mut reply = catalogue();
+    let wire::Reply::Catalogue { items, .. } = &mut reply else {
+        return Err("catalogue".into());
+    };
+    let mut other = items[0].clone();
+    other.definition = 43;
+    other.name = "Second blade".into();
+    items.push(other);
+    outbox.bevy_market_reply(&query, &result(&reply)?);
+    app.update();
+    for (index, definition) in [(0, 42), (1, 43)] {
+        let item = button(&mut app, root, Kind::Item(index))?;
+        app.world_mut().trigger(Activate { entity: item });
+        let book = feature(&mut commands)?;
+        app.update();
+        if index == 1 {
+            for (name, previous) in [
+                ("market.create.amount", "23"),
+                ("market.create.price", "456"),
+            ] {
+                let id = find(&mut app, name)?;
+                assert_ne!(
+                    app.world()
+                        .get::<EditableText>(id)
+                        .ok_or("editor")?
+                        .value()
+                        .to_string(),
+                    previous
+                );
+            }
+            edit(&mut app, "market.create.price", "654")?;
+        }
+        outbox.bevy_market_reply(
+            &book,
+            &result(&wire::Reply::Book {
+                definition,
+                page: 0,
+                rows: vec![],
+                has_next: false,
+                statistics: wire::Statistics {
+                    definition,
+                    as_of_us: 2592000000000,
+                    ..default()
+                },
+            })?,
+        );
+        app.update();
+        if index == 0 {
+            edit(&mut app, "market.create.amount", "23")?;
+            edit(&mut app, "market.create.price", "456")?;
+        }
+    }
+    edit(&mut app, "market.create.amount", "3")?;
+    click(&mut app, "market.create.confirm")?;
+    let request = command(&mut commands)?;
+    assert_eq!(
+        (request.definition, request.amount, request.price),
+        (43, 3, 654)
+    );
+    Ok(())
+}
+
 #[test]
 fn market_create_offer_validation() -> TestResult {
     let (mut app, mut commands, outbox, root) = setup()?;
@@ -560,6 +660,19 @@ fn market_own_offers_requery_after_the_interval_and_on_reopen() -> TestResult {
             .any(|text| text.0.contains("amount 5"))
     };
     assert!(shown(&mut app));
+    edit(&mut app, "market.filter.minimum", "017")?;
+    let search = app
+        .world_mut()
+        .query_filtered::<Entity, With<Search>>()
+        .single(app.world())?;
+    app.world_mut()
+        .get_mut::<EditableText>(search)
+        .ok_or("search")?
+        .editor_mut()
+        .set_text("draft");
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(search, bevy::input_focus::FocusCause::Navigated);
     app.world_mut()
         .resource_mut::<Time>()
         .advance_by(super::super::refresh::INTERVAL - std::time::Duration::from_secs(1));
@@ -573,6 +686,24 @@ fn market_own_offers_requery_after_the_interval_and_on_reopen() -> TestResult {
     assert_eq!((refresh.action, refresh.page), (3, 0));
     reply(&outbox, 3, vec![]);
     app.update();
+    let minimum = find(&mut app, "market.filter.minimum")?;
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(minimum)
+            .ok_or("minimum")?
+            .value()
+            .to_string(),
+        "017"
+    );
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(search)
+            .ok_or("search editor replaced")?
+            .value()
+            .to_string(),
+        "draft"
+    );
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(search));
     assert!(!shown(&mut app), "the expired offer leaves My Offers");
     for open in [false, true] {
         app.world()

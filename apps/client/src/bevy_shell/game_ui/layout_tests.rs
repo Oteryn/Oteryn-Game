@@ -99,6 +99,42 @@ fn geometry(app: &mut App, splitter: Splitter) {
 }
 
 #[test]
+fn chat_float_toggle_stacks_with_its_window() -> TestResult {
+    let mut app = app();
+    let toggle = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find(|(_, name)| name.as_str() == "Chat float")
+        .ok_or("chat toggle")?
+        .0;
+    assert!(app.world().get::<GlobalZIndex>(toggle).is_none());
+    assert_eq!(app.world().get::<ZIndex>(toggle), Some(&ZIndex(1)));
+    use super::super::{hud_panes, pointer_layout};
+    app.insert_non_send(crate::bevy_shell::owner::HostOwner::new(None)?);
+    pointer_layout::install(&mut app, UVec2::new(1280, 720));
+    app.world_mut().resource_mut::<UiScale>().0 = 1.;
+    hud_panes::install(&mut app);
+    app.world_mut()
+        .resource_mut::<hud_panes::SidebarWidgets>()
+        .toggle_region("chat");
+    for _ in 0..4 {
+        app.update();
+    }
+    let chat = app.world().resource::<GameRegions>().chat;
+    let parent = app.world().get::<ChildOf>(chat).ok_or("parent")?.parent();
+    assert_eq!(
+        app.world().get::<hud_panes::float::FloatRoot>(parent),
+        Some(&hud_panes::float::FloatRoot("chat"))
+    );
+    app.world_mut().entity_mut(parent).insert(GlobalZIndex(100));
+    app.update();
+    let point = pointer_layout::center(&app, toggle)?;
+    pointer_layout::hit(&mut app, point, toggle)?;
+    Ok(())
+}
+
+#[test]
 fn console_drag_resizes_the_console_and_nothing_resizes_the_sidebar() -> TestResult {
     let mut app = app();
     let handles = handles(&mut app);
@@ -286,6 +322,51 @@ fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
         LayoutStore::load(Some(path.clone())).window(),
         Some([40, 80, 1280, 900])
     );
+    for (width, height) in [(5120, 2880), (4096, 2880), (1280, 900)] {
+        let mut window = windows.single_mut(app.world_mut())?;
+        window.resolution = (width, height).into();
+        app.update();
+        assert_eq!(
+            LayoutStore::load(Some(path.clone())).window(),
+            Some([40, 80, width as i32, height as i32])
+        );
+    }
+    let mut window = windows.single_mut(app.world_mut())?;
+    window.resolution.set_scale_factor(2.);
+    window.resolution.set_physical_resolution(2400, 1400);
+    app.update();
+    let [_, _, width, height] = LayoutStore::load(Some(path.clone()))
+        .window()
+        .ok_or("window")?;
+    let mut restored = Window {
+        resolution: (u32::try_from(width)?, u32::try_from(height)?).into(),
+        ..default()
+    };
+    // Windowed creation requests this logical size from winit, which scales it
+    // to the monitor before reporting the physical resolution to Bevy.
+    restored
+        .resolution
+        .set_scale_factor_and_apply_to_physical_size(2.);
+    assert_eq!(restored.physical_size(), UVec2::new(2400, 1400));
     std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn failed_layout_save_retries_after_directory_recovers() -> TestResult {
+    let dir = std::env::temp_dir().join(format!("layout-retry-{}", std::process::id()));
+    std::fs::write(&dir, [])?;
+
+    let path = dir.join("layout.json");
+    let mut app = app_with(LayoutStore::load(Some(path.clone())));
+    std::fs::remove_file(&dir)?;
+    app.update();
+    assert!(!path.exists(), "retry must back off");
+    app.world_mut()
+        .resource_mut::<Time<Real>>()
+        .advance_by(std::time::Duration::from_secs(1));
+    app.update();
+    assert!(WindowLayout::load(&path)?.bounds("console").is_some());
+    std::fs::remove_dir_all(dir)?;
     Ok(())
 }

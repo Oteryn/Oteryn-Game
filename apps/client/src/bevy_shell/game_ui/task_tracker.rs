@@ -1,7 +1,7 @@
 //! Nonmodal task progress beside the map; the session remains the sole data owner.
 use super::{
     super::{owner::HostOwner, ui::Skins},
-    GameRegions,
+    Sidebar,
     modal::ModalGuard,
 };
 use bevy::{
@@ -149,7 +149,7 @@ fn content(board: &task_board::TaskBoardPanel, prey: &prey::PreyPanel, now: u64)
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
-    regions: Res<GameRegions>,
+    sidebar: Res<Sidebar>,
     skins: Res<Skins>,
     time: Res<Time>,
     mut state: ResMut<State>,
@@ -219,7 +219,7 @@ fn project(
         ))
         .id();
     commands.entity(root).add_child(label);
-    commands.entity(regions.minimap).add_child(root);
+    commands.entity(sidebar.right_widgets).add_child(root);
     state.root = Some(root);
     state.text = text;
 }

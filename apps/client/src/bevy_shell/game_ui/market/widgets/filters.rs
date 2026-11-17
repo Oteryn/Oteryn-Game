@@ -10,6 +10,7 @@ pub(super) fn catalogue_filters(
     parent: Entity,
     key: Key,
     panel: &MarketPanel,
+    drafts: &mut Drafts,
 ) {
     let filters = scroll(commands, parent, px(220.), 8);
     let filter = &panel.details.filter;
@@ -40,55 +41,66 @@ pub(super) fn catalogue_filters(
         ),
     ] {
         label(commands, skin, filters, caption);
-        let mut editor = EditableText::new(value.map(|v| v.to_string()).unwrap_or_default());
-        editor.max_characters = Some(5);
-        let field = commands
-            .spawn((
-                FilterEditor { key, kind },
-                Name::new(format!("market.filter.{name}")),
-                TextInput,
-                editor,
-                source::font(skin.font.clone(), false),
-                TextColor(source::TEXT_COLOR),
-                TextCursorStyle::default(),
-                TabIndex(0),
-                source::frame(skin.inset.clone(), [1.; 4]),
-                Node {
-                    width: percent(100.),
-                    min_height: px(25.),
-                    flex_shrink: 0.,
-                    ..default()
-                },
-            ))
-            .id();
+        let initial = value.map(|v| v.to_string()).unwrap_or_default();
+        let field = drafts.field(commands, DraftRole::Filter(kind), &initial, |commands| {
+            let mut editor = EditableText::new(&initial);
+            editor.max_characters = Some(5);
+            commands
+                .spawn((
+                    Name::new(format!("market.filter.{name}")),
+                    TextInput,
+                    editor,
+                    source::font(skin.font.clone(), false),
+                    TextColor(source::TEXT_COLOR),
+                    TextCursorStyle::default(),
+                    TabIndex(0),
+                    source::frame(skin.inset.clone(), [1.; 4]),
+                    Node {
+                        width: percent(100.),
+                        min_height: px(25.),
+                        flex_shrink: 0.,
+                        ..default()
+                    },
+                ))
+                .id()
+        });
+        commands.entity(field).insert(FilterEditor { key, kind });
         commands.entity(filters).add_child(field);
     }
-    let depot = commands
-        .spawn((
-            source::checkbox(source::checkbox_row(false)),
-            FilterDepot(key),
-            Name::new("market.filter.depot"),
-        ))
-        .observe(change_depot)
-        .id();
-    if filter.depot_only {
-        commands.entity(depot).insert(bevy::ui::Checked);
-    }
+    let depot = drafts.field(
+        commands,
+        DraftRole::Depot,
+        if filter.depot_only { "1" } else { "0" },
+        |commands| {
+            let depot = commands
+                .spawn((
+                    source::checkbox(source::checkbox_row(false)),
+                    Name::new("market.filter.depot"),
+                ))
+                .observe(change_depot)
+                .id();
+            if filter.depot_only {
+                commands.entity(depot).insert(bevy::ui::Checked);
+            }
+            let caption = commands
+                .spawn((
+                    source::button_caption(
+                        if filter.depot_only {
+                            "[x] Depot only"
+                        } else {
+                            "[ ] Depot only"
+                        },
+                        skin.font.clone(),
+                    ),
+                    DepotCaption,
+                ))
+                .id();
+            commands.entity(depot).add_child(caption);
+            depot
+        },
+    );
+    commands.entity(depot).insert(FilterDepot(key));
     commands.entity(filters).add_child(depot);
-    let caption = commands
-        .spawn((
-            source::button_caption(
-                if filter.depot_only {
-                    "[x] Depot only"
-                } else {
-                    "[ ] Depot only"
-                },
-                skin.font.clone(),
-            ),
-            DepotCaption,
-        ))
-        .id();
-    commands.entity(depot).add_child(caption);
     let apply = commands
         .spawn((
             source::button(skin.buttons.clone(), 140.),

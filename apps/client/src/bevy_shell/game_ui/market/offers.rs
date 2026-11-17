@@ -158,7 +158,8 @@ fn activate(
             let Some(panel) = current(&owner, &state, control.key) else {
                 return;
             };
-            if panel.view != MarketView::History
+            if state.offer != Some(index)
+                && panel.view != MarketView::History
                 && panel.rows.get(index).is_some_and(|row| row.state == 1)
             {
                 state.offer = Some(index);
