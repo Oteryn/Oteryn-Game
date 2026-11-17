@@ -625,8 +625,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if physical.control_loss.is_some() {
             return None;
         }
-        let mut states = self.states.spell_states.lock().await;
-        let state = states.get_mut(&runtime, actor, session)?;
+        // A read: a retained cast attempt reserves the actor until its retry settles, and that
+        // retry needs this binding for its Premium access (the transition itself is skipped).
+        let states = self.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, session)?;
         let player_revision = state.revision();
         Some(PremiumOwnerBinding {
             account: raw.account,

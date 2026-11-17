@@ -49,6 +49,10 @@ fn all_charms_delayed_chain_callback_carnage() -> TestResult {
     scenario(false, "carnage")
 }
 #[test]
+fn all_charms_delayed_chain_callback_carnage_after_retired_holder() -> TestResult {
+    retired_scenario(false, "carnage")
+}
+#[test]
 fn all_charms_delayed_native_callback_fatal_hold() -> TestResult {
     scenario(true, "fatal_hold")
 }
@@ -109,6 +113,14 @@ fn all_charms_delayed_chain_callback_leech_minors() -> TestResult {
     scenario(false, "leech_minors")
 }
 fn scenario(delayed: bool, charm: &'static str) -> TestResult {
+    scenario_retiring(delayed, charm, false)
+}
+
+fn retired_scenario(delayed: bool, charm: &'static str) -> TestResult {
+    scenario_retiring(delayed, charm, true)
+}
+
+fn scenario_retiring(delayed: bool, charm: &'static str, retire: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -120,7 +132,7 @@ fn scenario(delayed: bool, charm: &'static str) -> TestResult {
                     Harness::create_with_admission_seed(admin, "all_charms_delayed", false, false)
                         .await?;
                 let result = {
-                    let mut scenario = std::pin::pin!(scenario_with_harness(&h, delayed, charm, 3));
+                    let mut scenario = std::pin::pin!(scenario_with_harness(&h, delayed, charm, 3, retire));
                     std::future::poll_fn(|cx| {
                         match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                             std::future::Future::poll(scenario.as_mut(), cx)
@@ -146,7 +158,13 @@ fn scenario(delayed: bool, charm: &'static str) -> TestResult {
         .map_err(|_| "delayed charm thread panicked")?
         .map_err(Into::into)
 }
-async fn scenario_with_harness(h: &Harness, delayed: bool, charm: &str, stage: u8) -> TestResult {
+async fn scenario_with_harness(
+    h: &Harness,
+    delayed: bool,
+    charm: &str,
+    stage: u8,
+    retire: bool,
+) -> TestResult {
     let native_path = false;
     let race = match charm {
         "immune" | "cripple_immune" => "oteryn:creature.dragon",
@@ -540,6 +558,9 @@ async fn scenario_with_harness(h: &Harness, delayed: bool, charm: &str, stage: u
             runtime
                 .set_test_creature_health(target, maximum)
                 .map_err(debug)?;
+        }
+        if retire {
+            cast_through_retired_holder(h, &owner, actor, session, command, intent).await?;
         }
         let outcome = cast_ready(&owner, actor, session, command, intent).await?;
         assert_eq!(outcome.disposition, actor_spell::SpellCastDisposition::Cast);
@@ -1172,6 +1193,34 @@ fn expected_due_damage(
             .round()
             .max(0.0) as i64,
     )
+}
+
+/// A slow CI pass outlived the deadline and retired the sole holder mid-cast. Reproduce it:
+/// hold a relation the cast pass locks past the deadline, so its first pass retires.
+async fn cast_through_retired_holder(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    command: u64,
+    intent: actor_spell::SpellCastIntent,
+) -> TestResult {
+    let mut blocker = h.pool.begin().await?;
+    // Only the cast pass writes a spell item receipt; reads stay open to earlier passes.
+    sqlx::query("LOCK TABLE game_spell_item_receipts IN EXCLUSIVE MODE")
+        .execute(&mut *blocker)
+        .await?;
+    let release = async {
+        tokio::time::sleep(crate::durability::DB_PASS_DEADLINE * 2).await;
+        blocker.rollback().await
+    };
+    let (outcome, released) = tokio::join!(
+        owner.cast_spell_dispatch(actor, session, command, intent),
+        release
+    );
+    released?;
+    assert!(outcome.is_none(), "the blocked cast pass retires and stays pending");
+    Ok(())
 }
 
 async fn cast_ready(
