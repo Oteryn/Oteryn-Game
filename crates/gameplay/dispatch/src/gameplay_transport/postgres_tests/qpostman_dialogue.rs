@@ -16,13 +16,19 @@ fn postman_briefing_and_completed_passages_advance_mission_postgres() -> TestRes
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run_async(async move |_fixture_admin| {
         let h =
             Harness::create_with_admission_seed(admin, "postman_dialogue", false, false).await?;
         let result = exercise(&h).await;
         h.cleanup().await?;
         result
-    })
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED postman_briefing_and_completed_passages_advance_mission_postgres {:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 async fn exercise(h: &Harness) -> TestResult {
