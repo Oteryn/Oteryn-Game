@@ -796,6 +796,9 @@ fn native_soulpit_scenario_with_entry_cue(
                 if wave == 4 {
                     native_capture.before_return = Some(player);
                     let returning_player = player;
+                    // The capture starts another live serve after the final reward pass.
+                    // Let its initial Instance snapshot start with an idle holder.
+                    h.root.await_ready().await?;
                     completed_return = Some(super::guild_wire::capture_activity_return(
                         &owner, &mut player, &mut native_capture.return_frames,
                         async {
@@ -805,6 +808,11 @@ fn native_soulpit_scenario_with_entry_cue(
                             tokio::time::timeout(std::time::Duration::from_secs(10), async {
                                 let mut global_due = owner.owner_now().get();
                                 loop {
+                                    // A capture read or the preceding cadence pass can still
+                                    // be returning the holder. Re-establish readiness before
+                                    // consuming a global clearance tick. An action error
+                                    // cancels the capture reader that answers liveness probes.
+                                    h.root.await_ready().await.map_err(debug)?;
                                     let now = owner.owner_now().get();
                                     let global = now >= global_due;
                                     if global { global_due = now.saturating_add(1_000_000); }
@@ -812,10 +820,6 @@ fn native_soulpit_scenario_with_entry_cue(
                                         .map_err(|_| "actual Source completion return")?;
                                     if owner.activity_runtimes.current_connection(returning_player).game_session_id
                                         != returning_player.game_session_id { break; }
-                                    // try_acquire_ready coalesces demand on exhaustion.
-                                    // Use the normal bounded maintenance owner, never an
-                                    // extended pass/lease or a bypass of current fences.
-                                    h.root.maintain_ready_once().await.map_err(|error| format!("{error:?}"))?;
                                     let due = deadline.map_or(global_due,|at|at.min(global_due));
                                     tokio::time::sleep(std::time::Duration::from_micros(
                                         due.saturating_sub(owner.owner_now().get()))).await;
