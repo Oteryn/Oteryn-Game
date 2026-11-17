@@ -135,6 +135,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(None);
         };
         let definition = &entry.item.definition;
+        // Crystal items.xml defines the Soul Net, but its action registry
+        // has no Soul Net target handler.
+        if definition.production_key == "oteryn:item.tibia.i14020" {
+            return Ok(Some(outcome(UseDisposition::NotPossible)));
+        }
         if terrain_tools::TerrainTool::from_production_key(&definition.production_key).is_none()
             || index
                 .definition_ref(
