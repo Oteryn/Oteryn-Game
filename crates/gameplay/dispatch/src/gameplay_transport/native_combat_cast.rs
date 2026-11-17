@@ -1671,6 +1671,19 @@ pub(in crate::gameplay_transport) fn replay_with_rune(
 
 pub use oteryn_gameplay_spell_rules::dispatch_plans::geometry::TileFlags;
 /// Only this constructor reads the flags: source tile metadata plus locked actual Item rows.
+/// A refusal stands only on a transaction that still answers. The reads fold a failed statement
+/// into `Rejected`; when the pass deadline (`transaction_timeout`) or a lost connection ended the
+/// statement, PostgreSQL refuses every later one, and the cast stays pending for a new pass.
+async fn refusal_on_live_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+) -> Result<(), crate::durability::DurabilityError> {
+    sqlx::query("SELECT 1")
+        .execute(&mut **tx)
+        .await
+        .map(|_| ())
+        .map_err(|_| crate::durability::DurabilityError::Unavailable)
+}
+
 pub(in crate::gameplay_transport) async fn read_tile(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
@@ -2607,8 +2620,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     let rune_reservation=match rune.as_ref(){
                         Some(r)=>match rune_item_cast::reserve(&mut tx,&authority,runtime,room,content,spell,r).await {
                             Ok(reserved)=>Some(reserved),
-                            Err(_)=>return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{
-                                disposition:SpellCastDisposition::Rejected,vitals:super::observe_vitals(runtime,states,actor,session)})),
+                            Err(_)=>{refusal_on_live_transaction(&mut tx).await?;return Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{
+                                disposition:SpellCastDisposition::Rejected,vitals:super::observe_vitals(runtime,states,actor,session)}))},
                         },
                         None=>None,
                     };
@@ -2661,6 +2674,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     };
                     let mut prepared=match prepared_result{
                         Ok(p)=>p,Err(disposition)=>{
+                        refusal_on_live_transaction(&mut tx).await?;
                         #[cfg(test)]
                         eprintln!("SEAM_EVIDENCE native_combat_prepare result={disposition:?} ordinary={}",ordinary_combat::applicable(spell));
                         if let (Some(rune),Some(legacy))=(rune.as_ref(),legacy.as_ref()) {
