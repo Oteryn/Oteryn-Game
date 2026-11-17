@@ -21,7 +21,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    text = TEST.read_text()
+    original = TEST.read_text()
+    text = original
     fixture = re.search(
         r"let expected_programmes = std::collections::BTreeSet::from\(\[(.*?)\]\);",
         text, re.S,
@@ -76,7 +77,7 @@ def main() -> None:
     if count != 1:
         raise SystemExit("expected one schema1 programme count pin")
     rendered = before + marker + body
-    if args.check and rendered != text:
+    if args.check and rendered != original:
         raise SystemExit("NPC programme count pins are stale")
     if not args.check:
         TEST.write_text(rendered)
