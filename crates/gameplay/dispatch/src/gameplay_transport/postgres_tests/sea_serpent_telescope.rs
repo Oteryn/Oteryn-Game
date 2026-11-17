@@ -2,7 +2,6 @@
 use super::fixture::{Harness, debug};
 use super::{Dependencies, TestResult};
 use crate::foundation::ChannelContentPin;
-use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::{loader, sea_serpent};
 use oteryn_protocol_oteryn::chat::ChatLine;
