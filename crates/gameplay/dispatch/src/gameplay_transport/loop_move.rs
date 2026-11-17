@@ -405,6 +405,13 @@ impl LoopGroundOverlay {
         self.overlay.ground_entry(item)
     }
 
+    pub(super) fn plain_corpse_position(&self, item: &[u8; 16]) -> Option<TilePos> {
+        if !self.source_plain_corpses.contains(item) {
+            return None;
+        }
+        self.ground_entry(item).map(|(position, _)| position)
+    }
+
     /// Preserve the durable source bytes while reach is checked in map coordinates.
     /// The item owner independently rechecks this observation under its row lock.
     pub fn pickup_cell(&self, item: &[u8; 16]) -> Option<Vec<u8>> {

@@ -1032,6 +1032,16 @@ pub trait FreshAdmissionAuthority {
         self.move_loop_item(actor, command, request)
     }
 
+    /// Plain USE may claim a material from a source-authored quest corpse.
+    fn use_quest_corpse(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _target: ItemKey,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     /// ITEM-VIEW-1b: the Channel owner's view of the item a `USE` handle resolved to, with the
     /// actor's position, read together. `None` when it cannot be observed (`STALE_STATE`).
     fn observe_item_target(

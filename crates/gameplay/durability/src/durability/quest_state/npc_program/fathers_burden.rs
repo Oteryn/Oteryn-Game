@@ -67,7 +67,11 @@ pub(super) async fn inventory_for(
             .map_err(|_| DurabilityError::InvalidStoredState)?;
         let key = NpcItemKey {
             item: row.try_get("definition_production_key")?,
-            subtype: row.try_get::<Option<i16>, _>("fluid_subtype")?.map(u16::try_from).transpose().map_err(|_| DurabilityError::InvalidStoredState)?,
+            subtype: row
+                .try_get::<Option<i16>, _>("fluid_subtype")?
+                .map(u16::try_from)
+                .transpose()
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
         };
         let total = inventory.items.entry(key).or_default();
         *total = total
@@ -127,7 +131,18 @@ pub(super) async fn apply<C: ItemLoopContent>(
         })
         .collect::<Vec<_>>();
     if request.transition_key.ends_with("/mission-complete") {
-        if !takes.is_empty() || gives != [CAPE] || experience(plan)? != 8000 {
+        let money = plan
+            .effects
+            .iter()
+            .filter_map(|effect| match effect {
+                NpcRuleEffect::GiveMoney {
+                    amount,
+                    include_bank: false,
+                } => Some(*amount),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        if money != [8000] || !takes.is_empty() || gives != [CAPE] || experience(plan)? != 8000 {
             return Err(DurabilityError::InvalidStoredState);
         }
         return match crate::durability::reward_claim_mint::fathers_burden::claim(
@@ -136,6 +151,7 @@ pub(super) async fn apply<C: ItemLoopContent>(
             fence.item_fence(),
             request.command,
             content,
+            80,
         )
         .await?
         {

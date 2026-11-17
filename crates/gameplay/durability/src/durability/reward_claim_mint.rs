@@ -123,7 +123,7 @@ mod claimed;
 mod cake;
 mod contents;
 pub mod falcon;
-pub(in crate::durability) mod fathers_burden;
+pub mod fathers_burden;
 mod fluid;
 mod grizzly;
 mod monk;

@@ -323,6 +323,7 @@ fn scenario_case(
                 | "catalogue-npc-father"
                 | "fathers-burden-handins"
                 | "qfather-completion"
+                | "qfather-corpses"
                 | "catalogue-npc-hero"
                 | "catalogue-npc-legacy"
                 | "catalogue-npc-scoped"
@@ -2936,9 +2937,14 @@ fn scenario_case(
                 !name.ends_with("-free"),
             ))
             .await?;
+        } else if name == "qfather-corpses" {
+            super::super::qfather_corpses::exercise(&mut owner, &mut admitted, &h, trigger).await?;
         } else if matches!(
             name,
-            "catalogue-npc-father" | "catalogue-npc-legacy" | "fathers-burden-handins" | "qfather-completion"
+            "catalogue-npc-father"
+                | "catalogue-npc-legacy"
+                | "fathers-burden-handins"
+                | "qfather-completion"
         ) {
             let gold_before = if name == "qfather-completion" {
                 Some(super::super::qfather_completion::gold(&h.pool).await?)
@@ -2967,7 +2973,10 @@ fn scenario_case(
                 .await?;
             }
             if let Some(before) = gold_before {
-                assert_eq!(super::super::qfather_completion::gold(&h.pool).await?, before + 8000);
+                assert_eq!(
+                    super::super::qfather_completion::gold(&h.pool).await?,
+                    before + 8000
+                );
             }
         } else if matches!(name, "catalogue-npc-hero" | "catalogue-npc-scoped") {
             if sidec_npc {

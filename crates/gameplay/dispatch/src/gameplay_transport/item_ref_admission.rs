@@ -158,6 +158,101 @@ pub(super) fn visible_corpses(
         .collect()
 }
 
+pub(super) async fn use_quest_corpse(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    key: ItemKey,
+) -> Result<Option<super::connection::UseOutcome>, ()> {
+    use super::connection::UseOutcome;
+    use crate::durability::reward_claim_mint::{
+        RewardClaimMintError, fathers_burden::father_corpse_reward,
+    };
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+    let ItemKey::Instance(item) = key else {
+        return Ok(None);
+    };
+    let candidate = async {
+        let map = admission.bundle_map()?;
+        let native = admission.active_generation?.native_gameplay()?;
+        let ground =
+            super::loop_move::loop_ground(admission, map.overlay.base(), native.item_index()).await?;
+        let corpse = ground.plain_corpse_position(&item)?;
+        let (definition, _, _) = super::item_look::observe_map_look(admission, actor, key)
+            .await
+            .ok()?;
+        Some((father_corpse_reward(&definition.production_key)?, corpse, ground, native))
+    }.await;
+    let Some((rule, corpse, ground, native)) = candidate else {
+        return Ok(None);
+    };
+    let Some(_permit) = admission.spell_lane_permit().await else {
+        return Ok(Some(UseOutcome::rejected()));
+    };
+    if !admission
+        .states
+        .player_trades
+        .physical(command.game_session_id, None)
+    {
+        return Ok(Some(UseOutcome::rejected()));
+    }
+    let position = {
+        let mut runtime = admission.runtime.lock().await;
+        if admission.states.spell_states.lock().await.is_dead(actor)
+            || pinned_index(&runtime, admission.active_generation).is_none()
+        {
+            return Ok(Some(UseOutcome::rejected()));
+        }
+        super::bundle_map_position(&mut runtime, admission.movement_cells(), actor).map(|at| at.at)
+    };
+    let (Some(position), Some(fence), Some(cell), Ok(command_id)) = (
+        position,
+        command.item_fence,
+        ground.pickup_cell(&item),
+        crate::foundation::CommandId::new(command.command_id),
+    ) else {
+        return Ok(Some(UseOutcome::rejected()));
+    };
+    if !super::item_view::corpse_open::within_reach(
+        position,
+        ActorPosition {
+            x: i32::from(corpse.x),
+            y: i32::from(corpse.y),
+            floor: i16::from(corpse.floor),
+        },
+    ) {
+        return Ok(Some(UseOutcome {
+            disposition: UseDisposition::TooFar,
+            ..UseOutcome::rejected()
+        }));
+    }
+    let result = rule
+        .claim(
+            admission.root,
+            admission.character,
+            admission.holder,
+            fence,
+            crate::foundation::CommandRef::new(command.game_session_id, command_id),
+            (item, cell),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
+        )
+        .await;
+    match result {
+        Ok(fresh) => {
+            if fresh {
+                admission.states.chat.push_quest_feedback(command.game_session_id, rule.feedback);
+            }
+            Ok(Some(UseOutcome {
+                disposition: UseDisposition::Committed,
+                ..UseOutcome::rejected()
+            }))
+        }
+        Err(RewardClaimMintError::Unavailable(_)) => Err(()),
+        Err(_) => Ok(Some(UseOutcome::rejected())),
+    }
+}
+
 /// MAP-ITEM-REF-1 Part B: `USE` on a domain-1 object (ITEM-MOVE-WIRE-0 §4.3). Only a bound corpse
 /// is an item target; an unbound or vanished one is `Gone`, so no corpse Item id is ever made up.
 /// Its contents are the durable corpse entries, each named by the pinned index; any it does not

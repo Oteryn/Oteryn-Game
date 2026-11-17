@@ -1880,6 +1880,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         item_look::look_creature(self, actor, target).await
     }
 
+    async fn use_quest_corpse(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        target: item_view::ItemKey,
+    ) -> Result<Option<connection::UseOutcome>, ()> {
+        item_ref_admission::use_quest_corpse(self, actor, command, target).await
+    }
+
     /// MAP-ITEM-REF-1 Part B: a bound corpse's durable contents for `USE` (domain 11).
     async fn observe_item_target(
         &self,
