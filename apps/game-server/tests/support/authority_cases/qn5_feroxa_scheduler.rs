@@ -16,7 +16,7 @@ fn qn5_feroxa_lifetime_does_not_serialize_ordinary_legacy_raids() -> fixture::Te
     std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
         fixture::runtime().map_err(fixture::debug)?.block_on(async {
             let start = std::time::Instant::now();
-            for (day, expire_offline) in [(12, false), (13, false), (13, true)] {
+            for (day, expire_offline) in [(12, false), (13, false), (13, true), (14, false)] {
                 let h = fixture::Harness::create(admin.clone(), "qn5_feroxa_scheduler", false).await?;
                 let result = exercise(&h, day, expire_offline).await;
                 h.cleanup().await?;
@@ -42,7 +42,10 @@ async fn exercise(h: &fixture::Harness, day: i32, expire_offline: bool) -> fixtu
         .execute(&h.pool)
         .await?;
     let changes = h.root.world_changes(world, 1).await?.ok_or("World day")?;
-    assert_eq!(changes.grimvale_full_moon, day == 13);
+    // TibiaWiki "Grimvale Mini World Change/Spoiler" rev 1102848: the full moon lasts from
+    // the 12th to the 14th; Feroxa spawns only on the 13th.
+    assert_eq!(changes.grimvale_full_moon, (12..=14).contains(&day));
+    assert_eq!(changes.feroxa_day(), day == 13);
     sqlx::query("INSERT INTO game_world_raid_scheduler_clocks(world_id,reset_epoch,last_end_at_ms) VALUES(encode($1,'hex')::uuid,1,0)")
         .bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
     let key = ProductionKey::new("raid:edron.feroxa").map_err(fixture::debug)?;
@@ -159,7 +162,7 @@ async fn exercise(h: &fixture::Harness, day: i32, expire_offline: bool) -> fixtu
     assert_eq!(
         keys.contains(&"raid:edron.feroxa"),
         day == 13,
-        "the independent gate still requires the current full moon"
+        "Feroxa fires only on the 13th, not on the other full-moon days"
     );
     let occurrences: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_feroxa_occurrences")
         .fetch_one(&h.pool)

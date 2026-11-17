@@ -28,8 +28,12 @@ const THAWING_PERCENT: u8 = 10;
 const THEIR_MASTERS_VOICE_PERCENT: u8 = 20;
 /// `oriental_trader.lua:3`: 33%.
 const ORIENTAL_TRADER_PERCENT: u8 = 33;
-/// `grimvale_respawn_event.lua:3`: the 13th of each month.
-const GRIMVALE_DAY: u8 = 13;
+/// TibiaWiki "Grimvale Mini World Change/Spoiler" rev 1102848: the full moon rises from
+/// the server save of the 12th to the server save of the 15th, so reset days 12-14. Global
+/// wins over Crystal `grimvale_respawn_event.lua:3`, which uses only the 13th.
+const GRIMVALE_FULL_MOON_DAYS: std::ops::RangeInclusive<u8> = 12..=14;
+/// TibiaWiki rev 1102848: Feroxa always spawns on the 13th, the apex of the full moon.
+const FEROXA_DAY: u8 = 13;
 /// `raids/world_changes/flower_month.lua:63`: June.
 const FLOWER_MONTH: crate::owner::SeasonalWindow = crate::owner::SeasonalWindow {
     start: (6, 1),
@@ -174,6 +178,10 @@ pub struct DailyWorldChanges {
     pub oriental_trader: Option<OrientalTraderTown>,
     /// Wereboars and werebadgers instead of bandits, badgers and butterflies.
     pub grimvale_full_moon: bool,
+    /// Feroxa's day (the 13th). Decisions stored before this field existed had their full
+    /// moon only on the 13th, so a missing value reads as `grimvale_full_moon`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub feroxa_apex: Option<bool>,
     pub flower_month: bool,
     /// W15: 62/498 observed days, accepted as 125 per thousand per reset.
     /// Old immutable decisions stay inactive until their next server save.
@@ -268,9 +276,15 @@ impl DailyWorldChanges {
             thawing,
             their_masters_voice,
             oriental_trader,
-            grimvale_full_moon: day == GRIMVALE_DAY,
+            grimvale_full_moon: GRIMVALE_FULL_MOON_DAYS.contains(&day),
+            feroxa_apex: Some(day == FEROXA_DAY),
             flower_month: FLOWER_MONTH.contains(month, day),
         }
+    }
+
+    /// Feroxa spawns only on the 13th, while the full moon lasts from the 12th to the 14th.
+    pub fn feroxa_day(&self) -> bool {
+        self.grimvale_full_moon && self.feroxa_apex.unwrap_or(self.grimvale_full_moon)
     }
 
     /// Compiled entrance layers selected for this epoch, never paths loaded by the runtime.
@@ -407,6 +421,7 @@ mod tests {
                 their_masters_voice: true,
                 oriental_trader: Some(OrientalTraderTown::LibertyBay),
                 grimvale_full_moon: true,
+                feroxa_apex: Some(true),
                 flower_month: true,
                 stampede: true,
                 fire_from_the_earth: false,
@@ -418,7 +433,7 @@ mod tests {
                 shared_used_sources_mask: 0,
             }
         );
-        let none = roll([u64::MAX; 9], 5, 12);
+        let none = roll([u64::MAX; 9], 5, 11);
         assert_eq!(none.fury_gates, None);
         assert_eq!(none.exit_layers(), ["fury_gates/venore"]);
         assert_eq!(
@@ -433,6 +448,31 @@ mod tests {
         );
         // The same epoch and draws roll the same day again.
         assert_eq!(roll([0, 0, 0, at(2, 3), 0, u64::MAX, 0, 0, 0], 6, 13), all);
+    }
+
+    /// TibiaWiki "Grimvale Mini World Change/Spoiler" rev 1102848.
+    #[test]
+    fn grimvale_full_moon_spans_days_12_to_14_and_feroxa_only_the_13th() -> Result<(), String> {
+        for day in 1..=31 {
+            let changes = DailyWorldChanges::roll(1, 3, day, |_| u64::MAX);
+            assert_eq!(
+                changes.grimvale_full_moon,
+                (12..=14).contains(&day),
+                "day {day}"
+            );
+            assert_eq!(changes.feroxa_day(), day == 13, "day {day}");
+        }
+        // A decision stored before `feroxa_apex` existed had its full moon only on the 13th.
+        let mut stored = serde_json::to_value(DailyWorldChanges::roll(1, 3, 13, |_| u64::MAX))
+            .map_err(|error| error.to_string())?;
+        let removed = stored
+            .as_object_mut()
+            .and_then(|fields| fields.remove("feroxa_apex"));
+        assert_eq!(removed, Some(serde_json::json!(true)));
+        let old: DailyWorldChanges =
+            serde_json::from_value(stored).map_err(|error| error.to_string())?;
+        assert_eq!((old.feroxa_apex, old.feroxa_day()), (None, true));
+        Ok(())
     }
 
     #[test]

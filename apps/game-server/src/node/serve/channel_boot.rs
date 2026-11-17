@@ -452,6 +452,7 @@ fn bootstrap_world_changes() -> oteryn_gameplay_world_change::daily::DailyWorldC
         their_masters_voice: false,
         oriental_trader: None,
         grimvale_full_moon: false,
+        feroxa_apex: None,
         flower_month: false,
         stampede: false,
         fire_from_the_earth: false,

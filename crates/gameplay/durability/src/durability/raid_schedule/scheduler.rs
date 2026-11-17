@@ -146,7 +146,10 @@ impl DurabilityRoot {
             let mut retry_activity = false;
             for candidate in request.candidates {
                 if let Some(required) = requirements.get(candidate.key.as_str())
-                    && !world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)) {
+                    && !world_changes.as_ref().is_some_and(|day| oteryn_gameplay_world_change::owner::is_active(day, required)
+                        // TibiaWiki "Grimvale Mini World Change/Spoiler" rev 1102848: the full
+                        // moon lasts from the 12th to the 14th, but Feroxa spawns only on the 13th.
+                        && (candidate.key.as_str() != super::FEROXA_KEY || day.feroxa_day())) {
                     continue;
                 }
                 let source_kind: i16 = if candidate.lua.is_some() { 2 }

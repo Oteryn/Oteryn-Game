@@ -13,6 +13,10 @@ pub struct NativeDecision {
     their_masters_voice: bool,
     oriental_trader: Option<u8>,
     grimvale_full_moon: bool,
+    /// Absent in occurrences stored before the 12-14 full moon; restore then reads it
+    /// as `grimvale_full_moon`, which was only ever set on the 13th.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    feroxa_apex: Option<bool>,
     flower_month: bool,
 }
 
@@ -31,6 +35,7 @@ impl NativeDecision {
                 OrientalTraderTown::LibertyBay => 2,
             }),
             grimvale_full_moon: day.grimvale_full_moon,
+            feroxa_apex: day.feroxa_apex,
             flower_month: day.flower_month,
         }
     }
@@ -70,6 +75,7 @@ impl NativeDecision {
             their_masters_voice: self.their_masters_voice,
             oriental_trader,
             grimvale_full_moon: self.grimvale_full_moon,
+            feroxa_apex: self.feroxa_apex,
             flower_month: self.flower_month,
             stampede: false,
             fire_from_the_earth: false,

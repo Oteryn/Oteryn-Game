@@ -671,8 +671,12 @@ pub(crate) mod tests {
     }
 
     fn exercise_grimvale_inner(epoch: u64) {
-        for day in [12, 13, 14] {
-            exercise_grimvale_snapshot(DailyWorldChanges::roll(epoch, 1, day, |_| u64::MAX));
+        // TibiaWiki "Grimvale Mini World Change/Spoiler" rev 1102848: were-creatures on the
+        // 12th, 13th and 14th; bandits again from the 15th.
+        for day in [11, 12, 13, 14, 15] {
+            let changes = DailyWorldChanges::roll(epoch, 1, day, |_| u64::MAX);
+            assert_eq!(changes.grimvale_full_moon, (12..=14).contains(&day));
+            exercise_grimvale_snapshot(changes);
         }
     }
 
