@@ -242,6 +242,22 @@ async fn sinatuki(
         words.clone(),
     )
     .await?;
+    if result != NpcIntentDisposition::Ok {
+        // Diagnostic for a refused hand-in: the stored prerequisite rows and fish.
+        let rows: Vec<(String, String, i64)> = sqlx::query_as(
+            "SELECT track_key,quest_key,value FROM game_character_quest_tracks \
+             WHERE character_id=encode($1,'hex')::uuid AND (track_key LIKE '%questline' \
+             OR track_key LIKE '%sinatuki%') ORDER BY track_key LIMIT 32",
+        )
+        .bind(id(41).as_slice())
+        .fetch_all(&h.pool)
+        .await?;
+        eprintln!(
+            "QC_SINATUKI_DIAG tracks={rows:?} trout={} perch={}",
+            count(h, 7158).await?,
+            count(h, 7159).await?
+        );
+    }
     assert_eq!(result, NpcIntentDisposition::Ok);
     assert_eq!(count(h, 7158).await?, 0);
     assert_eq!(count(h, 7290).await?, 0);
