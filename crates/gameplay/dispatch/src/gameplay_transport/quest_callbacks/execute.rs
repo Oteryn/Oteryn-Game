@@ -1291,6 +1291,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
         }
+        if let Some(spawn) = &callback.effects.tool_spawn {
+            // The donor records the measurement even if creature placement fails.
+            if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                pending.remove(&session);
+            }
+            if let Some(speech) = &callback.effects.player_speech {
+                self.states
+                    .chat
+                    .publish_quest_speech(runtime, actor, session, speech);
+            }
+            let mut position = expected.position();
+            position.x += i32::from(spawn.offset_x);
+            position.y += i32::from(spawn.offset_y);
+            if native(position).is_some_and(|tile| {
+                !map.facts
+                    .quest_callback_blocked(map.overlay.base(), tile, false)
+            }) {
+                let _ = super::super::primal_menace::spawn_creature(
+                    self,
+                    runtime,
+                    &spawn.creature,
+                    position,
+                );
+            }
+            if let Some(message) = success_message {
+                self.states.chat.push_quest_feedback(session, &message);
+            }
+            return UseDisposition::Committed;
+        }
         if let Some(plan) = party {
             return self.commit_party_transfer(
                 runtime,

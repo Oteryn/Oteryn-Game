@@ -103,6 +103,17 @@ pub struct CallbackEffects {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub item_presence: Option<ItemPresence>,
     pub encounter: Option<Encounter>,
+    /// One ordinary creature placement relative to the player after a durable tool USE.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_spawn: Option<ToolSpawn>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ToolSpawn {
+    pub creature: String,
+    pub offset_x: i8,
+    pub offset_y: i8,
 }
 
 /// The original wire shapes retain distinct owners: a child quest or the current quest.
@@ -738,6 +749,46 @@ pub(super) fn valid(callback: &Callback) -> bool {
         + usize::from(effects.scene.is_some())
         + usize::from(effects.reward_door.is_some())
         + usize::from(effects.party_transfer.is_some());
+    if effects.tool_spawn.as_ref().is_some_and(|spawn| {
+        !super::super::valid_quest_key(&spawn.creature)
+            || !spawn.creature.starts_with("oteryn:creature.")
+            || spawn
+                .offset_x
+                .unsigned_abs()
+                .max(spawn.offset_y.unsigned_abs())
+                != 1
+            || callback.actor_kind != ActorKind::Player
+            || callback.trigger != Trigger::Use
+            || callback.selector.native.is_none()
+            || !callback.requires_world_admission
+            || !callback.has_state_writes()
+            || callback.is_read_only()
+            || callback.lever.is_some()
+            || callback.reversible
+            || callback.teleport.is_some()
+            || callback.remote_teleport.is_some()
+            || callback.world_change.is_some()
+            || !callback.offerings.is_empty()
+            || !callback.passages.is_empty()
+            || operations != 0
+            || callback.experience.is_some()
+            || callback.monk_reward.is_some()
+            || effects.shared
+                != CallbackEffects {
+                    tool_spawn: effects.tool_spawn.clone(),
+                    player_speech: effects.player_speech.clone(),
+                    ..CallbackEffects::default()
+                }
+            || !effects.legacy.is_empty()
+            || callback.item_on_target.as_ref().is_none_or(|tool| {
+                !tool.reusable
+                    || !tool.selected_instance
+                    || tool.target_remove
+                    || tool.target_replacement.is_some()
+            })
+    }) {
+        return false;
+    }
     if let Some(claimed_rewards) = effects
         .quest_completion
         .as_ref()
@@ -1119,6 +1170,15 @@ mod tool_spawn_tests {
             .ok_or("source encounter")?;
         callback.trigger = Trigger::Use;
         callback.lever = None;
+        callback.selector.native = Some(super::super::NativeSelector {
+            position: Position {
+                x: 33210,
+                y: 31670,
+                floor: -7,
+            },
+            ordinal: 1,
+            appearance: 1527,
+        });
         callback.requires_world_admission = true;
         callback.item_on_target = Some(
             serde_json::from_value(serde_json::json!({
