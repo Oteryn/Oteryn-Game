@@ -1,5 +1,5 @@
 //! Real admissions and protocol actions. The sole setup writer is root provision.py.
-use super::diagnostics::role_context;
+use super::diagnostics::{logout_failure_cause, logout_failure_detail, role_context};
 use super::*;
 use oteryn_dev_client::client_runtime::party as party_client;
 use oteryn_dev_client::{DevClientSession, EntityRef, SessionEvent};
@@ -148,14 +148,34 @@ async fn connect_bot(bot: &mut Bot<'_, '_>, tag: u8, stage: &str) -> TestResult 
 
 async fn logout_at(bot: &mut Bot<'_, '_>, stage: &str) -> TestResult {
     bot.progress(stage, "begin")?;
-    let result = logout(bot).await;
-    let result = bot.contextualize(stage, result);
-    if result.is_err() {
+    let begin = bot
+        .session
+        .as_ref()
+        .map_or(0, DevClientSession::last_server_sequence);
+    // Drain what the server already sent: a close found here happened before the logout.
+    let drained = async {
+        let client = bot.client()?;
+        client.service_liveness(Duration::from_millis(20)).await?;
+        client.take_events();
+        TestResult::Ok(())
+    }
+    .await;
+    let (before_send, result) = match drained {
+        Err(error) => (true, Err(error)),
+        Ok(()) => (false, logout(bot).await),
+    };
+    if let Err(error) = result {
+        let error = error.to_string();
+        let cause = logout_failure_cause(before_send, &error);
+        // at_unix_ms and the observed sequence join this line to the server's serve_end.
+        bot.progress(stage, &format!("fail cause={cause}"))?;
+        let detail = logout_failure_detail(cause, begin, &error);
+        let result = bot.contextualize(stage, Err(detail.into()));
         // A failed exchange poisons the protocol session. Drop its transport;
         // release_all still proves durable release for every Character below.
         bot.session = None;
+        return result;
     }
-    result?;
     bot.progress(stage, "pass")?;
     Ok(())
 }

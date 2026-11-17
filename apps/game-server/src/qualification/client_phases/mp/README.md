@@ -63,6 +63,14 @@ and failed scenarios, drop remaining sockets, and call `wait_character_released`
 for both indexes of **both** pairs. Cleanup failure fails the row. Add no fixed
 sleeps, direct SQL mutations, fixture shortcuts, server changes or ignored tests.
 
+A failed logout names its cause (`diagnostics.rs`, `logout_failure_cause`). The
+harness never closes a live transport before logout, so a transport error is the
+server's close: `server-closed-before-logout-sent` when the pre-logout liveness
+drain already fails, `server-closed-during-logout` otherwise. Its reason is the
+server's `serve_end` record with `server_sequence` equal to the bot's
+`observed_server_sequence` and `ts` matching the `MP_BOT ... outcome=fail` line's
+`at_unix_ms`. The row stays FAIL; no reconnect or retry hides that close.
+
 Local packet checks (one Cargo job at a time, source `env.sh` in each shell):
 
 ```sh
