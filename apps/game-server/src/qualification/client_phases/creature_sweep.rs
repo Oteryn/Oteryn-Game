@@ -519,6 +519,8 @@ pub(super) async fn run(
         .definition
         .as_ref()
         .map_or(0, |found| found.health);
+    // Calibration is advisory: preserve its FAIL evidence without failing the selected batch.
+    let mut calibration_tally = Tally::default();
     let mut dps = None;
     let mut last = String::new();
     for attempt in 1..=3 {
@@ -534,7 +536,7 @@ pub(super) async fn run(
                     &items,
                     &calibration,
                     &mut session,
-                    &mut tally,
+                    &mut calibration_tally,
                     &mut outcome,
                 )
                 .await;
@@ -589,7 +591,7 @@ pub(super) async fn run(
     }
     if dps.is_none() {
         evidence(&format!(
-            "creature_sweep calibration fallback attempts=3 last={last}"
+            "CREATURE_SWEEP calibration fallback reason={last}"
         ));
     }
     let long = long_seconds()?;
@@ -678,11 +680,12 @@ pub(super) async fn run(
     }
     let mean = seconds.iter().sum::<f64>() / seconds.len().max(1) as f64;
     evidence(&format!(
-        "creature_sweep summary species={} rows_pass={} rows_fail={} rows_skipped={} mean_seconds_per_creature={mean:.3}",
+        "creature_sweep summary species={} rows_pass={} rows_fail={} rows_skipped={} calibration_rows_fail={} mean_seconds_per_creature={mean:.3}",
         seconds.len(),
         tally.pass,
         tally.fail,
-        tally.skipped
+        tally.skipped,
+        calibration_tally.fail
     ));
     if tally.fail > 0 {
         return Err(format!(
