@@ -374,5 +374,4 @@ fn platform_world(
         },
     )
     .map_err(debug)
-    .map_err(Into::into)
 }
