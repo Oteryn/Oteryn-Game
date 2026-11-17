@@ -7,13 +7,23 @@ fn qfather_tereban_grants_eight_thousand_gold_once() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("qfather-completion", || {
         super::quest_world_callbacks::scenario(
             "qfather-completion",
-            Position { x: 33294, y: 31677, floor: -15 },
+            Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
             false,
         )
-    })
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qfather_tereban_grants_eight_thousand_gold_once duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 pub(super) async fn gold(pool: &sqlx::PgPool) -> TestResult<i64> {

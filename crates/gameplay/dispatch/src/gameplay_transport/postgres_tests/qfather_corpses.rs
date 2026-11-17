@@ -11,6 +11,7 @@ fn qfather_plain_use_grants_each_material_from_another_players_kill_once() -> Te
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("qfather-corpses", || {
         super::quest_world_callbacks::scenario(
             "qfather-corpses",
@@ -21,7 +22,12 @@ fn qfather_plain_use_grants_each_material_from_another_players_kill_once() -> Te
             },
             false,
         )
-    })
+    })?;
+    eprintln!(
+        "POSTGRES_CASE_COMPLETED qfather_plain_use_grants_each_material_from_another_players_kill_once duration={:?}",
+        started.elapsed()
+    );
+    Ok(())
 }
 
 pub(super) async fn exercise(
@@ -112,10 +118,11 @@ pub(super) async fn exercise(
             .definition_ref("Item", corpse, "definition-r1")
             .ok_or("corpse item definition")?;
         for expected in [UseDisposition::Committed, UseDisposition::Rejected] {
-            let (end, result, _) = super::rust_lottery::exchange(
+            let command_id = admitted.continuity.next_command_id;
+            let (end, result, actual) = super::rust_lottery::exchange(
                 owner,
                 *admitted,
-                admitted.continuity.next_command_id,
+                command_id,
                 &intent,
                 Some(source),
                 None,
@@ -123,6 +130,14 @@ pub(super) async fn exercise(
             .await?;
             *admitted = end;
             assert_eq!(result, expected, "{creature}");
+            if result == UseDisposition::Committed {
+                let (end, replayed, _) = super::rust_lottery::exchange(
+                    owner, *admitted, command_id, &actual, None, None,
+                )
+                .await?;
+                *admitted = end;
+                assert_eq!(replayed, result, "{creature} USE replay");
+            }
             let awarded: i64 = sqlx::query_scalar(
                 "SELECT coalesce(sum(i.quantity), 0)::bigint
                  FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id)
