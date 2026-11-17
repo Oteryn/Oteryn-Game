@@ -2,6 +2,17 @@
   "schema": 1,
   "tracks": [
     {
+      "key": "oteryn:quest-progress/rcauth/willie/banana",
+      "quest": "oteryn:quest.studded_shield_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "Owner RCAUTH acceptance: one banana-for-shield exchange per character."
+      ],
+      "writable": true
+    },
+    {
       "key": "oteryn:quest-progress/rcauth/wyda/blood_herb",
       "quest": "oteryn:quest.blood_herb_quest",
       "initial": 0,
@@ -66,7 +77,14 @@
       ],
       "topic": 0,
       "next_topic": 0,
-      "storage": [],
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rcauth/willie/banana",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
       "take": [
         {
           "item": "oteryn:item.tibia.i3587",
@@ -97,8 +115,7 @@
       ],
       "failure_reply": [
         "Are you trying to mess with me?!"
-      ],
-      "repeatable": true
+      ]
     },
     {
       "key": "oteryn:quest-reward/rcauth/wyda-blood-herb",

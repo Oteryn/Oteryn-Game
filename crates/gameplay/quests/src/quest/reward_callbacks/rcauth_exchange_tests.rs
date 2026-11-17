@@ -35,7 +35,7 @@ fn source_item_exchanges_are_atomic_and_refuse_with_the_donor_line() -> Result<(
             "oteryn:item.tibia.i3587",
             "oteryn:item.tibia.i3426",
             "Are you trying to mess with me?!",
-            true,
+            false,
         ),
         (
             "oteryn:quest-reward/rcauth/lee-delle-honey-flower",
