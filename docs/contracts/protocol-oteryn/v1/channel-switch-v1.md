@@ -32,7 +32,7 @@ Both commands answer five bytes: a lock code and the cooldown left in big-endian
 | 2 | skull | a red or black skull cannot leave for a Channel that is not Open PvP |
 | 3 | trade | an open direct trade |
 | 4 | value transaction | an unresolved item, currency or value commit |
-| 5 | event | boss, raid or event participation (an instance scope) |
+| 5 | event | boss, raid or event participation in an instance or a live Channel encounter room |
 | 6 | transition | a house, instance or travel transition in progress |
 | 7 | checkpoint | a pending checkpoint, handoff or authority transition; retry shortly |
 | 8 | destination | the target is not a current Channel of this World |
@@ -51,18 +51,20 @@ unchanged.
 
 ## Final admission
 
+The Game control operator sets the directory PvP type with `assignment assign|replace --pvp-type OPEN_PVP|OPTIONAL_PVP`. The assignment receipt binds that choice and commits it with the scope assignment. Without the option a new Channel defaults to Optional PvP and replacement retains the stored type.
+
 The fresh admission revalidates the switch inside the admission receipt insert (migration 2858):
 the first admission in a World sets the baseline, the same Channel is not a switch, a different
-Channel inside the cooldown or with a lock the database can prove (logout block, a skull into a
-Channel that is not Open PvP) is refused, and a refused or failed admission uses no cooldown. A
+Channel inside the cooldown or with a lock the database can prove (combat, kill or protection-zone deadline, a saved House on another Channel,
+or a skull entering a Channel outside Open PvP) is refused, and a refused or failed admission uses no cooldown. A
 retry of the same admission cannot advance the guard twice.
 
 ## Party across the switch
 
 The terminal release of an accepted `CHANNEL_SWITCH_REQUEST` keeps the Character in its Party and
 holds the membership for two minutes (migration 2859). The committed admission into the World
-takes the hold back; a refused admission leaves it. An expired hold without a current session
-leaves the Party through the World Party expiry drain, as an ordinary logout would. Party chat,
+retains membership if the hold is still current. A late admission and the periodic expiry drain
+both apply ordinary Party departure and leader succession. A refused admission leaves the hold intact. Party chat,
 Guild chat and private messages use the World relay and reach every Channel of the World.
 
 ## Load

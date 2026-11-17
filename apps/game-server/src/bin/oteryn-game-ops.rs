@@ -18,8 +18,9 @@ use oteryn_game_server::durability::native_admission_source::{
 };
 use oteryn_game_server::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentPredecessor, AssignmentRequest,
-    AssignmentState, BootstrapSecret, ControlActor, LaunchBinding, NodeRegistrationFact,
-    OperationKey, ReconcileOutcome, RegistrationError, RuntimeScopeAssignmentWriter,
+    AssignmentState, BootstrapSecret, ChannelPvpType, ControlActor, LaunchBinding,
+    NodeRegistrationFact, OperationKey, ReconcileOutcome, RegistrationError,
+    RuntimeScopeAssignmentWriter,
 };
 use oteryn_game_server::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, WorldId};
 use oteryn_game_server::native_admission_source::restore_notice::{
@@ -792,6 +793,18 @@ fn scope_of(world: &str, channel: &str) -> Result<RuntimeScopeRefV1, Failure> {
     ))
 }
 
+fn assignment_pvp_type(file: &AssignmentRequestFile) -> Result<Option<ChannelPvpType>, Failure> {
+    match file.pvp_type.as_deref() {
+        None => Ok(None),
+        Some(_) if file.command == "revoke" => Err(Failure::Usage("revoke has no PvP type")),
+        Some("OPEN_PVP") => Ok(Some(ChannelPvpType::Open)),
+        Some("OPTIONAL_PVP") => Ok(Some(ChannelPvpType::Optional)),
+        Some(_) => Err(Failure::Usage(
+            "--pvp-type requires OPTIONAL_PVP or OPEN_PVP",
+        )),
+    }
+}
+
 fn request_of(file: &AssignmentRequestFile) -> Result<AssignmentRequest, Failure> {
     let invalid = || Failure::Input("assignment request".into());
     let scope = scope_of(&file.world_id, &file.channel_id)?;
@@ -1292,7 +1305,10 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         let file = AssignmentRequestFile::decode(&operator.read_state(&name)?)
             .map_err(|_| Failure::Input("assignment request".into()))?;
         let request = request_of(&file)?;
-        return match writer.reconcile(&request).await {
+        return match writer
+            .reconcile_with_channel_policy(&request, assignment_pvp_type(&file)?)
+            .await
+        {
             Ok(ReconcileOutcome::Committed(receipt)) => {
                 event(&format!(
                     "assignment=committed ownership_generation={} source_revision={}",
@@ -1336,6 +1352,7 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
             ));
         }
     };
+    let pvp_type = arguments.take_optional("pvp-type");
     arguments.finish()?;
     // The reported node identity is validated before anything is written and
     // staged with the operation; it is bound to the target only on commit (§5).
@@ -1386,6 +1403,7 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         command: action,
         world_id: world,
         channel_id: channel,
+        pvp_type,
         predecessor_generation: predecessor.map(|p| p.ownership_generation),
         predecessor_source_revision: predecessor.map(|p| p.source_revision),
         predecessor_guard_publication_revision: predecessor
@@ -1394,6 +1412,7 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         target_registration_revision,
     };
     let request = request_of(&file)?;
+    let policy = assignment_pvp_type(&file)?;
     let bytes = file
         .encode()
         .map_err(|_| Failure::Input("assignment request".into()))?;
@@ -1401,7 +1420,7 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         stage_identity(operator, &file.operation_key, &holder, identity)?;
     }
     operator.create_state(&name, None, &bytes)?;
-    match writer.submit(&request).await {
+    match writer.submit_with_channel_policy(&request, policy).await {
         Ok(AssignmentOutcome::Committed(receipt)) => {
             event(&format!(
                 "assignment=committed ownership_generation={} source_revision={}",

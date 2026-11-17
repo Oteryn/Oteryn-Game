@@ -590,6 +590,9 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                 },
             )?;
             let first = committed(writer.submit(&assign).await)?;
+            let assigned_type: Option<i16> = sqlx::query_scalar("SELECT pvp_type FROM game_channel_pvp_types WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+                .bind(channel.world_id().as_bytes().as_slice()).bind(channel.channel_id().ok_or("Channel")?.as_bytes().as_slice()).fetch_optional(&pool).await?;
+            assert_eq!(assigned_type, Some(1));
             assert_eq!(first.assignment.ownership_generation, 1);
             assert_eq!(first.assignment.source_revision, 1);
             assert_eq!(
@@ -663,7 +666,19 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                     target: node2,
                 },
             )?;
-            let second = committed(writer.submit(&replace).await)?;
+            let open = Some(durability::runtime_scope_assignment::ChannelPvpType::Open);
+            let second = committed(writer.submit_with_channel_policy(&replace, open).await)?;
+            assert_eq!(
+                committed(writer.submit_with_channel_policy(&replace, open).await)?,
+                second
+            );
+            assert_eq!(
+                rejected(writer.submit(&replace).await)?,
+                AssignmentRejection::OperationConflict
+            );
+            let pvp: i16 = sqlx::query_scalar("SELECT pvp_type FROM game_channel_pvp_types WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+                .bind(channel.world_id().as_bytes().as_slice()).bind(channel.channel_id().ok_or("Channel")?.as_bytes().as_slice()).fetch_one(&pool).await?;
+            assert_eq!(pvp, 2);
             assert_eq!(
                 (
                     second.assignment.ownership_generation,

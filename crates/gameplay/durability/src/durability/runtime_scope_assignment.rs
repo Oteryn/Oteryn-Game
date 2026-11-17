@@ -570,7 +570,28 @@ pub struct AssignmentRequest {
     pub command: AssignmentCommand,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum ChannelPvpType {
+    Optional = 1,
+    Open = 2,
+}
+
 impl AssignmentRequest {
+    fn encode_channel_policy(
+        &self,
+        policy: Option<ChannelPvpType>,
+    ) -> Result<Vec<u8>, AssignmentError> {
+        let mut bytes = self.encode()?;
+        if let Some(policy) = policy {
+            if self.command.scope().channel_id().is_none() || self.command.target().is_none() {
+                return Err(AssignmentError::InvalidInput);
+            }
+            bytes.push(policy as u8);
+        }
+        Ok(bytes)
+    }
+
     /// Canonical closed encoding retained in the slot and receipt (`NASG-COMMAND-BYTES`).
     pub fn encode(&self) -> Result<Vec<u8>, AssignmentError> {
         if let RuntimeScopeRefV1::Instance {
@@ -1006,21 +1027,21 @@ impl RuntimeScopeAssignmentWriter {
         &self,
         request: &AssignmentRequest,
     ) -> Result<AssignmentOutcome, AssignmentError> {
-        let command = request.encode()?;
+        self.submit_with_channel_policy(request, None).await
+    }
+
+    pub async fn submit_with_channel_policy(
+        &self,
+        request: &AssignmentRequest,
+        policy: Option<ChannelPvpType>,
+    ) -> Result<AssignmentOutcome, AssignmentError> {
+        let command = request.encode_channel_policy(policy)?;
         let _permit = self.admit(command.len(), None).await?;
         let key = request.operation_key;
-        let scope = request.command.scope();
-        let target = request.command.target();
+
         let dispatched = tokio::time::timeout(
             DISPATCH_BUDGET,
-            self.dispatch(
-                key,
-                command,
-                request.actor.clone(),
-                request.command,
-                scope,
-                target,
-            ),
+            self.dispatch(key, command, request.actor.clone(), request.command, policy),
         )
         .await;
         match dispatched {
@@ -1041,7 +1062,15 @@ impl RuntimeScopeAssignmentWriter {
         &self,
         request: &AssignmentRequest,
     ) -> Result<ReconcileOutcome, AssignmentError> {
-        let command = request.encode()?;
+        self.reconcile_with_channel_policy(request, None).await
+    }
+
+    pub async fn reconcile_with_channel_policy(
+        &self,
+        request: &AssignmentRequest,
+        policy: Option<ChannelPvpType>,
+    ) -> Result<ReconcileOutcome, AssignmentError> {
+        let command = request.encode_channel_policy(policy)?;
         let key = request.operation_key;
         let _permit = self.admit(command.len(), Some(key)).await?;
         let registration = self.registration.clone();
@@ -1136,8 +1165,7 @@ impl RuntimeScopeAssignmentWriter {
         command: Vec<u8>,
         actor: ControlActor,
         typed: AssignmentCommand,
-        scope: RuntimeScopeRefV1,
-        target: Option<NodeRegistrationFact>,
+        policy: Option<ChannelPvpType>,
     ) -> Dispatch {
         // Checkpoint the exact binding before authoritative submission.
         let pass = match self.root.try_issue_semantic_pass() {
@@ -1190,8 +1218,7 @@ impl RuntimeScopeAssignmentWriter {
                         &command,
                         &actor,
                         typed,
-                        scope,
-                        target,
+                        policy,
                     )
                     .await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -1215,9 +1242,10 @@ async fn authoritative_transition(
     command: &[u8],
     actor: &ControlActor,
     typed: AssignmentCommand,
-    scope: RuntimeScopeRefV1,
-    target: Option<NodeRegistrationFact>,
+    policy: Option<ChannelPvpType>,
 ) -> Result<AssignmentOutcome, DurabilityError> {
+    let scope = typed.scope();
+    let target = typed.target();
     let scope_key = assignment_scope_key(scope);
     let (world_id, channel_id, instance_id, scope_kind) = match scope {
         RuntimeScopeRefV1::Channel {
@@ -1404,6 +1432,21 @@ async fn authoritative_transition(
     .bind(instance_id.as_ref().map(|id| id.as_slice()))
     .execute(&mut **tx)
     .await?;
+    if let Some(channel) = channel_id
+        && state == AssignmentState::Assigned
+    {
+        sqlx::query(
+            "INSERT INTO game_channel_pvp_types(world_id,channel_id,pvp_type)
+                     VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,COALESCE($3,1::smallint))
+                     ON CONFLICT (world_id,channel_id) DO UPDATE SET pvp_type=EXCLUDED.pvp_type
+                     WHERE $3::smallint IS NOT NULL",
+        )
+        .bind(world_id.as_bytes().as_slice())
+        .bind(channel.as_slice())
+        .bind(policy.map(|p| i16::from(p as u8)))
+        .execute(&mut **tx)
+        .await?;
+    }
     // Every decision on a guarded scope fences the guard at the next
     // publication revision; the receipt retains that exact binding.
     let fenced_publication_revision = runtime_guard_publication_revision(root, tx, scope)
