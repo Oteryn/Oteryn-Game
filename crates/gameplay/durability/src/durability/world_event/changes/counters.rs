@@ -350,7 +350,7 @@ pub async fn credit(
     for &(kind, credit) in &event.credits {
         store(tx, world, kind, values[kind.index()]).await?;
         if kind == CounterKind::TheirMastersVoice && credit == Credit::VoiceMage {
-            restore_voice_fungus(tx, world, authority.epoch).await?;
+            restore_voice_fungus(tx, world, authority.epoch, None).await?;
         }
         if matches!(kind, CounterKind::MagesTower | CounterKind::FireEarth)
             && credit == Credit::Kill(0)
@@ -434,7 +434,7 @@ impl DurabilityRoot {
         generation: ScopeOwnershipGeneration,
         epoch: u64,
         context: &mut C,
-        project: fn(&mut C, &DailyWorldChanges) -> Result<(), DurabilityError>,
+        project: fn(&mut C, &DailyWorldChanges) -> Result<bool, DurabilityError>,
     ) -> Result<bool, DurabilityError> {
         let recovery = authority
             .record_for(self)
@@ -472,7 +472,22 @@ impl DurabilityRoot {
                     let Some(day) = super::load(&mut tx, scope.world_id(), epoch).await? else {
                         return Ok(false);
                     };
-                    project(context, &day)?;
+                    if project(context, &day)?
+                        && day.their_masters_voice
+                        && let RuntimeScopeRefV1::Channel { world_id, channel_id } = scope
+                        && restore_voice_fungus(&mut tx, world_id, epoch, Some(channel_id)).await? > 0
+                    {
+                        let epoch_i64 = i64::try_from(epoch).map_err(|_| DurabilityError::InvalidStoredState)?;
+                        let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_terrain_tool_transforms WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2 AND state_item_id=12065 AND decay_step=0 AND cardinality(decay_states)=1 AND decay_states[1] BETWEEN 12059 AND 12063)")
+                            .bind(world_id.as_bytes().as_slice()).bind(epoch_i64).fetch_one(&mut *tx).await?;
+                        let kind = CounterKind::TheirMastersVoice;
+                        let before = values[kind.index()];
+                        if !pending && let Some(deadline) = before.deadline_ms {
+                            let reset = before.tick(kind, deadline)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?;
+                            store(&mut tx, world_id, kind, reset).await?;
+                        }
+                    }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(true)
                 })
@@ -505,9 +520,11 @@ async fn restore_voice_fungus(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
     epoch: u64,
-) -> Result<(), DurabilityError> {
+    channel: Option<crate::foundation::ChannelId>,
+) -> Result<u64, DurabilityError> {
     let epoch = i64::try_from(epoch).map_err(|_| DurabilityError::InvalidStoredState)?;
-    sqlx::query("UPDATE game_terrain_tool_transforms SET state_item_id=decay_states[1],object_revision=object_revision+1,decay_step=1,decay_at_unix_ms=NULL WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2 AND state_item_id=12065 AND decay_step=0 AND cardinality(decay_states)=1 AND decay_states[1] BETWEEN 12059 AND 12063")
-        .bind(world.as_bytes().as_slice()).bind(epoch).execute(&mut **tx).await?;
-    Ok(())
+    let channel = channel.as_ref().map(|channel| channel.as_bytes().as_slice());
+    let restored = sqlx::query("UPDATE game_terrain_tool_transforms SET state_item_id=decay_states[1],object_revision=object_revision+1,decay_step=1,decay_at_unix_ms=NULL WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2 AND state_item_id=12065 AND decay_step=0 AND cardinality(decay_states)=1 AND decay_states[1] BETWEEN 12059 AND 12063 AND ($3::bytea IS NULL OR channel_id=encode($3,'hex')::uuid)")
+        .bind(world.as_bytes().as_slice()).bind(epoch).bind(channel).execute(&mut **tx).await?;
+    Ok(restored.rows_affected())
 }

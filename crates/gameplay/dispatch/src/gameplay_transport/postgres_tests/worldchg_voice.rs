@@ -8,7 +8,7 @@ use crate::foundation::{ChannelId, CharacterId, RuntimeScopeRefV1, ScopeOwnershi
 mod event_fixture;
 
 #[test]
-fn worldchg_voice_mage_credit_requires_twenty_five_gobbles() -> TestResult {
+fn worldchg_voice_mage_qualification_death_and_empty_restoration() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()) };
     super::kill_reward_e2e::scenario_thread::run("worldchg-voice", scenario)
 }
@@ -78,6 +78,19 @@ fn scenario() -> TestResult {
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(terrain, (12059, 2, None));
+        sqlx::query("UPDATE game_terrain_tool_transforms SET state_item_id=12065,decay_step=0,decay_at_unix_ms=$1")
+            .bind(deadline).execute(&h.pool).await?;
+        for (empty, expected) in [(false, 12065), (true, 12059)] {
+            let mut empty = empty;
+            assert!(h.root.project_world_change_counters(
+                &authority, &h.node, scope, generation, epoch, &mut empty,
+                |empty, _| Ok(*empty),
+            ).await?);
+            let appearance: i64 = sqlx::query_scalar(
+                "SELECT state_item_id FROM game_terrain_tool_transforms",
+            ).fetch_one(&h.pool).await?;
+            assert_eq!(appearance, expected);
+        }
         Ok(())
     })
 }
