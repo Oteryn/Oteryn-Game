@@ -2914,6 +2914,7 @@ async fn control_loop(
     intents: &ProducerDescriptor,
     config: &NodeConfig,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    spawn: Option<qualification_fixture::SpawnOwners<'_>>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -2946,6 +2947,13 @@ async fn control_loop(
                     )
                     .await
                     .to_owned(),
+                    "character_bootstrap",
+                ),
+                Some(request) if request.starts_with(b"spawn ") => (
+                    qualification_fixture::spawn(
+                        root, authority, proof, config, native, spawn, &request,
+                    )
+                    .await,
                     "character_bootstrap",
                 ),
                 Some(request) if parse_operation_id(&request).is_some() => {
@@ -3971,6 +3979,7 @@ async fn boot_and_serve(
         generation,
         signalled,
         timed_npcs,
+        spawn_room: combat_room.as_ref().unwrap_or(&qualified_room),
     }));
     first(serving, enforcement_owner)
         .await

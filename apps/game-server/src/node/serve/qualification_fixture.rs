@@ -3,6 +3,7 @@
 use super::*;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::qualification_spell_character as qualification_build;
+use crate::qualification_wild_spawn as wild_spawn;
 
 fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let text = std::str::from_utf8(bytes).ok()?.trim_end_matches('\n');
@@ -69,6 +70,152 @@ pub(super) async fn prepare(
             "rejected"
         }
     }
+}
+
+/// The live Channel owner and the room the `spawn` command places creatures in.
+#[derive(Clone, Copy)]
+pub(super) struct SpawnOwners<'a> {
+    pub(super) runtime: &'a Mutex<ChannelRuntimeV1>,
+    pub(super) room: &'a crate::content::QualifiedNativeEntryRoom,
+}
+
+/// `spawn <session> <creature key>`: only a node in the qualification fixture mode serves it.
+fn spawn_request(enabled: bool, bytes: &[u8]) -> Result<([u8; 16], &str), &'static str> {
+    if !enabled {
+        return Err("not_qualification");
+    }
+    let text = std::str::from_utf8(bytes)
+        .map_err(|_| "malformed_request")?
+        .trim_end_matches('\n');
+    let (session, key) = text
+        .strip_prefix("spawn ")
+        .and_then(|rest| rest.split_once(' '))
+        .ok_or("malformed_request")?;
+    let session = parse_operation_id(session.as_bytes()).ok_or("malformed_request")?;
+    let bounded = !key.is_empty()
+        && key.len() <= 128
+        && key
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b":._/-".contains(&byte));
+    bounded.then_some((session, key)).ok_or("malformed_request")
+}
+
+fn spawn_rejected(reason: &str) -> String {
+    format!("rejected reason={reason}")
+}
+
+fn spawn_refusal_warning(
+    reason: &'static str,
+    detail: Option<&str>,
+) -> oteryn_error_codes::Line<'static> {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+    let line = Line::new(Level::Warn, "node", "qualification_spawn_refused")
+        .field("reason", FieldValue::Token(reason));
+    match detail {
+        // Line's token renderer bounds and sanitizes every extension field.
+        Some(detail) => line.field(
+            "detail",
+            FieldValue::Owned(detail.chars().take(200).collect()),
+        ),
+        None => line,
+    }
+}
+
+/// Realises creature `key` next to the actor of `session` through the same fenced owner path
+/// as the harness Rat, and answers `spawned <entity identity hex> <generation>`.
+pub(super) async fn spawn(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    config: &NodeConfig,
+    native: Option<&NativeGameplayState>,
+    owners: Option<SpawnOwners<'_>>,
+    bytes: &[u8],
+) -> String {
+    let refuse = |reason: &'static str, detail: Option<&str>| {
+        emit(PROCESS, &spawn_refusal_warning(reason, detail));
+        spawn_rejected(reason)
+    };
+    let (session, key) = match spawn_request(config.qualification_fixture, bytes) {
+        Ok(request) => request,
+        Err(reason) => return refuse(reason, None),
+    };
+    let (Some(native), Some(owners)) = (native, owners) else {
+        return refuse("native_unavailable", None);
+    };
+    let placed = tokio::time::timeout(
+        Duration::from_secs(10),
+        place(root, authority, proof, native, owners, session, key),
+    )
+    .await;
+    match placed {
+        Ok(Ok(creature)) => {
+            let identity = creature
+                .actor
+                .placement_identity()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
+            format!(
+                "spawned {identity} {}",
+                creature.actor.actor_local_generation()
+            )
+        }
+        Ok(Err(refusal)) => refuse(refusal.token(), refusal.detail()),
+        Err(_) => refuse("deadline", None),
+    }
+}
+
+async fn place(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    native: &NativeGameplayState,
+    owners: SpawnOwners<'_>,
+    session: [u8; 16],
+    key: &str,
+) -> Result<crate::foundation::CompanionSnapshot, wild_spawn::SpawnRefusal> {
+    let fence = wild_spawn::SpawnRefusal::Fence;
+    let session = crate::foundation::GameSessionId::decode(&session)
+        .map_err(|_| wild_spawn::SpawnRefusal::SessionUnknown)?;
+    let source = wild_spawn::next_command_source()?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    let mut holder = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        |error| matches!(error, DurabilityError::RootUnavailable),
+        async || root.try_acquire_ready(),
+    )
+    .await
+    .map_err(|error| fence(format!("qualification spawn holder: {error:?}")))?;
+    let mut tx = crate::durability::spell_item_transaction::begin_spell_owner_transaction(
+        &mut holder,
+        deadline.into_std(),
+    )
+    .await
+    .map_err(|error| fence(format!("qualification spawn transaction: {error:?}")))?;
+    // The Channel owner stays held through the read-only fence and the realisation, as in the
+    // harness; the control deadline bounds it, and this path exists only in the fixture mode.
+    let mut runtime = owners.runtime.lock().await;
+    let creature = wild_spawn::realize_creature_in_transaction(
+        &mut tx,
+        root,
+        authority,
+        proof,
+        owners.room,
+        native,
+        &mut runtime,
+        key,
+        session,
+        source,
+    )
+    .await?;
+    drop(runtime);
+    // The spawn is runtime state, not a SQL mutation; the transaction only held the fences.
+    tx.commit()
+        .await
+        .map_err(|error| fence(format!("qualification spawn commit: {error:?}")))?;
+    Ok(creature)
 }
 
 /// This fixture emits only classified errors/static context, never request bytes or node proof.
@@ -496,6 +643,47 @@ mod tests {
             );
         }
         Ok(())
+    }
+
+    #[test]
+    fn spawn_is_rejected_outside_qualification_mode() {
+        let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
+        let request = format!("spawn {id} oteryn:creature.rat\n");
+        assert_eq!(
+            spawn_request(false, request.as_bytes()).err(),
+            Some("not_qualification")
+        );
+        assert_eq!(
+            spawn_rejected("not_qualification"),
+            "rejected reason=not_qualification"
+        );
+        // The same bytes are a valid request once the node runs in the fixture mode.
+        assert!(matches!(
+            spawn_request(true, request.as_bytes()),
+            Ok((_, "oteryn:creature.rat"))
+        ));
+    }
+
+    #[test]
+    fn spawn_request_accepts_only_v7_sessions_and_bounded_keys() {
+        let id = "01890f4c-3b2a-7c01-8d11-9a321b7c0004";
+        let long = "x".repeat(129);
+        for text in [
+            format!("spawn {id}"),
+            format!("spawn {id} "),
+            format!("spawn {id} bad key"),
+            format!("spawn {id} key\nspawn {id} other"),
+            format!("spawn {id} {long}"),
+            format!("spawn {id} key;rm"),
+            "spawn 01890f4c-3b2a-4c01-8d11-9a321b7c0004 oteryn:creature.rat".into(),
+            format!("qualify {id} knight"),
+        ] {
+            assert_eq!(
+                spawn_request(true, text.as_bytes()).err(),
+                Some("malformed_request"),
+                "{text:?}"
+            );
+        }
     }
 
     #[test]

@@ -15,6 +15,8 @@ pub(super) struct Serving<'a, 'f, 's> {
     pub(super) generation: u64,
     pub(super) signalled: &'a CancellationToken,
     pub(super) timed_npcs: bundle_npcs::TimedNpcSpawns,
+    /// The room the qualification `spawn` command places creatures in.
+    pub(super) spawn_room: &'a crate::content::QualifiedNativeEntryRoom,
 }
 
 pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootError> {
@@ -32,6 +34,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         generation,
         signalled,
         timed_npcs,
+        spawn_room,
     } = serving;
     let root = owners.root;
     let authority = owners.character;
@@ -86,6 +89,10 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         &material.intents,
         config,
         native,
+        Some(super::qualification_fixture::SpawnOwners {
+            runtime,
+            room: spawn_room,
+        }),
         shutdown,
     ));
     let mut expiry = pin!(both(
