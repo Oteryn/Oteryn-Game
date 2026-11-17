@@ -67,23 +67,29 @@ async fn premium(
 
 #[test]
 fn reward_callback_maximum_level_refuses_above_bound() -> TestResult {
-    run(false, 25)
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin, false, 25)
 }
 #[test]
 fn reward_callback_maximum_level_pays_at_or_below_bound() -> TestResult {
-    run(false, 24)?;
-    run(false, 20)
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    run(admin.clone(), false, 24)?;
+    run(admin, false, 20)
 }
 #[test]
 fn reward_callback_level_scaled_experience_pays_factor_times_level() -> TestResult {
-    run(true, 20)?;
-    run(true, 40)
-}
-
-fn run(spirit: bool, level: i64) -> TestResult {
-    let Some(admin) = fixture::configured_admin() else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
+    run(admin.clone(), true, 20)?;
+    run(admin, true, 40)
+}
+
+fn run(admin: String, spirit: bool, level: i64) -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
         .spawn(move || -> Result<(), String> {
@@ -374,7 +380,7 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
 
 #[test]
 fn reward_callback_level_scaled_experience_overflow_refuses() -> TestResult {
-    let Some(admin) = fixture::configured_admin() else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     std::thread::Builder::new()
