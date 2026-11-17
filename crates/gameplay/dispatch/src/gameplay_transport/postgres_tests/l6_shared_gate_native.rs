@@ -412,6 +412,33 @@ async fn relocate(
     runtime.commit_source_step(proof).map_err(debug)?;
     Ok(())
 }
+pub(super) async fn seed_ashmunrah_count(
+    h: &Harness,
+    character: crate::domain::CharacterId,
+    personal_count: i64,
+) -> TestResult {
+    // Establish the source's personal storage as a historical predecessor.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let inserted = sqlx::query(
+        "INSERT INTO game_character_quest_tracks
+         (character_id,track_key,quest_key,value,committed_character_revision)
+         SELECT character_id,$2,$3,$4,GREATEST(character_revision,2) FROM game_character_roots
+         WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind("oteryn:quest-progress/quest/u7_4/the_ancient_tombs/ashmunrah_switches_global_storage")
+    .bind("oteryn:quest.the_ancient_tombs_quest")
+    .bind(personal_count)
+    .execute(&mut *tx)
+    .await?;
+    assert_eq!(inserted.rows_affected(), 1);
+    tx.commit().await?;
+    Ok(())
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -438,25 +465,7 @@ pub(super) async fn exercise(
             .map_err(debug)?
             .ok_or("native gate character fence")?
             .character_id;
-        // Establish the source's personal storage as a historical predecessor.
-        let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx)
-            .await?;
-        let inserted = sqlx::query(
-            "INSERT INTO game_character_quest_tracks
-             (character_id,track_key,quest_key,value,committed_character_revision)
-             SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots
-             WHERE character_id=encode($1,'hex')::uuid",
-        )
-        .bind(character.as_bytes().as_slice())
-        .bind("oteryn:quest-progress/quest/u7_4/the_ancient_tombs/ashmunrah_switches_global_storage")
-        .bind("oteryn:quest.the_ancient_tombs_quest")
-        .bind(personal_count)
-        .execute(&mut *tx)
-        .await?;
-        assert_eq!(inserted.rows_affected(), 1);
-        tx.commit().await?;
+        seed_ashmunrah_count(h, character, personal_count).await?;
     }
     let before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
         .fetch_one(&h.pool)

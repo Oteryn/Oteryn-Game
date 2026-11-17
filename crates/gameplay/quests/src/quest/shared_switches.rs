@@ -67,7 +67,7 @@ reward_bundle: false,
 })
 }
 
-/// One source shared-count STEP predicate, with no personal progress substitute.
+/// Source STEP predicate for a shared or personal switch count.
 #[derive(Clone, Copy, Debug)]
 pub struct Gate {
     pub quest: &'static str,
@@ -75,6 +75,8 @@ pub struct Gate {
     pub unique: u16,
     pub counter_recipe: &'static str,
     pub required: u16,
+    /// When set, only this character track supplies the count.
+    pub personal_count_track: Option<&'static str>,
     pub destination: Position,
     pub effect: u16,
     pub source_file: &'static str,
@@ -97,6 +99,7 @@ pub const GATES: &[Gate] = &[
         unique: 50135,
         counter_recipe: "oteryn:quest-callback/ancient-tombs-thalas-switch",
         required: 8,
+        personal_count_track: None,
         destination: Position {
             x: 33367,
             y: 32805,
@@ -114,6 +117,7 @@ pub const GATES: &[Gate] = &[
         unique: 50137,
         counter_recipe: "oteryn:quest-callback/ancient-tombs-diprath-switch",
         required: 7,
+        personal_count_track: None,
         destination: Position {
             x: 33083,
             y: 32568,
@@ -131,6 +135,9 @@ pub const GATES: &[Gate] = &[
         unique: 50138,
         counter_recipe: "oteryn:quest-callback/ancient-tombs-ashmunrah-switch",
         required: 5,
+        personal_count_track: Some(
+            "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/ashmunrah_switches_global_storage",
+        ),
         destination: Position {
             x: 33198,
             y: 32885,
@@ -148,6 +155,7 @@ pub const GATES: &[Gate] = &[
         unique: 40083,
         counter_recipe: "oteryn:quest-callback/ancient-tombs-diprath-switch",
         required: 7,
+        personal_count_track: None,
         destination: Position {
             x: 33092,
             y: 32590,

@@ -46,8 +46,25 @@ impl DurabilityRoot {
             let crate::foundation::RuntimeScopeRefV1::Channel {world_id,..}=fence.runtime_scope else{return Ok(None)};
             assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence.item_fence(),None,native.source_digest()).await.map_err(|_|DurabilityError::Unavailable)?;
             if !super::context_is_current(&mut tx,permit,fence,&request.context).await? {return Ok(None)}
-            let (now,count,next,personal_completion):(i64,i64,Option<i64>,bool)=sqlx::query_as("WITH clock AS (SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint AS now) SELECT clock.now,game_shared_switch_count(encode($1,'hex')::uuid,$2,$3::text::numeric,$4,clock.now),(SELECT min(r.expires_at_unix_ms) FROM game_shared_switch_leases r JOIN game_shared_switch_recipes p USING(recipe) WHERE r.world_id=encode($1,'hex')::uuid AND r.context->>'map_revision'=$2 AND (r.context->>'reset_epoch')::numeric=$3::text::numeric AND p.group_key=$4 AND r.expires_at_unix_ms>clock.now),EXISTS(SELECT 1 FROM game_character_quest_tracks t WHERE t.character_id=encode($5,'hex')::uuid AND t.track_key=$6 AND t.quest_key=$7 AND t.value=1) FROM clock")
-                .bind(world_id.as_bytes().as_slice()).bind(&request.context.map_revision).bind(request.context.reset_epoch.to_string()).bind(recipe.group).bind(fence.character_id.as_bytes().as_slice()).bind(gate.personal_completion).bind(gate.quest).fetch_one(&mut **tx).await?;
+            let (now,count,next,personal_completion):(i64,i64,Option<i64>,bool) =
+                if let Some(track) = gate.personal_count_track {
+                    sqlx::query_as(
+                        "SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint,
+                                0::bigint, NULL::bigint,
+                                EXISTS(SELECT 1 FROM game_character_quest_tracks
+                                       WHERE character_id=encode($1,'hex')::uuid
+                                         AND track_key=$2 AND quest_key=$3 AND value >= $4)",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(track)
+                    .bind(gate.quest)
+                    .bind(i64::from(gate.required))
+                    .fetch_one(&mut **tx)
+                    .await?
+                } else {
+                    sqlx::query_as("WITH clock AS (SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint AS now) SELECT clock.now,game_shared_switch_count(encode($1,'hex')::uuid,$2,$3::text::numeric,$4,clock.now),(SELECT min(r.expires_at_unix_ms) FROM game_shared_switch_leases r JOIN game_shared_switch_recipes p USING(recipe) WHERE r.world_id=encode($1,'hex')::uuid AND r.context->>'map_revision'=$2 AND (r.context->>'reset_epoch')::numeric=$3::text::numeric AND p.group_key=$4 AND r.expires_at_unix_ms>clock.now),EXISTS(SELECT 1 FROM game_character_quest_tracks t WHERE t.character_id=encode($5,'hex')::uuid AND t.track_key=$6 AND t.quest_key=$7 AND t.value=1) FROM clock")
+                .bind(world_id.as_bytes().as_slice()).bind(&request.context.map_revision).bind(request.context.reset_epoch.to_string()).bind(recipe.group).bind(fence.character_id.as_bytes().as_slice()).bind(gate.personal_completion).bind(gate.quest).fetch_one(&mut **tx).await?
+                };
             if !(0..=500).contains(&count) {return Err(DurabilityError::InvalidStoredState)}
             if !super::context_is_current(&mut tx,permit,fence,&request.context).await? {return Ok(None)}
             let result=Observation {personal_completion,count:count.try_into().map_err(|_|DurabilityError::InvalidStoredState)?,observed_at_unix_ms:now,next_change_unix_ms:next};

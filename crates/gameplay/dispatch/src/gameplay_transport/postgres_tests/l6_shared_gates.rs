@@ -152,6 +152,10 @@ pub(super) async fn exercise(
             .map_err(debug)?,
         )
         .map_err(debug)?;
+    if unique == 50138 {
+        super::l6_shared_gate_native::seed_ashmunrah_count(h, fence.character_id, i64::from(count))
+            .await?;
+    }
     let quests_before: i64 =
         sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts")
             .fetch_one(&h.pool)
