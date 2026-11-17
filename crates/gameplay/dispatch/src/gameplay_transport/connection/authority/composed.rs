@@ -16,6 +16,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.root.with_background_operation(future).await
     }
 
+    async fn background_operation_progress<F: Future>(&self, future: F) -> (F::Output, bool) {
+        self.root.with_background_operation_progress(future).await
+    }
+
     async fn client_bulletin(&self) -> Option<String> {
         self.states.bulletin_source.as_ref()?.load().await
     }

@@ -206,7 +206,11 @@ fn item_move_refused_container_without_browse_retries_next_visibility_tick() -> 
                     assert_eq!(authority.reads.get(), reads + 1);
                     let view = session.item_view.as_ref().ok_or("view")?;
                     assert!(!view.inventory_refresh_pending);
-                    assert_eq!(authority.background_operations.get(), 2);
+                    assert_eq!(
+                        authority.background_operations.get(),
+                        10,
+                        "each of the five independent projections arbitrates on both ticks"
+                    );
                     assert_eq!(
                         view.continuity().views_revision,
                         revision + 1,

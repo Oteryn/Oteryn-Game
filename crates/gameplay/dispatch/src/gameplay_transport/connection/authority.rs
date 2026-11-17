@@ -30,9 +30,17 @@ pub trait FreshAdmissionAuthority {
         async { false }
     }
 
-    /// One bounded cadence body; production retains its root's fairness grant across passes.
+    /// One bounded owner operation; production retains its fairness grant across passes.
     fn background_operation<F: Future>(&self, future: F) -> impl Future<Output = F::Output> {
         future
+    }
+
+    /// Report holder acquisition so a sweep resumes after its last serviced component.
+    fn background_operation_progress<F: Future>(
+        &self,
+        future: F,
+    ) -> impl Future<Output = (F::Output, bool)> {
+        async { (self.background_operation(future).await, true) }
     }
 
     /// Informational operator publication, read only after authoritative admission.

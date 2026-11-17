@@ -13,7 +13,7 @@ pub struct Observation {
     pub skipped: Vec<wire::EntityRef>,
 }
 
-/// Only a proven exhausted holder retry may defer an established observer's refresh.
+/// A refused background checkout or exhausted foreground retry may defer a refresh.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ObservationError {
     HolderBusy,

@@ -508,6 +508,8 @@ async fn live<A: FreshAdmissionAuthority>(
         liveness,
         cadence,
         serene,
+        serene_cursor: 0,
+        visibility_cursor: 0,
         quest_log_refresh,
         chat_refresh,
         npc_refresh,

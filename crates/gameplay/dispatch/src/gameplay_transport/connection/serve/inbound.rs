@@ -21,10 +21,15 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    if matches!(
-        next,
-        Next::Serene | Next::QuestLog | Next::Chat | Next::Visibility | Next::Combat | Next::Npc
-    ) {
+    if matches!(next, Next::Serene | Next::Visibility) {
+        // These sweeps arbitrate per independent projection in refresh; a grant
+        // for the whole sweep can starve training and appearance observations.
+        return crate::durability::DurabilityRoot::with_background_holder(receive_inner(
+            stream, authority, session, next,
+        ))
+        .await;
+    }
+    if matches!(next, Next::QuestLog | Next::Chat | Next::Combat | Next::Npc) {
         crate::durability::DurabilityRoot::with_background_holder(
             authority.background_operation(receive_inner(stream, authority, session, next)),
         )

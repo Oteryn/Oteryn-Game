@@ -449,8 +449,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 impl AdmissionRetryBudget<'_> {
-    /// Retry only a holder acquisition failure. Storage and ambiguous commit failures
-    /// retain their original outcome; neither is evidence that replay is safe.
+    /// Retry a foreground holder acquisition failure. A scheduled owner yields
+    /// to its next cadence instead. Storage and ambiguous commit failures retain
+    /// their original outcome; neither is evidence that replay is safe.
     /// Each attempt returns its own future, without borrowing mutable callback
     /// state, so the retry remains usable from boxed Send activity futures.
     pub(super) async fn retry_durability<T, F, Fut>(
@@ -467,6 +468,19 @@ impl AdmissionRetryBudget<'_> {
             match step().await {
                 Ok(value) => return Ok(value),
                 Err(error) => {
+                    if matches!(error, DurabilityError::RootUnavailable)
+                        && crate::durability::DurabilityRoot::is_background_holder()
+                    {
+                        // A scheduled owner has another cadence turn. Do not
+                        // occupy the scheduler with a command retry loop or
+                        // report its refused checkout as a failed live session.
+                        // The error remains Unknown to checkpoint owners, which
+                        // retain their occurrence; no write is acknowledged.
+                        operator_event(&format!(
+                            "event=session_durability_deferred stage={stage} kind=holder_busy"
+                        ));
+                        return Err(error);
+                    }
                     if matches!(error, DurabilityError::RootUnavailable)
                         && self
                             .retries_unavailable(AdmissionRefusal::Unavailable)

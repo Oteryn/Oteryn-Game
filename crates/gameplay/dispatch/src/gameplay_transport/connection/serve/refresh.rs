@@ -13,34 +13,63 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    if session.selected_capabilities.contains(290) {
-        authority.cast_refresh(session.admitted).await;
+    let mut changed = None;
+    let mut current = None;
+    let start = session.serene_cursor % 5;
+    for index in (start..5).chain(0..start) {
+        let (result, acquired) = authority
+            .background_operation_progress(async {
+                match index {
+                    0 => {
+                        if session.selected_capabilities.contains(290) {
+                            authority.cast_refresh(session.admitted).await;
+                        }
+                    }
+                    1 => {
+                        changed = authority
+                            .tick_vitals(session.actor, session.admitted.game_session_id)
+                            .await;
+                    }
+                    2 => {
+                        if let Some(catalog) = &mut session.spell_catalog {
+                            catalog
+                                .refresh(
+                                    stream,
+                                    authority,
+                                    session.actor,
+                                    &mut session.admitted,
+                                    &mut session.sequence,
+                                )
+                                .await?;
+                        }
+                    }
+                    3 => sounds(stream, authority, session).await?,
+                    _ => {
+                        current = authority
+                            .observe_vitals(session.actor, session.admitted.game_session_id)
+                            .await;
+                    }
+                }
+                Ok::<(), ServeEnd>(())
+            })
+            .await;
+        // A successful empty discovery also consumed a fairness turn. A refusal
+        // keeps this component first for the next turn, rather than phase-locking
+        // every five-second grant to the first component of the one-second tick.
+        if acquired {
+            session.serene_cursor = (index + 1) % 5;
+        }
+        result?;
     }
-    let changed = authority
-        .tick_vitals(session.actor, session.admitted.game_session_id)
-        .await;
-    if let Some(catalog) = &mut session.spell_catalog {
-        catalog
-            .refresh(
-                stream,
-                authority,
-                session.actor,
-                &mut session.admitted,
-                &mut session.sequence,
-            )
-            .await?;
-    }
-    sounds(stream, authority, session).await?;
-    let current = authority
-        .observe_vitals(session.actor, session.admitted.game_session_id)
-        .await;
-    let Some((to, value)) = current
+    // Rotation can observe before ticking. Publish the newest whole observation,
+    // while keeping the existing catalog/sounds-before-vitals frame ordering.
+    let Some((to, value)) = changed
+        .into_iter()
+        .chain(current)
         .filter(|(observed_revision, _)| {
             *observed_revision > session.admitted.continuity.vitals_revision
         })
-        .or(changed.filter(|(observed_revision, _)| {
-            *observed_revision > session.admitted.continuity.vitals_revision
-        }))
+        .max_by_key(|(observed_revision, _)| *observed_revision)
     else {
         return Ok(());
     };
@@ -560,7 +589,89 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    sounds(stream, authority, session).await?;
+    // These independent projections arbitrate separately; related passes inside
+    // each projection retain their grant until that projection finishes.
+    let start = session.visibility_cursor % 5;
+    for index in (start..5).chain(0..start) {
+        let (result, acquired) = authority
+            .background_operation_progress(async {
+                match index {
+                    0 => sounds(stream, authority, session).await,
+                    1 => visibility_inventory(stream, authority, session).await,
+                    2 => player_trade::refresh(stream, authority, session).await,
+                    3 => cyclopedia_tracker::refresh(stream, authority, session).await,
+                    _ => visibility_projection(stream, authority, session).await,
+                }
+            })
+            .await;
+        if acquired {
+            session.visibility_cursor = (index + 1) % 5;
+        }
+        result?;
+    }
+    if session.visibility.is_none() {
+        return Ok(());
+    }
+    // CLOCK-1 (§11.3): a due domain 18 delta, at most one per 10,000 ms.
+    if session
+        .selected_capabilities
+        .contains(CAPABILITY_WORLD_LIGHT_V1)
+    {
+        let Some(now) = authority.world_clock_utc_ms() else {
+            return Err(ServeEnd::Disconnected);
+        };
+        if let Some(reading) = session.world_clock_pacer.due(&session.world_clock, now) {
+            let Some((delta_sequence, frame, to)) = world_clock_delta(
+                session.generation,
+                session.sequence,
+                session.admitted.continuity.world_clock_revision,
+                reading,
+            ) else {
+                return Err(ServeEnd::Disconnected);
+            };
+            session.sequence = delta_sequence;
+            session.admitted.continuity.server_sequence = session.sequence;
+            session.admitted.continuity.world_clock_revision = to;
+            if write_frame(stream, &frame).await.is_err() {
+                return Err(ServeEnd::Disconnected);
+            }
+        }
+    }
+    // WEATHER-1: a full-replacement domain 22 delta only when the observation
+    // changed (a new absolute slot, or a lost or restored binding). Visual only: no
+    // gameplay owner is read or written.
+    if let (Some(sent), Some(here)) = (session.weather_sent, authority.observe(session.actor).await)
+    {
+        let observed = observe_weather(authority, here.actor_position);
+        if observed != sent {
+            let Some((delta_sequence, frame, to)) = world_weather_delta(
+                session.generation,
+                session.sequence,
+                session.admitted.continuity.world_weather_revision,
+                observed,
+            ) else {
+                return Err(ServeEnd::Disconnected);
+            };
+            session.sequence = delta_sequence;
+            session.admitted.continuity.server_sequence = session.sequence;
+            session.admitted.continuity.world_weather_revision = to;
+            if write_frame(stream, &frame).await.is_err() {
+                return Err(ServeEnd::Disconnected);
+            }
+            session.weather_sent = Some(observed);
+        }
+    }
+    Ok(())
+}
+async fn visibility_inventory<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
     let inventory_refresh_pending = session
         .item_view
         .as_ref()
@@ -591,8 +702,6 @@ where
     )
     .await
     .ok_or(ServeEnd::Disconnected)?;
-    player_trade::refresh(stream, authority, session).await?;
-    cyclopedia_tracker::refresh(stream, authority, session).await?;
     // Crystal's tile notifications refresh every observer, including an idle one.
     // Use the same bounded connection refresh already used after local item commits.
     // The pending inventory retry already observes these containers this tick.
@@ -623,6 +732,18 @@ where
                 .map_err(|_| ServeEnd::Disconnected)?;
         }
     }
+    Ok(())
+}
+
+async fn visibility_projection<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
     // VIS-3: entities that moved, entered or left without this actor's step.
     let Some(view) = session.visibility.as_mut() else {
         return Ok(());
@@ -692,57 +813,9 @@ where
         Err(ObservationError::HolderBusy | ObservationError::RespawnPending) => {}
         Err(ObservationError::Unavailable) => return Err(ServeEnd::Disconnected),
     }
-    // CLOCK-1 (§11.3): a due domain 18 delta, at most one per 10,000 ms.
-    if session
-        .selected_capabilities
-        .contains(CAPABILITY_WORLD_LIGHT_V1)
-    {
-        let Some(now) = authority.world_clock_utc_ms() else {
-            return Err(ServeEnd::Disconnected);
-        };
-        if let Some(reading) = session.world_clock_pacer.due(&session.world_clock, now) {
-            let Some((delta_sequence, frame, to)) = world_clock_delta(
-                session.generation,
-                session.sequence,
-                session.admitted.continuity.world_clock_revision,
-                reading,
-            ) else {
-                return Err(ServeEnd::Disconnected);
-            };
-            session.sequence = delta_sequence;
-            session.admitted.continuity.server_sequence = session.sequence;
-            session.admitted.continuity.world_clock_revision = to;
-            if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
-            }
-        }
-    }
-    // WEATHER-1: a full-replacement domain 22 delta only when the observation
-    // changed (a new absolute slot, or a lost or restored binding). Visual only: no
-    // gameplay owner is read or written.
-    if let (Some(sent), Some(here)) = (session.weather_sent, authority.observe(session.actor).await)
-    {
-        let observed = observe_weather(authority, here.actor_position);
-        if observed != sent {
-            let Some((delta_sequence, frame, to)) = world_weather_delta(
-                session.generation,
-                session.sequence,
-                session.admitted.continuity.world_weather_revision,
-                observed,
-            ) else {
-                return Err(ServeEnd::Disconnected);
-            };
-            session.sequence = delta_sequence;
-            session.admitted.continuity.server_sequence = session.sequence;
-            session.admitted.continuity.world_weather_revision = to;
-            if write_frame(stream, &frame).await.is_err() {
-                return Err(ServeEnd::Disconnected);
-            }
-            session.weather_sent = Some(observed);
-        }
-    }
     Ok(())
 }
+
 pub(super) async fn sounds<S, A>(
     stream: &mut S,
     authority: &A,

@@ -93,6 +93,8 @@ struct ServeState {
     chat_refresh: Option<tokio::time::Interval>,
     quest_log_refresh: Option<tokio::time::Interval>,
     serene: Option<tokio::time::Interval>,
+    serene_cursor: u8,
+    visibility_cursor: u8,
     cadence: tokio::time::Interval,
     liveness: Liveness,
     frames: FrameReader,

@@ -349,6 +349,10 @@ fn scenario(case: Case) -> TestResult {
                         );
                         break;
                     }
+                    assert!(
+                        held_at.elapsed() < COMMAND_HOLDER_WINDOW,
+                        "periodic appearance retried a yielded holder through the command budget"
+                    );
                     // This is the contract being exercised, not a readiness sleep:
                     // retain the holder beyond the entire existing command window.
                     tokio::time::sleep_until(
