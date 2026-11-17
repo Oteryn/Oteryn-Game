@@ -53,14 +53,22 @@ Validation recorded so far:
 | Initial focused dispatch regression | Build killed by SIGKILL before tests; no behavioral red result claimed |
 | Focused retry | Fixed a test calling a private parser by using the public binding validator; corrected build running with `CARGO_BUILD_JOBS=1` and normal profiles |
 | Quest-authoring checks | First run ended with a killed subprocess; rerun separately after Rust build |
-| Quest-authoring unit-tests runner | Serial runner paused at low resident memory while dispatch compiles; resume after Rust; no reported failure yet |
+| Quest-authoring unit-tests runner | Passed: 1464 tests, 8 existing skips |
 | Direct donor/data comparison | Passed: both inputs, output item/count/tile, storage gates, AID, native control stacks and literal feedback |
-| Clippy, full regeneration and pin verification | Pending |
+| Clippy: quests | Passed, all targets, warnings denied |
+| Clippy: durability | Passed, all targets, warnings denied |
+| Clippy: dispatch/server, full regeneration and pin verification | Pending |
 
 The cancelled compiler was explicitly terminated after Cargo exited, leaving only
 one active compiler for the corrected run. No profile, lint, assertion or test
 selection was weakened. The public schema test first validates the unmodified
 production plan, then rejects the four individually mutated invalid plans.
+
+The dedicated authority-case mount reuses the exact same assertions and framed
+`serve_admitted` transport. It boots both real B3 crops through the existing public
+World fixture and uses typed fresh admission and ordinary item mint/transfer. This
+keeps the bounded PG qualification separate from the oversized dispatch lib-test
+monolith without dropping a case or changing an assertion.
 
 Status: implementation authored; PostgreSQL red/green qualification and remaining
 validation are pending. This branch is WIP and has no PR.
