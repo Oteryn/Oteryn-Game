@@ -51,3 +51,8 @@ A direct run of the freshly built client test binary passed
 The test has an unbounded channel receive in its peer task, but the
 controller reached the send and the test joined both tasks on this run.
 The workspace baseline is still compiling the dispatch lib-test target.
+
+A serial direct run of the fresh client unit-test binary completed with 886
+passed, zero failed in 54.73s. The workspace baseline is still compiling,
+including the dispatch lib-test target. No Nextest test execution timings
+are available yet.
