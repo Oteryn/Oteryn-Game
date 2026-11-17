@@ -4354,7 +4354,7 @@
       "success_message": "You have dispelled imperial influence 4 of 4."
     },
     {
-      "key": "oteryn:quest-callback/demon-oak-reward-demon-legs",
+      "key": "oteryn:quest-callback/authored-demon-oak-reward-demon-legs",
       "quest": "oteryn:quest.demon_oak",
       "trigger": "use",
       "selector": {
@@ -4384,6 +4384,7 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
+        "oteryn-authored:world-projection:demon-oak:quest-r1",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:201-221",
         "https://tibia.fandom.com/index.php?curid=34086&oldid=855950"
@@ -4396,7 +4397,7 @@
       }
     },
     {
-      "key": "oteryn:quest-callback/demon-oak-reward-rainbow-shield",
+      "key": "oteryn:quest-callback/authored-demon-oak-reward-rainbow-shield",
       "quest": "oteryn:quest.demon_oak",
       "trigger": "use",
       "selector": {
@@ -4426,6 +4427,7 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
+        "oteryn-authored:world-projection:demon-oak:quest-r1",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:201-221",
         "https://tibia.fandom.com/index.php?curid=34086&oldid=855950"
@@ -4438,7 +4440,7 @@
       }
     },
     {
-      "key": "oteryn:quest-callback/demon-oak-reward-thorn-spitter",
+      "key": "oteryn:quest-callback/authored-demon-oak-reward-thorn-spitter",
       "quest": "oteryn:quest.demon_oak",
       "trigger": "use",
       "selector": {
@@ -4468,6 +4470,7 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
+        "oteryn-authored:world-projection:demon-oak:quest-r1",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:201-221",
         "https://tibia.fandom.com/index.php?curid=34086&oldid=855950"
@@ -4480,7 +4483,7 @@
       }
     },
     {
-      "key": "oteryn:quest-callback/demon-oak-reward-spellbook-of-ancient-arcana",
+      "key": "oteryn:quest-callback/authored-demon-oak-reward-spellbook-of-ancient-arcana",
       "quest": "oteryn:quest.demon_oak",
       "trigger": "use",
       "selector": {
@@ -4510,6 +4513,7 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
+        "oteryn-authored:world-projection:demon-oak:quest-r1",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_chest.lua:1-31",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/chest.lua:201-221",
         "https://tibia.fandom.com/index.php?curid=34086&oldid=855950"
@@ -4522,7 +4526,7 @@
       }
     },
     {
-      "key": "oteryn:quest-callback/demon-oak-reward-grave-projected",
+      "key": "oteryn:quest-callback/authored-demon-oak-reward-grave-projected",
       "quest": "oteryn:quest.demon_oak",
       "trigger": "use",
       "selector": {
@@ -4555,6 +4559,7 @@
       "return_on_failure": false,
       "failure_message": null,
       "sources": [
+        "oteryn-authored:world-projection:demon-oak:quest-r1",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/demon_oak/actions_demon_oak_gravestone.lua:2-11",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/lib/quests/demon_oak.lua:4",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3784-3788",
