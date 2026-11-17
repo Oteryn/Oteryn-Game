@@ -618,6 +618,13 @@ async fn migration_reapplication(h: &Harness) -> TestResult {
     )))
     .execute(&mut *tx)
     .await?;
+    // Restore the current supreme grade two fee after reapplying the historical guards.
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/2883_atelier_supreme_grade_two_cost.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
     tx.commit().await?;
     assert_eq!(definitions(h.pool.clone()).await?, before);
     assert_eq!(stored(h).await?, state);

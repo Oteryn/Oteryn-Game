@@ -352,7 +352,7 @@ Native reveal scope remains the accepted main-backpack-direct policy, a declared
 difference from upstream nested carried containers/StoreInbox; Global scope is
 not proven. Official manual fragment yields override the older Wiki/OTS table.
 
-## Superseding owner cost correction (2026-10-01)
+## Historical owner cost correction (2026-10-01)
 
 The owner explicitly corrects Supreme Grade II -> III to **12,000,000 gold +
 15 Greater Fragments**. The selected candidate and independent qualification
@@ -365,6 +365,29 @@ owning decision before native admission; this authoring repair admits no runtime
 The owner additionally confirms this12M/15 value from Global. Classification:
 OWNER_CONFIRMED_GLOBAL_VALUE; no independent worker observation of the transaction
 is claimed. This confirms the one price row, not all Global RNG/runtime behavior.
+
+## Current Winter Update CT cost (2026-11-16)
+
+The newer owner-supplied Content session measurement selects supreme target grade 2
+at **12,500,000 gold + 15 Greater Fragments**, superseding the October selection.
+Citation: `evidence/2026-11-16-testserver/fragment-workshop.txt`; context:
+`docs/reference/winter-update-2026-testserver/`. Crystal
+`201189f871d23597b82caf88fd611454a2ddefb8`,
+`src/creatures/players/wheel/player_wheel.cpp:1592`, still has 12,000,000 + 15.
+The owner rule selects current Tibia. The raw CT measurement is owner-supplied;
+no independent worker observation is claimed. Other costs and grade bonuses are unchanged.
+
+After changing the selected source value and qualification record, regenerate with:
+
+```sh
+python wheel_authoring.py build
+python client_icons.py
+python verify_atelier_reference.py --refresh-evidence
+python build_schema.py
+python wheel_authoring.py validate
+python import_server_data.py
+python build_report.py
+```
 
 ## Data-only server import
 
