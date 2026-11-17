@@ -48,6 +48,8 @@ CHARGED_QUEST_CLAIMS = {
     'canary:reward-claim/kv/desert2': 3084,
     'canary:reward-claim/kv/draconia1': 3284,
     'canary:reward-claim/kv/fireaxe1': 3085,
+    'canary:reward-claim/kv/ghoulroom1': 3083,
+    'canary:reward-claim/kv/silveramulet': 3054,
     'canary:reward-claim/kv/timering3': 3082,
     'canary:reward-claim/kv/triangletower': 3083,
     'canary:reward-claim/kv/trollcave1': 3083,
@@ -75,7 +77,7 @@ def native_charge_item(item, profile):
         return item
     identity = item['identity']
     key = identity['key']
-    charges = {3082: 50, 3083: 150, 3084: 250, 3085: 200, 3284: 1}.get(item_id(identity))
+    charges = {3054: 200, 3082: 50, 3083: 150, 3084: 250, 3085: 200, 3284: 1}.get(item_id(identity))
     if charges is None:
         return item
     held = item
