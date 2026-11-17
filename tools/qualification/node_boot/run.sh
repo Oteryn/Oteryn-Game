@@ -78,6 +78,9 @@ case "${NODE_BOOT_LIFECYCLE:-}" in
     ;;
   *) echo 'NODE_BOOT_RESULT=BLOCKED reason=unknown_lifecycle'; exit 2 ;;
 esac
+for program in docker python3 node openssl cargo sudo psql setsid timeout; do
+  command -v "$program" >/dev/null 2>&1 || { echo "NODE_BOOT_RESULT=BLOCKED reason=missing_binary_$program"; exit 2; }
+done
 NODE_BOOT_PLATFORM_PIN="$PLATFORM_SHA"
 NODE_BOOT_TOPOLOGY="$TOPOLOGY_REVISION"
 if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform || "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
@@ -241,6 +244,9 @@ save_reuse_state() { # the seam stage's inputs, for NODE_BOOT_REUSE_STACK=1
   local names=(WORK node_log failed_node_log WP5_PKI WP5_SCRATCH WP5_PORT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
     WP5_APP_KEY PG_PORT PG_ADMIN_PASSWORD CONTROL_PASSWORD RUNTIME_PASSWORD ADMIN_URL FRESH_SEED_HEX
     RECOVERY_SEED_HEX MAP_REVISION NODE_PID NODE_CLOCK_FEATURES NODE_GAMEPLAY_ENV PG_OBS)
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == native_reference ]]; then
+    names+=(GP_HARNESS_PID GP_PG_CONTAINER)
+  fi
   [[ -z "${OTERYN_QUALIFICATION_CLOCK_FILE:-}" ]] || names+=(OTERYN_QUALIFICATION_CLOCK_FILE)
   ( umask 077
     { declare -p "${names[@]}"
