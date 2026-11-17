@@ -162,3 +162,92 @@ fn sandra_lottery_source_planner_requires_owned_ticket() -> super::TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn sandra_lottery_postgres_missing_ticket_refuses_without_mutation() -> super::TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    drop(admin);
+    super::kill_reward_e2e::scenario_thread::run("sandra-lottery-missing", || {
+        super::quest_world_callbacks::scenario(
+            "sandra-lottery-missing",
+            oteryn_gameplay_quests::quest::world_callbacks::Position {
+                x: 33294,
+                y: 31677,
+                floor: -15,
+            },
+            false,
+        )
+    })
+}
+
+pub(super) async fn exercise_missing(
+    owner: &mut super::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut super::AdmittedSession,
+    h: &super::fixture::Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+) -> super::TestResult {
+    use crate::durability::quest_state::{QuestTransitionOutcome, npc_program::NpcProgramRequest};
+    use crate::foundation::{CommandId, CommandRef};
+    use oteryn_gameplay_quests::quest::npc_rules::NpcRuleTrigger;
+    let fence = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|()| "quest fence")?
+        .ok_or("quest fence")?;
+    sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,1,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT(character_id,track_key) DO UPDATE SET value=1")
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind("oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt")
+        .bind("oteryn:quest.outfit_and_addon_quests").execute(&h.pool).await?;
+    let catalogue = owner.quest_catalogue.clone().ok_or("quest catalogue")?;
+    let before = owner
+        .root
+        .read_character_quest_state(authority, fence.character_id)
+        .await
+        .map_err(super::fixture::debug)?;
+    let native = owner
+        .active_generation
+        .and_then(|generation| generation.native_gameplay())
+        .ok_or("native")?;
+    let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native)
+        .with_wheel(owner.premium_coordinator);
+    let result = owner
+        .root
+        .commit_character_npc_program(
+            authority,
+            owner.holder,
+            &owner.spell_lane_permit().await.ok_or("NPC permit")?,
+            fence,
+            NpcProgramRequest {
+                command: CommandRef::new(
+                    admitted.game_session_id,
+                    CommandId::new(6275).map_err(super::fixture::debug)?,
+                ),
+                npc: "oteryn:npc.sandra".into(),
+                trigger: NpcRuleTrigger::Say,
+                message: "lottery".into(),
+                topic: 0,
+                transition_key: "oteryn:quest-npc/sandra/lottery".into(),
+            },
+            catalogue,
+            &weights,
+            &owner.premium_coordinator,
+        )
+        .await
+        .map_err(super::fixture::debug)?;
+    assert!(matches!(
+        result.transition,
+        QuestTransitionOutcome::Refused(_)
+    ));
+    assert!(!result.inventory_changed);
+    assert_eq!(
+        before,
+        owner
+            .root
+            .read_character_quest_state(authority, fence.character_id)
+            .await
+            .map_err(super::fixture::debug)?
+    );
+    Ok(())
+}
