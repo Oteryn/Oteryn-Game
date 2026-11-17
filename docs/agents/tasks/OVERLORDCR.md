@@ -37,3 +37,15 @@ PG command: `cargo test --locked -p oteryn-game-server --test character_authorit
 Full production lethal-path regressions remain intact in mounted dispatch tests: two damaging Characters, nearby observer, non-overlord death, duplicate projection/settlement, all four mappings. Both attempted runs failed before test execution with `error: could not compile `oteryn-gameplay-dispatch` (lib test)` and `(signal: 9, SIGKILL: kill)`. Retried after `cargo clean -p oteryn-gameplay-dispatch` with `CARGO_BUILD_JOBS=1`. The repository PG workflow documents extra swap for this target; this container has no swap or administrative capabilities. No tests were skipped, loosened or removed to obtain the supplemental proof.
 
 Passed: `cargo clippy --locked -p oteryn-gameplay-dispatch --all-targets --all-features --quiet -- -D warnings` (exit 0). This checks the full authored dispatch test code as well as production code. Existing vendor warnings remain dependency diagnostics.
+
+## Per-criterion evidence and execution limits
+
+| Criterion | Evidence | Qualification |
+| --- | --- | --- |
+| Two damaging Characters both flagged | `postgres_tests/srvenc_source_deaths.rs:335-403,469-494,641-652` | Authored real lethal-queue case; all-feature clippy passed; runtime case not executed |
+| Nearby observer not flagged | Same fixture, member two and `:650` assertion | Authored real lethal-queue case; runtime case not executed |
+| Non-overlord creates no flag | Dispatch `postgres_tests/overlordcr.rs:39`; authority `authority_cases/overlordcr.rs:132` | Owner negative passed in PG; full death-path case not executed |
+| Duplicate settlement creates no duplicate | Authority replay and later-death checks `authority_cases/overlordcr.rs:153-208`; dispatch `srvenc_source_deaths.rs:667` | Owner replay passed in PG; full death-path case not executed |
+| Four overlords map to donor key | `quest/source_deaths.rs:161-190`; authority `overlordcr.rs:52-64` | All four owner transactions passed in PG |
+
+Clippy for the touched server authority target is still running; pin/lock verification follows it. The embedded catalogue was loaded successfully for each of the four executed PG mappings, so catalogue loading is already covered by that proof.
