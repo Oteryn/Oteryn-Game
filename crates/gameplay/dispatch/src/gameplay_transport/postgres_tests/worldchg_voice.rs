@@ -282,6 +282,7 @@ async fn kill(
         .active_generation
         .and_then(|active| active.native_gameplay())
         .ok_or("native")?;
+    assert!(owner.refresh_source_party_presence(actor, session).await);
     let observed = owner.owner_now();
     let now = observed.get() / 1_000;
     let queue = owner.states.attack.lock().await.kills().clone();

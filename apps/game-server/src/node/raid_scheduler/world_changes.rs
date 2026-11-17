@@ -159,9 +159,9 @@ pub(super) async fn observe(
                     return Ok(false);
                 }
                 Ok(!runtime.committed_player_positions().iter().any(|at| {
-                    at.floor == -9
-                        && (33306..=33369).contains(&at.x)
-                        && (31847..=31919).contains(&at.y)
+                    oteryn_gameplay_world::terrain_tools::voice_dungeon_contains(
+                        at.x, at.y, at.floor,
+                    )
                 }))
             },
         )

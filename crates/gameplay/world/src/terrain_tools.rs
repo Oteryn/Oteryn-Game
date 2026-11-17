@@ -336,6 +336,11 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
     bindings
 }
 
+/// The fungus dungeon rectangle in the carrier's positive Tibia floor frame.
+pub fn voice_dungeon_contains(x: i32, y: i32, floor: i16) -> bool {
+    floor == 9 && (33306..=33369).contains(&x) && (31847..=31919).contains(&y)
+}
+
 /// Crystal their_masters_voice.lua:9-41,43-49,59-83 (SHA256
 /// 9024836cf5c3cf570067c58383e9c4bd548b409d8650029d02ed91e36b5d746a).
 /// These are source home positions, in carrier floor coordinates. The existing
@@ -546,6 +551,16 @@ mod tests {
             assert_eq!(cane.binding.yield_item, Some(5466));
         }
     }
+    #[test]
+    fn voice_dungeon_occupancy_uses_the_carrier_floor_and_edges() {
+        for (x, y, floor) in [(33306, 31847, 9), (33369, 31919, 9)] {
+            assert!(voice_dungeon_contains(x, y, floor));
+        }
+        for (x, y, floor) in [(33305, 31847, 9), (33369, 31920, 9), (33306, 31847, -9)] {
+            assert!(!voice_dungeon_contains(x, y, floor));
+        }
+    }
+
     #[test]
     fn worldchg_voice_source_homes_choices_and_slot_identity() {
         for (draw, expected) in [
