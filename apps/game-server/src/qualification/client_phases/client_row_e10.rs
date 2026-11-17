@@ -160,7 +160,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("e10-stale.bin", &stale_payload);
     capture("e10-history.bin", &history_payload);
     capture("e10-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok(format!("balance={} price={} order={}", page.total_coins, offer.price, hex(&order)))
 }
 

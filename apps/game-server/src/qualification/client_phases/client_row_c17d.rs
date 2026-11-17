@@ -42,6 +42,10 @@ fn own(client: &DevClientSession) -> TestResult<oteryn_dev_client::EntityRef> {
         .map(|entry| entry.entity).ok_or_else(|| "own entity absent".into())
 }
 
+fn can_challenge(adjacent: bool, observed_victim_hit: bool, observed_caster_hit: bool) -> bool {
+    adjacent && observed_victim_hit && !observed_caster_hit
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -49,21 +53,51 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut victim = connect_character(clients, 0xd4, 1).await?;
     let mut caster = connect_character(clients, 0xd5, 0).await?;
-    travel_to_spawn(&mut victim, world, &metadata.spawns, "oteryn:creature.rat").await?;
+    with_peer(&mut caster, travel_to_spawn(&mut victim, world, &metadata.spawns, "oteryn:creature.rat")).await?;
     let victim_at = tile(victim.world_spatial().actor_position)?;
     let path = route(world, tile(caster.world_spatial().actor_position)?, |at| {
         at.floor == victim_at.floor && at.x.abs_diff(victim_at.x).max(at.y.abs_diff(victim_at.y)) <= 1
     }).ok_or("no route for Challenge caster")?;
-    walk(&mut caster, world, &path).await?;
-    let rat = caster.world_entities().and_then(|entities| entities.iter().find(|entry| {
-        entry.kind == oteryn_dev_client::EntityKind::Creature
-            && entry.position.floor == caster.world_spatial().actor_position.floor
-            && entry.position.x.abs_diff(caster.world_spatial().actor_position.x)
-                .max(entry.position.y.abs_diff(caster.world_spatial().actor_position.y)) <= 1
-    })).map(|entry| entry.entity).ok_or("adjacent rat absent")?;
+    with_peer(&mut victim, walk(&mut caster, world, &path)).await?;
     let caster_ref = own(&caster)?;
+    let victim_ref = own(&victim)?;
+    let mut hits_on_victim = BTreeSet::new();
+    let mut hits_on_caster = BTreeSet::new();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     caster.take_events();
     victim.take_events();
+    let rat = loop {
+        for (peer, target, sources) in [
+            (&mut victim, victim_ref, &mut hits_on_victim),
+            (&mut caster, caster_ref, &mut hits_on_caster),
+        ] {
+            peer.service_liveness(Duration::from_millis(25)).await?;
+            for event in peer.take_events() {
+                if let SessionEvent::Presentation(delta) = event {
+                    for item in delta.value {
+                        if let PresentationEventKind::ValueText {
+                            attacker: Some(source), target: recipient, primary, ..
+                        } = item.kind && recipient == target && primary.value > 0 {
+                            sources.insert((source.identity, source.generation));
+                        }
+                    }
+                }
+            }
+        }
+        let at = caster.world_spatial().actor_position;
+        if let Some(creature) = caster.world_entities().and_then(|entities| entities.iter().find(|entry| {
+            let source = (entry.entity.identity, entry.entity.generation);
+            let adjacent = entry.position.floor == at.floor
+                && entry.position.x.abs_diff(at.x).max(entry.position.y.abs_diff(at.y)) <= 1;
+            entry.kind == oteryn_dev_client::EntityKind::Creature
+                && can_challenge(adjacent, hits_on_victim.contains(&source), hits_on_caster.contains(&source))
+        })) {
+            break creature.entity;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("Challenge found no adjacent creature observed attacking only the other player".into());
+        }
+    };
     let book = spell_book()?;
     let before = caster.actor_vitals().copied().ok_or("caster vitals absent")?;
     let cast = caster.cast_spell(challenge_index(&book)?, SpellTarget::None, false).await?;
@@ -76,8 +110,10 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     while tokio::time::Instant::now() < deadline && captured.is_none() {
         caster.service_liveness(Duration::from_millis(100)).await?;
         victim.service_liveness(Duration::from_millis(20)).await?;
+        victim.take_events();
         for event in caster.take_events() {
             if let SessionEvent::Presentation(delta) = event
+                && delta.server_sequence > cast.result_server_sequence
                 && delta.value.iter().any(|event| matches!(event.kind,
                     PresentationEventKind::ValueText { attacker: Some(source), target, primary, .. }
                     if source == rat && target == caster_ref && primary.value > 0))
@@ -107,4 +143,18 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn challenge_requires_a_different_established_victim() {
+        assert!(!can_challenge(true, false, false));
+        assert!(!can_challenge(true, true, true));
+        assert!(!can_challenge(false, true, false));
+        assert!(can_challenge(true, true, false));
+    }
+
 }

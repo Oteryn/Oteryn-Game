@@ -19,6 +19,10 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     ));
 }
 
+fn matches_floor_landing(from: TilePos, planned: TilePos, observed: TilePos) -> bool {
+    observed == planned && observed.floor != from.floor
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -35,13 +39,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let (last, prefix) = path.split_last().ok_or("M03 floor route was empty")?;
     walk(&mut client, world, prefix).await?;
     let before = *client.world_spatial();
+    let step_from = tile(before.actor_position)?;
+    let planned = destination(world, step_from, *last).ok_or("M03 planned landing is absent")?;
     let moved = client.step_retrying(*last).await?;
     let delta = moved
         .world_spatial_delta
         .as_ref()
         .ok_or("M03 floor step sent no spatial delta")?;
-    if tile(delta.value.actor_position)?.floor == from.floor {
-        return Err("M03 capture step did not change floor".into());
+    let observed = tile(delta.value.actor_position)?;
+    if moved.disposition != StepDisposition::Moved || !matches_floor_landing(step_from, planned, observed) {
+        return Err(format!("M03 floor step from {step_from:?} expected {planned:?}, observed {observed:?}: {moved:?}").into());
     }
 
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -112,4 +119,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn floor_change_requires_the_planned_landing() {
+        let start = TilePos { x: 50, y: 60, floor: -7 };
+        let planned = TilePos { x: 51, floor: -6, ..start };
+        assert!(matches_floor_landing(start, planned, planned));
+        assert!(!matches_floor_landing(start, planned, TilePos { x: 52, ..planned }));
+    }
 }

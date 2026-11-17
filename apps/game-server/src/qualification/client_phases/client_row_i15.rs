@@ -12,16 +12,18 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
-fn capture(name: &str, bytes: &[u8]) {
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else { return; };
-    if let Err(error) = std::fs::write(Path::new(&path).join(name), bytes) {
-        evidence(&format!("I15_CAPTURE_WRITE_ERROR file={name} error={error}"));
-    }
+fn capture(name: &str, bytes: &[u8]) -> TestResult {
+    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else { return Ok(()); };
+    std::fs::write(Path::new(&path).join(name), bytes)?;
+    Ok(())
+}
+
+fn shield_ratio(health_unchanged: bool, mana_debit: u32, incoming_damage: u32) -> bool {
+    health_unchanged && incoming_damage > 0 && incoming_damage.checked_mul(2) == Some(mana_debit)
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let active = provisioning::item_reference(&provisioning::item_index()?, 3088)?;
@@ -32,22 +34,50 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         });
         if !equipped { return Err("I15 active Energy Ring 3088 absent after I05 lifecycle".into()); }
 
-        let mut previous = *client.actor_vitals().ok_or("I15 admission vitals absent")?;
+        const DROWNING_TICK: u32 = 20;
+        let from = tile(client.world_spatial().actor_position)?;
+        let mut path = route(world, from, |at| client_row_m10::is_underwater(world, at))
+            .ok_or("I15 no reachable underwater tile for a known incoming hit")?;
+        let enter = path.pop().ok_or("I15 started underwater")?;
+        walk(&mut client, world, &path).await?;
+        let baseline = client_row_c17a::query(&mut client).await?.0;
+        if baseline.conditions.iter().any(|condition| (1..=8).contains(&condition.icon)) {
+            return Err("I15 unexpected pre-existing damage condition".into());
+        }
+        let mut previous = *client.actor_vitals().ok_or("I15 pre-entry vitals absent")?;
+        if previous.mana < 2 * DROWNING_TICK {
+            return Err("I15 insufficient mana for a full shielded drowning hit".into());
+        }
         client.take_events();
-        travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+        let moved = client.step_retrying(enter).await?;
+        if moved.disposition != StepDisposition::Moved || moved.world_spatial_delta.is_none() {
+            return Err("I15 entering underwater did not move".into());
+        }
+        let observed = client_row_c17a::query(&mut client).await?.0;
+        let drowning = observed.conditions.iter().any(|condition| condition.icon == 5);
+        let other_harm = observed.conditions.iter().any(|condition| condition.icon != 5 && (1..=8).contains(&condition.icon));
+        if !drowning || other_harm {
+            return Err("I15 expected drowning as the only damage condition".into());
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(7);
         loop {
+            if client.world_entities().is_some_and(|entities| entities.iter().any(|entity|
+                matches!(entity.kind, oteryn_dev_client::EntityKind::Creature | oteryn_dev_client::EntityKind::Player)
+                && &entity.entity.identity != entities.own_identity()
+            )) {
+                return Err("I15 another visible attacker could supply the observed hit".into());
+            }
             for event in client.take_events() {
                 if let SessionEvent::ActorVitals(delta) = event {
                     let current = delta.value;
-                    if current.health == previous.health && previous.mana > current.mana {
-                        let paid = previous.mana - current.mana;
-                        if paid % 2 != 0 { return Err(format!("I15 mana debit is not an accepted 2:1 cost: {paid}").into()); }
+                    if current.health < previous.health || previous.mana > current.mana {
+                        let paid = previous.mana.saturating_sub(current.mana);
+                        if !shield_ratio(current.health == previous.health, paid, DROWNING_TICK) { return Err(format!("I15 mana debit is not an accepted 2:1 cost: {paid}").into()); }
                         let before = actor_spell::encode_actor_vitals(&previous).map_err(|error| format!("I15 before encode: {error:?}"))?;
                         let after = actor_spell::encode_actor_vitals(&current).map_err(|error| format!("I15 after encode: {error:?}"))?;
-                        capture("i15-before.bin", &before);
-                        capture("i15-after.bin", &after);
-                        capture("i15-expected.txt", format!("{} {}\n", current.health, current.mana).as_bytes());
+                        capture("i15-before.bin", &before)?;
+                        capture("i15-after.bin", &after)?;
+                        capture("i15-expected.txt", format!("{} {}\n", current.health, current.mana).as_bytes())?;
                         return Ok(());
                     }
                     previous = current;
@@ -59,6 +89,19 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             client.service_liveness(Duration::from_millis(50)).await?;
         }
     }.await;
-    let logout = client.session_mut().logout().await;
-    result.and(logout.map(|_| ()).map_err(Into::into))
+    let logout = client_row_c08::require_logout(&mut client, Duration::from_secs(70)).await;
+    result.and(logout)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shield_ratio_requires_twice_the_observed_hit() {
+        assert!(!shield_ratio(true, 2, 20));
+        assert!(!shield_ratio(true, 20, 20));
+        assert!(!shield_ratio(false, 40, 20));
+        assert!(shield_ratio(true, 40, 20));
+    }
 }

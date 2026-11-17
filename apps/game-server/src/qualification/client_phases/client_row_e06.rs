@@ -90,6 +90,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if refusal.code != 14 {
         return Err(format!("expected refusal 14, observed {refusal:?}").into());
     }
+    let before = oteryn_dev_client::client_runtime::npc_shop::balances(client.session_mut())
+        .await?.ok_or("E06 bank balance absent before offer")?;
     let (created, _) = command(&mut client, request(5, ware.definition, [0; 16])).await?;
     if created.code != 1 || created.offer == [0; 16] {
         return Err(format!(
@@ -99,9 +101,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .into());
     }
     let offer = created.offer;
-    let (cancelled, _) = command(&mut client, request(7, 0, offer)).await?;
-    if cancelled.code != 1 {
-        return Err(format!("cancel code {}", cancelled.code).into());
+    let held = client_row_e05::bounded_observation("E06 escrow bank balance", async {
+        oteryn_dev_client::client_runtime::npc_shop::balances(client.session_mut()).await?
+            .ok_or_else(|| "E06 bank balance absent after offer".into())
+    }).await;
+    let cancellation = client_row_e05::cancel_offer(clients, world, client, offer).await;
+    let held = held?;
+    let (mut client, (cancelled, _)) = cancellation?;
+    if cancelled.code != 1 || cancelled.action != 7 || held.bank_gold >= before.bank_gold {
+        return Err(format!("E06 invalid escrow or cancellation: before={before:?} held={held:?} cancel={cancelled:?}").into());
     }
     if client.session_mut().logout().await?.result
         != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted)
@@ -118,8 +126,15 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .find(|row| row.offer == offer)
         .cloned()
         .ok_or("cancelled offer absent from fresh-admission History")?;
-    if own.rows.iter().any(|row| row.offer == offer) {
-        return Err("cancelled offer active after fresh admission".into());
+    let durable = client_row_e05::durable_offer_end(clients, offer).await?;
+    let refunded = oteryn_dev_client::client_runtime::npc_shop::balances(client.session_mut())
+        .await?.ok_or("E06 bank balance absent after fresh admission")?;
+    if !client_row_e05::cancelled_offer(&own, &history, offer, durable)
+        || !escrow_refunded(before.bank_gold, held.bank_gold, refunded.bank_gold)
+        || held.carried_gold != before.carried_gold
+        || refunded.carried_gold != before.carried_gold
+    {
+        return Err(format!("E06 cancellation/refund mismatch own={own:?} history={history:?} durable={durable} held={held:?} refunded={refunded:?}").into());
     }
     let expected = format!(
         "definition={}\noffer={}\nrefusal=14\nfresh_own={}\nhistory_state={}\n",
@@ -134,7 +149,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("e06-own.bin", &own_bytes);
     capture("e06-history.bin", &history_bytes);
     capture("e06-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok(format!(
         "definition={} refusal=14 history_state={} expiry=MISSING-SERVER",
         ware.definition, ended.state
@@ -151,5 +166,22 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E06.client status=FAIL evidence=timeout"),
+    }
+}
+
+fn escrow_refunded(before: u64, held: u64, recovered: u64) -> bool {
+    before.checked_sub(1) == Some(held) && recovered == before
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn market_refund_requires_exact_escrow_and_full_restoration() {
+        assert!(!escrow_refunded(100, 98, 99));
+        assert!(!escrow_refunded(100, 99, 99));
+        assert!(!escrow_refunded(100, 99, 101));
+        assert!(escrow_refunded(100, 99, 100));
     }
 }

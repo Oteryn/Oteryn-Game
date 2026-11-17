@@ -1,7 +1,4 @@
-//! M06 client replay capture: a real key USE-WITH produces the domain-2 overlay payload consumed
-//! by `Session::apply_state_delta` in `crates/session/src/domain_dispatch.rs`; the resulting entry
-//! is exposed by `Session::world_object_overlay` in `crates/session/src/session_access.rs` and by
-//! `DevClientSession::world_object_overlay` in `tools/dev-client/src/lib.rs`.
+//! Captures the native bundle door transition for a matching carried key.
 
 use super::*;
 use oteryn_protocol_oteryn::world_object::{
@@ -42,21 +39,28 @@ fn key_doors(bytes: &[u8], world: &BundleWorld) -> TestResult<Vec<Door>> {
     Ok(found)
 }
 
-fn target(world: &BundleWorld, door: Door) -> TestResult<WorldObjectTarget> {
-    let key = crate::map::view::placement_key(door.at, door.ordinal)
-        .ok_or("M06 client placement key")?;
-    let mut placement = world.base().digest().to_vec();
-    placement.extend_from_slice(&key.to_be_bytes());
-    Ok(WorldObjectTarget {
-        placement,
-        expected_revision: 0,
-    })
-}
-
-fn capture(path: &Path, name: &str, bytes: &[u8]) {
-    if let Err(error) = std::fs::write(path.join(name), bytes) {
-        evidence(&format!("M06_CLIENT_CAPTURE_WRITE name={name} error={error}"));
+async fn matching_key(clients: &SeamClients<'_>, client: &oteryn_dev_client::DevClientSession, number: u16) -> TestResult<oteryn_dev_client::ItemEntry> {
+    let mut db = sqlx::PgConnection::connect(clients.url).await?;
+    let matches: Vec<(String, i32)> = sqlx::query_as(
+        "SELECT i.definition_production_key,k.key_number
+         FROM game_item_container_entries e
+         JOIN game_item_instances i USING (world_id,item_instance_id)
+         JOIN game_item_keys k USING (item_instance_id)
+         WHERE e.character_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid AND i.lifecycle=1"
+    ).bind(clients.characters[1].as_slice()).bind(clients.world.as_slice()).fetch_all(&mut db).await?;
+    let index = provisioning::item_index()?;
+    let inventory = client.inventory().ok_or("M06 inventory absent")?;
+    for (key, actual) in matches {
+        let Some(id) = key.strip_prefix("oteryn:item.tibia.i").and_then(|id| id.parse().ok()) else { continue; };
+        let definition = provisioning::item_reference(&index, id)?;
+        let mut candidates = inventory.entries.iter().filter(|entry| entry.item_definition_ref == definition);
+        if let Some(item) = candidates.next().copied()
+            && is_door_key(definition.get(), u16::try_from(actual).ok(), number, candidates.count() + 1)
+        {
+            return Ok(item);
+        }
     }
+    Err(format!("M06 no unambiguous carried key for door action {number}").into())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -80,16 +84,25 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             .map(|path| (door, path))
         })
         .ok_or("M06 client has no reachable authored key door")?;
-    walk(&mut client, world, &path).await?;
-    let carried = client
-        .inventory()
-        .and_then(|inventory| inventory.entries.first())
-        .copied()
-        .ok_or("M06 client has no carried key candidate")?;
+    let mut map = client_row_m05::DoorMap::read(&mut client)?;
+    walk_observing(&mut client, world, &path, |event| map.observe(&event)).await?;
+    let key = crate::map::view::placement_key(door.at, door.ordinal)
+        .ok_or("M06 placement key absent")?;
+    let number = world.facts().action_at(key).ok_or("M06 door has no authored key number")?;
+    let carried = matching_key(clients, &client, number).await?;
+    for event in client.take_events() { map.observe(&event); }
+    let (revision, appearance) = map.state(door.at, door.ordinal)
+        .ok_or("M06 locked door absent from current map")?;
+    if appearance != 1628 {
+        return Err(format!("M06 expected locked door 1628, observed {appearance}").into());
+    }
+    let mut placement = world.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    let cutoff = client.last_server_sequence();
     let intent = UseIntent {
         target: UseTarget::Item(carried.handle),
         use_with: None,
-        use_with_map_item: Some(MapUseTarget::Object(target(world, door)?)),
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget { placement, expected_revision: revision })),
         use_with_position: None,
     };
     let payload = encode_item_use_intent(&intent).map_err(|error| format!("{error:?}"))?;
@@ -106,42 +119,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )
         .into());
     }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(
-            oteryn_protocol_oteryn::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-            1,
-        )
-        .await?;
-    let entry = oteryn_protocol_oteryn::world_object::decode_world_object_overlay_delta(
-        &delta.payload,
-    )
-    .map_err(|error| format!("{error:?}"))?;
-    if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-        let root = Path::new(&root);
-        capture(root, "m06-overlay.bin", &delta.payload);
-        capture(root, "m06-placement.bin", &entry.placement);
-        capture(
-            root,
-            "m06-expected.txt",
-            format!(
-                "{} {} {} {}\n{}\n",
-                delta.server_sequence,
-                delta.base_revision,
-                delta.new_revision,
-                entry.revision,
-                String::from_utf8_lossy(&entry.state)
-            )
-            .as_bytes(),
-        );
-    }
+    let next = revision.checked_add(1).ok_or("M06 door revision exhausted")?;
+    client_row_m05::capture_transition(&mut client, "m06-key-unlocked", &mut map, cutoff, door.at, (door.ordinal, next, 1630)).await?;
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok(())
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
-        return;
-    }
     let result = verdict::observe(journey(clients)).await;
     evidence(&format!(
         "e2e_all scenario=M06.client status={}{}",
@@ -151,4 +135,22 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             .map(|error| format!(" evidence={}", error.to_string().replace(' ', "-")))
             .unwrap_or_default()
     ));
+}
+
+fn is_door_key(definition: u32, actual: Option<u16>, expected: u16, matching_instances: usize) -> bool {
+    definition > 0 && actual == Some(expected) && matching_instances == 1
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn key_action_must_match_door_and_resolve_one_carried_handle() {
+        assert!(!is_door_key(0, Some(100), 100, 1));
+        assert!(!is_door_key(121, Some(101), 100, 1));
+        assert!(!is_door_key(121, None, 100, 1));
+        assert!(!is_door_key(121, Some(100), 100, 2));
+        assert!(is_door_key(121, Some(100), 100, 1));
+    }
 }

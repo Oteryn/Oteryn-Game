@@ -111,7 +111,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("c17c-snapshot.bin", &snapshot.payload);
     capture("c17c-mapping.bin", &mapping_payload);
     capture("c17c-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok(format!("look={} sequence={sequence}", outfit(&binding.look)?))
 }
 

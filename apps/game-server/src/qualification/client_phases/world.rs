@@ -2233,60 +2233,6 @@ async fn reach_route_serviced(
     }))
 }
 
-const REACH_SEARCH_NODES: usize = 3_000_000;
-const REACH_CHUNK: usize = 20_000;
-
-/// Like `route` without its 160-tile and two-floor window: it searches the whole bundle (stairs,
-/// ladders and floor changes included) up to `REACH_SEARCH_NODES` tiles. The search yields to the
-/// connection every `REACH_CHUNK` expansions so liveness is served and the harness sees progress.
-/// `Ok(Err(searched))` means the goal is not reachable (or the cap was hit) after `searched` tiles.
-pub(super) async fn reach_route(
-    client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    from: TilePos,
-    goal: impl Fn(TilePos) -> bool,
-) -> TestResult<Result<Vec<StepDirection>, usize>> {
-    let mut queue = VecDeque::from([from]);
-    let mut parents = BTreeMap::from([(from, None)]);
-    let mut expanded = 0usize;
-    while let Some(at) = queue.pop_front() {
-        if goal(at) {
-            let mut path = Vec::new();
-            let mut cursor = at;
-            while let Some(Some((previous, direction))) = parents.get(&cursor) {
-                path.push(*direction);
-                cursor = *previous;
-            }
-            path.reverse();
-            return Ok(Ok(path));
-        }
-        if parents.len() > REACH_SEARCH_NODES {
-            break;
-        }
-        expanded += 1;
-        if expanded.is_multiple_of(REACH_CHUNK) {
-            verdict::Harness::global().progress("route-search");
-            client.service_liveness(Duration::from_millis(1)).await?;
-        }
-        for direction in [
-            StepDirection::North,
-            StepDirection::East,
-            StepDirection::South,
-            StepDirection::West,
-        ] {
-            let Some(next) = destination(world, at, direction) else {
-                continue;
-            };
-            if parents.contains_key(&next) {
-                continue;
-            }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
-        }
-    }
-    Ok(Err(parents.len()))
-}
-
 /// Use the production floor resolver over the production bundle's collision facts.
 fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> Option<TilePos> {
     use crate::map::floor::{Ground, resolve_landing};
@@ -2399,10 +2345,97 @@ async fn request_spawn(session: String, key: String) -> Result<String, String> {
     })
 }
 
+fn first_reachable<T: Copy, P>(
+    candidates: impl IntoIterator<Item = T>,
+    mut plan: impl FnMut(T) -> Option<P>,
+) -> Option<(T, P)> {
+    candidates
+        .into_iter()
+        .find_map(|target| plan(target).map(|path| (target, path)))
+}
+
+#[cfg(test)]
+mod reachability_tests {
+    use super::*;
+
+    #[test]
+    fn later_reachable_placement_survives_unreachable_first_placement() {
+        assert_eq!(
+            first_reachable([10, 20], |at| (at == 20).then_some(vec![at])),
+            Some((20, vec![20]))
+        );
+    }
+}
+
+async fn pump_during<T>(
+    work: impl Future<Output = TestResult<T>>,
+    mut pump: impl AsyncFnMut() -> TestResult,
+) -> TestResult<T> {
+    let finished = std::cell::Cell::new(false);
+    let (result, ()) = tokio::try_join!(
+        async {
+            let result = work.await;
+            finished.set(true);
+            result
+        },
+        async {
+            while !finished.get() {
+                pump().await?;
+            }
+            Ok(())
+        },
+    )?;
+    Ok(result)
+}
+
+async fn with_peer<T>(
+    peer: &mut oteryn_dev_client::DevClientSession,
+    work: impl Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    pump_during(work, async || {
+        peer.service_liveness(Duration::from_millis(25)).await?;
+        peer.take_events();
+        Ok(())
+    })
+    .await
+}
+
+#[cfg(test)]
+mod peer_liveness_tests {
+    use super::*;
+
+    #[tokio::test(start_paused = true)]
+    async fn peer_is_serviced_while_primary_waits_for_work() -> TestResult {
+        let serviced = std::cell::Cell::new(0);
+        pump_during(
+            async {
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                assert!(serviced.get() >= 2);
+                Ok(())
+            },
+            async || {
+                serviced.set(serviced.get() + 1);
+                tokio::time::sleep(Duration::from_millis(25)).await;
+                Ok(())
+            },
+        )
+        .await
+    }
+}
+
 async fn walk(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
     path: &[StepDirection],
+) -> TestResult {
+    walk_observing(client, world, path, |_| {}).await
+}
+
+async fn walk_observing(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    path: &[StepDirection],
+    mut observe: impl FnMut(oteryn_dev_client::SessionEvent),
 ) -> TestResult {
     for &direction in path {
         let before = client.world_spatial().actor_position;
@@ -2444,7 +2477,7 @@ async fn walk(
             )
             .into());
         }
-        client.take_events();
+        client.take_events().into_iter().for_each(&mut observe);
     }
     Ok(())
 }
@@ -2507,6 +2540,7 @@ pub(super) async fn journeys(
     packet_clients: &SeamClients<'_>,
     path: &Path,
 ) -> TestResult {
+    verdict::Harness::global().begin_world_journeys();
     let started = std::time::Instant::now();
     let bytes = std::fs::read(path)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;

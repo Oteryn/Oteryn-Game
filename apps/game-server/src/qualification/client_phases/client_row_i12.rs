@@ -24,11 +24,38 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     ));
 }
 
+fn refinement_matches(before: [u64; 6], after: [u64; 6], command: u64, delta: u64) -> bool {
+    if delta <= command || before[0] != after[0] || before[1].checked_sub(1) != Some(after[1]) {
+        return false;
+    }
+    let mut rewards = 0;
+    for (&old, &new) in before[2..].iter().zip(&after[2..]) {
+        if old != new {
+            if old.checked_add(1) != Some(new) {
+                return false;
+            }
+            rewards += 1;
+        }
+    }
+    rewards == 1
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let mut client = connect_character(clients, 0xc2, 0).await?;
     let index = provisioning::item_index()?;
     let pick_ref = provisioning::item_reference(&index, PICK)?;
     let stone_ref = provisioning::item_reference(&index, SHINY_STONE)?;
+    let references = [
+        pick_ref, stone_ref,
+        provisioning::item_reference(&index, 3043)?,
+        provisioning::item_reference(&index, 3031)?,
+        provisioning::item_reference(&index, 3035)?,
+        provisioning::item_reference(&index, 3028)?,
+    ];
+    let counts = |inventory: &item_view::CharacterInventory| references.map(|reference| {
+        inventory.entries.iter().filter(|entry| entry.item_definition_ref == reference)
+            .map(|entry| u64::from(entry.count.get())).sum::<u64>()
+    });
     let inventory = client.inventory().ok_or("no inventory snapshot")?;
     let pick = inventory
         .entries
@@ -42,6 +69,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         .find(|entry| entry.item_definition_ref == stone_ref)
         .ok_or("no legitimately carried shiny stone")?
         .handle;
+    let before = counts(inventory);
     let snapshot = client
         .session_mut()
         .gated_snapshot(item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
@@ -64,15 +92,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if reply.status != CommandStatus::Accepted || disposition != UseDisposition::Committed {
         return Err(format!("pick refine returned {:?}/{disposition:?}", reply.status).into());
     }
-    client.service_liveness(Duration::from_millis(250)).await?;
-    let delta = client
-        .take_events()
-        .into_iter()
-        .find_map(|event| match event {
-            SessionEvent::Inventory(delta) => Some(delta),
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let delta = loop {
+        if let Some(delta) = client.take_events().into_iter().find_map(|event| match event {
+            SessionEvent::Inventory(delta) if refinement_matches(
+                before, counts(&delta.value), reply.server_sequence, delta.server_sequence,
+            ) => Some(delta),
             _ => None,
-        })
-        .ok_or("committed pick refine sent no inventory delta")?;
+        }) {
+            break delta;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("I12 no inventory delta with one shiny stone debit and one refinement reward".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    };
     let delta_payload = item_view::encode_character_inventory(&delta.value)
         .map_err(|error| format!("inventory capture: {error:?}"))?;
     capture(&snapshot.payload, &delta_payload, &reply.payload, snapshot.revision, &delta);
@@ -118,5 +152,19 @@ fn capture(
         if let Err(error) = std::fs::write(root.join(name), value) {
             evidence(&format!("I12_CAPTURE_WRITE_ERROR file={name} error={error}"));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shiny_stone_capture_requires_fresh_exact_refinement() {
+        let before = [1, 4, 0, 3, 0, 0];
+        assert!(!refinement_matches(before, before, 2, 3));
+        assert!(!refinement_matches(before, [1, 3, 1, 4, 0, 0], 2, 3));
+        assert!(!refinement_matches(before, [1, 3, 1, 3, 0, 0], 3, 2));
+        assert!(refinement_matches(before, [1, 3, 1, 3, 0, 0], 2, 3));
     }
 }

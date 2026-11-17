@@ -14,6 +14,9 @@ fn capture(name: &str, bytes: &[u8]) {
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
+    client_row_c20b::require_current_run(
+        verdict::Harness::global().completed_prerequisite("C19a.full"), "C19a.full",
+    )?;
     let definitions = provisioning::item_index()?;
     let backpack_ref = provisioning::item_reference(&definitions, 2854)?;
     let mut client = connect_world(clients, 0x32).await?;
@@ -46,7 +49,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     }
     capture("c19a-snapshot.bin", &snapshot.payload);
     capture("c19a-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok(format!(
         "backpack_ref={} entries={}",
         backpack.item_definition_ref,

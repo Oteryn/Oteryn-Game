@@ -363,6 +363,28 @@ fn capture_inventory(client: &mut DevClientSession) {
     }
 }
 
+fn validate_bait_attempt(
+    reply: (CommandStatus, UseDisposition),
+    before: u64,
+    remaining: u64,
+    consecutive_misses: &mut usize,
+) -> TestResult {
+    match reply {
+        (CommandStatus::Accepted, UseDisposition::Committed) if before.checked_sub(1) == Some(remaining) => {
+            *consecutive_misses = 0;
+            Ok(())
+        }
+        (CommandStatus::Accepted, UseDisposition::NothingToUse) if before == remaining => {
+            *consecutive_misses += 1;
+            if *consecutive_misses >= 40 {
+                return Err(format!("step 3 bait-drain no progress after {consecutive_misses} replies: last={reply:?} remaining={remaining}").into());
+            }
+            Ok(())
+        }
+        _ => Err(format!("step 3 bait-drain reply={reply:?} worms={before}->{remaining}").into()),
+    }
+}
+
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let bytes = fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -433,7 +455,9 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("fishing-replies-and-deltas", committed);
     capture_inventory(&mut client);
 
+    let mut consecutive_misses = 0;
     while units(&client, worm_ref) > 0 {
+        let before = units(&client, worm_ref);
         let reply = use_on(
             &mut client,
             rod.handle,
@@ -441,9 +465,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
         )
         .await?;
         settle(&mut client).await?;
-        if reply.0 != CommandStatus::Accepted {
-            return Err(format!("step 3 bait-drain reply={reply:?}").into());
-        }
+        validate_bait_attempt(reply, before, units(&client, worm_ref), &mut consecutive_misses)?;
     }
     let fish = units(&client, fish_ref);
     let refusal = use_on(
@@ -462,4 +484,20 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     row.pass("no-bait-refusal", refusal);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod bait_tests {
+    use super::*;
+
+    #[test]
+    fn bait_drain_stops_after_consecutive_no_progress_replies() {
+        let reply = (CommandStatus::Accepted, UseDisposition::NothingToUse);
+        let mut misses = 0;
+        for _ in 0..39 {
+            assert!(validate_bait_attempt(reply, 5, 5, &mut misses).is_ok());
+        }
+        let result = validate_bait_attempt(reply, 5, 5, &mut misses);
+        assert!(result.is_err_and(|error| error.to_string().contains("NothingToUse")));
+    }
 }

@@ -75,6 +75,17 @@ async fn wait_carried(client: &mut DevClientSession, handle: ItemHandle, expecte
     Ok(())
 }
 
+fn detail_matches(detail: &wire::Reply, client_id: u32, tier: u8, count: u32) -> bool {
+    detail.outcome == wire::Outcome::Detailed && detail.retrieved == 0
+        && matches!(detail.results.as_slice(), [row] if row.client_id == client_id
+            && row.tiers == [wire::TierCount { tier, count }]
+            && storage_total(row) == u64::from(count))
+}
+
+fn storage_total(row: &wire::SearchResult) -> u64 {
+    u64::from(row.depot) + u64::from(row.stash) + u64::from(row.inbox)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
@@ -116,6 +127,13 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     if browse.outcome != depot::DepotOutcome::Opened || browse.town.is_none() {
         return Err("depot browse did not open".into());
     }
+    let (baseline, _) = search_command(&mut client, wire::Request::Search { client_id }).await?;
+    let (depot_before, stash_before, inbox_before, tiers_before) = match (baseline.outcome, baseline.results.as_slice()) {
+        (wire::Outcome::NotFound, []) if baseline.retrieved == 0 => (0, 0, 0, &[][..]),
+        (wire::Outcome::Found, [row]) if row.client_id == client_id && baseline.retrieved == 0 =>
+            (row.depot, row.stash, row.inbox, row.tiers.as_slice()),
+        _ => return Err(format!("E08 invalid pre-deposit search: {baseline:?}").into()),
+    };
     let moved = depot_intent(
         &mut client,
         depot::DepotIntent {
@@ -133,16 +151,21 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
 
     let (found, found_bytes) = search_command(&mut client, wire::Request::Search { client_id }).await?;
     let row = found.results.first().ok_or("search returned no row")?;
-    let tier = row.tiers.first().ok_or("search row has no tier")?;
+    let tier = row.tiers.iter().find(|tier| {
+        let old = tiers_before.iter().find(|before| before.tier == tier.tier).map_or(0, |before| before.count);
+        old.checked_add(item.count.get()) == Some(tier.count)
+    }).ok_or("E08 deposit did not add the carried stack to a tier")?;
     if found.outcome != wire::Outcome::Found
         || found.retrieved != 0
         || row.client_id != client_id
-        || row.depot == 0
+        || found.results.len() != 1
+        || depot_before.checked_add(item.count.get()) != Some(row.depot)
+        || row.stash != stash_before || row.inbox != inbox_before
     {
         return Err(format!("search reply {found:?}").into());
     }
     let (tier_number, tier_count) = (tier.tier, tier.count);
-    let total = row.depot + row.stash + row.inbox;
+    let total = storage_total(row);
     let (detail, detail_bytes) = search_command(
         &mut client,
         wire::Request::Detail {
@@ -151,7 +174,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         },
     )
     .await?;
-    if detail.outcome != wire::Outcome::Detailed || detail.results.len() != 1 {
+    if !detail_matches(&detail, client_id, tier_number, tier_count) {
         return Err(format!("detail reply {detail:?}").into());
     }
     let (retrieved, retrieved_bytes) = search_command(
@@ -162,7 +185,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
         },
     )
     .await?;
-    if retrieved.outcome != wire::Outcome::Retrieved || retrieved.retrieved != total {
+    if retrieved.outcome != wire::Outcome::Retrieved || u64::from(retrieved.retrieved) != total {
         return Err(format!("retrieve reply {retrieved:?}").into());
     }
     wait_carried(&mut client, item.handle, true).await?;
@@ -197,7 +220,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     capture("e08-retrieve.bin", &retrieved_bytes);
     capture("e08-empty.bin", &empty_bytes);
     capture("e08-expected.txt", expected.as_bytes());
-    let _ = client.session_mut().logout().await;
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok(format!("item={client_id} depot={} retrieved={}", first.depot, retrieved.retrieved))
 }
 
@@ -211,5 +234,25 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             error.to_string().replace(' ', "_")
         )),
         Err(_) => evidence("e2e_all scenario=E08.client status=FAIL evidence=timeout"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn depot_detail_checks_definition_tier_and_count() {
+        let reply = wire::Reply {
+            outcome: wire::Outcome::Detailed, retrieved: 0,
+            results: vec![wire::SearchResult {
+                client_id: 3028, depot: 2, stash: 1, inbox: 0,
+                tiers: vec![wire::TierCount { tier: 1, count: 3 }],
+            }],
+        };
+        assert!(!detail_matches(&reply, 3029, 1, 3));
+        assert!(!detail_matches(&reply, 3028, 2, 3));
+        assert!(!detail_matches(&reply, 3028, 1, 2));
+        assert!(detail_matches(&reply, 3028, 1, 3));
     }
 }

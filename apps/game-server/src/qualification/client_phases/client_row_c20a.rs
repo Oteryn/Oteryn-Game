@@ -62,6 +62,7 @@ async fn capture_journey(
     let mut client = connect_world(clients, 0xca).await?;
     let before_payload = stats(&mut client).await?;
     let before = progress(&before_payload, general_stats::selected(&client))?;
+    let before_death = super::client_row_c20d::death_occurrence(&mut client).await?;
     travel_to_spawn(
         &mut client,
         world,
@@ -98,6 +99,10 @@ async fn capture_journey(
         if tokio::time::Instant::now() >= deadline {
             return Err("C20a did not observe lethal damage and respawn".into());
         }
+    }
+    let after_death = super::client_row_c20d::death_occurrence(&mut client).await?;
+    if after_death.is_none() || after_death == before_death {
+        return Err("C20a observed recovery without a new committed death occurrence".into());
     }
     let after_payload = stats(&mut client).await?;
     let after = progress(&after_payload, general_stats::selected(&client))?;

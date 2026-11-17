@@ -185,6 +185,10 @@ fn capture(before: ActorVitals, after: ActorVitals) {
     }
 }
 
+fn regeneration_matches(before: ActorVitals, after: ActorVitals, used: u64, delta: u64, food_debited: bool) -> bool {
+    food_debited && delta > used && after.health > before.health && after.mana > before.mana
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -247,27 +251,55 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         })
         .map(|item| item.handle)
         .ok_or("meat handle absent")?;
-    if client.use_item(handle).await?.disposition != UseDisposition::Committed {
+    let food_before = quantity(&client, meat);
+    let food_after = food_before.checked_sub(1).ok_or("C09 food baseline is empty")?;
+    client.take_events();
+    let used = client.use_item(handle).await?;
+    if used.status != CommandStatus::Accepted || used.disposition != UseDisposition::Committed {
         return Err("food use was not committed".into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+    let mut food_debited = false;
     loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
         for event in client.take_events() {
-            if let SessionEvent::ActorVitals(delta) = event
-                && delta.value.health > before.health
-                && delta.value.mana > before.mana
-            {
-                capture(before, delta.value);
-                return Ok(());
+            match event {
+                SessionEvent::Inventory(delta) if delta.server_sequence > used.result_server_sequence => {
+                    let observed = delta.value.entries.iter()
+                        .filter(|entry| entry.item_definition_ref == meat)
+                        .map(|entry| u64::from(entry.count.get())).sum::<u64>();
+                    food_debited |= observed == food_after;
+                }
+                SessionEvent::ActorVitals(delta) if regeneration_matches(
+                    before, delta.value, used.result_server_sequence, delta.server_sequence, food_debited,
+                ) => {
+                    capture(before, delta.value);
+                    return Ok(());
+                }
+                _ => {}
             }
         }
         if tokio::time::Instant::now() >= deadline {
             return Err(format!(
-                "food regeneration timeout before={before:?} current={:?}",
+                "food regeneration timeout food_debited={food_debited} before={before:?} current={:?}",
                 client.actor_vitals()
             )
             .into());
         }
+        client.service_liveness(Duration::from_millis(50)).await?;
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn food_regeneration_requires_post_use_vitals_and_food_debit() {
+        let before = ActorVitals { health: 10, mana: 20, ..Default::default() };
+        let after = ActorVitals { health: 11, mana: 21, ..before };
+        assert!(!regeneration_matches(before, after, 20, 19, true));
+        assert!(!regeneration_matches(before, after, 20, 21, false));
+        assert!(regeneration_matches(before, after, 20, 21, true));
+    }
+
 }

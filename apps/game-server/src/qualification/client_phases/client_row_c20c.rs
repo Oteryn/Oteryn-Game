@@ -17,6 +17,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
 }
 
 async fn capture(clients: &SeamClients<'_>) -> TestResult<String> {
+    client_row_c20b::require_current_run(
+        verdict::Harness::global().completed_prerequisite("C20c.full"), "C20c.full",
+    )?;
     // full_e2ef6 leaves Character 1's latest receipt at the Twist-only PvP death.
     let mut client = connect_character(clients, 0xc2, 1).await?;
     let result = client

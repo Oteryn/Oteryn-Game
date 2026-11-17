@@ -37,7 +37,17 @@ impl Watch {
     }
 
     fn take_verdicts(&self) -> Vec<String> {
-        let pending = std::mem::take(&mut self.state().pending);
+        let mut pending = std::mem::take(&mut self.state().pending);
+        if let Some(capture_failure) = pending.iter().position(|line| is_capture_write_error(line))
+        {
+            let failure = pending
+                .iter()
+                .position(|line| line.contains(" status=FAIL ") && !is_capture_write_error(line))
+                .unwrap_or(capture_failure);
+            let terminal = pending.swap_remove(failure);
+            pending.clear();
+            pending.push(terminal);
+        }
         let mut lines = Vec::with_capacity(pending.len());
         for mut line in pending {
             // An error during cleanup cannot leave an earlier optimistic PASS.
@@ -65,6 +75,33 @@ impl Watch {
         }
         lines
     }
+}
+
+fn is_capture_write_error(line: &str) -> bool {
+    line.split_whitespace().any(|field| {
+        field == "evidence=CAPTURE-WRITE-ERROR"
+            || field.starts_with("evidence=CAPTURE-WRITE-ERROR;")
+    })
+}
+
+fn terminal_capture(scenario: &str) -> bool {
+    matches!(
+        scenario,
+        "C02.client"
+            | "C08.client"
+            | "C17c.client"
+            | "C19a.client"
+            | "E01.client"
+            | "E02.client"
+            | "E03.client"
+            | "E05.client"
+            | "E06.client"
+            | "E07.client"
+            | "E08.client"
+            | "E09.client"
+            | "E10.client"
+            | "E12.client"
+    )
 }
 
 /// Enroll the dispatch boundary without changing any row's coverage assertions.
@@ -98,14 +135,36 @@ pub(crate) fn indexed(
 
 /// Called after legacy line normalization, before output. Buffer only this
 /// indexed row's verdict so late cleanup failures retain their typed origin.
-pub(crate) fn indexed_evidence(line: String) -> Option<String> {
-    if !line.starts_with("e2e_all ") && !(line.contains("_CHECK ") && line.contains(" PASS ")) {
+pub(crate) fn indexed_evidence(mut line: String) -> Option<String> {
+    if !(line.starts_with("e2e_all ")
+        || line.starts_with("e2e_capture ")
+        || line.contains("_CHECK ") && line.contains(" PASS "))
+    {
         return Some(line);
     }
-    let watch = Harness::global().active().clone();
+    let harness = Harness::global();
+    let watch = harness.active().clone();
     let Some(watch) = watch.filter(|watch| watch.scenario.is_some()) else {
+        for scenario in ["C14.full", "C19a.full", "C20b.full", "C20c.full"] {
+            if line.starts_with(&format!("e2e_all scenario={scenario} status=PASS ")) {
+                harness
+                    .completed_prerequisites
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .insert(scenario);
+                break;
+            }
+        }
         return Some(line);
     };
+    if let Some(scenario) = watch.scenario.filter(|scenario| terminal_capture(scenario))
+        && let Some(detail) =
+            line.strip_prefix(&format!("e2e_capture scenario={scenario} status=CAPTURED"))
+    {
+        line = crate::qualification::e2e_result_line(&format!(
+            "e2e_all scenario={scenario} status=PASS{detail}"
+        ));
+    }
     if line.contains("_CHECK ") && line.contains(" PASS ") {
         watch.touch("row-check");
     }
@@ -269,5 +328,42 @@ mod tests {
             ));
             Ok(())
         })
+    }
+}
+
+#[cfg(test)]
+mod capture_tests {
+    use super::*;
+
+    #[test]
+    fn indexed_capture_completion_is_a_terminal_pass() {
+        let mut watch = Watch::new("C02.client", Harness::global());
+        watch.scenario = Some("C02.client");
+        let active = watch.enter();
+
+        assert_eq!(
+            indexed_evidence("e2e_capture scenario=C02.client status=CAPTURED attack=1".to_owned()),
+            None
+        );
+        drop(active);
+        assert_eq!(
+            watch.take_verdicts(),
+            ["e2e_all scenario=C02.client status=PASS seconds=0.000 evidence=attack=1"]
+        );
+    }
+
+    #[test]
+    fn capture_write_failure_has_one_terminal_verdict() {
+        let mut watch = Watch::new("I03.client", Harness::global());
+        watch.scenario = Some("I03.client");
+        watch.state().pending.extend([
+            "e2e_all scenario=I03.client status=FAIL seconds=0.000 evidence=CAPTURE-WRITE-ERROR;disk".to_owned(),
+            "e2e_all scenario=I03.client status=PASS seconds=0.000".to_owned(),
+        ]);
+
+        let verdicts = watch.take_verdicts();
+        assert_eq!(verdicts.len(), 1);
+        assert!(verdicts[0].contains("status=FAIL"));
+        assert!(verdicts[0].contains("CAPTURE-WRITE-ERROR;disk"));
     }
 }

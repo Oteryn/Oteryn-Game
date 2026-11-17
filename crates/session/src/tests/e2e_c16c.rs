@@ -80,17 +80,44 @@ fn visible(session: &Session<DuplexStream>) -> Result<String, BoxError> {
 #[test]
 fn e2e_c16c_replays_real_companion_visibility_payloads() -> Result<(), BoxError> {
     block_on(async {
-        let (convince, animate, expected) =
-            if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
-                let root = std::path::Path::new(&root);
-                (
-                    std::fs::read(root.join("c16c-convince.bin"))?,
-                    std::fs::read(root.join("c16c-animate.bin"))?,
-                    std::fs::read_to_string(root.join("c16c-expected.txt"))?,
-                )
-            } else {
-                fixture()?
-            };
+        if let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+            let root = std::path::Path::new(&root);
+            static SELECTED: &[u32] = &[
+                6,
+                oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+            ];
+            for (phase, name) in [("convince", "Rat"), ("animate", "Skeleton")] {
+                let snapshot = std::fs::read(root.join(format!("c16c-{phase}.bin")))?;
+                let expected =
+                    std::fs::read_to_string(root.join(format!("c16c-{phase}-expected.txt")))?;
+                let (client, peer) = entity_peer(
+                    (SNAPSHOT_TYPE_WORLD_SPATIAL_ENTITIES_V2, snapshot),
+                    SELECTED,
+                    vec![],
+                );
+                let session = Session::admit(client, entity_admission()?).await?;
+                let entities = session
+                    .world_entities()
+                    .ok_or("C16c admitted entities absent")?;
+                assert!(entities.others().any(|entry| {
+                    let identity = entry
+                        .entity
+                        .identity
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>();
+                    entry.kind == EntityKind::Creature
+                        && entry
+                            .display_name
+                            .as_ref()
+                            .is_some_and(|actual| actual.as_str().ok() == Some(name))
+                        && format!("{name} {identity} {}\n", entry.entity.generation) == expected
+                }));
+                drop(session);
+                peer.await??;
+            }
+        }
+        let (convince, animate, expected) = fixture()?;
         let rat = named_actor(2, "Rat", at(1, 0))?;
         let dead = corpse(3, at(2, 0));
         let (client, peer) = entity_peer(

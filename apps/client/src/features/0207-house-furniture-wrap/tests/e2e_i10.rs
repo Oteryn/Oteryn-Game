@@ -62,32 +62,46 @@ fn apply_reply(command: &FeatureCommand, status: CommandStatus, payload: &[u8]) 
 
 #[test]
 fn e2e_i10_replays_wrap_unwrap_and_stale_refusals() -> Result<(), Box<dyn std::error::Error>> {
-    // (action, expected revision, server reply payload) for the wrap, unwrap and stale requests.
-    let captured = if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
         let path = std::path::Path::new(&path);
         let expected = std::fs::read_to_string(path.join("i10-expected.txt"))?;
-        let mut replies = Vec::new();
-        for (key, name, action, revision) in [
-            ("wrap", "i10-wrap.bin", Action::Wrap, 0),
-            ("unwrap", "i10-unwrap.bin", Action::Unwrap, 0),
-            ("refusal", "i10-refusal.bin", Action::Wrap, u64::MAX),
-        ] {
-            let payload = std::fs::read(path.join(name))?;
-            let line = expected
-                .lines()
-                .find_map(|line| line.strip_prefix(&format!("{key}=")))
+        let mut original: Option<Request> = None;
+        for (key, action) in [("wrap", Action::Wrap), ("unwrap", Action::Unwrap), ("refusal", Action::Wrap)] {
+            let payload = std::fs::read(path.join(format!("i10-{key}.bin")))?;
+            let request_payload = std::fs::read(path.join(format!("i10-{key}-request.bin")))?;
+            let observed = Request::decode(&request_payload).ok_or("malformed I10 request capture")?;
+            let line = expected.lines().find_map(|line| line.strip_prefix(&format!("{key}=")))
                 .ok_or("expected capture line absent")?;
             assert_eq!(hex(line), payload, "{key} capture disagrees");
-            replies.push((action, revision, payload));
+            assert_eq!(observed.action, action);
+            assert_ne!(observed.item, [0; 16]);
+            let baseline = *original.get_or_insert(observed);
+            assert_eq!(observed.item, baseline.item);
+            assert_eq!(observed.acl_revision, baseline.acl_revision);
+            assert_eq!(observed.position, baseline.position);
+            let command = FeatureCommand { capability: 207, kind: wire::COMMAND_WRAP, payload: request_payload };
+            let (status, feedback) = if key == "refusal" {
+                assert_eq!(observed.expected_revision, baseline.expected_revision);
+                assert_eq!(Reply::decode(&payload), Some(Reply::Refused(Refusal::Stale)));
+                (CommandStatus::Rejected, visible(4).to_owned())
+            } else {
+                let expected_revision = baseline.expected_revision.checked_add(u64::from(key == "unwrap"))
+                    .ok_or("I10 captured revision exhausted")?;
+                assert_eq!(observed.expected_revision, expected_revision);
+                let revision = expected_revision.checked_add(1).ok_or("I10 committed revision exhausted")?;
+                assert_eq!(Reply::decode(&payload), Some(Reply::Committed(revision)));
+                (CommandStatus::Accepted, format!("Furniture updated (revision {revision}). Refresh the list"))
+            };
+            let panel = apply_reply(&command, status, &payload);
+            assert_eq!(panel.feedback, feedback);
+            assert!(panel.catalogue.is_none());
         }
-        replies
-    } else {
-        vec![
-            (Action::Wrap, 0, Reply::Refused(Refusal::NotInHouse).encode()),
-            (Action::Unwrap, 0, Reply::Refused(Refusal::NotInHouse).encode()),
-            (Action::Wrap, u64::MAX, Reply::Refused(Refusal::Stale).encode()),
-        ]
-    };
+    }
+    let captured = [
+        (Action::Wrap, 0, Reply::Refused(Refusal::NotInHouse).encode()),
+        (Action::Unwrap, 0, Reply::Refused(Refusal::NotInHouse).encode()),
+        (Action::Wrap, u64::MAX, Reply::Refused(Refusal::Stale).encode()),
+    ];
     for (action, revision, payload) in &captured {
         let [code] = payload.as_slice() else {
             return Err("captured refusal is not one byte".into());

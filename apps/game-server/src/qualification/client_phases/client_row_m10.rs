@@ -22,7 +22,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     }
 }
 
-fn is_underwater(world: &BundleWorld, at: TilePos) -> bool {
+pub(super) fn is_underwater(world: &BundleWorld, at: TilePos) -> bool {
     world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| {
         tile.ground()
             .and_then(|(ordinal, id)| world.facts().base_entry(at, ordinal, id))
@@ -82,6 +82,6 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("M10 drowning damage was not 20: {initial:?} -> {:?}", delta.value).into());
     }
     capture(&initial, &delta);
-    let _ = client.session_mut().logout().await?;
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok(())
 }

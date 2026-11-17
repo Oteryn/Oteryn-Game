@@ -262,58 +262,73 @@ fn actor_position(at: TilePos) -> ActorPosition {
     }
 }
 
-fn capture_write(path: &Path, name: &str, bytes: impl AsRef<[u8]>) {
-    if let Err(error) = std::fs::write(path.join(name), bytes) {
-        evidence(&format!("C16a.client capture write {name}: {error}"));
+fn capture_write(path: Option<&Path>, name: &str, bytes: impl AsRef<[u8]>) -> TestResult {
+    if let Some(path) = path {
+        std::fs::write(path.join(name), bytes)
+            .map_err(|error| verdict::context(format!("C16a capture file={name}"), error))?;
     }
+    Ok(())
 }
 
-struct CapturedMapDelta {
-    server_sequence: u64,
-    base_revision: u64,
-    new_revision: u64,
-    payload: Vec<u8>,
-}
-
-async fn capture_map_delta(client: &mut DevClientSession) -> TestResult<CapturedMapDelta> {
-    let delta = client
-        .session_mut()
-        .read_gated_delta(
-            oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
-            1,
-        )
-        .await?;
-    Ok(CapturedMapDelta {
-        server_sequence: delta.server_sequence,
-        base_revision: delta.base_revision,
-        new_revision: delta.new_revision,
-        payload: delta.payload,
+fn barrier_transition(
+    target: ActorPosition,
+    expected: &[std::num::NonZeroU32],
+    present: bool,
+    tiles: &[oteryn_protocol_oteryn::world_map::MapTile],
+) -> bool {
+    use oteryn_protocol_oteryn::world_map::MapDefinition;
+    tiles.iter().find(|tile| tile.position == target).is_some_and(|tile| {
+        tile.items.iter().any(|item| matches!(item.definition,
+            MapDefinition::Item(reference) if expected.contains(&reference))) == present
     })
 }
 
+async fn barrier_frame(
+    client: &mut DevClientSession,
+    target: ActorPosition,
+    expected: &[std::num::NonZeroU32],
+    present: bool,
+    after: u64,
+    wait: Duration,
+) -> TestResult<oteryn_dev_client::AppliedDelta<oteryn_protocol_oteryn::world_map::WorldMapViewDelta>> {
+    let deadline = tokio::time::Instant::now() + wait;
+    verdict::Harness::global().bounded_wait(deadline, "barrier observation");
+    loop {
+        if let Some(delta) = client.take_events().into_iter().find_map(|event| match event {
+            SessionEvent::WorldMap(delta)
+                if delta.server_sequence > after
+                    && barrier_transition(target, expected, present, &delta.value.tiles) => Some(delta),
+            _ => None,
+        }) {
+            return Ok(delta);
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("C16a missing barrier transition at {target:?}: present={present} expected={expected:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
+}
+
 pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
-    let Some(directory) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    let result: TestResult = verdict::observe(async {
-        let path = Path::new(&directory);
+    let directory = std::env::var_os("E2E_ALL_CAPTURE_DIR");
+    let path = directory.as_deref().map(Path::new);
+    let result = verdict::indexed_timeout(Duration::from_secs(240), verdict::observe(async {
+        use oteryn_protocol_oteryn::world_map::{MapDefinition, encode_world_map_delta};
+        let definitions = provisioning::item_index()?;
         let mut client = connect_world(clients, 0xc1).await?;
         let snapshot = client
             .session_mut()
             .gated_snapshot(oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
             .ok_or("C16a client map snapshot absent")?
             .clone();
-        capture_write(path, "c16a-snapshot.bin", &snapshot.payload);
-        capture_write(
-            path,
-            "c16a-snapshot-revision.txt",
-            snapshot.revision.to_string(),
-        );
-        let snapshot_map =
-            oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(&snapshot.payload)
-                .map_err(|error| format!("C16a client snapshot decode: {error:?}"))?;
+        capture_write(path, "c16a-snapshot.bin", &snapshot.payload)?;
+        capture_write(path, "c16a-snapshot-revision.txt", snapshot.revision.to_string())?;
         let mut expected = String::new();
-        for (rune_id, stem) in [(3180, "wall"), (3156, "growth")] {
+        for (rune_id, stem, item_ids) in [(3180, "wall", [2128, 10181]), (3156, "growth", [2130, 10182])] {
+            let possible = [
+                provisioning::item_reference(&definitions, item_ids[0])?,
+                provisioning::item_reference(&definitions, item_ids[1])?,
+            ];
             let reference = acquire_rune(&mut client, world, rune_id).await?.0;
             let path_to_site = route(world, tile(client.world_spatial().actor_position)?, |at| {
                 rune_corridor(world, at).is_some()
@@ -324,60 +339,34 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
             let from = tile(client.world_spatial().actor_position)?;
             let cells = rune_corridor(world, from).ok_or("C16a client corridor absent")?;
             let target = actor_position(cells[1]);
-            let (reply, _) = rune_use(&mut client, reference, None, Some(target)).await?;
+            let map = client.session_mut().world_map_snapshot().ok_or("C16a pre-cast map absent")?;
+            if !barrier_transition(target, &possible, false, &map.tiles) {
+                return Err(format!("C16a target {target:?} missing or already contains the barrier").into());
+            }
+            let (reply, cast_sequence) = rune_use(&mut client, reference, None, Some(target)).await?;
             if reply != oteryn_protocol_oteryn::world_object::UseDisposition::Committed {
                 return Err(format!("C16a client rune {rune_id} refused: {reply:?}").into());
             }
-            let placed = capture_map_delta(&mut client).await?;
-            capture_write(path, &format!("c16a-{stem}-placed.bin"), &placed.payload);
-            capture_write(
-                path,
-                &format!("c16a-{stem}-placed-meta.txt"),
-                format!(
-                    "{} {} {}",
-                    placed.base_revision, placed.new_revision, placed.server_sequence
-                ),
-            );
-            let visible = oteryn_protocol_oteryn::world_map::decode_world_map_delta(
-                &snapshot_map.header,
-                &placed.payload,
-            )
-            .map_err(|error| format!("C16a client placement decode: {error:?}"))?;
-            let visible_reference = visible
-                .tiles
-                .iter()
-                .find(|tile| tile.position == target)
-                .and_then(|tile| {
-                    tile.items
-                        .iter()
-                        .rev()
-                        .find_map(|item| match item.definition {
-                            oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference) => {
-                                Some(reference)
-                            }
-                            oteryn_protocol_oteryn::world_map::MapDefinition::Terrain(_) => None,
-                        })
-                })
-                .ok_or("C16a client placement omitted barrier item")?;
-            expected.push_str(&format!(
-                "{stem} {} {} {} {}\n",
-                target.x, target.y, target.floor, visible_reference
-            ));
-            let expired = capture_map_delta(&mut client).await?;
-            capture_write(path, &format!("c16a-{stem}-expired.bin"), &expired.payload);
-            capture_write(
-                path,
-                &format!("c16a-{stem}-expired-meta.txt"),
-                format!(
-                    "{} {} {}",
-                    expired.base_revision, expired.new_revision, expired.server_sequence
-                ),
-            );
+            let placed = barrier_frame(&mut client, target, &possible, true, cast_sequence, Duration::from_secs(8)).await?;
+            let actual = placed.value.tiles.iter().find(|tile| tile.position == target)
+                .and_then(|tile| tile.items.iter().find_map(|item| match item.definition {
+                    MapDefinition::Item(reference) if possible.contains(&reference) => Some(reference),
+                    _ => None,
+                }))
+                .ok_or("C16a barrier definition missing from matched placement")?;
+            let expired = barrier_frame(&mut client, target, &[actual], false, placed.server_sequence, Duration::from_secs(70)).await?;
+            for (phase, delta) in [("placed", placed), ("expired", expired)] {
+                let payload = encode_world_map_delta(&delta.value.header, &delta.value)
+                    .map_err(|error| format!("C16a {phase} map encoding: {error:?}"))?;
+                capture_write(path, &format!("c16a-{stem}-{phase}.bin"), payload)?;
+                capture_write(path, &format!("c16a-{stem}-{phase}-meta.txt"), format!(
+                    "{} {} {}", delta.base_revision, delta.new_revision, delta.server_sequence,
+                ))?;
+            }
+            expected.push_str(&format!("{stem} {} {} {} {actual}\n", target.x, target.y, target.floor));
         }
-        capture_write(path, "c16a-expected.txt", expected);
-        Ok(())
-    })
-    .await;
+        capture_write(path, "c16a-expected.txt", expected)
+    })).await.unwrap_or_else(|_| Err("C16a barrier journey deadline".into()));
     match result {
         Ok(()) => evidence(
             "e2e_all scenario=C16a.client status=PASS evidence=raw-domain-17-placement-and-expiry",
@@ -385,5 +374,32 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>, world: &BundleWorld) {
         Err(error) => evidence(&format!(
             "e2e_all scenario=C16a.client status=FAIL evidence={error}"
         )),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_protocol_oteryn::world_map::{MapDefinition, MapItem, MapOrigin, MapTile};
+
+    #[test]
+    fn barrier_requires_exact_item_at_target_and_its_removal() -> TestResult {
+        let target = ActorPosition { x: 4, y: 5, floor: 7 };
+        let barrier = std::num::NonZeroU32::new(123).ok_or("definition")?;
+        let mut tile = MapTile { position: target, items: vec![MapItem {
+            definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
+            count: 1, sub_type: 0, origin: MapOrigin::BaseOrdinal { ordinal: 0, object_revision: 0 },
+            appearance_id: 1,
+        }], more: false, ground_speed: 0 };
+        assert!(!barrier_transition(target, &[barrier], true, std::slice::from_ref(&tile)));
+        tile.items[0].definition = MapDefinition::Item(barrier);
+        assert!(barrier_transition(target, &[barrier], true, std::slice::from_ref(&tile)));
+        assert!(!barrier_transition(target, &[barrier], false, std::slice::from_ref(&tile)));
+        tile.items.clear();
+        tile.position.x += 1;
+        assert!(!barrier_transition(target, &[barrier], false, std::slice::from_ref(&tile)));
+        tile.position = target;
+        assert!(barrier_transition(target, &[barrier], false, &[tile]));
+        Ok(())
     }
 }

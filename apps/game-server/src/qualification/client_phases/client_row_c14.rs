@@ -5,26 +5,20 @@ use super::*;
 use oteryn_protocol_oteryn::{actor_spell_catalog, skill_display};
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    if let Err(error) = verdict::observe(capture(clients, Path::new(&path))).await {
-        evidence(&format!(
-            "SEAM_EVIDENCE e2e_all scenario=C14.client status=CAPTURE-WRITE-ERROR evidence={}",
-            error.to_string().replace(['\n', '\r'], " ")
-        ));
+    match verdict::observe(capture(clients)).await {
+        Ok(()) => evidence("e2e_all scenario=C14.client status=PASS evidence=skill-and-spell-catalog-snapshots"),
+        Err(error) => evidence(&failure_evidence(&error.to_string())),
     }
 }
 
-async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .canonicalize()?;
-    let path = path.canonicalize()?;
-    if !path.starts_with(root) {
-        return Err("E2E_ALL_CAPTURE_DIR must be inside the Game worktree".into());
-    }
+fn failure_evidence(error: &str) -> String {
+    format!("e2e_all scenario=C14.client status=FAIL evidence={}", error.replace(['\n', '\r'], " "))
+}
 
+async fn capture(clients: &SeamClients<'_>) -> TestResult {
+    client_row_c20b::require_current_run(
+        verdict::Harness::global().completed_prerequisite("C14.full"), "C14.full",
+    )?;
     let mut client = connect_character(clients, 0xc1, 0).await?;
     let reply = client
         .session_mut()
@@ -50,12 +44,22 @@ async fn capture(clients: &SeamClients<'_>, path: &Path) -> TestResult {
         .payload
         .clone();
 
-    std::fs::write(path.join("c14-skill-display.bin"), &reply.payload)?;
-    std::fs::write(path.join("c14-spell-catalog.bin"), catalog_payload)?;
-    std::fs::write(
-        path.join("c14-expected.txt"),
-        expected(&display, &catalog.entries),
-    )?;
+    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        write_capture(Path::new(&path), &reply.payload, &catalog_payload, &expected(&display, &catalog.entries))
+            .map_err(|error| verdict::context(format!("C14 capture output: {error}"), error))?;
+    }
+    Ok(())
+}
+
+fn write_capture(path: &Path, skill: &[u8], catalog: &[u8], expected: &str) -> TestResult {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").canonicalize()?;
+    let path = path.canonicalize()?;
+    if !path.starts_with(root) {
+        return Err("E2E_ALL_CAPTURE_DIR must be inside the Game worktree".into());
+    }
+    std::fs::write(path.join("c14-skill-display.bin"), skill)?;
+    std::fs::write(path.join("c14-spell-catalog.bin"), catalog)?;
+    std::fs::write(path.join("c14-expected.txt"), expected)?;
     Ok(())
 }
 
@@ -85,4 +89,15 @@ fn expected(
         "level={} experience={} level_percent={} skills={} learned={}\n",
         display.level, display.experience, display.level_percent, skills, learned
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn skill_query_failure_does_not_claim_an_artifact_write() {
+        let text = failure_evidence("C14 skill-display reply was rejected");
+        assert_eq!(text, "e2e_all scenario=C14.client status=FAIL evidence=C14 skill-display reply was rejected");
+    }
 }

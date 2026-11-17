@@ -55,7 +55,8 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     if cast.disposition != SpellCastDisposition::Cast {
         return Err(format!("C10 client cast reply: {cast:?}").into());
     }
-    let debit = wait_soul(&mut client, |soul| soul == before.soul.saturating_sub(spell.soul), Duration::from_secs(5)).await?;
+    let wanted = before.soul.checked_sub(spell.soul).ok_or("C10 soul cost exceeds baseline")?;
+    let debit = cast_debit(cast.actor_vitals_delta, wanted)?;
     let refused = client.cast_spell(index, SpellTarget::None, false).await?;
     if refused.disposition != SpellCastDisposition::CoolingDown
         || client.actor_vitals() != Some(&debit.value)
@@ -69,6 +70,17 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let regenerated = wait_soul(&mut client, |soul| soul == debit.value.soul + 1, Duration::from_secs(130)).await?;
     capture(&before, &debit, &regenerated);
     Ok(())
+}
+
+fn cast_debit(
+    claimed: Option<oteryn_dev_client::AppliedDelta<actor_spell::ActorVitals>>,
+    wanted: u32,
+) -> TestResult<oteryn_dev_client::AppliedDelta<actor_spell::ActorVitals>> {
+    let debit = claimed.ok_or("C10 successful cast omitted its vitals delta")?;
+    if debit.value.soul != wanted {
+        return Err(format!("C10 cast reported soul {}, expected {wanted}", debit.value.soul).into());
+    }
+    Ok(debit)
 }
 
 async fn wait_soul(
@@ -123,5 +135,28 @@ fn capture(
     };
     if let Err(error) = write() {
         evidence(&format!("C10_CLIENT_CAPTURE_WRITE_ERROR {error}"));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn soul_debit_comes_from_the_cast_outcome() -> TestResult {
+        let claimed = oteryn_dev_client::AppliedDelta {
+            server_sequence: 10,
+            base_revision: 4,
+            new_revision: 5,
+            value: actor_spell::ActorVitals {
+                soul: 2,
+                ..Default::default()
+            },
+        };
+        let debit = cast_debit(Some(claimed.clone()), 2)?;
+        assert!(cast_debit(None, 2).is_err());
+        assert!(cast_debit(Some(claimed.clone()), 1).is_err());
+        assert_eq!(debit, claimed);
+        Ok(())
     }
 }

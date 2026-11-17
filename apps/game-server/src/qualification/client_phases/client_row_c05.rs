@@ -7,7 +7,7 @@ use oteryn_protocol_oteryn::exiva;
 const NEW_MODES: u8 = 0b1_0101;
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    let result = verdict::indexed_timeout(Duration::from_secs(60), verdict::observe(journey(clients))).await;
+    let result = verdict::indexed_timeout(Duration::from_secs(100), verdict::observe(journey(clients))).await;
     match result.unwrap_or_else(|_| Err("C05 client capture timed out".into())) {
         Ok(()) => evidence(
             "e2e_all scenario=C05.client status=PASS evidence=exiva-mode-change-and-player-list",
@@ -41,6 +41,14 @@ async fn list(
     Ok((payload, decoded))
 }
 
+async fn restore_after(result: TestResult, cleanup: impl Future<Output = TestResult>) -> TestResult {
+    let cleanup = cleanup.await;
+    if let (Err(_), Err(error)) = (&result, &cleanup) {
+        evidence(&format!("C05 cleanup also failed: {error}"));
+    }
+    result.and(cleanup)
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let mut target = connect_character(clients, 0x5c, 1).await?;
     let own_name = {
@@ -61,6 +69,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         return Err(format!("C05 unexpected initial Exiva state {initial:?}").into());
     }
 
+    let changed = tokio::time::timeout(Duration::from_secs(35), async {
     if settings(&mut target, &[0, NEW_MODES]).await? != [1] {
         return Err("C05 SetModes lacked an accepted receipt".into());
     }
@@ -78,7 +87,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let [(player_id, listed_name)] = player_list.players.as_slice() else {
         return Err(format!("C05 AddName did not yield one player: {player_list:?}").into());
     };
-    if player_list.modes != NEW_MODES || *listed_name != own_name {
+    if player_list.modes != NEW_MODES || *listed_name != own_name || *player_id != clients.characters[1] {
         return Err(format!("C05 unexpected List after AddName: {player_list:?}").into());
     }
     let player_id = *player_id;
@@ -94,17 +103,64 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
         )?;
     }
 
-    // Restore the character's previous Exiva settings, then prove the restore took.
-    let mut remove = vec![2];
-    remove.extend(player_id);
-    if settings(&mut target, &remove).await? != [1]
-        || settings(&mut target, &[0, initial.modes]).await? != [1]
-    {
+    Ok(())
+    }).await;
+    let changed = match changed {
+        Ok(result) => result,
+        Err(error) => {
+            drop(target);
+            target = connect_character(clients, 0x5d, 1).await?;
+            Err(verdict::context("C05 Exiva mutation deadline".into(), error))
+        }
+    };
+    restore_after(changed, async {
+        let restored = restore(&mut target, &initial, clients.characters[1]).await;
+        if restored.is_err() {
+            drop(target);
+            let mut fresh = connect_character(clients, 0x5e, 1).await?;
+            restore(&mut fresh, &initial, clients.characters[1]).await?;
+            client_row_c08::require_logout(&mut fresh, Duration::from_secs(15)).await
+        } else {
+            client_row_c08::require_logout(&mut target, Duration::from_secs(15)).await
+        }
+    }).await
+}
+
+async fn restore(
+    target: &mut oteryn_dev_client::DevClientSession,
+    initial: &exiva::PlayerList,
+    player: [u8; 16],
+) -> TestResult {
+    let modes = settings(target, &[0, initial.modes]).await;
+    let (_payload, current) = list(target).await?;
+    let removal = if current.players.iter().any(|(id, _)| *id == player) {
+        let mut remove = vec![2];
+        remove.extend_from_slice(&player);
+        Some(settings(target, &remove).await?)
+    } else {
+        None
+    };
+    if modes? != [1] || removal.is_some_and(|reply| reply != [1]) {
         return Err("C05 restore lacked accepted receipts".into());
     }
-    if list(&mut target).await?.1 != initial {
+    if list(target).await?.1 != *initial {
         return Err("C05 restore did not return the initial Exiva state".into());
     }
-    let _ = target.session_mut().logout().await;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn exiva_restore_runs_after_action_failure() {
+        let called = std::cell::Cell::new(false);
+        let result = restore_after(Err("invalid List frame".into()), async {
+            called.set(true);
+            Ok(())
+        }).await;
+        assert!(called.get());
+        assert!(result.is_err_and(|error| error.to_string() == "invalid List frame"));
+    }
 }

@@ -276,11 +276,12 @@ pub fn compose_into(
                 .base_entry(pos, ordinal, *id)
                 .ok_or(ViewError::MissingFacts)?;
             let contents = depths.get(at + 1).is_some_and(|next| *next != 0);
-            let (movable, openable_source) = source_handles::base_handles(
+            let (movable, openable_source) = source_handles::base_handles_for_item(
                 entry.pickupable,
                 entry.bound,
                 contents,
                 facts.house_tile(pos),
+                entry.appearance_id,
             );
             let movable = movable
                 || facts.ground_push_definition().is_some_and(|definition| {

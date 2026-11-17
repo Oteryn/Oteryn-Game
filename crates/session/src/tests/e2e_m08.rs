@@ -8,21 +8,21 @@ use oteryn_protocol_oteryn::world_map::*;
 fn e2e_m08_replays_terrain_transform_and_rejects_stale_delta() -> Result<(), BoxError> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| block_on(replay()))
+        .spawn(|| block_on(replay("m08")))
         .map_err(|_| "M08 replay thread spawn failed")?
         .join()
         .map_err(|_| "M08 replay thread failed")??
 }
 
-async fn replay() -> Result<(), BoxError> {
+pub(super) async fn replay(name: &str) -> Result<(), BoxError> {
     let (snapshot_payload, delta_payload, revisions, expected) =
         if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
             let path = std::path::Path::new(&path);
             (
-                std::fs::read(path.join("m08-snapshot.bin"))?,
-                std::fs::read(path.join("m08-delta.bin"))?,
-                std::fs::read_to_string(path.join("m08-revisions.txt"))?,
-                std::fs::read_to_string(path.join("m08-expected.txt"))?,
+                std::fs::read(path.join(format!("{name}-snapshot.bin")))?,
+                std::fs::read(path.join(format!("{name}-delta.bin")))?,
+                std::fs::read_to_string(path.join(format!("{name}-revisions.txt")))?,
+                std::fs::read_to_string(path.join(format!("{name}-expected.txt")))?,
             )
         } else {
             fixture()?
@@ -40,8 +40,13 @@ async fn replay() -> Result<(), BoxError> {
         .split_whitespace()
         .map(str::parse::<i64>)
         .collect::<Result<Vec<_>, _>>()?;
-    let [x, y, floor, ordinal, appearance] = expected.as_slice() else {
+    let [x, y, floor, ordinal, appearance, revisions @ ..] = expected.as_slice() else {
         return Err("invalid M08 expected metadata".into());
+    };
+    let door_revision = match (name, revisions) {
+        ("m08", []) => None,
+        (_, [revision]) if *revision > 0 => Some(u64::try_from(*revision)?),
+        _ => return Err("invalid object revision metadata".into()),
     };
     let snapshot = decode_world_map_snapshot(&snapshot_payload).map_err(|e| format!("{e:?}"))?;
     let content = snapshot.header.content_generation;
@@ -102,7 +107,7 @@ async fn replay() -> Result<(), BoxError> {
         tile.position == position
             && tile.items.iter().any(|item| {
                 item.appearance_id == u16::try_from(*appearance).unwrap_or_default()
-                    && matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: value, .. } if value == u8::try_from(*ordinal).unwrap_or_default())
+                    && matches!(item.origin, MapOrigin::BaseOrdinal { ordinal: value, object_revision } if value == u8::try_from(*ordinal).unwrap_or_default() && door_revision.is_none_or(|expected| object_revision == expected))
             })
     }));
     let binding = session.map_header;

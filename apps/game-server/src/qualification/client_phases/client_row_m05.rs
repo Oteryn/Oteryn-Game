@@ -1,10 +1,9 @@
-//! Captures M05's real `WORLD_OBJECT_OVERLAY` payloads for the session replay test.
+//! Captures each bundle door transition from the native world-map stream.
 
 use super::*;
 use oteryn_dev_client::{DevClientSession, SessionEvent};
-use oteryn_protocol_oteryn::world_object::{
-    UseDisposition, WorldObjectOverlayEntry, encode_world_object_overlay_delta,
-};
+use oteryn_protocol_oteryn::world_map::{self, MapOrigin, MapTile, WorldMapViewDelta, WorldMapViewSnapshot};
+use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 #[derive(Clone, Copy)]
 struct Door {
@@ -52,47 +51,103 @@ fn placement(world: &BundleWorld, door: Door) -> TestResult<Vec<u8>> {
     Ok(placement)
 }
 
-async fn next_overlay(client: &mut DevClientSession) -> TestResult<WorldObjectOverlayEntry> {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
-    loop {
-        client.service_liveness(Duration::from_millis(50)).await?;
-        if let Some(entry) = client.take_events().into_iter().find_map(|event| match event {
-            SessionEvent::WorldObjectOverlay(delta) => Some(delta.value),
-            _ => None,
-        }) {
-            return Ok(entry);
+fn tile_position(at: TilePos) -> ActorPosition {
+    ActorPosition { x: i32::from(at.x), y: i32::from(at.y), floor: -i16::from(at.floor) }
+}
+
+pub(super) struct DoorMap {
+    revision: u64,
+    snapshot: WorldMapViewSnapshot,
+}
+
+impl DoorMap {
+    pub(super) fn read(client: &mut DevClientSession) -> TestResult<Self> {
+        let snapshot = client.session_mut().gated_snapshot(world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
+            .ok_or("door map snapshot absent")?;
+        let map = world_map::decode_world_map_snapshot(&snapshot.payload)
+            .map_err(|error| format!("door map snapshot: {error:?}"))?;
+        Ok(Self { revision: snapshot.revision, snapshot: map })
+    }
+
+    pub(super) fn observe(&mut self, event: &SessionEvent) {
+        match event {
+            SessionEvent::WorldMap(delta) => {
+                self.revision = delta.new_revision;
+                self.snapshot.header = delta.value.header;
+                self.snapshot.tiles.retain(|tile| !delta.value.cleared.contains(&tile.position)
+                    && !delta.value.tiles.iter().any(|updated| updated.position == tile.position));
+                self.snapshot.tiles.extend(delta.value.tiles.iter().cloned());
+            }
+            SessionEvent::WorldMapSnapshot(snapshot) => {
+                self.revision = snapshot.new_revision;
+                self.snapshot = snapshot.value.clone();
+            }
+            _ => {}
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("M05 client capture timed out waiting for overlay".into());
-        }
+    }
+
+    pub(super) fn state(&self, at: TilePos, ordinal: u8) -> Option<(u64, u16)> {
+        door_state(&self.snapshot.tiles, at, ordinal)
     }
 }
 
-fn capture(entries: &[(&str, &WorldObjectOverlayEntry)]) {
-    let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {
-        return;
-    };
-    let result: TestResult = (|| {
-        let path = Path::new(&path);
-        for (name, entry) in entries {
-            std::fs::write(
-                path.join(format!("m05-{name}.bin")),
-                encode_world_object_overlay_delta(entry)
-                    .map_err(|error| format!("M05 {name} encode: {error:?}"))?,
-            )?;
+fn door_state(tiles: &[MapTile], at: TilePos, ordinal: u8) -> Option<(u64, u16)> {
+    tiles.iter().find(|tile| tile.position == tile_position(at))?.items.iter().find_map(|item| {
+        match item.origin {
+            MapOrigin::BaseOrdinal { ordinal: seen, object_revision } if seen == ordinal =>
+                Some((object_revision, item.appearance_id)),
+            _ => None,
         }
-        std::fs::write(
-            path.join("m05-expected.txt"),
-            entries
-                .iter()
-                .map(|(_, entry)| format!("{}\n", String::from_utf8_lossy(&entry.state)))
-                .collect::<String>(),
-        )?;
-        Ok(())
-    })();
-    if let Err(error) = result {
-        evidence(&format!("M05_CLIENT_CAPTURE_WRITE_ERROR {error}"));
+    })
+}
+
+pub(super) async fn capture_transition(
+    client: &mut DevClientSession,
+    name: &str,
+    map: &mut DoorMap,
+    cutoff: u64,
+    at: TilePos,
+    expected: (u8, u64, u16),
+) -> TestResult {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let (delta, base, mut snapshot): (oteryn_dev_client::AppliedDelta<WorldMapViewDelta>, _, _) = 'wait: loop {
+        let mut matched = None;
+        for event in client.take_events() {
+            if let SessionEvent::WorldMap(delta) = &event
+                && matched.is_none()
+                && delta.server_sequence > cutoff
+                && delta.value.tiles.iter().any(|tile| tile.items.iter().any(|item| {
+                    let MapOrigin::BaseOrdinal { ordinal, object_revision } = item.origin else { return false; };
+                    door_transition(tile.position == tile_position(at), (ordinal, object_revision, item.appearance_id), expected)
+                }))
+            {
+                matched = Some((delta.clone(), map.revision, map.snapshot.clone()));
+            }
+            map.observe(&event);
+        }
+        if let Some(observed) = matched {
+            break 'wait observed;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("{name} missing door transition at {at:?}: {expected:?}").into());
+        }
+        client.service_liveness(Duration::from_millis(50)).await?;
+    };
+    if let Some(path) = std::env::var_os("E2E_ALL_CAPTURE_DIR") {
+        let path = Path::new(&path);
+        let (ordinal, revision, appearance) = expected;
+        snapshot.tiles.sort_by_key(|tile| world_map::tile_order(&tile.position));
+        if base != delta.base_revision {
+            return Err(format!("{name} intervening map updates changed the replay baseline").into());
+        }
+        std::fs::write(path.join(format!("{name}-snapshot.bin")), world_map::encode_world_map_snapshot(&snapshot)
+            .map_err(|err| format!("{name} encode snapshot: {err:?}"))?)?;
+        std::fs::write(path.join(format!("{name}-delta.bin")), world_map::encode_world_map_delta(&snapshot.header, &delta.value)
+            .map_err(|err| format!("{name} encode delta: {err:?}"))?)?;
+        std::fs::write(path.join(format!("{name}-revisions.txt")), format!("{base} {} {} {}", delta.base_revision, delta.new_revision, delta.server_sequence))?;
+        std::fs::write(path.join(format!("{name}-expected.txt")), format!("{} {} {} {ordinal} {appearance} {revision}\n", at.x, at.y, at.floor))?;
     }
+    Ok(())
 }
 
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
@@ -106,39 +161,38 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )?;
     let doors = doors(&bytes, world)?;
     let mut client = connect_world(clients, 0xc5).await?;
-    let mut captured = Vec::new();
+    let mut map = DoorMap::read(&mut client)?;
     for (appearance, family) in [(1638, "basic"), (1629, "key")] {
-        let door = doors
-            .iter()
-            .copied()
-            .find(|door| door.appearance == appearance)
-            .ok_or_else(|| format!("M05 client capture found no {family} door"))?;
         let from = tile(client.world_spatial().actor_position)?;
-        let path = route(world, from, |at| {
-            at.floor == door.at.floor
-                && at.x.abs_diff(door.at.x).max(at.y.abs_diff(door.at.y)) == 1
-        })
-        .ok_or_else(|| format!("M05 client capture has no route to {family} door"))?;
-        walk(&mut client, world, &path).await?;
+        let (door, path) = first_reachable(
+            doors.iter().copied().filter(|door| door.appearance == appearance),
+            |door| route(world, from, |at| {
+                at.floor == door.at.floor
+                    && at.x.abs_diff(door.at.x).max(at.y.abs_diff(door.at.y)) == 1
+            }),
+        ).ok_or_else(|| format!("M05 client capture has no route to {family} door"))?;
+        walk_observing(&mut client, world, &path, |event| map.observe(&event)).await?;
         let placement = placement(world, door)?;
-        let opened = client.use_object(&placement, 0).await?;
-        if opened.disposition != UseDisposition::Committed {
-            return Err(format!("M05 {family} open observed {:?}", opened.disposition).into());
+        let opened_appearance = match appearance {
+            1638 => 1639,
+            1629 => 1630,
+            _ => return Err("M05 unknown door pair".into()),
+        };
+        for (action, before, after) in [("open", appearance, opened_appearance), ("closed", opened_appearance, appearance)] {
+            for event in client.take_events() { map.observe(&event); }
+            let (revision, observed) = map.state(door.at, door.ordinal)
+                .ok_or("M05 door absent from current map")?;
+            if observed != before { return Err(format!("M05 {family} unexpected prior door appearance {observed}").into()); }
+            let next = revision.checked_add(1).ok_or("M05 door revision exhausted")?;
+            let cutoff = client.last_server_sequence();
+            let result = client.use_object(&placement, revision).await?;
+            if result.disposition != UseDisposition::Committed {
+                return Err(format!("M05 {family} {action} observed {:?}", result.disposition).into());
+            }
+            capture_transition(&mut client, &format!("m05-{family}-{action}"), &mut map, cutoff, door.at, (door.ordinal, next, after)).await?;
         }
-        let open = next_overlay(&mut client).await?;
-        let closed = client.use_object(&placement, open.revision).await?;
-        if closed.disposition != UseDisposition::Committed {
-            return Err(format!("M05 {family} close observed {:?}", closed.disposition).into());
-        }
-        let closed = next_overlay(&mut client).await?;
-        captured.push((format!("{family}-open"), open));
-        captured.push((format!("{family}-closed"), closed));
     }
-    let entries = captured
-        .iter()
-        .map(|(name, entry)| (name.as_str(), entry))
-        .collect::<Vec<_>>();
-    capture(&entries);
+    client_row_c08::require_logout(&mut client, Duration::from_secs(15)).await?;
     Ok(())
 }
 
@@ -154,4 +208,23 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
             .map(|error| format!(" evidence={}", error.to_string().replace(' ', "-")))
             .unwrap_or_default()
     ));
+}
+
+fn door_transition(location_matches: bool, seen: (u8, u64, u16), expected: (u8, u64, u16)) -> bool {
+    location_matches && seen == expected
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn door_delta_must_name_target_ordinal_revision_and_state() {
+        let wanted = (1, 4, 1639);
+        assert!(!door_transition(false, wanted, wanted));
+        assert!(!door_transition(true, (2, 4, 1639), wanted));
+        assert!(!door_transition(true, (1, 3, 1639), wanted));
+        assert!(!door_transition(true, (1, 4, 1638), wanted));
+        assert!(door_transition(true, wanted, wanted));
+    }
 }

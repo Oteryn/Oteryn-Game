@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 PHASES = ROOT / "apps/game-server/src/qualification/client_phases"
 USE_COUNTS = {
-    "client_row_i09": 2, "client_row_i11": 2, "client_row_i12": 1,
+    "client_row_i09": 2, "client_row_i11": 3, "client_row_i12": 1,
     "client_row_m06": 1, "client_row_m07": 1, "client_row_m08": 1,
     "client_row_m09": 1, "client_row_w19a": 1,
     "full_row_g08": 1, "full_row_g09": 1, "full_row_g36": 1,
@@ -21,8 +21,8 @@ USE_COUNTS = {
 
 
 class RowCommandRoutes(unittest.TestCase):
-    def test_all_27_reviewed_use_calls_use_the_core_session_owner(self):
-        self.assertEqual(sum(USE_COUNTS.values()), 27)
+    def test_all_28_reviewed_use_calls_use_the_core_session_owner(self):
+        self.assertEqual(sum(USE_COUNTS.values()), 28)
         for name, count in USE_COUNTS.items():
             with self.subTest(row=name):
                 source = (PHASES / f"{name}.rs").read_text()

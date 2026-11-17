@@ -2848,6 +2848,32 @@ const ACQUIRE_ACTIONS: &[&str] = &[
     "death-fresh-admission",
 ];
 
+pub(super) async fn client_companions(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
+    let mut row = Row::new("C16c.client", ACQUIRE_ACTIONS);
+    let mut client = connect_world(clients, 0xd5).await?;
+    let journey = acquired_companions(&mut row, &mut client, clients, world, true).await;
+    let cleanup = rune_cleanup(&mut client, world).await;
+    journey?;
+    cleanup?;
+    if !client_row_c16c::actions_proven(row.0.complete(), ACQUIRE_ACTIONS.len()) {
+        return Err("C16c companion transitions incomplete".into());
+    }
+    Ok(())
+}
+
+pub(super) async fn client_tile_items(clients: &SeamClients<'_>, world: &BundleWorld) -> TestResult {
+    let mut row = Row::new("C16d.client", TILE_ITEM_ACTIONS);
+    let mut client = connect_world(clients, 0xd6).await?;
+    let journey = tile_items(&mut row, &mut client, clients, world, true).await;
+    let cleanup = rune_cleanup(&mut client, world).await;
+    journey?;
+    cleanup?;
+    if !client_row_c16c::actions_proven(row.0.complete(), TILE_ITEM_ACTIONS.len()) {
+        return Err("C16d tile item transitions incomplete".into());
+    }
+    Ok(())
+}
+
 async fn companion_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
     for (id, actions, tag) in [
         ("C13", SUMMON_ACTIONS, 0xd0),
@@ -2866,7 +2892,7 @@ async fn companion_rows(clients: &SeamClients<'_>, world: &BundleWorld) {
                     let result = if id == "C13" {
                         summons(&mut row, &mut client, clients, world).await
                     } else {
-                        acquired_companions(&mut row, &mut client, clients, world).await
+                        acquired_companions(&mut row, &mut client, clients, world, false).await
                     };
                     completed = true;
                     result
@@ -3816,6 +3842,7 @@ async fn acquired_companions(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
+    capture: bool,
 ) -> TestResult {
     let input = native_input()?;
     let book = native_spell_book()?;
@@ -3838,6 +3865,9 @@ async fn acquired_companions(
     let (rat, sequence) = convince_rat(client, world, convince, convince_ref, &[], mana).await?;
     // This receipt is only marked after follow/attack, which proves conversion.
     let behavior = companion_behavior(client, world, rat, &[rat]).await?;
+    if capture {
+        client_row_c16c::capture(client, "convince", rat, None)?;
+    }
     row.pass("convince-payment-master", sequence);
     row.pass("convinced-follow-attack", behavior);
     row.pass(
@@ -3847,6 +3877,9 @@ async fn acquired_companions(
     let (corpse, sequence) = player_corpse(client, world, &[rat]).await?;
     row.pass("player-kill-corpse", sequence);
     let (skeleton, sequence) = animate_corpse(client, animate, animate_ref, corpse).await?;
+    if capture {
+        client_row_c16c::capture(client, "animate", skeleton, Some(corpse.entity))?;
+    }
     row.pass("animate-payment-corpse-removal", sequence);
     row.pass(
         "animated-follow-attack",
@@ -4070,7 +4103,7 @@ async fn tile_item_row(clients: &SeamClients<'_>, world: &BundleWorld) {
                 Duration::from_secs(400),
                 "C16d 400s journey deadline; required actions unproven",
                 async {
-                    let result = tile_items(&mut row, &mut client, clients, world).await;
+                    let result = tile_items(&mut row, &mut client, clients, world, false).await;
                     completed = true;
                     result
                 },
@@ -4219,6 +4252,7 @@ async fn tile_items(
     client: &mut DevClientSession,
     clients: &SeamClients<'_>,
     world: &BundleWorld,
+    capture: bool,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_map::MapDefinition;
     let book = native_spell_book()?;
@@ -4348,6 +4382,9 @@ async fn tile_items(
             "C16d fresh admission lost exact backpack appearance/condition or changed its target"
                 .into(),
         );
+    }
+    if capture {
+        client_row_c16d::capture(client)?;
     }
     row.pass("chameleon-payment-appearance", appearance_sequence);
     row.pass("chameleon-fresh-admission", client.last_server_sequence());

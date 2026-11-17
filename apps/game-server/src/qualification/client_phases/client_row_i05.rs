@@ -19,6 +19,20 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     ));
 }
 
+fn reequipped_ring(
+    delta: &oteryn_dev_client::AppliedDelta<items::CharacterInventory>,
+    after: u64,
+    handle: items::ItemHandle,
+    active: std::num::NonZeroU32,
+) -> Option<&items::EquippedItem> {
+    if delta.server_sequence <= after {
+        return None;
+    }
+    delta.value.equipment.iter().find(|row| {
+        row.slot == items::EquipmentSlot::Ring && row.item.handle == handle && row.item.item_definition_ref == active
+    })
+}
+
 async fn capture(clients: &SeamClients<'_>) -> TestResult {
     let mut client = connect_world(clients, 0xb2).await?;
     let active = provisioning::item_reference(&provisioning::item_index()?, ACTIVE_ENERGY_RING)?;
@@ -40,7 +54,22 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("i05-unequip-refused:{moved:?}").into());
     }
-    client.take_events();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    loop {
+        if client.take_events().into_iter().any(|event| matches!(
+            event,
+            oteryn_dev_client::SessionEvent::Inventory(delta)
+                if delta.server_sequence > moved.result_server_sequence
+                    && delta.value.entries.iter().any(|item| item.handle == handle)
+                    && !delta.value.equipment.iter().any(|row| row.slot == items::EquipmentSlot::Ring)
+        )) {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("i05-unequip-inventory-delta-missing".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    }
     let moved = client
         .move_item(&items::ItemMoveIntent {
             source: handle,
@@ -50,19 +79,21 @@ async fn capture(clients: &SeamClients<'_>) -> TestResult {
     if moved.outcome != items::ItemMoveOutcome::Moved {
         return Err(format!("i05-reequip-refused:{moved:?}").into());
     }
-    let delta = client
-        .take_events()
-        .into_iter()
-        .find_map(|event| match event {
-            oteryn_dev_client::SessionEvent::Inventory(delta) => Some(delta),
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let delta = loop {
+        if let Some(delta) = client.take_events().into_iter().find_map(|event| match event {
+            oteryn_dev_client::SessionEvent::Inventory(delta)
+                if reequipped_ring(&delta, moved.result_server_sequence, handle, active).is_some() => Some(delta),
             _ => None,
-        })
-        .ok_or("i05-reequip-inventory-delta-missing")?;
-    let equipped = delta
-        .value
-        .equipment
-        .iter()
-        .find(|row| row.slot == items::EquipmentSlot::Ring)
+        }) {
+            break delta;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("i05-reequip-original-active-ring-delta-missing".into());
+        }
+        client.service_liveness(Duration::from_millis(25)).await?;
+    };
+    let equipped = reequipped_ring(&delta, moved.result_server_sequence, handle, active)
         .ok_or("i05-ring-slot-empty-after-reequip")?;
     let payload = items::encode_character_inventory_with_equip_drop(&delta.value, true)
         .map_err(|error| format!("i05-capture-encode:{error:?}"))?;
@@ -97,5 +128,40 @@ fn write_capture(name: &str, payload: &[u8], expected: &str) {
         evidence(&format!(
             "I05_CLIENT_CAPTURE_WRITE_ERROR file=i05-expected.txt error={error}"
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reequipped_ring_requires_fresh_frame_and_original_instance() -> TestResult {
+        let handle = items::ItemHandle::new(42).ok_or("handle")?;
+        let active = std::num::NonZeroU32::new(ACTIVE_ENERGY_RING).ok_or("definition")?;
+        let mut delta = oteryn_dev_client::AppliedDelta {
+            server_sequence: 5,
+            base_revision: 1,
+            new_revision: 2,
+            value: items::CharacterInventory {
+                equipment: vec![items::EquippedItem {
+                    slot: items::EquipmentSlot::Ring,
+                    item: items::ItemEntry {
+                        appearance_id: 0,
+                        handle,
+                        item_definition_ref: active,
+                        count: std::num::NonZeroU32::MIN,
+                        sub_type: 0,
+                    },
+                }],
+                ..Default::default()
+            },
+        };
+        assert!(reequipped_ring(&delta, 6, handle, active).is_none());
+        delta.server_sequence = 7;
+        assert!(reequipped_ring(&delta, 6, items::ItemHandle::MIN, active).is_none());
+        assert!(reequipped_ring(&delta, 6, handle, std::num::NonZeroU32::MIN).is_none());
+        assert!(reequipped_ring(&delta, 6, handle, active).is_some());
+        Ok(())
     }
 }

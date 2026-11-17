@@ -10,11 +10,22 @@
 
 use super::*;
 
+pub(super) fn require_current_run(completed: bool, scenario: &str) -> TestResult {
+    if completed {
+        Ok(())
+    } else {
+        Err(format!("missing current-run PASS for {scenario}").into())
+    }
+}
+
 mod journey {
     use super::*;
 
     pub(super) async fn run_and_capture(clients: &SeamClients<'_>) -> TestResult {
-        let mut client = super::super::connect_character(clients, 0xcb, 0).await?;
+        super::require_current_run(
+            verdict::Harness::global().completed_prerequisite("C20b.full"), "C20b.full",
+        )?;
+        let mut client = super::super::connect_character(clients, 0xcb, 1).await?;
         let snapshot = client
             .session_mut()
             .gated_snapshot(oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY)
@@ -59,23 +70,33 @@ mod journey {
 }
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
-    if std::env::var_os("E2E_ALL_CAPTURE_DIR").is_none() {
-        return;
-    }
     let started = std::time::Instant::now();
     let result = verdict::indexed_timeout(
         Duration::from_secs(480),
-        journey::run_and_capture(clients),
+        verdict::observe(journey::run_and_capture(clients)),
     )
     .await
     .map_err(|_| "C20b client capture timed out".into())
     .and_then(|result| result);
+    let (status, detail) = match result {
+        Ok(()) => ("PASS", "current-run-C20b-actions-and-fresh-inventory-snapshot".to_owned()),
+        Err(error) => ("FAIL", error.to_string()),
+    };
     evidence(&format!(
-        "SEAM_EVIDENCE e2e_all scenario=C20b.client status={} seconds={:.3} evidence=real-C20b-actions-and-fresh-inventory-snapshot",
-        if result.is_ok() { "PASS" } else { "FAIL" },
+        "e2e_all scenario=C20b.client status={status} seconds={:.3} evidence={detail}",
         started.elapsed().as_secs_f64()
     ));
-    if let Err(error) = result {
-        evidence(&format!("C20b client capture error={error}"));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stored_character_state_needs_current_run_action_evidence() {
+        for scenario in ["C20b.full", "C20c.full", "C14.full", "C19a.full"] {
+            assert!(require_current_run(false, scenario).is_err());
+            assert!(require_current_run(true, scenario).is_ok());
+        }
     }
 }

@@ -170,6 +170,16 @@ fn capture(name: &str, bytes: &[u8]) {
     }
 }
 
+fn write_replies_match(
+    first: &[u8],
+    refused: &[u8],
+    too_long: &[u8],
+    rewrite_first: &[u8],
+    rewrite_second: &[u8],
+) -> bool {
+    first == [2] && refused == [9] && too_long == [10] && rewrite_first == [2] && rewrite_second == [2]
+}
+
 async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
     let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
@@ -204,6 +214,11 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     )
     .await?;
     wait_units(&mut client, written, 1).await?;
+    if client.inventory().is_none_or(|inventory| !inventory.entries.iter().any(|entry| {
+        entry.handle == once_item.handle && entry.item_definition_ref == written
+    })) {
+        return Err("I04 written definition did not replace the original item".into());
+    }
     let refused = write(&mut client, once_item.handle.get(), "second".into()).await?;
     let rewrite_item = client
         .inventory()
@@ -218,9 +233,9 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let too_long = write(&mut client, rewrite_item.handle.get(), "x".repeat(7_996)).await?;
     let rewrite_first = write(&mut client, rewrite_item.handle.get(), "first".into()).await?;
     let rewrite_second = write(&mut client, rewrite_item.handle.get(), "second".into()).await?;
-    if first != [2] || too_long != [10] || rewrite_first != [2] || refused == [2] {
+    if !write_replies_match(&first, &refused, &too_long, &rewrite_first, &rewrite_second) {
         return Err(format!(
-            "I04 unexpected mail replies: first={first:?} refused={refused:?} too_long={too_long:?} rewrite_first={rewrite_first:?}"
+            "I04 unexpected mail replies: first={first:?} refused={refused:?} too_long={too_long:?} rewrite_first={rewrite_first:?} rewrite_second={rewrite_second:?}"
         )
         .into());
     }
@@ -244,4 +259,16 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     }
     capture("i04-expected.txt", expected.as_bytes());
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn writing_requires_second_success_and_specific_write_once_refusal() {
+        assert!(write_replies_match(&[2], &[9], &[10], &[2], &[2]));
+        assert!(!write_replies_match(&[2], &[9], &[10], &[2], &[6]));
+        assert!(!write_replies_match(&[2], &[6], &[10], &[2], &[2]));
+    }
 }
