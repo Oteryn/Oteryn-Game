@@ -8,6 +8,7 @@ use crate::durability::{
     DurabilityError, item_mint_audit::Type2Transaction, npc_travel::NpcTravelGate,
 };
 use oteryn_gameplay_quests::quest::loader::load_embedded_quest_state;
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
 #[test]
@@ -43,7 +44,16 @@ async fn exercise(h: &Harness) -> TestResult {
     super::tutorial_vitals_fixture::admit(&owner, &deps, &request).await?;
     let admitted = &deps.admitted;
     owner.admit_quest_session(admitted).await;
-    let [kevin] = install(&owner, admitted, ["oteryn:npc.kevin"]).await?;
+    let [kevin, captain, technomancer] = install(
+        &owner,
+        admitted,
+        [
+            "oteryn:npc.kevin",
+            "oteryn:npc.captain_bluebear",
+            "oteryn:npc.brodrosch",
+        ],
+    )
+    .await?;
     let track = "oteryn:quest-progress/quest/u7_24/the_postman_missions/mission01";
 
     talk(&mut owner, admitted, kevin, 1, "hi").await?;
@@ -93,13 +103,14 @@ async fn exercise(h: &Harness) -> TestResult {
                 "UPDATE game_newhaven_travel_receipts SET arrived_at=arrived_at-interval '4 seconds' WHERE arrived_at IS NOT NULL",
             ).execute(&h.pool).await?;
     }
-    assert_fares(h, &owner, &deps).await
+    assert_fares(h, &mut owner, &deps, [captain, technomancer]).await
 }
 
 async fn assert_fares(
     h: &Harness,
-    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     deps: &Dependencies,
+    [captain, technomancer]: [EntityRef; 2],
 ) -> TestResult {
     let session = deps.admitted.game_session_id;
     let fence = owner
@@ -131,6 +142,7 @@ async fn assert_fares(
     assert!(cormaya.postman && !cormaya.held);
     assert_eq!(cormaya.route.price, 160);
 
+    let mut command = 30;
     for (rank, mission06, ship_fare, carpet_fare, cormaya_fare) in [
         (2_i64, 13_i64, 110, 50, 160),
         (3, 12, 100, 60, 150),
@@ -159,28 +171,36 @@ async fn assert_fares(
             .await?;
         }
         tx.commit().await?;
-        for (route, expected) in [
-            (&ship, ship_fare),
-            (&carpet, carpet_fare),
-            (&cormaya, cormaya_fare),
+        for (npc, route, expected) in [
+            (captain, &ship, ship_fare),
+            (technomancer, &cormaya, cormaya_fare),
         ] {
-            assert_eq!(
-                owner
-                    .root
-                    .quote_npc_travel(
-                        owner.character,
-                        owner.holder,
-                        fence,
-                        route.clone(),
-                        &Premium
-                    )
-                    .await
-                    .map_err(debug)?,
-                Ok(expected),
-                "rank {rank}, mission 6 at {mission06}, route {}",
+            talk(owner, &deps.admitted, npc, command, "hi").await?;
+            let reply = talk(owner, &deps.admitted, npc, command + 1, &route.keyword).await?;
+            assert!(
+                reply
+                    .iter()
+                    .any(|line| line.contains(&format!("for {expected} gold"))),
+                "rank {rank}, mission 6 at {mission06}, route {}: {reply:?}",
                 route.service,
             );
+            command += 2;
         }
+        assert_eq!(
+            owner
+                .root
+                .quote_npc_travel(
+                    owner.character,
+                    owner.holder,
+                    fence,
+                    carpet.clone(),
+                    &Premium,
+                )
+                .await
+                .map_err(debug)?,
+            Ok(carpet_fare),
+            "rank {rank}, mission 6 at {mission06}",
+        );
     }
     Ok(())
 }
