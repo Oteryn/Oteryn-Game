@@ -26,6 +26,8 @@ enum Case {
     Admitted,
     Advanced,
     Vocation,
+    Skill,
+    EarnedThenDied,
     Died,
     MismatchedContext,
     MismatchedPolicy,
@@ -152,7 +154,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
     }
     let sequencer = CharacterRevisionSequencer::new();
     let mut slot = sequencer.acquire(initial.character_id).await;
-    if matches!(case, Case::Advanced) {
+    if matches!(case, Case::Advanced | Case::EarnedThenDied) {
         // Still level one: even one earned XP must make the Character ineligible.
         slot.commit_experience(
             &h.root,
@@ -171,7 +173,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         )
         .await
         .map_err(debug)?;
-    } else if matches!(case, Case::Vocation) {
+    } else if matches!(case, Case::Vocation | Case::Skill) {
         let formula = crate::spell::mana_training::CompiledTrainingFormula::from_profile(
             include_bytes!(
                 "../../../../../tools/content-schema/native-gameplay/build-training.json"
@@ -184,7 +186,24 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             .read_character_build_state(&authority, initial.character_id)
             .await
             .map_err(debug)?;
-        let after = convert_vocation(&formula, &before, "druid").map_err(debug)?;
+        let (after, cause) = if matches!(case, Case::Vocation) {
+            (
+                convert_vocation(&formula, &before, "druid").map_err(debug)?,
+                BuildCause::VocationChoice,
+            )
+        } else {
+            let mut skills = before.skills();
+            skills[0].1 = 1;
+            (
+                crate::durability::character_build::DurableBuildState::new(
+                    before.vocation(),
+                    before.magic(),
+                    skills,
+                )
+                .map_err(debug)?,
+                BuildCause::Training,
+            )
+        };
         slot.commit_build(
             &h.root,
             &authority,
@@ -192,7 +211,7 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             initial,
             BuildChangeRequest {
                 occurrence: BuildOccurrence::from_bytes(id(82)).map_err(debug)?,
-                cause: BuildCause::VocationChoice,
+                cause,
                 before,
                 after,
                 pruned_stance: None,
@@ -204,16 +223,23 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     }
     drop(slot);
-    if matches!(case, Case::Died) {
+    if matches!(case, Case::Died | Case::EarnedThenDied) {
         use crate::durability::character_death::{
             CharacterDeathRequest, DeathCell, PlayerDeathOccurrence,
         };
+        let mut death_fence = initial;
+        death_fence.expected_character_revision = h
+            .root
+            .read_current_character(&authority, initial.character_id)
+            .await
+            .map_err(debug)?
+            .revision;
         h.root
             .settle_player_death(
                 &sequencer,
                 &authority,
                 &h.node,
-                initial,
+                death_fence,
                 CharacterDeathRequest {
                     public_cause: None,
                     pvp_contributors: Vec::new(),
@@ -241,8 +267,18 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
             .ok_or("death progression absent")?;
         assert_eq!(state.level, 1);
         assert_eq!(state.total_experience, ExactI64::new(0));
-        assert_eq!(state.character_revision.get(), 2);
+        assert_eq!(
+            state.character_revision.get(),
+            if matches!(case, Case::Died) { 2 } else { 3 }
+        );
     }
+    assert_eq!(
+        h.root
+            .has_character_experience_or_death_receipts(&authority, initial.character_id)
+            .await
+            .map_err(debug)?,
+        matches!(case, Case::Advanced | Case::Died | Case::EarnedThenDied)
+    );
     let before_progression = h
         .root
         .read_character_progression(&authority, initial.character_id)
@@ -311,10 +347,21 @@ async fn exercise(h: &Harness, case: Case) -> TestResult {
         let error = result
             .err()
             .ok_or("fixture overwrote a non-fresh Character")?;
-        assert_eq!(
-            error.to_string(),
-            "spell fixture requires a fresh disposable Character"
-        );
+        let expected = match case {
+            Case::Advanced => "spell fixture progression level or XP is not initial",
+            Case::Vocation => "spell fixture vocation is set",
+            Case::Skill => "spell fixture build is not initial",
+            Case::Died | Case::EarnedThenDied => {
+                "spell fixture noninitial progression revision has XP or death history"
+            }
+            Case::MismatchedContext => "spell fixture progression context mismatch",
+            Case::MismatchedPolicy => "spell fixture progression policy revision mismatch",
+            Case::MismatchedReward => "spell fixture progression reward revision mismatch",
+            Case::Admitted | Case::BootstrapOnly => {
+                return Err("positive fixture case reached refusal assertion".into());
+            }
+        };
+        assert_eq!(error.to_string(), expected);
         assert_eq!(
             h.root
                 .read_character_progression(&authority, initial.character_id)
@@ -371,4 +418,14 @@ fn qualification_fixture_refuses_different_context() -> TestResult {
 #[test]
 fn qualification_fixture_refuses_different_reward() -> TestResult {
     run(Case::MismatchedReward, "qfixture_reward")
+}
+
+#[test]
+fn qualification_fixture_refuses_earned_skills_without_xp() -> TestResult {
+    run(Case::Skill, "qfixture_skill")
+}
+
+#[test]
+fn qualification_fixture_refuses_earned_xp_after_death_returns_it_to_zero() -> TestResult {
+    run(Case::EarnedThenDied, "qfixture_earned_death")
 }
