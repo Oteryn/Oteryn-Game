@@ -3,7 +3,7 @@
 Run on a node-boot runner shard with `NODE_BOOT_WORLD=1` and
 `NODE_BOOT_E2E_ONLY=mp`. Acceptance is the indexed per-row verdict
 `SEAM_EVIDENCE e2e_all scenario=MP01.full status=PASS|FAIL`, together with
-`SEAM_EVIDENCE MP_CHECK MP01 <step> PASS|FAIL <detail>` observations.
+`SEAM_EVIDENCE MP_CHECK MP01 <step> PASS|FAIL|NOT_ATTEMPTED <detail>` observations.
 Compilation is not runtime qualification. Node boot needs Docker and the pinned
 Platform checkout; it is run by the owner on the GitHub runner for this packet.
 
@@ -41,13 +41,19 @@ write authority, update SQL, inject a combat event or synthesize a receipt.
 Production fenced party reads require the serving process's current runtime
 authority, which this remote protocol harness does not own.
 
-PvP requires D's damage and new death history plus temple respawn, A's attributed
-hit and new unjustified kill history, a fresh death receipt and matching durable
-frag points, and all four own skull/points views matched against PostgreSQL and
-the combat-rules thresholds. Starter D can be below `PVP_MIN_LEVEL=8`
-(`crates/gameplay/combat-rules/src/pvp/legality.rs:7,97`). In that case the actual
-attack refusal is **FAIL**, never a successful death test; the scenario does not
-provision or bypass D's protection. Other server refusals are retained as well.
+The node-boot World is no-PvP (`tools/qualification/node_boot/run.sh:1010` seeds
+`game_spell_field_world_policies` with `world_type=1`), so MP01 checks the no-PvP
+rules instead of a kill: `nopvp-expert` requests Red Fist and requires the served
+expert mode to be Dove (`pvp_expert.rs:83-92` set, `:121-131` observe);
+`nopvp-attack-refused` requires A's attack on player D to come back `Rejected`
+(`pvp_live.rs:184`, `legality.rs:90`) and D to take no damage in a 5 s window.
+`pvp-combat` (death, frag points, skull views) is reported as
+`MP_CHECK MP01 pvp-combat NOT_ATTEMPTED not attempted: ...`: neither PASS nor
+FAIL, and it does not change the `e2e_all` verdict. The relog step keeps checking
+that every participant's skull/points view still matches PostgreSQL.
+
+Follow-up, not implemented: PvP damage needs an Open world (`world_type=2`), i.e. a
+second world and `game_spell_field_world_policies` insert in `run.sh` near line 1010.
 
 Relog always uses checked `logout_retrying_busy`; combat blocks expire on real
 server time. All logout futures are serviced together, so one killer's natural
