@@ -1,4 +1,6 @@
-use super::*;
+use super::world_event::{T94Bootstrap, event_fixture};
+use super::{Harness, TestResult, debug, id, reset, run};
+use crate::foundation::{ChannelId, WorldId};
 
 #[test]
 fn awash_coal_threshold_is_applied_at_the_next_server_save() -> TestResult {
@@ -18,7 +20,7 @@ fn awash_coal_threshold_is_applied_at_the_next_server_save() -> TestResult {
                     crate::content::native_gameplay::test_support::activated_with_loot_tables(
                         world,
                         Some(include_bytes!(
-                            "../../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+                            "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
                         )),
                     );
                 let seal = h.recovery.seal_current().map_err(debug)?;

@@ -13,11 +13,8 @@ use oteryn_protocol_oteryn::{
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-#[path = "world_event/awash.rs"]
-mod awash;
-
 #[path = "world_event/reset_fixture.rs"]
-mod event_fixture;
+pub(super) mod event_fixture;
 
 #[test]
 fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
@@ -570,7 +567,7 @@ async fn exchange(
     Ok(results)
 }
 
-struct T94Bootstrap;
+pub(super) struct T94Bootstrap;
 impl crate::native_admission_source::account_characters::EpochFence for T94Bootstrap {
     fn read(
         &mut self,
