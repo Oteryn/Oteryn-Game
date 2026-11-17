@@ -508,6 +508,65 @@ async fn boss(
     killed_ok
 }
 
+const VOCATION_SELECT: TilePos = TilePos {
+    x: 32538,
+    y: 32514,
+    floor: -7,
+};
+const SORCERER_STARTER_WEAPON: u32 = 21348;
+
+fn carried_and_worn(client: &DevClientSession) -> BTreeMap<u32, u64> {
+    let mut items = inventory_counts(client);
+    if let Some(inventory) = client.inventory() {
+        for entry in inventory.equipment.iter() {
+            *items
+                .entry(entry.item.item_definition_ref.get())
+                .or_insert(0) += 1;
+        }
+    }
+    items
+}
+
+/// Crystal gives the vocation starter set only after the vocation is selected at 32538,32514,7
+/// (movement_select_vocation.lua). Walk onto that step with real steps, wait a bounded time for
+/// the set (the sorcerer weapon, scorcher 21348) and record what the inventory showed. The
+/// server has no vocation-select command or step effect, so nothing is chosen here.
+pub(super) async fn starter_after_vocation_select(
+    client: &mut DevClientSession,
+    world: &BundleWorld,
+) {
+    let outcome: Observation = async {
+        let before = carried_and_worn(client);
+        let here = tile(client.world_spatial().actor_position)?;
+        let path = route(world, here, |at| at == VOCATION_SELECT)
+            .ok_or_else(|| format!("no walk route from {here:?} to the vocation-select step {VOCATION_SELECT:?}"))?;
+        walk(client, world, &path).await?;
+        let at = tile(client.world_spatial().actor_position)?;
+        let names = known_refs()?;
+        let wanted = names
+            .iter()
+            .find(|(_, id)| **id == SORCERER_STARTER_WEAPON)
+            .map(|(reference, _)| *reference);
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+        let mut after = carried_and_worn(client);
+        while after == before && tokio::time::Instant::now() < deadline {
+            client.service_liveness(Duration::from_millis(100)).await?;
+            client.take_events();
+            verdict::Harness::global().progress("newhaven_journey");
+            after = carried_and_worn(client);
+        }
+        let granted = wanted.is_some_and(|reference| after.contains_key(&reference));
+        Ok((
+            granted,
+            format!(
+                "stood on {at:?}; sorcerer scorcher {SORCERER_STARTER_WEAPON} present={granted} inventory before={before:?} after={after:?}; no vocation-select wire exists so no vocation was chosen"
+            ),
+        ))
+    }
+    .await;
+    row("starter-set-granted-after-vocation-select", outcome);
+}
+
 /// Runs after the death relog of the Newhaven leg on the same character.
 pub(super) async fn run(
     client: &mut DevClientSession,
