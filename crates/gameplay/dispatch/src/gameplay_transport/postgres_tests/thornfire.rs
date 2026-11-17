@@ -30,7 +30,12 @@ fn scenario(admin: String) -> TestResult {
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let (_controller, pin) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                world,
+                Some(include_bytes!(
+                    "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+                )),
+            );
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
