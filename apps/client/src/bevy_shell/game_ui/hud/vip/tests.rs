@@ -36,9 +36,41 @@ pub(super) fn control(
 }
 pub(super) fn click(app: &mut App, predicate: impl Fn(Action) -> bool) -> TestResult {
     let entity = control(app, predicate)?;
+    // List actions sit in the list's right-click menu: open it the way a player does.
+    let in_menu = app
+        .world()
+        .get::<ChildOf>(entity)
+        .is_some_and(|parent| app.world().get::<view::ListMenu>(parent.parent()).is_some());
+    if in_menu {
+        let list = app
+            .world_mut()
+            .query_filtered::<Entity, With<List>>()
+            .single(app.world())?;
+        app.world_mut().trigger(secondary_click(list));
+        app.update();
+    }
     app.world_mut().trigger(Activate { entity });
     app.update();
     Ok(())
+}
+pub(super) fn secondary_click(entity: Entity) -> bevy::picking::events::PointerClick {
+    bevy::picking::events::PointerClick {
+        entity,
+        pointer: bevy::picking::events::Pointer::new(
+            bevy::picking::pointer::PointerId::Mouse,
+            bevy::picking::pointer::Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: bevy::picking::pointer::PointerButton::Secondary,
+        hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    }
 }
 pub(super) fn field(app: &mut App) -> Result<Entity, Box<dyn std::error::Error>> {
     app.world_mut()
@@ -608,6 +640,12 @@ fn vip_presentation_controls_are_reachable_and_icons_are_visible() -> TestResult
             .iter(app.world())
             .find_map(|(entity, name)| (name.as_str() == id).then_some(entity))
             .ok_or("VIP presentation control missing")?;
+        let list = app
+            .world_mut()
+            .query_filtered::<Entity, With<List>>()
+            .single(app.world())?;
+        app.world_mut().trigger(secondary_click(list));
+        app.update();
         app.world_mut().trigger(Activate { entity });
         app.update();
     }
@@ -846,5 +884,63 @@ fn vip_rows_reserve_primary_for_messaging_and_keyboard_activation_opens_edit() -
         assert!(app.world().resource::<State>().draft.is_some());
         click(&mut app, |a| matches!(a, Action::Cancel(_)))?;
     }
+    Ok(())
+}
+
+#[test]
+fn vip_list_actions_open_from_the_right_click_menu_without_a_header() -> TestResult {
+    let (mut app, _commands, outbox) = super::super::tests::app()?;
+    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
+    app.update();
+    let region = app
+        .world()
+        .resource::<crate::bevy_shell::game_ui::GameRegions>()
+        .vip;
+    let mut texts = Vec::new();
+    let mut stack = vec![region];
+    while let Some(entity) = stack.pop() {
+        if let Some(text) = app.world().get::<Text>(entity) {
+            texts.push(text.0.clone());
+        }
+        stack.extend(app.world().get::<Children>(entity).into_iter().flatten());
+    }
+    for header in ["VIP", "↻", "Groups"] {
+        assert!(!texts.iter().any(|text| text == header), "{header}");
+    }
+    let menu = app
+        .world_mut()
+        .query_filtered::<Entity, With<view::ListMenu>>()
+        .single(app.world())?;
+    let display = |app: &App| app.world().get::<Node>(menu).map(|node| node.display);
+    assert_eq!(display(&app), Some(Display::None));
+    let list = app
+        .world_mut()
+        .query_filtered::<Entity, With<List>>()
+        .single(app.world())?;
+    app.world_mut().trigger(secondary_click(list));
+    app.update();
+    assert_eq!(display(&app), Some(Display::Flex));
+    let entries: Vec<String> = app
+        .world()
+        .get::<Children>(menu)
+        .ok_or("menu entries")?
+        .iter()
+        .filter_map(|entry| app.world().get::<Name>(entry))
+        .map(|name| name.as_str().to_owned())
+        .collect();
+    assert_eq!(
+        entries,
+        [
+            "vip.add",
+            "vip.groups.add",
+            "vip.next",
+            "vip.refresh",
+            "vip.close",
+            "vip.sort",
+            "vip.hide_offline",
+        ]
+    );
+    click(&mut app, |action| matches!(action, Action::Sort))?;
+    assert_eq!(display(&app), Some(Display::None));
     Ok(())
 }

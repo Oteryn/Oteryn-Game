@@ -334,6 +334,14 @@ fn o014_battle_list_filters_by_type_and_sorts_by_each_choice() {
         list(true, true, BattleSort::Identity).rows(&rows),
         vec![creature, player]
     );
+    // Tibia's default list: no kind filter, sorted by display time (the order the creatures
+    // appeared in the session's battle rows).
+    let tibia = BattleListPreferences::default();
+    assert_eq!(tibia.sort, BattleSort::Appearance);
+    assert!(tibia.players && tibia.creatures && tibia.search.is_empty());
+    assert_eq!(tibia.max_health, 100);
+    assert_eq!(tibia.rows(&[player, creature]), vec![player, creature]);
+    assert_eq!(tibia.rows(&rows), vec![creature, player]);
 }
 
 #[test]

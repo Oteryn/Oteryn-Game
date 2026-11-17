@@ -1,4 +1,4 @@
-//! Native splitters for the main regions; their sizes and the main window geometry are kept
+//! The native console splitter (the Tibia sidebar has a fixed width); its height and the main window geometry are kept
 //! in the local layout file across sessions.
 //! Behaviour: Tibia manual §3.1 (docs/reference/tibia-manual/interface.md).
 //! Structural reference: edubart/otclient gameinterface.otui:70-77,
@@ -43,7 +43,6 @@ impl LayoutStore {
 pub(super) struct Splitter {
     id: &'static str,
     target: Entity,
-    vertical: bool,
     gesture: Option<Gesture>,
 }
 #[derive(Clone, Copy)]
@@ -62,20 +61,16 @@ pub(super) fn install(app: &mut App) {
         .add_systems(Startup, restore.after(super::setup))
         .add_systems(Update, (maintain, remember).chain());
 }
-/// Applies the remembered region sizes within the same bounds a drag allows.
+/// Applies the remembered console height within the same bounds a drag allows.
 fn restore(store: Res<LayoutStore>, splitters: Query<&Splitter>, mut nodes: Query<&mut Node>) {
     for splitter in &splitters {
-        let Some([_, _, width, height]) = store.layout.bounds(splitter.id) else {
+        let Some([_, _, _, height]) = store.layout.bounds(splitter.id) else {
             continue;
         };
         let Ok(mut node) = nodes.get_mut(splitter.target) else {
             continue;
         };
-        if splitter.vertical {
-            node.height = px((height as f32).clamp(90., 600.));
-        } else {
-            node.width = px((width as f32).clamp(176., 480.));
-        }
+        node.height = px((height as f32).clamp(90., 600.));
     }
 }
 /// Writes the region sizes and the windowed main window geometry when they change; a drag
@@ -94,22 +89,11 @@ fn remember(
         let Ok(node) = nodes.get(splitter.target) else {
             continue;
         };
-        let Val::Px(size) = (if splitter.vertical {
-            node.height
-        } else {
-            node.width
-        }) else {
+        let Val::Px(size) = node.height else {
             continue;
         };
         let size = size.round() as i32;
-        entries.push((
-            splitter.id,
-            if splitter.vertical {
-                [0, 0, 1, size]
-            } else {
-                [0, 0, size, 1]
-            },
-        ));
+        entries.push((splitter.id, [0, 0, 1, size]));
     }
     if let Ok(window) = windows.single()
         && window.mode == WindowMode::Windowed
@@ -165,28 +149,18 @@ fn maintain(
         }
     }
 }
-pub(super) fn spawn(
-    commands: &mut Commands,
-    target: Entity,
-    vertical: bool,
-    id: &'static str,
-) -> Entity {
+pub(super) fn spawn(commands: &mut Commands, target: Entity, id: &'static str) -> Entity {
     commands
         .spawn((
-            Name::new(if vertical {
-                "Resize console"
-            } else {
-                "Resize sidebar"
-            }),
+            Name::new("Resize console"),
             Splitter {
                 id,
                 target,
-                vertical,
                 gesture: None,
             },
             Node {
-                width: if vertical { percent(100.) } else { px(6.) },
-                height: if vertical { px(6.) } else { percent(100.) },
+                width: percent(100.),
+                height: px(6.),
                 flex_shrink: 0.,
                 ..default()
             },
@@ -228,11 +202,7 @@ fn start(
     let Ok(node) = nodes.get(splitter.target) else {
         return;
     };
-    let size = (if splitter.vertical {
-        node.size().y
-    } else {
-        node.size().x
-    }) * node.inverse_scale_factor();
+    let size = node.size().y * node.inverse_scale_factor();
     if !size.is_finite() || size <= 0. {
         return;
     }
@@ -287,11 +257,7 @@ fn drag(
     let Ok(mut node) = nodes.get_mut(splitter.target) else {
         return;
     };
-    if splitter.vertical {
-        node.height = px((gesture.size - event.distance.y / scale.0).clamp(90., 600.));
-    } else {
-        node.width = px((gesture.size - event.distance.x / scale.0).clamp(176., 480.));
-    }
+    node.height = px((gesture.size - event.distance.y / scale.0).clamp(90., 600.));
     event.propagate(false);
 }
 fn end(event: On<PointerDragEnd>, mut splitters: Query<&mut Splitter>) {

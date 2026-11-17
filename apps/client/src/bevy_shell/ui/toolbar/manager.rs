@@ -31,9 +31,9 @@ fn order(owner: &HostOwner) -> Vec<String> {
         .toolbar_order
         .clone()
         .unwrap_or_else(|| {
-            TOOLBAR
+            super::grid::DEFAULT
                 .iter()
-                .map(|(_, control)| control.id().to_owned())
+                .map(|id| (*id).to_owned())
                 .collect()
         })
 }

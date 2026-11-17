@@ -69,7 +69,7 @@ const ART: [[u8; 7]; 20] = [
 pub(super) fn setup(
     mut commands: Commands,
     skins: Res<Skins>,
-    regions: Res<super::super::super::GameRegions>,
+    menus: Query<Entity, With<view::ListMenu>>,
     mut images: ResMut<Assets<Image>>,
     mut preferences: ResMut<Preferences>,
 ) {
@@ -96,19 +96,19 @@ pub(super) fn setup(
         TextureFormat::Rgba8UnormSrgb,
         RenderAssetUsages::default(),
     ));
-    let root = commands
-        .spawn(Node {
-            column_gap: px(3.),
-            ..default()
-        })
-        .id();
     for (label, action, id, width, hide) in [
-        ("Sort: Status", Action::Sort, "vip.sort", 80., false),
+        (
+            "Sort: Status",
+            Action::Sort,
+            "vip.sort",
+            view::MENU_WIDTH,
+            false,
+        ),
         (
             "Hide offline",
             Action::HideOffline,
             "vip.hide_offline",
-            80.,
+            view::MENU_WIDTH,
             true,
         ),
     ] {
@@ -133,10 +133,12 @@ pub(super) fn setup(
         commands
             .entity(entity)
             .despawn_children()
-            .add_child(caption);
-        commands.entity(root).add_child(entity);
+            .add_child(caption)
+            .observe(view::close_list_menu);
+        for menu in &menus {
+            commands.entity(menu).add_child(entity);
+        }
     }
-    commands.entity(regions.vip).add_child(root);
 }
 
 pub(super) fn click(

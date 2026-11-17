@@ -35,6 +35,47 @@ fn source_skill_rows_project_actual_levels_progress_and_saved_number_mode()
 }
 
 #[test]
+fn skills_widget_shows_label_value_rows_without_prose() -> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, _commands, outbox) = super::super::tests::app()?;
+    outbox.bevy_hud_skills_fixture()?;
+    app.update();
+    // Only the skills widget's own texts.
+    let region = app
+        .world()
+        .resource::<crate::bevy_shell::game_ui::GameRegions>()
+        .skills;
+    let mut texts = Vec::new();
+    let mut stack = vec![region];
+    while let Some(entity) = stack.pop() {
+        if let Some(text) = app.world().get::<Text>(entity) {
+            texts.push(text.0.clone());
+        }
+        stack.extend(app.world().get::<Children>(entity).into_iter().flatten());
+    }
+    assert!(texts.iter().any(|text| text == "Level"));
+    assert!(texts.iter().any(|text| text == "Experience"));
+    for prose in ["Trained skills", "Refresh", "Skills controls", "Updating…"] {
+        assert!(!texts.iter().any(|text| text.contains(prose)), "{prose}");
+    }
+    assert!(
+        !texts
+            .iter()
+            .any(|text| text.contains("Loyalty skill bonus"))
+    );
+    let heights: Vec<Val> = app
+        .world_mut()
+        .query::<(&Label, &ChildOf)>()
+        .iter(app.world())
+        .filter_map(|(_, parent)| app.world().get::<Node>(parent.parent()))
+        .map(|node| node.height)
+        .collect();
+    assert_eq!(heights, vec![px(15.); 8]);
+    assert_eq!(super::grouped(1_234_567), "1,234,567");
+    assert_eq!(super::grouped(999), "999");
+    Ok(())
+}
+
+#[test]
 fn skills_hover_and_visibility_reset_controls_are_reachable()
 -> Result<(), Box<dyn std::error::Error>> {
     let (mut app, _, outbox) = super::super::tests::app()?;
@@ -47,8 +88,26 @@ fn skills_hover_and_visibility_reset_controls_are_reachable()
             .find_map(|(entity, name)| (name.as_str() == label).then_some(entity))
             .ok_or_else(|| format!("missing {label}").into())
     };
-    let menu = find(&mut app, "Skills controls")?;
-    app.world_mut().trigger(Activate { entity: menu });
+    // Tibia opens the skills settings from the widget's right-click menu.
+    let menu = find(&mut app, "Skills base")?;
+    app.world_mut()
+        .trigger(bevy::picking::events::PointerClick {
+            entity: menu,
+            pointer: bevy::picking::events::Pointer::new(
+                bevy::picking::pointer::PointerId::Mouse,
+                bevy::picking::pointer::Location {
+                    target: bevy::camera::NormalizedRenderTarget::None {
+                        width: 100,
+                        height: 100,
+                    },
+                    position: Vec2::ZERO,
+                },
+            ),
+            button: bevy::picking::pointer::PointerButton::Secondary,
+            hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: std::time::Duration::ZERO,
+            count: 1,
+        });
     app.update();
     let toggle = find(&mut app, "Toggle Magic")?;
     app.world_mut().trigger(Activate { entity: toggle });

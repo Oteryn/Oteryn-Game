@@ -51,13 +51,18 @@ fn keys(app: &mut App) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let children = app
             .world()
             .get::<Children>(*icon)
-            .ok_or("icon label missing")?;
+            .ok_or("icon art missing")?;
         assert!(
             children.iter().any(|entity| app
                 .world()
-                .get::<Text>(entity)
-                .is_some_and(|text| !text.0.is_empty())),
-            "icon has visible text"
+                .get::<crate::bevy_shell::game_ui::art::ArtSlot>(entity)
+                .is_some_and(|slot| slot.key.starts_with("condition-")
+                    || slot.key.starts_with("player-state-flags-"))
+                && app
+                    .world()
+                    .get::<Node>(entity)
+                    .is_some_and(|node| { (node.width, node.height) == (px(9.), px(9.)) })),
+            "each state is a 9x9 condition art slot"
         );
     }
     Ok(app
@@ -81,28 +86,21 @@ fn status_icons_show_only_active_in_order() -> TestResult {
         default(),
     )?;
     app.update();
-    assert_eq!(keys(&mut app)?, ["Poison", "Haste", "Skill bonus", "Agony"]);
+    // Tibia strip conditions come first in state-bit order, the rest in catalogue order.
+    assert_eq!(keys(&mut app)?, ["Poison", "Haste", "Agony", "Skill bonus"]);
+    // The row is centred under the status bar over the game window.
     let status_row = row(&mut app)?;
     let parent = app
         .world()
         .get::<ChildOf>(status_row)
         .ok_or("row parent")?
         .parent();
-    let children = app
-        .world()
-        .get::<Children>(parent)
-        .ok_or("vitals children")?;
-    assert_eq!(
-        children.last(),
-        Some(&status_row),
-        "row is below vital tracks"
-    );
     assert_eq!(
         app.world()
             .get::<Node>(parent)
-            .ok_or("vitals node")?
-            .flex_direction,
-        FlexDirection::Column
+            .ok_or("centre node")?
+            .justify_content,
+        JustifyContent::Center
     );
     publish(&app, default(), default(), default(), default())?;
     app.update();
@@ -113,6 +111,72 @@ fn status_icons_show_only_active_in_order() -> TestResult {
             .ok_or("row node")?
             .display,
         Display::None
+    );
+    Ok(())
+}
+
+fn art_keys(app: &mut App) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let row = row(app)?;
+    let mut out = Vec::new();
+    for icon in app.world().get::<Children>(row).into_iter().flatten() {
+        for child in app.world().get::<Children>(*icon).into_iter().flatten() {
+            if let Some(slot) = app
+                .world()
+                .get::<crate::bevy_shell::game_ui::art::ArtSlot>(*child)
+            {
+                out.push(slot.key.clone());
+            }
+        }
+    }
+    Ok(out)
+}
+
+#[test]
+fn conditions_use_the_tibia_state_flag_cells_in_bit_order() -> TestResult {
+    let (mut app, _commands, _outbox) = super::super::tests::app()?;
+    // Agony, Feared, Bleeding, Paralysed, Drunk, Poison, Mana Shield, Invisible.
+    publish(
+        &app,
+        conditions(&[
+            (27, 0),
+            (12, 0),
+            (4, 0),
+            (14, 0),
+            (10, 0),
+            (1, 0),
+            (17, 0),
+            (9, 0),
+        ]),
+        default(),
+        default(),
+        default(),
+    )?;
+    app.update();
+    assert_eq!(
+        keys(&mut app)?,
+        [
+            "Poison",
+            "Drunk",
+            "Paralysed",
+            "Bleeding",
+            "Feared",
+            "Mana Shield",
+            "Agony",
+            "Invisible"
+        ]
+    );
+    assert_eq!(
+        art_keys(&mut app)?,
+        [
+            "player-state-flags-0",
+            "player-state-flags-3",
+            "player-state-flags-5",
+            "player-state-flags-15",
+            "player-state-flags-20",
+            "player-state-flags-26",
+            "player-state-flags-27",
+            "condition-invisible"
+        ]
     );
     Ok(())
 }

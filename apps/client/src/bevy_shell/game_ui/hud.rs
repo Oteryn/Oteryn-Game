@@ -10,10 +10,19 @@ use oteryn_session::{ChaseMode, EntityRef, FightMode};
 mod battle;
 #[path = "hud/blessings.rs"]
 mod blessings;
+/// The inventory widget state: minimised to the Soul and Cap boxes, and the blessings panel
+/// opened from its Blessings button (closed by default).
+#[derive(Resource, Default, Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) struct EquipmentWidget {
+    pub minimised: bool,
+    pub blessings: bool,
+}
 #[path = "hud/skills.rs"]
 mod skills;
 #[path = "hud/status_icons.rs"]
 mod status_icons;
+#[path = "hud/top_bar.rs"]
+mod top_bar;
 #[path = "hud/vip.rs"]
 mod vip;
 #[derive(Clone, Copy, Component)]
@@ -29,11 +38,22 @@ enum Command {
     Chase(ChaseMode),
     Secure(bool),
     Expert(u8),
-    Skills,
     BattleList(usize),
     BattleListEditor,
+    /// Opens or closes the battle list menu (sort, lists, list editor).
+    BattleMenu,
+    /// Toggles a type filter of the active battle list.
+    BattleFilter(battle::Filter),
     Analyser(oteryn_client_ui::analyser::Tool),
 }
+/// A combat control of the inventory widget; it is kept across frames, so its generation and
+/// secure target follow the live session.
+#[derive(Component)]
+struct CombatControl;
+/// The combat column of the inventory widget (Inventory.qml): a 42 px column with the Stop
+/// button over 20x20 buttons in three rows, filled top to bottom.
+const COMBAT_COLUMN: f32 = 42.;
+const COMBAT_BUTTON: f32 = 20.;
 #[derive(Component)]
 struct VitalLabel(bool);
 #[derive(Component)]
@@ -47,6 +67,9 @@ enum InfoText {
 pub(super) fn install(app: &mut App) {
     blessings::spawn(app);
     skills::install(app);
+    app.init_resource::<DevOverlay>()
+        .init_resource::<battle::Menu>()
+        .init_resource::<EquipmentWidget>();
     vip::install(app);
     app.add_systems(
         Startup,
@@ -54,38 +77,78 @@ pub(super) fn install(app: &mut App) {
     )
     .add_systems(
         Update,
-        (project, battle::project, status_icons::project).chain(),
+        (
+            project,
+            battle::project,
+            status_icons::project,
+            top_bar::project,
+        )
+            .chain(),
     )
     .add_observer(activate);
 }
-fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Skins>) {
+/// The developer overlay over the game window (status line, world and channel ids, combat
+/// state); it is shown only when `OTERYN_DEV_OVERLAY=1`.
+#[derive(Resource, Clone, Copy)]
+pub(in crate::bevy_shell) struct DevOverlay(pub bool);
+impl Default for DevOverlay {
+    fn default() -> Self {
+        Self(std::env::var("OTERYN_DEV_OVERLAY").is_ok_and(|value| value == "1"))
+    }
+}
+/// HitpointsMana.qml: a 12x11 symbol, a 94x11 bar and the current value in a 42 px column.
+const STATUS_ICON: Vec2 = Vec2::new(12., 11.);
+const STATUS_BAR: Vec2 = Vec2::new(94., 11.);
+const STATUS_VALUE: f32 = 42.;
+/// The monk row of the status widget, shown only while the character has harmony or serene.
+#[derive(Component)]
+struct MonkRow;
+#[derive(Component)]
+struct MonkLabel;
+fn setup(
+    mut commands: Commands,
+    regions: Res<super::GameRegions>,
+    sidebar: Option<Res<super::Sidebar>>,
+    status_bar: Option<Res<super::StatusBar>>,
+    skins: Res<Skins>,
+    overlay: Res<DevOverlay>,
+) {
     commands.entity(regions.vitals).insert(Node {
         width: percent(100.),
-        min_height: px(28.),
         flex_shrink: 0.,
         flex_direction: FlexDirection::Column,
+        row_gap: px(2.),
         ..default()
     });
-    let vitals = commands
-        .spawn(Node {
-            width: percent(100.),
-            min_height: px(28.),
-            flex_shrink: 0.,
-            ..default()
-        })
-        .id();
-    commands.entity(regions.vitals).add_child(vitals);
-    for (mana, color) in [
-        (false, crate::bevy_shell::health_circle::health_colour(0, 0)),
-        (true, Color::srgb_u8(0, 70, 180)),
+    let font = source::font(skins.font.clone(), false);
+    let row = |commands: &mut Commands| {
+        commands
+            .spawn(Node {
+                width: percent(100.),
+                height: px(STATUS_ICON.y),
+                flex_shrink: 0.,
+                column_gap: px(2.),
+                align_items: AlignItems::Center,
+                ..default()
+            })
+            .id()
+    };
+    for (mana, color, key) in [
+        (
+            false,
+            crate::bevy_shell::health_circle::health_colour(0, 0),
+            "status-health",
+        ),
+        (true, Color::srgb_u8(0, 70, 180), "status-mana"),
     ] {
+        let line = row(&mut commands);
+        let icon = super::art::fixed(&mut commands, &skins.font, key, STATUS_ICON);
         let track = commands
             .spawn((
-                source::frame(skins.inset.clone(), [1.; 4]),
                 Node {
-                    flex_grow: 1.,
-                    height: px(14.),
-                    margin: UiRect::all(px(2.)),
+                    width: px(STATUS_BAR.x),
+                    height: px(STATUS_BAR.y),
+                    flex_shrink: 0.,
                     overflow: Overflow::clip(),
                     ..default()
                 },
@@ -97,9 +160,9 @@ fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Sk
                 VitalFill(mana),
                 Node {
                     position_type: PositionType::Absolute,
-                    left: px(1.),
-                    top: px(1.),
-                    bottom: px(1.),
+                    left: px(0.),
+                    top: px(0.),
+                    bottom: px(0.),
                     width: percent(0.),
                     ..default()
                 },
@@ -107,15 +170,15 @@ fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Sk
                 Pickable::IGNORE,
             ))
             .id();
+        commands.entity(track).add_child(fill);
         let label = commands
             .spawn((
                 VitalLabel(mana),
-                source::text("—", source::font(skins.font.clone(), false)),
+                source::text("—", font.clone()),
                 Node {
-                    position_type: PositionType::Absolute,
-                    width: percent(100.),
-                    top: px(0.),
-                    justify_content: JustifyContent::Center,
+                    width: px(STATUS_VALUE),
+                    flex_shrink: 0.,
+                    margin: UiRect::left(Val::Auto),
                     ..default()
                 },
             ))
@@ -124,40 +187,55 @@ fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Sk
                 TextColor(Color::WHITE),
             ))
             .id();
-        commands.entity(track).add_children(&[fill, label]);
-        commands.entity(vitals).add_child(track);
+        commands.entity(line).add_children(&[icon, track, label]);
+        commands.entity(regions.vitals).add_child(line);
     }
-    let status = commands
-        .spawn((
-            InfoText::Status,
-            source::text("", source::font(skins.font.clone(), false)),
-        ))
+    let monk = row(&mut commands);
+    commands.entity(monk).insert(MonkRow);
+    commands
+        .entity(monk)
+        .entry::<Node>()
+        .and_modify(|mut node| {
+            node.display = Display::None;
+        });
+    let harmony = super::art::fixed(&mut commands, &skins.font, "status-harmony", STATUS_ICON);
+    let label = commands
+        .spawn((MonkLabel, source::text("", font.clone())))
+        .insert(TextColor(Color::WHITE))
         .id();
-    commands.entity(regions.vitals).add_child(status);
-    status_icons::setup(&mut commands, regions.vitals);
-    let header = commands
-        .spawn(Node {
-            width: percent(100.),
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::SpaceBetween,
-            ..default()
-        })
-        .id();
-    let caption = commands
-        .spawn(source::text(
-            "Skills",
-            source::font(skins.font.clone(), false),
-        ))
-        .id();
-    let refresh = button(&mut commands, &skins, 0, Command::Skills, "Refresh", 48.);
-    commands.entity(header).add_children(&[caption, refresh]);
-    commands.entity(regions.skills).add_child(header);
-    let title = commands
-        .spawn(source::text(
-            "Analysers",
-            source::font(skins.font.clone(), false),
-        ))
-        .id();
+    let serene = super::art::fixed(&mut commands, &skins.font, "status-serene", STATUS_ICON);
+    commands
+        .entity(monk)
+        .add_children(&[harmony, label, serene]);
+    commands.entity(regions.vitals).add_child(monk);
+    // The condition row sits in the status bar over the game window when there is one.
+    let conditions = status_bar.map_or(regions.vitals, |bar| {
+        top_bar::setup(&mut commands, &skins, bar.0)
+    });
+    status_icons::setup(&mut commands, conditions);
+    combat_column(&mut commands, &skins, regions.equipment);
+    if overlay.0 {
+        let status = commands
+            .spawn((
+                InfoText::Status,
+                source::text("", font.clone()),
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: px(4.),
+                    top: px(4.),
+                    right: px(4.),
+                    ..default()
+                },
+                GlobalZIndex(5),
+            ))
+            .insert((TextColor(Color::srgb(1., 1., 0.6)), TextLayout::default()))
+            .id();
+        commands.entity(regions.world).add_child(status);
+    }
+    // The analytics selector widget: one button per analyser and its report.
+    let Some(sidebar) = sidebar else {
+        return;
+    };
     let tools = commands
         .spawn(Node {
             width: percent(100.),
@@ -174,14 +252,14 @@ fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Sk
             0,
             Command::Analyser(tool),
             tool.title(),
-            86.,
+            78.,
         );
         commands.entity(tools).add_child(selector);
     }
     let text = commands
         .spawn((
             InfoText::Analyser,
-            source::text("", source::font(skins.font.clone(), false)),
+            source::text("", font),
             Node {
                 width: percent(100.),
                 padding: UiRect::all(px(3.)),
@@ -191,8 +269,97 @@ fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Sk
         .insert(TextLayout::default())
         .id();
     commands
-        .entity(regions.analyzers)
-        .add_children(&[title, tools, text]);
+        .entity(sidebar.analytics)
+        .add_children(&[tools, text]);
+}
+/// The combat column of the inventory widget, docked at the right of the equipment.
+fn combat_column(commands: &mut Commands, skins: &Skins, equipment: Entity) {
+    commands.entity(equipment).insert(Node {
+        width: percent(100.),
+        min_height: px(142.),
+        flex_shrink: 0.,
+        flex_direction: FlexDirection::Column,
+        padding: UiRect::right(px(COMBAT_COLUMN + 2.)),
+        ..default()
+    });
+    let column = commands
+        .spawn((
+            Name::new("Combat controls"),
+            Node {
+                position_type: PositionType::Absolute,
+                right: px(0.),
+                top: px(0.),
+                width: px(COMBAT_COLUMN),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(2.),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(equipment).add_child(column);
+    let stop = button(commands, skins, 0, Command::Stop, "Stop", COMBAT_COLUMN);
+    commands
+        .entity(stop)
+        .insert((CombatControl, BorderColor::all(Color::NONE)));
+    commands.entity(column).add_child(stop);
+    let grid = |commands: &mut Commands, rows: u16| {
+        commands
+            .spawn(Node {
+                display: Display::Grid,
+                grid_auto_flow: GridAutoFlow::Column,
+                grid_template_rows: RepeatedGridTrack::px(rows, COMBAT_BUTTON),
+                grid_auto_columns: vec![GridTrack::px(COMBAT_BUTTON)],
+                column_gap: px(2.),
+                row_gap: px(2.),
+                ..default()
+            })
+            .id()
+    };
+    let modes = grid(commands, 3);
+    let pvp = grid(commands, 2);
+    commands.entity(column).add_children(&[modes, pvp]);
+    for (parent, command, key) in [
+        (
+            modes,
+            Command::Fight(FightMode::Offensive),
+            "combat-offensive",
+        ),
+        (
+            modes,
+            Command::Fight(FightMode::Balanced),
+            "combat-balanced",
+        ),
+        (
+            modes,
+            Command::Fight(FightMode::Defensive),
+            "combat-defensive",
+        ),
+        (modes, Command::Chase(ChaseMode::Stand), "combat-stand"),
+        (modes, Command::Chase(ChaseMode::Chase), "combat-chase"),
+        (modes, Command::Secure(true), "combat-secure"),
+        (pvp, Command::Expert(0), "combat-pvp-dove"),
+        (pvp, Command::Expert(1), "combat-pvp-whitehand"),
+        (pvp, Command::Expert(2), "combat-pvp-yellowhand"),
+        (pvp, Command::Expert(3), "combat-pvp-redfist"),
+    ] {
+        let slot = super::art::fixed(commands, &skins.font, key, Vec2::splat(COMBAT_BUTTON));
+        commands.entity(slot).insert((
+            CombatControl,
+            HudAction {
+                generation: 0,
+                command,
+            },
+            bevy::ui_widgets::Button,
+            BorderColor::all(Color::NONE),
+        ));
+        commands
+            .entity(slot)
+            .entry::<Node>()
+            .and_modify(|mut node| {
+                node.border = UiRect::all(px(1.));
+            });
+        commands.entity(parent).add_child(slot);
+    }
 }
 fn button(
     commands: &mut Commands,
@@ -221,7 +388,8 @@ fn activate(
     event: On<Activate>,
     guard: ModalGuard,
     actions: Query<&HudAction>,
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
+    mut menu: ResMut<battle::Menu>,
 ) {
     if !guard.allows(event.entity) {
         return;
@@ -231,6 +399,35 @@ fn activate(
     };
     if owner.modal_active() || action.generation != owner.generation() {
         return;
+    }
+    // Battle list filters edit the saved active list; the session mailbox
+    // takes them over on the next settings sync.
+    match action.command {
+        Command::BattleMenu => {
+            menu.0 = !menu.0;
+            return;
+        }
+        Command::BattleFilter(filter) => {
+            let Some(active) = owner
+                .play
+                .as_ref()
+                .map(|play| play.link.active_battle_list())
+            else {
+                return;
+            };
+            let mut preferences = owner.settings.preferences.clone();
+            let Some(list) = preferences.battle_lists.get_mut(active) else {
+                return;
+            };
+            match filter {
+                battle::Filter::Players => list.players = !list.players,
+                battle::Filter::Monsters => list.creatures = !list.creatures,
+            }
+            owner.settings.apply(preferences);
+            return;
+        }
+        Command::BattleList(_) | Command::BattleListEditor => menu.0 = false,
+        _ => {}
     }
     let Some(play) = &owner.play else { return };
     if play.view.gameplay_input_blocked(&play.link) {
@@ -254,11 +451,11 @@ fn activate(
         Command::Chase(mode) => play.link.battle_request(Action::Chase(mode)),
         Command::Secure(secure) => battle::request_pvp(&play.link, Some(secure), None),
         Command::Expert(mode) => battle::request_pvp(&play.link, None, Some(mode)),
-        Command::Skills => play.link.skills_widget_request(),
         Command::BattleList(index) => {
             let _ = play.link.battle_select_list(index);
         }
         Command::BattleListEditor => play.link.battle_list_editor_open(),
+        Command::BattleMenu | Command::BattleFilter(_) => {}
         Command::Analyser(tool) => {
             super::analyser::open(&owner, tool);
         }
@@ -272,10 +469,18 @@ fn project(
         NonSend<HostOwner>,
         Option<NonSend<crate::bevy_shell::audio::Playback>>,
     ),
-    mut labels: Query<(&VitalLabel, &mut Text), Without<InfoText>>,
-    mut info: Query<(&InfoText, &mut Text), Without<VitalLabel>>,
-    mut fills: Query<(&VitalFill, &mut Node, &mut BackgroundColor)>,
-    mut actions: Query<(Entity, &mut HudAction, Has<InteractionDisabled>)>,
+    mut labels: Query<(&VitalLabel, &mut Text), (Without<InfoText>, Without<MonkLabel>)>,
+    mut info: Query<(&InfoText, &mut Text), (Without<VitalLabel>, Without<MonkLabel>)>,
+    mut monk: (
+        Query<&mut Text, With<MonkLabel>>,
+        Query<&mut Node, (With<MonkRow>, Without<VitalFill>)>,
+    ),
+    mut fills: Query<(&VitalFill, &mut Node, &mut BackgroundColor), Without<MonkRow>>,
+    mut actions: Query<(Entity, &mut HudAction, Has<InteractionDisabled>), Without<CombatControl>>,
+    mut controls: Query<
+        (&mut HudAction, &mut BorderColor, &mut Node),
+        (With<CombatControl>, Without<VitalFill>, Without<MonkRow>),
+    >,
     mut entered: Local<Option<u64>>,
 ) {
     let Some(play) = &owner.play else {
@@ -296,7 +501,8 @@ fn project(
                 (v.health, v.max_health)
             }
         });
-        let next = value.map_or_else(|| "—".into(), |(current, max)| format!("{current}/{max}"));
+        // Tibia shows the current value only.
+        let next = value.map_or_else(|| "—".into(), |(current, _)| current.to_string());
         if text.0 != next {
             text.0 = next;
         }
@@ -323,13 +529,34 @@ fn project(
             node.width = width;
         }
     }
+    let harmony = vitals
+        .filter(|v| v.harmony > 0 || v.serene)
+        .map(|v| v.harmony.to_string());
+    for mut text in &mut monk.0 {
+        let next = harmony.clone().unwrap_or_default();
+        if text.0 != next {
+            text.0 = next;
+        }
+    }
+    for mut node in &mut monk.1 {
+        let display = if harmony.is_some() {
+            Display::Flex
+        } else {
+            Display::None
+        };
+        if node.display != display {
+            node.display = display;
+        }
+    }
     for (kind, mut text) in &mut info {
         let next = match kind {
             InfoText::Status => {
                 if owner.settings.preferences.compact_status {
                     oteryn_client_ui::spell_action_bar::vitals_text(vitals.as_ref())
                 } else {
-                    status_line(play, playback.as_ref().and_then(|audio| audio.status()))
+                    let line =
+                        status_line(play, playback.as_ref().and_then(|audio| audio.status()));
+                    format!("{line}\n{}", play.view.combat_status())
                 }
             }
             InfoText::Analyser => play.link.analyser_text().replace("\r\n", "\n"),
@@ -339,20 +566,48 @@ fn project(
         }
     }
     let blocked = owner.modal_active() || play.view.gameplay_input_blocked(&play.link);
-    let skills = play.link.skill_progress_panel();
-    let loyalty = play.link.loyalty_skills_panel();
-    let skills_blocked =
-        (!skills.selected && !loyalty.selected) || skills.pending || loyalty.pending;
     let analyser_blocked = !play.link.analyser_panel().selected;
+    let combat = play.link.battle_panel().combat;
+    let pvp = play.link.pvp_expert_panel();
+    let expert = pvp.confirmed.filter(|_| pvp.selected);
+    for (mut action, mut border, mut node) in &mut controls {
+        action.generation = generation;
+        let (selected, shown) = match action.command {
+            Command::Fight(mode) => (combat.is_some_and(|c| c.modes.fight_mode == mode), true),
+            Command::Chase(mode) => (combat.is_some_and(|c| c.modes.chase == mode), true),
+            Command::Secure(_) | Command::Expert(_) => match expert {
+                Some(state) => {
+                    let controls = battle::pvp_controls(state);
+                    let index = match action.command {
+                        Command::Expert(mode) => usize::from(mode) + 1,
+                        _ => 0,
+                    };
+                    if index == 0 {
+                        action.command = controls[0].0;
+                    }
+                    (controls.get(index).is_some_and(|control| control.2), true)
+                }
+                None => (false, false),
+            },
+            _ => (false, true),
+        };
+        let next = BorderColor::all(if selected {
+            Color::srgb_u8(230, 230, 230)
+        } else {
+            Color::NONE
+        });
+        if *border != next {
+            *border = next;
+        }
+        let display = if shown { Display::Flex } else { Display::None };
+        if node.display != display {
+            node.display = display;
+        }
+    }
     for (entity, mut action, disabled) in &mut actions {
-        if matches!(action.command, Command::Skills | Command::Analyser(_)) {
+        if matches!(action.command, Command::Analyser(_)) {
             action.generation = generation;
-            let blocked = blocked
-                || match action.command {
-                    Command::Skills => skills_blocked,
-                    Command::Analyser(_) => analyser_blocked,
-                    _ => false,
-                };
+            let blocked = blocked || analyser_blocked;
             if blocked && !disabled {
                 commands.entity(entity).insert(InteractionDisabled);
             }

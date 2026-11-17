@@ -86,11 +86,7 @@ fn move_drag(app: &mut App, entity: Entity, distance: Vec2) -> TestResult {
 }
 fn size(app: &App, splitter: Splitter) -> Result<Val, Box<dyn std::error::Error>> {
     let node = app.world().get::<Node>(splitter.target).ok_or("region")?;
-    Ok(if splitter.vertical {
-        node.height
-    } else {
-        node.width
-    })
+    Ok(node.height)
 }
 fn geometry(app: &mut App, splitter: Splitter) {
     app.world_mut()
@@ -103,51 +99,31 @@ fn geometry(app: &mut App, splitter: Splitter) {
 }
 
 #[test]
-fn main_panel_drag_resizes_console_and_both_sidebars() -> TestResult {
+fn console_drag_resizes_the_console_and_nothing_resizes_the_sidebar() -> TestResult {
     let mut app = app();
     let handles = handles(&mut app);
-    assert_eq!(handles.len(), 3);
     let chat = app.world().resource::<GameRegions>().chat;
     assert_eq!(
         handles
             .iter()
-            .filter(|(_, splitter)| splitter.vertical && splitter.target == chat)
-            .count(),
-        1
+            .map(|(_, splitter)| (splitter.id, splitter.target))
+            .collect::<Vec<_>>(),
+        [("console", chat)]
     );
     for (entity, splitter) in handles {
         geometry(&mut app, splitter);
         start_drag(&mut app, entity, PointerButton::Primary)?;
         move_drag(&mut app, entity, Vec2::splat(-120.))?;
-        assert_eq!(
-            size(&app, splitter)?,
-            px(if splitter.vertical { 210. } else { 236. })
-        );
+        assert_eq!(size(&app, splitter)?, px(210.));
         // Distance is cumulative from drag start, rather than added to each prior frame.
         move_drag(&mut app, entity, Vec2::splat(-140.))?;
-        assert_eq!(
-            size(&app, splitter)?,
-            px(if splitter.vertical { 220. } else { 246. })
-        );
+        assert_eq!(size(&app, splitter)?, px(220.));
         move_drag(&mut app, entity, Vec2::splat(10000.))?;
-        assert_eq!(
-            size(&app, splitter)?,
-            px(if splitter.vertical { 90. } else { 176. })
-        );
+        assert_eq!(size(&app, splitter)?, px(90.));
         move_drag(&mut app, entity, Vec2::splat(-10000.))?;
-        assert_eq!(
-            size(&app, splitter)?,
-            px(if splitter.vertical { 600. } else { 480. })
-        );
+        assert_eq!(size(&app, splitter)?, px(600.));
         let node = app.world().get::<Node>(splitter.target).ok_or("region")?;
-        assert_eq!(
-            if splitter.vertical {
-                node.max_height
-            } else {
-                node.max_width
-            },
-            percent(if splitter.vertical { 50. } else { 30. })
-        );
+        assert_eq!(node.max_height, percent(50.));
     }
     Ok(())
 }
@@ -215,7 +191,8 @@ fn splitter_cancels_when_ui_scale_changes_and_ends_on_release() -> TestResult {
 }
 
 #[test]
-fn game_shell_exposes_three_resize_handles() -> Result<(), Box<dyn std::error::Error>> {
+fn game_shell_exposes_only_the_console_handle_and_the_widget_resize_edges()
+-> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new();
     app.insert_resource(Skins {
         buttons: source::ButtonImages {
@@ -231,12 +208,22 @@ fn game_shell_exposes_three_resize_handles() -> Result<(), Box<dyn std::error::E
     app.add_systems(Startup, setup);
     app.update();
     let mut handles = app.world_mut().query::<&Name>();
+    let mut names: Vec<_> = handles
+        .iter(app.world())
+        .filter(|name| name.as_str().starts_with("Resize "))
+        .map(|name| name.as_str().to_owned())
+        .collect();
+    names.sort();
     assert_eq!(
-        handles
-            .iter(app.world())
-            .filter(|name| name.as_str().starts_with("Resize "))
-            .count(),
-        3
+        names,
+        [
+            "Resize console",
+            "Resize widget",
+            "Resize widget",
+            "Resize widget",
+            "Resize widget",
+            "Resize widget"
+        ]
     );
     Ok(())
 }
@@ -265,11 +252,7 @@ fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
         start_drag(&mut app, entity, PointerButton::Primary)?;
         move_drag(&mut app, entity, Vec2::splat(-120.))?;
         app.update();
-        let dragged = if splitter.vertical {
-            [0, 0, 1, 210]
-        } else {
-            [0, 0, 236, 1]
-        };
+        let dragged = [0, 0, 1, 210];
         assert_ne!(
             LayoutStore::load(Some(path.clone()))
                 .layout
@@ -298,14 +281,7 @@ fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
         .map(|(_, splitter)| Ok((splitter.id, size(&restarted, splitter)?)))
         .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
     sizes.sort_by_key(|(id, _)| *id);
-    assert_eq!(
-        sizes,
-        vec![
-            ("console", px(210.)),
-            ("sidebar.inventory", px(236.)),
-            ("sidebar.panels", px(236.)),
-        ]
-    );
+    assert_eq!(sizes, vec![("console", px(210.))]);
     assert_eq!(
         LayoutStore::load(Some(path.clone())).window(),
         Some([40, 80, 1280, 900])

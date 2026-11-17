@@ -32,19 +32,77 @@ fn fixture() -> Result<App, Box<dyn std::error::Error>> {
     Ok(app)
 }
 fn activate(app: &mut App, label: &str) -> TestResult {
-    let text = app
-        .world_mut()
-        .query::<(Entity, &Text)>()
-        .iter(app.world())
-        .find_map(|(e, t)| (t.0 == label).then_some(e))
-        .ok_or("missing minimap control")?;
+    let name = match label {
+        "N" | "W" | "E" | "S" => format!("Rose {label}"),
+        "Centre" => "Rose centre".to_owned(),
+        "Zoom out" => "minimap-zoom-out".to_owned(),
+        "Zoom in" => "minimap-zoom-in".to_owned(),
+        "Floor up" => "minimap-floor-up".to_owned(),
+        "Floor down" => "minimap-floor-down".to_owned(),
+        // Dialog buttons keep their caption text.
+        other => {
+            let text = app
+                .world_mut()
+                .query::<(Entity, &Text)>()
+                .iter(app.world())
+                .find_map(|(e, t)| (t.0 == other).then_some(e))
+                .ok_or("missing minimap control")?;
+            let button = app
+                .world()
+                .get::<ChildOf>(text)
+                .ok_or("button parent")?
+                .parent();
+            app.world_mut().trigger(Activate { entity: button });
+            app.update();
+            return Ok(());
+        }
+    };
     let button = app
-        .world()
-        .get::<ChildOf>(text)
-        .ok_or("button parent")?
-        .parent();
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(e, n)| (n.as_str() == name).then_some(e))
+        .ok_or("missing minimap control")?;
     app.world_mut().trigger(Activate { entity: button });
     app.update();
+    Ok(())
+}
+#[test]
+fn the_minimap_is_a_tibia_viewport_with_a_rose_and_icon_buttons() -> TestResult {
+    let mut app = fixture()?;
+    let size = |app: &mut App, wanted: &str| {
+        app.world_mut()
+            .query::<(&Name, &Node)>()
+            .iter(app.world())
+            .find(|(name, _)| name.as_str() == wanted)
+            .map(|(_, node)| (node.width, node.height))
+    };
+    assert_eq!(
+        size(&mut app, "Minimap viewport"),
+        Some((px(108.), px(111.)))
+    );
+    assert_eq!(size(&mut app, "minimap-rose"), Some((px(43.), px(43.))));
+    for key in [
+        "minimap-floor-up",
+        "minimap-floor-down",
+        "minimap-zoom-in",
+        "minimap-zoom-out",
+        "minimap-centre",
+        "minimap-full-map",
+    ] {
+        assert_eq!(size(&mut app, key), Some((px(20.), px(20.))), "{key}");
+    }
+    // No compass text buttons and no camera prose.
+    let texts: Vec<String> = app
+        .world_mut()
+        .query_filtered::<&Text, Without<art::ArtFallback>>()
+        .iter(app.world())
+        .map(|text| text.0.clone())
+        .collect();
+    for prose in ["N", "W", "E", "S", "Centre", "Zoom in"] {
+        assert!(!texts.iter().any(|text| text == prose), "{prose}");
+    }
+    assert!(!texts.iter().any(|text| text.starts_with("Floor")));
     Ok(())
 }
 #[test]

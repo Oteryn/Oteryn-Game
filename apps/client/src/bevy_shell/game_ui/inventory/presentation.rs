@@ -28,7 +28,6 @@ struct Action {
 }
 #[derive(Clone, Copy)]
 enum Target {
-    Ground,
     Container(Binding, Kind),
 }
 #[derive(Clone, Copy)]
@@ -124,13 +123,11 @@ fn action(
     caption: &str,
     action: Action,
 ) {
-    let (name, width) = match action.target {
-        Target::Ground => ("inventory.container.browse".into(), 110.),
-        Target::Container(binding, _) => (
-            format!("inventory.container.{}.{}", binding.view, name),
-            50.,
-        ),
-    };
+    let Target::Container(binding, _) = action.target;
+    let (name, width) = (
+        format!("inventory.container.{}.{}", binding.view, name),
+        50.,
+    );
     let entity = commands
         .spawn((
             Name::new(name),
@@ -144,18 +141,6 @@ fn action(
         .id();
     commands.entity(entity).add_child(text);
     commands.entity(parent).add_child(entity);
-}
-pub(super) fn browse_entry(
-    commands: &mut Commands,
-    skins: &Skins,
-    parent: Entity,
-    generation: u64,
-) {
-    let entry = Action {
-        generation,
-        target: Target::Ground,
-    };
-    action(commands, skins, parent, "browse", "Browse ground", entry);
 }
 pub(super) fn body(
     commands: &mut Commands,
@@ -276,12 +261,6 @@ fn activate(
         return;
     }
     let intent = match action.target {
-        Target::Ground => {
-            let (x, y, floor) = play.view.map_center();
-            BrowseFieldIntent::Open {
-                position: oteryn_session::item_view::WorldTilePosition { x, y, floor },
-            }
-        }
         Target::Container(binding, kind) => {
             let panel = play.link.container_panel();
             let Some(view) = panel.views.as_ref().and_then(|views| {

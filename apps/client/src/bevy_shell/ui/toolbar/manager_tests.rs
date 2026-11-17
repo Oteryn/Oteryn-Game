@@ -34,52 +34,69 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
         .add_systems(Startup, crate::bevy_shell::ui::setup)
         .add_systems(Update, (project_toolbar, project_manager).chain());
     app.update();
-    let manage = app
-        .world_mut()
-        .query::<(Entity, &Control)>()
-        .iter(app.world())
-        .find(|(_, control)| matches!(control, Control::ManageButtons))
-        .map(|(entity, _)| entity)
-        .ok_or("missing Manage Buttons")?;
-    app.world_mut().trigger(Activate { entity: manage });
+    // While playing, the manager opens from the sidebar control buttons (grid.rs).
+    app.world_mut().resource_mut::<Manager>().open = true;
     app.update();
+    // The default set is the Tibia control-button set (ending with the reward wall); Market is
+    // added and moved up and the battle list button is removed.
+    assert_eq!(
+        order(app.world().non_send::<HostOwner>()),
+        super::super::grid::DEFAULT
+    );
     click(&mut app, |action| {
         matches!(action, Edit::Toggle("shell.market"))
     })?;
+    click(&mut app, |action| matches!(action, Edit::Toggle("battle")))?;
     click(&mut app, |action| {
-        matches!(action, Edit::Move("store", true))
+        matches!(action, Edit::Move("shell.market", true))
     })?;
     let expected = order(app.world().non_send::<HostOwner>());
-    assert!(!expected.iter().any(|id| id == "shell.market"));
+    assert!(!expected.iter().any(|id| id == "battle"));
+    assert_eq!(
+        expected.iter().rev().take(2).collect::<Vec<_>>(),
+        ["rewards", "shell.market"]
+    );
     let restored = HostOwner::new(Some(path))?;
     assert_eq!(
         restored.settings.preferences.toolbar_order.as_ref(),
         Some(&expected)
     );
-    let actual: Vec<_> = app
+    // While playing, the text buttons stay hidden and the sidebar grid follows the editor.
+    assert!(
+        app.world_mut()
+            .query::<(&Control, &Node)>()
+            .iter(app.world())
+            .filter(|(control, _)| TOOLBAR.iter().any(|entry| entry.1.id() == control.id()))
+            .all(|(_, node)| node.display == Display::None)
+    );
+    let region = app.world_mut().spawn(Node::default()).id();
+    app.world_mut()
+        .resource_scope(|world, skins: Mut<crate::bevy_shell::ui::Skins>| {
+            super::super::grid::spawn(&mut world.commands(), &skins, region);
+        });
+    app.world_mut().flush();
+    bevy::ecs::system::RunSystemOnce::run_system_once(app.world_mut(), super::super::grid::project)
+        .map_err(|error| error.to_string())?;
+    app.world_mut().flush();
+    let grid = app
         .world_mut()
-        .query::<(&Control, &Node)>()
-        .iter(app.world())
-        .filter(|(control, node)| control.id() == "shell.market" && node.display == Display::None)
-        .collect();
-    assert_eq!(actual.len(), 1);
-    // The actual child order, rather than just the preference vector, follows the editor.
-    let parent = app
-        .world()
-        .get::<ChildOf>(manage)
-        .ok_or("toolbar parent")?
-        .parent();
-    let children = app
-        .world()
-        .get::<Children>(parent)
-        .ok_or("toolbar children")?;
-    let shown: Vec<_> = children
+        .query_filtered::<&Children, With<super::super::grid::ControlGrid>>()
+        .single(app.world())?
         .iter()
+        .collect::<Vec<_>>();
+    let shown: Vec<_> = grid
+        .into_iter()
         .filter_map(|entity| {
-            let control = app.world().get::<Control>(entity)?;
+            let id = match *app
+                .world()
+                .get::<super::super::grid::ControlButton>(entity)?
+            {
+                super::super::grid::ControlButton::Grid(control) => control.id(),
+                super::super::grid::ControlButton::Extra(extra) => extra.id(),
+                _ => return None,
+            };
             let node = app.world().get::<Node>(entity)?;
-            (node.display != Display::None && !matches!(control, Control::ManageButtons))
-                .then_some(control.id().to_owned())
+            (node.display != Display::None).then_some(id.to_owned())
         })
         .collect();
     assert_eq!(shown, expected);
@@ -103,13 +120,7 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
         owner.settings.apply(preferences);
     }
     app.update();
-    assert_eq!(
-        app.world()
-            .get::<Node>(manage)
-            .ok_or("manage node")?
-            .display,
-        Display::Flex
-    );
+    // An empty set hides every grid button; the manager stays in the fixed column.
     for (control, node) in app
         .world_mut()
         .query::<(&Control, &Node)>()

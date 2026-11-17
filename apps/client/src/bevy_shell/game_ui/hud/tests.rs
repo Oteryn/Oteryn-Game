@@ -41,16 +41,23 @@ type AppResult = Result<
     Box<dyn std::error::Error>,
 >;
 pub(super) fn app() -> AppResult {
-    app_with_vitals(Some(ActorVitals {
-        health: 42,
-        max_health: 100,
-        mana: 10,
-        max_mana: 20,
-        ..default()
-    }))
+    app_with(
+        true,
+        Some(ActorVitals {
+            health: 42,
+            max_health: 100,
+            mana: 10,
+            max_mana: 20,
+            ..default()
+        }),
+    )
 }
 fn app_with_vitals(vitals: Option<ActorVitals>) -> AppResult {
+    app_with(true, vitals)
+}
+fn app_with(overlay: bool, vitals: Option<ActorVitals>) -> AppResult {
     let mut app = App::new();
+    app.insert_resource(DevOverlay(overlay));
     app.add_plugins((MinimalPlugins, AssetPlugin::default()))
         .init_asset::<Image>()
         .init_asset::<Font>();
@@ -80,6 +87,20 @@ fn app_with_vitals(vitals: Option<ActorVitals>) -> AppResult {
         bars: entities[9],
         world: entities[10],
     });
+    let mut sidebar = Vec::new();
+    for _ in 0..7 {
+        sidebar.push(app.world_mut().spawn(Node::default()).id());
+    }
+    app.insert_resource(super::super::Sidebar {
+        left: sidebar[0],
+        extra: sidebar[1],
+        left_widgets: sidebar[3],
+        extra_widgets: sidebar[4],
+        right_widgets: sidebar[5],
+        analytics: sidebar[6],
+    });
+    let status_bar = app.world_mut().spawn(Node::default()).id();
+    app.insert_resource(super::super::StatusBar(status_bar));
     app.add_systems(Startup, crate::bevy_shell::ui::setup);
     install(&mut app);
     app.update();
@@ -103,16 +124,15 @@ fn battle_activate_reaches_real_command_owner_and_uses_server_vitals() -> TestRe
         app.world().get::<HudAction>(button).is_some(),
         "pending updates retain the live target control"
     );
-    let text = app
+    let mut labels = app
         .world_mut()
-        .query::<&Text>()
+        .query::<(&VitalLabel, &Text)>()
         .iter(app.world())
-        .map(|value| value.0.as_str())
-        .collect::<Vec<_>>()
-        .join("\n");
-    assert!(text.contains("42/100"));
-    assert!(text.contains("10/20"));
-    assert!(!text.contains("7907"));
+        .map(|(label, text)| (label.0, text.0.clone()))
+        .collect::<Vec<_>>();
+    labels.sort();
+    // Tibia shows the current value only, not "42/100".
+    assert_eq!(labels, [(false, "42".to_owned()), (true, "10".to_owned())]);
     Ok(())
 }
 #[test]
@@ -442,7 +462,7 @@ fn compact_status_projects_the_settings_owner() -> TestResult {
                     "combined status line misses {part}"
                 );
             }
-            combined
+            format!("{combined}\n{}", play.view.combat_status())
         };
         assert!(
             app.world_mut()
@@ -551,6 +571,16 @@ fn parity_a_battle_chord_and_stacked_row_preserve_exact_target() -> TestResult {
 #[test]
 fn edit_lists_button_opens_the_battle_list_editor_form() -> TestResult {
     let (mut app, _, _) = app()?;
+    let menu = app
+        .world_mut()
+        .query::<(Entity, &HudAction)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| {
+            matches!(action.command, Command::BattleMenu).then_some(entity)
+        })
+        .ok_or("battle list menu button")?;
+    app.world_mut().trigger(Activate { entity: menu });
+    app.update();
     let button = app
         .world_mut()
         .query::<(Entity, &HudAction)>()
@@ -570,5 +600,174 @@ fn edit_lists_button_opens_the_battle_list_editor_form() -> TestResult {
     let view = link.feature_form_view(form);
     assert!(view.open);
     assert_eq!(view.fields.first().map(String::as_str), Some("Nearby"));
+    Ok(())
+}
+
+#[test]
+fn the_status_widget_is_a_sidebar_bar_pair_without_prose_or_ids() -> TestResult {
+    let (mut app, _, _) = app_with(
+        false,
+        Some(ActorVitals {
+            health: 150,
+            max_health: 150,
+            mana: 35,
+            max_mana: 90,
+            ..default()
+        }),
+    )?;
+    app.update();
+    let vitals = app.world().resource::<super::super::GameRegions>().vitals;
+    let rows: Vec<Entity> = app
+        .world()
+        .get::<Children>(vitals)
+        .ok_or("status rows")?
+        .iter()
+        .take(2)
+        .collect();
+    for (row, key) in rows.into_iter().zip(["status-health", "status-mana"]) {
+        let parts: Vec<Entity> = app
+            .world()
+            .get::<Children>(row)
+            .ok_or("status row parts")?
+            .iter()
+            .collect();
+        let icon = app.world().get::<super::super::art::ArtSlot>(parts[0]);
+        assert_eq!(icon.map(|slot| slot.key.as_str()), Some(key));
+        let size = |entity: Entity| {
+            app.world()
+                .get::<Node>(entity)
+                .map(|node| (node.width, node.height))
+        };
+        assert_eq!(size(parts[0]), Some((px(12.), px(11.))));
+        assert_eq!(size(parts[1]), Some((px(94.), px(11.))));
+        assert_eq!(
+            app.world().get::<Node>(parts[2]).map(|node| node.width),
+            Some(px(42.))
+        );
+    }
+    assert_eq!(
+        app.world_mut()
+            .query::<&InfoText>()
+            .iter(app.world())
+            .filter(|kind| matches!(kind, InfoText::Status))
+            .count(),
+        0,
+        "the status prose and world ids live only in the developer overlay"
+    );
+    let text = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|value| value.0.clone())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(!text.contains("Ctrl+arrows"));
+    // The sidebar widget shows the current value only; "cur/max" belongs to the status bar.
+    let vitals = app.world().resource::<super::super::GameRegions>().vitals;
+    assert!(
+        !texts_under(&app, vitals)
+            .iter()
+            .any(|text| text.contains("150/150"))
+    );
+    Ok(())
+}
+
+fn named(app: &mut App, name: &str) -> Result<Entity, Box<dyn std::error::Error>> {
+    app.world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, found)| (found.as_str() == name).then_some(entity))
+        .ok_or_else(|| format!("{name} missing").into())
+}
+fn texts_under(app: &App, root: Entity) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut stack = vec![root];
+    while let Some(entity) = stack.pop() {
+        if let Some(text) = app.world().get::<Text>(entity) {
+            out.push(text.0.clone());
+        }
+        stack.extend(app.world().get::<Children>(entity).into_iter().flatten());
+    }
+    out
+}
+#[test]
+fn top_status_bar_shows_vitals_level_xp_and_conditions_above_the_game_window() -> TestResult {
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_hud_skills_fixture()?;
+    app.update();
+    app.update();
+    let bar = app.world().resource::<super::super::StatusBar>().0;
+    let top = named(&mut app, "Status bar")?;
+    assert_eq!(
+        app.world()
+            .get::<ChildOf>(top)
+            .ok_or("top parent")?
+            .parent(),
+        bar
+    );
+    // Line 1: health and mana side by side, each half the width, "cur/max" centred.
+    let vitals = named(&mut app, "Status bar vitals")?;
+    let halves: Vec<Val> = app
+        .world()
+        .get::<Children>(vitals)
+        .ok_or("vital tracks")?
+        .iter()
+        .filter_map(|track| app.world().get::<Node>(track).map(|node| node.width))
+        .collect();
+    assert_eq!(halves, [percent(50.), percent(50.)]);
+    let texts = texts_under(&app, vitals);
+    assert!(texts.contains(&"42/100".to_owned()), "{texts:?}");
+    assert!(texts.contains(&"10/20".to_owned()), "{texts:?}");
+    // Line 2: the level, a red XP bar with ticks and the XP Boost button.
+    let experience = named(&mut app, "Status bar experience")?;
+    assert!(texts_under(&app, experience).contains(&"30".to_owned()));
+    let fill = named(&mut app, "Status bar XP fill")?;
+    assert_eq!(
+        app.world().get::<Node>(fill).ok_or("xp fill")?.width,
+        percent(23.45)
+    );
+    let ticks = app
+        .world_mut()
+        .query::<&Name>()
+        .iter(app.world())
+        .filter(|name| name.as_str() == "XP tick")
+        .count();
+    assert_eq!(ticks, 9);
+    // Below: the centred condition row.
+    let status = named(&mut app, "Status icons")?;
+    let centre = app
+        .world()
+        .get::<ChildOf>(status)
+        .ok_or("status parent")?
+        .parent();
+    assert_eq!(
+        app.world()
+            .get::<ChildOf>(centre)
+            .ok_or("centre parent")?
+            .parent(),
+        top
+    );
+    assert_eq!(
+        app.world()
+            .get::<Node>(centre)
+            .ok_or("centre node")?
+            .justify_content,
+        JustifyContent::Center
+    );
+    // XP Boost opens the store.
+    while commands.try_recv().is_ok() {}
+    let boost = named(&mut app, "status-xp-boost")?;
+    app.world_mut().trigger(Activate { entity: boost });
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .store_panel()
+            .open
+    );
     Ok(())
 }

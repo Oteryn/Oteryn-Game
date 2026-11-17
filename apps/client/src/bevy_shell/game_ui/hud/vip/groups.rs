@@ -36,23 +36,7 @@ pub(super) fn current(panel: &oteryn_client_ui::vip::VipPanel, draft: Option<&Dr
         Draft::Rename(expected) => groups.contains(expected),
     })
 }
-pub(super) fn setup(commands: &mut Commands, skins: &Skins, list: Entity) {
-    let header = commands
-        .spawn(Node {
-            width: percent(100.),
-            align_items: AlignItems::Center,
-            ..default()
-        })
-        .id();
-    let title = commands
-        .spawn((
-            source::text("Groups", source::font(skins.font.clone(), false)),
-            Node {
-                flex_grow: 1.,
-                ..default()
-            },
-        ))
-        .id();
+pub(super) fn setup(commands: &mut Commands, skins: &Skins, list: Entity, menu: Entity) {
     let add = button(
         commands,
         skins,
@@ -61,11 +45,12 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, list: Entity) {
             revision: 0,
             command: Action::GroupAdd,
         },
-        "Add",
-        35.,
+        "Add new group",
+        view::MENU_WIDTH,
         "vip.groups.add",
     );
-    commands.entity(header).add_children(&[title, add]);
+    commands.entity(add).observe(view::close_list_menu);
+    commands.entity(menu).insert_children(1, &[add]);
     let catalog = commands
         .spawn((
             Catalog,
@@ -77,7 +62,7 @@ pub(super) fn setup(commands: &mut Commands, skins: &Skins, list: Entity) {
             },
         ))
         .id();
-    commands.entity(list).add_children(&[header, catalog]);
+    commands.entity(list).add_child(catalog);
 }
 pub(super) fn project(
     mut commands: Commands,

@@ -201,6 +201,7 @@ fn project(
     skins: Res<Skins>,
     time: Res<Time<Real>>,
     hover: Res<Hover>,
+    widget: Option<Res<super::EquipmentWidget>>,
     scale: Res<UiScale>,
     windows: Query<&Window, With<PrimaryWindow>>,
     mut panels: Query<(&Panel, &mut Node), Without<Tooltip>>,
@@ -216,7 +217,9 @@ fn project(
     tooltip.display = Display::None;
     let Some((play, character)) = owner.play.as_ref().and_then(|play| {
         let character = play.link.cyclopedia_character_panel();
-        character.selected.then_some((play, character))
+        // The panel opens from the inventory's Blessings button.
+        (character.selected && widget.as_ref().is_some_and(|widget| widget.blessings))
+            .then_some((play, character))
     }) else {
         root.display = Display::None;
         if state.generation.is_some() {

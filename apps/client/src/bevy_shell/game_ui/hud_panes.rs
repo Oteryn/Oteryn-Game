@@ -1,501 +1,662 @@
-//! The four movable HUD panes of the local layout (Status, Combat, Conditions and rest,
-//! Monk): shown or hidden, docked left, right or top or floating, ordered within a dock and
-//! dragged by the title bar. Every change goes through `PlayView::hud_action` and is saved
-//! with the preferences, so the panes come back where they were after a restart.
-//! Behaviour of the removed native panes: b6305c1c^
-//! apps/client/src/features/local-spell-action-bar/native.rs and native/events.rs.
+//! Tibia Global sidebar widget chrome (SidebarWidget.qml): a 15 px title bar with the title, a
+//! 12x12 minimise and close button and drag-to-move, a 4 px border, a 19 px minimised height
+//! and a bottom edge that resizes the content. Widgets live in the widget pane of a sidebar
+//! column; the 9x27 arrows beside the game window add and remove the optional sidebars.
 use super::{
     super::{owner::HostOwner, ui::Skins},
+    art,
     modal::ModalGuard,
 };
-use crate::play::{HudAction, HudDock, HudPanel};
 use bevy::{
-    ecs::system::SystemParam,
     picking::{
         events::{PointerCancel, PointerDrag, PointerDragEnd, PointerDragStart},
         pointer::{PointerButton, PointerId},
     },
     prelude::*,
-    ui::Checked,
-    ui_widgets::Activate,
-    window::PrimaryWindow,
+    ui_widgets::{Activate, Button},
 };
 use oteryn_client_ui_bevy as source;
 
-#[derive(Component, Clone, Copy)]
-struct Pane(HudPanel);
-#[derive(Component, Clone, Copy)]
-struct PaneText(HudPanel);
-/// The drag handle of a pane; `gesture` holds the running drag.
-#[derive(Component, Clone, Copy)]
-struct TitleBar {
-    panel: HudPanel,
-    gesture: Option<Gesture>,
-}
-/// A title-bar drag: the pointer, the pane position it started from and the coordinate
-/// space it started in. Any change of that space ends the drag without saving it.
-#[derive(Clone, Copy, PartialEq, Debug)]
-struct Gesture {
-    pointer: PointerId,
-    origin: Vec2,
-    context: Context,
-}
-#[derive(Clone, Copy, PartialEq, Debug)]
-struct Context {
-    window: Vec2,
-    dpi: f32,
-    scale: f32,
-    header: f32,
-}
+/// SidebarWidget.qml geometry.
+pub(super) const HEADER: f32 = 15.;
+pub(super) const BORDER: f32 = 4.;
+pub(super) const MINIMISED: f32 = 19.;
+pub(super) const MIN_CONTENT: f32 = 38.;
+const MAX_CONTENT: f32 = 600.;
+/// The add and remove sidebar arrows beside the game window.
+pub(super) const ARROW: Vec2 = Vec2::new(9., 27.);
 
-/// The one coordinate space of the panes. The layout works in window pixels below the
-/// header (vitals and pane-toggle strip) with the interface scale applied; pane nodes are
-/// in UI units, which Bevy multiplies by `UiScale` (the same interface scale) when it
-/// renders them, and start below the header.
-#[derive(SystemParam)]
-struct Space<'w, 's> {
-    windows: Query<'w, 's, &'static Window, With<PrimaryWindow>>,
-    scale: Res<'w, UiScale>,
-    regions: Res<'w, super::GameRegions>,
-    computed: Query<'w, 's, &'static ComputedNode>,
+/// A sidebar column (left, second right or right).
+#[derive(Component)]
+pub(super) struct Column;
+/// The dockable widget pane of a column.
+#[derive(Component)]
+pub(super) struct WidgetPane;
+/// The fill pane that closes every widget pane.
+#[derive(Component)]
+pub(super) struct FillPane;
+
+/// The dockable widgets with chrome.
+#[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::bevy_shell) enum Widget {
+    BattleList,
+    Containers,
+    Skills,
+    Vip,
+    AnalyticsSelector,
 }
-impl Space<'_, '_> {
-    fn scale(&self) -> f32 {
-        if self.scale.0.is_finite() && self.scale.0 > 0. {
-            self.scale.0
-        } else {
-            1.
+impl Widget {
+    pub(super) const ALL: [Self; 5] = [
+        Self::BattleList,
+        Self::Containers,
+        Self::Skills,
+        Self::Vip,
+        Self::AnalyticsSelector,
+    ];
+    pub(super) fn title(self) -> &'static str {
+        match self {
+            Self::BattleList => "Battle List",
+            Self::Containers => "Containers",
+            Self::Skills => "Skills",
+            Self::Vip => "VIP",
+            Self::AnalyticsSelector => "Analytics Selector",
         }
     }
-    /// The bottom of the header in UI units; the panes never cover it.
-    fn header(&self) -> f32 {
-        self.computed
-            .get(self.regions.vitals)
-            .map(|node| node.size.y * node.inverse_scale_factor)
-            .ok()
-            .filter(|height| height.is_finite())
-            .map_or(0., |height| height.max(0.))
+    /// The initial content height of the QML widget; `None` sizes to the content.
+    pub(super) fn content_height(self) -> Option<f32> {
+        match self {
+            Self::BattleList => Some(75.),
+            Self::Skills | Self::Vip => Some(200.),
+            Self::Containers | Self::AnalyticsSelector => None,
+        }
     }
-    /// The area the layout positions panes in: the window below the header, in window pixels.
-    fn root(&self) -> [u16; 2] {
-        let header = self.header() * self.scale();
-        self.windows.single().map_or([1024, 720], |window| {
-            [window.width(), window.height() - header].map(|size| size.clamp(1., 4096.) as u16)
-        })
+    /// Tibia sidebars.json opens battleList, container, skills and vip; analysers stay closed.
+    fn open_by_default(self) -> bool {
+        !matches!(self, Self::AnalyticsSelector)
     }
-    /// The space a drag runs in; `None` without a focused window.
-    fn context(&self) -> Option<Context> {
-        let window = self.windows.single().ok().filter(|window| window.focused)?;
-        Some(Context {
-            window: window.size(),
-            dpi: window.scale_factor(),
-            scale: self.scale(),
-            header: self.header(),
-        })
+    /// The settings panel id that also decides whether the widget is shown.
+    fn panel(self) -> Option<&'static str> {
+        match self {
+            Self::BattleList => Some("battle"),
+            Self::Vip => Some("vip"),
+            Self::Containers => Some("inventory"),
+            Self::Skills | Self::AnalyticsSelector => None,
+        }
+    }
+}
+/// The column a widget is docked in.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum Dock {
+    Left,
+    Extra,
+    Right,
+}
+/// The side of the game window an arrow pair sits on: left adds the left sidebar, right
+/// adds the second right sidebar.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum Side {
+    Left,
+    Right,
+}
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub(super) struct Entry {
+    pub widget: Widget,
+    pub dock: Dock,
+    pub open: bool,
+    pub minimised: bool,
+    pub height: Option<f32>,
+}
+/// The open set, order, dock, minimised state and content height of every widget, and the
+/// optional sidebars.
+#[derive(Resource, Clone, PartialEq, Debug)]
+pub(in crate::bevy_shell) struct SidebarWidgets {
+    pub(super) entries: Vec<Entry>,
+    pub(super) left: bool,
+    pub(super) extra: bool,
+}
+impl Default for SidebarWidgets {
+    fn default() -> Self {
+        Self {
+            entries: Widget::ALL
+                .into_iter()
+                .map(|widget| Entry {
+                    widget,
+                    dock: Dock::Right,
+                    open: widget.open_by_default(),
+                    minimised: false,
+                    height: widget.content_height(),
+                })
+                .collect(),
+            left: false,
+            extra: false,
+        }
+    }
+}
+impl SidebarWidgets {
+    pub(super) fn entry(&self, widget: Widget) -> Option<&Entry> {
+        self.entries.iter().find(|entry| entry.widget == widget)
+    }
+    fn entry_mut(&mut self, widget: Widget) -> Option<&mut Entry> {
+        self.entries.iter_mut().find(|entry| entry.widget == widget)
+    }
+    /// Opens a closed widget (restoring it if minimised) or closes an open one.
+    pub(in crate::bevy_shell) fn toggle(&mut self, widget: Widget) -> bool {
+        let Some(entry) = self.entry_mut(widget) else {
+            return false;
+        };
+        entry.open = !entry.open || entry.minimised;
+        entry.minimised = false;
+        entry.open
+    }
+    pub(in crate::bevy_shell) fn set_open(&mut self, widget: Widget, open: bool) {
+        if let Some(entry) = self.entry_mut(widget) {
+            entry.open = open;
+            entry.minimised &= open;
+        }
+    }
+    /// Moves `widget` into `dock` before `before` (or to the end of the dock).
+    pub(super) fn place(&mut self, widget: Widget, dock: Dock, before: Option<Widget>) {
+        let Some(index) = self.entries.iter().position(|entry| entry.widget == widget) else {
+            return;
+        };
+        let mut entry = self.entries.remove(index);
+        entry.dock = dock;
+        let at = before
+            .and_then(|before| self.entries.iter().position(|entry| entry.widget == before))
+            .or_else(|| {
+                self.entries
+                    .iter()
+                    .rposition(|entry| entry.dock == dock)
+                    .map(|index| index + 1)
+            })
+            .unwrap_or(self.entries.len());
+        self.entries.insert(at, entry);
+    }
+    /// Shows or hides an optional sidebar; the widgets of a removed sidebar go back to the
+    /// right sidebar.
+    pub(super) fn set_sidebar(&mut self, side: Side, shown: bool) {
+        let dock = match side {
+            Side::Left => {
+                self.left = shown;
+                Dock::Left
+            }
+            Side::Right => {
+                self.extra = shown;
+                Dock::Extra
+            }
+        };
+        if !shown {
+            for entry in &mut self.entries {
+                if entry.dock == dock {
+                    entry.dock = Dock::Right;
+                }
+            }
+        }
     }
 }
 
+/// The outer node of a widget.
+#[derive(Component, Clone, Copy)]
+pub(super) struct WidgetFrame(pub Widget);
+#[derive(Component, Clone, Copy)]
+struct Body(Widget);
+#[derive(Component, Clone, Copy)]
+struct Handle(Widget);
+#[derive(Component, Clone, Copy)]
+struct TitleBar {
+    widget: Widget,
+    pointer: Option<PointerId>,
+}
+#[derive(Component, Clone, Copy)]
+struct Resize {
+    widget: Widget,
+    gesture: Option<(PointerId, f32)>,
+}
 #[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
-enum PaneCommand {
-    Toggle(HudPanel),
-    Earlier(HudPanel),
-    Later(HudPanel),
-    Dock(HudPanel, HudDock),
-    Hide(HudPanel),
-    Reset,
+enum TitleButton {
+    Minimise(Widget),
+    Close(Widget),
+}
+#[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) struct SidebarArrow {
+    side: Side,
+    add: bool,
 }
 
 pub(super) fn install(app: &mut App) {
-    app.add_systems(
-        Startup,
-        setup.after(super::setup).after(super::super::ui::setup),
-    )
-    .add_systems(Update, (cancel_stale, project).chain())
-    .add_observer(activate)
-    .add_observer(cancel);
+    art::install(app);
+    app.init_resource::<SidebarWidgets>()
+        .add_systems(Update, (project, super::super::ui::toolbar::grid::project))
+        .add_observer(activate)
+        .add_observer(cancel);
 }
 
-fn button(commands: &mut Commands, skins: &Skins, command: PaneCommand, label: &str) -> Entity {
-    let width = 14. + 7. * label.chars().count() as f32;
-    let entity = commands
-        .spawn((command, source::button(skins.buttons.clone(), width)))
+/// Wraps `content` in the chrome of `widget`; returns the outer node.
+pub(super) fn frame(
+    commands: &mut Commands,
+    skins: &Skins,
+    widget: Widget,
+    content: Entity,
+) -> Entity {
+    let outer = commands
+        .spawn((
+            WidgetFrame(widget),
+            Name::new(widget.title()),
+            source::frame(skins.frame.clone(), [BORDER; 4]),
+            Node {
+                width: percent(100.),
+                flex_shrink: 0.,
+                flex_direction: FlexDirection::Column,
+                padding: UiRect::horizontal(px(BORDER)),
+                overflow: Overflow::clip(),
+                ..default()
+            },
+        ))
         .id();
-    let caption = commands
-        .spawn(source::button_caption(label, skins.font.clone()))
+    let bar = commands
+        .spawn((
+            TitleBar {
+                widget,
+                pointer: None,
+            },
+            Node {
+                width: percent(100.),
+                height: px(HEADER),
+                flex_shrink: 0.,
+                column_gap: px(2.),
+                align_items: AlignItems::Center,
+                ..default()
+            },
+        ))
+        .observe(move_start)
+        .observe(move_end)
         .id();
-    commands.entity(entity).add_child(caption);
-    entity
+    let title = commands
+        .spawn((
+            source::text(widget.title(), source::font(skins.font.clone(), false)),
+            Node {
+                flex_grow: 1.,
+                min_width: px(0.),
+                overflow: Overflow::clip_x(),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(bar).add_child(title);
+    for (button, key) in [
+        (TitleButton::Minimise(widget), "widget-minimise"),
+        (TitleButton::Close(widget), "widget-close"),
+    ] {
+        let slot = art::fixed(commands, &skins.font, key, Vec2::splat(12.));
+        commands.entity(slot).insert((button, Button));
+        commands.entity(bar).add_child(slot);
+    }
+    let body = commands
+        .spawn((
+            Body(widget),
+            Node {
+                width: percent(100.),
+                flex_direction: FlexDirection::Column,
+                overflow: Overflow::scroll_y(),
+                height: widget.content_height().map_or(Val::Auto, px),
+                ..default()
+            },
+            bevy::ui_widgets::ScrollArea,
+        ))
+        .id();
+    commands.entity(body).add_child(content);
+    let handle = commands
+        .spawn((
+            Handle(widget),
+            Resize {
+                widget,
+                gesture: None,
+            },
+            Name::new("Resize widget"),
+            Node {
+                width: percent(100.),
+                height: px(BORDER),
+                flex_shrink: 0.,
+                ..default()
+            },
+        ))
+        .observe(resize_start)
+        .observe(resize)
+        .observe(resize_end)
+        .id();
+    commands.entity(outer).add_children(&[bar, body, handle]);
+    outer
 }
 
-fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Skins>) {
+/// The arrow pair on one side of the game window.
+pub(super) fn arrows(commands: &mut Commands, skins: &Skins, side: Side) -> Entity {
     let strip = commands
         .spawn(Node {
-            width: percent(100.),
-            flex_wrap: FlexWrap::Wrap,
-            column_gap: px(2.),
+            width: px(ARROW.x),
+            height: percent(100.),
+            flex_shrink: 0.,
+            flex_direction: FlexDirection::Column,
             row_gap: px(2.),
-            margin: UiRect::vertical(px(2.)),
             ..default()
         })
         .id();
-    for panel in HudPanel::ALL {
-        let toggle = button(
-            &mut commands,
-            &skins,
-            PaneCommand::Toggle(panel),
-            panel.title(),
-        );
-        commands.entity(strip).add_child(toggle);
+    for add in [true, false] {
+        let key = if add == (side == Side::Left) {
+            "sidebar-add"
+        } else {
+            "sidebar-remove"
+        };
+        let slot = art::fixed(commands, &skins.font, key, ARROW);
+        commands
+            .entity(slot)
+            .insert((SidebarArrow { side, add }, Button));
+        commands.entity(strip).add_child(slot);
     }
-    let reset = button(&mut commands, &skins, PaneCommand::Reset, "Reset panes");
-    commands.entity(strip).add_child(reset);
-    commands.entity(regions.vitals).add_child(strip);
-
-    for panel in HudPanel::ALL {
-        let pane = commands
-            .spawn((
-                Pane(panel),
-                GlobalZIndex(20),
-                source::frame(skins.frame.clone(), [4., 4., 4., 4.]),
-                Node {
-                    position_type: PositionType::Absolute,
-                    display: Display::None,
-                    padding: px(4.).all(),
-                    row_gap: px(2.),
-                    flex_direction: FlexDirection::Column,
-                    overflow: Overflow::clip(),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.9)),
-            ))
-            .id();
-        let bar = commands
-            .spawn((
-                TitleBar {
-                    panel,
-                    gesture: None,
-                },
-                Node {
-                    width: percent(100.),
-                    column_gap: px(2.),
-                    align_items: AlignItems::Center,
-                    flex_wrap: FlexWrap::Wrap,
-                    ..default()
-                },
-            ))
-            .observe(drag_start)
-            .observe(drag)
-            .observe(drag_end)
-            .id();
-        let title = commands
-            .spawn(source::text(
-                panel.title(),
-                source::font(skins.font.clone(), false),
-            ))
-            .id();
-        commands.entity(bar).add_child(title);
-        for (command, label) in [
-            (PaneCommand::Earlier(panel), "Up"),
-            (PaneCommand::Later(panel), "Down"),
-            (PaneCommand::Dock(panel, HudDock::Left), "Left"),
-            (PaneCommand::Dock(panel, HudDock::Right), "Right"),
-            (PaneCommand::Dock(panel, HudDock::Top), "Top"),
-            (PaneCommand::Dock(panel, HudDock::Floating), "Float"),
-            (PaneCommand::Hide(panel), "Hide"),
-        ] {
-            let entity = button(&mut commands, &skins, command, label);
-            commands.entity(bar).add_child(entity);
-        }
-        let body = commands
-            .spawn((
-                PaneText(panel),
-                source::text("", source::font(skins.font.clone(), false)),
-            ))
-            .id();
-        commands.entity(pane).add_children(&[bar, body]);
-    }
+    strip
 }
 
-/// Applies one layout edit to the play view and saves it with the preferences.
-fn apply(owner: &mut HostOwner, action: HudAction, root: [u16; 2]) {
-    let HostOwner { play, settings, .. } = owner;
-    let Some(play) = play.as_mut() else {
-        return;
+/// Whether `widget` is shown: its own open flag and, for battle, VIP and containers, the
+/// settings panel that the control buttons toggle.
+fn shown(owner: &HostOwner, state: &SidebarWidgets, widget: Widget) -> bool {
+    let Some(entry) = state.entry(widget) else {
+        return false;
     };
-    if let Err(error) = play
-        .view
-        .hud_action(action, root)
-        .and_then(|()| settings.capture(&mut play.view))
-    {
-        eprintln!("Could not save HUD layout: {error}");
-    }
+    entry.open
+        && widget.panel().is_none_or(|id| {
+            owner.settings.preferences.panel_visible(id)
+                || id == "vip"
+                    && owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| play.link.vip_is_open())
+        })
 }
 
 fn activate(
     event: On<Activate>,
-    commands: Query<&PaneCommand>,
+    buttons: Query<&TitleButton>,
+    arrows: Query<&SidebarArrow>,
     guard: ModalGuard,
     mut owner: NonSendMut<HostOwner>,
-    space: Space,
+    mut state: ResMut<SidebarWidgets>,
 ) {
-    let Ok(command) = commands.get(event.entity) else {
-        return;
-    };
-    if !guard.allows(event.entity) {
+    if !guard.allows(event.entity) || owner.modal_active() {
         return;
     }
-    let Some(play) = &owner.play else {
+    if let Ok(arrow) = arrows.get(event.entity) {
+        state.set_sidebar(arrow.side, arrow.add);
+        return;
+    }
+    let Ok(button) = buttons.get(event.entity) else {
         return;
     };
-    let action = match *command {
-        PaneCommand::Toggle(panel) => HudAction::Visible(
-            panel,
-            !play
-                .view
-                .preferences()
-                .effective_hud_layout()
-                .pane(panel)
-                .visible,
-        ),
-        PaneCommand::Earlier(panel) => HudAction::Earlier(panel),
-        PaneCommand::Later(panel) => HudAction::Later(panel),
-        PaneCommand::Dock(panel, dock) => HudAction::Dock(panel, dock),
-        PaneCommand::Hide(panel) => HudAction::Visible(panel, false),
-        PaneCommand::Reset => HudAction::Reset,
-    };
-    apply(&mut owner, action, space.root());
+    match *button {
+        TitleButton::Minimise(widget) => {
+            if let Some(entry) = state.entry_mut(widget) {
+                entry.minimised = !entry.minimised;
+            }
+        }
+        TitleButton::Close(widget) => {
+            // Battle and VIP close through the same owner the control buttons use, so the
+            // VIP subscription ends and the setting is saved.
+            if let Some(id @ ("battle" | "vip")) = widget.panel() {
+                if owner.settings.preferences.panel_visible(id)
+                    || owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| id == "vip" && play.link.vip_is_open())
+                {
+                    super::super::ui::toolbar::open_toolbar(
+                        &mut owner,
+                        super::super::ui::Control::Panel(id),
+                    );
+                }
+            } else {
+                state.set_open(widget, false);
+            }
+        }
+    }
 }
 
-fn drag_start(
-    mut event: On<PointerDragStart>,
+fn move_start(mut event: On<PointerDragStart>, mut bars: Query<&mut TitleBar>, guard: ModalGuard) {
+    if event.button != PointerButton::Primary || !guard.allows(event.entity) {
+        return;
+    }
+    if let Ok(mut bar) = bars.get_mut(event.entity) {
+        bar.pointer = Some(event.pointer.id);
+        event.propagate(false);
+    }
+}
+/// Drops a dragged widget into the widget pane under the pointer, before the first widget
+/// whose middle lies below it.
+// Bevy injects the independent ECS queries and resources a drop needs.
+#[allow(clippy::too_many_arguments)]
+fn move_end(
+    event: On<PointerDragEnd>,
     mut bars: Query<&mut TitleBar>,
-    panes: Query<(&Pane, &Node)>,
     guard: ModalGuard,
-    space: Space,
+    sidebar: Res<super::Sidebar>,
+    frames: Query<(&WidgetFrame, &ChildOf, &ComputedNode, &UiGlobalTransform)>,
+    panes: Query<(Entity, &ComputedNode, &UiGlobalTransform), With<WidgetPane>>,
+    scale: Res<UiScale>,
+    mut state: ResMut<SidebarWidgets>,
+) {
+    let Ok(mut bar) = bars.get_mut(event.entity) else {
+        return;
+    };
+    if bar.pointer.take() != Some(event.pointer.id)
+        || event.button != PointerButton::Primary
+        || !guard.allows(event.entity)
+    {
+        return;
+    }
+    let at = event.pointer.location().position;
+    let logical = |node: &ComputedNode, transform: &UiGlobalTransform| {
+        let factor = node.inverse_scale_factor * scale.0;
+        Rect::from_center_size(transform.translation * factor, node.size() * factor)
+    };
+    let Some(pane) = panes
+        .iter()
+        .find(|(_, node, transform)| logical(node, transform).contains(at))
+        .map(|(entity, _, _)| entity)
+    else {
+        return;
+    };
+    let dock = if pane == sidebar.left_widgets {
+        Dock::Left
+    } else if pane == sidebar.extra_widgets {
+        Dock::Extra
+    } else {
+        Dock::Right
+    };
+    let before = state
+        .entries
+        .iter()
+        .filter(|entry| entry.dock == dock && entry.widget != bar.widget)
+        .find(|entry| {
+            frames.iter().any(|(frame, parent, node, transform)| {
+                frame.0 == entry.widget
+                    && parent.parent() == pane
+                    && logical(node, transform).center().y > at.y
+            })
+        })
+        .map(|entry| entry.widget);
+    state.place(bar.widget, dock, before);
+}
+fn resize_start(
+    mut event: On<PointerDragStart>,
+    mut handles: Query<&mut Resize>,
+    bodies: Query<(&Body, &ComputedNode)>,
+    guard: ModalGuard,
 ) {
     if event.button != PointerButton::Primary || !guard.allows(event.entity) {
         return;
     }
-    let Ok(mut bar) = bars.get_mut(event.entity) else {
+    let Ok(mut handle) = handles.get_mut(event.entity) else {
         return;
     };
-    if bar.gesture.is_some() {
-        return;
-    }
-    let Some(context) = space.context() else {
-        return;
-    };
-    let panel = bar.panel;
-    bar.gesture = panes
+    let widget = handle.widget;
+    let Some(height) = bodies
         .iter()
-        .find(|(pane, _)| pane.0 == panel)
-        .and_then(|(_, node)| match (node.left, node.top) {
-            (Val::Px(x), Val::Px(y)) => Some(Vec2::new(x, y)),
-            _ => None,
-        })
-        .map(|origin| Gesture {
-            pointer: event.pointer.id,
-            origin,
-            context,
-        });
-    event.propagate(false);
-}
-
-/// Whether a running drag may still move or drop its pane: same pointer, same coordinate
-/// space, a focused window and no modal above the bar.
-fn live(
-    gesture: &Gesture,
-    pointer: PointerId,
-    space: &Space,
-    guard: &ModalGuard,
-    bar: Entity,
-) -> bool {
-    gesture.pointer == pointer && space.context() == Some(gesture.context) && guard.allows(bar)
-}
-
-fn drag(
-    mut event: On<PointerDrag>,
-    mut bars: Query<&mut TitleBar>,
-    mut ui: ParamSet<(ModalGuard, Query<(&Pane, &mut Node)>)>,
-    space: Space,
-) {
-    let Ok(mut bar) = bars.get_mut(event.entity) else {
-        return;
-    };
-    let Some(gesture) = bar.gesture else {
-        return;
-    };
-    if !live(&gesture, event.pointer.id, &space, &ui.p0(), event.entity) {
-        bar.gesture = None;
-        return;
-    }
-    if event.button != PointerButton::Primary || !event.distance.is_finite() {
-        return;
-    }
-    let at = (gesture.origin + event.distance / gesture.context.scale)
-        .max(Vec2::new(0., gesture.context.header));
-    for (pane, mut node) in &mut ui.p1() {
-        if pane.0 == bar.panel {
-            node.left = px(at.x);
-            node.top = px(at.y);
-        }
-    }
-    event.propagate(false);
-}
-
-/// Hands the dropped bounds to the layout, which docks the pane by where it landed.
-fn drag_end(
-    event: On<PointerDragEnd>,
-    mut bars: Query<&mut TitleBar>,
-    panes: Query<(&Pane, &Node)>,
-    mut owner: NonSendMut<HostOwner>,
-    (guard, space): (ModalGuard, Space),
-) {
-    let Ok(mut bar) = bars.get_mut(event.entity) else {
-        return;
-    };
-    let Some(gesture) = bar.gesture else {
-        return;
-    };
-    if gesture.pointer != event.pointer.id {
-        return;
-    }
-    bar.gesture = None;
-    if event.button != PointerButton::Primary
-        || !live(&gesture, event.pointer.id, &space, &guard, event.entity)
-    {
-        return;
-    }
-    let panel = bar.panel;
-    let Some((_, node)) = panes.iter().find(|(pane, _)| pane.0 == panel) else {
-        return;
-    };
-    let (Val::Px(x), Val::Px(y), Val::Px(width), Val::Px(height)) =
-        (node.left, node.top, node.width, node.height)
+        .find(|(body, _)| body.0 == widget)
+        .map(|(_, node)| node.size().y * node.inverse_scale_factor)
+        .filter(|height| height.is_finite())
     else {
         return;
     };
-    let Context { scale, header, .. } = gesture.context;
-    let bounds =
-        [x, y - header, width, height].map(|value| (value * scale).round().clamp(0., 4096.) as u16);
-    apply(&mut owner, HudAction::Dragged(panel, bounds), space.root());
+    handle.gesture = Some((event.pointer.id, height));
+    event.propagate(false);
 }
-
-/// A cancelled pointer (a lifted touch, a lost capture) ends its drag without saving it.
-fn cancel(event: On<PointerCancel>, mut bars: Query<&mut TitleBar>) {
-    for mut bar in &mut bars {
-        if bar
-            .gesture
-            .is_some_and(|gesture| gesture.pointer == event.pointer.id)
-        {
-            bar.gesture = None;
-        }
-    }
-}
-
-/// Ends a drag whose window, scale, header or modal state changed since it started, or whose
-/// pointer no longer holds its primary button (a release whose drag end never arrived); the
-/// projection then puts the pane back where the layout keeps it.
-fn cancel_stale(
-    mut bars: Query<(Entity, &mut TitleBar)>,
-    pointers: Query<(&PointerId, &bevy::picking::pointer::PointerPressState)>,
-    guard: ModalGuard,
-    space: Space,
+fn resize(
+    mut event: On<PointerDrag>,
+    handles: Query<&Resize>,
+    scale: Res<UiScale>,
+    mut state: ResMut<SidebarWidgets>,
 ) {
-    let context = space.context();
-    for (entity, mut bar) in &mut bars {
-        if bar.gesture.is_some_and(|gesture| {
-            context != Some(gesture.context)
-                || !guard.allows(entity)
-                || pointers
-                    .iter()
-                    .any(|(id, press)| *id == gesture.pointer && !press.is_primary_pressed())
-        }) {
-            bar.gesture = None;
-        }
-    }
-}
-
-fn project(
-    mut commands: Commands,
-    (owner, playback): (
-        NonSend<HostOwner>,
-        Option<NonSend<crate::bevy_shell::audio::Playback>>,
-    ),
-    (space, bars): (Space, Query<&TitleBar>),
-    mut panes: Query<(&Pane, &mut Node)>,
-    mut texts: Query<(&PaneText, &mut Text)>,
-    toggles: Query<(Entity, &PaneCommand, Has<Checked>)>,
-) {
-    let Some(play) = &owner.play else {
-        for (_, mut node) in &mut panes {
-            if node.display != Display::None {
-                node.display = Display::None;
-            }
-        }
+    let Ok(handle) = handles.get(event.entity) else {
         return;
     };
-    let preferences = play.view.preferences();
-    let layout = preferences.effective_hud_layout();
-    let (root, scale, header) = (space.root(), space.scale(), space.header());
-    for (pane, mut node) in &mut panes {
-        if bars
-            .iter()
-            .any(|bar| bar.panel == pane.0 && bar.gesture.is_some())
+    let Some((pointer, start)) = handle.gesture else {
+        return;
+    };
+    if pointer != event.pointer.id
+        || !event.distance.is_finite()
+        || !scale.0.is_finite()
+        || scale.0 <= 0.
+    {
+        return;
+    }
+    if let Some(entry) = state.entry_mut(handle.widget) {
+        entry.height = Some((start + event.distance.y / scale.0).clamp(MIN_CONTENT, MAX_CONTENT));
+    }
+    event.propagate(false);
+}
+fn resize_end(event: On<PointerDragEnd>, mut handles: Query<&mut Resize>) {
+    if let Ok(mut handle) = handles.get_mut(event.entity)
+        && handle
+            .gesture
+            .is_some_and(|(pointer, _)| pointer == event.pointer.id)
+    {
+        handle.gesture = None;
+    }
+}
+fn cancel(
+    event: On<PointerCancel>,
+    mut handles: Query<&mut Resize>,
+    mut bars: Query<&mut TitleBar>,
+) {
+    for mut handle in &mut handles {
+        if handle
+            .gesture
+            .is_some_and(|(pointer, _)| pointer == event.pointer.id)
         {
-            continue;
+            handle.gesture = None;
         }
-        let Some([x, y, width, height]) = layout.rect(pane.0, root, preferences.interface_scale)
-        else {
-            if node.display != Display::None {
-                node.display = Display::None;
-            }
-            continue;
+    }
+    for mut bar in &mut bars {
+        if bar.pointer == Some(event.pointer.id) {
+            bar.pointer = None;
+        }
+    }
+}
+
+/// Applies the widget state: open and minimised widgets, content heights, the order of every
+/// widget pane and the optional sidebars.
+// Disjoint node roles of one widget are updated together from one state snapshot.
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
+fn project(
+    mut commands: Commands,
+    owner: NonSend<HostOwner>,
+    state: Res<SidebarWidgets>,
+    sidebar: Option<Res<super::Sidebar>>,
+    frames: Query<(Entity, &WidgetFrame)>,
+    mut nodes: ParamSet<(
+        Query<(&WidgetFrame, &mut Node)>,
+        Query<(&Body, &mut Node)>,
+        Query<(&Handle, &mut Node)>,
+        Query<&mut Node, With<Column>>,
+    )>,
+    children: Query<&Children>,
+    fills: Query<(), With<FillPane>>,
+) {
+    for (frame, mut node) in &mut nodes.p0() {
+        let display = if shown(&owner, &state, frame.0) {
+            Display::Flex
+        } else {
+            Display::None
         };
-        let (left, top, width, height) = (
-            px(f32::from(x) / scale),
-            px(header + f32::from(y) / scale),
-            px(f32::from(width) / scale),
-            px(f32::from(height) / scale),
-        );
-        if node.display != Display::Flex
-            || node.left != left
-            || node.top != top
-            || node.width != width
-            || node.height != height
-        {
-            node.display = Display::Flex;
-            node.left = left;
-            node.top = top;
-            node.width = width;
+        let minimised = state.entry(frame.0).is_some_and(|entry| entry.minimised);
+        let height = if minimised { px(MINIMISED) } else { Val::Auto };
+        if node.display != display || node.height != height {
+            node.display = display;
             node.height = height;
         }
     }
-    for (pane, mut text) in &mut texts {
-        if !layout.pane(pane.0).visible {
+    for (body, mut node) in &mut nodes.p1() {
+        let Some(entry) = state.entry(body.0) else {
             continue;
-        }
-        let next = match pane.0 {
-            HudPanel::Resources => {
-                super::hud::status_line(play, playback.as_ref().and_then(|audio| audio.status()))
-            }
-            HudPanel::Combat => play.view.combat_status(),
-            HudPanel::Conditions => play.view.hud_conditions_text(),
-            HudPanel::Monk => play.view.hud_monk_text(),
         };
-        if text.0 != next {
-            text.0 = next;
+        let display = if entry.minimised {
+            Display::None
+        } else {
+            Display::Flex
+        };
+        let height = entry.height.map_or(Val::Auto, px);
+        if node.display != display || node.height != height {
+            node.display = display;
+            node.height = height;
         }
     }
-    for (entity, command, checked) in &toggles {
-        let PaneCommand::Toggle(panel) = command else {
-            continue;
+    for (handle, mut node) in &mut nodes.p2() {
+        let display = if state.entry(handle.0).is_some_and(|entry| entry.minimised) {
+            Display::None
+        } else {
+            Display::Flex
         };
-        let visible = layout.pane(*panel).visible;
-        if visible && !checked {
-            commands.entity(entity).insert(Checked);
-        } else if !visible && checked {
-            commands.entity(entity).remove::<Checked>();
+        if node.display != display {
+            node.display = display;
+        }
+    }
+    let Some(sidebar) = sidebar else {
+        return;
+    };
+    let mut columns = nodes.p3();
+    for (column, shown) in [(sidebar.left, state.left), (sidebar.extra, state.extra)] {
+        if let Ok(mut node) = columns.get_mut(column) {
+            let display = if shown { Display::Flex } else { Display::None };
+            if node.display != display {
+                node.display = display;
+            }
+        }
+    }
+    for (pane, dock) in [
+        (sidebar.left_widgets, Dock::Left),
+        (sidebar.extra_widgets, Dock::Extra),
+        (sidebar.right_widgets, Dock::Right),
+    ] {
+        let current: Vec<Entity> = children
+            .get(pane)
+            .map(|children| children.iter().collect())
+            .unwrap_or_default();
+        let mut desired: Vec<Entity> = state
+            .entries
+            .iter()
+            .filter(|entry| entry.dock == dock)
+            .filter_map(|entry| {
+                frames
+                    .iter()
+                    .find(|(_, frame)| frame.0 == entry.widget)
+                    .map(|(entity, _)| entity)
+            })
+            .collect();
+        desired.extend(
+            current
+                .iter()
+                .filter(|entity| !frames.contains(**entity) && !fills.contains(**entity)),
+        );
+        desired.extend(current.iter().filter(|entity| fills.contains(**entity)));
+        if desired != current {
+            commands.entity(pane).replace_children(&desired);
         }
     }
 }

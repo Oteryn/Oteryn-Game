@@ -3,7 +3,7 @@ mod markers;
 mod mouse;
 use super::{
     super::{owner::HostOwner, ui::Skins},
-    GameRegions,
+    GameRegions, art,
 };
 use bevy::{
     camera::{RenderTarget, visibility::RenderLayers},
@@ -74,26 +74,35 @@ fn project(
     let Some(generation) = generation else {
         return;
     };
+    // Tibia Global minimap widget: a 108x111 viewport, the 43x43 rose at the top right and
+    // the layer and zoom buttons below the rose.
     let panel = commands
         .spawn((
-            source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
+            Name::new("Minimap"),
             Node {
                 width: percent(100.),
-                min_height: px(120.),
+                height: px(VIEWPORT.y),
                 flex_shrink: 0.,
-                padding: UiRect::all(px(3.)),
-                align_items: AlignItems::Center,
-                flex_direction: FlexDirection::Column,
+                column_gap: px(2.),
                 ..default()
             },
         ))
         .id();
-    let title = commands
-        .spawn(source::text(
-            "Minimap",
-            source::font(skins.font.clone(), false),
+    let viewport = commands
+        .spawn((
+            Name::new("Minimap viewport"),
+            Node {
+                width: px(VIEWPORT.x),
+                height: px(VIEWPORT.y),
+                flex_shrink: 0.,
+                overflow: Overflow::clip(),
+                ..default()
+            },
+            BackgroundColor(Color::BLACK),
         ))
         .id();
+    // The rendered map keeps its full size, so clicks and drags map 1:1 to camera pixels; the
+    // viewport crops the side columns to the Tibia width.
     let image = commands
         .spawn((
             MiniImage(generation),
@@ -101,9 +110,10 @@ fn project(
             ImageNode::new(state.image.clone()),
             RelativeCursorPosition::default(),
             Node {
+                position_type: PositionType::Absolute,
+                left: px(-CROP),
                 width: px(SIZE.x as f32),
                 height: px(SIZE.y as f32),
-                flex_shrink: 0.,
                 ..default()
             },
         ))
@@ -113,8 +123,19 @@ fn project(
         .observe(mouse::drag)
         .observe(mouse::scroll)
         .id();
-    commands.entity(panel).add_children(&[title, image]);
-    navigation_controls(&mut commands, &skins, panel, generation);
+    commands.entity(viewport).add_child(image);
+    let controls = commands
+        .spawn(Node {
+            width: px(ROSE),
+            flex_shrink: 0.,
+            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::Center,
+            row_gap: px(2.),
+            ..default()
+        })
+        .id();
+    commands.entity(panel).add_children(&[viewport, controls]);
+    navigation_controls(&mut commands, &skins, controls, generation);
     commands.entity(regions.minimap).add_child(panel);
     state.panel = Some(panel);
 }
@@ -161,53 +182,116 @@ struct NavigationControl {
     generation: u64,
     action: crate::play::MinimapNavigation,
 }
-#[derive(Component)]
-struct CameraLabel;
+/// Tibia Global minimap viewport (minimap.qml) and rose size.
+const VIEWPORT: Vec2 = Vec2::new(108., 111.);
+const ROSE: f32 = 43.;
+/// The columns cropped from each side of the rendered map to fit the viewport width.
+const CROP: f32 = (SIZE.x as f32 - VIEWPORT.x) / 2.;
 fn navigation_controls(commands: &mut Commands, skins: &Skins, panel: Entity, generation: u64) {
     use crate::play::MinimapNavigation as Nav;
-    for row in [
-        vec![("N", Nav::Pan(0, -5))],
-        vec![
-            ("W", Nav::Pan(-5, 0)),
-            ("Centre", Nav::Centre),
-            ("E", Nav::Pan(5, 0)),
-        ],
-        vec![("S", Nav::Pan(0, 5))],
-        vec![("Zoom out", Nav::ZoomOut), ("Zoom in", Nav::ZoomIn)],
-        vec![("Floor up", Nav::FloorUp), ("Floor down", Nav::FloorDown)],
+    // The rose: its eight points pan five tiles that way and its centre resumes following.
+    let rose = art::fixed(commands, &skins.font, "minimap-rose", Vec2::splat(ROSE));
+    commands.entity(rose).insert(Node {
+        width: px(ROSE),
+        height: px(ROSE),
+        flex_shrink: 0.,
+        display: Display::Grid,
+        grid_template_columns: RepeatedGridTrack::fr(3, 1.),
+        grid_template_rows: RepeatedGridTrack::fr(3, 1.),
+        ..default()
+    });
+    for (name, action) in [
+        ("Rose NW", Nav::Pan(-5, -5)),
+        ("Rose N", Nav::Pan(0, -5)),
+        ("Rose NE", Nav::Pan(5, -5)),
+        ("Rose W", Nav::Pan(-5, 0)),
+        ("Rose centre", Nav::Centre),
+        ("Rose E", Nav::Pan(5, 0)),
+        ("Rose SW", Nav::Pan(-5, 5)),
+        ("Rose S", Nav::Pan(0, 5)),
+        ("Rose SE", Nav::Pan(5, 5)),
     ] {
-        let width = SIZE.x as f32 / row.len() as f32;
-        let bar = commands
-            .spawn(Node {
-                width: px(SIZE.x as f32),
-                justify_content: JustifyContent::Center,
-                ..default()
-            })
+        let point = commands
+            .spawn((
+                Name::new(name),
+                NavigationControl { generation, action },
+                bevy::ui_widgets::Button,
+                Node {
+                    position_type: PositionType::Relative,
+                    ..default()
+                },
+            ))
+            .observe(navigate)
             .id();
-        commands.entity(panel).add_child(bar);
-        for (label, action) in row {
-            let button = commands
-                .spawn((
-                    source::button(skins.buttons.clone(), width),
-                    NavigationControl { generation, action },
-                ))
-                .observe(navigate)
-                .id();
-            let text = commands
-                .spawn(source::text(label, source::font(skins.font.clone(), false)))
-                .id();
-            commands.entity(button).add_child(text);
-            commands.entity(bar).add_child(button);
-        }
+        commands.entity(rose).add_child(point);
     }
-    let status = commands
+    commands.entity(panel).add_child(rose);
+    let buttons = commands
+        .spawn(Node {
+            width: px(ROSE),
+            display: Display::Grid,
+            grid_template_columns: RepeatedGridTrack::px(2, 20.),
+            column_gap: px(2.),
+            row_gap: px(2.),
+            justify_content: JustifyContent::Center,
+            ..default()
+        })
+        .id();
+    commands.entity(panel).add_child(buttons);
+    for (key, action) in [
+        ("minimap-floor-up", Some(Nav::FloorUp)),
+        ("minimap-zoom-in", Some(Nav::ZoomIn)),
+        ("minimap-floor-down", Some(Nav::FloorDown)),
+        ("minimap-zoom-out", Some(Nav::ZoomOut)),
+        ("minimap-centre", Some(Nav::Centre)),
+        ("minimap-full-map", None),
+    ] {
+        let button = art::fixed(commands, &skins.font, key, Vec2::splat(20.));
+        commands
+            .entity(button)
+            .insert(bevy::ui_widgets::Button)
+            .observe(navigate);
+        match action {
+            Some(action) => commands
+                .entity(button)
+                .insert(NavigationControl { generation, action }),
+            None => commands.entity(button).insert(FullMap(generation)),
+        };
+        commands.entity(buttons).add_child(button);
+    }
+    // The layer indicator: the shown floor as a slider-style track of the 16 floors.
+    let layer = commands
         .spawn((
-            source::text("", source::font(skins.font.clone(), false)),
-            CameraLabel,
+            Name::new("Minimap layer"),
+            Node {
+                width: px(ROSE),
+                height: px(4.),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
         ))
         .id();
-    commands.entity(panel).add_child(status);
+    let knob = commands
+        .spawn((
+            LayerKnob,
+            Node {
+                position_type: PositionType::Absolute,
+                width: px(5.),
+                height: percent(100.),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.75, 0.75, 0.75)),
+        ))
+        .id();
+    commands.entity(layer).add_child(knob);
+    commands.entity(panel).add_child(layer);
 }
+/// The full map button of one session generation.
+#[derive(Component)]
+struct FullMap(u64);
+/// The marker of the shown floor on the layer track.
+#[derive(Component)]
+struct LayerKnob;
 fn apply_navigation(owner: &mut HostOwner, action: crate::play::MinimapNavigation) {
     let Some(play) = &mut owner.play else {
         return;
@@ -222,11 +306,22 @@ fn apply_navigation(owner: &mut HostOwner, action: crate::play::MinimapNavigatio
 fn navigate(
     event: On<bevy::ui_widgets::Activate>,
     controls: Query<&NavigationControl>,
+    full_map: Query<&FullMap>,
     mut owner: NonSendMut<HostOwner>,
     guard: super::modal::ModalGuard,
     mut focus: ResMut<bevy::input_focus::InputFocus>,
 ) {
     if owner.modal_active() || !guard.allows(event.entity) {
+        return;
+    }
+    if let Ok(full_map) = full_map.get(event.entity) {
+        if full_map.0 == owner.generation() {
+            focus.clear();
+            super::super::ui::toolbar::open_toolbar(
+                &mut owner,
+                super::super::ui::Control::Shortcut("map"),
+            );
+        }
         return;
     }
     let Ok(control) = controls.get(event.entity) else {
@@ -280,16 +375,16 @@ fn shortcuts(
         }
     }
 }
-fn camera_label(owner: NonSend<HostOwner>, mut labels: Query<&mut Text, With<CameraLabel>>) {
+/// Places the layer knob at the shown floor: the deepest (-15) left, the highest (0) right.
+fn camera_label(owner: NonSend<HostOwner>, mut knobs: Query<&mut Node, With<LayerKnob>>) {
     let Some(play) = &owner.play else {
         return;
     };
-    let (_, _, floor, zoom, tracking) = play.view.minimap_camera();
-    let mode = if tracking { "Following" } else { "Browsing" };
-    let label = format!("Floor {floor} / {zoom} tiles\n{mode}");
-    for mut text in &mut labels {
-        if text.0 != label {
-            text.0.clone_from(&label);
+    let (_, _, floor, _, _) = play.view.minimap_camera();
+    let left = px(f32::from((floor + 15).clamp(0, 15)) * (ROSE - 5.) / 15.);
+    for mut node in &mut knobs {
+        if node.left != left {
+            node.left = left;
         }
     }
 }

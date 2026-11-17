@@ -356,50 +356,14 @@ fn container_geometry_rejects_recycled_views_and_bounds_row_controls() -> Result
 }
 
 #[test]
-fn inventory_browse_ground_opens_the_live_player_tile() -> Result {
-    use oteryn_session::browse_field::{
-        BrowseFieldIntent, BrowseFieldPage, decode_browse_field_intent,
-    };
-    let (mut app, mut commands, outbox) = app()?;
-    assert!(
-        click(&mut app, "inventory.container.browse").is_err(),
-        "unnegotiated entry"
-    );
-    let position = oteryn_session::item_view::WorldTilePosition {
-        x: 101,
-        y: 102,
-        floor: -7,
-    };
+fn the_inventory_widget_has_no_browse_ground_button() -> Result {
+    // Browse Field opens from the world context menu and the container tools instead.
+    let (mut app, _commands, outbox) = app()?;
     let mut fields = views()?;
     fields.views.truncate(1);
-    fields.views[0].capacity = 30;
-    fields.views[0].entries.clear();
-    fields.views[0].browse = Some(BrowseFieldPage {
-        position,
-        index: 0,
-        total: 0,
-    });
     PlayLink::bevy_items_fixture(&outbox, Some(Default::default()), Some(fields), true, true);
-    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(101, 102), -7, &[])?;
-    view.use_shared_frontend();
-    app.world_mut()
-        .non_send_mut::<HostOwner>()
-        .play
-        .as_mut()
-        .ok_or("play")?
-        .view = view;
     app.update();
-    click(&mut app, "inventory.container.browse")?;
-    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
-        return Err("browse command".into());
-    };
-    assert_eq!((command.capability, command.command_type), (230, 440));
-    assert_eq!(
-        decode_browse_field_intent(&command.payload).map_err(|e| format!("{e:?}"))?,
-        BrowseFieldIntent::Open { position }
-    );
-    click(&mut app, "inventory.container.browse")?;
-    assert!(commands.try_recv().is_err());
+    assert!(click(&mut app, "inventory.container.browse").is_err());
     Ok(())
 }
 
