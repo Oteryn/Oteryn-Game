@@ -42,12 +42,42 @@ pub(super) async fn exercise(
             "retired {key}"
         );
     }
+    // Temporary diagnostic: which reward row and Bestiary race key the settle would use.
+    {
+        let native = owner
+            .active_generation
+            .and_then(|g| g.native_gameplay())
+            .ok_or("native policies")?;
+        match native.reward_table().row(RACE) {
+            Ok(row) => eprintln!(
+                "[DBG-QGB2] row ok race_key={:?} threshold={:?} xp={:?}",
+                row.race.as_ref().map(|race| race.key().to_owned()),
+                row.race.as_ref().map(|race| race.final_kill_threshold()),
+                row.xp_amount
+            ),
+            Err(reason) => eprintln!("[DBG-QGB2] row refused reason={reason:?}"),
+        }
+        eprintln!(
+            "[DBG-QGB2] progression_binding={}",
+            owner.progression_binding(admitted.game_session_id).is_some()
+        );
+        let rows: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT race_key,kill_count FROM game_character_bestiary_progress WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).fetch_all(&h.pool).await?;
+        eprintln!("[DBG-QGB2] progress rows before={rows:?}");
+    }
     let mut first_grant = None;
     for count in 1..=6_u8 {
         // Real native damage -> duplicate lethal projections -> two reward drains.
         // The helper reclaims the creature only after both drains finish.
         super::qengine_kill_stories::death(owner, admitted, RACE, 98_000 + u64::from(count))
             .await?;
+        {
+            let rows: Vec<(String, i64)> = sqlx::query_as(
+                "SELECT race_key,kill_count FROM game_character_bestiary_progress")
+                .fetch_all(&h.pool).await?;
+            eprintln!("[DBG-QGB2] after death {count}: all progress rows={rows:?}");
+        }
         let progress = owner
             .root
             .read_bestiary_progress(
