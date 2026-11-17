@@ -64,6 +64,11 @@ fn awash_coal_threshold_is_applied_at_the_next_server_save() -> TestResult {
                 .fetch_all(&h.pool)
                 .await?;
                 assert_eq!(states, [(false, 0), (false, 0), (true, 20), (true, 20), (true, 30), (true, 40), (true, 40), (false, 0)]);
+                for (index, &(active, _)) in states.iter().enumerate() {
+                    let epoch = u64::try_from(index)? + 1;
+                    assert_eq!(h.root.world_change_phase(world, epoch, "awash").await?, Some(active));
+                }
+                assert_eq!(h.root.world_change_phase(world, 0, "awash").await?, None);
                 Ok(())
             })
             .map_err(|error| error.to_string())
