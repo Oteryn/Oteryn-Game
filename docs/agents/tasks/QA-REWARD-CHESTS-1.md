@@ -59,6 +59,7 @@ quests whose claims match the wiki totals.
 4. Alawar Keys 4501 (chest 2472 at 32172,31602,10) and 4503 (one of the chests at 32030/32031,31686/31688,8): no donor UID, once-only unconfirmed, which 4503 chest unknown.
 5. Power Bolts Pile of Bones with the Two Handed Sword: position unknown; no placement authored.
 6. Isle of the Mists drawer (second emerald + book): no drawer on our map.
+7. Inquisition reward room book "Interrogating a Vampire": no TibiaWiki page; talesoftibia (8.2, Thais Jail Library) differs from the donor in wording and has an extra final paragraph. Donor text kept until a Global source exists.
 
 ## Validation state
 
@@ -77,3 +78,8 @@ quests whose claims match the wiki totals.
 - Koshei platinum (100 vs 50): owned by qcx6 (record 78); not changed here.
 - Owner batch: Magic Sword north wand (Yellow Spell Wand), Dark Trails notebook/Shargon chest positions,
   missing one-time items (Outlaw Camp bag, Shargon chest, Crystal of Focus, Explorer Society books), 53 placements without wiki contents.
+- Book texts (14 checked against TibiaWiki, talesoftibia as a cross-check): 10 match. Corrected to the
+  Global text in `global_corrections.TEXTS`: Power Bolts book (The Dreammaster (Book) rev 841657), Dreamer's
+  Challenge Book of the Lost Heroes (rev 1114576, heading line), Pits of Inferno Holy Tible (rev 1022683,
+  heading and "honor"). Inquisition book: open fact 7.
+  Check: `test_committed_variants_carry_tibia_global_book_texts` red on the old content, green now.

@@ -524,6 +524,21 @@ def test_committed_content_carries_tibia_global_corrections() -> None:
     assert pairs("kv.ghostsilver_lantern_quest") == [[23738, 1]]
     assert pairs("quest.key.id4502") == [[2970, 1], [3031, 33], [3147, 1], [3298, 4], [3384, 1]]
 
+
+def test_committed_variants_carry_tibia_global_book_texts() -> None:
+    """The Global book text reaches both the claim text_ref and the native root_text."""
+    import global_corrections
+    shards = sorted((rca.ROOT / rca.CONTENT_DIR).glob("reward-claim-variants-*.json"))
+    records = {r["definition"]["source_variant"]["source_claim"]["identity"]["key"]: r["definition"]
+               for p in shards for r in json.loads(p.read_text())["records"]}
+    assert len(global_corrections.TEXTS) == 3
+    for pilot, _, body in global_corrections.TEXTS.values():
+        definition = records[pilot]
+        [placement] = definition["placements"]
+        assert placement["reward"]["written_text"]["text_ref"] == global_corrections.text_ref(body)
+        [native] = definition["native_contents"]["placements"]
+        assert native["root_text"] == body
+
 if __name__ == "__main__":
     for name, test in sorted(globals().items()):
         if name.startswith("test_") and callable(test):
