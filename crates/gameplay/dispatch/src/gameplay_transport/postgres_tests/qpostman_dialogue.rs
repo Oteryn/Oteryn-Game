@@ -39,7 +39,13 @@ async fn exercise(h: &Harness) -> TestResult {
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
-    let deps = Dependencies::new()?;
+    let world = super::fence(1)?.runtime_scope.world_id();
+    let deps = Dependencies::with_content_and_capacity(
+        crate::foundation::ChannelContentPin::test(world),
+        crate::content::qualify_native_entry_room(world).map_err(debug)?,
+        crate::spell::cast::v1_spell_book().map_err(debug)?,
+        4,
+    )?;
     let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
         deps.admitted.world_id,
         "content-1",
