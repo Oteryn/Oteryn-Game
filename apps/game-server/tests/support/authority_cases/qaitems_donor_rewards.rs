@@ -17,11 +17,11 @@ const HAMMER: Case = Case {
     item: "oteryn:item.tibia.i3208",
     shard: "items-19000-19499.json",
 };
-// API returned HTTP 402: owner-directed lane qa TibiaWiki revs 1148768/1115206/1114329.
+// Wiki API returned HTTP 402; donor chest.lua:2720 grants inventory boots 9019.
 const BOOTS: Case = Case {
     tag: "boots",
     claim: "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
-    item: "oteryn:item.tibia.i9018",
+    item: "oteryn:item.tibia.i9019",
     shard: "items-33000-33499.json",
 };
 const POEM: Case = Case {
@@ -33,9 +33,11 @@ const POEM: Case = Case {
 const LOTTERY: Case = Case {
     tag: "lottery",
     claim: "oteryn:reward-claim.quest.u8_1.secret_service.lottery_ticket",
-    item: "oteryn:item.tibia.i5957",
+    item: "oteryn:item.tibia.i5956",
     shard: "items-29500-29999.json",
 };
+
+const LOTTERY_TEXT: &str = "Damn you Thais! Damn you TBI! I am no longer an agent or a noble but a black knight. A dark avenger that will have his revenge!";
 
 fn content_root() -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content")
@@ -74,11 +76,17 @@ fn content_case(case: Case) -> f::TestResult {
         claim["placements"][0]["reward"]["items"][0]["item"]["key"],
         case.item
     );
-    assert_eq!(claim["readiness"], "ready");
+    if case.tag == "lottery" {
+        assert_eq!(claim["native_contents"]["placements"][0]["root"]["key"], case.item);
+        assert_eq!(claim["native_contents"]["placements"][0]["root_text"], LOTTERY_TEXT);
+        assert_eq!(claim["placements"][0]["reward"]["written_text"]["item"]["key"], case.item);
+    } else {
+        assert_eq!(claim["readiness"], "ready");
+    }
     Ok(())
 }
 fn postgres_case(case: Case) -> f::TestResult {
-    let Some(admin) = f::configured_admin() else {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
     std::thread::Builder::new()
@@ -123,10 +131,10 @@ macro_rules! cases {
         }
     };
 }
-cases!(qaitems_hammer_content, qaitems_hammer_inventory, HAMMER);
 cases!(qaitems_boots_content, qaitems_boots_inventory, BOOTS);
-cases!(qaitems_poem_content, qaitems_poem_inventory, POEM);
+cases!(qaitems_hammer_content, qaitems_hammer_inventory, HAMMER);
 cases!(qaitems_lottery_content, qaitems_lottery_inventory, LOTTERY);
+cases!(qaitems_poem_content, qaitems_poem_inventory, POEM);
 
 async fn exercise(
     h: &f::Harness,
@@ -173,7 +181,7 @@ async fn exercise(
         quantity: reward["count"].as_u64().ok_or("quantity")?.try_into()?,
         contents: Vec::new(),
         additional_items: Vec::new(),
-        root_text: None,
+        root_text: claim["native_contents"]["placements"][0]["root_text"].as_str().map(str::to_owned),
         backpack: generation_item_facts(native, &definition(2854)).map_err(f::debug)?,
         content_revision: format!(
             "sha256:{}",
