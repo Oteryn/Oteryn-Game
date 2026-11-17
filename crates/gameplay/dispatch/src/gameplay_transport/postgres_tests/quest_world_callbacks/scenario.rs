@@ -307,7 +307,6 @@ fn scenario_case(
                 | "catalogue-npc-xp"
                 | "nx6-wayfarer"
                 | "npc-item-exchanges"
-                | "sinatuki-exchange"
                 | "m42-hot-typed"
                 | "m42-hot-final"
                 | "authored-mystery-intro"
@@ -1368,7 +1367,6 @@ fn scenario_case(
             "questpc7-grave" => Some(250),
             "questpc7-outfits-formal" => Some(20),
             "questpc7-outfits-fiend" | "questpc7-outfits-inquisition" => Some(250),
-            "sinatuki-exchange" => Some(250),
             _ => None,
         };
         if let Some(initial_level) = initial_level {
@@ -2937,8 +2935,6 @@ fn scenario_case(
                 !name.ends_with("-free"),
             ))
             .await?;
-        } else if name == "sinatuki-exchange" {
-            Box::pin(super::super::sinatuki_exchange::exercise(&mut owner, &mut admitted, &h)).await?;
         } else if matches!(
             name,
             "catalogue-npc-father" | "catalogue-npc-legacy" | "fathers-burden-handins"
