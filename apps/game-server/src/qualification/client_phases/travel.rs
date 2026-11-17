@@ -824,7 +824,7 @@ impl Planner<'_> {
 }
 
 /// One line to the NPC through the production dialogue protocol, and the lines it answers.
-async fn converse(
+pub(super) async fn converse(
     client: &mut DevClientSession,
     npc: EntityRef,
     text: &str,

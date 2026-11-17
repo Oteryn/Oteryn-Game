@@ -67,7 +67,7 @@ pub(super) const CHESTS: [Chest; 5] = [
 
 static PLANNER: OnceLock<travel::Planner<'static>> = OnceLock::new();
 
-fn planner(
+pub(super) fn planner(
     world: &'static BundleWorld,
     bytes: &[u8],
 ) -> TestResult<&'static travel::Planner<'static>> {
@@ -80,7 +80,10 @@ fn planner(
         .ok_or_else(|| "travel planner not initialised".into())
 }
 
-fn carried(client: &oteryn_dev_client::DevClientSession, reference: std::num::NonZeroU32) -> usize {
+pub(super) fn carried(
+    client: &oteryn_dev_client::DevClientSession,
+    reference: std::num::NonZeroU32,
+) -> usize {
     client.inventory().map_or(0, |inventory| {
         inventory
             .entries
@@ -124,7 +127,7 @@ async fn journey(clients: &SeamClients<'_>, chest: &Chest) -> TestResult {
 }
 
 /// The character's level, read from the GeneralStats tab.
-async fn level(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<u32> {
+pub(super) async fn level(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<u32> {
     use oteryn_protocol_oteryn::cyclopedia_character as wire;
     let reply = client
         .session_mut()

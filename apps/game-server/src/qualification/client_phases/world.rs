@@ -217,6 +217,7 @@ include!("full_row_p04_mount.rs");
 include!("full_row_p03_mount.rs");
 include!("full_row_p02_mount.rs");
 include!("full_row_p01_mount.rs");
+include!("full_row_q02_mount.rs");
 include!("full_row_q01_mount.rs");
 include!("full_row_e10_mount.rs");
 include!("full_row_e09_mount.rs");
@@ -2827,6 +2828,13 @@ pub(super) async fn journeys(
             if e2e_row_selected(310) {
                 verdict::indexed("Q01e.full", async {
                     full_row_q01::run_packet(clients, &full_row_q01::CHESTS[4]).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+            }
+            if e2e_row_selected(311) {
+                verdict::indexed("Q02.full", async {
+                    full_row_q02::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
                 .await;
