@@ -34,6 +34,10 @@ async fn exercise(h: &Harness) -> TestResult {
         .await
         .map_err(debug)?;
     let deps = Dependencies::new()?;
+    let (controller, _) = super::death_ml_loss_composed::production_generation_with_pin(
+        deps.admitted.world_id,
+        "content-1",
+    )?;
     let mut owner = deps.owner(h, &authority);
     owner.quest_catalogue = Some(Arc::new(
         load_embedded_quest_state("content-1")
@@ -42,6 +46,7 @@ async fn exercise(h: &Harness) -> TestResult {
             .clone(),
     ));
     super::tutorial_vitals_fixture::admit(&owner, &deps, &request).await?;
+    owner.active_generation = Some(controller.active().ok_or("active generation")?);
     let admitted = &deps.admitted;
     owner.admit_quest_session(admitted).await;
     let [kevin, captain, technomancer] = install(
