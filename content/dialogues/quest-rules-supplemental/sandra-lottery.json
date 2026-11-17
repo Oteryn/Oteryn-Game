@@ -12,6 +12,16 @@
       "sources": [
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:103-119"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/outfit_quest/default_start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "initial": 0,
+      "min": 0,
+      "max": 1,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/sandra.lua:105"
+      ]
     }
   ],
   "rules": [
@@ -88,6 +98,11 @@
           "value": 1
         },
         {
+          "kind": "set",
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "value": 1
+        },
+        {
           "kind": "set_topic",
           "value": 0
         }
@@ -146,7 +161,7 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
-          "op": "eq",
+          "op": "ge",
           "value": 1
         },
         {
@@ -158,9 +173,9 @@
       ],
       "effects": [
         {
-          "kind": "set",
+          "kind": "add",
           "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
-          "value": 1
+          "value": 0
         },
         {
           "kind": "take_item",
@@ -199,7 +214,7 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
-          "op": "eq",
+          "op": "ge",
           "value": 1
         },
         {
@@ -211,9 +226,9 @@
       ],
       "effects": [
         {
-          "kind": "set",
+          "kind": "add",
           "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
-          "value": 1
+          "value": 0
         },
         {
           "kind": "take_item",
@@ -252,7 +267,7 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
-          "op": "eq",
+          "op": "ge",
           "value": 1
         },
         {
@@ -264,9 +279,9 @@
       ],
       "effects": [
         {
-          "kind": "set",
+          "kind": "add",
           "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
-          "value": 1
+          "value": 0
         },
         {
           "kind": "take_item",
@@ -305,7 +320,7 @@
         {
           "kind": "storage",
           "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
-          "op": "eq",
+          "op": "ge",
           "value": 1
         },
         {
@@ -320,9 +335,9 @@
       ],
       "effects": [
         {
-          "kind": "set",
+          "kind": "add",
           "track": "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt",
-          "value": 1
+          "value": 0
         },
         {
           "kind": "take_item",

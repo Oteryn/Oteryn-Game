@@ -123,7 +123,7 @@ fn sandra_lottery_source_planner_requires_owned_ticket() -> super::TestResult {
     )])?;
     let tracks = BTreeMap::from([(
         "oteryn:quest-progress/quest/u7_8/mage_and_summoner_outfits/addon_belt".into(),
-        1,
+        2,
     )]);
     let outfits = BTreeMap::new();
     for count in [0, 1] {
@@ -669,6 +669,9 @@ fn sandra_lottery_bonus_topics_match_donor_enrollment_flow() -> super::TestResul
             .ok_or("bonus dialogue")?;
         assert_eq!(plan.next_topic, expected);
         if topic == 2 {
+            assert!(plan.track_changes.iter().any(|change| change.key
+                == "oteryn:quest-progress/outfit_quest/default_start"
+                && change.after == 1));
             assert!(
                 plan.track_changes
                     .iter()
