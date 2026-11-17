@@ -122,7 +122,7 @@ fn definition(key: &str) -> TypedDefinitionRef {
 
 /// A legacy once claim served by its exact World callback (legacy_world_claims.rs)
 /// commits through the quest writer, which needs the admitted quest session.
-fn legacy_world_owned(claim: &str) -> TestResult<bool> {
+pub(super) fn legacy_world_owned(claim: &str) -> TestResult<bool> {
     use oteryn_gameplay_quests::quest::world_callbacks::{legacy_world_claim, load};
     for callback in load()?.iter() {
         if legacy_world_claim(callback)?.is_some_and(|binding| binding.key == claim) {
@@ -370,17 +370,18 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
                 vec![(CommandStatus::Accepted, UseDisposition::Committed)]
             } else {
                 // Crystal answers a repeated use of a claimed World-owned
-                // chest with its "it is empty" refusal (Rejected, as M39
+                // chest with its "it is empty" refusal, a Rejected command
+                // with a Rejected disposition (as quest_container_chests
                 // asserts); a RewardClaim chest owner reports NothingToUse.
                 let repeated = if world_owned {
-                    UseDisposition::Rejected
+                    (CommandStatus::Rejected, UseDisposition::Rejected)
                 } else {
-                    UseDisposition::NothingToUse
+                    (CommandStatus::Accepted, UseDisposition::NothingToUse)
                 };
                 vec![
                     (CommandStatus::Accepted, UseDisposition::Committed),
                     (CommandStatus::DuplicateReplay, UseDisposition::Committed),
-                    (CommandStatus::Accepted, repeated),
+                    repeated,
                 ]
             };
             let commands = if cold {

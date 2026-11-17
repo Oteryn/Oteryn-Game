@@ -829,7 +829,14 @@ fn scenario_case(
                         [
                             (CommandStatus::Accepted, UseDisposition::Committed),
                             (CommandStatus::DuplicateReplay, UseDisposition::Committed),
-                            (CommandStatus::Accepted, UseDisposition::NothingToUse),
+                            // A World-owned legacy chest refuses a repeated use
+                            // with its "it is empty" answer; a RewardClaim chest
+                            // reports NothingToUse.
+                            if super::source_quest_rewards::legacy_world_owned(claim)? {
+                                (CommandStatus::Rejected, UseDisposition::Rejected)
+                            } else {
+                                (CommandStatus::Accepted, UseDisposition::NothingToUse)
+                            },
                         ],
                         "{claim} at {chest:?}"
                     );
