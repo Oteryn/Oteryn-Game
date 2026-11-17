@@ -37,8 +37,8 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
     // While playing, the manager opens from the sidebar control buttons (grid.rs).
     app.world_mut().resource_mut::<Manager>().open = true;
     app.update();
-    // The default set is the Tibia control-button set; Market is added and moved up and the
-    // battle list button is removed.
+    // The default set is the Tibia control-button set (ending with the reward wall); Market is
+    // added and moved up and the battle list button is removed.
     assert_eq!(
         order(app.world().non_send::<HostOwner>()),
         super::super::grid::DEFAULT
@@ -54,7 +54,7 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
     assert!(!expected.iter().any(|id| id == "battle"));
     assert_eq!(
         expected.iter().rev().take(2).collect::<Vec<_>>(),
-        ["shell.analysers", "shell.market"]
+        ["rewards", "shell.market"]
     );
     let restored = HostOwner::new(Some(path))?;
     assert_eq!(
@@ -87,14 +87,16 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
     let shown: Vec<_> = grid
         .into_iter()
         .filter_map(|entity| {
-            let super::super::grid::ControlButton::Grid(control) =
-                *app.world()
-                    .get::<super::super::grid::ControlButton>(entity)?
-            else {
-                return None;
+            let id = match *app
+                .world()
+                .get::<super::super::grid::ControlButton>(entity)?
+            {
+                super::super::grid::ControlButton::Grid(control) => control.id(),
+                super::super::grid::ControlButton::Missing(id) => id,
+                _ => return None,
             };
             let node = app.world().get::<Node>(entity)?;
-            (node.display != Display::None).then_some(control.id().to_owned())
+            (node.display != Display::None).then_some(id.to_owned())
         })
         .collect();
     assert_eq!(shown, expected);

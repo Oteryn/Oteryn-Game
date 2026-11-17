@@ -174,21 +174,54 @@ fn one_fixed_right_sidebar_holds_the_panel_then_the_default_widgets() -> TestRes
     assert_eq!(
         shown,
         [
+            "control-action-bars",
             "control-analysers",
             "control-battle",
+            "control-bestiary-tracker",
+            "control-boss-slots",
+            "control-bosstiary",
+            "control-bosstiary-tracker",
+            "control-compendium",
             "control-cyclopedia",
+            "control-daily-rewards",
+            "control-forge",
+            "control-friends",
             "control-highscores",
+            "control-imbuement-tracker",
+            "control-lens-help",
             "control-logout",
             "control-manage",
             "control-options",
+            "control-player-guide",
             "control-prey",
+            "control-prey-widget",
             "control-quest-log",
             "control-skills",
             "control-spellbook",
             "control-store",
+            "control-task-board",
             "control-vip",
+            "control-weapon-proficiency",
+            "control-wheel",
         ]
     );
+    // Tibia default buttons without an Oteryn feature are shown but disabled.
+    let missing: Vec<bool> = app
+        .world_mut()
+        .query::<(
+            &crate::bevy_shell::ui::toolbar::grid::ControlButton,
+            Has<bevy::ui::InteractionDisabled>,
+        )>()
+        .iter(app.world())
+        .filter(|(button, _)| {
+            matches!(
+                button,
+                crate::bevy_shell::ui::toolbar::grid::ControlButton::Missing(_)
+            )
+        })
+        .map(|(_, disabled)| disabled)
+        .collect();
+    assert_eq!(missing, [true; 6]);
 
     let titles: Vec<&str> = Widget::ALL.iter().map(|widget| widget.title()).collect();
     assert_eq!(

@@ -19,17 +19,44 @@ const BUTTON: f32 = 20.;
 const PITCH: f32 = 22.;
 const COLUMNS: u16 = 5;
 
-/// The grid buttons shown until the player picks their own set in the button manager.
+/// The grid buttons shown until the player picks their own set in the button manager: the
+/// Tibia Global `controlButtonsOptions` defaults in their order, each mapped to the Oteryn
+/// feature that serves it (`tibia.*` ids are Tibia buttons Oteryn has no feature for yet).
 pub(in crate::bevy_shell) const DEFAULT: &[&str] = &[
-    "shell.skills",
-    "battle",
-    "vip",
-    "shell.spells",
-    "shell.quests",
-    "cyclopedia",
-    "highscores",
-    "prey",
-    "shell.analysers",
+    "shell.skills",            // skillsWidget
+    "battle",                  // battleListWidget
+    "shell.spells",            // spellListWidget
+    "vip",                     // vipWidget
+    "tibia.lens_help",         // lenshelpFunction
+    "shell.quests",            // questDialog
+    "shell.notices",           // compendiumDialog
+    "cyclopedia",              // cyclopediaDialog
+    "highscores",              // highscoresDialog
+    "tibia.player_guide",      // playerGuide
+    "bars",                    // manageShortcuts
+    "wheel",                   // skillWheelDialog
+    "tasks",                   // taskboard
+    "prey",                    // preyDialog
+    "tibia.prey_widget",       // preyWidget
+    "shell.analysers",         // analyticsSelectorWidget
+    "bestiary_tracker",        // bestiaryTrackerWidget
+    "tibia.imbuement_tracker", // imbuementTrackerWidget
+    "forge",                   // exaltationForgeDialog
+    "proficiency",             // weaponProficiency
+    "bosstiary",               // bosstiaryDialog
+    "bosstiary_tracker",       // bosstiaryTrackerWidget
+    "tibia.boss_slots",        // bossslotsDialog
+    "tibia.friends",           // friendsDialog
+    "rewards",                 // rewardWallDialog
+];
+/// Tibia default buttons without an Oteryn feature: shown, but disabled.
+pub(in crate::bevy_shell) const MISSING: &[(&str, &str)] = &[
+    ("tibia.boss_slots", "Boss Slots"),
+    ("tibia.friends", "Friends"),
+    ("tibia.imbuement_tracker", "Imbuement Tracker"),
+    ("tibia.lens_help", "Lens Help"),
+    ("tibia.player_guide", "Player Guide"),
+    ("tibia.prey_widget", "Prey Widget"),
 ];
 /// Entries that sit in the fixed columns instead of the grid.
 const FIXED: &[&str] = &["shell.options", "store"];
@@ -38,6 +65,8 @@ const FIXED: &[&str] = &["shell.options", "store"];
 #[derive(Component, Clone, Copy, Debug)]
 pub(in crate::bevy_shell) enum ControlButton {
     Grid(Control),
+    /// A Tibia button whose feature Oteryn does not have yet.
+    Missing(&'static str),
     Store,
     Options,
     Logout,
@@ -134,6 +163,21 @@ pub(in crate::bevy_shell) fn spawn(commands: &mut Commands, skins: &Skins, regio
             .observe(activate);
         commands.entity(grid).add_child(button);
     }
+    for &(id, label) in MISSING {
+        let button = art::spawn(
+            commands,
+            &skins.font,
+            key(label),
+            &short(label),
+            Vec2::splat(BUTTON),
+        );
+        commands.entity(button).insert((
+            ControlButton::Missing(id),
+            bevy::ui::InteractionDisabled,
+            BackgroundColor(Color::srgba(0., 0., 0., 0.5)),
+        ));
+        commands.entity(grid).add_child(button);
+    }
     commands.entity(left).add_children(&[store, grid]);
     let right = commands
         .spawn(Node {
@@ -222,6 +266,7 @@ fn activate(
         ControlButton::Grid(control) => {
             open_toolbar(&mut owner, control);
         }
+        ControlButton::Missing(_) => {}
     }
 }
 
@@ -236,10 +281,15 @@ pub(in crate::bevy_shell) fn project(
     for (grid, children) in &grids {
         let mut order = Vec::new();
         for child in children.iter() {
-            let Ok((ControlButton::Grid(control), mut node)) = buttons.get_mut(child) else {
+            let Ok((button, mut node)) = buttons.get_mut(child) else {
                 continue;
             };
-            let rank = enabled.iter().position(|id| id == control.id());
+            let id = match button {
+                ControlButton::Grid(control) => control.id(),
+                ControlButton::Missing(id) => id,
+                _ => continue,
+            };
+            let rank = enabled.iter().position(|enabled| enabled == id);
             let display = if rank.is_some() {
                 Display::Flex
             } else {
