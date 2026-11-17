@@ -4436,6 +4436,191 @@
           ]
         }
       }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-outlaw-camp-power-switch",
+      "quest": "oteryn:quest.the_outlaw_camp_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32594,
+          "y": 32212,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "ordinal": 1
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "offerings": [],
+      "storage": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_outlaw_camp/actions_power_switch.lua:1-16",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1012-1015"
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32594,
+            "y": 32214,
+            "floor": -9
+          },
+          "appearance": 2321
+        },
+        {
+          "position": {
+            "x": 32613,
+            "y": 32220,
+            "floor": -10
+          },
+          "appearance": 2321
+        },
+        {
+          "position": {
+            "x": 32604,
+            "y": 32216,
+            "floor": -9
+          },
+          "appearance": 1271
+        }
+      ],
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32604,
+                "y": 32216,
+                "floor": -9
+              },
+              "remove": 1271,
+              "create": null,
+              "passable": null,
+              "allow_missing": false
+            }
+          ],
+          "close": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/authored-outlaw-camp-power-burn",
+      "quest": "oteryn:quest.the_outlaw_camp_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32616,
+          "y": 32222,
+          "floor": -10
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2772,
+        "ordinal": 2
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [],
+      "teleport": null,
+      "offerings": [
+        {
+          "position": {
+            "x": 32613,
+            "y": 32220,
+            "floor": -10
+          },
+          "item": "oteryn:item.tibia.i3050",
+          "count": 1
+        }
+      ],
+      "storage": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_outlaw_camp/actions_power_burn.lua:1-19",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/lever.lua:1017-1020"
+      ],
+      "world_requirements": [
+        {
+          "position": {
+            "x": 32614,
+            "y": 32205,
+            "floor": -10
+          },
+          "appearance": 1270
+        },
+        {
+          "position": {
+            "x": 32614,
+            "y": 32206,
+            "floor": -10
+          },
+          "appearance": 1791
+        }
+      ],
+      "effects": {
+        "scene": {
+          "open": [
+            {
+              "position": {
+                "x": 32614,
+                "y": 32205,
+                "floor": -10
+              },
+              "remove": 1270,
+              "create": null,
+              "passable": null,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32614,
+                "y": 32206,
+                "floor": -10
+              },
+              "remove": 1791,
+              "create": 1270,
+              "passable": false,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32613,
+                "y": 32220,
+                "floor": -10
+              },
+              "remove": null,
+              "create": 2118,
+              "passable": true,
+              "allow_missing": false
+            },
+            {
+              "position": {
+                "x": 32615,
+                "y": 32221,
+                "floor": -10
+              },
+              "remove": null,
+              "create": 2118,
+              "passable": true,
+              "allow_missing": false
+            }
+          ],
+          "close": []
+        }
+      }
     }
   ]
 }
