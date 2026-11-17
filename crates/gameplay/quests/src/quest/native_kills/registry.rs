@@ -60,24 +60,21 @@ pub fn active_for(catalogue: &QuestStateCatalogue, tracks: &BTreeMap<String, i64
         .filter(|key| counter_for(catalogue, key).is_some())
         .map(str::to_owned)
         .collect();
+    let rookie = &crate::quest::creature_objectives::ROOKIE_RATS;
+    if let Some(counter) = counter_for(catalogue, rookie.transition)
+        && active_counter(catalogue, tracks, counter)
+    {
+        active.push(counter.transition.to_owned());
+    }
     if let Some(bindings) = catalogue.authored_bindings() {
         for quest in &bindings.quests {
             for stage in &quest.stages {
                 let Trigger::Kill { counter } = &stage.trigger else {
                     continue;
                 };
-                let (Some(gate), Some(count)) = (
-                    catalogue.track(&counter.gate),
-                    catalogue.track(&counter.track),
-                ) else {
-                    continue;
-                };
-                let observed_gate = tracks.get(&counter.gate).copied().unwrap_or(gate.initial);
-                let observed_count = tracks.get(&counter.track).copied().unwrap_or(count.initial);
-                if observed_gate == counter.gate_value
-                    && (counter.minimum..counter.maximum).contains(&observed_count)
-                {
-                    active.push(counter.key.clone());
+                let counter = counter.counter(&quest.quest);
+                if active_counter(catalogue, tracks, counter) {
+                    active.push(counter.transition.to_owned());
                 }
             }
         }
@@ -85,8 +82,25 @@ pub fn active_for(catalogue: &QuestStateCatalogue, tracks: &BTreeMap<String, i64
     active
 }
 
+fn active_counter(
+    catalogue: &QuestStateCatalogue,
+    tracks: &BTreeMap<String, i64>,
+    counter: CounterRef<'_>,
+) -> bool {
+    let (Some(gate), Some(count)) = (
+        catalogue.track(counter.gate),
+        catalogue.track(counter.track),
+    ) else {
+        return false;
+    };
+    tracks.get(counter.gate).copied().unwrap_or(gate.initial) == counter.gate_value
+        && (counter.minimum..counter.maximum)
+            .contains(&tracks.get(counter.track).copied().unwrap_or(count.initial))
+}
+
 pub fn tracks_creature_for(catalogue: &QuestStateCatalogue, creature: &str) -> bool {
-    super::counters().any(|counter|counter.creature==creature && catalogue.transition(counter.transition).is_some())
+    counter_for(catalogue, crate::quest::creature_objectives::ROOKIE_RATS.transition).is_some_and(|counter| counter.creature == creature)
+        || super::counters().any(|counter|counter.creature==creature && catalogue.transition(counter.transition).is_some())
         || catalogue.authored_bindings().is_some_and(|bindings|bindings.quests.iter().any(|quest|
             quest.stages.iter().any(|stage|matches!(&stage.trigger,Trigger::Kill {counter} if counter.creature==creature))))
 }

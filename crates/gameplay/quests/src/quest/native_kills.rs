@@ -194,6 +194,7 @@ pub const COUNTERS: &[Counter] = &[
 #[must_use]
 pub fn counter(transition: &str) -> Option<&'static Counter> {
     counters()
+        .chain(std::iter::once(&super::creature_objectives::ROOKIE_RATS))
         .chain(phase_settlements::COUNTERS)
         .find(|counter| counter.transition == transition)
 }
@@ -237,7 +238,6 @@ pub fn active_encounter(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
 pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
     COUNTERS
         .iter()
-        .chain(std::iter::once(&super::creature_objectives::ROOKIE_RATS))
         .chain(fugue::COUNTERS)
         .chain(qworld::counters().unwrap_or_default())
         .chain(
