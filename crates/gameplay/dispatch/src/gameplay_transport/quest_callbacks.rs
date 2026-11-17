@@ -19,6 +19,7 @@ mod goblin_elevator;
 mod ground_stack;
 mod mead;
 pub(super) mod monsters;
+mod outlaw_power;
 mod party_transfer;
 mod personal_encounter;
 mod personal_trial;
@@ -1180,6 +1181,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 None
             };
+            if callback.key == outlaw_power::SWITCH {
+                let index = {
+                    let runtime = self.runtime.lock().await;
+                    super::item_ref_admission::pinned_index(&runtime, self.active_generation)
+                };
+                if super::loop_move::loop_ground(self, map.overlay.base(), index).await.is_none() {
+                    return UseDisposition::Rejected;
+                }
+            }
             if !self.prepare_scene_items(&permit, actor, command, map, callback, resolved.placement_key, target.expected_revision, fence).await {
                 return UseDisposition::Rejected;
             }

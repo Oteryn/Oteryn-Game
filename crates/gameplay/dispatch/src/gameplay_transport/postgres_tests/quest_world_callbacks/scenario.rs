@@ -686,6 +686,8 @@ fn scenario_case(
         super::super::questpc8_life_ring::world()?
     } else if name == "authored-life-ring-bridge" {
         super::super::questpc8_life_ring_bridge::world()?
+    } else if name == super::super::outlaw_camp_power::SWITCH_CASE {
+        super::super::outlaw_camp_power::world()?
     } else if let Some(appearance) = oven {
         outlaw_camp_oven::world(appearance)?
     } else if let Some(route) = super::super::questpc8_retrieval_routes::route(name) {

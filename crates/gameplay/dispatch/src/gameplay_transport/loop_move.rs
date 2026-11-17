@@ -763,7 +763,7 @@ pub(super) async fn committed_loop_move(
 }
 
 /// The 10-byte Ground cell codec of the item owner (x i32 BE, y i32 BE, floor i16 BE).
-fn ground_cell(x: i32, y: i32, floor: i16) -> Vec<u8> {
+pub(super) fn ground_cell(x: i32, y: i32, floor: i16) -> Vec<u8> {
     let mut cell = Vec::with_capacity(10);
     cell.extend_from_slice(&x.to_be_bytes());
     cell.extend_from_slice(&y.to_be_bytes());

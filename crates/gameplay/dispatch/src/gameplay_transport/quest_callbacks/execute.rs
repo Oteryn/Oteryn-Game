@@ -194,6 +194,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || callback
                 .lever
                 .is_some_and(|pair| after.appearance_id == pair[1]);
+        if callback.key == super::outlaw_power::SWITCH {
+            let Some(pair) = callback.lever else {
+                return UseDisposition::Rejected;
+            };
+            after.appearance_id = pair[usize::from(!close)];
+            return self
+                .execute_outlaw_power_switch(
+                    permit,
+                    runtime,
+                    map,
+                    callback,
+                    key,
+                    expected_revision,
+                    after,
+                    close,
+                    fence,
+                    cause,
+                )
+                .await;
+        }
         if !close
             && (!world_requirements_match(map, callback)
                 || !self.ground_requirements_match(runtime, map, callback)
