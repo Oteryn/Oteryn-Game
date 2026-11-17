@@ -1,0 +1,1470 @@
+{
+  "schema": "OTERYN_NATIVE_WEAPON_EQUIP_REQUIREMENT_FACTS/v1",
+  "source": {
+    "crystal_items_xml_blob_sha1": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+    "wiki": "imports/tibiawiki/facts/items-stats.json (levelrequired, vocrequired)",
+    "rule": "Crystal level, else 0; Crystal vocations as base vocations, else [] (any); Wiki follows only where it is stricter, none was"
+  },
+  "records": [
+    {
+      "key": "oteryn:item.tibia.i1781",
+      "source_id": 1781,
+      "name": "small stone",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i2992",
+      "source_id": 2992,
+      "name": "snowball",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3266",
+      "source_id": 3266,
+      "name": "battle axe",
+      "crystal": {
+        "level": null,
+        "vocation": "Knight;true, Elite Knight"
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": "knights"
+      },
+      "level": 0,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3267",
+      "source_id": 3267,
+      "name": "dagger",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3268",
+      "source_id": 3268,
+      "name": "hand axe",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3269",
+      "source_id": 3269,
+      "name": "halberd",
+      "crystal": {
+        "level": "25",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "25",
+        "vocrequired": null
+      },
+      "level": 25,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3270",
+      "source_id": 3270,
+      "name": "club",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3272",
+      "source_id": 3272,
+      "name": "rapier",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3273",
+      "source_id": 3273,
+      "name": "sabre",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3274",
+      "source_id": 3274,
+      "name": "axe",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3276",
+      "source_id": 3276,
+      "name": "hatchet",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3280",
+      "source_id": 3280,
+      "name": "fire sword",
+      "crystal": {
+        "level": "30",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "30",
+        "vocrequired": null
+      },
+      "level": 30,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3282",
+      "source_id": 3282,
+      "name": "morning star",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3283",
+      "source_id": 3283,
+      "name": "carlin sword",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3284",
+      "source_id": 3284,
+      "name": "ice rapier",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3286",
+      "source_id": 3286,
+      "name": "mace",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3288",
+      "source_id": 3288,
+      "name": "magic sword",
+      "crystal": {
+        "level": "80",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "80",
+        "vocrequired": null
+      },
+      "level": 80,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3290",
+      "source_id": 3290,
+      "name": "silver dagger",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3293",
+      "source_id": 3293,
+      "name": "sickle",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3294",
+      "source_id": 3294,
+      "name": "short sword",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3297",
+      "source_id": 3297,
+      "name": "serpent sword",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3298",
+      "source_id": 3298,
+      "name": "throwing knife",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3299",
+      "source_id": 3299,
+      "name": "poison dagger",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3300",
+      "source_id": 3300,
+      "name": "katana",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3301",
+      "source_id": 3301,
+      "name": "broadsword",
+      "crystal": {
+        "level": null,
+        "vocation": "Knight;true, Elite Knight"
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": "knights"
+      },
+      "level": 0,
+      "vocations": [
+        "KNIGHT"
+      ],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3302",
+      "source_id": 3302,
+      "name": "dragon lance",
+      "crystal": {
+        "level": "60",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "60",
+        "vocrequired": null
+      },
+      "level": 60,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3304",
+      "source_id": 3304,
+      "name": "crowbar",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3305",
+      "source_id": 3305,
+      "name": "battle hammer",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3310",
+      "source_id": 3310,
+      "name": "iron hammer",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3313",
+      "source_id": 3313,
+      "name": "obsidian lance",
+      "crystal": {
+        "level": "20",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "20",
+        "vocrequired": null
+      },
+      "level": 20,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3314",
+      "source_id": 3314,
+      "name": "naginata",
+      "crystal": {
+        "level": "25",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "25",
+        "vocrequired": null
+      },
+      "level": 25,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3315",
+      "source_id": 3315,
+      "name": "guardian halberd",
+      "crystal": {
+        "level": "55",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "55",
+        "vocrequired": null
+      },
+      "level": 55,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3319",
+      "source_id": 3319,
+      "name": "stonecutter axe",
+      "crystal": {
+        "level": "90",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "90",
+        "vocrequired": null
+      },
+      "level": 90,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3323",
+      "source_id": 3323,
+      "name": "dwarven axe",
+      "crystal": {
+        "level": "20",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "20",
+        "vocrequired": null
+      },
+      "level": 20,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3324",
+      "source_id": 3324,
+      "name": "skull staff",
+      "crystal": {
+        "level": "30",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "30",
+        "vocrequired": null
+      },
+      "level": 30,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3326",
+      "source_id": 3326,
+      "name": "epee",
+      "crystal": {
+        "level": "30",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "30",
+        "vocrequired": null
+      },
+      "level": 30,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3327",
+      "source_id": 3327,
+      "name": "daramian mace",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3334",
+      "source_id": 3334,
+      "name": "pharaoh sword",
+      "crystal": {
+        "level": "45",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "45",
+        "vocrequired": null
+      },
+      "level": 45,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3336",
+      "source_id": 3336,
+      "name": "studded club",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3338",
+      "source_id": 3338,
+      "name": "bone sword",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3339",
+      "source_id": 3339,
+      "name": "djinn blade",
+      "crystal": {
+        "level": "35",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "35",
+        "vocrequired": null
+      },
+      "level": 35,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3341",
+      "source_id": 3341,
+      "name": "arcane staff",
+      "crystal": {
+        "level": "75",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "75",
+        "vocrequired": null
+      },
+      "level": 75,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3344",
+      "source_id": 3344,
+      "name": "beastslayer axe",
+      "crystal": {
+        "level": "30",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "30",
+        "vocrequired": null
+      },
+      "level": 30,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3346",
+      "source_id": 3346,
+      "name": "ripper lance",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3349",
+      "source_id": 3349,
+      "name": "crossbow",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3350",
+      "source_id": 3350,
+      "name": "bow",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i3453",
+      "source_id": 3453,
+      "name": "scythe",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7379",
+      "source_id": 7379,
+      "name": "brutetamer's staff",
+      "crystal": {
+        "level": "25",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "25",
+        "vocrequired": null
+      },
+      "level": 25,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7385",
+      "source_id": 7385,
+      "name": "crimson sword",
+      "crystal": {
+        "level": "20",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "20",
+        "vocrequired": null
+      },
+      "level": 20,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7390",
+      "source_id": 7390,
+      "name": "justice seeker",
+      "crystal": {
+        "level": "75",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "75",
+        "vocrequired": "None"
+      },
+      "level": 75,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7392",
+      "source_id": 7392,
+      "name": "orcish maul",
+      "crystal": {
+        "level": "35",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "35",
+        "vocrequired": null
+      },
+      "level": 35,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7404",
+      "source_id": 7404,
+      "name": "assassin dagger",
+      "crystal": {
+        "level": "40",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "40",
+        "vocrequired": null
+      },
+      "level": 40,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7408",
+      "source_id": 7408,
+      "name": "wyvern fang",
+      "crystal": {
+        "level": "25",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "25",
+        "vocrequired": null
+      },
+      "level": 25,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7410",
+      "source_id": 7410,
+      "name": "queen's sceptre",
+      "crystal": {
+        "level": "55",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "55",
+        "vocrequired": null
+      },
+      "level": 55,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7411",
+      "source_id": 7411,
+      "name": "ornamented axe",
+      "crystal": {
+        "level": "50",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "50",
+        "vocrequired": null
+      },
+      "level": 50,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7412",
+      "source_id": 7412,
+      "name": "butcher's axe",
+      "crystal": {
+        "level": "45",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "45",
+        "vocrequired": null
+      },
+      "level": 45,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7418",
+      "source_id": 7418,
+      "name": "nightmare blade",
+      "crystal": {
+        "level": "70",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "70",
+        "vocrequired": null
+      },
+      "level": 70,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7419",
+      "source_id": 7419,
+      "name": "dreaded cleaver",
+      "crystal": {
+        "level": "40",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "40",
+        "vocrequired": null
+      },
+      "level": 40,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7421",
+      "source_id": 7421,
+      "name": "onyx flail",
+      "crystal": {
+        "level": "65",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "65",
+        "vocrequired": null
+      },
+      "level": 65,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7422",
+      "source_id": 7422,
+      "name": "jade hammer",
+      "crystal": {
+        "level": "70",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "70",
+        "vocrequired": null
+      },
+      "level": 70,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7424",
+      "source_id": 7424,
+      "name": "lunar staff",
+      "crystal": {
+        "level": "30",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "30",
+        "vocrequired": null
+      },
+      "level": 30,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7425",
+      "source_id": 7425,
+      "name": "taurus mace",
+      "crystal": {
+        "level": "20",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "20",
+        "vocrequired": null
+      },
+      "level": 20,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7426",
+      "source_id": 7426,
+      "name": "amber staff",
+      "crystal": {
+        "level": "40",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "40",
+        "vocrequired": null
+      },
+      "level": 40,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7427",
+      "source_id": 7427,
+      "name": "chaos mace",
+      "crystal": {
+        "level": "45",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "45",
+        "vocrequired": null
+      },
+      "level": 45,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7429",
+      "source_id": 7429,
+      "name": "blessed sceptre",
+      "crystal": {
+        "level": "75",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "75",
+        "vocrequired": null
+      },
+      "level": 75,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7430",
+      "source_id": 7430,
+      "name": "dragonbone staff",
+      "crystal": {
+        "level": "30",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "30",
+        "vocrequired": null
+      },
+      "level": 30,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7432",
+      "source_id": 7432,
+      "name": "furry club",
+      "crystal": {
+        "level": "20",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "20",
+        "vocrequired": null
+      },
+      "level": 20,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7434",
+      "source_id": 7434,
+      "name": "royal axe",
+      "crystal": {
+        "level": "75",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "75",
+        "vocrequired": null
+      },
+      "level": 75,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7437",
+      "source_id": 7437,
+      "name": "sapphire hammer",
+      "crystal": {
+        "level": "30",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "30",
+        "vocrequired": null
+      },
+      "level": 30,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7438",
+      "source_id": 7438,
+      "name": "elvish bow",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": "None"
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7451",
+      "source_id": 7451,
+      "name": "shadow sceptre",
+      "crystal": {
+        "level": "35",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "35",
+        "vocrequired": null
+      },
+      "level": 35,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i7456",
+      "source_id": 7456,
+      "name": "noble axe",
+      "crystal": {
+        "level": "35",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "35",
+        "vocrequired": null
+      },
+      "level": 35,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i10388",
+      "source_id": 10388,
+      "name": "drakinata",
+      "crystal": {
+        "level": "60",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "60",
+        "vocrequired": null
+      },
+      "level": 60,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i10390",
+      "source_id": 10390,
+      "name": "Zaoan sword",
+      "crystal": {
+        "level": "55",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "55",
+        "vocrequired": null
+      },
+      "level": 55,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i10406",
+      "source_id": 10406,
+      "name": "Zaoan halberd",
+      "crystal": {
+        "level": "25",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "25",
+        "vocrequired": null
+      },
+      "level": 25,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i12683",
+      "source_id": 12683,
+      "name": "heavy trident",
+      "crystal": {
+        "level": "25",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "25",
+        "vocrequired": null
+      },
+      "level": 25,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i13987",
+      "source_id": 13987,
+      "name": "deepling staff",
+      "crystal": {
+        "level": "38",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "38",
+        "vocrequired": null
+      },
+      "level": 38,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i13991",
+      "source_id": 13991,
+      "name": "deepling axe",
+      "crystal": {
+        "level": "80",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "80",
+        "vocrequired": null
+      },
+      "level": 80,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i14001",
+      "source_id": 14001,
+      "name": "ornate mace",
+      "crystal": {
+        "level": "90",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "90",
+        "vocrequired": null
+      },
+      "level": 90,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i14040",
+      "source_id": 14040,
+      "name": "warrior's axe",
+      "crystal": {
+        "level": "40",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "40",
+        "vocrequired": null
+      },
+      "level": 40,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i14043",
+      "source_id": 14043,
+      "name": "guardian axe",
+      "crystal": {
+        "level": "50",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "50",
+        "vocrequired": null
+      },
+      "level": 50,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i14089",
+      "source_id": 14089,
+      "name": "hive scythe",
+      "crystal": {
+        "level": "70",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "70",
+        "vocrequired": null
+      },
+      "level": 70,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i14250",
+      "source_id": 14250,
+      "name": "deepling squelcher",
+      "crystal": {
+        "level": "48",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "48",
+        "vocrequired": null
+      },
+      "level": 48,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i21172",
+      "source_id": 21172,
+      "name": "glooth whip",
+      "crystal": {
+        "level": "25",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "25",
+        "vocrequired": null
+      },
+      "level": 25,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i21173",
+      "source_id": 21173,
+      "name": "moohtant cudgel",
+      "crystal": {
+        "level": "60",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "60",
+        "vocrequired": null
+      },
+      "level": 60,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i21176",
+      "source_id": 21176,
+      "name": "execowtioner axe",
+      "crystal": {
+        "level": "55",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "55",
+        "vocrequired": null
+      },
+      "level": 55,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i21177",
+      "source_id": 21177,
+      "name": "cowtana",
+      "crystal": {
+        "level": "25",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "25",
+        "vocrequired": null
+      },
+      "level": 25,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i22727",
+      "source_id": 22727,
+      "name": "rift lance",
+      "crystal": {
+        "level": "70",
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "70",
+        "vocrequired": null
+      },
+      "level": 70,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i30283",
+      "source_id": 30283,
+      "name": "ice hatchet",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": "0",
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": null
+    },
+    {
+      "key": "oteryn:item.tibia.i32093",
+      "source_id": 32093,
+      "name": "schnitzel meat grinder",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": null,
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": "Wiki infobox carries no levelrequired; Crystal gives none, so level 0"
+    },
+    {
+      "key": "oteryn:item.tibia.i40530",
+      "source_id": 40530,
+      "name": "broken macuahuitl",
+      "crystal": {
+        "level": null,
+        "vocation": null
+      },
+      "wiki": {
+        "levelrequired": null,
+        "vocrequired": null
+      },
+      "level": 0,
+      "vocations": [],
+      "note": "Wiki infobox carries no levelrequired; Crystal gives none, so level 0"
+    }
+  ]
+}
