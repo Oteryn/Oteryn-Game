@@ -299,8 +299,16 @@ async fn white_raven(
         use_at(owner, admitted, FUGIO_BODY, plain).await?,
         UseDisposition::Committed
     );
-    assert_eq!(count(h, BACKPACK).await?, 1, "Fugio's body holds a backpack");
-    assert_eq!(count(h, DIARY).await?, 1, "the backpack holds Fugio's diary");
+    assert_eq!(
+        count(h, BACKPACK).await?,
+        1,
+        "Fugio's body holds a backpack"
+    );
+    assert_eq!(
+        count(h, DIARY).await?,
+        1,
+        "the backpack holds Fugio's diary"
+    );
     assert_ne!(
         use_at(owner, admitted, FUGIO_BODY, plain).await?,
         UseDisposition::Committed,
