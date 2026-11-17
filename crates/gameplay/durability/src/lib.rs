@@ -79,6 +79,10 @@ pub mod durability;
 #[path = "../../../../apps/game-server/tests/support/bestiary_postgres_harness.rs"]
 mod bestiary_postgres_harness;
 
+#[cfg(test)]
+#[path = "../../../../apps/game-server/tests/support/authority_cases/seasonwin.rs"]
+mod seasonwin_postgres;
+
 #[allow(unused_imports)]
 use oteryn_gameplay_admission_evidence as admission_evidence;
 #[allow(unused_imports)]

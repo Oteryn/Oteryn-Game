@@ -125,10 +125,21 @@ pub(super) async fn commit_in_transaction<const N: usize>(
         skill_progression: (),
         magic_progression: (),
     };
+    // Resolve the world reward only after the original occurrence replay check.
+    // Quest obligations retain their exact authored XP amount.
+    let amount = if quest_obligation {
+        request.amount
+    } else {
+        ExactI64::new(
+            super::seasonwin::buffs(tx, fence.runtime_scope.world_id())
+                .await?
+                .scale_experience(request.amount.get())?,
+        )
+    };
     let operation = ProgressionOperation::AwardExperience {
         source_occurrence: request.occurrence,
         reward_revision: request.reward_revision.clone(),
-        amount: request.amount,
+        amount,
     };
     let staged = match calculate_progression(
         &snapshot,

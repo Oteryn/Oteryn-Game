@@ -779,6 +779,44 @@ pub(super) async fn npc_bank_talk(
     {
         return ordinary;
     }
+    if intent.text.trim().eq_ignore_ascii_case("status")
+        && let Some(context) = admission
+            .states
+            .npc_conversations
+            .current_npc(&admission.states.chat, &runtime, actor, session, &intent)
+            .filter(|context| {
+                matches!(
+                    context.2.as_str(),
+                    "oteryn:npc.emilie" | "oteryn:npc.gruffy"
+                )
+            })
+    {
+        drop(runtime);
+        let progress = admission
+            .root
+            .seasonal_progress(
+                admission.world_id,
+                crate::durability::seasonwin::SeasonalEvent::AutumnVintage,
+            )
+            .await;
+        runtime = admission.runtime.lock().await;
+        if admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            actor,
+            session,
+            &intent,
+        ) != Some(context)
+        {
+            return rejected();
+        }
+        return match progress {
+            Ok(progress) => reply(crate::durability::seasonwin::autumn_status(
+                progress.as_ref(),
+            )),
+            Err(_) => rejected(),
+        };
+    }
     if let Some(step) = marriage::prepare(admission, actor, command, &intent, &runtime) {
         if matches!(step, marriage::Step::Ordinary) {
             return ordinary;

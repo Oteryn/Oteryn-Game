@@ -92,6 +92,7 @@ pub(super) async fn record_reset(
     {
         return Err(DurabilityError::InvalidStoredState);
     }
+    super::seasonwin::capture(tx, world, epoch).await?;
     capture_calendar(tx, world, epoch, catalogue).await?;
     changes::record(tx, world, epoch).await?;
     super::world_event_outcomes::capture_reset(tx, world, epoch).await?;
@@ -353,7 +354,11 @@ impl DurabilityRoot {
                         || base != announcement_for_epoch(epoch).unwrap_or_default() {
                         return Err(DurabilityError::InvalidStoredState);
                     }
-                    let announcement = announcement(base, &seasonal);
+                    let mut announcement = announcement(base, &seasonal);
+                    for text in super::seasonwin::announcements(&mut tx, world).await? {
+                        if !announcement.is_empty() { announcement.push(' '); }
+                        announcement.push_str(&text);
+                    }
                     WorldEventState { reset_epoch: epoch, active: !announcement.is_empty(), announcement }
                 }
             } else if expected_epoch == 0 {

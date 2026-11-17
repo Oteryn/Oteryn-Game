@@ -345,6 +345,10 @@ pub(super) fn hireling_refusal(
 enum Effect {
     Food(u16),
     Potion(Vec<ReferencePotionRestore>),
+    PotionWithBonus(
+        Vec<ReferencePotionRestore>,
+        crate::durability::seasonwin::SeasonalBuffs,
+    ),
     /// W22c: the durable effect row is the whole effect; the kill settle reads it.
     Concoction,
 }
@@ -694,6 +698,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source_definition: entry.item.definition.clone(),
             source_quantity_before: entry.item.quantity,
             flask,
+        };
+        let effect = if let Effect::Potion(restores) = effect {
+            let buffs = self
+                .root
+                .seasonal_buffs(fence.runtime_scope.world_id())
+                .await
+                .map_err(|_| UseDisposition::Rejected)?;
+            Effect::PotionWithBonus(restores, buffs)
+        } else {
+            effect
         };
         // PREPARE (§5): requirements before any reservation, then FULL, then the cooldown.
         {
@@ -1327,7 +1341,7 @@ fn apply_effect(
             // Checked FULL at PREPARE; with one use in flight it cannot have filled since.
             let _ = states.apply_food(runtime, actor, session, *seconds, now_ms);
         }
-        Effect::Potion(restores) => {
+        Effect::Potion(restores) | Effect::PotionWithBonus(restores, _) => {
             let root =
                 GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
             let decision = DecisionOccurrenceId::from_bytes(occurrence(actor, session, command_id));
@@ -1340,6 +1354,10 @@ fn apply_effect(
                     i64::from(restore.max),
                 );
                 let amount = u64::try_from(drawn).unwrap_or(0);
+                let amount = match effect {
+                    Effect::PotionWithBonus(_, buffs) => buffs.scale_potion(amount),
+                    _ => amount,
+                };
                 let _ = match restore.resource {
                     ReferenceRestoreResource::Health => {
                         states.apply_health_gain(runtime, actor, session, amount)
