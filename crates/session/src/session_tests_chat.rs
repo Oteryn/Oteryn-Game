@@ -148,6 +148,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // never grants the signed-envelope authority it requires.
     // SRX-3 adds 372 native creature icons, 385 native cue basis, and 386
     // native object appearance; all reuse existing domain/transport owners.
+    // CORPSE48 adds 512 (open corpses carry up to 48 entries).
     assert_eq!(
         CLIENT_SUPPORTED_CAPABILITIES,
         &[
@@ -158,7 +159,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
             224, 230, 232, 233, 240, 258, 259, 272, 274, 275, 276, 277, 278, 279, 280, 285, 286,
             287, 288, 290, 291, 292, 330, 350, 370, 371, 372, 381, 382, 383, 384, 385, 386, 445,
             446, 447, 448, 449, 450, 461, 462, 463, 470, 474, 479, 480, 483, 485, 486, 487, 488,
-            489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499,
+            489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 512,
         ]
     );
 }
