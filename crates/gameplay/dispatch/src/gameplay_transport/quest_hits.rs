@@ -20,7 +20,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         && runtime.bound_attacker_lease(hit.actor, hit.session) == Ok(hit.lease)
                 };
                 if live
-                    && fence.character_id == hit.lease.character_id()
+                    && fence.character_id.as_bytes() == hit.lease.character_id().as_bytes()
                     && fence.character_lease_generation == hit.lease.generation()
                     && self
                         .root
