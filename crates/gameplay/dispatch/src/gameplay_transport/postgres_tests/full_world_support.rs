@@ -181,7 +181,9 @@ pub(super) async fn relogin_as(
     account: [u8; 16],
     successor: [u8; 16],
 ) -> TestResult<GameSessionId> {
-    relogin_into(h, character, account, successor, None).await
+    relogin_into(h, character, account, successor, None)
+        .await
+        .map(|(session, _)| session)
 }
 
 /// `relogin_as`, optionally into another assigned Channel of the World (chsw).
@@ -191,7 +193,10 @@ pub(super) async fn relogin_into(
     account: [u8; 16],
     successor: [u8; 16],
     channel: Option<crate::foundation::ChannelId>,
-) -> TestResult<GameSessionId> {
+) -> TestResult<(
+    GameSessionId,
+    crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1,
+)> {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::foundation::admission_authority_publication::{
         AdmissionAuthorityGuardKeyV1 as Key, AdmissionAuthorityGuardStateV1 as State,
@@ -301,7 +306,7 @@ pub(super) async fn relogin_into(
             .generation(),
         3
     );
-    Ok(next_session)
+    Ok((next_session, next))
 }
 
 // Shared lexical fixture: the controller, authority and owner borrow each other. Keeping

@@ -116,13 +116,29 @@ fn a_player_switches_between_two_live_channels_and_reenters_the_other_one() -> T
                     .map_err(debug)?;
                 // Channel 43 on the harness node: Character 41, positioned and leased.
                 let mut first = Dependencies::new()?;
+                let entry = first.room.entry_start();
+                let logout_cell = crate::foundation::MovementLocalPosition {
+                    x: entry.x,
+                    y: entry.y,
+                    floor: entry.floor,
+                };
+                let pin = crate::content::channel_content_pin::ChannelContentPin::from_activation(
+                    first.admitted.world_id,
+                    1,
+                    first.room.movement_cells().scope().generation_digest,
+                    [2; 32],
+                    first.room.frame_binding().digest(),
+                    first.room.map_revision_digest(),
+                    (entry.x + 10, entry.y, entry.floor),
+                );
                 let mut fence = super::fixture::fence(1)?.item_fence();
                 fence.character_lease_generation = 2;
                 first.admitted.item_fence = Some(fence);
                 {
                     let mut runtime = first.runtime.lock().await;
+                    runtime.replace_encounter_fixture_content(pin.clone());
                     runtime
-                        .initialize_first_entry_position(first.actor)
+                        .initialize_pinned_test_position(first.actor, logout_cell)
                         .map_err(debug)?;
                     runtime
                         .bind_attacker_lease(
@@ -138,9 +154,13 @@ fn a_player_switches_between_two_live_channels_and_reenters_the_other_one() -> T
                 }
                 first.admitted.first_entry = FirstEntryOutcome::Positioned;
                 // Channel 44 on a second node of the same World, with its own admitted player.
-                let (node, _second) = world::admit_second_node(&h).await?;
+                let (node, second) = world::admit_second_node(&h).await?;
                 let mut owner = first.owner(&h, &authority);
                 first.initialize(&owner).await;
+                let mut position_fence = super::fixture::fence(super::revision(&h).await?)?;
+                position_fence.character_lease_generation = fence.character_lease_generation;
+                assert!(owner.track_restored(first.admitted.game_session_id, first.actor,
+                    &crate::gameplay_transport::last_position::AdmissionPosition::FirstLogin, position_fence));
                 // The fixture entered long enough ago that no fresh-login fight block holds.
                 owner.clock_origin = owner
                     .clock_origin
@@ -199,11 +219,15 @@ fn a_player_switches_between_two_live_channels_and_reenters_the_other_one() -> T
                 .await?;
                 assert_eq!(status, CommandStatus::Accepted);
                 assert_eq!(wire::decode_status(&switched), Some(SwitchStatus::READY));
-                assert_eq!(session_state(&h, id(50)).await?, 3, "the safe exit ended it");
+                assert_eq!(
+                    session_state(&h, id(50)).await?,
+                    3,
+                    "the safe exit ended it"
+                );
                 assert_eq!(guard(&h).await?, (here.to_vec(), 0, false));
 
                 // The client enters Channel 44 by a fresh admission: that is the switch.
-                let entered = super::full_world_support::relogin_into(
+                let (entered, request) = super::full_world_support::relogin_into(
                     &h,
                     id(41),
                     id(40),
@@ -211,7 +235,36 @@ fn a_player_switches_between_two_live_channels_and_reenters_the_other_one() -> T
                     Some(ChannelId::decode(&there).map_err(debug)?),
                 )
                 .await?;
-                assert!(matches!(session_state(&h, *entered.as_bytes()).await?, 1 | 2));
+                let destination = second.owner_from(&h.root, &node, &authority);
+                let actor = {
+                    let mut runtime = second.runtime.lock().await;
+                    runtime.replace_encounter_fixture_content(pin);
+                    let reservation = runtime.reserve_fresh_session(entered).map_err(debug)?;
+                    runtime.commit_fresh_session(reservation).map_err(debug)?
+                };
+                let (placement, _, _) = destination
+                    .initialize_first_entry(
+                        &request,
+                        entered,
+                        request.operation().authorization.transport,
+                        actor,
+                    )
+                    .await;
+                assert_eq!(placement, FirstEntryOutcome::Positioned);
+                assert_eq!(
+                    second
+                        .runtime
+                        .lock()
+                        .await
+                        .read_actor_position(actor)
+                        .map_err(debug)?
+                        .position(),
+                    logout_cell
+                );
+                assert!(matches!(
+                    session_state(&h, *entered.as_bytes()).await?,
+                    1 | 2
+                ));
                 let channel: Vec<u8> = sqlx::query_scalar(
                     "SELECT uuid_send(COALESCE(runtime_scope_channel_id, origin_channel_id)) \
                      FROM game_durability_reconnect_sessions \
