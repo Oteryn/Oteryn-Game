@@ -174,8 +174,12 @@ async fn scenario(admin: String) -> TestResult {
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
             .await?;
-    let current = crate::world_party_runtime_postgres_cases::committed_fresh_player(
-        &h,
+    let current = crate::world_party_runtime_postgres_cases::committed_fresh_player_owned(
+        &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
+            root: h.root.clone(),
+            node: h.node.clone(),
+            recovery: &h.recovery,
+        },
         60,
         63,
         70,
