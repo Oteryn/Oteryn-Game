@@ -50,13 +50,7 @@ async fn scenario(admin: String) -> TestResult {
     let rope = index
         .definition_ref("Item", ROPE, "definition-r1")
         .ok_or("rope definition")?;
-    let map = super::quest_callbacks::source_world_spatial(
-        (HOLE.x, HOLE.y, HOLE.floor),
-        &[
-            (HOLE.x, HOLE.y, HOLE.floor, 0, 385),
-            (SOUTH.x, SOUTH.y, BELOW.floor, 0, 1858),
-        ],
-    )?;
+    let map = rope_world(deps.admitted.world_id, deps.admitted.channel_id)?;
     let cells = map
         .movement_cells(pin.qualified_room().movement_cells())
         .map_err(debug)?;
@@ -64,9 +58,9 @@ async fn scenario(admin: String) -> TestResult {
     let room = super::rust_lottery::bundle_action_room(pin.qualified_room(), &map, world, &cells)?;
     let frame = room.frame_binding().digest();
     let start = MovementLocalPosition {
-        x: i32::from(HOLE.x) - 1,
-        y: i32::from(HOLE.y),
-        floor: 8,
+        x: i32::from(SOUTH.x),
+        y: i32::from(SOUTH.y),
+        floor: -i16::from(SOUTH.floor),
     };
     let channel_pin = ChannelContentPin::from_activation(
         world,
@@ -121,7 +115,7 @@ async fn scenario(admin: String) -> TestResult {
             .ok_or("rope USE capabilities")?;
     let mut placement = map.base().digest().to_vec();
     placement.extend_from_slice(
-        &crate::map::view::placement_key(HOLE, 1)
+        &crate::map::view::placement_key(HOLE, 0)
             .ok_or("hole placement")?
             .to_be_bytes(),
     );
@@ -166,6 +160,80 @@ async fn scenario(admin: String) -> TestResult {
     drop(authority);
     drop(seal);
     harness.cleanup().await
+}
+
+fn rope_world(
+    world: crate::foundation::WorldId,
+    channel: crate::foundation::ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use oteryn_world_bundle::{bundle, sector, writer};
+    let (template, mut pins) = crate::map::boot::tests::bundle();
+    let mut manifest = bundle::read(&template)?.manifest;
+    manifest.world = bundle::Extent {
+        min_x: HOLE.x,
+        max_x: HOLE.x + 1,
+        min_y: HOLE.y,
+        max_y: SOUTH.y + 1,
+        floors: vec![BELOW.floor, HOLE.floor],
+    };
+    // Ground appearances and speeds from the generated Outlaw Camp regions.
+    manifest.palette = [(351, 120), (355, 200), (385, 130)]
+        .into_iter()
+        .enumerate()
+        .map(|(index, (appearance, speed))| bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{appearance}"),
+            family: bundle::Family::Terrain,
+            id: index as u32,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Ground,
+                walkable: Some(true),
+                ground_speed: Some(speed),
+                blocks_projectile: None,
+            }),
+        })
+        .collect();
+    let tile = |pos: TilePos, palette| sector::Tile {
+        x: pos.x,
+        y: pos.y,
+        flags: 0,
+        house: 0,
+        zones: vec![],
+        items: vec![sector::Item {
+            palette,
+            depth: 0,
+            attrs: sector::Attrs::default(),
+        }],
+    };
+    let mut sectors = [
+        bundle::Sector {
+            floor: HOLE.floor,
+            sx: HOLE.x / 32,
+            sy: HOLE.y / 32,
+            tiles: vec![tile(HOLE, 2), tile(SOUTH, 0)],
+        },
+        bundle::Sector {
+            floor: BELOW.floor,
+            sx: BELOW.x / 32,
+            sy: BELOW.y / 32,
+            tiles: vec![tile(BELOW, 1)],
+        },
+    ];
+    sectors.sort_by_key(bundle::order);
+    let bytes = writer::write(&manifest, &sectors, &Default::default())?;
+    pins.digest = bundle::read(&bytes)?.digest;
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+    crate::map::boot::boot(
+        &bytes,
+        &crate::map::boot::BootPins {
+            map_revision: crate::map::overlay::map_revision(&base),
+            bundle: pins,
+            start: SOUTH,
+        },
+        world,
+        channel,
+        |_| None,
+    )
+    .map_err(|error| debug(error).into())
 }
 
 fn cell(pos: TilePos) -> Vec<u8> {
