@@ -194,8 +194,21 @@ async fn provision_as(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
     connect_bot(bot, 0xa4, "connect-profiled").await
 }
 
+/// Each node serves one World (`node/config.rs` `ScopeConfig`); the Open PvP World's node has
+/// its own root-only control socket (`run.sh` `pvp_world_ready`).
+fn control_socket(pair: &SeamClients<'_>) -> TestResult<String> {
+    let pvp = std::env::var("NODE_BOOT_PVP_WORLD_ID")
+        .ok()
+        .and_then(|world| crate::node::uuid_bytes(&world));
+    Ok(if pvp == Some(pair.world) {
+        required("NODE_BOOT_PVP_CONTROL_SOCKET")?
+    } else {
+        required("NODE_BOOT_CONTROL_SOCKET")?
+    })
+}
+
 async fn provision_current(bot: &mut Bot<'_, '_>, profile: &str) -> TestResult {
-    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let socket = control_socket(bot.pair)?;
     let session = uuid_text(bot.client()?.join_snapshot().game_session_id.as_bytes());
     let profile = profile.to_owned();
     let script = Path::new(env!("CARGO_MANIFEST_DIR"))

@@ -3,7 +3,7 @@
 Run on a node-boot runner shard with `NODE_BOOT_WORLD=1` and
 `NODE_BOOT_E2E_ONLY=mp`. Acceptance is the indexed per-row verdict
 `SEAM_EVIDENCE e2e_all scenario=MP01.full status=PASS|FAIL`, together with
-`SEAM_EVIDENCE MP_CHECK MP01 <step> PASS|FAIL|NOT_ATTEMPTED <detail>` observations.
+`SEAM_EVIDENCE MP_CHECK MP01 <step> PASS|FAIL <detail>` observations.
 Compilation is not runtime qualification. Node boot needs Docker and the pinned
 Platform checkout; it is run by the owner on the GitHub runner for this packet.
 
@@ -15,16 +15,29 @@ Every scenario must emit a terminal PASS or FAIL, even after a refusal or a
 cleanup error. Unsupported commands fail with their actual status/disposition
 and source location. Dependent checks fail explicitly; none silently skip.
 
-MP01 roles own four distinct Accounts, Characters and sessions:
+MP01 runs on two Worlds, one after the other. On the no-PvP World its roles own four
+distinct Accounts, Characters and sessions:
 
 | Bot | Pair/index | Setup | Role |
 | --- | --- | --- | --- |
-| A | core/0 | knight | party leader, PvP attacker |
+| A | core/0 | knight | party leader, refused attacker |
 | B | packet/0 | druid | invited party member |
 | C | packet/1 | paladin | invited party member |
-| D | core/1 | **never provisioned** | solo PvP victim, D150 no-vocation path |
+| D | core/1 | **never provisioned** | solo refused target, D150 no-vocation path |
 
-Only the existing root-only `provision.py --profile` command sets up A/B/C.
+On the Open PvP World (`world_type=2`) two more Accounts own one Character each:
+
+| Bot | Pair/index | Setup | Role |
+| --- | --- | --- | --- |
+| A | pvp/0 | knight | PvP attacker |
+| B | pvp/1 | sorcerer | PvP victim |
+
+Both PvP Characters are provisioned at level 100, above `PVP_MIN_LEVEL` (8,
+`legality.rs:7`); an unprovisioned starter is below it and is refused
+(`legality.rs:96`). The PvP pair has no party: the party journey stays on the
+no-PvP World. Only the existing root-only `provision.py --profile` command sets up
+A/B/C and both PvP bots, each through its own node's control socket (`bots.rs`,
+`control_socket`).
 Profiles are explicit, so `NODE_BOOT_PROFILE` cannot change these roles. D's
 vocation is checked through its own General Stats command and PostgreSQL;
 the relog checks its no-vocation observation again. Equipment, party, movement,
@@ -41,19 +54,42 @@ write authority, update SQL, inject a combat event or synthesize a receipt.
 Production fenced party reads require the serving process's current runtime
 authority, which this remote protocol harness does not own.
 
-The node-boot World is no-PvP (`tools/qualification/node_boot/run.sh:1010` seeds
-`game_spell_field_world_policies` with `world_type=1`), so MP01 checks the no-PvP
-rules instead of a kill: `nopvp-expert` requests Red Fist and requires the served
-expert mode to be Dove (`pvp_expert.rs:83-92` set, `:121-131` observe);
-`nopvp-attack-refused` requires A's attack on player D to come back `Rejected`
-(`pvp_live.rs:184`, `legality.rs:90`) and D to take no damage in a 5 s window.
-`pvp-combat` (death, frag points, skull views) is reported as
-`MP_CHECK MP01 pvp-combat NOT_ATTEMPTED not attempted: ...`: neither PASS nor
-FAIL, and it does not change the `e2e_all` verdict. The relog step keeps checking
-that every participant's skull/points view still matches PostgreSQL.
+### Two Worlds, two nodes
 
-Follow-up, not implemented: PvP damage needs an Open world (`world_type=2`), i.e. a
-second world and `game_spell_field_world_policies` insert in `run.sh` near line 1010.
+The no-PvP World is unchanged: `tools/qualification/node_boot/run.sh:1021` seeds
+`game_spell_field_world_policies` with `world_type=1`. MP01 checks its rules
+there: `nopvp-expert` requests Red Fist and requires the served expert mode to be
+Dove (`pvp_expert.rs:83-92` set, `:121-131` observe); `nopvp-attack-refused`
+requires A's attack on player D to come back `Rejected` (`pvp_live.rs:184`,
+`legality.rs:90`) and D to take no damage in a 5 s window.
+
+After the no-PvP bots are released, MP01 runs the PvP rows on a second World,
+`world_type=2` (Open PvP, `run.sh:1291`): `pvp-world` (the served policy is
+Open PvP, the fixture Characters and scope generation exist), `pvp-admissions`,
+`pvp-profiles`, `pvp-combat` (Red Fist served, attack, attributed hit and damage,
+the kill and temple respawn, the new durable death receipt, A's kill and B's
+death history views, the frag points row, A's white skull in both clients and
+the points/skull state against PostgreSQL), `pvp-stop-combat`, `pvp-relog`
+(sessions, positions, histories and PvP state persist) and `pvp-release`. Every
+row is PASS or FAIL; a failed `pvp-world` or `pvp-admissions` fails the rows it
+blocks.
+
+One node process serves one World/Channel scope (`node/config.rs:81-83`, the
+single `[scope]`), and one database holds one live node's S2 custody
+(`crates/gameplay/durability/src/durability/native_admission_source.rs:376-388`:
+the single `registration_id=1` row, and a live prior holder keeps it). The
+existing stages also assert one node registration, one content activation and
+one runtime guard in their database. So the Open PvP World has its own database
+(`oteryn_node_boot_pvp`, in the same PostgreSQL container) and its own `serve`
+process on the next port, with its own operator state, fence, control socket and
+launch/S2 authorizations; Platform, PKI, secrets, binaries, the compiled bundle
+and gameplay inputs are shared. `run.sh` stages `pvp_world_ready` (migrate,
+operator setup, grants, the `world_type=2` policy row, content activation,
+assignment, World epoch), `pvp_character_bootstrap` (two Platform intents with
+`--target-world-id` the PvP World, bootstrapped through that node's socket) and
+`pvp_world_shutdown` (before the existing lifecycle probes). The seam harness gets
+the `NODE_BOOT_PVP_*` variables; MP01 builds the PvP pair from them and shares
+the core pair's Platform descriptor, grant signer and gameplay certificate.
 
 Relog always uses checked `logout_retrying_busy`; combat blocks expire on real
 server time. All logout futures are serviced together, so one killer's natural
