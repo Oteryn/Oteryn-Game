@@ -435,10 +435,10 @@ async fn pvp_journey(
     let old_death = latest_death(&bots[3]).await?;
     let old_kills = history(&mut bots[0], character::CharacterTab::RecentPvpKills).await?;
     let old_deaths = history(&mut bots[3], character::CharacterTab::RecentDeaths).await?;
-    // Equip through A's own protocol unless provisioning already wielded it.
+    // Equip through A's own protocol. MP provisioning (bots.rs provision_current) only mints the
+    // axe into the backpack; it does not wield it, so an axe already worn is the only skip.
     let definitions = provisioning::item_index()?;
     let axe = provisioning::item_reference(&definitions, 3276)?;
-    // Fenced provisioning (provision.rs) already wields the axe; a second equip is SlotMismatch.
     let wielded = bots[0].client()?.inventory().is_some_and(|inventory| {
         inventory
             .equipment
@@ -454,7 +454,23 @@ async fn pvp_journey(
         if equipped.status != CommandStatus::Accepted
             || equipped.outcome != oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Moved
         {
-            return Err(format!("axe equip refused:{equipped:?};source:apps/game-server/src/qualification/client_phases/provision.rs:86").into());
+            let detail = bots[0].client()?.session_mut().last_refusal_detail();
+            let observed = bots[0].client()?.inventory().map(|inventory| {
+                let carried = inventory
+                    .entries
+                    .iter()
+                    .filter(|entry| entry.item_definition_ref == axe)
+                    .map(|entry| entry.count.get())
+                    .collect::<Vec<_>>();
+                format!(
+                    "equipment={:?};backpack={:?};axe_ref={axe};axe_direct_counts={carried:?}",
+                    inventory.equipment, inventory.main_backpack,
+                )
+            });
+            return Err(format!(
+                "axe equip refused:{equipped:?};refusal_detail={detail:?};observed_inventory={observed:?};source:apps/game-server/src/qualification/client_phases/mp/bots.rs:197"
+            )
+            .into());
         }
     }
     let from = tile(bots[3].client()?.world_spatial().actor_position)?;
