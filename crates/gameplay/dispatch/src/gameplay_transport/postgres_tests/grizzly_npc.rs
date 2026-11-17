@@ -122,13 +122,13 @@ fn postgres_case(case: u8) -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("grizzly-npc", runner)
 }
 
-fn scenario(case: u8) -> TestResult {
+pub(super) fn scenario(case: u8) -> TestResult {
     let reward = case == 1;
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "grizzly_npc_wire", true, false).await?;
         prepare_current_session(&h).await?;
-        let production = if case == 6 {
+        let production = if matches!(case, 6 | 7) {
             eprintln!(
                 "POSTGRES_CASE_STARTED questpc8_grizzly_production_placement after PostgreSQL fixture initialization"
             );
@@ -148,7 +148,12 @@ fn scenario(case: u8) -> TestResult {
         let (controller, pin) =
             super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
         let active = controller.active().ok_or("active content")?;
-        let bundle = if case == 5 {
+        let bundle = if case == 7 {
+            super::qcx5_grizzly_source_crocodile_wire_combat_credit::world(
+                world,
+                active.native_gameplay().ok_or("native hunting content")?,
+            )?
+        } else if case == 5 {
             super::grizzly_boss::world::source_rooms(
                 [1, 3, 19]
                     .into_iter()
@@ -222,12 +227,34 @@ fn scenario(case: u8) -> TestResult {
                 (2, 0, 7)
             },
         );
-        let deps = Dependencies::with_content_and_capacity(
+        let mut deps = Dependencies::with_content_and_capacity(
             channel_pin,
             crate::content::qualify_native_entry_room(world).map_err(debug)?,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
-            if case == 5 { 5 } else { 2 },
+            if case == 5 {
+                5
+            } else if case == 7 {
+                3
+            } else {
+                2
+            },
         )?;
+        if case == 7 {
+            deps.combat_room = Some(
+                deps.room
+                    .bundle_view(
+                        cells.clone(),
+                        bundle.frame_binding_digest(world),
+                        bundle.map_revision_digest(),
+                        crate::content::NativeEntryStart {
+                            x: 32692,
+                            y: 32767,
+                            floor: 6,
+                        },
+                    )
+                    .ok_or("native hunting combat room")?,
+            );
+        }
         let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
         h.root
             .latch_premium_activation(
@@ -244,12 +271,16 @@ fn scenario(case: u8) -> TestResult {
             Some(h.root.clone()),
         );
         let mut owner = deps.owner(&h, &authority);
-        if case == 5 {
+        if matches!(case, 5 | 7) {
             super::grizzly_boss::world::activate(
                 &h,
                 active.identity().server_artifact_digest(),
                 active.identity().client_artifact_digest(),
-                pin.frame_binding().digest(),
+                if case == 7 {
+                    bundle.frame_binding_digest(world)
+                } else {
+                    pin.frame_binding().digest()
+                },
             )
             .await?;
         }
@@ -466,7 +497,7 @@ fn scenario(case: u8) -> TestResult {
         }
         owner.premium_coordinator = Some(&premium);
         owner.admit_premium(id(40), admitted.game_session_id);
-        if case == 6 {
+        if matches!(case, 6 | 7) {
             wire::talk(
                 &mut owner,
                 &mut admitted,
@@ -482,6 +513,15 @@ fn scenario(case: u8) -> TestResult {
                 value(&owner, &authority, quest::KILL_COUNTER_BASE + 1).await?,
                 0
             );
+            if case == 7 {
+                super::qcx5_grizzly_source_crocodile_wire_combat_credit::exercise(
+                    &mut owner,
+                    &mut admitted,
+                    &bundle,
+                    &authority,
+                )
+                .await?;
+            }
         } else if case == 5 {
             questpc8_campaign::exercise(&mut owner, &mut admitted, npc, &h, &authority, &journal)
                 .await?;
@@ -516,7 +556,7 @@ fn scenario(case: u8) -> TestResult {
     })
 }
 
-async fn value(
+pub(super) async fn value(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     authority: &ReconciledCharacterAuthority<'_, '_>,
     storage: u32,
