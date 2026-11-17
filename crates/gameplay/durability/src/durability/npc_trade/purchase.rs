@@ -366,8 +366,8 @@ pub(super) async fn prepare(
                     _ => NpcTradeError::DoesNotFit,
                 })?;
                 if !ground_checked {
-                    // The native Ground check holds the cell lock until this transaction ends.
-                    // Recount after that lock: another buyer may have committed since planning.
+                    // Recount under the existing native Ground writer admission before any mint.
+                    // Its caller retains the native Channel lock for this transaction.
                     let current: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND spatial_position=$3")
                         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
                         .bind(&ground.spatial_position).fetch_one(&mut ***tx).await?;
