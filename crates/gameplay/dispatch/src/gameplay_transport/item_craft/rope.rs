@@ -86,7 +86,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if let Some(lift) = lift {
             let disposition = match lift {
-                Ok((item, from, to)) => match loop_move::relocate_roped_item(
+                Ok(RopedGroundItem { item, from, to }) => match loop_move::relocate_roped_item(
                     self, &permit, actor, command, item, &ground, from, to,
                 )
                 .await
@@ -149,6 +149,12 @@ const OPEN_HOLES: &[u16] = &[
     8690, 8709, 12203, 12961, 17239, 19220, 23364,
 ];
 
+struct RopedGroundItem {
+    item: [u8; 16],
+    from: TilePos,
+    to: TilePos,
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "current rope USE and its fenced map projection"
@@ -163,7 +169,7 @@ fn resolve_item_lift(
     target: Option<ItemKey>,
     ground: &LoopGroundOverlay,
     index: &crate::content::item_ref::ItemDefinitionIndex,
-) -> Option<Result<([u8; 16], TilePos, TilePos), UseDisposition>> {
+) -> Option<Result<RopedGroundItem, UseDisposition>> {
     let cells = admission.movement_cells();
     let at = super::super::bundle_map_position(runtime, cells, actor)?;
     let pinned = at.map.facts.pinned();
@@ -250,7 +256,7 @@ fn resolve_item_lift(
             })
         });
     Some(
-        item.map(|item| (item, from, to))
+        item.map(|item| RopedGroundItem { item, from, to })
             .ok_or(UseDisposition::NotPossible),
     )
 }
