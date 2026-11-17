@@ -68,3 +68,42 @@ fn lersatio_encounter_accepts_bounded_current_spectator_input() -> Result<(), se
     }
     Ok(())
 }
+
+#[test]
+fn lersatio_scene_encounter_composition_retains_unrelated_operation_guard() -> Result<(), String> {
+    use oteryn_gameplay_quests::quest::world_callbacks::{Encounter, load};
+    let mut callback = load()?
+        .into_iter()
+        .find(|callback| callback.key == "oteryn:quest-callback/authored-life-ring-bridge")
+        .ok_or("bridge")?;
+    callback.reversible = false;
+    let scene = callback.effects.scene.as_mut().ok_or("scene")?;
+    scene.relocations.clear();
+    scene.close.clear();
+    callback.effects.encounter = Some(serde_json::from_value::<Encounter>(serde_json::json!({
+        "minimum_level":0,"players":[],
+        "monsters":[{"creature":"oteryn:creature.lersatio","position":{"x":32967,"y":31459,"floor":-1}}],
+        "room_min":{"x":32963,"y":31456,"floor":-1},
+        "room_max":{"x":32972,"y":31465,"floor":-1},
+        "spectators":{
+            "minimum":{"x":32954,"y":31447,"floor":-2},
+            "maximum":{"x":32972,"y":31465,"floor":-2},
+            "destination":{"x":32967,"y":31459,"floor":-1}
+        }
+    })).map_err(|error| error.to_string())?);
+    assert!(
+        callback.has_valid_effects(),
+        "bounded scene + spectator encounter"
+    );
+    callback.effects.item_cycle = Some(
+        serde_json::from_value(serde_json::json!({
+            "position":{"x":32965,"y":31457,"floor":-2},"remove":8667,"create":8721
+        }))
+        .map_err(|error| error.to_string())?,
+    );
+    assert!(
+        !callback.has_valid_effects(),
+        "third operation must remain invalid"
+    );
+    Ok(())
+}

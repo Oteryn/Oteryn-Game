@@ -411,6 +411,34 @@ fn valid_party_transfer(callback: &Callback, party: &PartyTransfer) -> bool {
         })
 }
 
+pub(super) fn scene_encounter(callback: &Callback) -> bool {
+    callback
+        .effects
+        .encounter
+        .as_ref()
+        .is_some_and(|encounter| {
+            encounter.spectators.is_some()
+                && encounter.timing.is_none()
+                && encounter.phase.is_none()
+        })
+        && callback.effects.scene.as_ref().is_some_and(|scene| {
+            scene.relocations.is_empty()
+                && scene.evacuate_open.is_empty()
+                && scene.evacuate_close.is_empty()
+                && !scene.remove_self
+                && scene.close.is_empty()
+                && !scene.relocate_items_close
+        })
+        && !callback.reversible
+}
+
+impl Callback {
+    /// Shared boot and production-use validation of authored effect composition.
+    pub fn has_valid_effects(&self) -> bool {
+        valid(self)
+    }
+}
+
 pub(super) fn valid(callback: &Callback) -> bool {
     let effects = &callback.effects;
     let inputs = &effects.carried_inputs;
@@ -662,7 +690,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
                 || effects.encounter.as_ref().is_some_and(|encounter| {
                     encounter.timing.is_some()
                         || encounter.phase.is_some()
-                        || effects.scene.is_some()
+                        || (effects.scene.is_some() && !scene_encounter(callback))
                 })
                 || (!callback.passages.is_empty() && effects.passages_reset_after_ms.is_none())
         })
@@ -801,7 +829,7 @@ pub(super) fn valid(callback: &Callback) -> bool {
             && effects.item_reward.is_none()
             && effects.outfit_reward.is_none()
     });
-    if operations > 1
+    if (operations > 1 && !(operations == 2 && scene_encounter(callback)))
         || (operations > 0
             && ((!personal_encounter
                 && !super::personal_trial::admitted(callback)

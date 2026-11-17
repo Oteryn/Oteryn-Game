@@ -21,6 +21,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         close: bool,
         after: &mut EntryFacts,
     ) -> Result<Option<QuestCallbackProjection>, UseDisposition> {
+        if !callback.has_valid_effects() {
+            return Err(UseDisposition::Rejected);
+        }
         if let Some(target) = &callback.effects.target_transform {
             return super::source_transforms::prepare(map, target).map(Some);
         }
