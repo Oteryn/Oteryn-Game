@@ -83,6 +83,13 @@ matching one locally when your change can reach it; commands are copied from
   PR).
 - Run one target or one filtered test locally. The full twenty-four-partition suite is
   CI's job (`heavy-tests`); running it locally costs about an hour of CPU.
+- The full dispatch lib-test build peaks above 16 GB RAM. On the PC (or any
+  host under 16 GB) build only the shard of
+  `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/` the filter
+  needs (its README): set `OTERYN_DISPATCH_PG_TESTS` to substrings of the
+  test file stems, comma-separated, then
+  `CARGO_BUILD_JOBS=1 cargo test --locked -p oteryn-gameplay-dispatch --all-features --lib FILTER -- --test-threads=1`.
+  Unset, it builds every file, as CI does.
 - A lock timeout or deadline in one partition can be contention. Re-run that
   test once in isolation; if it fails again it is a real failure.
 
