@@ -208,12 +208,12 @@ a separate malformed MP encoding. A cause-specific request rewrite would be
 speculation until a concrete failing frame or refusal class is observed.
 
 **Cleanup-log caveat:** zero warnings in the final `node.log` does not establish
-that the early returns fired. `run.sh:615–618` opens that log with truncation on
-node start; `run.sh:1178–1179` explicitly truncates it for the later superseding
-replacement. Those stages run after the seam (`run.sh:1230–1234`). For a seam
-that exits 0 despite a FAIL row, `run.sh:884–887` prints only selected session
+that the early returns fired. `run.sh:627–630` opens that log with truncation on
+node start; `run.sh:1196–1197` explicitly truncates it for the later superseding
+replacement. Those stages run after the seam (`run.sh:1358–1362`). For a seam
+that exits 0 despite a FAIL row, `run.sh:896–899` prints only selected session
 close events, excluding qualification warnings. The old node log is preserved
-only on a nonzero stage exit (`run.sh:891–894`). This matches a `NODE_BOOT_PASS`
+only on a nonzero stage exit (`run.sh:903–906`). This matches a `NODE_BOOT_PASS`
 run with an MP01 FAIL row, and means the cleanup artifact can belong to the
 replacement incarnation. Inspect or retain the serving node's log at the seam
 stage, before replacement, to identify the actual refusal. This packet does not
