@@ -71,8 +71,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if !unworthy.is_empty() {
             let map = self.bundle_map().ok_or(DurabilityError::Unavailable)?;
-            let closed = crate::map::floor::BundleDoors(&map.facts);
+            let closed = crate::map::floor::BundleDoors(map.facts.doors());
             let mut runtime = self.runtime.lock().await;
+            let mut spell_states = self
+                .states
+                .spell_states
+                .try_lock()
+                .map_err(|_| DurabilityError::Unavailable)?;
             runtime
                 .owner_fence()
                 .map_err(|_| DurabilityError::Unavailable)?;
@@ -103,9 +108,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &closed,
                     )
                     .map_err(|_| DurabilityError::Unavailable)?;
-                    runtime
+                    let moved = runtime
                         .commit_source_step(proof)
                         .map_err(|_| DurabilityError::Unavailable)?;
+                    let before = position.position();
+                    let after = moved.position();
+                    let now = self.owner_now().get();
+                    spell_states.stage_special_movement_step(
+                        &runtime,
+                        map,
+                        actor,
+                        session,
+                        now,
+                        Some(before),
+                        after,
+                        None,
+                    );
+                    spell_states.stage_underwater_step(
+                        &runtime,
+                        actor,
+                        session,
+                        now,
+                        super::paced_movement::underwater_drown::underwater(map, before),
+                        super::paced_movement::underwater_drown::underwater(map, after),
+                    );
                 }
             }
         }
