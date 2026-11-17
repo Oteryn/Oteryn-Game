@@ -367,8 +367,8 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates, 
                 let mut proofs = Vec::new();
                 for (actor, expected, session) in players {
                     let session = session.ok_or(CarrierError::PlanConflict)?;
-                    proofs.push(crate::map::floor::prepare_quest_callback_teleport(runtime, cells, actor, session, expected,
-                        MovementLocalPosition { x:i32::from(exit.x), y:i32::from(exit.y), floor:-i16::from(exit.floor) }, false, &closed).map_err(|_| CarrierError::PlanConflict)?);
+                    proofs.push(crate::map::floor::prepare_quest_encounter_ejection(runtime, cells, actor, session, expected,
+                        MovementLocalPosition { x:i32::from(exit.x), y:i32::from(exit.y), floor:-i16::from(exit.floor) }, &closed).map_err(|_| CarrierError::PlanConflict)?);
                 }
                 runtime.commit_quest_relocation(proofs, || true)?;
                 fight.retire(runtime)?;

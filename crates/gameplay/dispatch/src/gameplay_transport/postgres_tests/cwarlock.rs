@@ -56,6 +56,30 @@ fn cwarlock_last_wave_sets_completion_storage_once_postgres() -> TestResult {
     scenario(admin, 4)
 }
 
+#[test]
+fn cwarlock_stack_two_player_entry_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, 5)
+}
+
+#[test]
+fn cwarlock_stack_two_player_exit_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, 6)
+}
+
+#[test]
+fn cwarlock_stack_solo_exit_occupied_landing_postgres() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    scenario(admin, 7)
+}
+
 fn scenario(_admin: String, mode: u8) -> TestResult {
     let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("cwarlock", move || {
@@ -315,6 +339,23 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                     )])
                     .map_err(debug)?;
             }
+            let mut peer = if mode == 5 {
+                Some(
+                    prepare_peer(
+                        &h,
+                        &owner,
+                        &admitted,
+                        MovementLocalPosition {
+                            x: 33842,
+                            y: 32145,
+                            floor: 3,
+                        },
+                    )
+                    .await?,
+                )
+            } else {
+                None
+            };
             let before = owner.owner_now().get();
             assert_eq!(
                 use_lever(&owner, &admitted, &placement, 0, 4).await,
@@ -382,6 +423,89 @@ fn scenario(_admin: String, mode: u8) -> TestResult {
                     UseDisposition::Rejected,
                     "an old command number with the later source revision cannot replay admission"
                 );
+            } else if mode >= 5 {
+                if mode == 5 {
+                    let runtime = owner.runtime.lock().await;
+                    let at = runtime
+                        .read_actor_position(
+                            peer.as_ref()
+                                .ok_or("entry peer")?
+                                .runtime_actor
+                                .ok_or("peer actor")?,
+                        )
+                        .map_err(debug)?
+                        .position();
+                    assert_eq!(
+                        (at.x, at.y, at.floor),
+                        (33838, 32141, 2),
+                        "both participants land on the shared centre"
+                    );
+                    drop(runtime);
+                    tick(&owner, began + 3_000_000).await;
+                    assert_eq!(
+                        owner
+                            .runtime
+                            .lock()
+                            .await
+                            .visible_entities()
+                            .creatures
+                            .len(),
+                        7,
+                        "party entry starts the first wave"
+                    );
+                } else {
+                    let destination = if mode == 6 {
+                        MovementLocalPosition {
+                            x: 33839,
+                            y: 32141,
+                            floor: 2,
+                        }
+                    } else {
+                        MovementLocalPosition {
+                            x: i32::from(source::EXIT.x),
+                            y: i32::from(source::EXIT.y),
+                            floor: -i16::from(source::EXIT.floor),
+                        }
+                    };
+                    peer = Some(prepare_peer(&h, &owner, &admitted, destination).await?);
+                    tick(&owner, began + 1_800_000_000).await;
+                    let runtime = owner.runtime.lock().await;
+                    for actor in [
+                        deps.actor,
+                        peer.as_ref()
+                            .ok_or("exit peer")?
+                            .runtime_actor
+                            .ok_or("peer actor")?,
+                    ] {
+                        let at = runtime
+                            .read_actor_position(actor)
+                            .map_err(debug)?
+                            .position();
+                        assert_eq!(
+                            (at.x, at.y, at.floor),
+                            (
+                                i32::from(source::EXIT.x),
+                                i32::from(source::EXIT.y),
+                                -i16::from(source::EXIT.floor)
+                            ),
+                            "all players reach the shared exit, including an existing bystander"
+                        );
+                    }
+                    drop(runtime);
+                    assert!(
+                        owner
+                            .states
+                            .spell_states
+                            .lock()
+                            .await
+                            .encounter_phases
+                            .active
+                            .lock()
+                            .map_err(|_| "phases")?
+                            .is_empty(),
+                        "ejection retires the phase and releases the lever"
+                    );
+                }
             } else if mode >= 2 {
                 tick(&owner, before + 2_999_999).await;
                 assert_eq!(
@@ -564,6 +688,137 @@ async fn move_to(
         .map_err(debug)?;
     Ok(())
 }
+async fn prepare_peer(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    primary: &crate::gameplay_transport::connection::AdmittedSession,
+    position: MovementLocalPosition,
+) -> TestResult<crate::gameplay_transport::connection::AdmittedSession> {
+    use crate::gameplay_transport::connection::{
+        AdmittedSession, ControllerBinding, SessionContinuity,
+    };
+    let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+        .fetch_one(&h.pool)
+        .await?;
+    let (current, operation) =
+        crate::world_party_runtime_postgres_cases::committed_fresh_player_from_source_owned(
+            &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
+                root: h.root.clone(),
+                node: h.node.clone(),
+                recovery: &h.recovery,
+            },
+            60,
+            63,
+            171,
+            now,
+            Some("platform-test"),
+        )
+        .await
+        .map_err(|error| format!("Court Warlock peer admission: {error}"))?;
+    let fence = crate::gameplay_transport::item_fence_of(current).ok_or("peer fence")?;
+    let actor = {
+        let mut runtime = owner.runtime.lock().await;
+        let reservation = runtime
+            .reserve_fresh_session(fence.game_session_id)
+            .map_err(debug)?;
+        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .bind_attacker_lease(
+                actor,
+                fence.game_session_id,
+                current.current_character_lease(),
+            )
+            .map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(actor, position)
+            .map_err(debug)?;
+        actor
+    };
+    let mut continuity = SessionContinuity::FRESH;
+    continuity.selected_capabilities = primary.continuity.selected_capabilities;
+    let mut peer = AdmittedSession {
+        game_session_id: fence.game_session_id,
+        world_id: primary.world_id,
+        channel_id: primary.channel_id,
+        runtime_actor: Some(actor),
+        first_entry: FirstEntryOutcome::Positioned,
+        controller: Some(ControllerBinding {
+            transport: current.current_transport().ok_or("peer transport")?,
+            account_id: id(63),
+        }),
+        continuity,
+        item_fence: Some(fence),
+    };
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("peer native generation")?;
+    h.root
+        .initialize_admission_equipment(
+            owner.character,
+            owner.holder,
+            &fence,
+            native.source_digest(),
+            &operation,
+        )
+        .await
+        .map_err(debug)?;
+    Box::pin(owner.admit_progression_session(&mut peer)).await;
+    let facts = match crate::gameplay_transport::spell_character_facts::load_character_cast_facts(
+        &h.root,
+        owner.character,
+        fence.character_id,
+    )
+    .await
+    {
+        crate::gameplay_transport::spell_character_facts::CastFactsLoad::Ready {
+            facts, ..
+        } => facts,
+        _ => return Err("peer Character facts".into()),
+    };
+    let monk = owner
+        .load_monk_state(fence.character_id)
+        .await
+        .ok_or("peer monk defaults")?;
+    {
+        let runtime = owner.runtime.lock().await;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .initialize_admitted(
+                &runtime,
+                actor,
+                peer.game_session_id,
+                facts,
+                monk,
+                owner.owner_now(),
+                None,
+                None,
+            )
+            .ok_or("peer native admission")?;
+    }
+    owner.admit_quest_session(&peer).await;
+    super::qengine_outfit_stories::seed_quest_prerequisites(
+        h,
+        owner,
+        &peer,
+        &[(source::TRACK.into(), 11)],
+        0xc2,
+    )
+    .await?;
+    owner
+        .refresh_quest_session(peer.game_session_id, false)
+        .await;
+    assert!(
+        owner
+            .refresh_source_party_presence(actor, peer.game_session_id)
+            .await
+    );
+    Ok(peer)
+}
+
 async fn value(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),-1)",

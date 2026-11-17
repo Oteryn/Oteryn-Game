@@ -201,7 +201,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let blocked =
                 super::super::pvp_live::pz_blocked(states, who, member_session, self.owner_now());
-            let Ok(proof) = crate::map::floor::prepare_quest_callback_teleport(
+            // Preserve voluntary-entry control and protection-zone admission checks.
+            // The runtime remains locked through the shared landing commit below.
+            if crate::map::floor::prepare_quest_callback_teleport(
                 runtime,
                 &self.movement_cells,
                 who,
@@ -209,6 +211,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected,
                 local(member.to),
                 blocked,
+                &closed,
+            )
+            .is_err()
+            {
+                return UseDisposition::NotPossible;
+            }
+            // Court Warlock and Cults gather the staged party on one centre tile.
+            let Ok(proof) = crate::map::floor::prepare_quest_encounter_ejection(
+                runtime,
+                &self.movement_cells,
+                who,
+                member_session,
+                expected,
+                local(member.to),
                 &closed,
             ) else {
                 return UseDisposition::NotPossible;
