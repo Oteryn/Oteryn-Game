@@ -2,6 +2,14 @@
   "schema": 1,
   "changes": [
     {
+      "key": "chyllfroest",
+      "schedule": {"kind": "calendar_range", "start": [4, 1], "end": [5, 1]},
+      "sources": [
+        "https://tibia.fandom.com/index.php?curid=76214&oldid=797728",
+        "https://github.com/zimbadev/crystalserver/blob/201189f8/data-global/scripts/quests/tinder_box_quest_chyllfroest/movements_prohibit_entry.lua#L9-L22"
+      ]
+    },
+    {
       "key": "fury_gates",
       "schedule": {"kind": "native_daily", "change": "fury_gates"},
       "sources": ["oteryn:production/crates/gameplay/world-change/src/daily.rs#fury_gates"]

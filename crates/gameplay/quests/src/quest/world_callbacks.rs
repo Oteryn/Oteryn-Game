@@ -37,6 +37,66 @@ pub enum Trigger {
 }
 
 #[cfg(test)]
+#[test]
+fn chyllfroest_entry_binds_aid_to_season_and_failure_destination() -> Result<(), String> {
+    let callback = load()?
+        .into_iter()
+        .find(|callback| callback.key == CHYLLFROEST_ENTRY)
+        .ok_or("Chyllfroest entry callback")?;
+    assert_eq!(callback.trigger, Trigger::StepIn);
+    assert_eq!(callback.selector.action, Some(50000));
+    assert_eq!(
+        world_change_requirement(&callback.key),
+        Some(("chyllfroest", None))
+    );
+    assert!(callback.return_on_failure);
+    assert_eq!(
+        callback.failure_teleport,
+        Some(Position {
+            x: 32063,
+            y: 31091,
+            floor: -7
+        })
+    );
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn ursagrodon_melt_binds_progress_and_ten_minute_revert() -> Result<(), String> {
+    let callbacks = load()?;
+    for appearance in 20358..=20360 {
+        for advances in [false, true] {
+            let suffix = if advances { "melt" } else { "break" };
+            let key = format!("oteryn:quest-callback/ursagrodon-{appearance}-{suffix}");
+            let callback = callbacks
+                .iter()
+                .find(|callback| callback.key == key)
+                .ok_or(key)?;
+            let chance = callback.effects.chance.ok_or("melt chance")?;
+            let depleted = !advances || appearance == 20360;
+            assert_eq!(chance.source_appearance, Some(appearance));
+            assert_eq!(chance.success_permille, 100);
+            assert_eq!(chance.success, advances);
+            assert_eq!(
+                callback.effects.transform,
+                Some(if depleted { 20361 } else { appearance + 1 })
+            );
+            assert_eq!(callback.effects.reset_after_ms, depleted.then_some(600_000));
+            assert_eq!(callback.effects.reset_appearance, depleted.then_some(20358));
+            assert_eq!(
+                callback.effects.mount_reward.is_some(),
+                advances && appearance == 20360
+            );
+            let tool = callback.item_on_target.as_ref().ok_or("Tinder Box")?;
+            assert!(tool.selected_instance);
+            assert_eq!(tool.reusable, !depleted);
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
 mod admission_tests;
 mod asura_authored;
 mod character_requirements;
@@ -603,6 +663,8 @@ struct Document {
     callbacks: Vec<Callback>,
 }
 
+pub const CHYLLFROEST_ENTRY: &str = "oteryn:quest-callback/chyllfroest-seasonal-entry";
+
 /// Shared World prerequisites for exact native source callbacks. Ordinary quest
 /// travel and exits remain independent of these event-only predicates.
 pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)> {
@@ -610,6 +672,13 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
         return Some(("hive_born", None));
     }
     match key {
+        CHYLLFROEST_ENTRY
+        | "oteryn:quest-callback/ursagrodon-20358-break"
+        | "oteryn:quest-callback/ursagrodon-20358-melt"
+        | "oteryn:quest-callback/ursagrodon-20359-break"
+        | "oteryn:quest-callback/ursagrodon-20359-melt"
+        | "oteryn:quest-callback/ursagrodon-20360-break"
+        | "oteryn:quest-callback/ursagrodon-20360-melt" => Some(("chyllfroest", None)),
         "oteryn:quest-callback/fire-feathered-native-darkness"
         | "oteryn:quest-callback/fire-feathered-native-life"
         | "oteryn:quest-callback/fire-feathered-native-light" => {
@@ -668,6 +737,9 @@ pub fn load_for(catalogue: &QuestStateCatalogue) -> Result<Vec<Callback>, String
 
 pub fn load() -> Result<Vec<Callback>, String> {
     let mut callbacks = parse(EMBEDDED)?;
+    callbacks.extend(parse(include_str!(
+        "../../../../../content/encounters/world-changes/chyllfroest-callbacks.json"
+    ))?);
     callbacks.extend(parse(include_str!(
         "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
     ))?);
@@ -942,7 +1014,9 @@ fn parse_with_provenance(text: &str, authored: bool) -> Result<Vec<Callback>, St
             || (selector.position.is_none()
                 && selector.unique.is_none()
                 && selector.action.is_none()
-                && selector.native.is_none())
+                && selector.native.is_none()
+                && !(selector.appearance.is_some()
+                    && callback.effects.chance.is_some_and(|chance| chance.source_appearance.is_some())))
             || selector.position.is_some_and(|p| !valid_pos(p))
             || selector
                 .native

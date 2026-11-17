@@ -85,6 +85,13 @@ pub fn source_is_ready(callback: &Callback, appearance: u16) -> bool {
     if callback.has_fenced_regrowth_reward() {
         return appearance == 21388;
     }
+    if let Some(expected) = callback
+        .effects
+        .chance
+        .and_then(|chance| chance.source_appearance)
+    {
+        return appearance == expected;
+    }
     (match callback.key.as_str() {
         UNEASY_CRYSTAL => appearance == 10186,
         // Crystal 201189f movement_fire_bug_teleport.lua:9-14.

@@ -4,6 +4,13 @@ use oteryn_gameplay_quests::quest::{targuna_ram, world_callbacks::Callback};
 pub(crate) fn accepts(callback: &Callback) -> bool {
     callback.item_on_target.is_some()
         && (callback.key == targuna_ram::KEY
+            || (callback
+                .key
+                .starts_with("oteryn:quest-callback/ursagrodon-")
+                && callback.effects.chance.is_some()
+                && callback.item_on_target.as_ref().is_some_and(|item| {
+                    item.selected_instance && item.item == "oteryn:item.tibia.i20355"
+                }))
             || matches!(
                 callback.native_rule,
                 Some(oteryn_gameplay_quests::quest::native_rules::NativeRule::IceSealPaint { .. })
@@ -32,6 +39,22 @@ pub(crate) fn matches_source(
 mod tests {
     use super::*;
     use oteryn_gameplay_quests::quest::{native_rules::NativeRule, world_callbacks};
+
+    #[test]
+    fn ursagrodon_melt_uses_the_fenced_carried_tool_route() -> Result<(), String> {
+        let callbacks = world_callbacks::load()?;
+        let melt: Vec<_> = callbacks
+            .iter()
+            .filter(|callback| {
+                callback
+                    .key
+                    .starts_with("oteryn:quest-callback/ursagrodon-")
+            })
+            .collect();
+        assert_eq!(melt.len(), 6);
+        assert!(melt.iter().all(|callback| accepts(callback)));
+        Ok(())
+    }
 
     #[test]
     fn registered_ice_paint_callbacks_reach_the_carried_tool_owner() -> Result<(), String> {

@@ -1,0 +1,319 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/chyllfroest-seasonal-entry",
+      "quest": "oteryn:quest.chyllfroest_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50000,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_teleport": {
+        "x": 32063,
+        "y": 31091,
+        "floor": -7
+      },
+      "failure_message": "Chyllfroest is open from April 1 through May 1.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/movements_prohibit_entry.lua:3-22"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/ursagrodon-20358-break",
+      "quest": "oteryn:quest.tinder_box_quest_chyllfroest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 20358
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua:22-61"
+      ],
+      "requires_world_admission": true,
+      "effects": {
+        "chance": {
+          "success_permille": 100,
+          "success": false,
+          "source_appearance": 20358
+        },
+        "transform": 20361,
+        "reset_after_ms": 600000,
+        "reset_appearance": 20358
+      },
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i20355",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false,
+        "selected_instance": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ursagrodon-20358-melt",
+      "quest": "oteryn:quest.tinder_box_quest_chyllfroest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 20358
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua:22-61"
+      ],
+      "requires_world_admission": true,
+      "effects": {
+        "chance": {
+          "success_permille": 100,
+          "success": true,
+          "source_appearance": 20358
+        },
+        "transform": 20359
+      },
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i20355",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ursagrodon-20359-break",
+      "quest": "oteryn:quest.tinder_box_quest_chyllfroest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 20358
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua:22-61"
+      ],
+      "requires_world_admission": true,
+      "effects": {
+        "chance": {
+          "success_permille": 100,
+          "success": false,
+          "source_appearance": 20359
+        },
+        "transform": 20361,
+        "reset_after_ms": 600000,
+        "reset_appearance": 20358
+      },
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i20355",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false,
+        "selected_instance": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ursagrodon-20359-melt",
+      "quest": "oteryn:quest.tinder_box_quest_chyllfroest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 20358
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua:22-61"
+      ],
+      "requires_world_admission": true,
+      "effects": {
+        "chance": {
+          "success_permille": 100,
+          "success": true,
+          "source_appearance": 20359
+        },
+        "transform": 20360
+      },
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i20355",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": true,
+        "selected_instance": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ursagrodon-20360-break",
+      "quest": "oteryn:quest.tinder_box_quest_chyllfroest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 20358
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua:22-61"
+      ],
+      "requires_world_admission": true,
+      "effects": {
+        "chance": {
+          "success_permille": 100,
+          "success": false,
+          "source_appearance": 20360
+        },
+        "transform": 20361,
+        "reset_after_ms": 600000,
+        "reset_appearance": 20358
+      },
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i20355",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false,
+        "selected_instance": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/ursagrodon-20360-melt",
+      "quest": "oteryn:quest.tinder_box_quest_chyllfroest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": null,
+        "appearance": 20358
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/actions_ursagrodon.lua:22-61"
+      ],
+      "requires_world_admission": true,
+      "effects": {
+        "chance": {
+          "success_permille": 100,
+          "success": true,
+          "source_appearance": 20360
+        },
+        "transform": 20361,
+        "reset_after_ms": 600000,
+        "reset_appearance": 20358,
+        "mount_reward": {
+          "mount": "oteryn:content.mount.ursagrodon"
+        }
+      },
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i20355",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null,
+        "reusable": false,
+        "selected_instance": true
+      }
+    }
+  ]
+}

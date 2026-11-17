@@ -885,6 +885,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::StaleState;
             }
         }
+        if callback.key == world_callbacks::CHYLLFROEST_ENTRY {
+            // The open gate only observes the fenced World decision.
+            return UseDisposition::Committed;
+        }
         if callback.is_read_only()
             && !read_only_gate.is_some_and(|gate| {
                 gate.actor == actor
