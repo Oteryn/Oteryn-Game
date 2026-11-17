@@ -1387,6 +1387,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // The shrine is a separate storage/message branch, not a refusal.
                 let shrine = at.x == 32017 && (at.y == 32917 || at.y == 32918) && at.floor == -10;
                 if !shrine
+                    && self
+                        .callback_content()
+                        .iter()
+                        .any(|callback| callback.selector.action == Some(25018))
                     && (0..base.depths().iter().filter(|d| **d == 0).count()).any(|ordinal| {
                         u8::try_from(ordinal)
                             .ok()

@@ -74,7 +74,8 @@ fn actmark_all_four_stairs_run_donor_stepin_postgres() -> TestResult {
                     name,
                     position(from),
                     position(to),
-                )?;
+                )
+                .map_err(|error| error.to_string())?;
             }
             Ok(())
         })?
