@@ -33,6 +33,7 @@ The same action registers `gravediggerBrain:aid(4631)` at line 21.
 ground objects when `itemId = false`. The donor map's top objects are 19161 and
 19162, retained at native ordinal 4 in the two committed B3 source crops.
 The machine crosses the x=33024 region boundary; tests retain both real crops.
+Source z=10 maps to normalized floor -10.
 
 | Donor behavior | Primary evidence |
 |---|---|
@@ -91,6 +92,9 @@ generator now emits it. A second red confirmed that the spell ABI rejected
 intentionally opaque unrelated semantic groups; the participant now uses the
 ordinary custody owner facts. The atomic/replay PG case subsequently passed.
 
+The selected base has no `.claude/skills/oteryn-dev/scripts/ci-local.sh`.
+The table records the named local qualification steps.
+
 | Local check | Recorded result |
 |---|---|
 | Quest-authoring checks | Passed on final inputs: full checks runner |
@@ -104,11 +108,17 @@ ordinary custody owner facts. The atomic/replay PG case subsequently passed.
 | Clippy, dispatch | Passed: final all-target/all-feature check with warnings denied; cross-mount error formatter fixed without allowances |
 | Clippy, server | Passed: final all-target check with warnings denied; one shared World fixture module, no lint allowances |
 | Full World regeneration | Passed with all default checks; second full regeneration left no diff; World pin unchanged |
-| No-URL guards and public schema | Passed: 6 filtered tests in 0.11 seconds without the admin URL |
+| No-URL guards and public schema | Passed on final source: 6 filtered tests in 0.13 seconds without the admin URL |
 | Full focused PG suite | Passed on final source: 6 tests, including 5 real PG cases, in 322.87 seconds; all requested assertions plus east control and whole stacks |
 | Quest source-cohort loader | Passed: focused owner-scope test in 9.66 seconds |
-| Pin verification | Pending |
+| Pin verification | Passed: source-fresh release compiler `pin-check`; World digest `9aa91f7abe59f92ff7b159151f9588cb6fd42f0bfb8ef1826520e48d9921a82b`; command exit status 0 |
 
-Status: implementation and generated Item admission committed; final qualification
-is still in progress. No PR. Migration 2889 is used; no new capability or command
-number is needed.
+Qualification is complete. No PR was created. Migration 2889 is used; capability
+542 and command/mechanic ordinal 6277 are unnecessary because the existing USE
+command and custody owner carry the new effect. No requested work remains.
+
+Reproduce the focused PG qualification after sourcing the retained environment:
+
+```sh
+CARGO_BUILD_JOBS=1 cargo test --locked -p oteryn-game-server --test character_authority_postgres brainout_ -- --nocapture --test-threads=1
+```
