@@ -302,6 +302,8 @@ def materialize_item_tree(reference, declarations, editor, sources):
     apply_quest_item_holds(item_records, ROOT)
     from tainted_talisman import apply_admissions as apply_tainted_talisman
     apply_tainted_talisman(item_records, ROOT)
+    from spirithunters_item_profile import apply_admissions as apply_spirithunters_item
+    apply_spirithunters_item(item_records, ROOT)
     from engclaim_item_profiles import apply_admissions as apply_engclaim_items
     apply_engclaim_items(item_records, ROOT)
     # Captured Global client weights win over the legacy package (ITEMGLOB).

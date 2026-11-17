@@ -530,6 +530,8 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     srv7_targuna_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import qmech_npcfix2_item_profiles
     qmech_npcfix2_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import spirithunters_item_profile
+    spirithunters_item_profile.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import engnpc_m04_item_profiles
     engnpc_m04_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import engnpc_m05_item_profiles

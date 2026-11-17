@@ -842,6 +842,8 @@ def _main() -> int:
     apply_quest_item_holds(legacy_items, ROOT)
     from tainted_talisman import apply_admissions as apply_tainted_talisman
     apply_tainted_talisman(legacy_items, ROOT)
+    from spirithunters_item_profile import apply_admissions as apply_spirithunters_item
+    apply_spirithunters_item(legacy_items, ROOT)
     from engclaim_item_profiles import apply_admissions as apply_engclaim_items
     apply_engclaim_items(legacy_items, ROOT)
     # ITEMGLOB: replay the producer's captured Global client weights.

@@ -4,7 +4,7 @@ use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
-use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Offering, Position};
+use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_gameplay_world::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{
     COMMAND_TYPE_USE_INTENT, MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 const CREATURE: &str = "oteryn:creature.squidgy_slime";
 const TRACK: &str = "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use";
-const TOOL: &str = "oteryn:item.tibia.i7253";
+const TOOL: &str = "oteryn:item.tibia.i4049";
 const GRAVE: Position = Position {
     x: 33210,
     y: 31670,
@@ -33,20 +33,6 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
             let h =
                 Harness::create_with_admission_seed(admin, "quest_tool_spawn", true, false).await?;
             prepare_current_session(&h).await?;
-            // Use admission-qualified paint to exercise the generic hook while the
-            // measurement device has no materializable item definition.
-            let callback: Callback = serde_json::from_value(serde_json::json!({
-                "key": "oteryn:quest-callback/test-tool-spawn",
-                "quest": "oteryn:quest.spirithunters_quest",
-                "trigger": "use",
-                "selector": {"native": {"position": GRAVE, "ordinal": 1, "appearance": 1979}},
-                "reversible": false, "passages": [], "offerings": [], "return_on_failure": false,
-                "requires_world_admission": true,
-                "item_on_target": {"item": TOOL, "count": 1, "reusable": true, "selected_instance": true},
-                "storage": [{"track": TRACK, "minimum": 0, "maximum": 1, "set": 1, "increment": true}],
-                "effects": {"tool_spawn": {"creature": CREATURE, "offset_x": 1, "offset_y": 0}},
-                "sources": ["crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12"]
-            }))?;
             let mut deps = Dependencies::new()?;
             let (controller, activated) =
                 super::death_ml_loss_composed::production_generation_with_pin(
@@ -142,9 +128,7 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
             let loaded =
                 oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                     .map_err(debug)?;
-            owner.quest_catalogue = Some(Arc::new(
-                loaded.catalogue().with_fixture_tool_spawn(callback)?,
-            ));
+            owner.quest_catalogue = Some(Arc::new(loaded.catalogue().clone()));
             let mut admitted = deps.admitted;
             admitted.runtime_actor = Some(deps.actor);
             admitted.first_entry = FirstEntryOutcome::Positioned;

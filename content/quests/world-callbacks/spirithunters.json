@@ -1,0 +1,965 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-6-33188-31688",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33188,
+            "y": 31688,
+            "floor": -6
+          },
+          "ordinal": 2,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-6-33190-31691",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33190,
+            "y": 31691,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-6-33192-31688",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33192,
+            "y": 31688,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-6-33196-31691",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33196,
+            "y": 31691,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-6-33197-31687",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33197,
+            "y": 31687,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-6-33202-31689",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33202,
+            "y": 31689,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-6-33203-31677",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33203,
+            "y": 31677,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-6-33203-31682",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33203,
+            "y": 31682,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-6-33203-31687",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33203,
+            "y": 31687,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-6-33204-31688",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33204,
+            "y": 31688,
+            "floor": -6
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-6-33205-31680",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33205,
+            "y": 31680,
+            "floor": -6
+          },
+          "ordinal": 2,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-7-31927-31859",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 31927,
+            "y": 31859,
+            "floor": -7
+          },
+          "ordinal": 2,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-7-31928-31859",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 31928,
+            "y": 31859,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-7-32710-32398",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 32710,
+            "y": 32398,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-7-33210-31670",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33210,
+            "y": 31670,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-7-33215-31667",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33215,
+            "y": 31667,
+            "floor": -7
+          },
+          "ordinal": 2,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-7-33217-31661",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33217,
+            "y": 31661,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-7-33219-31671",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33219,
+            "y": 31671,
+            "floor": -7
+          },
+          "ordinal": 2,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-7-33223-31665",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33223,
+            "y": 31665,
+            "floor": -7
+          },
+          "ordinal": 1,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/spirithunters/grave-7-33270-31788",
+      "quest": "oteryn:quest.spirithunters_quest",
+      "trigger": "use",
+      "selector": {
+        "native": {
+          "position": {
+            "x": 33270,
+            "y": 31788,
+            "floor": -7
+          },
+          "ordinal": 3,
+          "appearance": 1979
+        }
+      },
+      "reversible": false,
+      "passages": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "requires_world_admission": true,
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i4049",
+        "count": 1,
+        "reusable": true,
+        "selected_instance": true
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_7/spirit_hunters/tomb_use",
+          "minimum": 0,
+          "maximum": 3,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "effects": {
+        "tool_spawn": {
+          "creature": "oteryn:creature.squidgy_slime",
+          "offset_x": 1,
+          "offset_y": 0
+        },
+        "player_speech": "An incredibly slimy substance oozes out of every crack in the old gravestone. It seems to attack you."
+      },
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/spirit_hunters/actions_magical_device.lua:4-12",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/world/world.otbm"
+      ]
+    }
+  ]
+}
