@@ -38,7 +38,7 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
                 "key": "oteryn:quest-callback/test-tool-spawn",
                 "quest": "oteryn:quest.spirithunters_quest",
                 "trigger": "use",
-                "selector": {"native": {"position": GRAVE, "ordinal": 1, "appearance": 1527}},
+                "selector": {"native": {"position": GRAVE, "ordinal": 1, "appearance": 1979}},
                 "reversible": false, "passages": [], "offerings": [], "return_on_failure": false,
                 "requires_world_admission": true,
                 "item_on_target": {"item": TOOL, "count": 1, "reusable": true, "selected_instance": true},
@@ -63,11 +63,11 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
                         "/../../../content/world/placements/region-z07-x129-y123.b3"
                     )),
                     region: (7, 129, 123),
-                    bounds: (33209, 31669, 33211, 31672),
+                    bounds: (33209, 31669, 33212, 31672),
                     start,
                     expected: vec![super::l6_world_pickups::ExpectedTile {
                         position: (GRAVE.x, GRAVE.y),
-                        ids: vec![594, 1527],
+                        ids: vec![992, 1979],
                         counted_entry: None,
                     }],
                 },
@@ -276,8 +276,9 @@ fn item_on_map_use_commits_progress_and_spawns_once_without_relocation_postgres(
                                 floor: 7,
                             }
                 }));
-                assert!(actors.iter().any(|(_, position, session)| {
+                assert!(actors.iter().any(|(actor, position, session)| {
                     session.is_none()
+                        && runtime.matches_live_creature_identity(*actor, CREATURE.as_bytes())
                         && position.position()
                             == MovementLocalPosition {
                                 x: i32::from(start.0) + 1,

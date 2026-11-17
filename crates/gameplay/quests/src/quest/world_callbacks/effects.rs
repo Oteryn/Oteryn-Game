@@ -1204,7 +1204,7 @@ mod tool_spawn_tests {
                 floor: -7,
             },
             ordinal: 1,
-            appearance: 1527,
+            appearance: 1979,
         });
         callback.requires_world_admission = true;
         callback.item_on_target = Some(
