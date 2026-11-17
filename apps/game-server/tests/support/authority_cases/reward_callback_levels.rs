@@ -273,7 +273,7 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
         .await?;
     sqlx::query("UPDATE game_item_instances SET quantity=3 WHERE definition_production_key='oteryn:item.tibia.i11544'").execute(&mut *tx).await?;
     for s in &callback.storage {
-        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,value,quest_key,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,2) ON CONFLICT(character_id,track_key) DO UPDATE SET value=excluded.value")
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,value,quest_key,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,$4,1) ON CONFLICT(character_id,track_key) DO UPDATE SET value=excluded.value")
             .bind(id(41).as_slice()).bind(&s.track).bind(s.minimum).bind(&callback.quest).execute(&mut *tx).await?;
     }
     tx.commit().await?;
@@ -360,7 +360,7 @@ async fn exercise(h: &fixture::Harness, spirit: bool, level: i64) -> TestResult 
             callback.failure_reply
         );
     } else {
-        assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
+        assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "{outcome:?}");
         assert_eq!(receipts, 1);
         if spirit {
             let amount: i64 = sqlx::query_scalar("SELECT coalesce((SELECT sum(amount) FROM game_character_quest_xp_obligations),(SELECT sum(experience_awarded) FROM game_character_xp_receipts),0)::bigint").fetch_one(&h.pool).await?;
