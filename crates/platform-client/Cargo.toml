@@ -12,10 +12,10 @@ category = "platform-client"
 release-role = "production"
 
 [dependencies]
-async-trait = "=0.1.89"
+async-trait = "=0.1.92"
 base64 = "=0.22.1"
 bytes = "=1.12.1"
-futures = "=0.3.32"
+futures = "=0.3.34"
 oteryn-diagnostics = { version = "=0.1.0", path = "../diagnostics" }
 oteryn-error-codes = { version = "=0.1.0", path = "../error-codes" }
 oteryn-foundation = { version = "=0.1.0", path = "../foundation" }
