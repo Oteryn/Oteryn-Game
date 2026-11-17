@@ -58,10 +58,11 @@ fn sea_serpent_haba_report_clears_pending_direction_and_resets_wrong_report() ->
         (4, "speed"),
     ] {
         for reported in 1..=4 {
+            let before = i64::from(code != reported);
             let tracks = BTreeMap::from([
                 (line.to_owned(), 1),
                 (direction.to_owned(), reported),
-                (success.to_owned(), 1),
+                (success.to_owned(), before),
             ]);
             let planned = rules
                 .plan_storage(&NpcRuleInput {
@@ -92,7 +93,7 @@ fn sea_serpent_haba_report_clears_pending_direction_and_resets_wrong_report() ->
                 .track_changes
                 .iter()
                 .find(|change| change.key == success)
-                .map_or(1, |change| change.after);
+                .map_or(before, |change| change.after);
             assert_eq!(after, i64::from(code == reported));
         }
     }
