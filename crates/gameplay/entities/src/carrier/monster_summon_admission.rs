@@ -16,7 +16,7 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::WrongScope);
         }
         self.retire_native_summons(current, stamp)?;
-        self.admit_native_summon_checked(parent, spec, at)
+        self.admit_native_summon_checked(parent, spec, at, false)
     }
     pub fn admit_current_native_summon(
         &mut self,
@@ -29,13 +29,119 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::WrongScope);
         }
         self.retire_current_native_summons(stamp)?;
-        self.admit_native_summon_checked(parent, spec, at)
+        self.admit_native_summon_checked(parent, spec, at, false)
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn admit_current_native_callback_intrinsic(
+        &mut self,
+        native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
+        parent: ExactActorRef,
+        spec: &NativeSummonAdmissionSpec,
+        source: &oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallbackSpawn,
+        requested_center: MovementLocalPosition,
+        at: MovementLocalPosition,
+        map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
+    ) -> Result<ExactActorRef, CarrierError> {
+        self.admit_native_callback_intrinsic_bound(
+            native,
+            None,
+            stamp,
+            parent,
+            spec,
+            source,
+            requested_center,
+            at,
+            map_admits,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn admit_native_callback_intrinsic(
+        &mut self,
+        native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+        current: &oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
+        parent: ExactActorRef,
+        spec: &NativeSummonAdmissionSpec,
+        source: &oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallbackSpawn,
+        requested_center: MovementLocalPosition,
+        at: MovementLocalPosition,
+        map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
+    ) -> Result<ExactActorRef, CarrierError> {
+        self.admit_native_callback_intrinsic_bound(
+            native,
+            Some(current),
+            stamp,
+            parent,
+            spec,
+            source,
+            requested_center,
+            at,
+            map_admits,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn admit_native_callback_intrinsic_bound(
+        &mut self,
+        native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState,
+        current: Option<&oteryn_gameplay_foundation::foundation::ScopeRuntimeFence>,
+        stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
+        parent: ExactActorRef,
+        spec: &NativeSummonAdmissionSpec,
+        source: &oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallbackSpawn,
+        requested_center: MovementLocalPosition,
+        at: MovementLocalPosition,
+        map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
+    ) -> Result<ExactActorRef, CarrierError> {
+        let binding = self.binding();
+        let fence = current.unwrap_or(self.owner_fence()?);
+        if !fence.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+            || !fence.accepts_stamp(stamp)
+        {
+            return Err(CarrierError::WrongScope);
+        }
+        self.validate_native_callback_spawn_source(native, parent, source)?;
+        if spec.parent_key() != source.parent().key
+            || spec.child_key() != source.child().key
+            || spec.content() != source.source_digest()
+            || spec.health() != self.companion_policy(&source.child().key)?.maximum_health
+            || !matches!(&spec.origin, NativeSummonOrigin::SourceCallback { ability, revision, .. }
+                if ability.as_ref()==source.ability().key && revision.as_ref()==source.ability().revision)
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        let occupied_allowed = if source.forced() && at == requested_center {
+            true
+        } else {
+            if !self
+                .current_native_source_occupancy(native, &source.child().key, at, None)?
+                .admits_occupants
+            {
+                return Err(CarrierError::CapacityExceeded);
+            }
+            true
+        };
+        match map_admits(self, at) {
+            None => return Err(CarrierError::WrongScope),
+            Some(false) => return Err(CarrierError::CapacityExceeded),
+            Some(true) => {}
+        }
+        match current {
+            Some(fence) => {
+                self.retire_native_summons(fence, stamp)?;
+            }
+            None => {
+                self.retire_current_native_summons(stamp)?;
+            }
+        }
+        self.admit_native_summon_checked(parent, spec, at, occupied_allowed)
     }
     fn admit_native_summon_checked(
         &mut self,
         parent: ExactActorRef,
         spec: &NativeSummonAdmissionSpec,
         at: MovementLocalPosition,
+        source_occupied_allowed: bool,
     ) -> Result<ExactActorRef, CarrierError> {
         if spec.content() != self.content.server_artifact_digest()
             || !self.matches_live_creature_identity(parent, spec.parent_key().as_bytes())
@@ -78,7 +184,7 @@ impl ChannelRuntimeV1 {
         // the links are bounded by the same value.
         if self.carrier.occupied.len() >= CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX
             || self.carrier.native_summons.len() >= CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX
-            || !self.native_summon_cell_free(at)
+            || (!source_occupied_allowed && !self.native_summon_cell_free(at))
         {
             return Err(CarrierError::CapacityExceeded);
         }

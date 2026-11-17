@@ -15,6 +15,9 @@ use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[path = "qengine_rewards/m39_any_topic.rs"]
+mod m39_any_topic;
+
 pub(super) fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -23,7 +26,9 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {
         super::quest_world_callbacks::scenario(
             name,
-            if name == "qengine-rewards-l2-white-raven" {
+            if name.starts_with("qengine-rewards-qworld-phase-") {
+                super::qworld_phase_steps::SOURCE
+            } else if name == "qengine-rewards-l2-white-raven" {
                 Position {
                     x: 32248,
                     y: 31866,
@@ -41,6 +46,17 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
                 super::l6_paradox_story::start()
             } else if name.starts_with("qengine-rewards-questpc4-native-tower-") {
                 super::l6_paradox_native::trigger(name)
+            } else if name == "qengine-rewards-m56-wax" {
+                Position {
+                    x: 31942,
+                    y: 32936,
+                    floor: -10,
+                }
+            } else if matches!(
+                name,
+                "qengine-rewards-m56-wax-corner" | "qengine-rewards-m56-wax-edge-outside"
+            ) {
+                super::m56_cursed_crystal_wax::trigger(name)
             } else if name.starts_with("qengine-rewards-questpc4-admission-") {
                 super::l6_world_admission::trigger(name)
             } else {
@@ -185,19 +201,39 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         return &["diary"];
     }
 
+    if key.contains("/l2-cael-tome-") {
+        return &["tome"];
+    }
+    if key.ends_with("/l2-zalamon-tome") {
+        return &["mission"];
+    }
+    if key.ends_with("/l2-bone-start") {
+        return &["mission"];
+    }
+
     match key.rsplit('/').next().unwrap_or(key) {
         "fibula-key-first" | "fibula-key-repeat" => &["key"],
         "fibula-complete" => &["expedition"],
         "l13-rift-first" | "l13-rift-second" => &["addon"],
+        "m09-rookie-mission11" => &["yes"],
+        "m09-tower" => &["mission"],
         "knight-sword" => &["forge"],
         "questpc7-golden-base" => &["base outfit"],
         "questpc7-golden-gloves" => &["boots and gloves"],
         "questpc7-golden-helmet" => &["golden helmet"],
+        "qnpcfx-koshei-start" => &["amulet"],
         "l1-warmaster-crest" => &["crest"],
         "l1-wayfarer-cape" => &["cape"],
         "l1-yalaharian-sage" | "l1-yalaharian-villain" => &["addon"],
         "l1-warmaster-tribal" => &["tribal crest"],
         "l1-wayfarer-hat" => &["hat"],
+        "l2-wizard-start" => &["outfit", "yes"],
+        "l2-wizard-shield" => &["shield"],
+        "l2-wizard-mail" => &["mail"],
+        "l2-wizard-legs" => &["legs"],
+        "l2-wizard-skull" => &["ring"],
+        "l2-wizard-flowers-start" => &["addon", "yes"],
+        "l2-wizard-flowers" => &["orchid"],
         "l2-battle-mage-book" | "l2-battle-mage-epaulettes" => &["addon", "yes", "yes"],
         "l2-elementalist-start" | "l2-elementalist-base" => &["slime", "yes"],
         "l2-festive-mask-start" | "l2-festive-feather-start" => &["addons"],
@@ -313,6 +349,19 @@ fn offer_words(key: &str) -> &'static [&'static str] {
         "deepling-helmet" => &[
             "flou", "explain", "yes", "no", "yes", "yes", "yes", "helmet",
         ],
+        "qnpcfx-oldrak-begin" => &["demon oak"],
+        "qnpcfx-oldrak-hallowed-axe" => &["axe"],
+        "qnpcfx-inquisition-join" => &["join"],
+        "qnpcfx-inquisition-report" => &["mission"],
+        "qnpcfx-inquisition-kulag_guard" | "qnpcfx-inquisition-grof_guard" => &["trouble"],
+        "qnpcfx-inquisition-tim_guard" | "qnpcfx-inquisition-walter_guard" => {
+            &["trouble", "authorities", "avoided"]
+        }
+        "qnpcfx-inquisition-miles_guard" => &[
+            "trouble",
+            "foresight of the authorities",
+            "also for the gods",
+        ],
         _ => &[],
     }
 }
@@ -379,6 +428,59 @@ pub(super) async fn wire_reward_with_prefix_refusal(
     Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
     u64,
 )> {
+    let words: Vec<_> = std::iter::once("hi")
+        .chain(offer_words(&callback.key).iter().copied())
+        .chain(std::iter::once(callback.keywords[0].as_str()))
+        .collect();
+    wire_conversation_with_prefix_refusal(
+        owner,
+        admitted,
+        npc,
+        callback,
+        expect_outfit,
+        words,
+        prefix_refusal,
+    )
+    .await
+}
+
+pub(super) async fn wire_conversation(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    callback: &RewardCallback,
+    expect_outfit: bool,
+    words: Vec<&str>,
+) -> TestResult<(
+    NpcIntentDisposition,
+    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
+    u64,
+)> {
+    wire_conversation_with_prefix_refusal(
+        owner,
+        admitted,
+        npc,
+        callback,
+        expect_outfit,
+        words,
+        None,
+    )
+    .await
+}
+
+async fn wire_conversation_with_prefix_refusal(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    callback: &RewardCallback,
+    expect_outfit: bool,
+    words: Vec<&str>,
+    prefix_refusal: Option<u64>,
+) -> TestResult<(
+    NpcIntentDisposition,
+    Vec<oteryn_protocol_oteryn::appearance::Catalogue>,
+    u64,
+)> {
     use crate::foundation::{MessageType, decode_wire_envelope};
     use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -386,10 +488,6 @@ pub(super) async fn wire_reward_with_prefix_refusal(
         .clock_origin
         .checked_sub(std::time::Duration::from_secs(2))
         .ok_or("clock")?;
-    let words: Vec<_> = std::iter::once("hi")
-        .chain(offer_words(&callback.key).iter().copied())
-        .chain(std::iter::once(callback.keywords[0].as_str()))
-        .collect();
     let last = admitted.continuity.next_command_id + u64::try_from(words.len())? - 1;
     let prefix_refusal = prefix_refusal.map(|offset| admitted.continuity.next_command_id + offset);
     assert!(prefix_refusal.is_none_or(|command| command < last));
@@ -585,6 +683,9 @@ pub(super) async fn wire_reward_with_prefix_refusal(
         Ok::<_, String>((result.ok_or("no reward result")?, catalogues, last))
     });
     let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
+    if let ConnectionEnd::AdmittedThenClosed(_, error) = &end {
+        eprintln!("qengine reward wire last_command={last} closed={error:?}");
+    }
     drop(server);
     if let ConnectionEnd::AdmittedThenDisconnected(a) | ConnectionEnd::AdmittedThenClosed(a, _) =
         end
@@ -811,6 +912,7 @@ async fn capacity_refusal(
     Ok(())
 }
 
+// Lane futures stay on the heap: adding a story must not enlarge every scenario frame.
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -839,6 +941,133 @@ pub(super) async fn exercise(
     }
     if name.starts_with("qengine-rewards-l2-djinn-") {
         return Box::pin(questl2_djinn_journeys::exercise(owner, admitted, h, name)).await;
+    }
+    if name == "qengine-rewards-m25-galthen-native-deaths" {
+        return Box::pin(super::m25_galthen_native_death::exercise(
+            owner, admitted, h,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-m09-rookie" {
+        return Box::pin(super::m09_rookie_reward::exercise(
+            owner, admitted, h, authority,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-m37-peter" {
+        return Box::pin(super::questpc8_npc_teleport_story::exercise(
+            owner, admitted, h, authority,
+        ))
+        .await;
+    }
+    if name.starts_with("qengine-rewards-m56-wax") {
+        return Box::pin(super::m56_cursed_crystal_wax::exercise(
+            owner,
+            admitted,
+            h,
+            name.ends_with("-outside"),
+        ))
+        .await;
+    }
+    if name.starts_with("qengine-rewards-m09-tower-") {
+        return Box::pin(super::m09_multi_rewards::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
+    }
+    if name.starts_with("qengine-rewards-qworld-phase-") {
+        return Box::pin(super::qworld_phase_steps::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-questpc5-personal-map-query" {
+        return Box::pin(super::questpc5_personal_map_marks::exercise(
+            owner, admitted, h,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-m23-last-creep" {
+        return Box::pin(super::m23_last_creep::exercise(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-srvgap-disguise" {
+        return Box::pin(super::srvgap_quest_disguise::exercise(owner, admitted, h)).await;
+    }
+    if name.starts_with("qengine-rewards-qworld-phase-") {
+        return Box::pin(super::qworld_phase_steps::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-m39-any-topic" {
+        return Box::pin(m39_any_topic::exercise(owner, admitted, h)).await;
+    }
+    if name.starts_with("qengine-rewards-m39-tomes") {
+        return Box::pin(super::m39_tomes_journey::exercise(owner, admitted, h, name)).await;
+    }
+    if name.starts_with("qengine-rewards-m39-bone") {
+        return Box::pin(super::m39_bone_journey::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-m39-any-topic" {
+        return Box::pin(m39_any_topic::exercise(owner, admitted, h)).await;
+    }
+    if name == "qengine-rewards-authored-imported-talk-group" {
+        return Box::pin(super::qengine_m01a_imported_talk::exercise_group(
+            owner, admitted, h,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-m01a-sven" {
+        return Box::pin(super::qengine_m01a_sven::exercise(
+            owner, admitted, h, authority,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-m01a-starter-routes" {
+        return Box::pin(super::qengine_m01a_starter_routes::exercise(
+            owner, admitted, h, authority,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-m01a-production-pirate-talk" {
+        return Box::pin(super::qengine_m01a_production_talk::exercise(
+            owner, admitted, h,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-authored-imported-talk-group" {
+        return Box::pin(super::qengine_m01a_imported_talk::exercise_group(
+            owner, admitted, h,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-authored-imported-talk" {
+        return Box::pin(super::qengine_m01a_imported_talk::exercise(
+            owner, admitted, h,
+        ))
+        .await;
+    }
+    if name == "qengine-rewards-m01c-collection" {
+        return Box::pin(super::m01c_collection::exercise(owner, admitted, h)).await;
+    }
+    if name.starts_with("qengine-rewards-qnpcfx-m10-") {
+        return Box::pin(super::qnpcfx_m10::exercise(
+            owner, admitted, h, authority, name,
+        ))
+        .await;
+    }
+    if name.starts_with("qengine-rewards-qnpcfx-koshei") {
+        return Box::pin(super::qnpcfx_koshei::exercise(
+            owner,
+            admitted,
+            h,
+            authority,
+            name.ends_with("-bank"),
+        ))
+        .await;
     }
     if name.starts_with("qengine-rewards-questpc4-paradox-upper-") {
         return Box::pin(super::l6_paradox_upper::exercise(

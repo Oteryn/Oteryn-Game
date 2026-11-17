@@ -54,7 +54,7 @@ fn general_controls_transform_real_inputs_and_preserve_releases()
     let w = key(26, none, ButtonState::Pressed, false)?;
     let mapped = settings.control_events_at(std::slice::from_ref(&w), false, Duration::ZERO);
     assert_eq!(
-        crate::input::arrow_step(&mapped),
+        crate::input::arrow_step(&mapped, false),
         Some(crate::input::StepDir::North)
     );
     let repeat = key(26, none, ButtonState::Pressed, true)?;

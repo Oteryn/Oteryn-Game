@@ -16,6 +16,7 @@ import hashlib
 import json
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 # isort: off
 # world_objects puts item-authoring on sys.path, so test_engine_items imports after it.
@@ -610,6 +611,81 @@ def test_committed_catalogue_matches_the_census_sample():
             (build_catalogue.ROOT / directory / "index.json").read_text()
         )
         check(marker["population_state"] == "POPULATED", marker)
+
+
+def test_qualified_catalogue_preserves_canonical_restore_and_base_drift():
+    import activity_static
+
+    static_files = activity_static.outputs()
+    registry = json.loads(static_files[activity_static.REGISTRY])
+    restore = next(
+        row["catalogue_record"]
+        for row in registry["records"]
+        if row["source_item_id"] == 23049
+    )
+    excluded = (
+        build_catalogue.donor_shards()
+        | build_catalogue.official_shards()
+        | build_catalogue.qualified_shards()
+    )
+    base = {
+        path.relative_to(build_catalogue.ROOT).as_posix(): json.loads(path.read_bytes())
+        for directory, prefix, _notes in build_catalogue.CATALOGUES.values()
+        for path in sorted((build_catalogue.ROOT / directory).glob(f"{prefix}-*.json"))
+        if path not in excluded
+    }
+    restore_path = "content/world/terrain/terrain-05500-05999.json"
+    rows = base[restore_path]["records"]
+    ordinal = next(
+        i for i, row in enumerate(rows) if row["identity"] == restore["identity"]
+    )
+    # Model the earlier base source independently of the qualified publisher.
+    legacy = copy.deepcopy(restore)
+    legacy["blocks_projectile"] = {"state": "UNKNOWN"}
+    legacy["provenance"].update(
+        item_pointer={
+            "family": "Item",
+            "key": "oteryn:item.tibia.i23049",
+            "revision": "definition-r1",
+        },
+        route={"owner": "Terrain", "reason": "primarytype_world_object"},
+        source=META,
+    )
+    rows[ordinal] = legacy
+    # A changed neighbour must survive publication so --check can detect drift;
+    # copying the whole published shard would silently erase this difference.
+    neighbour = rows[ordinal - 1]
+    neighbour["walkable"]["value"] = not neighbour["walkable"]["value"]
+
+    def base_census(_sources, on_record):
+        for document in base.values():
+            for row in document["records"]:
+                on_record(document["family"], copy.deepcopy(row))
+        return json.loads(world_objects.DEFAULT_SAMPLE.read_bytes())
+
+    with patch.object(world_objects, "build_census", side_effect=base_census):
+        files, _census = build_catalogue.outputs(None, include_qualified=True)
+    rows[ordinal] = restore
+    for path, expected in base.items():
+        check(
+            json.loads(files[path]) == expected,
+            f"qualified publication changed base records outside i23049: {path}",
+        )
+    actual = [
+        row
+        for path, data in files.items()
+        if path.startswith("content/world/terrain/terrain-")
+        for row in json.loads(data)["records"]
+        if row["identity"] == restore["identity"]
+    ]
+    check(
+        actual == [restore], "one exact canonical restore body at its original ordinal"
+    )
+    notes = json.loads(files["content/world/terrain/index.json"])["notes"]
+    check(
+        notes == activity_static.compose_terrain_notes(notes),
+        "catalogue and activity publishers must use the same terrain note order",
+    )
 
 
 def test_qualified_donor_identity_and_precedence_fail_closed():

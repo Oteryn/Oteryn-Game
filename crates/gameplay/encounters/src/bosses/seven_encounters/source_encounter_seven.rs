@@ -68,6 +68,76 @@ pub struct SourceMapWork {
     pub source_frame: &'static str,
 }
 impl SevenSource {
+    /// The active native body and canonical-root witness supply source membership;
+    /// this does not grant a map operation or an actor/scope mutation.
+    pub fn qualify_native(
+        native: &crate::content::native_gameplay::NativeGameplayState,
+        caster: &Ref,
+        index: usize,
+        list: ScheduleList,
+    ) -> Result<Option<Self>, AttackError> {
+        let Some(proof) =
+            crate::bosses::source_callbacks::native_witness::qualify(native, caster, index, list)?
+        else {
+            return Ok(None);
+        };
+        let ability = &proof.entry().ability.key;
+        let kind = match ability.as_str() {
+            "oteryn:ability.creature.cerebellum.field-fill-heal_brain_head" => SevenKind::BrainHeal,
+            "oteryn:ability.spell.charge_vortex" => SevenKind::Vortex,
+            "oteryn:ability.spell.maxxenteleport" => SevenKind::Maxxen,
+            "oteryn:ability.spell.ragiaz_transform" => SevenKind::Ragiaz,
+            "oteryn:ability.spell.time_guardian" => SevenKind::TimeGuardian,
+            "oteryn:ability.spell.time_guardiann" => SevenKind::TimeGuardiann,
+            "oteryn:ability.spell.zamulosh_tp" => SevenKind::Zamulosh,
+            _ => return Ok(None),
+        };
+        struct NativeWitness {
+            cases: Vec<Case>,
+            profiles: std::sync::Arc<[ProjectV2AuthoringProfile]>,
+            records: std::sync::Arc<[Record]>,
+        }
+        static WITNESS: std::sync::OnceLock<Result<NativeWitness, AttackError>> =
+            std::sync::OnceLock::new();
+        let witness = WITNESS
+            .get_or_init(|| {
+                let witness: Witness = serde_json::from_str(include_str!(
+                    "../../../../../../apps/game-server/src/source_encounter_seven_fixture.json"
+                ))
+                .map_err(|_| AttackError::InvalidSource)?;
+                Ok(NativeWitness {
+                    cases: witness.cases,
+                    profiles: witness.profiles.into(),
+                    records: witness.records.into(),
+                })
+            })
+            .as_ref()
+            .map_err(|error| *error)?;
+        let phase = if list == ScheduleList::Attack {
+            "attacks"
+        } else {
+            "defenses"
+        };
+        let case = witness
+            .cases
+            .iter()
+            .find(|case| {
+                case.creature == caster.key
+                    && case.index == index
+                    && case.list == phase
+                    && case.ability == *ability
+                    && case.encounter == proof.entry().encounter.key
+            })
+            .cloned()
+            .ok_or(AttackError::InvalidSource)?;
+        Ok(Some(Self {
+            case,
+            kind,
+            content: proof.content(),
+            profiles: witness.profiles.clone(),
+            records: witness.records.clone(),
+        }))
+    }
     pub fn qualify(
         d: &ProjectV2Draft,
         c: &Ref,

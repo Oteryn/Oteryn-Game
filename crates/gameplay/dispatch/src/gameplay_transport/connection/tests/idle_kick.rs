@@ -489,6 +489,11 @@ fn idle_kick_classification_excludes_queries_and_status_polling() {
         (72, &[][..], false),
         (77, &[][..], false),
         (81, &[][..], false),
+        (
+            oteryn_protocol_oteryn::personal_map_marks::COMMAND_TYPE_PERSONAL_MAP_MARKS_QUERY,
+            &[][..],
+            false,
+        ),
         (1000, &[][..], false),
     ] {
         assert_eq!(

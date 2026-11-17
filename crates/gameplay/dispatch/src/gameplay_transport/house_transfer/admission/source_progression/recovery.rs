@@ -105,6 +105,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let version = old.map_or(Some(1), |entry| entry.version.checked_add(1));
         let deferred = binding.is_none() || old.is_some_and(|entry| entry.experience_deferred);
         let retry_at = old.and_then(|entry| entry.retry_at);
+        let map_marks = old.map_or_else(Vec::new, |entry| entry.map_marks.clone());
+        let map_marks_world = old.and_then(|entry| entry.map_marks_world);
         if let Some((promoted, current_premium)) = promotion
             && !premium.restore_promotion_snapshot(account, session, promoted, current_premium)
         {
@@ -121,6 +123,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         quests.insert(
             session,
             QuestSession {
+                map_marks,
+                map_marks_world,
                 // Exhaustion keeps quest actions closed without reusing a version.
                 copy: version.and(copy),
                 version: version.unwrap_or(u64::MAX),

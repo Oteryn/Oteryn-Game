@@ -7,6 +7,37 @@ import qengine_rewards as q
 
 
 class QuestRewards(unittest.TestCase):
+    def test_royal_costume_completes_only_after_crown_exchange(self):
+        rows = {row['key'].split('/')[-1]: row for row in self.callbacks['callbacks']}
+        for name, before, after in [('base', -1, 1), ('shield', 1, 2), ('crown', 2, 3)]:
+            row = rows['l4-royal-costume-' + name]
+            with self.subTest(exchange=name):
+                self.assertEqual(row.get('completes', False), name == 'crown')
+                self.assertEqual(row['storage'][0]['minimum'], before)
+                self.assertEqual(row['storage'][0]['set'], after)
+
+    def test_literal_reward_text_is_bounded_and_leaf_only(self):
+        document=copy.deepcopy(self.callbacks)
+        reward={'item':'oteryn:item.tibia.i2814','count':1,'contents':[],
+                'text':'Literal café.\n'}
+        document['callbacks'][0]['give']=reward
+        q.validate_callbacks(document)
+        for body in ['x'*4000,'é'*3998]:
+            reward['text']=body
+            q.validate_callbacks(document)
+        for body in ['', 'bad\0text', 'x'*4001, 'é'*4000]:
+            reward['text']=body
+            with self.subTest(body_length=len(body)), self.assertRaises((ValidationError,ValueError)):
+                q.validate_callbacks(document)
+        reward['text']='Text'
+        reward['count']=2
+        with self.assertRaises(ValidationError):
+            q.validate_callbacks(document)
+        reward['count']=1
+        reward['contents']=[{'item':'oteryn:item.tibia.i3031','count':1}]
+        with self.assertRaises(ValidationError):
+            q.validate_callbacks(document)
+
     def test_full_source_outfit_population_and_item_acquisition_bindings(self):
         doc=self.author['document']
         outfits={r['key']:r for r in doc['outfits']}
@@ -463,11 +494,11 @@ class QuestRewards(unittest.TestCase):
                             and s['preserve'] for s in terminal['storage']))
 
     def test_original_six_and_eight_l1_source_compositions_exist(self):
-        callbacks=[c for c in self.callbacks['callbacks'] if not c['key'].split('/')[-1].startswith('questpc7-')] + self.l13_callbacks['callbacks']
-        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-'))},
+        callbacks=self.callbacks['callbacks'] + self.l13_callbacks['callbacks']
+        self.assertEqual({c['key'].split('/')[-1] for c in callbacks if not c['key'].split('/')[-1].startswith(('l1-','l2-','l3-','l4-','l5-','l6-','l7-','l8-','l9-','l10-','l11-','l12-','l13-','m36-'))},
                          {'pirate-sabre','knight-sword','deepling-helmet','hallowed-holy-water','outfox-helmet','sam-backpack'})
-        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),88)  # Seven L13 grants.
-        self.assertEqual(sum(c['outfit'] is None for c in callbacks),114)
+        self.assertEqual(sum(c['outfit'] is not None for c in callbacks),91)
+        self.assertEqual(sum(c['outfit'] is None for c in callbacks),123)
         self.assertTrue(any(len(c['take'])>1 and any(i['count']==100 for i in c['take']) for c in callbacks))
         self.assertTrue(all(q.PIN in c['sources'][0] for c in callbacks))
 

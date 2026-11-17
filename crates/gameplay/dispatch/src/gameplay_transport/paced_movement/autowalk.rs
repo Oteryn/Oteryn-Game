@@ -79,11 +79,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 y: at.y,
                 floor: at.floor.checked_neg().ok_or(())?,
             },
-            AutoWalkTarget::Cell(at) => MovementLocalPosition {
-                x: at.x,
-                y: at.y,
-                floor: at.floor,
-            },
+            AutoWalkTarget::Cell(at) => self
+                .wire_position_frame(&runtime)
+                .and_then(|frame| frame.unproject(at))
+                .ok_or(())?,
             AutoWalkTarget::Follow(target) => {
                 let census = runtime.visible_entities();
                 let named = |other: ExactActorRef, generation| {
@@ -351,16 +350,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .read(actor)
             .ok()
             .filter(|current| {
-                let (dx, dy) = match direction {
-                    StepDirection::North => (0, -1),
-                    StepDirection::East => (1, 0),
-                    StepDirection::South => (0, 1),
-                    StepDirection::West => (-1, 0),
-                    StepDirection::NorthEast => (1, -1),
-                    StepDirection::SouthEast => (1, 1),
-                    StepDirection::SouthWest => (-1, 1),
-                    StepDirection::NorthWest => (-1, -1),
-                };
+                let (dx, dy) = direction.delta();
                 expected.revision().checked_add(1) == Some(current.revision())
                     && expected.context() == current.context()
                     && expected.position().x.checked_add(dx) == Some(current.position().x)

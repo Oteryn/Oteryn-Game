@@ -59,7 +59,9 @@ jobs:
       && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
       && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # The dispatch library test build peaks near the hosted runner's 16 GB and takes longer
+    # than the other archives; the lib leg gets extra swap and time (owner decision for #3056).
+    timeout-minutes: 90
     permissions:
       contents: read
     # One leg per archive. The E2E leg also runs the target custody checks.
@@ -311,6 +313,18 @@ jobs:
             cargo +1.100.0 nextest archive --locked -p oteryn-game-server "${archived_targets[@]}" \
               --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
           fi
+
+      # The library test link peaks above the hosted runner's memory; add swap so it slows instead of dying.
+      - name: Add swap for the library test build
+        if: steps.scope.outputs.empty != 'true' && matrix.archive == 'lib'
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 8G /mnt/oteryn-extra.swap
+          sudo chmod 600 /mnt/oteryn-extra.swap
+          sudo mkswap /mnt/oteryn-extra.swap
+          sudo swapon /mnt/oteryn-extra.swap
+          swapon --show
+          free -h
 
       # Library tests that need PostgreSQL skip in the Rust Linux lib shards, which have no database;
       # this archive holds exactly the library tests the partition jobs run against the service.

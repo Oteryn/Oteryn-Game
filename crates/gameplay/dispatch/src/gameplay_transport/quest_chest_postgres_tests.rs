@@ -42,10 +42,42 @@ fn quest_chest_use_dispatch_mints_once_refreshes_and_pays_xp_once() -> TestResul
 }
 
 fn scenario() -> TestResult {
+    scenario_with_multiple(false)
+}
+
+pub(super) fn run_multiple() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_with_multiple(true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "multi-item chest dispatch panicked")?
+        .map_err(Into::into)
+}
+
+fn scenario_with_multiple(multiple: bool) -> TestResult {
+    scenario_with_room(multiple, false)
+}
+
+pub(super) fn run_one_free_slot() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_with_room(true, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "multi-item chest capacity dispatch panicked")?
+        .map_err(Into::into)
+}
+
+fn scenario_with_room(multiple: bool, one_slot: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "quest_chest_dispatch", false, false)
                 .await?;
+        if multiple {
+            let version: String = sqlx::query_scalar("SELECT version()")
+                .fetch_one(&harness.pool)
+                .await?;
+            eprintln!("QENGINE2_W15B_POSTGRES {version}");
+        }
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -67,6 +99,11 @@ fn scenario() -> TestResult {
                 for placement in &mut claim.placements {
                     placement.quest_transition =
                         Some(super::quest_runtime_fixture::TRANSITION.into());
+                    if multiple {
+                        let mut extra = placement.items[0].clone();
+                        extra.count = 2;
+                        placement.items.push(extra);
+                    }
                 }
             }
         }
@@ -148,6 +185,15 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(item_fence);
+        if one_slot {
+            super::qengine_w15b_multi::fill_to_one_free_slot(&owner, item_fence, &content).await?;
+        }
+        let before = harness
+            .root
+            .read_character_backpack(&authority, fence.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("initial bag")?;
         let target = oteryn_protocol_oteryn::world_object::WorldObjectTarget {
             placement: entry_chest::PLACEMENT.as_bytes().to_vec(),
             expected_revision: 0,
@@ -172,6 +218,35 @@ fn scenario() -> TestResult {
             super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
         assert!(!output.is_empty(), "{end}");
         let paid: (i64, i64, i64, i64) = sqlx::query_as("SELECT total_experience, (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_xp_obligations), (SELECT count(*) FROM game_character_quest_receipts) FROM game_character_progression_state").fetch_one(&harness.pool).await?;
+        if one_slot {
+            assert_eq!(
+                paid,
+                (0, 0, 0, 0),
+                "a partial bundle must grant neither quest nor XP"
+            );
+            let after = harness
+                .root
+                .read_character_backpack(&authority, fence.character_id)
+                .await
+                .map_err(debug)?
+                .ok_or("retained bag")?;
+            assert_eq!(
+                before.entries, after.entries,
+                "no item or custody change on insufficient total room"
+            );
+            assert_eq!(
+                after.entries.len(),
+                usize::from(entry_chest::BACKPACK_CAPACITY) - 1
+            );
+            let target_receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_receipts WHERE claim_production_key=$1").bind(entry_chest::CLAIM).fetch_one(&harness.pool).await?;
+            let target_reservations:i64=sqlx::query_scalar("SELECT count(*) FROM game_reward_claim_mint_reservations WHERE claim_production_key=$1").bind(entry_chest::CLAIM).fetch_one(&harness.pool).await?;
+            assert_eq!((target_receipts, target_reservations), (0, 0));
+            super::qengine_w15b_multi::assert_no_room(&output)?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         assert_eq!(paid, (50, 1, 0, 1), "{end}");
         let bag = harness
             .root
@@ -179,8 +254,21 @@ fn scenario() -> TestResult {
             .await
             .map_err(debug)?
             .ok_or("bag")?;
-        assert_eq!(bag.entries.len(), 1);
-        assert_eq!(bag.entries[0].item.quantity, entry_chest::REWARD_COUNT);
+        assert_eq!(bag.entries.len(), if multiple { 2 } else { 1 });
+        let primary = bag
+            .entries
+            .iter()
+            .find(|entry| entry.placement_ordinal == 1)
+            .ok_or("primary reward slot")?;
+        assert_eq!(primary.item.quantity, entry_chest::REWARD_COUNT);
+        if multiple {
+            let additional = bag
+                .entries
+                .iter()
+                .find(|entry| entry.placement_ordinal == 2)
+                .ok_or("additional reward slot")?;
+            assert_eq!(additional.item.quantity, 2);
+        }
         // A replay on a new connection reaches the durable claim receipt again.
         let _ = super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
         assert_eq!(
@@ -192,7 +280,7 @@ fn scenario() -> TestResult {
                 .ok_or("bag")?
                 .entries
                 .len(),
-            1
+            if multiple { 2 } else { 1 }
         );
         {
             let entry = owner.states.quest_sessions.lock().map_err(debug)?;

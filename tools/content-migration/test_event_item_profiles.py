@@ -153,7 +153,7 @@ class EventItemProfilePrecedence(unittest.TestCase):
         self.assertFalse(physical['movable'])
         self.assertFalse(any(row['item_id'] == 31159 for row in source['unavailable']))
 
-    def test_cake_bridge_source_facts_do_not_admit_missing_canonical_identity(self):
+    def test_historical_cake_facts_do_not_grant_inventory_after_map_identity_approval(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())
         captured = source['appearance_only_items']
         self.assertEqual([row['item_id'] for row in captured], [48227])
@@ -182,10 +182,17 @@ class EventItemProfilePrecedence(unittest.TestCase):
         self.assertEqual(len(evidence[0]['sources']), 8)
         self.assertTrue(all(len(row['sha256']) == 64 for row in evidence[0]['sources']))
         self.assertFalse({'bindings', 'target', 'policy', 'index'} & evidence[0].keys())
-        # ANSWER6549960114 preserves the canonical key section and sorted reference
-        # contract. Neither observed physical flags nor the producer allocates a key.
+        # The historical capture remains unchanged. M57's later explicit owner
+        # approval grants one map-only reference, never inventory Item semantics.
         keys = json.loads((ROOT / 'tools/content-schema/native-gameplay/item-keys.json').read_bytes())
-        self.assertNotIn('oteryn:item.tibia.i48227', [row[0] for row in keys['records']])
+        self.assertEqual([row for row in keys['records'] if row[0] == 'oteryn:item.tibia.i48227'],
+                         [['oteryn:item.tibia.i48227', 'definition-r1']])
+        from cake_bridge_reference import definition, KEY
+        current = [row['definition'] for path in (ROOT / 'content/items/definitions').glob('items-*.json')
+                   for row in json.loads(path.read_bytes())['records']
+                   if row['definition']['identity']['key'] == KEY]
+        self.assertEqual(current, [definition(KEY)])
+        self.assertFalse(current[0]['materializable'])
 
     def test_spiritual_horseshoe_source_rule_survives_without_invented_item_profile(self):
         source = json.loads((ROOT / 'tools/content-schema/native-gameplay/event-item-profiles.json').read_bytes())

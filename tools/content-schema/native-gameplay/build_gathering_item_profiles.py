@@ -75,11 +75,39 @@ def build(checkout):
             'records': bound['records']}
 
 
+def refresh_rekey_proof():
+    """Re-pin only unchanged rod facts after an approved offline snapshot re-key."""
+    from source_relocations import read_pinned
+    packet = json.loads((ROOT / OUTPUT).read_bytes())
+    previous, = packet['qualified_overrides']
+    current = mechanical_rod_policy(ROOT)[2]
+    if previous.keys() != current.keys():
+        raise ValueError('GATHERING_REKEY_PROOF_SHAPE')
+    if {k: v for k, v in previous.items() if k != 'inputs'} != {
+            k: v for k, v in current.items() if k != 'inputs'}:
+        raise ValueError('GATHERING_REKEY_CHANGED_FACTS')
+    if len(previous['inputs']) != len(current['inputs']):
+        raise ValueError('GATHERING_REKEY_INPUT_SET')
+    for old, new in zip(previous['inputs'], current['inputs']):
+        if old['path'] != new['path'] or read_pinned(ROOT, old['path'], old['sha256']) != (ROOT / new['path']).read_bytes():
+            raise ValueError('GATHERING_REKEY_UNREVIEWED_INPUT')
+    packet['qualified_overrides'] = [current]
+    (ROOT / OUTPUT).write_text(json.dumps(packet, indent=2, ensure_ascii=False) + '\n')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('checkout', type=Path)
+    parser.add_argument('checkout', type=Path, nargs='?')
+    parser.add_argument('--refresh-rekey-proof', action='store_true')
     parser.add_argument('--check', action='store_true')
     args = parser.parse_args()
+    if args.refresh_rekey_proof:
+        if args.checkout is not None or args.check:
+            parser.error('--refresh-rekey-proof cannot capture or check a donor')
+        refresh_rekey_proof()
+        raise SystemExit(0)
+    if args.checkout is None:
+        parser.error('checkout is required for donor capture')
     data = (json.dumps(build(args.checkout), indent=2, ensure_ascii=False) + '\n').encode()
     if args.check:
         if (ROOT / OUTPUT).read_bytes() != data:

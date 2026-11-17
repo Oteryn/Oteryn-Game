@@ -193,14 +193,16 @@ fn soulpit_lethal_callback_scenario() -> TestResult {
                     species: "oteryn:creature.rat".into(),
                     boss_ability: BossAbility::Overpower,
                     now_micros: 0,
-                    positions: std::array::from_fn(|index| MovementLocalPosition {
-                        x: if index == 6 {
-                            32376
-                        } else {
-                            32363 + index as i32
-                        },
-                        y: if index == 6 { 31144 } else { 31133 },
-                        floor: 8,
+                    positions: std::array::from_fn(|index| {
+                        Some(MovementLocalPosition {
+                            x: if index == 6 {
+                                32376
+                            } else {
+                                32363 + index as i32
+                            },
+                            y: if index == 6 { 31144 } else { 31133 },
+                            floor: 8,
+                        })
                     }),
                 },
                 |_| true,
@@ -261,5 +263,63 @@ fn soulpit_lethal_callback_scenario() -> TestResult {
     assert!(entry.forge.is_none() && entry.echo.is_none() && entry.grizzly.is_none());
     assert!(entry.activity_at_death.is_some());
     assert!(runtime.retains_corpse_projection(boss));
+    Ok(())
+}
+
+#[test]
+fn srx3_handoff_proficiency_equipment_keeps_exact_session_and_frozen_history() -> TestResult {
+    let world = WorldId::decode(&id(71)).map_err(debug)?;
+    let actor = ExactActorRef(ActorRef::from_scoped_owner_parts(
+        RuntimeScopeRefV1::instance(world, id(72)).map_err(debug)?,
+        ScopeOwnershipGeneration::new(1).map_err(debug)?,
+        ActorLocalId(1),
+        ActorLocalGeneration(1),
+    ));
+    let next_actor = ExactActorRef(ActorRef::from_scoped_owner_parts(
+        RuntimeScopeRefV1::instance(world, id(73)).map_err(debug)?,
+        ScopeOwnershipGeneration::new(1).map_err(debug)?,
+        ActorLocalId(1),
+        ActorLocalGeneration(1),
+    ));
+    let session = GameSessionId::decode(&id(74)).map_err(debug)?;
+    let next_session = GameSessionId::decode(&id(75)).map_err(debug)?;
+    let source = KillSettlementQueue::default();
+    let destination = KillSettlementQueue::default();
+    source.proficiency_equipment(actor, session, 9, Some("oteryn:item.tibia.i3264"));
+    assert_eq!(
+        source.activity_proficiency_equipment(actor, next_session),
+        None
+    );
+    assert_eq!(
+        source.activity_proficiency_equipment(next_actor, session),
+        None
+    );
+    let (revision, weapon) = source
+        .activity_proficiency_equipment(actor, session)
+        .ok_or("exact source equipment")?;
+    for _ in 0..2 {
+        destination.proficiency_equipment(next_actor, next_session, revision, weapon.as_deref());
+    }
+    assert_eq!(
+        destination.activity_proficiency_equipment(next_actor, next_session),
+        Some((9, Some("oteryn:item.tibia.i3264".into())))
+    );
+    assert_eq!(
+        destination.state().proficiency_weapons.len(),
+        1,
+        "retry keeps one current equipment witness"
+    );
+    assert_eq!(
+        source.activity_proficiency_equipment(actor, session),
+        Some((revision, weapon)),
+        "old frozen deaths retain their source witness"
+    );
+    destination.proficiency_equipment(next_actor, next_session, 8, Some("wrong-older-weapon"));
+    assert_eq!(
+        destination
+            .activity_proficiency_equipment(next_actor, next_session)
+            .map(|row| row.0),
+        Some(9)
+    );
     Ok(())
 }

@@ -35,6 +35,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         root_fluid_subtype: None,
         root_charges_remaining: None,
         backpack_outputs: false,
+            additional_items: Vec::new(),
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),

@@ -1,0 +1,829 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.elemental_spheres_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/elemental_spheres/quest_line",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:105"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/sorcerer-offer",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.sorcerer"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Okay, listen closely: First of all, you need to gather 20 enchanted rubies in order to go to the fire sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...",
+        "Once you got there, find a way to gather elemental fire in any form. You will face fire elementals, that's for sure, but I don't know how the fire is stored. ...",
+        "Anyway, there should be a way to use that elemental fire and strengthen one of the elementals. If my calculations are right, you will create a Fire Overlord who hopefully will consist of some sort of 'concentrated' fire or something similar. ...",
+        "THAT'S what we need!! Are you in on it?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:110"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/sorcerer-accept",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.sorcerer"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Good, don't waste time! Come back here when you have the elemental object!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:169"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/sorcerer-soil",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.sorcerer"
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i946",
+          "count": 1,
+          "op": "ge"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Impressive!! Let me take a look.......Ahh, an ETERNAL FLAME! Now you need to find a knight, a druid, and a paladin who also completed this first task. ...",
+        "Go down in the cellar again. I prepared a room under the academy where it should be safe. Your task is to charge the machines with the elemental substances and summon the LORD OF THE ELEMENTS. ...",
+        "When you use an obsidian knife on it's corpse you hopefully get some of the precious neutral matter. It's the only way to revive my dear friend Alverus!!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:144"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/sorcerer-reward",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.sorcerer"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i954",
+          "count": 1,
+          "optional": false
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i8039",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "AMAZING!! I'm going to start immediately with the research. If it turns out the way I expect it, Alverus will be revived soon!! Here, take this as a reward and try to collect more of this substance. I'll make you a good offer, I promise. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:162"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/druid-offer",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.druid"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Okay, listen closely: First of all, you need to gather 20 enchanted emeralds in order to go to the earth sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...",
+        "Once you got there, find a way to gather elemental earth in any form. You will face earth elementals, that's for sure, but I don't know how the earth is stored. ...",
+        "Anyway, there should be a way to use that elemental earth and strengthen one of the elementals. If my calculations are right, you will create an Earth Overlord who hopefully will consist of some sort of 'concentrated' earth or something similar. ...",
+        "THAT'S what we need!! Are you in on it?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:117"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/druid-accept",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.druid"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Good, don't waste time! Come back here when you have the elemental object!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:169"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/druid-soil",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.druid"
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i947",
+          "count": 1,
+          "op": "ge"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Impressive!! Let me take a look.......Ahh, MOTHER SOIL! Now you need to find a knight, a paladin, and a sorcerer who also completed this first task. ...",
+        "Go down in the cellar again. I prepared a room under the academy where it should be safe. Your task is to charge the machines with the elemental substances and summon the LORD OF THE ELEMENTS. ...",
+        "When you use an obsidian knife on it's corpse you hopefully get some of the precious neutral matter. It's the only way to revive my dear friend Alverus!!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:144"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/druid-reward",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.druid"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i954",
+          "count": 1,
+          "optional": false
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i8041",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "AMAZING!! I'm going to start immediately with the research. If it turns out the way I expect it, Alverus will be revived soon!! Here, take this as a reward and try to collect more of this substance. I'll make you a good offer, I promise. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:162"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/paladin-offer",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.paladin"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Okay, listen closely: First of all, you need to gather 20 enchanted sapphires in order to go to the ice sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...",
+        "Once you got there, find a way to gather elemental ice in any form. You will face ice elementals, that's for sure, but I don't know how the ice is stored. ...",
+        "Anyway, there should be a way to use that elemental ice and strengthen one of the elementals. If my calculations are right, you will create an Ice Overlord who hopefully will consist of some sort of 'concentrated' ice or something similar. ...",
+        "THAT'S what we need!! Are you in on it?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:124"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/paladin-accept",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.paladin"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Good, don't waste time! Come back here when you have the elemental object!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:169"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/paladin-soil",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.paladin"
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i942",
+          "count": 1,
+          "op": "ge"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Impressive!! Let me take a look.......Ahh, a FLAWLESS ICE CRYSTAL! Now you need to find a knight, a druid, and a sorcerer who also completed this first task. ...",
+        "Go down in the cellar again. I prepared a room under the academy where it should be safe. Your task is to charge the machines with the elemental substances and summon the LORD OF THE ELEMENTS. ...",
+        "When you use an obsidian knife on it's corpse you hopefully get some of the precious neutral matter. It's the only way to revive my dear friend Alverus!!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:144"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/paladin-reward",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.paladin"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i954",
+          "count": 1,
+          "optional": false
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i8025",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "AMAZING!! I'm going to start immediately with the research. If it turns out the way I expect it, Alverus will be revived soon!! Here, take this as a reward and try to collect more of this substance. I'll make you a good offer, I promise. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:162"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/knight-offer",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.knight"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Okay, listen closely: First of all, you need to gather 20 enchanted amethysts in order to go to the energy sphere. Deep under the academy, one floor below the elemental shrines, there is a machine. Put the gems in there and activate it. ...",
+        "Once you got there, find a way to gather elemental energy in any form. You will face energy elementals, that's for sure, but I don't know how the energy is stored. ...",
+        "Anyway, there should be a way to use that energy and strengthen one of the elementals. If my calculations are right, you will create an Energy Overlord who hopefully will consist of some sort of 'concentrated' energy. ...",
+        "THAT'S what we need!! Are you in on it?"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:131"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/knight-accept",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "yes"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "lt",
+          "value": 1
+        },
+        {
+          "kind": "level",
+          "op": "ge",
+          "value": 80
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.knight"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Good, don't waste time! Come back here when you have the elemental object!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:169"
+      ],
+      "topics": [
+        1
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/knight-soil",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.knight"
+        },
+        {
+          "kind": "item",
+          "item": "oteryn:item.tibia.i948",
+          "count": 1,
+          "op": "ge"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 2
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "Impressive!! Let me take a look.......Ahh, PURE ENERGY! Now you need to find a druid, a paladin, and a sorcerer who also completed this first task. ...",
+        "Go down in the cellar again. I prepared a room under the academy where it should be safe. Your task is to charge the machines with the elemental substances and summon the LORD OF THE ELEMENTS. ...",
+        "When you use an obsidian knife on it's corpse you hopefully get some of the precious neutral matter. It's the only way to revive my dear friend Alverus!!"
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:144"
+      ]
+    },
+    {
+      "key": "oteryn:quest-npc/elemental_spheres/arkulius/knight-reward",
+      "quest": "oteryn:quest.elemental_spheres_quest",
+      "npc": "oteryn:npc.arkulius",
+      "trigger": "say",
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "kind": "vocation",
+          "value": "oteryn:vocation.knight"
+        },
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i954",
+          "count": 1,
+          "optional": false
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i8055",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/elemental_spheres/quest_line",
+          "value": 3
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "AMAZING!! I'm going to start immediately with the research. If it turns out the way I expect it, Alverus will be revived soon!! Here, take this as a reward and try to collect more of this substance. I'll make you a good offer, I promise. "
+      ],
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/arkulius.lua:162"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "path": "data-global/npc/arkulius.lua",
+      "sha256": "3d9f5879d653c522d80b7548e547acd150d43fa1c301feb43ec7a0788af36985",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8"
+    }
+  ]
+}

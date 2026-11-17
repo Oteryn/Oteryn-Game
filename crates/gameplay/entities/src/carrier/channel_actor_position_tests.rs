@@ -477,3 +477,119 @@ fn translation_stamp_is_scoped_to_the_exact_actor_and_current_owner() {
     );
     assert_eq!(carrier.slots, before);
 }
+
+// Canary 47dfd51f src/items/tile.cpp:336-340,1131-1143,1764-1774:
+// getTopCreature reads begin(); actual tile insertion prepends. Position revisions
+// and actor allocation IDs are not stack positions. Same-position teleport is
+// rejected before map.moveCreature (src/game/game.cpp:3569-3571).
+#[test]
+fn srx3_top_actor_tracks_actual_entry_order_and_preserves_same_cell_writes() {
+    let (continuity, mut carrier) = fixture(730, 4);
+    let older_id = carrier
+        .admit(&continuity, ActorState(1))
+        .expect("first actor");
+    let newer_id = carrier
+        .admit(&continuity, ActorState(2))
+        .expect("second actor");
+    let scope = context(&continuity);
+    let second = carrier
+        .initialize_position(&continuity, newer_id, scope, position(4))
+        .expect("second enters first");
+    let first = carrier
+        .initialize_position(&continuity, older_id, scope, position(4))
+        .expect("first enters last");
+    assert_eq!(
+        carrier.top_actor_on_cell(&continuity, scope, position(4)),
+        Ok(Some(older_id))
+    );
+    let unchanged = carrier
+        .compare_commit_position(&continuity, second, scope, position(4))
+        .expect("same cell");
+    assert_eq!(
+        carrier.top_actor_on_cell(&continuity, scope, position(4)),
+        Ok(Some(older_id)),
+        "turn/no-op does not insert again"
+    );
+    let away = carrier
+        .compare_commit_position(&continuity, first, scope, position(5))
+        .expect("leave");
+    assert_eq!(
+        carrier.top_actor_on_cell(&continuity, scope, position(4)),
+        Ok(Some(newer_id))
+    );
+    carrier
+        .compare_commit_position(&continuity, away, scope, position(4))
+        .expect("reenter");
+    assert_eq!(
+        carrier.top_actor_on_cell(&continuity, scope, position(4)),
+        Ok(Some(older_id))
+    );
+    carrier.remove(&continuity, older_id).expect("remove top");
+    assert_eq!(
+        carrier.top_actor_on_cell(&continuity, scope, position(4)),
+        Ok(Some(newer_id))
+    );
+    carrier
+        .remove(&continuity, newer_id)
+        .expect("remove remaining");
+    assert_eq!(
+        carrier.top_actor_on_cell(&continuity, scope, position(4)),
+        Ok(None)
+    );
+    assert!(carrier.read_position(&continuity, newer_id).is_err());
+    assert!(
+        carrier
+            .compare_commit_position(&continuity, unchanged, scope, position(5))
+            .is_err()
+    );
+}
+
+#[test]
+fn qn6_adjacent_commit_rejects_nonsteps_and_stale_diagonal_snapshots() -> Result<(), CarrierError> {
+    let mut actor = super::fixtures::MovementActorFixture::new(
+        MovementLocalPosition {
+            x: 5,
+            y: 5,
+            floor: -1,
+        },
+        false,
+    )?;
+    let before = actor.current_position()?;
+    for next in [
+        MovementLocalPosition {
+            x: 5,
+            y: 5,
+            floor: -1,
+        },
+        MovementLocalPosition {
+            x: 7,
+            y: 6,
+            floor: -1,
+        },
+        MovementLocalPosition {
+            x: 6,
+            y: 6,
+            floor: 0,
+        },
+    ] {
+        assert_eq!(
+            actor.borrow_position().commit_adjacent(before, next),
+            Err(CarrierError::MovementNonCardinal)
+        );
+        assert_eq!(actor.current_position()?, before);
+    }
+    let next = MovementLocalPosition {
+        x: 6,
+        y: 4,
+        floor: -1,
+    };
+    let committed = actor.borrow_position().commit_adjacent(before, next)?;
+    assert_eq!(committed.position(), next);
+    assert_eq!(committed.revision(), before.revision() + 1);
+    assert_eq!(
+        actor.borrow_position().commit_adjacent(before, next),
+        Err(CarrierError::PositionSnapshotMismatch)
+    );
+    assert_eq!(actor.current_position()?, committed);
+    Ok(())
+}
