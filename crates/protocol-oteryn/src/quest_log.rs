@@ -7,7 +7,8 @@
 //!
 //! Quests and missions are canonical uint32 indexes per content generation. Only the indexes, the
 //! completed and done flags, mission names and journal texts (with template counters filled in)
-//! leave the server: never a track key, a track value, a transition, a gate or a claim.
+//! and committed personal map markers leave the server: never a track key, a track value,
+//! a transition, a gate or a claim.
 //!
 //! Decoding is strict, and encoding refuses the same values before any byte is emitted: list
 //! entries out of ascending order, missions out of ascending order, a quest index repeated where it
@@ -61,8 +62,9 @@ const MAX_LIST_ENTRY_ELEMENT_BYTES: usize = 2 + MAX_LIST_ENTRY_BYTES;
 pub const MAX_QUEST_LIST_BYTES: usize = MAX_LISTED_QUESTS * MAX_LIST_ENTRY_ELEMENT_BYTES;
 /// `QUESTGATE0-RL-08-DOMAIN-BYTES`: domain 16 snapshot and delta. The view (the list or one
 /// line, each within [`MAX_QUEST_LINE_BYTES`]) and 10 tracked lines: 11 x 16,388 = 180,268,
-/// within the FND-02 delta and snapshot chunk bounds.
-pub const MAX_QUEST_LOG_BYTES: usize = (1 + MAX_TRACKED_QUESTS) * MAX_QUEST_LINE_ELEMENT_BYTES;
+/// plus 256 Cross markers of at most 272 bytes, within the FND-02 bounds.
+pub const MAX_QUEST_LOG_BYTES: usize =
+    (1 + MAX_TRACKED_QUESTS) * MAX_QUEST_LINE_ELEMENT_BYTES + MAX_QUEST_MAP_MARKS * 272;
 /// `QuestLogQueryV1`: the largest query, `track` 1 + 1 + 10 x (1 + 5).
 pub const MAX_QUEST_LOG_QUERY_BYTES: usize = 2 + MAX_TRACKED_QUESTS * 6;
 /// ListOnly returns a list-only QuestLog; original queries retain empty results.
@@ -107,9 +109,77 @@ pub enum QuestLogView {
 /// `QuestLogV1`: domain 16. The default is no view and no tracked quest.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct QuestLog {
+    /// Committed personal Cross markers in this World, replaced with the domain.
+    pub map_marks: Vec<QuestMapMark>,
     pub view: Option<QuestLogView>,
     /// The tracked quests' lines, in the order the client tracked them.
     pub tracked: Vec<QuestLine>,
+}
+
+/// Personal display fact, never gameplay authority. Floor uses native negative depth.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QuestMapMark {
+    pub x: u16,
+    pub y: u16,
+    pub floor: i8,
+    pub text: String,
+}
+
+pub const MAX_QUEST_MAP_MARKS: usize = 256;
+
+fn validate_map_marks(marks: &[QuestMapMark]) -> WireResult<()> {
+    if marks.len() > MAX_QUEST_MAP_MARKS {
+        return Err(QuestLogWireError::LimitExceeded);
+    }
+    if marks.iter().any(|m| {
+        !(-15..=0).contains(&m.floor)
+            || m.text.trim().is_empty()
+            || m.text.len() > 256
+            || m.text.chars().count() > 128
+            || m.text.chars().any(char::is_control)
+    }) {
+        return malformed();
+    }
+    Ok(())
+}
+
+fn encode_map_mark(mark: &QuestMapMark) -> Vec<u8> {
+    let mut body = Vec::new();
+    push_varint_field(&mut body, 1, u64::from(mark.x));
+    push_varint_field(&mut body, 2, u64::from(mark.y));
+    push_varint_field(&mut body, 3, u64::from(mark.floor.unsigned_abs()));
+    push_message_field(&mut body, 4, mark.text.as_bytes());
+    body
+}
+
+fn decode_map_mark(body: &[u8]) -> WireResult<QuestMapMark> {
+    if body.len() > 280 {
+        return Err(QuestLogWireError::LimitExceeded);
+    }
+    let (mut x, mut y, mut depth, mut text) = (None, None, None, None);
+    let mut cursor = 0;
+    while cursor < body.len() {
+        match read_varint(body, &mut cursor)? {
+            8 => set_once(&mut x, read_uint32(body, &mut cursor)?)?,
+            16 => set_once(&mut y, read_uint32(body, &mut cursor)?)?,
+            24 => set_once(&mut depth, read_uint32(body, &mut cursor)?)?,
+            34 => set_once(
+                &mut text,
+                String::from_utf8(read_bytes(body, &mut cursor)?.to_vec())
+                    .map_err(|_| QuestLogWireError::Malformed)?,
+            )?,
+            _ => return malformed(),
+        }
+    }
+    Ok(QuestMapMark {
+        x: u16::try_from(x.ok_or(QuestLogWireError::Malformed)?)
+            .map_err(|_| QuestLogWireError::Malformed)?,
+        y: u16::try_from(y.ok_or(QuestLogWireError::Malformed)?)
+            .map_err(|_| QuestLogWireError::Malformed)?,
+        floor: -i8::try_from(depth.ok_or(QuestLogWireError::Malformed)?)
+            .map_err(|_| QuestLogWireError::Malformed)?,
+        text: text.ok_or(QuestLogWireError::Malformed)?,
+    })
 }
 
 /// `QuestLogQueryV1`.
@@ -181,6 +251,7 @@ fn validate_tracked_indexes(indexes: impl Iterator<Item = u32>) -> WireResult<()
 }
 
 fn validate_quest_log(log: &QuestLog) -> WireResult<()> {
+    validate_map_marks(&log.map_marks)?;
     match &log.view {
         Some(QuestLogView::List(entries)) => validate_list(entries)?,
         Some(QuestLogView::Line(line)) => validate_line(line)?,
@@ -341,6 +412,9 @@ pub fn encode_quest_log(log: &QuestLog) -> WireResult<Vec<u8>> {
     for line in &log.tracked {
         push_message_field(&mut output, 3, &encode_line(line)?);
     }
+    for mark in &log.map_marks {
+        push_message_field(&mut output, 4, &encode_map_mark(mark));
+    }
     Ok(output)
 }
 
@@ -366,6 +440,13 @@ pub fn decode_quest_log(payload: &[u8]) -> WireResult<QuestLog> {
                 }
                 log.tracked
                     .push(decode_line(read_bytes(payload, &mut cursor)?)?);
+            }
+            0x22 => {
+                if log.map_marks.len() == MAX_QUEST_MAP_MARKS {
+                    return Err(QuestLogWireError::LimitExceeded);
+                }
+                log.map_marks
+                    .push(decode_map_mark(read_bytes(payload, &mut cursor)?)?);
             }
             _ => return malformed(),
         }

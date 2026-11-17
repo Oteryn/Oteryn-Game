@@ -13,7 +13,9 @@ impl DurabilityRoot {
         if command.game_session_id() != fence.game_session_id {
             return Ok(None);
         }
-        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             super::super::character_authority::assert_recovery_fence(&mut tx, &record).await?;

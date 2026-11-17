@@ -157,6 +157,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let requests = rewards
                     .into_iter()
                     .map(|(item, quantity)| RewardClaimMintRequest {
+                        additional_items: Vec::new(),
                         backpack_outputs: false,
                         command: CommandRef::new(command.game_session_id, id),
                         claim: TypedDefinitionRef {

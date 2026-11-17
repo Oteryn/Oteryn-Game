@@ -3,6 +3,14 @@ import hashlib
 import json
 QUEST='oteryn:quest.feaster_of_souls_quest'
 TRACK='oteryn:quest-progress/questpc7/feaster/programme'
+PHASE_ROUTE_KEYS = frozenset({
+    'oteryn:quest-callback/questpc7-feaster-entry',
+    'oteryn:quest-callback/questpc7-feaster-purification-entry',
+})
+# The complete definition at 2caf6670 is unchanged; the moving shard also holds
+# unrelated quests. Only these two closed routes retain that historical witness.
+PHASE_DEFINITION_SHA256 = 'e2b60e02a8e07240b63cf05d88567ff18f0b3b7cb595228d3747f48bf9cd9bbe'
+PHASE_SOURCE = 'canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:57af470e521006a832fbc046639ee4a5a5a455b2c6552335afff0a0131783f2c'
 def track(name):return 'oteryn:quest-progress/questpc7/feaster/'+name
 def pos(p):return dict(x=p[0],y=p[1],floor=p[2])
 def state(key,lo,hi,value,preserve=False,add=None):
@@ -16,6 +24,9 @@ def build(root):
     props={r['name']:r for r in questpc7_props.SITES}
     path='content/quests/definitions/quests-00100-00199.json';raw=(root/path).read_bytes()
     index,d=next((i,r['definition']) for i,r in enumerate(json.loads(raw)['records']) if r['definition']['identity']['key']==QUEST)
+    definition_bytes = json.dumps(d, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
+    if hashlib.sha256(definition_bytes).hexdigest() != PHASE_DEFINITION_SHA256:
+        raise ValueError('QUESTPC7_FEASTER_DEFINITION_DRIFT')
     stages=d['oteryn_recipe']['payload']['recipe']['stages']
     if [(s['kind'],s['count']) for s in stages[:6]]!=[('talk',1),('use',3),('use',1),('use',1),('use',20),('use',20)]:raise ValueError('QUESTPC7_FEASTER_PREFIX_RECIPE_DRIFT')
     canonical=f'canonical:{path}:1#/records/{index}/definition:sha256:{hashlib.sha256(raw).hexdigest()}'
@@ -48,4 +59,13 @@ def build(root):
         ('souls','souls',5,6,None,[dict(item='oteryn:item.tibia.i32228',count=20)],[state(track('purified'),20,20,20,True)],'Your twenty purified souls are accepted. The Brain Head investigation may continue.'),
     ]:
         callbacks.append(dict(key='oteryn:quest-reward/questpc7-feaster-'+name,quest=QUEST,npc='oteryn:npc.para_norbert',keywords=[word],topic=0,next_topic=0,storage=[state(TRACK,before,before,after,before==after)]+extra,take=take,give=None if give is None else reward(name,give,1),outfit=None,achievement=None,reply=[reply],requirements=dict(requirements),sources=sources))
+    for row in worlds:
+        if row['key'] in PHASE_ROUTE_KEYS:
+            if row['requirements'] != requirements:
+                raise ValueError('QUESTPC7_FEASTER_PHASE_REQUIREMENTS_DRIFT')
+            del row['requirements']
+            row['minimum_level'] = 250
+            row['admission'] = {'premium': True}
+            row['requires_world_admission'] = True
+            row['sources'] = [PHASE_SOURCE, *sources[1:]]
     return worlds,[],callbacks

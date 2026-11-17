@@ -5341,6 +5341,8 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.1",
+ "sqlx",
+ "tokio",
 ]
 
 [[package]]
@@ -5572,6 +5574,7 @@ dependencies = [
  "oteryn-gameplay-housing",
  "oteryn-gameplay-items",
  "oteryn-gameplay-node-files",
+ "oteryn-gameplay-quests",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "oteryn-world-bundle",

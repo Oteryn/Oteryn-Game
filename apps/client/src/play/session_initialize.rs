@@ -1,16 +1,21 @@
 use super::*;
 
-pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
+pub(super) fn initialize<T: Stepper>(
+    session: &T,
+    outbox: &Outbox,
+) -> Result<(), oteryn_session::SessionError> {
+    outbox.diagonal_initialize(
+        session.feature_selected(oteryn_session::CAPABILITY_DIAGONAL_MOVEMENT_V1),
+    );
+    if session.feature_selected(451) {
+        outbox.personal_map_marks_initialize();
+    }
     outbox.discovery_initialize(session);
     outbox.hud_stamina_initialize(session.feature_selected(199));
     outbox.properties_initialize(session);
     outbox.analyser_initialize(session.feature_selected(10));
-    if let Err(error) = outbox
-        .spell_catalog_initialize(session.feature_selected(287), session.feature_snapshot(100))
-    {
-        outbox.end(public_class(&error));
-        return false;
-    }
+    outbox
+        .spell_catalog_initialize(session.feature_selected(287), session.feature_snapshot(100))?;
     outbox.battle_metadata_initialize(session.server_mechanic_selected(17));
     outbox.spell_bar_initialize(session.feature_snapshot(20));
     outbox.bar_item_cooldowns_initialize(session.feature_selected(463));
@@ -138,5 +143,5 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.depot_initialize(session.feature_selected(37));
     outbox.achievements_initialize();
     outbox.player_trade_items(session.player_trade_items());
-    true
+    Ok(())
 }

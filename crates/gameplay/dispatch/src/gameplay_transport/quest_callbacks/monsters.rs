@@ -9,7 +9,7 @@ pub(in crate::gameplay_transport) fn settle_monster_puzzles(
     registry: &[Callback],
 ) {
     // Refuse a partial census. Reconciliation also closes plates after death/despawn.
-    let Ok(actors) = runtime.current_live_creature_candidates(4096) else {
+    let Ok(actors) = runtime.current_live_creature_census() else {
         return;
     };
     let occupied: std::collections::BTreeSet<_> = actors

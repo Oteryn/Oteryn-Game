@@ -13,6 +13,29 @@ import historical_world_owner_context as world_context
 import refresh_spkg2_qualification_receipts as refresh
 
 
+def closed_owner_fixture(relative):
+    """The historical owner negatives exercise their exact pre-integration view."""
+    if relative == world_context.MARKER:
+        marker = json.loads(world_context.original_marker(check.ROOT))
+        marker["notes"] += (
+            world_context.NOTE
+            + world_context.SOULPIT_NOTE
+            + world_context.sugar_owner()[0]
+        )
+        raw = (json.dumps(marker, indent=2, ensure_ascii=False) + "\n").encode()
+        if (
+            world_context.sha(raw)
+            != "0549b3567749436b9e6f91f79751d32d9ea4431fe6b1be7505566d50b797e27d"
+        ):
+            raise ValueError("closed owner fixture marker drift")
+        return raw
+    if relative == world_context.HIT_PACKET:
+        return check.frozen_archive()[relative]
+    if relative == "content/world/terrain/" + world_context.SOULPIT:
+        return world_context.original_soulpit(check.ROOT)
+    return (check.ROOT / relative).read_bytes()
+
+
 class ContextTests(unittest.TestCase):
     def test_own_rebuild_preserves_frozen_facts_and_rejects_foreign_lineage(self):
         with tempfile.TemporaryDirectory() as d:
@@ -96,7 +119,7 @@ class ContextTests(unittest.TestCase):
             ):
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes((check.ROOT / relative).read_bytes())
+                target.write_bytes(closed_owner_fixture(relative))
             path = root / "content/world/terrain" / world_context.SOULPIT
             path.write_bytes(path.read_bytes() + b" ")
             with self.assertRaisesRegex(ValueError, "unrecognized Soulpit"):
@@ -122,7 +145,7 @@ class ContextTests(unittest.TestCase):
                 ):
                     target = root / source
                     target.parent.mkdir(parents=True, exist_ok=True)
-                    target.write_bytes((check.ROOT / source).read_bytes())
+                    target.write_bytes(closed_owner_fixture(source))
                 self.assertEqual(
                     world_context.sha(world_context.original_marker(root)),
                     world_context.BASE_SHA,
@@ -144,7 +167,7 @@ class ContextTests(unittest.TestCase):
             ):
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes((check.ROOT / relative).read_bytes())
+                target.write_bytes(closed_owner_fixture(relative))
             self.assertEqual(
                 world_context.sha(world_context.original_hit_packet(root)),
                 world_context.HIT_SHA,

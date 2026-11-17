@@ -128,6 +128,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
           "op": "lt",
           "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -157,6 +161,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
           "op": "eq",
           "value": 5
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -186,7 +194,12 @@
       "keywords": [
         "ring"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "He said he still had it after work. On that evening, {Grombur}, {Rerun} and me opened a cask of beer in one of the mine tunnels. We had a fun evening there. ...",
         "On the next day, the guards brought me to emperor {Rehal}, and Rerun was there, too. He said I had stolen his ring. I'd never steal, you have to believe me."
@@ -215,7 +228,12 @@
       "keywords": [
         "grombur"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Maybe Grombur knows more than me. The thing is he won't talk to me, and he will surely not accuse his best friend as a liar. What a dilemma!"
       ],
@@ -244,7 +262,12 @@
       "keywords": [
         "rerun"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "He's a miner in the southern wing. Maybe he has lost the ring there... but even if I find the ring, no one will believe me. Someone should talk to Grombur. He's Rerun's best friend."
       ],
@@ -274,7 +297,12 @@
       "keywords": [
         "rehal"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "He's a good emperor but I doubt he is wise enough to see the truth behind that false accusation against me. If just someone would find out the truth about that whole mess."
       ],
@@ -315,7 +343,12 @@
       "keywords": [
         "hail emperor"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "May Fire and Earth bless you, stranger. What leads you to Beregar, the dwarven city?"
       ],
@@ -330,7 +363,12 @@
       "npc": "oteryn:npc.emperor_rehal",
       "trigger": "greet",
       "keywords": [],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [],
       "effects": [
         {
@@ -359,6 +397,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
           "op": "eq",
           "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -393,6 +435,10 @@
           "kind": "item",
           "item": "oteryn:item.tibia.i8777",
           "count": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -423,7 +469,12 @@
       "keywords": [
         "grombur"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "He's very ambitious and always volunteers for the long shifts."
       ],
@@ -468,6 +519,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
           "op": "gt",
           "value": 4
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -501,6 +556,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
           "op": "eq",
           "value": 7
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -528,7 +587,12 @@
       "keywords": [
         "yes"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Splendid! My son Rehon set off on an expedition to the deeper mines. He and a group of dwarfs were to search for new veins of crystal. Unfortunately they have been missing for 2 weeks now. ...",
         "Find my son and if he's alive bring him back. You will find a reactivated ore wagon tunnel at the entrance of the great citadel which leades to the deeper mines. If you encounter problems within the tunnel go ask Xorlosh, he can help you."
@@ -564,7 +628,12 @@
       "keywords": [
         "yes"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Look at these dwarven legs. They were forged years ago by a dwarf who was rather tall for our kind. I want you to have them. Thank you for rescuing my son |PLAYERNAME|."
       ],
@@ -604,7 +673,12 @@
       "keywords": [
         "no"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Alright then, come back when you are ready."
       ],
@@ -642,6 +716,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/justice_for_all",
           "op": "eq",
           "value": 2
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -665,7 +743,12 @@
       "keywords": [
         "rerun"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Yeah, he's the lucky guy in this whole story. I heard rumours that emperor Rehal had plans to promote Nokmir, but after this whole thievery story, he might pick Rerun instead."
       ],
@@ -704,6 +787,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/the_good_guard",
           "op": "lt",
           "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -742,6 +829,10 @@
           "kind": "item",
           "item": "oteryn:item.tibia.i8774",
           "count": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -780,7 +871,12 @@
       "keywords": [
         "yes"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Haha, fine! Don't waste time and get me the ale. See you."
       ],
@@ -826,6 +922,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
           "op": "lt",
           "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -855,6 +955,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
           "op": "eq",
           "value": 2
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -878,7 +982,12 @@
       "keywords": [
         "yes"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Great! She works in the tavern of Beregar. It's situated in the western part of the city. Bring her a chocolate cake and tell her that it was me who sent it."
       ],
@@ -916,7 +1025,12 @@
       "keywords": [
         "yes"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Great! That's my breakthrough. Now she can't refuse to go out with me. I grant you access to the western part of the mine.",
         "So did you tell her that the cake came from me?"
@@ -955,7 +1069,12 @@
       "keywords": [
         "no"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "I hope your kidding 'cause I'll find out WHAT you've told her and I can get reeeeaaaalllly angry. I grant you access to the western part of the mine.....for NOW."
       ],
@@ -995,6 +1114,10 @@
           "kind": "item",
           "item": "oteryn:item.tibia.i8019",
           "count": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1024,6 +1147,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/sweet_as_chocolate_cake",
           "op": "eq",
           "value": 2
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1052,6 +1179,10 @@
           "kind": "item",
           "item": "oteryn:item.tibia.i8019",
           "count": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1091,7 +1222,12 @@
       "keywords": [
         "yes"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Oh, I thought you have one."
       ],
@@ -1119,7 +1255,12 @@
       "keywords": [
         "Frafnar"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Oh, Frafnar. That's so nice of him. I gotta invite him for a beer."
       ],
@@ -1146,7 +1287,12 @@
       "npc": "oteryn:npc.bolfona",
       "trigger": "say",
       "keywords": [],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Never heard that name. Well, I don't mind, thanks for the cake."
       ],
@@ -1183,6 +1329,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/going_down",
           "op": "lt",
           "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1217,6 +1367,10 @@
           "kind": "item",
           "item": "oteryn:item.tibia.i8775",
           "count": 3
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1246,7 +1400,12 @@
       "keywords": [
         "yes"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "That would be great! Maybe a blacksmith can forge you some. Come back when you got them and ask me about your mission."
       ],
@@ -1290,6 +1449,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
           "op": "eq",
           "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1319,6 +1482,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
           "op": "eq",
           "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1348,6 +1515,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/royal_rescue",
           "op": "eq",
           "value": 5
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1371,7 +1542,12 @@
       "keywords": [
         "yes"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         " Great! I hope you find my brothers. Good luck!"
       ],
@@ -1415,6 +1591,10 @@
           "kind": "item",
           "item": "oteryn:item.tibia.i9172",
           "count": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1454,6 +1634,10 @@
           "track": "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/way_to_beregar",
           "op": "ne",
           "value": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1479,7 +1663,12 @@
       "keywords": [
         "mistrock"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "Do you smell this? It's the smell of fire... the fire of a forge. Many people searched this rock here for a hidden path, but they haven't found anything. ...",
         "I'd search on Fenrock if I were you. Even though there's snow on the surface, it's still warm underground. There are often caves under fresh lava streams."
@@ -1497,7 +1686,12 @@
       "keywords": [
         "treasure"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "LIKE MY TREASURE? WANNA PICK SOMETHING OUT OF IT?"
       ],
@@ -1519,7 +1713,12 @@
       "keywords": [
         "yes"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "ALRIGHT. BUT FIRST OF ALL I WANT YOU TO BRING ME SOMETHING IN EXCHANGE. SURPRISE ME....AND IF I LIKE IT, YOU MAY GET WHAT YOU DESERVE."
       ],
@@ -1544,7 +1743,12 @@
       "keywords": [
         "no"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "HAVE YOU SEEN THESE LEGENDARY ITEMS BACK THERE? WHO COULD REFUSE THE CHANCE OF OBTAINING ONE?!? SO WHAT IS YOUR ANSWER?"
       ],
@@ -1569,6 +1773,10 @@
           "kind": "level",
           "op": "gt",
           "value": 99
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1592,7 +1800,12 @@
       "keywords": [
         "offer"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "YOU LITTLE MAGGOT. COME BACK TO ME WHEN YOU CAN HANDLE A FIGHT AGAINST MY KIND."
       ],
@@ -1609,7 +1822,12 @@
       "keywords": [
         "yes"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "AS YOU WISH. WHAT DO YOU HAVE TO OFFER?"
       ],
@@ -1639,6 +1857,10 @@
           "kind": "item",
           "item": "oteryn:item.tibia.i2903",
           "count": 1
+        },
+        {
+          "kind": "premium",
+          "value": true
         }
       ],
       "reply": [
@@ -1675,7 +1897,12 @@
       "keywords": [
         "golden mug"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "THIS IS NOT WORTH BEING PART OF MY TREASURE! BRING ME SOMETHING ELSE."
       ],
@@ -1698,7 +1925,12 @@
       "npc": "oteryn:npc.pythius_the_rotten",
       "trigger": "say",
       "keywords": [],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "THIS IS NOT WORTH BEING PART OF MY TREASURE! BRING ME SOMETHING ELSE"
       ],
@@ -1722,7 +1954,12 @@
       "npc": "oteryn:npc.pythius_the_rotten",
       "trigger": "say",
       "keywords": [],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "TELL ME IF YOU CHANGE YOUR MIND. MY TREASURE THIRSTS FOR GOLD."
       ],
@@ -1748,7 +1985,12 @@
       "keywords": [
         "awaited"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "I HAVE A MISSION FOR YOU BUT YOU NEED TO DIE FIRST AND RETURN AS AN {UNDEAD} CREATURE. COME BACK TO ME WHEN YOU ACHIEVED THIS GOAL."
       ],
@@ -1765,7 +2007,12 @@
       "keywords": [
         "exchange"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "EVERYTHING YOU CARRY WITH YOU CAN ALSO BE FOUND IN MY {TREASURE}. BRING ME SOMETHING I DON'T OWN!!!"
       ],
@@ -1782,7 +2029,12 @@
       "keywords": [
         "mission"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "I HAVE A MISSION FOR YOU BUT YOU NEED TO DIE FIRST AND RETURN AS AN {UNDEAD} CREATURE. COME BACK TO ME WHEN YOU ACHIEVED THIS GOAL."
       ],
@@ -1799,7 +2051,12 @@
       "keywords": [
         "undead"
       ],
-      "guards": [],
+      "guards": [
+        {
+          "kind": "premium",
+          "value": true
+        }
+      ],
       "reply": [
         "BOON AND BANE. I HAVE CHOSEN THIS LIFE VOLUNTARILLY AND I NEVER REGRET IT. MY {TREASURE} IS GROWING BIGGER EACH DAY."
       ],

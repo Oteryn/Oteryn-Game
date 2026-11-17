@@ -15,7 +15,7 @@ class SourceQuestRewards(unittest.TestCase):
         # Replay main's historical Item holds independently of QUESTPC8's
         # subsequent source-backed global admission of these same identities.
         cls.items = copy.deepcopy(cls.merged_items)
-        for number in (3082, 3083, 3084, 3085):
+        for number in container_native.CHARGED_QUEST_CLAIMS.values():
             cls.items[f'oteryn:item.tibia.i{number}']['materializable'] = False
         cls.claims = plain.load_json(plain.ROOT / plain.CLAIMS_REL)['claims']
         cls.manifest = plain.load_json(plain.ROOT / plain.MANIFEST_REL)
@@ -23,6 +23,25 @@ class SourceQuestRewards(unittest.TestCase):
     def build(self, items):
         records, _ = plain.build_records(self.claims, self.manifest, items)
         return {r['definition']['identity']['key']: r['definition'] for r in records}
+
+    def test_draconia_rapier_qualifies_only_its_exact_existing_native_charge(self):
+        key = 'oteryn:item.tibia.i3284'
+        claim = 'canary:reward-claim/kv/draconia1'
+        qualified = container_native.claim_items(claim, self.items)
+        self.assertTrue(qualified[key]['materializable'])
+        self.assertFalse(self.items[key]['materializable'])
+        changed = copy.deepcopy(self.items)
+        changed[key]['semantics']['charges']['value']['count']['value'] = 2
+        self.assertFalse(container_native.claim_items(claim, changed)[key]['materializable'])
+        self.assertFalse(container_native.claim_items('canary:reward-claim/kv/unrelated', self.items)[key]['materializable'])
+        rows = variant.derive(plain.ROOT, self.items, plain.stack_problem)
+        row = next(r['definition'] for r in rows
+                   if r['definition']['identity']['key'] == 'oteryn:reward-claim.kv.draconia1')
+        self.assertEqual(row['data_holds'], [])
+        self.assertEqual(row['placements'][0]['reward']['items'], [
+            {'count':1, 'item':plain.item_ref(key)},
+            {'count':1, 'item':plain.item_ref('oteryn:item.tibia.i3297')},
+        ])
 
     def test_full_charge_quest_leaves_are_one_physical_item(self):
         rows = self.build(self.items)
@@ -123,10 +142,14 @@ class SourceQuestRewards(unittest.TestCase):
         self.assertFalse(container_native.native_charge_item(self.merged_items[key], profile)['materializable'])
         self.assertEqual(self.merged_items, before)
 
-    def test_qualification_changes_only_the_five_owned_claims(self):
+    def test_qualification_changes_only_the_merged_owned_claims(self):
         held_items = copy.deepcopy(self.items)
-        for item in (3082, 3083, 3084, 3085):
+        for item in container_native.CHARGED_QUEST_CLAIMS.values():
             held_items[f'oteryn:item.tibia.i{item}']['materializable'] = False
+        # This historical fixture holds charge Items only; the current empty
+        # vial remains unchanged while exact source-scoped fluid proofs apply.
+        self.assertEqual(held_items['oteryn:item.tibia.i2874'],
+                         self.merged_items['oteryn:item.tibia.i2874'])
         after = self.build(held_items)
         variants_after = variant.derive(plain.ROOT, held_items, plain.stack_problem)
         with patch.object(container_native, 'claim_items', side_effect=lambda _key, items: items):
@@ -138,7 +161,10 @@ class SourceQuestRewards(unittest.TestCase):
         })
         self.assertEqual([r['definition']['identity']['key']
                           for r, old in zip(variants_after, variants_before) if r != old],
-                         ['oteryn:reward-claim.kv.desert2', 'oteryn:reward-claim.kv.triangletower'])
+                         ['oteryn:reward-claim.kv.desert2', 'oteryn:reward-claim.kv.draconia1',
+                          'oteryn:reward-claim.kv.fireaxe1', 'oteryn:reward-claim.kv.goblintemple2',
+                          'oteryn:reward-claim.kv.triangletower',
+                          'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine'])
 
 
 if __name__ == '__main__':

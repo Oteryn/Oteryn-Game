@@ -6,7 +6,8 @@
 //!
 //! Nested under the monk-save PostgreSQL tests to reuse their fresh-admission fixture.
 
-use super::fixture::{Harness, debug, run};
+use super::fixture::{Harness, debug};
+use super::kill_reward_e2e::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};

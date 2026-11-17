@@ -229,8 +229,15 @@ fn decay_retires_each_entry_then_the_corpse_at_sixty_seconds() -> TestResult {
         for entry in &schedule.corpses {
             let materialized = materialized_at(&harness, entry.corpse_item_instance_id).await?;
             assert_eq!(entry.materialized_at_unix_ms, materialized);
-            assert_eq!(entry.decay_at_unix_ms, materialized + CORPSE_DECAY_AFTER_MS);
-            assert!(entry.decay_at_unix_ms > schedule.database_now_unix_ms);
+            assert_eq!(
+                entry.decay_at_unix_ms,
+                Some(materialized + CORPSE_DECAY_AFTER_MS)
+            );
+            assert!(
+                entry
+                    .decay_at_unix_ms
+                    .is_some_and(|deadline| deadline > schedule.database_now_unix_ms)
+            );
         }
 
         // Exactly at the deadline: admitted.
@@ -619,7 +626,7 @@ fn a_partial_decay_resumes_from_durable_state_after_a_handoff() -> TestResult {
             .map_err(debug)?;
         assert_eq!(schedule.corpses.len(), 1);
         assert_eq!(schedule.corpses[0].corpse_item_instance_id, corpse);
-        assert_eq!(schedule.corpses[0].decay_at_unix_ms, deadline);
+        assert_eq!(schedule.corpses[0].decay_at_unix_ms, Some(deadline));
         assert!(schedule.database_now_unix_ms >= deadline);
 
         // ... and draining it completes only the remaining steps.

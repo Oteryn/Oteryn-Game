@@ -40,15 +40,23 @@ pub const SOURCES: [OrbSource; 3] = [
 ];
 pub const GUARDIAN_NATIVE_POSITION: (u16, u16, i8) = (33553, 31624, -14);
 pub fn callbacks() -> Vec<Callback> {
-    SOURCES.iter().enumerate().map(|(index,(key,pos,appearance,input,consume))|Callback{ failure_teleport: None, state_operations: Vec::new(),actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, world_requirements: Vec::new(),
+    SOURCES.iter().enumerate().map(|(index,(key,pos,appearance,input,consume))|Callback{
+        remote_teleport: None,
+        state_operations: Vec::new(),
+        failure_teleport: None,
+        item_reward: None,
+        reward_bundle: false,
+        achievements: Vec::new(),
+        activation: None,
+        requirements: None,track_initials: Default::default(),required_completed_quests:Vec::new(),admission: None, requires_premium: false,actor_kind: Default::default(), opening_only: false, requires_world_admission: false, facing: None, state_ops: Vec::new(), world_requirements: Vec::new(),
         key:(*key).into(),quest:QUEST.into(),trigger:Trigger::Use,
 use_range:1,disguise:None,completes:false,premium_required:false,present:vec![],required_travel:vec![],
         selector:Selector{ position_aliases: Vec::new(),ordinal:None,native: None,position:Some(Position{x:pos.0,y:pos.1,floor:pos.2}),unique:None,action:None,appearance:Some(*appearance)},
         lever:None,reversible:false,passages:vec![],teleport:None,
-        storage:vec![Storage{ set_if: None, increment:false,at_least:false,add:None,read_only:false,track:TRACKS[index].into(),minimum:0,maximum:0,set:1,preserve:false}],
-        minimum_level:None,experience: None, world_change: None,monk_reward:None,offerings:vec![],
-        item_on_target:Some(ItemOnTarget{alternatives:Vec::new(),reusable:false,item:format!("oteryn:item.tibia.i{input}"),count:1,replacement:(!consume).then(||format!("oteryn:item.tibia.i{input}")),target_replacement:None}),
-        return_on_failure:false,failure_message:None,success_message:None,native_rule:None,effects:Default::default(),remote_teleport:None,item_reward:None,reward_bundle:false,achievements:vec![],activation:None,requirements:None,
+        storage:vec![Storage{add: None, read_only: false, set_if: None, increment: false, at_least: false,track:TRACKS[index].into(),minimum:0,maximum:0,set:1,preserve:false}],
+        minimum_level:None, character_requirements: None,experience: None, world_change: None,monk_reward:None,offerings:vec![],
+        item_on_target:Some(ItemOnTarget{on_step: false, ingredients: Vec::new(), target_remove: false,selected_instance:false,alternatives: Vec::new(), reusable: false,item:format!("oteryn:item.tibia.i{input}"),count:1,replacement:(!consume).then(||format!("oteryn:item.tibia.i{input}")),target_replacement:None}),
+        return_on_failure:false,failure_message:None,success_message:None,native_rule:None,effects:Default::default(),
         sources:vec!["crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/guardian_of_the_deep_seas.lua:explicit-native-world-quest-adaptation;wiki69583@1149608:145,153,158,160,162;NOT_DONOR_GEOMETRY".into()],
     }).collect()
 }

@@ -41,6 +41,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .and_then(|timer| timer.next_due_time())
                     .map(|due| due.get())
                     .into_iter()
+                    .chain(states.primal_callbacks.next_due_us())
+                    .chain(states.spite_steps.next_due_us())
+                    .chain(states.rotten_blood_callbacks.next_due_time())
                     .chain(
                         self.bundle_map()
                             .and_then(|map| map.facts.next_movement_decay_time()),
@@ -105,8 +108,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gate.begin_turn();
                 }
             }
-            let start = self.background_start("source-cycle", 8);
-            for index in (start..8).chain(0..start) {
+            // Rotate independent units, including empty discoveries. The two
+            // Rotten slots retain cyclic pre/AI/post order across resumed sweeps;
+            // monster melee runs with the AI phase, between them.
+            // No whole-population grant is introduced.
+            let start = self.background_start("source-cycle", 15);
+            for index in (start..15).chain(0..start) {
                 self.background_turn("source-cycle", index + 1, async {
                     match index {
                         0 => {
@@ -115,7 +122,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .with_background_operation(self.flush_daily_kill_statistics())
                                 .await;
                         }
-                        1 => self.tick_timed_items().await,
+                        1 => {
+                            self.tick_timed_items().await;
+                        }
                         2 => {
                             let _ = self.ensure_source_map_initialized().await;
                         }
@@ -124,6 +133,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 self.root
                                     .with_background_operation(self.drain_source_item_deadlines())
                                     .await;
+                                self.drain_spite_recovery_notices().await;
                             }
                         }
                         4 => {
@@ -133,17 +143,76 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         5 => {
                             if self.ensure_source_map_initialized().await {
-                                self.drain_source_party_deadlines_bounded().await;
+                                self.root
+                                    .with_background_operation(
+                                        self.drain_elemental_altar_boss_unit(),
+                                    )
+                                    .await;
                             }
                         }
                         6 => {
                             if self.ensure_source_map_initialized().await {
+                                self.drain_source_party_deadlines_bounded().await;
+                            }
+                        }
+                        7 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(
+                                        self.drain_rotten_movement_callback_unit(),
+                                    )
+                                    .await;
+                            }
+                        }
+                        8 => {
+                            if self.ensure_source_map_initialized().await {
                                 let _ = self.drain_native_ai_timers().await;
+                            }
+                        }
+                        9 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.drain_monster_melee().await;
+                            }
+                        }
+                        10 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(
+                                        self.drain_rotten_movement_callback_unit(),
+                                    )
+                                    .await;
+                            }
+                        }
+                        11 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(self.drain_bak_first_think_claims())
+                                    .await;
+                            }
+                        }
+                        12 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(
+                                        self.drain_primal_pod_callback_unit(),
+                                    )
+                                    .await;
+                            }
+                        }
+                        13 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(self.drain_primal_pod_expiries())
+                                    .await;
                             }
                         }
                         _ => {
                             if self.ensure_source_map_initialized().await {
-                                self.drain_monster_melee().await;
+                                self.root
+                                    .with_background_operation(
+                                        self.drain_rotten_portal_callback_unit(),
+                                    )
+                                    .await;
                             }
                         }
                     }
@@ -245,6 +314,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || source.source_digest() != runtime.content_pin().server_artifact_digest()
         {
             return false;
+        }
+        if matches!(
+            runtime.binding().runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            return crate::spell::source_map_initialization::CurrentNativeMapInitialization::qualify_static_instance(
+                &runtime, room, source,
+            )
+            .is_ok();
         }
         let binding = match crate::spell::source_map_initialization::CurrentNativeMapInitialization::qualify_current_binding(
             &runtime, room, source,

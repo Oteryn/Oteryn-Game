@@ -118,6 +118,7 @@ pub(in crate::gameplay_transport) async fn execute(
     }
     let fence = admitted.item_fence?;
     let actor = admitted.runtime_actor?;
+    let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
     let permit = owner.spell_lane_permit().await?;
     // A background read can own the single ready holder. Retry only checkout;
     // once a transaction starts, its unknown outcome must never be re-executed.
@@ -133,6 +134,8 @@ pub(in crate::gameplay_transport) async fn execute(
         .ok()?;
     let runtime = owner.runtime.lock().await;
     if !actor_is_current(&runtime, admitted) {
+        drop(runtime);
+        let _ = pass.run(|_, _| Box::pin(async { Ok(()) })).await;
         return Some((false, Vec::new()));
     }
     let reserved = intent.accepts() && runtime.assert_actor_spell_unreserved(actor).is_err();
@@ -147,7 +150,6 @@ pub(in crate::gameplay_transport) async fn execute(
     // The ordinary invitation proof borrows the current runtime, just as PartyIntent::Invite.
     // Other operations release the runtime before their database work.
     let runtime = intent.accepts().then_some(runtime);
-    let command = CommandRef::new(admitted.game_session_id, CommandId::new(command_id).ok()?);
     let mut hash = Sha256::new();
     hash.update(b"oteryn.team-finder.wire.v1");
     hash.update(command_type.to_be_bytes());

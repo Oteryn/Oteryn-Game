@@ -704,7 +704,7 @@ pub async fn admit_character_wheel(
         .await;
     drop(slot);
     if let Err(error) = &reset {
-        eprintln!("oteryn-game-server: Wheel reset at admission did not commit: {error}");
+        oteryn_error_codes::emit("oteryn-game-server", &oteryn_error_codes::Line::new(oteryn_error_codes::Level::Warn, "durability", "wheel_reset_refused").field("reason", oteryn_error_codes::FieldValue::Owned(error.to_string())));
         return None;
     }
     root.read_character_wheel(

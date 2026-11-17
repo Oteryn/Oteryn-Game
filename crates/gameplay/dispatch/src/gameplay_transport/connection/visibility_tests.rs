@@ -28,6 +28,8 @@ const CONTENT: [u8; 32] = [0x5c; 32];
 
 fn creature(identity: [u8; 16], position: ActorPosition, revision: u64) -> ChannelEntity {
     ChannelEntity {
+        source_icons: oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(
+        ),
         display_name: None,
         health_percent: 100,
         direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
@@ -115,6 +117,8 @@ impl FreshAdmissionAuthority for Channel {
     async fn observe_visible_entities(&self, actor: ExactActorRef) -> Option<ChannelEntities> {
         let own = actor.placement_identity();
         let mut entities = vec![ChannelEntity {
+            source_icons:
+                oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
             display_name: None,
             health_percent: 100,
             direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,

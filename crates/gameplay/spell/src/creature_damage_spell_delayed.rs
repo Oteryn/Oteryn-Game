@@ -101,11 +101,10 @@ impl DelayedOwner {
             clock: None,
         })
     }
-    fn current(
+    fn current_owner(
         &self,
         r: &ChannelRuntimeV1,
         f: &ScopeRuntimeFence,
-        now: SemanticTimeMicros,
     ) -> Result<(), AttackError> {
         let b = r.binding();
         if self.scope != b.runtime_scope()
@@ -114,6 +113,15 @@ impl DelayedOwner {
         {
             return Err(AttackError::StaleOwner);
         }
+        Ok(())
+    }
+    fn current(
+        &self,
+        r: &ChannelRuntimeV1,
+        f: &ScopeRuntimeFence,
+        now: SemanticTimeMicros,
+    ) -> Result<(), AttackError> {
+        self.current_owner(r, f)?;
         if self.clock.is_some_and(|old| now < old) {
             return Err(AttackError::NotDue);
         }
@@ -171,23 +179,25 @@ impl DelayedOwner {
         r: &ChannelRuntimeV1,
         f: &mut ScopeRuntimeFence,
         clock: &impl OwnerClock,
+        through: SemanticTimeMicros,
     ) -> PreparedDueCasts {
         self.current(r, f, clock.now())?;
         let ordinal = f
             .accept_input(self.generation)
             .map_err(|_| AttackError::StaleOwner)?;
-        self.drain_prepared(r, f, f.stamp(ordinal), clock)
+        self.drain_prepared(r, f, f.stamp(ordinal), clock, through)
     }
     pub(super) fn drain_current(
         &mut self,
         r: &ChannelRuntimeV1,
         stamp: RuntimeWorkStamp,
         clock: &impl OwnerClock,
+        through: SemanticTimeMicros,
     ) -> PreparedDueCasts {
         // The caller minted this turn before resolving source-specific current facts.
         // drain_prepared checks that authority before cancelling or consuming timers.
         let fence = r.owner_fence().map_err(|_| AttackError::StaleOwner)?;
-        self.drain_prepared(r, fence, stamp, clock)
+        self.drain_prepared(r, fence, stamp, clock, through)
     }
     fn drain_prepared(
         &mut self,
@@ -195,6 +205,7 @@ impl DelayedOwner {
         f: &ScopeRuntimeFence,
         stamp: RuntimeWorkStamp,
         clock: &impl OwnerClock,
+        through: SemanticTimeMicros,
     ) -> PreparedDueCasts {
         let now = clock.now();
         self.current(r, f, now)?;
@@ -232,9 +243,15 @@ impl DelayedOwner {
                 index += 1;
             }
         }
-        let fired = self
-            .timers
-            .drain_due(clock, f, |a| r.contains_live_creature(a));
+        // The cutoff selects original owner inputs. The real clock still
+        // validates monotonic execution and timestamps the eventual effects.
+        let pending = &self.pending;
+        let fired = self.timers.drain_due_matching(
+            clock,
+            f,
+            |a| r.contains_live_creature(a),
+            |_, token| pending.iter().any(|p| p.token == token && p.due <= through),
+        );
         for timer in fired {
             if let Some(index) = self
                 .pending
@@ -252,6 +269,14 @@ impl DelayedOwner {
     }
     pub(super) fn next_due_time(&self) -> Option<SemanticTimeMicros> {
         self.pending.iter().map(|pending| pending.due).min()
+    }
+    pub(super) fn next_due_time_current(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<SemanticTimeMicros>, AttackError> {
+        let fence = runtime.owner_fence().map_err(|_| AttackError::StaleOwner)?;
+        self.current_owner(runtime, fence)?;
+        Ok(self.next_due_time())
     }
     /// Read-only source metadata; a snapshot cannot create or consume a timer pulse.
     pub(super) fn pending_sources(

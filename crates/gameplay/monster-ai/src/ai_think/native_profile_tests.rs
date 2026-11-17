@@ -70,7 +70,7 @@ fn srvwld_canonical_schedules_resolve_every_callback_at_its_source_index()
     // Regenerate pins: tools/content-migration/refresh_season_creature_inventory.py.
     assert_eq!(
         (creatures, schedules, attacks, defenses),
-        (1865, 7206, 15, 8)
+        (1868, 7221, 15, 8)
     );
     Ok(())
 }

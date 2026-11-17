@@ -10,7 +10,11 @@ impl PlayView {
             entity.position.floor == self.floor
                 && entity.position.x == tile.x
                 && entity.position.y == tile.y
-                && matches!(entity.detail, oteryn_session::EntityDetail::Actor { .. })
+                && matches!(
+                    entity.detail,
+                    oteryn_session::EntityDetail::Actor { .. }
+                        | oteryn_session::EntityDetail::ActorWithIcons { .. }
+                )
         }) {
             return Some(Target::Creature(entity.entity));
         }

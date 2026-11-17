@@ -1,0 +1,380 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/oramond/native-roots-1",
+      "quest": "oteryn:quest.oramond_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33534,
+          "y": 31908,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21104,
+        "native": {
+          "position": {
+            "x": 33534,
+            "y": 31908,
+            "floor": -7
+          },
+          "ordinal": 2,
+          "appearance": 21104
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/1",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/epoch",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/count",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/count",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You harvest juicy roots from the marked plant.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21291",
+          "count": 1,
+          "contents": [],
+          "premium": true
+        },
+        "item_reward_cycle": "oteryn:quest-progress/oramond/native-roots/epoch"
+      },
+      "sources": [
+        "content/quests/authoring/oramond-native-roots.md",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/oramond/native-roots-2",
+      "quest": "oteryn:quest.oramond_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33525,
+          "y": 31909,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21104,
+        "native": {
+          "position": {
+            "x": 33525,
+            "y": 31909,
+            "floor": -7
+          },
+          "ordinal": 2,
+          "appearance": 21104
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/2",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/epoch",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/count",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/count",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You harvest juicy roots from the marked plant.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21291",
+          "count": 1,
+          "contents": [],
+          "premium": true
+        },
+        "item_reward_cycle": "oteryn:quest-progress/oramond/native-roots/epoch"
+      },
+      "sources": [
+        "content/quests/authoring/oramond-native-roots.md",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/oramond/native-roots-3",
+      "quest": "oteryn:quest.oramond_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33520,
+          "y": 31915,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21104,
+        "native": {
+          "position": {
+            "x": 33520,
+            "y": 31915,
+            "floor": -7
+          },
+          "ordinal": 4,
+          "appearance": 21104
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/3",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/epoch",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/count",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/count",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You harvest juicy roots from the marked plant.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21291",
+          "count": 1,
+          "contents": [],
+          "premium": true
+        },
+        "item_reward_cycle": "oteryn:quest-progress/oramond/native-roots/epoch"
+      },
+      "sources": [
+        "content/quests/authoring/oramond-native-roots.md",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/oramond/native-roots-4",
+      "quest": "oteryn:quest.oramond_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33530,
+          "y": 31921,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21105,
+        "native": {
+          "position": {
+            "x": 33530,
+            "y": 31921,
+            "floor": -7
+          },
+          "ordinal": 3,
+          "appearance": 21105
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/4",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/epoch",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/count",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/count",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You harvest juicy roots from the marked plant.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21291",
+          "count": 1,
+          "contents": [],
+          "premium": true
+        },
+        "item_reward_cycle": "oteryn:quest-progress/oramond/native-roots/epoch"
+      },
+      "sources": [
+        "content/quests/authoring/oramond-native-roots.md",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/oramond/native-roots-5",
+      "quest": "oteryn:quest.oramond_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33523,
+          "y": 31930,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 21104,
+        "native": {
+          "position": {
+            "x": 33523,
+            "y": 31930,
+            "floor": -7
+          },
+          "ordinal": 4,
+          "appearance": 21104
+        }
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/5",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/epoch",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "set": 1,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/oramond/native-roots/count",
+          "minimum": 0,
+          "maximum": 4,
+          "set": 1,
+          "increment": true
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u10_50/oramond_quest/to_take_roots/count",
+          "minimum": 0,
+          "maximum": 2147483646,
+          "set": 1,
+          "increment": true
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You harvest juicy roots from the marked plant.",
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i21291",
+          "count": 1,
+          "contents": [],
+          "premium": true
+        },
+        "item_reward_cycle": "oteryn:quest-progress/oramond/native-roots/epoch"
+      },
+      "sources": [
+        "content/quests/authoring/oramond-native-roots.md",
+        "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua",
+        "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/oramond/to_take_roots/actions_to_take_roots.lua:14-44;explicit-native-daily-adaptation"
+      ]
+    }
+  ]
+}

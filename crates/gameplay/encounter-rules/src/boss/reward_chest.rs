@@ -121,7 +121,7 @@ pub struct FrozenBossContribution {
 
 /// Crystal `data/scripts/systems/reward_chest.lua:28-83`. Totals start at 0.1; damage,
 /// incoming damage and healing of others have equal shares. Nonzero participants determine
-/// the expected share. Oteryn's explicitly retained anti-leech eligibility gate is separate.
+/// the expected share; every nonzero score is eligible (lines 54-69).
 pub fn contribution_loot_factors(participants: &[FrozenBossContribution]) -> Vec<f64> {
     let scores = contribution_scores(participants);
     let count = scores.iter().filter(|score| **score > 0.0).count();
@@ -298,7 +298,7 @@ mod tests {
     }
 
     #[test]
-    fn two_contributors_receive_private_frozen_rewards_and_non_contributor_receives_none() {
+    fn three_contributors_receive_private_frozen_rewards_and_non_contributor_receives_none() {
         let participants = [
             FrozenBossContribution {
                 character: [1; 16],
@@ -312,6 +312,10 @@ mod tests {
                 character: [3; 16],
                 contribution: contribution(0, 99, 99),
             },
+            FrozenBossContribution {
+                character: [4; 16],
+                contribution: contribution(0, 0, 0),
+            },
         ];
         let chests = freeze_personal_rewards(
             "oteryn:boss.fixture",
@@ -320,10 +324,12 @@ mod tests {
             &participants,
             |character, frozen| vec![(character[0], frozen.damage_dealt, frozen.healing_others)],
         );
-        assert_eq!(chests.len(), 2);
+        assert_eq!(chests.len(), 3);
         assert_eq!(chests[0].items(), &[(1, 40, 0)]);
         assert_eq!(chests[1].items(), &[(2, 1, 30)]);
-        assert!(chests.iter().all(|chest| chest.character != [3; 16]));
+        // Crystal 201189f reward_chest.lua:54-69 includes support-only scores.
+        assert_eq!(chests[2].items(), &[(3, 0, 99)]);
+        assert!(chests.iter().all(|chest| chest.character != [4; 16]));
     }
 
     #[test]
@@ -376,7 +382,7 @@ mod tests {
     }
 
     #[test]
-    fn contribution_threshold_excludes_a_one_hit_leech_before_drawing() {
+    fn crystal_nonzero_contribution_draws_even_for_one_hit() {
         let participants = [
             FrozenBossContribution {
                 character: [1; 16],
@@ -394,7 +400,9 @@ mod tests {
             &participants,
             |character, _| vec![character[0]],
         );
-        assert_eq!(chests.len(), 1);
+        // Crystal 201189f reward_chest.lua:69 has no fair-share threshold.
+        assert_eq!(chests.len(), 2);
+        assert_eq!(chests[1].character, [2; 16]);
         assert_eq!(chests[0].character, [1; 16]);
     }
 }

@@ -8,13 +8,25 @@
 
 use crate::durability::item_mint::{GroundPlacement, TypedDefinitionRef};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SpellGroundTarget {
     pub spatial_position: Vec<u8>,
     pub map_revision: String,
     pub content_revision: String,
     pub placement_context: Vec<u8>,
+    /// Read-only, artifact-bound DATA. This is not serialized into placement or
+    /// intent and never substitutes for current SQL scope/custody authority.
+    pub item_profile_source: Option<crate::content::native_gameplay::NativeItemProfileSource>,
 }
+impl PartialEq for SpellGroundTarget {
+    fn eq(&self, other: &Self) -> bool {
+        self.spatial_position == other.spatial_position
+            && self.map_revision == other.map_revision
+            && self.content_revision == other.content_revision
+            && self.placement_context == other.placement_context
+    }
+}
+impl Eq for SpellGroundTarget {}
 
 /// A source-qualified definition from the compatible content generation. The
 /// durable corpse cause is checked separately; appearance membership cannot
@@ -131,6 +143,8 @@ pub struct CastCostBinding {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SpellItemOperation {
+    /// Same physical Ground instance, source-qualified callback only.
+    TransformGround(DurableGroundItemTransform),
     ConsumeCorpse(DurableCorpseReservation),
     RemoveGround(DurableGroundItemReservation),
     MergeInventory(DurableInventoryGrantReservation),
@@ -218,6 +232,27 @@ pub struct DurableGroundItemReservation {
     pub contents: Vec<DurableContainedRetirement>,
 }
 
+/// Durable epoch projection of one retained source execution. Monotonic source
+/// time remains the callback ordering authority; this is only the timer bridge.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct SourceIntrinsicDecayClock {
+    pub original_execution_us: u64,
+    pub execution_unix_ms: i64,
+    pub sampled_owner_us: u64,
+    pub sampled_unix_ms: i64,
+}
+
+/// Sealed by the existing scoped Item callback owner after a locked current
+/// Ground read. No external caller can construct a definition mutation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DurableGroundItemTransform {
+    pub(super) current: DurableGroundItemReservation,
+    pub(super) target: QualifiedItemDefinition,
+    pub(super) intrinsic_decay_clock: Option<SourceIntrinsicDecayClock>,
+    pub(super) blocks_movement: bool,
+    pub(super) blocks_projectile: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DurableTileItem {
     pub item_instance_id: [u8; 16],
@@ -230,6 +265,11 @@ pub struct DurableTileItem {
     pub expires_at_unix_ms: Option<i64>,
     pub field_origin: Option<DurableFieldOrigin>,
     pub creature_field_origin: Option<DurableCreatureFieldOrigin>,
+    /// Positive receipt evidence for this exact current native-map placement.
+    /// Missing player or creature attribution alone is never environmental proof.
+    pub native_map_origin: bool,
+    /// Positive script-created field provenance; current tile ownership is checked separately.
+    pub environment_field_origin: bool,
 }
 
 /// Historical creation source only. A field tick must independently resolve

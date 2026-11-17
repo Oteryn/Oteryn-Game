@@ -295,6 +295,17 @@
       "sources": [
         "owner:chosen-trial:fire_fighter:fixed-native-creature-deaths:questpc3-engine-5e72a3f0b"
       ]
+    },
+    {
+      "key": "oteryn:quest-progress/rock_steady/collection",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "initial": -1,
+      "min": -1,
+      "max": 5,
+      "writable": true,
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+      ]
     }
   ],
   "callbacks": [
@@ -2954,6 +2965,239 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/l2-wizard-flowers",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 11,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 6,
+          "maximum": 6,
+          "set": 7
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i5922",
+          "count": 50
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.wizard",
+        "addons": 1
+      },
+      "achievement": "oteryn:achievement/warlock",
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_queen_of_the_banshees.lua:sha256:4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-flowers-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.the_queen_of_the_banshees",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 10,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 5,
+          "maximum": 5,
+          "set": 6
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_queen_of_the_banshees.lua:sha256:4cddea4188575f2b8b4291bac0bb67adaf41b1725df8763e3845348ebbc38c71"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-legs",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 5,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3382",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-mail",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 4,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3386",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-shield",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3436",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-skull",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 6,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i3006",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.wizard",
+        "addons": 2
+      },
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/l2-wizard-start",
+      "quest": "oteryn:quest.outfit_and_addon_quests",
+      "npc": "oteryn:npc.lugri",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u7_8/wizard_outfits",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/outfit_quest/default_start",
+          "minimum": 0,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Thank you for your help."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/lugri.lua:sha256:51f9fcfbd4e51de5e9f2efb5fe2d39a93b59863b17da2dd9b969f9aa9b5c2a27"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/l3-demon-base",
       "quest": "oteryn:quest.the_annihilator_quest",
       "npc": "oteryn:npc.avar_tar",
@@ -3709,7 +3953,8 @@
       ],
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/percybald.lua:sha256:b617d51111abedf07a4b5de72acc938153152695517ef46b894b7b37873fdadc"
-      ]
+      ],
+      "completes": true
     },
     {
       "key": "oteryn:quest-reward/l4-royal-costume-shield",
@@ -8154,6 +8399,167 @@
       ]
     },
     {
+      "key": "oteryn:quest-reward/m36-rock-steady-confirm",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 1,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Great! Let me see. Amazing! I will take this, thank you!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/m36-rock-steady-first",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 2,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i14022",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Great! Let me see. Amazing! I will take this, thank you!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/m36-rock-steady-second",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "yes"
+      ],
+      "topic": 3,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i14023",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "Great! Let me see. Amazing! I will take this, thank you!"
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/m36-rock-steady-start",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "addon",
+        "help"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "If you want anything, you should talk to Old Rock Boy over there. I do {collect} stuff, though. So just ask if you're interested in helping me."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/m36-rock-steady-weapon",
+      "quest": "oteryn:quest.rock_steady_collection",
+      "npc": "oteryn:npc.rock_steady",
+      "keywords": [
+        "collect"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/rock_steady/collection",
+          "minimum": 4,
+          "maximum": 4,
+          "set": 5
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i14021",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": {
+        "outfit": "oteryn:outfit.deepling",
+        "addons": 1
+      },
+      "achievement": null,
+      "reply": [
+        "Have you got anything... what? You want what? A reward? HAHAHAHAAAA!! ...",
+        "No I'm just teasing you. I'm really happy about my collection now. ...",
+        "Well, I found some kind of weapon a long time ago. I believe it may be especially helpful underwater as it is from the deep folk. In any case it is of more use for you than it would be for me."
+      ],
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rock_steady.lua:56-98:sha256:2111b23a930e50619fde1541883e443e434d347b0b2d2116d52cab9bd0bc47d1"
+      ]
+    },
+    {
       "key": "oteryn:quest-reward/outfox-helmet",
       "quest": "oteryn:quest.tibia_tales",
       "npc": "oteryn:npc.budrik",
@@ -8223,2388 +8629,6 @@
       ]
     },
     {
-      "key": "oteryn:quest-reward/questpc7-feaster-mission",
-      "quest": "oteryn:quest.feaster_of_souls_quest",
-      "npc": "oteryn:npc.para_norbert",
-      "keywords": [
-        "mission"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/feaster/programme",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/feaster/bells",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i32582",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Ring this Death Knell at Carlin graveyard, Ghostlands and Dark Cathedral; grind one skull and distil it with a grave flower."
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
-        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-feaster-probes",
-      "quest": "oteryn:quest.feaster_of_souls_quest",
-      "npc": "oteryn:npc.para_norbert",
-      "keywords": [
-        "probes"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/feaster/programme",
-          "minimum": 4,
-          "maximum": 4,
-          "set": 5
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/feaster/samples",
-          "minimum": 20,
-          "maximum": 20,
-          "set": 20,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/feaster/raw_souls",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/feaster/purified",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i32197",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i32226",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "The twenty personal probes are accepted. Use this purifier for twenty lost souls."
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
-        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-feaster-scalpel",
-      "quest": "oteryn:quest.feaster_of_souls_quest",
-      "npc": "oteryn:npc.para_norbert",
-      "keywords": [
-        "scalpel"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/feaster/programme",
-          "minimum": 3,
-          "maximum": 3,
-          "set": 3,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/feaster/scalpel_given",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 1
-        }
-      ],
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i32225",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Use this scalpel on the ulcer after drinking the potion at the Brain Grounds entrance."
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
-        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-feaster-souls",
-      "quest": "oteryn:quest.feaster_of_souls_quest",
-      "npc": "oteryn:npc.para_norbert",
-      "keywords": [
-        "souls"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/feaster/programme",
-          "minimum": 5,
-          "maximum": 5,
-          "set": 6
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/feaster/purified",
-          "minimum": 20,
-          "maximum": 20,
-          "set": 20,
-          "preserve": true
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i32228",
-          "count": 20
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your twenty purified souls are accepted. The Brain Head investigation may continue."
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/41/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
-        "https://www.tibiawiki.com.br/index.php?title=Para_Norbert&oldid=419674"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-fiend-commission",
-      "quest": "oteryn:quest.fiend_slayer_outfits_quest",
-      "npc": "oteryn:npc.the_forgemaster",
-      "keywords": [
-        "fiend commission"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/fiend/programme",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": [
-          "oteryn:quest.no_rest_for_the_wicked_quest"
-        ]
-      },
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.fiend_slayer",
-        "addons": 0
-      },
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Your fiend commission qualification is recorded."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-fiend-complete",
-      "quest": "oteryn:quest.fiend_slayer_outfits_quest",
-      "npc": "oteryn:npc.the_forgemaster",
-      "keywords": [
-        "fiend complete"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/fiend/programme",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        }
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": [
-          "oteryn:quest.no_rest_for_the_wicked_quest"
-        ],
-        "owned_cosmetics": [
-          {
-            "outfit": "oteryn:outfit.fiend_slayer",
-            "addons": 3
-          }
-        ]
-      },
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "completes": true,
-      "reply": [
-        "Your fiend complete qualification is recorded."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-fiend-first-token",
-      "quest": "oteryn:quest.fiend_slayer_outfits_quest",
-      "npc": "oteryn:npc.the_forgemaster",
-      "keywords": [
-        "fiend first token"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/fiend/programme",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": [
-          "oteryn:quest.no_rest_for_the_wicked_quest"
-        ],
-        "owned_cosmetics": [
-          {
-            "outfit": "oteryn:outfit.fiend_slayer",
-            "addons": 0
-          }
-        ]
-      },
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i50060",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Your fiend first token qualification is recorded."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-fiend-second-token",
-      "quest": "oteryn:quest.fiend_slayer_outfits_quest",
-      "npc": "oteryn:npc.the_forgemaster",
-      "keywords": [
-        "fiend second token"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/fiend/programme",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        }
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": [
-          "oteryn:quest.no_rest_for_the_wicked_quest"
-        ],
-        "owned_cosmetics": [
-          {
-            "outfit": "oteryn:outfit.fiend_slayer",
-            "addons": 1
-          }
-        ]
-      },
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i50061",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Your fiend second token qualification is recorded."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/43/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/the_forgemaster.lua:1-250:sha256:4d3c8a44257795fcb949cdd1bb30a0f1ba0cad8b88fad050fba97852946db76e"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-forgotten-complete",
-      "quest": "oteryn:quest.forgotten_knowledge_quest",
-      "npc": "oteryn:npc.ivalisse",
-      "keywords": [
-        "knowledge"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
-          "minimum": 10,
-          "maximum": 10,
-          "set": 11
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You restored the selected six paths and defeated the Last Lore Keeper. You have earned powerful imbuing knowledge."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ivalisse.lua:60-114:sha256:455bf9ca148de6aec55a2801f9234bb492b161bac253afd3703cb8c609f11bda"
-      ],
-      "completes": true
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-forgotten-father",
-      "quest": "oteryn:quest.forgotten_knowledge_quest",
-      "npc": "oteryn:npc.ivalisse",
-      "keywords": [
-        "father"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
-          "minimum": 6,
-          "maximum": 6,
-          "set": 60
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/father",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "My father is Silus. Follow the fire path to find his aid and confront the Dragon King."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ivalisse.lua:60-114:sha256:455bf9ca148de6aec55a2801f9234bb492b161bac253afd3703cb8c609f11bda"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-forgotten-mission",
-      "quest": "oteryn:quest.forgotten_knowledge_quest",
-      "npc": "oteryn:npc.ivalisse",
-      "keywords": [
-        "mission"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Recover a Heavy Old Tome for the temple record."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ivalisse.lua:60-114:sha256:455bf9ca148de6aec55a2801f9234bb492b161bac253afd3703cb8c609f11bda"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-forgotten-silus-chalice",
-      "quest": "oteryn:quest.forgotten_knowledge_quest",
-      "npc": "oteryn:npc.a_strange_chalice",
-      "keywords": [
-        "chalice"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
-          "minimum": 60,
-          "maximum": 60,
-          "set": 60,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/father",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You listen to the disguised scholar. Ask about daughter."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-forgotten-silus-daughter",
-      "quest": "oteryn:quest.forgotten_knowledge_quest",
-      "npc": "oteryn:npc.a_strange_chalice",
-      "keywords": [
-        "daughter"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
-          "minimum": 60,
-          "maximum": 60,
-          "set": 60,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/father",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You listen to the disguised scholar. Ask about story."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-forgotten-silus-disguised",
-      "quest": "oteryn:quest.forgotten_knowledge_quest",
-      "npc": "oteryn:npc.a_strange_chalice",
-      "keywords": [
-        "disguised"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
-          "minimum": 60,
-          "maximum": 60,
-          "set": 60,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/father",
-          "minimum": 3,
-          "maximum": 3,
-          "set": 4
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You listen to the disguised scholar. Ask about thirsty."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-forgotten-silus-learned",
-      "quest": "oteryn:quest.forgotten_knowledge_quest",
-      "npc": "oteryn:npc.a_strange_chalice",
-      "keywords": [
-        "learned"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
-          "minimum": 60,
-          "maximum": 60,
-          "set": 7
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/father",
-          "minimum": 5,
-          "maximum": 5,
-          "set": 6
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "I am Ivalisse's father. My research taught me the fire-route password: zzubaran."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-forgotten-silus-story",
-      "quest": "oteryn:quest.forgotten_knowledge_quest",
-      "npc": "oteryn:npc.a_strange_chalice",
-      "keywords": [
-        "story"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
-          "minimum": 60,
-          "maximum": 60,
-          "set": 60,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/father",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You listen to the disguised scholar. Ask about disguised."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-forgotten-silus-thirsty",
-      "quest": "oteryn:quest.forgotten_knowledge_quest",
-      "npc": "oteryn:npc.a_strange_chalice",
-      "keywords": [
-        "thirsty"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
-          "minimum": 60,
-          "maximum": 60,
-          "set": 60,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/father",
-          "minimum": 4,
-          "maximum": 4,
-          "set": 5
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You listen to the disguised scholar. Ask about learned."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z09-x130-y121.b3:1:sha256:207afee64040ad35fef81382d73667ae3b3307d2f3bd8f0b370aa2ecc961d1e8",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_strange_chalice.lua:60-113:sha256:7eb9bf22d46533d4584fc67a1fa60e49cda9395e05f2e1dc4b50c250c18243ea"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-forgotten-tome",
-      "quest": "oteryn:quest.forgotten_knowledge_quest",
-      "npc": "oteryn:npc.ivalisse",
-      "keywords": [
-        "tome"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/forgotten/programme",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i23986",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "The record is restored. Enter the Energy Portal."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/45/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z07-x126-y125.b3:1:sha256:b7f4b09e880cc1637e2d056e058c37e8b2a77b614751333d4b89496a7fdfe037",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua:1-27:sha256:a253bd0bd92d9acba483a5a181998f59a09d48aef91c50b20de2128661599907",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/ivalisse.lua:60-114:sha256:455bf9ca148de6aec55a2801f9234bb492b161bac253afd3703cb8c609f11bda"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-formal-admission",
-      "quest": "oteryn:quest.formal_dress_outfits_quest",
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "anniversary exhibition",
-        "formal commission"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/formal/programme",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "requirements": {
-        "min_level": 20,
-        "premium": true,
-        "completed_quests": []
-      },
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Visit our anniversary exhibition beside the northeastern palace display, then use the display to claim your Formal Dress."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:6fb7468006ad83002016055359750c0ce15b5ae47032112013d6bdbb9ffa85ff",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-formal-button",
-      "quest": "oteryn:quest.formal_dress_outfits_quest",
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "formal brass button"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/formal/programme",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        }
-      ],
-      "requirements": {
-        "min_level": 20,
-        "premium": true,
-        "completed_quests": [],
-        "owned_cosmetics": [
-          {
-            "outfit": "oteryn:outfit.formal_dress",
-            "addons": 0
-          }
-        ]
-      },
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i37604",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Attach this Brass Button, then ask me for a {formal decorative plume}."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:6fb7468006ad83002016055359750c0ce15b5ae47032112013d6bdbb9ffa85ff",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-formal-complete",
-      "quest": "oteryn:quest.formal_dress_outfits_quest",
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "complete formal dress"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/formal/programme",
-          "minimum": 4,
-          "maximum": 4,
-          "set": 5
-        }
-      ],
-      "requirements": {
-        "min_level": 20,
-        "premium": true,
-        "completed_quests": [],
-        "owned_cosmetics": [
-          {
-            "outfit": "oteryn:outfit.formal_dress",
-            "addons": 3
-          }
-        ]
-      },
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": "oteryn:achievement/sharp_dressed",
-      "completes": true,
-      "reply": [
-        "Your Formal Dress exhibition programme is complete. You are Sharp Dressed!"
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:6fb7468006ad83002016055359750c0ce15b5ae47032112013d6bdbb9ffa85ff",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-formal-plume",
-      "quest": "oteryn:quest.formal_dress_outfits_quest",
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "formal decorative plume"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/formal/programme",
-          "minimum": 3,
-          "maximum": 3,
-          "set": 4
-        }
-      ],
-      "requirements": {
-        "min_level": 20,
-        "premium": true,
-        "completed_quests": [],
-        "owned_cosmetics": [
-          {
-            "outfit": "oteryn:outfit.formal_dress",
-            "addons": 2
-          }
-        ]
-      },
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i37605",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Attach this Decorative Plume, then ask me to {complete formal dress}."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00200-00299.json:1#/records/75/definition:sha256:6fb7468006ad83002016055359750c0ce15b5ae47032112013d6bdbb9ffa85ff",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:1-497:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-blessing",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.quentin",
-      "keywords": [
-        "finish prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 13,
-          "maximum": 13,
-          "set": 14
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i5941",
-          "count": 1
-        }
-      ],
-      "present": [],
-      "give": {
-        "item": "oteryn:item.tibia.i5942",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "The ten-part prayer has blessed your wooden stake."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-complete",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.quentin",
-      "keywords": [
-        "complete friendships"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 14,
-          "maximum": 14,
-          "set": 15
-        }
-      ],
-      "take": [],
-      "present": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your Friends and Traders programme is complete."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
-      ],
-      "completes": true
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-honey",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.marina",
-      "keywords": [
-        "deliver honey"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i5902",
-          "count": 50
-        }
-      ],
-      "present": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "I can now spin ten spider silks into one spool of yarn."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/marina.lua:1-136:sha256:8574dd5721f258bef8d649657ed428537e3e351e540a990fe72bcc21c89b8682"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-intro",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "forging friendship"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "take": [],
-      "present": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Bring three bast skirts for my partner."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-prayer-amanda",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.amanda",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 8,
-          "maximum": 8,
-          "set": 9
-        }
-      ],
-      "take": [],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i5941",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your stake has received this line of the prayer."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/amanda.lua:1-207:sha256:ce09851af74f62f12b43b9cddea4717113f97f5240669306482020734e96fdef"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-prayer-brewster",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.brewster",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 11,
-          "maximum": 11,
-          "set": 12
-        }
-      ],
-      "take": [],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i5941",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your stake has received this line of the prayer."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/brewster.lua:1-194:sha256:87af89081d39013a27efa93e35bb1006cf46ff19e051d865151e847a1b0e8bc4"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-prayer-isimov",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.isimov",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 7,
-          "maximum": 7,
-          "set": 8
-        }
-      ],
-      "take": [],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i5941",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your stake has received this line of the prayer."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/isimov.lua:1-176:sha256:83fc7dd789475bdc5cb3c49c04141c49469cb674537bac2d33343a221f8a4d10"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-prayer-kasmir",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.kasmir",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 9,
-          "maximum": 9,
-          "set": 10
-        }
-      ],
-      "take": [],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i5941",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your stake has received this line of the prayer."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/kasmir.lua:1-177:sha256:9ed3bb0bed0fc1b7e573b3a0e60e40bebb43eb270db997f97e5a6c5225721f62"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-prayer-maealil",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.maealil",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 5,
-          "maximum": 5,
-          "set": 6
-        }
-      ],
-      "take": [],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i5941",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your stake has received this line of the prayer."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/maealil.lua:1-232:sha256:5513bfbb4b666300a1a51ba229698aac401a68021b1388b7b4170fca74957786"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-prayer-quentin",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.quentin",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 3,
-          "maximum": 3,
-          "set": 4
-        }
-      ],
-      "take": [],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i5941",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your stake has received this line of the prayer."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/quentin.lua:1-186:sha256:ec847fd5847361ac4ac7e278426fa284712ffd50f77b1b00cc38cc5c4ff480e9"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-prayer-rahkem",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.rahkem",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 10,
-          "maximum": 10,
-          "set": 11
-        }
-      ],
-      "take": [],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i5941",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your stake has received this line of the prayer."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rahkem.lua:1-452:sha256:5a3cbb6ed0041da27bbfc8b15b5ef0f203a256e0cde50c584fb1d64a17956174"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-prayer-tibra",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.tibra",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 4,
-          "maximum": 4,
-          "set": 5
-        }
-      ],
-      "take": [],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i5941",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your stake has received this line of the prayer."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tibra.lua:1-143:sha256:ac4aa101390c470c2fb3881d2a1aedb1916620676d9abed2f4ea82412398c30f"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-prayer-tyrias",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.tyrias",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 12,
-          "maximum": 12,
-          "set": 13
-        }
-      ],
-      "take": [],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i5941",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your stake has received this line of the prayer."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/tyrias.lua:1-180:sha256:d940a44e911493aa8091f8c8331220036f364288df05eb830b741f2b82d312c6"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-prayer-yberius",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.yberius",
-      "keywords": [
-        "stake prayer"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 6,
-          "maximum": 6,
-          "set": 7
-        }
-      ],
-      "take": [],
-      "present": [
-        {
-          "item": "oteryn:item.tibia.i5941",
-          "count": 1
-        }
-      ],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your stake has received this line of the prayer."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yberius.lua:1-176:sha256:6a82e568681ecb911d988b30626f415ea07cb6cf2193c73246b8380e2a4363f5"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-royal-steel",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "forge royal steel"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 1,
-          "maximum": 15,
-          "set": 1,
-          "preserve": true
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i3381",
-          "count": 1
-        }
-      ],
-      "present": [],
-      "give": {
-        "item": "oteryn:item.tibia.i5887",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Cling clang!"
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
-      ],
-      "counter": {
-        "track": "oteryn:quest-progress/questpc7/friends/steel-uses",
-        "maximum": 1000000000000
-      }
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-skirts",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.a_sweaty_cyclops",
-      "keywords": [
-        "deliver skirts"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i3560",
-          "count": 3
-        }
-      ],
-      "present": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Now I can forge royal steel for you."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/a_sweaty_cyclops.lua:1-376:sha256:bc694bf7d62f6a0daae1eda9f6542c6bd79fb749805fe58c23275189ce1e5d0a"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-stake",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.gamon",
-      "keywords": [
-        "buy wooden stake"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        }
-      ],
-      "take": [],
-      "present": [],
-      "give": {
-        "item": "oteryn:item.tibia.i5941",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Here is your wooden stake."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/gamon.lua:1-191:sha256:466de8702c51fc9c550f3f9f75e0301713eeec3a81bb8974fc848f10df5ead83"
-      ],
-      "fee": {
-        "gold": 5000,
-        "include_bank": true
-      }
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-friends-yarn",
-      "quest": "oteryn:quest.friends_and_traders",
-      "npc": "oteryn:npc.marina",
-      "keywords": [
-        "spin yarn"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/friends/program",
-          "minimum": 2,
-          "maximum": 15,
-          "set": 2,
-          "preserve": true
-        }
-      ],
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i5879",
-          "count": 10
-        }
-      ],
-      "present": [],
-      "give": {
-        "item": "oteryn:item.tibia.i5886",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Here is your spool of yarn."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/47/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/marina.lua:1-136:sha256:8574dd5721f258bef8d649657ed428537e3e351e540a990fe72bcc21c89b8682"
-      ],
-      "counter": {
-        "track": "oteryn:quest-progress/questpc7/friends/yarn-uses",
-        "maximum": 1000000000000
-      }
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-goblin-intro",
-      "quest": "oteryn:quest.goblin_merchant_quest",
-      "npc": "oteryn:npc.rafzan",
-      "keywords": [
-        "swamp jobs"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/goblin/programme",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/goblin/signs",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/goblin/odours",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/goblin/captures",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/goblin/urine",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/goblin/trunks",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/goblin/stalkers",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "All six swamp jobs are accepted: place three signs, gather four odours, catch three adventurers, apply rat urine, smash three trunks and hunt five marsh stalkers. Ask to buy swamp kit for the source-priced tools."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-goblin-kit",
-      "quest": "oteryn:quest.goblin_merchant_quest",
-      "npc": "oteryn:npc.rafzan",
-      "keywords": [
-        "buy swamp kit"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/goblin/programme",
-          "minimum": 0,
-          "maximum": 6,
-          "set": 0,
-          "preserve": true
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/goblin/kit_bought",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 1
-        }
-      ],
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i17668",
-        "count": 3,
-        "contents": [],
-        "backpack_outputs": [
-          {
-            "item": "oteryn:item.tibia.i17669",
-            "count": 1
-          },
-          {
-            "item": "oteryn:item.tibia.i17670",
-            "count": 1
-          },
-          {
-            "item": "oteryn:item.tibia.i17671",
-            "count": 1
-          },
-          {
-            "item": "oteryn:item.tibia.i17676",
-            "count": 1
-          }
-        ]
-      },
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Here are three advertisement signs, a guardcatcher, a perfume gatherer, rat urine and a trunkhammer. The total is 1125 gold."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
-      ],
-      "fee": {
-        "gold": 1125,
-        "include_bank": true
-      }
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-golden-base",
-      "quest": "oteryn:quest.golden_outfits_quest",
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 101,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.golden",
-        "addons": 0
-      },
-      "achievement": null,
-      "reply": [
-        "Your basic Golden outfit is ready."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-189:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ],
-      "fee": {
-        "gold": 100000,
-        "include_bank": true
-      }
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-golden-complete",
-      "quest": "oteryn:quest.golden_outfits_quest",
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "complete commission"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission",
-          "minimum": 3,
-          "maximum": 3,
-          "set": 4
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Your Golden commission is complete."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-189:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ],
-      "completes": true
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-golden-gloves",
-      "quest": "oteryn:quest.golden_outfits_quest",
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 102,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.golden",
-        "addons": 1
-      },
-      "achievement": null,
-      "reply": [
-        "Your Golden boots and gloves is ready."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-189:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ],
-      "fee": {
-        "gold": 50000,
-        "include_bank": true
-      }
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-golden-helmet",
-      "quest": "oteryn:quest.golden_outfits_quest",
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "yes"
-      ],
-      "topic": 103,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.golden",
-        "addons": 2
-      },
-      "achievement": null,
-      "reply": [
-        "Your Golden helmet is ready."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-189:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ],
-      "fee": {
-        "gold": 50000,
-        "include_bank": true
-      }
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-golden-intro",
-      "quest": "oteryn:quest.golden_outfits_quest",
-      "npc": "oteryn:npc.king_tibianus",
-      "keywords": [
-        "golden commission",
-        "golden outfit"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/golden/commission",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "I can commission the Golden outfit and its two addons. Ask me for the base outfit."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/52/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/king_tibianus.lua:131-189:sha256:e6509e41311669a22f9c7ac6c1787fcf5b63120d06d802a1ad268e0adac9d9bd"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-grimvale-domizian",
-      "quest": "oteryn:quest.grimvale_quest",
-      "npc": "oteryn:npc.domizian",
-      "keywords": [
-        "pardon"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
-          "minimum": 9,
-          "maximum": 9,
-          "set": 10
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/grimvale/oskayaat",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "You have earned the pardon. Investigate Oskayaat's symbols."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z05-x129-y126.b3:1:sha256:60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-grimvale-rhargu",
-      "quest": "oteryn:quest.grimvale_quest",
-      "npc": "oteryn:npc.rhargu",
-      "keywords": [
-        "feud"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/grimvale/programme",
-          "minimum": 6,
-          "maximum": 6,
-          "set": 7
-        }
-      ],
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Investigate the cursed site in the Hyaena Lairs."
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/55/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "content/world/placements/region-z05-x129-y126.b3:1:sha256:60db4d14173f0c4e584d81d39240aeb45959152fa1f401098dfed1294b303062",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/grimvale/actions_closed_silvered_trap.lua:1-19:sha256:cba8b2e3c3843fbb2f9226682faaf36c26c209fa8f95c312fe89042466c08e94"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-heart-yana",
-      "quest": "oteryn:quest.heart_of_destruction_quest",
-      "npc": "oteryn:npc.yana",
-      "keywords": [
-        "worth"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/heart/programme",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        },
-        {
-          "track": "oteryn:quest-progress/questpc7/heart/passages",
-          "minimum": 6,
-          "maximum": 6,
-          "set": 6,
-          "preserve": true
-        }
-      ],
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i22721",
-        "count": 5,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": "oteryn:achievement/ender_of_the_end",
-      "completes": true,
-      "reply": [
-        "You disrupted the Heart of Destruction and defeated the World Devourer. You have proven your worth. You receive five Gold Tokens and learn Powerful Strike, Void and Vampirism."
-      ],
-      "requirements": {
-        "min_level": 150,
-        "premium": true,
-        "completed_quests": []
-      },
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/57/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/yana.lua:185-187:sha256:3101fdaea3ef33df501762a2e85417ad8b6ae06e685f9c7caf2aa8b41da4b324"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-hunter-intro",
-      "quest": "oteryn:quest.hunter_outfits_quest",
-      "npc": "oteryn:npc.elane",
-      "keywords": [
-        "hunter commission"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/hunter/programme",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": true,
-        "completed_quests": []
-      },
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Bring back my crossbow from the cultist cache."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00000-00099.json:1#/records/44/definition:sha256:eda7d35e93148ae3350a75d47ff5123ab44de29b8eac8f3efe3a5dd96e4d83a6",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/elane.lua:1-352:sha256:beb84839e9b7b878fc276659bcbc0577bd82210f3cf900f53e5ddeb25dcc2cef"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-illuminated-intro",
-      "quest": "oteryn:quest.authored.illuminated_warrior_outfits_quest",
-      "npc": "oteryn:npc.wayland_smythers",
-      "keywords": [
-        "illuminated commission"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/illuminated/programme",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "requirements": {
-        "min_level": 1000,
-        "premium": true,
-        "completed_quests": [
-          "oteryn:quest.authored.make_believe_quest"
-        ]
-      },
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "reply": [
-        "Collect 2500 radiant attire scraps for the basic outfit."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00300-00351.json:1#/records/5/definition:sha256:4a24de17cc2af26d6122fea2502b95974c8b5db55682e3540da813c0f28ebe6a",
-        "crystal-summer:00ce02a57ca5a12e48f32a3476e37471167e4c3f:data-global/npc/wayland_smythers.lua:1-128:sha256:9a6b7b1ff8c351bc44275c053a6992093e69984f6ae77a519dcdc9040be7b851"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-inquisition-commission",
-      "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
-      "npc": "oteryn:npc.henricus",
-      "keywords": [
-        "inquisition commission"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/inquisition/programme",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": [
-          "oteryn:quest.grave_danger_quest"
-        ]
-      },
-      "take": [],
-      "give": null,
-      "outfit": {
-        "outfit": "oteryn:outfit.hand_of_the_inquisition",
-        "addons": 0
-      },
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Your inquisition commission qualification is recorded."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:1-416:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-inquisition-complete",
-      "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
-      "npc": "oteryn:npc.henricus",
-      "keywords": [
-        "inquisition complete"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/inquisition/programme",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 3
-        }
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": [
-          "oteryn:quest.grave_danger_quest"
-        ],
-        "owned_cosmetics": [
-          {
-            "outfit": "oteryn:outfit.hand_of_the_inquisition",
-            "addons": 3
-          }
-        ]
-      },
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "completes": true,
-      "reply": [
-        "Your inquisition complete qualification is recorded."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:1-416:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-inquisition-first-token",
-      "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
-      "npc": "oteryn:npc.henricus",
-      "keywords": [
-        "inquisition first token"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/inquisition/programme",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": [
-          "oteryn:quest.grave_danger_quest"
-        ],
-        "owned_cosmetics": [
-          {
-            "outfit": "oteryn:outfit.hand_of_the_inquisition",
-            "addons": 0
-          }
-        ]
-      },
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i31738",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Your inquisition first token qualification is recorded."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:1-416:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-inquisition-second-token",
-      "quest": "oteryn:quest.hand_of_the_inquisition_outfits_quest",
-      "npc": "oteryn:npc.henricus",
-      "keywords": [
-        "inquisition second token"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/inquisition/programme",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        }
-      ],
-      "requirements": {
-        "min_level": 250,
-        "premium": true,
-        "completed_quests": [
-          "oteryn:quest.grave_danger_quest"
-        ],
-        "owned_cosmetics": [
-          {
-            "outfit": "oteryn:outfit.hand_of_the_inquisition",
-            "addons": 1
-          }
-        ]
-      },
-      "take": [],
-      "give": {
-        "item": "oteryn:item.tibia.i31737",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Your inquisition second token qualification is recorded."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/56/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/henricus.lua:1-416:sha256:1b98530e7f7ae4bef44e9d55373254e6590a160c7c8f5d8d9dd41b578bf7977d"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-tokens-abacus-replica",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "abacus replica"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/tokens/programme",
-          "minimum": 0,
-          "maximum": 0,
-          "set": 1
-        }
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": []
-      },
-      "take": [
-        {
-          "item": "oteryn:item.tibia.i19083",
-          "count": 20
-        }
-      ],
-      "give": {
-        "item": "oteryn:item.tibia.i19151",
-        "count": 1,
-        "contents": []
-      },
-      "outfit": null,
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Your twenty Silver Raid Tokens paid for this Abacus replica. Ask to {finish the commission}."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jorge.lua:61,115,125-128:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-tokens-finish-the-commission",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "finish the commission"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/tokens/programme",
-          "minimum": 1,
-          "maximum": 1,
-          "set": 2
-        }
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": []
-      },
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "completes": true,
-      "reply": [
-        "Your replica commission is complete. Enjoy your Abacus!"
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jorge.lua:61,115,125-128:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ]
-    },
-    {
-      "key": "oteryn:quest-reward/questpc7-tokens-replica-rewards",
-      "quest": "oteryn:quest.hunting_for_tokens",
-      "npc": "oteryn:npc.jorge",
-      "keywords": [
-        "replica rewards"
-      ],
-      "topic": 0,
-      "next_topic": 0,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/questpc7/tokens/programme",
-          "minimum": -1,
-          "maximum": -1,
-          "set": 0
-        }
-      ],
-      "requirements": {
-        "min_level": 0,
-        "premium": false,
-        "completed_quests": []
-      },
-      "take": [],
-      "give": null,
-      "outfit": null,
-      "achievement": null,
-      "completes": false,
-      "reply": [
-        "Bring twenty Silver Raid Tokens and ask for an {abacus replica}."
-      ],
-      "sources": [
-        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/61/definition:sha256:1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac",
-        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/jorge.lua:61,115,125-128:sha256:127ff40ceb3fd0612663cbd952176840977e1ba9b9f22534ba52b2d059963db0"
-      ]
-    },
-    {
       "key": "oteryn:quest-reward/sam-backpack",
       "quest": "oteryn:quest.sam_s_old_backpack_quest",
       "npc": "oteryn:npc.sam",
@@ -10636,6 +8660,29 @@
       "sources": [
         "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/sam.lua:sha256:ed713aa63d597133355328a16e9c36d1b382c0e1d7e40dc199211f4fc4d14e6b"
       ]
+    }
+  ],
+  "item_disguises": [
+    {
+      "key": "quest.wrath.crate",
+      "sources": [
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/wrath_of_the_emperor/actions_mission01_crate.lua:sha256:c7633852055fb9535229721cccd9c1b09233780a3bd7f8d5badc02ac5ed15688",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/scripts/quests/wrath_of_the_emperor/movements_crate.lua:sha256:b90e05dd645aa6e0e38b12ec51c6c1cf1ce83f8901796441b14d2d30a1b21aa2",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:src/utils/utils_definitions.hpp:sha256:8ca63a90b2d34da65ee94ca0e3134ed05bd021bd20ccfad0ed6210ed7ae116e9"
+      ],
+      "item": "oteryn:item.tibia.i11328",
+      "use_text": "You remove its top and pull the crate over yourself. Inside it is stifling and you can barely see a thing when looking outward.",
+      "restore_text": "On reaching the watchtower you remove your temporary disguise.",
+      "use_effect": 3,
+      "speech_type": 36,
+      "appearance": 11328,
+      "track": "oteryn:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+      "required": 2,
+      "restore": {
+        "x": 33323,
+        "y": 31080,
+        "floor": -7
+      }
     }
   ]
 }

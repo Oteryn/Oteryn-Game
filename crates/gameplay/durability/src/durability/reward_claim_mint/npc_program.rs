@@ -28,17 +28,17 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
             _ => None,
         })
         .collect::<Vec<_>>();
-    let [(reward_item, quantity @ 1..=100)] = gifts.as_slice() else {
+    let Some((reward_item, quantity @ 1..=100)) = gifts.first() else {
         return Ok(Err(RewardClaimMintError::InvalidInput));
     };
+    if gifts.len() > 20 || gifts.iter().any(|(_, count)| !(1..=100).contains(count)) {
+        return Ok(Err(RewardClaimMintError::InvalidInput));
+    }
     let quantity = *quantity;
     let Some(rule) = plan.selected_rule_keys.first() else {
         return Ok(Err(RewardClaimMintError::InvalidInput));
     };
-    let rule_hash = Sha256::digest(rule.as_bytes())
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
+    let claim_key = crate::durability::quest_state::npc_program::hot_cuisine_m42::claim_key(plan)?;
     let context: Option<(String, String)> = sqlx::query_as("SELECT ruleset_revision,simulation_revision FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
     let Some((ruleset_revision, sim_revision)) = context else {
@@ -63,14 +63,37 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
     if item.container_capacity.is_some() {
         return Ok(Err(RewardClaimMintError::InvalidInput));
     }
+    let mut additional_items = Vec::new();
+    for (key, quantity) in gifts.iter().skip(1) {
+        let definition = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: (*key).clone(),
+            revision_ref: "definition-r1".into(),
+        };
+        let Some(item) = content.loop_facts(&definition) else {
+            return Ok(Err(RewardClaimMintError::InvalidInput));
+        };
+        if item.container_capacity.is_some() {
+            return Ok(Err(RewardClaimMintError::InvalidInput));
+        }
+        additional_items.push(RewardClaimMintContent {
+            charges_remaining: None,
+            item,
+            quantity: *quantity,
+            key_number: None,
+            text: None,
+            fluid_subtype: None,
+        });
+    }
     let request = RewardClaimMintRequest {
         root_fluid_subtype: None,
         root_charges_remaining: None,
         backpack_outputs: false,
+        additional_items,
         command,
         claim: TypedDefinitionRef {
             family: "RewardClaim".into(),
-            production_key: format!("oteryn:reward-claim.npc-program.{rule_hash}"),
+            production_key: claim_key,
             revision_ref: "npc-program-r1".into(),
         },
         source_placement: rule.clone(),
@@ -89,6 +112,7 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         ),
         ruleset_revision,
         sim_revision,
+        // M41 grants the source achievement in the same fenced NPC transaction.
         achievement: None,
         quest_transition: None,
         key_number: None,
@@ -122,26 +146,11 @@ pub(in crate::durability) async fn claim<C: ItemLoopContent>(
         Ok(admitted) => admitted,
         Err(error) => return Ok(Err(error)),
     };
-    let incoming = InventoryItem {
-        item_instance_id: reservation.item_instance_id,
-        definition: request.item.definition.clone(),
-        quantity,
-    };
-    if let Err(refusal) = super::super::item_transfer::check_incoming_capacity(
-        tx,
-        fence.character_id,
-        world.as_bytes(),
-        &request.item,
-        &incoming,
-        content,
-    )
-    .await?
+    if let Err(error) =
+        contents::check_capacity(tx, fence.character_id, *world.as_bytes(), &request, content)
+            .await?
     {
-        return Ok(Err(if refusal == ItemTransferRefusal::Overweight {
-            RewardClaimMintError::Refused(RewardClaimRefusal::CarryingCapacity)
-        } else {
-            RewardClaimMintError::InvalidInput
-        }));
+        return Ok(Err(error));
     }
     insert_reservation(tx, &request, &binding, &reservation).await?;
     sqlx::query("UPDATE game_reward_claim_mint_reservations SET work_units_used=work_units_used+1 WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")

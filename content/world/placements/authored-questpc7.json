@@ -4,12 +4,12 @@
   "quest": {
     "key": "oteryn:quest.feaster_of_souls_quest",
     "path": "content/quests/definitions/quests-00100-00199.json",
-    "sha256": "1b1dcadfa807c89031849b5bba76afec2b3028aebaa0aa7f2025d74afb8690ac"
+    "sha256": "a6a5fda33f1e0ecf8b75ae1e7cff8ee5fb296e8be1a7c8a367f79cde09b61a9e"
   },
   "sources": [
     "https://www.tibiawiki.com.br/index.php?title=Feaster_of_Souls_Quest&oldid=421868",
     "imports/canary/items-xml/items.xml:sha256:1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
-    "content/world/placements/region-z07-x127-y125.b3:sha256:8c2ce52518d32cb66d406ce0bbfca743e0b707438e52649d32b7b278345fcfb2",
+    "content/world/placements/region-z07-x127-y125.b3:sha256:9a29bd789d743e29c2c90e4df547e7125084699bd3d97c325e1f993adf24a0b1",
     "content/world/placements/region-z08-x124-y126.b3:sha256:aed6c165a77e3fa1e7806caac386d83d384cba2488fe2c429b485296335eb4e9",
     "content/world/placements/region-z08-x129-y123.b3:sha256:2e4b7303f8f61074c0b7367b184b3ef9239b0eb9d08f58dd76abd3586e5120ad"
   ],

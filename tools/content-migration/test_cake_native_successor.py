@@ -10,8 +10,8 @@ import cake_native_successor as successor
 import unittest
 
 import compose_monster_current_sources as compose
-import import_current_spell_sources as current
 import import_spell_families as importer
+import engenc2_fugue_profile as fugue
 
 
 class CakeNativeSuccessorTests(unittest.TestCase):
@@ -53,6 +53,10 @@ class CakeNativeSuccessorTests(unittest.TestCase):
         import register_spell_families
         result = register_spell_families.outputs(importer.ROOT)
         creatures = json.loads(result[compose.CREATURES])
+        fugue_source = json.loads((importer.ROOT / fugue.SOURCE).read_bytes())
+        self.assertEqual([r for r in creatures['records']
+                          if r['profile']['target'] == fugue.ref('Creature')],
+                         [fugue.native(fugue_source)[0]])
         cake, = [row for row in creatures['records']
                  if row['profile']['target']['key'] == 'oteryn:creature.cake_golem']
         self.assertEqual(cake['profile']['data']['profile']['details']['corpse_item']['key'],

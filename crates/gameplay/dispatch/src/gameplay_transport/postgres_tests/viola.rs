@@ -582,6 +582,7 @@ async fn burden(
         revision_ref: "definition-r1".into(),
     };
     let request = RewardClaimMintRequest {
+        additional_items: Vec::new(),
         backpack_outputs: false,
         command: reference(fence.game_session_id, 200 + index)?,
         claim: TypedDefinitionRef {

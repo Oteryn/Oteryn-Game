@@ -4,9 +4,9 @@
 mod appearance;
 pub(crate) mod audit;
 pub(crate) mod fence;
+pub(crate) mod food;
 mod ingress;
 mod lamp;
-pub(crate) mod food;
 mod model;
 mod read;
 pub(crate) use read::read_house_hirelings_in_transaction;
@@ -15,13 +15,13 @@ mod receipts;
 mod return_lamp;
 mod store_grants;
 
-pub use model::{HirelingSnapshot, HIRELING_LAMP_KEY, MAX_HIRELINGS, npc_identity, npc_key};
+pub use food::{HirelingFoodError, HirelingFoodOutcome, HirelingFoodRequest};
+pub use ingress::{HirelingLampInput, HirelingReturnInput};
 pub use lamp::HirelingLampPlacement;
-pub use ingress::{HirelingLampInput,HirelingReturnInput};
-pub use receipts::{HirelingReceiptRead,command_identity,return_binding};
-pub use return_lamp::{HirelingLampReturn, HirelingRefusal, STORE_INBOX_CAPACITY};
+pub use model::{HIRELING_LAMP_KEY, HirelingSnapshot, MAX_HIRELINGS, npc_identity, npc_key};
 pub use recall::HirelingRecallState;
-pub use food::{HirelingFoodRequest, HirelingFoodError, HirelingFoodOutcome};
+pub use receipts::{HirelingReceiptRead, command_identity, return_binding};
+pub use return_lamp::{HirelingLampReturn, HirelingRefusal, STORE_INBOX_CAPACITY};
 pub(crate) use store_grants::{grant_store_hireling, grant_store_hireling_entitlement};
 
 /// Reserved E12 native item-use cause; never accepted by the generic consumable writer.

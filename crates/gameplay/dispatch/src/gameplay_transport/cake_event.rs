@@ -102,7 +102,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // identities remain the sole registry. Edible USE is globally registered;
         // only upper-floor removal is restricted to the donor tower rectangle.
         for (floor, x, y, raw) in map.overlay.base().tiles() {
-            if !raw.ids().iter().any(|id| compact.contains(id)) {
+            let bridge_item = if floor == -7 && (32052..=32059).contains(&y) {
+                match x {
+                    33301..=33305 => 48227,
+                    33300 | 33306 => 12113,
+                    _ => 0,
+                }
+            } else {
+                0
+            };
+            if bridge_item == 0 && !raw.ids().iter().any(|id| compact.contains(id)) {
                 continue;
             }
             let pos = TilePos { x, y, floor };
@@ -123,24 +132,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 {
                     continue;
                 }
-                let MapDefinition::Item(reference) = entry.facts.definition else {
-                    continue;
-                };
-                let definition = super::item_look::typed_definition(index, reference)?;
-                let Some(id) = item_id(&definition.production_key) else {
-                    continue;
+                let id = match entry.facts.definition {
+                    MapDefinition::Item(reference) => item_id(
+                        &super::item_look::typed_definition(index, reference)?.production_key,
+                    )?,
+                    MapDefinition::Terrain(_) if bridge_item != 0 => 0,
+                    _ => continue,
                 };
                 let upper = (4..=6).contains(&z)
                     && (33287..=33330).contains(&x)
                     && (32065..=32103).contains(&y)
                     && matches!(id, 12147 | 12148 | 12152..=12155);
-                if !((z == 7 && matches!(id, 12085 | 12086)) || upper) {
+                if bridge_item == 0 && !((z == 7 && matches!(id, 12085 | 12086)) || upper) {
                     continue;
                 }
                 sources.push(CakeMapSource {
                     placement: hex(bundle.into_iter().chain(key.to_be_bytes())),
                     spatial: hex(key.to_be_bytes()),
                     source_item: id,
+                    bridge_item,
                     x,
                     y,
                     z,
@@ -189,7 +199,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(sources) = self.cake_sources() else {
             return false;
         };
-        let Ok(rows) = self
+        let Ok(projection) = self
             .root
             .project_world_cake(
                 self.holder,
@@ -211,7 +221,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         }
         let base = map.facts.base_only();
-        for row in rows {
+        for row in projection.states {
             let Ok(bytes) = row.placement.get(32..).unwrap_or_default().try_into() else {
                 return false;
             };
@@ -232,12 +242,39 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(revision) = u64::try_from(row.revision) else {
                 return false;
             };
-            if !map.facts.install_gathering_state(
-                key,
-                revision,
-                entry.facts,
-                (row.item != 0).then_some(entry.facts),
-            ) {
+            let bridge = pos.floor == -7
+                && (33300..=33306).contains(&pos.x)
+                && (32052..=32059).contains(&pos.y);
+            let after = if bridge && projection.restore {
+                Some(entry.facts)
+            } else if bridge && matches!(row.item, 48227 | 12113) {
+                let Some(reference) = native.item_index().and_then(|index| {
+                    index.definition_ref(
+                        "Item",
+                        &format!("oteryn:item.tibia.i{}", row.item),
+                        "definition-r1",
+                    )
+                }) else {
+                    return false;
+                };
+                Some(view::EntryFacts {
+                    definition: MapDefinition::Item(reference),
+                    appearance_id: row.item as u16,
+                    terrain_kind: Some(oteryn_world_bundle::bundle::TerrainKind::Ground),
+                    blocks_projectile: false,
+                    pickupable: false,
+                    ..entry.facts
+                })
+            } else {
+                (row.item != 0).then_some(entry.facts)
+            };
+            if !(if bridge {
+                map.facts
+                    .install_cake_bridge_state(key, revision, entry.facts, after)
+            } else {
+                map.facts
+                    .install_gathering_state(key, revision, entry.facts, after)
+            }) {
                 return false;
             }
         }
@@ -386,5 +423,98 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let _ = self.refresh_cake_world_map().await;
         }
         Some(outcome(disposition))
+    }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn cake_errand_step(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        actor: ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        snapshot: crate::foundation::MovementPositionSnapshot,
+    ) {
+        let Some(map) = self.bundle_map() else { return };
+        let Some(native) = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+        else {
+            return;
+        };
+        let Some(index) = native.item_index() else {
+            return;
+        };
+        let p = snapshot.position();
+        let Ok(x) = u16::try_from(p.x) else { return };
+        let Ok(y) = u16::try_from(p.y) else { return };
+        let Ok(floor) = i8::try_from(-p.floor) else {
+            return;
+        };
+        let Some(tile) = view::compose_tile(&map.overlay, &map.facts, TilePos { x, y, floor })
+            .ok()
+            .flatten()
+        else {
+            return;
+        };
+        let source = tile.entries.iter().find_map(|entry| {
+            let MapDefinition::Item(reference) = entry.facts.definition else {
+                return None;
+            };
+            let id =
+                item_id(&super::item_look::typed_definition(index, reference)?.production_key)?;
+            if id == 8886 {
+                let expected = match (p.x, p.y, p.floor) {
+                    (32346, 31822 | 31823, 7) => 43910,
+                    (32350, 32275 | 32276, 7) => 43911,
+                    (33251, 31802 | 31803, 7) => 43912,
+                    (33191, 32397 | 32398, 7) => 43913,
+                    (32377, 32801 | 32802, 7) => 43914,
+                    _ => return None,
+                };
+                let MapEntryKey::Base(key) = entry.source.key() else {
+                    return None;
+                };
+                if map.facts.action_at(key) != Some(expected) {
+                    return None;
+                }
+                return Some(id);
+            }
+            matches!(id, 12090..=12095).then_some(id)
+        });
+        let Some(source) = source else { return };
+        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+            return;
+        };
+        {
+            let runtime = self.runtime.lock().await;
+            if runtime.read_actor_position(actor) != Ok(snapshot)
+                || !runtime
+                    .bound_attacker_lease(actor, session)
+                    .is_ok_and(|lease| {
+                        lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                            && lease.generation() == fence.character_lease_generation
+                    })
+            {
+                return;
+            }
+        }
+        if self
+            .root
+            .record_cake_errand_step(
+                permit,
+                self.character,
+                self.holder,
+                fence,
+                actor.placement_identity(),
+                snapshot.revision(),
+                self.reset_epoch,
+                p,
+                source,
+            )
+            .await
+            .is_err()
+        {
+            super::operator_event("cake_errand_step_transaction_failed");
+        }
     }
 }

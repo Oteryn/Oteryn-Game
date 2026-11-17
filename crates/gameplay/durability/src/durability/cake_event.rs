@@ -72,10 +72,16 @@ pub struct CakeMapSource {
     pub placement: String,
     pub spatial: String,
     pub source_item: u16,
+    pub bridge_item: u16,
     pub x: u16,
     pub y: u16,
     pub z: u8,
 }
+pub struct CakeProjection {
+    pub states: Vec<TerrainState>,
+    pub restore: bool,
+}
+
 #[derive(Clone, Debug)]
 pub struct CakeBite {
     pub command: CommandRef,
@@ -168,7 +174,7 @@ impl DurabilityRoot {
         bundle: [u8; 32],
         scope: TerrainScope,
         sources: Vec<CakeMapSource>,
-    ) -> Result<Vec<TerrainState>, DurabilityError> {
+    ) -> Result<CakeProjection, DurabilityError> {
         if sources.len() > 8192 {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -189,7 +195,10 @@ impl DurabilityRoot {
             let ready:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_runtime_scope_assignments a JOIN game_durability_admission_runtime_guards g USING(scope_key) WHERE a.world_id=encode($1,'hex')::uuid AND a.channel_id=encode($2,'hex')::uuid AND a.scope_kind=1 AND a.state=1 AND a.ownership_generation=$3::text::numeric AND g.ready AND g.ownership_generation=a.ownership_generation)")
                 .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string()).fetch_one(&mut *tx).await?;
             if !ready{return Err(DurabilityError::Unavailable)}
-            let Some(year)=latest_year(&mut tx,world_id).await? else{commit_semantic_transaction(tx,deadline).await?;return Ok(Vec::new())};
+            let Some(year)=latest_year(&mut tx,world_id).await? else{commit_semantic_transaction(tx,deadline).await?;return Ok(CakeProjection {states:Vec::new(), restore:false})};
+            settle_current_world(&mut tx, world_id, u64::try_from(scope.reset_epoch).map_err(|_| DurabilityError::InvalidStoredState)?).await?;
+            sqlx::query("SELECT game_cake_reset_continuation(encode($1,'hex')::uuid,$2::text::numeric)")
+                .bind(world_id.as_bytes().as_slice()).bind(scope.reset_epoch.to_string()).execute(&mut *tx).await?;
             let projected:bool=sqlx::query_scalar("SELECT game_cake_project_channel(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,$7,$8)")
                 .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(bundle.as_slice()).bind(&scope.map_revision)
                 .bind(scope.content_generation.as_slice()).bind(scope.reset_epoch).bind(year).bind(sources).fetch_one(&mut *tx).await?;
@@ -198,7 +207,9 @@ impl DurabilityRoot {
                 .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(scope.reset_epoch).bind(scope.map_revision).bind(scope.content_generation.as_slice()).bind(year).fetch_all(&mut *tx).await?;
             if rows.len()>8192{return Err(DurabilityError::InvalidStoredState)}
             let result=rows.into_iter().map(|row|Ok(TerrainState{placement:row.try_get("placement")?,revision:row.try_get("object_revision")?,item:u32::try_from(row.try_get::<i64,_>("state_item_id")?).map_err(|_|DurabilityError::InvalidStoredState)?})).collect::<Result<Vec<_>,DurabilityError>>()?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(result)
+            let restore: bool = sqlx::query_scalar("SELECT coalesce((SELECT event_end_cleaned_up FROM game_cake_phases WHERE world_id=encode($1,'hex')::uuid AND event_year=$2),false)")
+                .bind(world_id.as_bytes().as_slice()).bind(year).fetch_one(&mut *tx).await?;
+            commit_semantic_transaction(tx,deadline).await?;Ok(CakeProjection {states:result,restore})
         })).await
     }
 }
@@ -272,5 +283,73 @@ impl DurabilityRoot {
             let result=if character==fence.character_id.as_bytes()&&stored==intent{UseDisposition::Committed}else{UseDisposition::StaleState};
             commit_semantic_transaction(tx,deadline).await?;Ok(Some(result))
         })).await
+    }
+}
+
+impl DurabilityRoot {
+    /// Only the committed movement dispatcher supplies this source-qualified step.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn record_cake_errand_step(
+        &self,
+        permit: &SpellLanePermit,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: super::character_progression::CurrentCharacterGameplayFence,
+        actor: [u8; 16],
+        movement_revision: u64,
+        epoch: u64,
+        position: crate::foundation::MovementLocalPosition,
+        source: u16,
+    ) -> Result<String, DurabilityError> {
+        let item_fence = fence.item_fence();
+        permit.check_scope(item_fence.runtime_scope)?;
+        if !matches!(source, 12090..=12095 | 8886) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let (world, _) = scope_of(&item_fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        let position: Vec<_> = position
+            .x
+            .to_be_bytes()
+            .into_iter()
+            .chain(position.y.to_be_bytes())
+            .chain(i32::from(position.floor).to_be_bytes())
+            .collect();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if super::character_progression::assert_gameplay_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Err(DurabilityError::Unavailable);
+            }
+            let Some(year) = latest_year(&mut tx, world).await? else {
+                commit_semantic_transaction(tx, deadline).await?;
+                return Ok("inactive".into());
+            };
+            let outcome: String = sqlx::query_scalar("SELECT game_cake_errand_step(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7,$8)")
+                .bind(world.as_bytes().as_slice()).bind(year).bind(fence.character_id.as_bytes().as_slice())
+                .bind(actor.as_slice()).bind(movement_revision.to_string()).bind(epoch.to_string())
+                .bind(position).bind(i32::from(source)).fetch_one(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(outcome)
+        })).await
+    }
+}
+
+impl DurabilityRoot {
+    pub async fn current_cake_year(&self, world: WorldId) -> Result<Option<i32>, DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let year = latest_year(&mut tx, world).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(year)
+                })
+            })
+            .await
     }
 }

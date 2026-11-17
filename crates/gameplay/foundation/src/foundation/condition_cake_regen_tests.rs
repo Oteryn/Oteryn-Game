@@ -13,7 +13,7 @@ fn regen(
     def(
         key,
         ConditionValues::SpellRegeneration {
-            sub_id,
+            sub_id: sub_id.into(),
             duration_ms,
             health_gain: h,
             health_interval_ms: ht,
