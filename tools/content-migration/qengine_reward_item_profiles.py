@@ -71,6 +71,8 @@ IDS |= {22082}
 # M44: source flower harvest and the two remaining native pagoda offerings.
 IDS |= {21389, 21466}
 IDS |= questl2_ready.ITEMS
+# QB-VAMPIRE: Storkus's vampire lord tokens and the last-rank vampire doll.
+IDS |= {8191, 8192}
 # Already present in main f5b584ef1's native provider; the existing cohort
 # cardinality includes these six shells, even when a source fact is refined.
 PREVIOUSLY_COUNTED_IDS = {3029, 3035, 3205, 3212, 3234, 3607}
