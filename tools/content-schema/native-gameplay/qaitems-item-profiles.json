@@ -405,7 +405,7 @@
       "authoring": {
         "item": {
           "family": "Item",
-          "key": "candidate:item/5957",
+          "key": "candidate:item/23738",
           "revision": "spell-p2-r21"
         }
       },
@@ -415,11 +415,11 @@
           "value": {
             "name": {
               "state": "KNOWN",
-              "value": "lottery ticket"
+              "value": "ghostsilver lantern"
             },
             "description": {
               "state": "KNOWN",
-              "value": "It has not been used yet."
+              "value": "It is made of filigree silver braces and delicate indigo glass. It glows with an otherworldly light."
             }
           }
         },
@@ -439,7 +439,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 120
+              "value": 600
             },
             "movable": {
               "state": "KNOWN",
@@ -464,7 +464,38 @@
           }
         },
         "equipment": {
-          "state": "NOT_APPLICABLE"
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  },
+                  "level": {
+                    "state": "UNKNOWN"
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "EXTRA"
+                  },
+                  "vocations": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
         },
         "weapon": {
           "state": "UNKNOWN"
@@ -497,304 +528,6 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "KNOWN",
-          "value": {
-            "account_binding_policy": {
-              "state": "UNKNOWN"
-            },
-            "character_binding_policy": {
-              "state": "UNKNOWN"
-            },
-            "marketable": {
-              "state": "KNOWN",
-              "value": true
-            },
-            "tradeable": {
-              "state": "UNKNOWN"
-            },
-            "vocations": {
-              "state": "UNKNOWN"
-            }
-          }
-        },
-        "fluid": {
-          "state": "UNKNOWN"
-        },
-        "readable_writeable": {
-          "state": "UNKNOWN"
-        }
-      },
-      "attributes": {
-        "spell_augments": [],
-        "speed_bonus": 0,
-        "blocks_movement": false,
-        "blocks_projectile": false,
-        "immovable_block_solid": false,
-        "has_height": false,
-        "field_replaceable": null,
-        "field_condition": null,
-        "rune_consumption": null
-      },
-      "admission": {
-        "materializable": true,
-        "stack_class": "NonStackable",
-        "legal_destinations": [
-          "CharacterInventory",
-          "Ground"
-        ]
-      },
-      "production_binding": {
-        "disposition": "EXACT",
-        "external_id": "5957",
-        "identity_namespace": "ots/item_server_id",
-        "source_key": "oteryn:source.crystalserver",
-        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
-        "target": {
-          "family": "Item",
-          "key": "oteryn:item.tibia.i5957",
-          "revision": "definition-r1"
-        }
-      },
-      "production_definition": {
-        "family": "Item",
-        "production_key": "oteryn:item.tibia.i5957",
-        "revision_ref": "definition-r1"
-      },
-      "production_binding_qualification": null
-    },
-    {
-      "authoring": {
-        "item": {
-          "family": "Item",
-          "key": "candidate:item/9018",
-          "revision": "spell-p2-r21"
-        }
-      },
-      "semantics": {
-        "presentation": {
-          "state": "KNOWN",
-          "value": {
-            "name": {
-              "state": "KNOWN",
-              "value": "firewalker boots"
-            },
-            "description": {
-              "state": "KNOWN",
-              "value": "Wearing these boots reduces the damage gotten from fiery ground"
-            }
-          }
-        },
-        "classification": {
-          "state": "KNOWN",
-          "value": {
-            "item_type": {
-              "state": "NOT_APPLICABLE"
-            },
-            "capabilities": {
-              "state": "UNKNOWN"
-            }
-          }
-        },
-        "physical": {
-          "state": "KNOWN",
-          "value": {
-            "weight": {
-              "state": "KNOWN",
-              "value": 950
-            },
-            "movable": {
-              "state": "KNOWN",
-              "value": true
-            },
-            "pickupable": {
-              "state": "KNOWN",
-              "value": true
-            }
-          }
-        },
-        "stack": {
-          "state": "KNOWN",
-          "value": {
-            "stackable": {
-              "state": "KNOWN",
-              "value": false
-            },
-            "stack_max": {
-              "state": "NOT_APPLICABLE"
-            }
-          }
-        },
-        "equipment": {
-          "state": "KNOWN",
-          "value": {
-            "patterns": {
-              "state": "KNOWN",
-              "value": [
-                {
-                  "pattern_id": 1,
-                  "primary_slot": {
-                    "state": "KNOWN",
-                    "value": "FEET"
-                  },
-                  "additional_reserved_slots": {
-                    "state": "KNOWN",
-                    "value": []
-                  },
-                  "mutually_exclusive_groups": {
-                    "state": "KNOWN",
-                    "value": []
-                  },
-                  "vocations": {
-                    "state": "KNOWN",
-                    "value": []
-                  },
-                  "level": {
-                    "state": "KNOWN",
-                    "value": 130
-                  },
-                  "compatibility_rule": {
-                    "state": "NOT_APPLICABLE"
-                  }
-                }
-              ]
-            }
-          }
-        },
-        "weapon": {
-          "state": "UNKNOWN"
-        },
-        "protection": {
-          "state": "KNOWN",
-          "value": {
-            "armor": {
-              "state": "KNOWN",
-              "value": 2
-            },
-            "resistances": {
-              "state": "KNOWN",
-              "value": [
-                {
-                  "kind": "FIRE_FIELD",
-                  "percent": {
-                    "state": "KNOWN",
-                    "value": {
-                      "denominator": 1,
-                      "numerator": 90
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        },
-        "skill_modifiers": {
-          "state": "UNKNOWN"
-        },
-        "charges": {
-          "state": "NOT_APPLICABLE"
-        },
-        "temporal": {
-          "state": "KNOWN",
-          "value": {
-            "consumption_mode": {
-              "state": "KNOWN",
-              "value": "AUTHORITATIVE_ACTIVE_TIME_BUDGET"
-            },
-            "decay_target": {
-              "state": "UNKNOWN"
-            },
-            "duration": {
-              "state": "KNOWN",
-              "value": 3600000
-            },
-            "stop_duration": {
-              "state": "KNOWN",
-              "value": true
-            }
-          }
-        },
-        "container": {
-          "state": "NOT_APPLICABLE"
-        },
-        "imbuement": {
-          "state": "UNKNOWN"
-        },
-        "use_transform": {
-          "state": "KNOWN",
-          "value": {
-            "targets": [
-              {
-                "kind": "ROTATE",
-                "target": {
-                  "state": "UNKNOWN"
-                }
-              },
-              {
-                "kind": "WRAP",
-                "target": {
-                  "state": "UNKNOWN"
-                }
-              },
-              {
-                "kind": "USE",
-                "target": {
-                  "state": "UNKNOWN"
-                }
-              },
-              {
-                "kind": "EQUIP",
-                "target": {
-                  "state": "UNKNOWN"
-                }
-              },
-              {
-                "kind": "DEEQUIP",
-                "target": {
-                  "state": "KNOWN",
-                  "value": {
-                    "key": "oteryn:item.tibia.i9019",
-                    "revision": "definition-r1"
-                  }
-                }
-              },
-              {
-                "kind": "MALE",
-                "target": {
-                  "state": "UNKNOWN"
-                }
-              },
-              {
-                "kind": "FEMALE",
-                "target": {
-                  "state": "UNKNOWN"
-                }
-              },
-              {
-                "kind": "DESTROY",
-                "target": {
-                  "state": "UNKNOWN"
-                }
-              },
-              {
-                "kind": "DECAY",
-                "target": {
-                  "state": "KNOWN",
-                  "value": {
-                    "key": "oteryn:item.tibia.i9020",
-                    "revision": "definition-r1"
-                  }
-                }
-              },
-              {
-                "kind": "WRITE_ONCE",
-                "target": {
-                  "state": "UNKNOWN"
-                }
-              }
-            ]
-          }
-        },
-        "trade_restrictions": {
           "state": "UNKNOWN"
         },
         "fluid": {
@@ -825,19 +558,19 @@
       },
       "production_binding": {
         "disposition": "EXACT",
-        "external_id": "9018",
+        "external_id": "23738",
         "identity_namespace": "ots/item_server_id",
         "source_key": "oteryn:source.crystalserver",
         "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
         "target": {
           "family": "Item",
-          "key": "oteryn:item.tibia.i9018",
+          "key": "oteryn:item.tibia.i23738",
           "revision": "definition-r1"
         }
       },
       "production_definition": {
         "family": "Item",
-        "production_key": "oteryn:item.tibia.i9018",
+        "production_key": "oteryn:item.tibia.i23738",
         "revision_ref": "definition-r1"
       },
       "production_binding_qualification": null
