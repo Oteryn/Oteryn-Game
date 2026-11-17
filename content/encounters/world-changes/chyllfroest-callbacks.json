@@ -2,14 +2,40 @@
   "schema": 1,
   "callbacks": [
     {
-      "key": "oteryn:quest-callback/chyllfroest-seasonal-entry",
+      "key": "oteryn:quest-callback/chyllfroest-seasonal-entry-north",
       "quest": "oteryn:quest.chyllfroest_mini_world_change",
       "trigger": "step_in",
       "selector": {
-        "position": null,
+        "position": {
+          "x": 32061,
+          "y": 31083,
+          "floor": -7
+        },
         "unique": null,
         "action": 50000,
-        "appearance": null
+        "appearance": null,
+        "position_aliases": [
+          {
+            "x": 32060,
+            "y": 31083,
+            "floor": -7
+          },
+          {
+            "x": 32060,
+            "y": 31084,
+            "floor": -7
+          },
+          {
+            "x": 32059,
+            "y": 31084,
+            "floor": -7
+          },
+          {
+            "x": 32059,
+            "y": 31085,
+            "floor": -7
+          }
+        ]
       },
       "lever": null,
       "reversible": false,
@@ -25,7 +51,67 @@
       },
       "failure_message": "Chyllfroest is open from April 1 through May 1.",
       "sources": [
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/movements_prohibit_entry.lua:3-22"
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/movements_prohibit_entry.lua:3-22",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3086-3102"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/chyllfroest-seasonal-entry-south",
+      "quest": "oteryn:quest.chyllfroest_mini_world_change",
+      "trigger": "step_in",
+      "selector": {
+        "position": {
+          "x": 32058,
+          "y": 31085,
+          "floor": -7
+        },
+        "unique": null,
+        "action": 50000,
+        "appearance": null,
+        "position_aliases": [
+          {
+            "x": 32058,
+            "y": 31086,
+            "floor": -7
+          },
+          {
+            "x": 32057,
+            "y": 31086,
+            "floor": -7
+          },
+          {
+            "x": 32057,
+            "y": 31087,
+            "floor": -7
+          },
+          {
+            "x": 32056,
+            "y": 31087,
+            "floor": -7
+          },
+          {
+            "x": 32056,
+            "y": 31088,
+            "floor": -7
+          }
+        ]
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_teleport": {
+        "x": 32063,
+        "y": 31091,
+        "floor": -7
+      },
+      "failure_message": "Chyllfroest is open from April 1 through May 1.",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/tinder_box_quest_chyllfroest/movements_prohibit_entry.lua:3-22",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/startup/tables/item.lua:3086-3102"
       ]
     },
     {

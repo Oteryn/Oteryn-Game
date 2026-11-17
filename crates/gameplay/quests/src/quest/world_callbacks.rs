@@ -39,25 +39,35 @@ pub enum Trigger {
 #[cfg(test)]
 #[test]
 fn chyllfroest_entry_binds_aid_to_season_and_failure_destination() -> Result<(), String> {
-    let callback = load()?
+    let entries: Vec<_> = load()?
         .into_iter()
-        .find(|callback| callback.key == CHYLLFROEST_ENTRY)
-        .ok_or("Chyllfroest entry callback")?;
-    assert_eq!(callback.trigger, Trigger::StepIn);
-    assert_eq!(callback.selector.action, Some(50000));
+        .filter(|callback| is_chyllfroest_entry(&callback.key))
+        .collect();
+    assert_eq!(entries.len(), 2);
     assert_eq!(
-        world_change_requirement(&callback.key),
-        Some(("chyllfroest", None))
+        entries
+            .iter()
+            .map(|entry| 1 + entry.selector.position_aliases.len())
+            .sum::<usize>(),
+        11
     );
-    assert!(callback.return_on_failure);
-    assert_eq!(
-        callback.failure_teleport,
-        Some(Position {
-            x: 32063,
-            y: 31091,
-            floor: -7
-        })
-    );
+    for callback in entries {
+        assert_eq!(callback.trigger, Trigger::StepIn);
+        assert_eq!(callback.selector.action, Some(50000));
+        assert_eq!(
+            world_change_requirement(&callback.key),
+            Some(("chyllfroest", None))
+        );
+        assert!(callback.return_on_failure);
+        assert_eq!(
+            callback.failure_teleport,
+            Some(Position {
+                x: 32063,
+                y: 31091,
+                floor: -7
+            })
+        );
+    }
     Ok(())
 }
 
@@ -663,7 +673,13 @@ struct Document {
     callbacks: Vec<Callback>,
 }
 
-pub const CHYLLFROEST_ENTRY: &str = "oteryn:quest-callback/chyllfroest-seasonal-entry";
+pub fn is_chyllfroest_entry(key: &str) -> bool {
+    matches!(
+        key,
+        "oteryn:quest-callback/chyllfroest-seasonal-entry-north"
+            | "oteryn:quest-callback/chyllfroest-seasonal-entry-south"
+    )
+}
 
 /// Shared World prerequisites for exact native source callbacks. Ordinary quest
 /// travel and exits remain independent of these event-only predicates.
@@ -672,8 +688,8 @@ pub fn world_change_requirement(key: &str) -> Option<(&'static str, Option<u8>)>
         return Some(("hive_born", None));
     }
     match key {
-        CHYLLFROEST_ENTRY
-        | "oteryn:quest-callback/ursagrodon-20358-break"
+        key if is_chyllfroest_entry(key) => Some(("chyllfroest", None)),
+        "oteryn:quest-callback/ursagrodon-20358-break"
         | "oteryn:quest-callback/ursagrodon-20358-melt"
         | "oteryn:quest-callback/ursagrodon-20359-break"
         | "oteryn:quest-callback/ursagrodon-20359-melt"

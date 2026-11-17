@@ -398,9 +398,15 @@ pub(super) fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
             || selector.appearance.is_some()
             || callback.trigger == Trigger::Use
             || ordinal == 0)
-        && map
-            .facts
-            .quest_callback_matches(key, selector.unique, selector.action, None)
+        && (map.facts.quest_callback_matches(key, selector.unique, selector.action, None)
+            // Crystal assigns AID 50000 to the ground at startup. The immutable
+            // base map can retain the authored floor without that Lua assignment.
+            || (world_callbacks::is_chyllfroest_entry(&callback.key)
+                && ordinal == 0
+                && selector.action == Some(50000)
+                && selector.position.is_some()
+                && !map.facts.house_tile(pos)
+                && !map.facts.quest_callback_source_bound(key)))
         && (map
             .facts
             .quest_callback_matches(key, None, None, selector.appearance)
