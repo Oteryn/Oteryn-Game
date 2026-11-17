@@ -23,6 +23,8 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 const STORY: &str = "oteryn:quest-progress/l6/paradox/story";
 const ACHIEVEMENT: &str = "oteryn:achievement/mathemagician";
+const SOURCE_HUGO: &str = "oteryn:quest-progress/quest/u7_24/the_paradox_tower/the_feared_hugo";
+const SOURCE_MATH: &str = "oteryn:quest-progress/quest/u7_24/the_paradox_tower/mathemagics";
 #[derive(Clone, Copy)]
 struct Contact {
     key: &'static str,
@@ -383,6 +385,92 @@ async fn progress(h: &Harness) -> TestResult<i64> {
 async fn snapshot(h: &Harness) -> TestResult<serde_json::Value> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_object('tracks',(SELECT jsonb_agg(to_jsonb(t) ORDER BY track_key) FROM game_character_quest_tracks t),'receipts',(SELECT jsonb_agg(to_jsonb(r) ORDER BY committed_character_revision) FROM game_character_quest_receipts r),'achievements',(SELECT jsonb_agg(to_jsonb(a) ORDER BY achievement_key) FROM game_account_achievements a),'grants',(SELECT jsonb_agg(to_jsonb(g) ORDER BY source_event_id) FROM game_account_achievement_grant_requests g))").fetch_one(&h.pool).await?)
 }
+async fn source_tracks(h: &Harness) -> TestResult<std::collections::BTreeMap<String, i64>> {
+    let rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT track_key,value FROM game_character_quest_tracks WHERE track_key IN ($1,$2) ORDER BY track_key LIMIT 2",
+    )
+    .bind(SOURCE_HUGO)
+    .bind(SOURCE_MATH)
+    .fetch_all(&h.pool)
+    .await?;
+    Ok(rows.into_iter().collect())
+}
+
+async fn assert_riddler_accepts_learned_story(h: &Harness) -> TestResult {
+    use oteryn_gameplay_quests::quest::npc_rules::{
+        NpcInventorySnapshot, NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger,
+    };
+    let catalogue = NpcRuleCatalog::runtime().map_err(debug)?;
+    let mut tracks = source_tracks(h).await?;
+    assert_eq!(tracks.get(SOURCE_HUGO), Some(&4));
+    assert_eq!(tracks.get(SOURCE_MATH), Some(&1));
+    let inventory = NpcInventorySnapshot::default();
+    let outfits = std::collections::BTreeMap::new();
+    let mut topic = 0;
+    for (message, expected_topic) in [
+        ("test", 1),
+        ("yes", 2),
+        ("goshnar", 3),
+        ("demonbunny", 4),
+        ("tha'kull", 6),
+        ("yes", 7),
+        ("breath", 8),
+        ("silence", 9),
+        ("old", 10),
+        ("yes", 11),
+        ("green", 12),
+        ("none", 13),
+        ("1", 13),
+    ] {
+        let input = NpcRuleInput {
+            npc: "oteryn:npc.riddler",
+            trigger: NpcRuleTrigger::Say,
+            message,
+            player_name: None,
+            topic,
+            tracks: &tracks,
+            inventory: &inventory,
+            now_epoch_seconds: 1_700_000_000,
+            calendar_month: 11,
+            premium_current: true,
+            level: 30,
+            vocation: "oteryn:vocation.knight",
+            sex: 0,
+            outfits: &outfits,
+        };
+        let plan = if message == "1" {
+            let teleport = catalogue
+                .plan_storage_teleport(&input)
+                .map_err(debug)?
+                .ok_or("Riddler finale")?;
+            assert_eq!(
+                (
+                    teleport.destination.x,
+                    teleport.destination.y,
+                    teleport.destination.floor
+                ),
+                (32478, 31905, -1)
+            );
+            teleport.source
+        } else {
+            catalogue
+                .plan_storage(&input)
+                .map_err(debug)?
+                .ok_or("Riddler answer")?
+        };
+        assert_eq!(
+            plan.next_topic, expected_topic,
+            "learned source answer {message}"
+        );
+        topic = plan.next_topic;
+        // Only the consumer preview is simulated; the two prerequisite tracks
+        // above came from the real NPC dispatch and PostgreSQL writer.
+        for change in plan.track_changes {
+            tracks.insert(change.key, change.after);
+        }
+    }
+    Ok(())
+}
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -429,6 +517,7 @@ pub(super) async fn exercise(
             .all(|r| r.disposition == NpcIntentDisposition::Ok)
     );
     assert_eq!(progress(h).await?, 1);
+    assert_eq!(source_tracks(h).await?.get(SOURCE_HUGO), Some(&1));
     if name.ends_with("lesson-guard") {
         let before = snapshot(h).await?;
         relocate(owner, admitted, 4).await?;
@@ -463,6 +552,7 @@ pub(super) async fn exercise(
             expected,
             "only the exact ordered contact advances the story"
         );
+        assert_eq!(source_tracks(h).await?.get(SOURCE_HUGO), Some(&expected));
     }
     let before = snapshot(h).await?;
     relocate(owner, admitted, 1).await?;
@@ -498,6 +588,7 @@ pub(super) async fn exercise(
             .collect::<Vec<_>>()
     );
     assert_eq!(progress(h).await?, 5);
+    assert_riddler_accepts_learned_story(h).await?;
     let achievements: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_account_achievements WHERE achievement_key=$1",
     )
