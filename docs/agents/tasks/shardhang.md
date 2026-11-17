@@ -45,3 +45,9 @@ Its reported fixed setup/build cost was about 19 minutes. That earlier run
 establishes that aggregate execution has exhausted this lane's budget
 before, but does not explain the later 45-minute cancellations on its own.
 The exact-base local run has reached dispatch and game-server compilation.
+
+A direct run of the freshly built client test binary passed
+`srx3_native_missile_crosses_real_session_into_play_scene` in 0.16s.
+The test has an unbounded channel receive in its peer task, but the
+controller reached the send and the test joined both tasks on this run.
+The workspace baseline is still compiling the dispatch lib-test target.
