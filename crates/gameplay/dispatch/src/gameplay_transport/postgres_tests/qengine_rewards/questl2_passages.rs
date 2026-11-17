@@ -1,6 +1,9 @@
 //! L2 delivery rewards must be followed by the real entitled player journey.
 use super::*;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn probe(case: &'static str, required: &[&str]) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -22,6 +25,7 @@ fn probe(case: &'static str, required: &[&str]) -> TestResult {
     scenario(case)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questl2_passage_batch_white_raven_full_journey() -> TestResult {
     probe("qengine-rewards-l2-white-raven", &["/l2-white-raven-brooch"])

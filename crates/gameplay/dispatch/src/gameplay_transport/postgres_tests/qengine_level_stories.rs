@@ -12,14 +12,17 @@ use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_l11_dream_warrior_complete_level_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l11-dream-warrior-story")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_l11_issavi_complete_level_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l11-issavi-story")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_l11_makeshift_complete_apprenticeship_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l11-makeshift-story")

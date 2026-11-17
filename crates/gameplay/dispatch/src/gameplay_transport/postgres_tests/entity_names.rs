@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 };
 use oteryn_protocol_oteryn::{MessageType, decode_snapshot_chunk, decode_wire_envelope};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn entity_names_spawned_monster_and_logged_in_player_reach_the_session() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

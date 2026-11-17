@@ -1,6 +1,7 @@
 //! S10 source-population regression through the production voice cadence and CHAT owner.
 use super::TestResult;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn s10_valindara_postgres_source_voice_reaches_chat() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

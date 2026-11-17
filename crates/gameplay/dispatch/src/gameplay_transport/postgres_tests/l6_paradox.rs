@@ -4,6 +4,7 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_npc_minimum_level_renamed_stripped_binding_cannot_use_generic_writer() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -13,6 +14,7 @@ fn l6_npc_minimum_level_renamed_stripped_binding_cannot_use_generic_writer() -> 
     super::qengine_rewards::scenario("qengine-rewards-questpc4-paradox-shadow")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_npc_minimum_level_uses_locked_progression_and_bound_terms() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

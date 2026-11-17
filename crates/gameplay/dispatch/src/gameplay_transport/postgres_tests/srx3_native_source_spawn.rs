@@ -176,6 +176,7 @@ fn source_spawn_case_with_gaz_heal(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_gaz_actual_native_proposal_creates_source_minions_postgres() -> TestResult {
     source_spawn_case(
@@ -195,6 +196,7 @@ fn srx3_gaz_actual_native_proposal_creates_source_minions_postgres() -> TestResu
         },
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_generator_actual_native_proposal_creates_energy_pulse_postgres() -> TestResult {
     source_spawn_case(
@@ -214,6 +216,7 @@ fn srx3_generator_actual_native_proposal_creates_energy_pulse_postgres() -> Test
         },
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_maxxen_actual_native_proposal_creates_source_generator_postgres() -> TestResult {
     source_spawn_case(crate::content::bosses::activity_template::PinnedActivitySourceRoom::CallbackProfessorMaxxen,
@@ -221,6 +224,7 @@ fn srx3_maxxen_actual_native_proposal_creates_source_generator_postgres() -> Tes
         MovementLocalPosition{x:33711,y:32052,floor:15},MovementLocalPosition{x:33711,y:32051,floor:15})
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_stationary_native_target_selection_publishes_source_facing_without_translation_postgres()
 -> TestResult {
@@ -244,6 +248,7 @@ fn srx3_stationary_native_target_selection_publishes_source_facing_without_trans
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_gaz_actual_reserved_think_installs_shared_marker_and_heals_after_seven_seconds_postgres()
 -> TestResult {

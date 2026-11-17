@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srv7_quest_turnips_never_enter_the_unguarded_generic_taming_owner() {
     assert!(
@@ -18,6 +19,7 @@ fn srv7_quest_turnips_never_enter_the_unguarded_generic_taming_owner() {
     );
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srv7_reliable_ram_real_map_use_guards_grants_and_replays() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -340,6 +342,7 @@ async fn exercise_mode(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn engitem_targuna_consumes_the_selected_copy_and_replays_its_fenced_receipt() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() { return Ok(()); }

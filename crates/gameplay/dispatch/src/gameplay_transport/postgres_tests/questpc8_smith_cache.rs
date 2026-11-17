@@ -2,6 +2,7 @@
 use super::{TestResult, quest_world_callbacks};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc8_smith_cache_native_guardian_and_atomic_outputs() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

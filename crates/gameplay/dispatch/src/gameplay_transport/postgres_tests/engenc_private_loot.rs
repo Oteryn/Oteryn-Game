@@ -1,6 +1,7 @@
 //! ENGENC: private settlement is independent of physical corpse capacity.
 use super::TestResult;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn engenc_private_loot_postgres_large_corpse_settles_private_loot_once() -> TestResult {
     let started = std::time::Instant::now();

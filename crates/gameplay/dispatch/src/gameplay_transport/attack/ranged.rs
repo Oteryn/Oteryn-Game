@@ -948,6 +948,30 @@ fn native_health_primary_components(
 
 #[cfg(test)]
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(in crate::gameplay_transport) async fn park_committed_ranged_shot_for_test(
         &self,
         actor: ExactActorRef,

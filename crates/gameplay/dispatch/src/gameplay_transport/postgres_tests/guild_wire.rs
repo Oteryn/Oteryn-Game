@@ -2,23 +2,88 @@
 #[path = "guild_wire/paging.rs"]
 mod paging;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{self, Harness, debug, id, run};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::fixture::{self, debug};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::fixture::{self, debug};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult, prepare_current_session, reset};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::TestResult;
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::domain::CharacterId;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::guild_chat_fixture as seed;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{MessageType, decode_wire_envelope};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::connection::{
     AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
 };
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use crate::gameplay_transport::connection::{
+    AdmittedSession, IDLE_LIVENESS, serve_admitted,
+};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::gameplay_transport::connection::{
+    AdmittedSession, IDLE_LIVENESS, serve_admitted,
+};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use crate::gameplay_transport::ComposedFreshAdmission;
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::gameplay_transport::ComposedFreshAdmission;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::guild::*;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn guild_wire_postgres_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -32,6 +97,7 @@ fn guild_wire_postgres_real_dispatch() -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -104,6 +170,9 @@ pub(super) async fn exchange(
 
 /// One real transport epoch, retaining every server frame across an optional
 /// activity barrier. No sequence, session binding or snapshot is reconstructed.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn exchange_capture(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -135,6 +204,9 @@ pub(super) async fn exchange_capture(
 }
 
 #[derive(Clone, Copy)]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 enum CaptureGoal {
     Reply,
     Switch,
@@ -142,6 +214,9 @@ enum CaptureGoal {
     SwitchEffect(u16),
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn exchange_capture_effect(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -177,6 +252,9 @@ pub(super) async fn exchange_capture_effect(
 
 /// Retain the actual post-barrier idle cue on the same transport epoch.
 #[allow(clippy::too_many_arguments)]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn exchange_capture_switch_effect(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -210,6 +288,9 @@ pub(super) async fn exchange_capture_switch_effect(
     .await
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn exchange_capture_goal(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -427,6 +508,9 @@ async fn exchange_capture_goal(
 /// Emit the actual ACK only after the complete destination snapshot, then
 /// retain the untouched server result in the server-frame transcript. Client
 /// command bytes are sent verbatim, never inserted into that server-only stream.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn acknowledge_captured_activity<S>(
     client: &mut S,
     receipt: &oteryn_protocol_oteryn::activity_scope::ActivityScopeSnapshot,
@@ -487,6 +571,9 @@ where
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn capture_end_kind(end: &crate::gameplay_transport::connection::ConnectionEnd) -> String {
     match end {
         crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenControlLost(_) => {
@@ -503,6 +590,9 @@ fn capture_end_kind(end: &crate::gameplay_transport::connection::ConnectionEnd) 
 }
 /// Observe a real autonomous owner action inside one continuously served
 /// Instance transport, through its barrier and the Channel's initial snapshot.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn capture_activity_return(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -590,6 +680,9 @@ pub(super) async fn capture_activity_return(
     Ok(barrier)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn intent(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -610,6 +703,9 @@ async fn intent(
     assert_eq!(r.code, code);
     Ok(r)
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn query(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -627,6 +723,9 @@ async fn query(
     assert_eq!(status, CommandStatus::Accepted);
     decode_guild_query_result(&bytes).map_err(debug)
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario() -> TestResult {
     run(|admin| async move {
         reset();

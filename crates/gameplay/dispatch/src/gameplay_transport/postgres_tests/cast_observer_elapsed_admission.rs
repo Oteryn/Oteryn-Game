@@ -27,6 +27,7 @@ impl PreferencesStore for Access {
     }
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn cast_observer_join_and_renew_reject_expiry_across_holder_and_sql_waits_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

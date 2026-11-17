@@ -1,6 +1,7 @@
 //! Visit the retained infernal arrival approach without replacing its source portal.
 use super::*;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_ferumbras_native_arrival_requires_level_and_current_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

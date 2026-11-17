@@ -2,6 +2,7 @@
 use super::TestResult;
 use super::fixture::{debug, id};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc8_mintwallin_native_cache_without_uid_mints_ruby_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

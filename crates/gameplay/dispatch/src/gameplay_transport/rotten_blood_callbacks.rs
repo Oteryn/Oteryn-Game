@@ -237,6 +237,30 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
 }
 
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 pub(super) struct MassiveStateForTest {
     pub(super) deadlines: Vec<(u8, u64)>,
     pub(super) paused: bool,
@@ -244,15 +268,58 @@ pub(super) struct MassiveStateForTest {
 }
 
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 pub(super) struct MushroomProgressForTest {
     pub(super) actor: ExactActorRef,
     pub(super) original_due: u64,
     pub(super) cursor: usize,
     pub(super) total: usize,
+    #[cfg(feature = "pg-tests-g4")]
     pub(super) players: Vec<(ExactActorRef, GameSessionId)>,
 }
 
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 pub(super) struct PortalClockForTest {
     pub(super) cycle_due: Option<u64>,
     pub(super) think_sequence: Option<u64>,
@@ -353,14 +420,80 @@ impl RottenBloodCallbacks {
         Ok(self.next_source_due(runtime)?.map(|work| work.at))
     }
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
     pub(super) fn pause_mushroom_after_player_commit_for_test(&mut self) {
         self.mushrooms.pause_after_player_commit_for_test();
     }
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(super) fn mushroom_progress_for_test(&self) -> Option<MushroomProgressForTest> {
         self.mushrooms.progress_for_test()
     }
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(super) fn portal_clock_for_test(&self, actor: ExactActorRef) -> Option<PortalClockForTest> {
         self.advanced.portal_clock_for_test(actor)
     }
@@ -371,6 +504,30 @@ impl RottenBloodCallbacks {
         self.advanced.pending_for_player(actor, session)
     }
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(super) fn actual_massive_commit_for_test(
         &self,
         actor: ExactActorRef,
@@ -379,6 +536,30 @@ impl RottenBloodCallbacks {
         self.advanced.massive_commit_for_test(actor, phase)
     }
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(super) fn massive_state_for_test(
         &self,
         centre: MovementLocalPosition,
@@ -387,6 +568,7 @@ impl RottenBloodCallbacks {
         self.advanced.massive_state_for_test(pos(centre), actor)
     }
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub(super) fn actual_agony_commit_for_test(
         &self,
         actor: ExactActorRef,

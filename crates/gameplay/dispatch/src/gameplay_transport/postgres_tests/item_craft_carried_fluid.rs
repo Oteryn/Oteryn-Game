@@ -37,17 +37,20 @@ impl Case {
     fn moves(self)->bool {matches!(self,Self::KegMove)}
     fn nested(self)->bool {matches!(self,Self::Nested|Self::NestedLast)}
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx1_dispenser_full_parent_conserves_flasks_and_charges_postgres()->TestResult {
     postgres_case(Case::KegFull,"srx1_keg_full_parent")?;
     postgres_case(Case::GroundFull,"srx1_cask_full_parent")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx1_used_keg_moves_preserve_charge_row_postgres()->TestResult {
     postgres_case(Case::KegMove,"srx1_used_keg_move")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx1_dispenser_ground_and_nested_charge_custody_postgres()->TestResult {
     for (case,name) in [(Case::Ground,"srx1_cask_ground"),(Case::GroundLast,"srx1_cask_ground_last"),
@@ -57,26 +60,31 @@ fn srx1_dispenser_ground_and_nested_charge_custody_postgres()->TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn item_craft_carried_flour_on_water_vessel_commits_atomically_postgres() -> TestResult {
     postgres_case(Case::Water, "item_craft_carried_water")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn item_craft_carried_flour_on_milk_vessel_makes_cake_dough_postgres() -> TestResult {
     postgres_case(Case::Milk, "item_craft_carried_milk")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn item_craft_carried_flour_on_empty_vessel_is_nothing_to_use_postgres() -> TestResult {
     postgres_case(Case::Empty, "item_craft_carried_empty")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn item_craft_carried_flour_on_water_vessel_full_bag_is_no_room_postgres() -> TestResult {
     postgres_case(Case::Full, "item_craft_carried_full")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx1_keg_fills_flasks_and_debits_charges_atomically_postgres() -> TestResult {
     postgres_case(Case::Keg, "srx1_keg")?;

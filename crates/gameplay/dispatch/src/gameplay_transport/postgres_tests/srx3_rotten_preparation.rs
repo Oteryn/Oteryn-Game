@@ -1,40 +1,55 @@
 //! Real essence USE followed by the literal public Bakragore flame USE.
 use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, run};
+
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use super::fixture::{Harness, debug, id};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::srx3_activity_source_fixture::{SourceScene, install_scene, prepare_player};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::foundation::MovementLocalPosition;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::map::view::MapFacts;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_bakragore_actual_essence_then_public_flame_use_prepares_phase_postgres() -> TestResult {
     run_flame_case(FlameCase::Normal)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_bakragore_actual_no_essence_flame_use_is_true_without_feedback_or_burn_postgres()
 -> TestResult {
     run_flame_case(FlameCase::NoEssence)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_bakragore_historical_global_one_unlit_flame_keeps_essence_and_reports_activated_postgres()
 -> TestResult {
     run_flame_case(FlameCase::HistoricalGlobalActive)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_rotten_essence_already_held_actual_wire_returns_true_with_literal_feedback_postgres()
 -> TestResult {
     run_flame_case(FlameCase::EssenceAlreadyHeld)
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 enum FlameCase {
     Normal,
     NoEssence,
     HistoricalGlobalActive,
     EssenceAlreadyHeld,
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run_flame_case(mode: FlameCase) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -390,6 +405,7 @@ pub(super) async fn seed_historical_defensive_global_phase(
 
 /// Actual command transport with decoded native feedback, including the short
 /// post-result egress window. No direct callback or invented target is invoked.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn flame_wire(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,

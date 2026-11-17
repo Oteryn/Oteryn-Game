@@ -1,6 +1,7 @@
 //! Visit the retained Zao/Farmine breach arrival without replacing its source portal.
 use super::*;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_heart_native_zao_breach_requires_level_and_current_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

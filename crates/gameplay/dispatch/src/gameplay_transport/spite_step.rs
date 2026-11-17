@@ -162,6 +162,30 @@ fn stage_with_items(
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(super) async fn retained_spite_movement_for_test(
         &self,
     ) -> Option<MovementPositionSnapshot> {
@@ -176,6 +200,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(super) async fn retained_spite_step_for_test(
         &self,
     ) -> Option<(SoulWarSourceStep, CurrentCharacterGameplayFence)> {

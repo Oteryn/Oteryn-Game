@@ -273,73 +273,87 @@ fn phase_a_chests() -> impl Iterator<Item = &'static Chest> {
         .chain(PHASE_A_KEY_CONTAINER)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_phase_a_leaf_cohort() -> TestResult {
     execute_cohort(PHASE_A_LEAVES)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_phase_a_container_cohort() -> TestResult {
     execute_cohort(PHASE_A_CONTAINERS)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_phase_a_book_cohort() -> TestResult {
     execute_cohort(PHASE_A_BOOK)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_phase_a_key_container_cohort() -> TestResult {
     execute_cohort(PHASE_A_KEY_CONTAINER)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_batch_one_orc_fortress_all_rewards_and_level_gate() -> TestResult {
     execute_gate(&ORC_FORTRESS_GATE)?;
     execute_cohort(&PHASE_A_LEAVES[..3])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_batch_one_orc_shaman_bag_exact_contents() -> TestResult {
     execute(&PHASE_A_CONTAINERS[0])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_batch_one_panpipe_bag_exact_contents() -> TestResult {
     execute(&PHASE_A_CONTAINERS[1])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_batch_one_plate_armor_coffin_once_and_replay() -> TestResult {
     execute(&PHASE_A_LEAVES[3])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_batch_one_purple_tome_all_three_bookcases() -> TestResult {
     execute_cohort(&PHASE_A_LEAVES[4..])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_batch_two_poison_daggers_two_instances_once_and_replay() -> TestResult {
     execute(&PHASE_A_CONTAINERS[2])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_batch_two_power_bolts_book_and_ammunition() -> TestResult {
     execute(&PHASE_A_CONTAINERS[3])?;
     execute_cohort(PHASE_A_BOOK)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_batch_two_parchment_room_key_bag() -> TestResult {
     execute_cohort(PHASE_A_KEY_CONTAINER)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_panpipe_key_4055_once_and_replay() -> TestResult {
     execute(&PANPIPE_ACCESS_KEY)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_panpipe_locked_door_to_reward_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -422,6 +436,7 @@ fn committed_attrs(
     Ok(entries[0].attrs.clone())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_committed_map_selectors_match_source() -> TestResult {
     assert_eq!(committed_attrs(NAGINATA_ROCK, 1791)?.action, Some(40031));
@@ -453,6 +468,7 @@ fn quest_reward_claims_committed_map_selectors_match_source() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_source_selectors_bind_exactly() -> TestResult {
     for chest in [
@@ -490,11 +506,13 @@ fn quest_reward_claims_source_selectors_bind_exactly() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_naginata_use_once_and_replay() -> TestResult {
     execute(&NAGINATA)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_naginata_pick_six_shared_hits_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -513,16 +531,19 @@ fn quest_reward_claims_naginata_pick_six_shared_hits_and_replay() -> TestResult 
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_nightmare_teddy_use_once_and_replay() -> TestResult {
     execute(&NIGHTMARE_TEDDY)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_noble_armor_use_once_and_replay() -> TestResult {
     execute(&NOBLE_ARMOR)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_noble_armor_crown_helmet_use_once_and_replay() -> TestResult {
     execute(&CROWN_HELMET)
@@ -812,16 +833,19 @@ fn committed_world(
     .map_err(debug)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_naginata_level_gate_requires_40() -> TestResult {
     execute_gate(&NAGINATA_GATE)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_noble_armor_level_gate_requires_35() -> TestResult {
     execute_gate(&NOBLE_ARMOR_GATE)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_reward_claims_phase_a_orc_fortress_level_gate_requires_40() -> TestResult {
     execute_gate(&ORC_FORTRESS_GATE)

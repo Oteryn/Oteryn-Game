@@ -4,17 +4,20 @@ use crate::foundation::ChannelContentPin;
 use crate::gameplay_transport::actor_spell;
 use crate::map::boot::tests::{floor_items, floor_pins, teleport_bundle};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn daily_resting_persisted_streak_feeds_existing_vitals_owner() -> TestResult {
     scenario(false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn daily_resting_premium_streak_feeds_vitals_and_soul_owner() -> TestResult {
     scenario(true)
 }
 
 /// Winter Update 2026: the resting bonus does not depend on the reward streak.
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn daily_resting_zero_streak_premium_regenerates_soul() -> TestResult {
     scenario_with(true, true)

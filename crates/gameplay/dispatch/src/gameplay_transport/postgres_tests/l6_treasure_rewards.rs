@@ -12,31 +12,39 @@ const TILE: oteryn_gameplay_quests::quest::world_callbacks::Position =
         floor: -7,
     };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_treasure_reward_9204_native_custody_and_replay() -> TestResult {
     run("l6-treasure-reward-9204")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_treasure_reward_9616_native_custody_and_replay() -> TestResult {
     run("l6-treasure-reward-9616")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_treasure_reward_9617_native_custody_and_replay() -> TestResult {
     run("l6-treasure-reward-9617")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_treasure_reward_9618_native_custody_and_replay() -> TestResult {
     run("l6-treasure-reward-9618")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_treasure_reward_9619_native_custody_and_replay() -> TestResult {
     run("l6-treasure-reward-9619")
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         assert!(

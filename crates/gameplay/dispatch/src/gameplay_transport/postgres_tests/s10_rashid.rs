@@ -1,6 +1,7 @@
 //! S10: real framed shop commands and durable payment after Rashid wanders one tile.
 use super::TestResult;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn s10_rashid_wandering_postgres_shop_payment_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -19,6 +20,7 @@ fn s10_rashid_wandering_postgres_shop_payment_and_replay() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn s10_weekday_rollover_moves_live_rashid_on_postgres() -> TestResult {
     use super::fixture::{Harness, debug, run};

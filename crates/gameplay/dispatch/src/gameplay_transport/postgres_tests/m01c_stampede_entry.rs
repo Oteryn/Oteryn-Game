@@ -14,6 +14,7 @@ const SELECTOR: Position = Position {
     floor: -7,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn timed_personal_stampede_entry_passes_preflight_and_schedules_elephants() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

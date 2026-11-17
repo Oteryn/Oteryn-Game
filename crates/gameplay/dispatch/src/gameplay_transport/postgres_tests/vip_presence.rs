@@ -23,6 +23,7 @@ mod commands;
 #[path = "vip_presence/progression.rs"]
 mod progression;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn vip_presence_postgres_cross_node_login_logout_consent_and_privacy() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

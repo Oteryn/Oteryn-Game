@@ -17,6 +17,7 @@ const AMPHORA: TilePos = TilePos {
     floor: -9,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m44_native_amphora_step_mints_once_and_restores_only_its_fenced_revision() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

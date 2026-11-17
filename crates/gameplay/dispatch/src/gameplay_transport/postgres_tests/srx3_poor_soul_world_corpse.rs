@@ -6,6 +6,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 const POOR_SOUL: &str = "oteryn:creature.poor_soul";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_poor_soul_actual_world_uncredited_corpse_accepts_current_bundle_frame_postgres()
 -> TestResult {

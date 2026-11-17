@@ -20,6 +20,7 @@ use oteryn_protocol_oteryn::{MessageType, decode_wire_envelope};
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn refusal_detail_bundle_world_door_too_far_with_and_without_capability_66() -> TestResult {
     std::thread::Builder::new()

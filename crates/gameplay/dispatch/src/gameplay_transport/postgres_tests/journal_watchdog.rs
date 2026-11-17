@@ -1,15 +1,21 @@
 //! Whole-scenario bound includes setup, source operations and cleanup.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::sync::{Arc, Mutex, mpsc};
 #[derive(Clone)]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) struct Stage(Arc<Mutex<&'static str>>);
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 impl Stage {
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
     pub(super) fn set(&self, name: &'static str) {
         if let Ok(mut stage) = self.0.lock() {
             *stage = name;
         }
     }
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn run(
     name: &'static str,
     body: impl FnOnce(Stage) -> TestResult + Send + 'static,

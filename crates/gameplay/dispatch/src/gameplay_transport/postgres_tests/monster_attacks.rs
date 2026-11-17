@@ -12,36 +12,43 @@ mod invisible_area;
 #[path = "monster_attacks/removal.rs"]
 mod removal;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn rat_source_melee_dispatch_damages_player_once_and_checkpoints_vitals_postgres() -> TestResult {
     run_case("monster_attacks_rat", AttackCase::Rat)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn hunter_source_arrow_dispatch_damages_distant_player_and_checkpoints_vitals_postgres() -> TestResult {
     run_case("monster_attacks_hunter", AttackCase::Hunter)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn fire_devil_source_area_dispatch_damages_target_and_bystander_postgres() -> TestResult {
     run_case("monster_attacks_fire_devil", AttackCase::FireDevil)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn fire_devil_source_area_dispatch_damages_invisible_bystander_and_checkpoints_vitals_postgres() -> TestResult {
     run_case("monster_attacks_invisible_area", AttackCase::FireDevilInvisibleBystander)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn fire_elemental_source_field_dispatch_commits_owned_ground_once_postgres() -> TestResult {
     run_case("monster_attacks_fire_field", AttackCase::FireElemental)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn firestarter_zero_range_source_field_dispatch_commits_distant_ground_postgres() -> TestResult {
     run_case("monster_attacks_zero_range_field", AttackCase::Firestarter)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn the_monster_source_removal_dispatch_retires_owned_wall_once_postgres() -> TestResult {
     run_case("monster_attacks_wall_removal", AttackCase::TheMonster)

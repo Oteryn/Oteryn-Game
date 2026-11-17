@@ -127,38 +127,47 @@ fn facts(key: &str) -> ItemDefinitionFacts {
         container_slot_equip_pattern: key == f::BACKPACK,
     }
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn1_elemental_consumption_shares_drop_transaction_and_replays_once() -> f::TestResult {
     run(false, 0)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn1_elemental_native_corpse_arrival_postgres() -> f::TestResult {
     run(true, 0)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn1_elemental_arrival_consumes_direct_loot_atomically() -> f::TestResult {
     run(true, 1)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn1_elemental_arrival_rolls_back_loot_and_drop_for_parent_failure() -> f::TestResult {
     run(true, 2)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn1_elemental_arrival_consumes_fluid_loot_and_archives_its_state() -> f::TestResult {
     run(true, 3)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn1_elemental_corpse_keeps_classification_after_owner_generation_move() -> f::TestResult {
     run(true, 4)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn1_elemental_arrival_consumes_text_loot_without_auditing_its_body() -> f::TestResult {
     run(true, 5)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn1_elemental_arrival_consumes_nested_kill_loot_child_first() -> f::TestResult {
     run(true, 6)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn1_elemental_arrival_rolls_back_nested_loot_for_parent_failure() -> f::TestResult {
     run(true, 7)

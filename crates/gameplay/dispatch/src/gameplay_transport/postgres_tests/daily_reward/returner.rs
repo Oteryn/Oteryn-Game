@@ -1,4 +1,8 @@
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn returner_real_dispatch_qualifies_native_history_and_claims_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -12,6 +16,9 @@ fn returner_real_dispatch_qualifies_native_history_and_claims_once() -> TestResu
         .map_err(Into::into)
 }
 /// Only historical timestamps are seeded; the current session/fences come from fresh admission.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn seed_history(h: &Harness) -> TestResult {
     sqlx::raw_sql("ALTER TABLE game_durability_reconnect_sessions DISABLE TRIGGER game_training_session_clock").execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,original_grace_deadline,predecessor_generation,character_lease_generation,scope_ownership_generation,current_generation,session_state,training_created_at_us,training_session_sequence) OVERRIDING SYSTEM VALUE VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,0,1,1,1,1,3,extract(epoch FROM TIMESTAMPTZ '2020-01-01 00:00:00+00')::bigint*1000000,0)")
@@ -23,6 +30,9 @@ pub(super) async fn seed_history(h: &Harness) -> TestResult {
     .await?;
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn query(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -37,6 +47,9 @@ async fn query(
     );
     wire::returner::Reply::decode(&values[0].2).map_err(Into::into)
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn case(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,

@@ -3,6 +3,7 @@ use sqlx::{Connection, Executor, PgConnection};
 
 type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn fenced_home_town_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

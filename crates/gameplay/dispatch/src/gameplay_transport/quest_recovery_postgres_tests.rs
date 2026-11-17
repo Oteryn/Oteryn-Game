@@ -3,6 +3,7 @@
 use super::TestResult;
 use super::fixture::{Harness, debug, run};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn same_tag_fixtures_preserve_each_others_retained_recovery_authority() -> TestResult {
     run(async |admin| {

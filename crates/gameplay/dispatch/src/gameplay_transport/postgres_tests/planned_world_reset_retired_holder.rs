@@ -3,6 +3,7 @@ use super::planned_world_reset::reset_fixture;
 use super::*;
 use crate::foundation::GameSessionState;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn world_reset_retired_holder_release_preserves_live_holders_and_original_grace() -> TestResult {
     std::thread::Builder::new()

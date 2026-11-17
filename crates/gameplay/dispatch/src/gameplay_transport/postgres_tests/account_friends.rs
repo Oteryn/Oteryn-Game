@@ -31,6 +31,7 @@ async fn call(
     assert_eq!(status, CommandStatus::Accepted);
     vip::decode_result(&result).map_err(debug)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn account_friends_postgres_main_consent_revocation_replay_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -4,12 +4,30 @@ use super::{
     fixture::{debug, id},
 };
 use oteryn_world_bundle::bundle;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_world_bundle_compiler::{
     b3,
     compile::{KeyResolver, Resolution},
     source,
 };
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use oteryn_world_bundle_compiler::source;
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use oteryn_world_bundle_compiler::source;
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use oteryn_world_bundle_compiler::source;
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn world(
     minimum: crate::map::overlay::TilePos,
     maximum: crate::map::overlay::TilePos,

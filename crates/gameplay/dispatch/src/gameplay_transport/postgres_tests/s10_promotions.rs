@@ -1,6 +1,7 @@
 //! Every newly populated source promotion giver reaches the real purchase and replay writer.
 use super::TestResult;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn s10_promotions_postgres_registered_sources_charge_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

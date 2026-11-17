@@ -4,6 +4,7 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::map::{overlay::TilePos, view::MapFacts};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc8_mystery_native_landmark_geometry_and_lai_receipts() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

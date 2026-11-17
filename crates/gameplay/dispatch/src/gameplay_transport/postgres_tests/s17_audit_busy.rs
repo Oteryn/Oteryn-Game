@@ -15,6 +15,7 @@ use oteryn_gameplay_social::{
 };
 use std::{future::Future, task::Poll};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn s17_audit_postgres_busy_holder_preserves_cast_and_storage_failure_closes_it() -> TestResult {
     large_stack(|| {
@@ -94,6 +95,7 @@ async fn after_holder_release<T>(
     Ok(operation.await)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn s17_observer_postgres_busy_ban_read_preserves_admission_and_fail_closed_checks() -> TestResult {
     large_stack(|| {

@@ -52,6 +52,7 @@ pub(super) const INSTRUMENTS: [(u16, Position); 5] = [
 
 const PREFIX: &str = "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_ancient_tombs_instruments_real_use_persists_order_and_replay() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

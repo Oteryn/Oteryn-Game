@@ -1,7 +1,15 @@
 //! M38: remember completed inbound receipts through the existing fenced travel owner.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, run};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::fixture::debug;
 use super::npcfix_m38_travel_guards::NoPremium;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{ComposedFreshAdmission, Dependencies, TestResult, prepare_current_session};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::{ComposedFreshAdmission, Dependencies, TestResult};
 use crate::content::npc_catalogue::travel::{TravelReturnRequirement, TravelRoute};
 use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFacts};
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -19,6 +27,7 @@ pub(super) fn requirement(expected: &str) -> TravelReturnRequirement {
     }
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn npcfix_m38_travel_return_remembers_only_completed_inbound_ports_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -89,6 +98,7 @@ fn npcfix_m38_travel_return_remembers_only_completed_inbound_ports_postgres() ->
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn check(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,

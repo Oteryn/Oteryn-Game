@@ -14,14 +14,17 @@ fn scenario(name: &'static str, position: Position) -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn questpc8_remaining_trader_complete_native_journey() -> TestResult {
     scenario("authored-trader", Position { x: 32307, y: 32834, floor: -7 })
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn questpc8_remaining_treasure_island_paid_ship_tools_cave_return() -> TestResult {
     scenario("authored-treasure-island", Position { x: 32131, y: 32913, floor: -7 })
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn questpc8_remaining_anniversary_rags_five_dragons_reward() -> TestResult {
     scenario("authored-anniversary", Position { x: 32359, y: 32234, floor: -7 })

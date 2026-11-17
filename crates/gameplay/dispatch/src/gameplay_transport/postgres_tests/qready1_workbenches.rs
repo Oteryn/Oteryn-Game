@@ -26,6 +26,7 @@ pub(super) fn start(name: &str) -> TestResult<Position> {
     }
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready1_cradle_cauldron_three_inputs_one_antimutagen_atomic_and_repeatable() -> TestResult {
     run(
@@ -38,6 +39,7 @@ fn qready1_cradle_cauldron_three_inputs_one_antimutagen_atomic_and_repeatable() 
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready1_scatter_blender_five_inputs_one_flakes_atomic_and_repeatable() -> TestResult {
     run(
@@ -50,6 +52,9 @@ fn qready1_scatter_blender_five_inputs_one_flakes_atomic_and_repeatable() -> Tes
     )
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run(name: &'static str, at: Position) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

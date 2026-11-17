@@ -21,23 +21,30 @@ const KEY: &str = "oteryn:quest-callback/draconia-escape-35012";
 const TRACK: &str = "oteryn:quest-progress/dragonfetish";
 const SEED: &str = "oteryn:quest-transition/fixture/draconia-flag";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn draconia_escape_missing_offering_recovers_without_progress_or_receipt() -> TestResult {
     scenario("draconia-escape-missing")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn draconia_escape_consumes_one_offering_and_retains_absent_flag() -> TestResult {
     scenario("draconia-escape-absent")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn draconia_escape_consumes_offering_and_resets_exact_flag_atomically() -> TestResult {
     scenario("draconia-escape-exact")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn draconia_escape_consumes_offering_without_rewinding_later_flag() -> TestResult {
     scenario("draconia-escape-later")
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

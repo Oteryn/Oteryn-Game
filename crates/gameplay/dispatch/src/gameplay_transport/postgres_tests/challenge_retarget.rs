@@ -16,6 +16,7 @@ fn cell(x: i32) -> MovementLocalPosition {
     }
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn staged_challenge_retargets_the_production_monster_cycle_until_expiry() -> TestResult {
     // The full dispatch future runs on its own stack, including under nextest.

@@ -1,12 +1,16 @@
 //! MRL-3: current SQL party membership feeds the real scheduled monster reader.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::bestiary_postgres_harness::{TestResult, debug};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn reference_level_party_lookup_postgres_real_dispatch() -> TestResult {
     super::party_membership::run_reference_level()
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn check(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &[AdmittedSession],

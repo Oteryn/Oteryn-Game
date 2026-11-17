@@ -1,4 +1,5 @@
 use super::*;
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn house_wire_postgres_bid_dispatch_replay_and_conflicting_maximum() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

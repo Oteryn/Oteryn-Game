@@ -3,6 +3,7 @@
 use super::TestResult;
 use super::fixture::{Harness, run};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m25_native_step_exit_sql_contract_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

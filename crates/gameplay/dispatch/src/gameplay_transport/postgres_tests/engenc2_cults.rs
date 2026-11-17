@@ -66,11 +66,13 @@ fn callback() -> TestResult<Callback> {
     Ok(callback)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult {
     cults_scenario(false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
     cults_scenario(true)

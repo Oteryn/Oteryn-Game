@@ -1,9 +1,24 @@
 //! Prepared storage is administrative setup; cancellation runs through real logout.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::fresh_admission::{ExpiredLossReleaseV1, FreshAdmissionStore};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionState};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::logout::{COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_result};
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn group(h: &Harness, handoff: &[u8; 16]) -> TestResult<(i16, Option<i64>)> {
     Ok(sqlx::query_as(
         "SELECT state,decided_at FROM game_activity_handoff_groups WHERE handoff_id=encode($1,'hex')::uuid",
@@ -13,6 +28,9 @@ async fn group(h: &Harness, handoff: &[u8; 16]) -> TestResult<(i16, Option<i64>)
     .await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn membership(h: &Harness, handoff: &[u8; 16]) -> TestResult<String> {
     Ok(sqlx::query_scalar(
         "SELECT md5(to_jsonb(p)::text) FROM game_activity_handoff_participants p WHERE handoff_id=encode($1,'hex')::uuid LIMIT 1",
@@ -22,6 +40,7 @@ async fn membership(h: &Harness, handoff: &[u8; 16]) -> TestResult<String> {
     .await?)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn boss_activity_handoff_postgres_real_dispatch_logout_aborts_preparation() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -35,6 +54,9 @@ fn boss_activity_handoff_postgres_real_dispatch_logout_aborts_preparation() -> T
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario() -> TestResult {
     run(async |admin| {
         reset();

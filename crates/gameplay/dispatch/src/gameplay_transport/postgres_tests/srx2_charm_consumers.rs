@@ -1,55 +1,90 @@
 //! SRX-2: real auto-attack damage consumes a killing-hit charm without chaining.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::party_xp::{self, Case};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::bestiary_postgres_harness::{TestResult, debug};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::charm_state::{CharacterCharmState, CombatCharmState};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{ExactActorRef, GameSessionId};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::ComposedFreshAdmission;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_domain::domain::charm::{BestiaryRaceKey, CharmKey, CharmStage};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_progression::charm_effects::{
     CharmAttackerFacts, CharmEffectOutcome, CharmHitSource, CharmHookEvent, CharmResult,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx2_charm_carnage_real_lethal_swing_and_adjacent_damage() -> TestResult {
     party_xp::run(Case::CharmCarnage)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx2_charm_incoming_hit_hastes_player() -> TestResult {
     party_xp::run(Case::CharmIncoming)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx2_charm_numb_incoming_hit_paralyses_attacker() -> TestResult {
     party_xp::run(Case::CharmNumb)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx2_charm_cleanse_incoming_hit_removes_one_negative_condition() -> TestResult {
     party_xp::run(Case::CharmCleanse)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx2_charm_cripple_real_swing_slows_living_target() -> TestResult {
     party_xp::run(Case::CharmCripple)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx2_charm_fatal_hold_real_swing_prevents_native_flee() -> TestResult {
     party_xp::run(Case::CharmFatalHold)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx2_charm_void_inversion_native_source_mana_commit_and_replay() -> TestResult {
     party_xp::run(Case::CharmMana)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx2_charm_bless_lethal_snapshot_atomic_loss_rollback_and_replay() -> TestResult {
     party_xp::run(Case::CharmBless)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn bless(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &crate::bestiary_postgres_harness::Harness,
@@ -324,6 +359,9 @@ pub(super) async fn bless(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn mana(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     players: &[(ExactActorRef, GameSessionId)],
@@ -578,6 +616,9 @@ pub(super) async fn mana(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn control(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     players: &[(ExactActorRef, GameSessionId)],
@@ -729,6 +770,9 @@ pub(super) async fn control(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn incoming(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     players: &[(ExactActorRef, GameSessionId)],
@@ -1052,6 +1096,9 @@ pub(super) async fn incoming(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn carnage(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &crate::bestiary_postgres_harness::Harness,
@@ -1211,6 +1258,7 @@ pub(super) async fn carnage(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx2_charm_parry_native_source_spell_damage_and_replay() -> TestResult {
     party_xp::run(Case::CharmParry)

@@ -6,6 +6,7 @@ use oteryn_protocol_oteryn::world_object::UseDisposition;
 const QUEST: &str = "oteryn:quest.giant_smithhammer_quest";
 const TRACK: &str = "oteryn:quest-progress/chosen/smith-cache/stage";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc7_smith_native_guardian_exact_cache_completion() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

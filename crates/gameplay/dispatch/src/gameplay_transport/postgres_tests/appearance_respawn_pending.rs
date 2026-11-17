@@ -9,6 +9,7 @@ use crate::gameplay_transport::appearance_change::observation::{ObservationError
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_protocol_oteryn::appearance;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn appearance_projection_defers_while_the_observer_respawn_is_pending_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -109,6 +110,7 @@ fn scenario() -> TestResult {
 
 /// Node boot world=1: the lost S08 Character stayed dead in town, and every later join that
 /// saw it failed `join_prepare_failed phase=appearances` with the target's RespawnPending.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn appearance_projection_skips_a_peer_whose_respawn_is_pending_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

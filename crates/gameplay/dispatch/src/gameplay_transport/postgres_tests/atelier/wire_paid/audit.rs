@@ -1,8 +1,14 @@
 //! Exercise the real outbox size guard without an unrelated unique-event constraint
 //! hiding the historical-proof refusal. The temporary probe copies the actual
 //! column checks and invokes the production stamp and deferred size guard.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::*;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn outbox(h: &Harness) -> TestResult<Vec<serde_json::Value>> {
     let rows = sqlx::query_scalar(
         "SELECT to_jsonb(a) FROM game_item_audit_outbox a ORDER BY event_id LIMIT 100",
@@ -13,6 +19,9 @@ async fn outbox(h: &Harness) -> TestResult<Vec<serde_json::Value>> {
     Ok(rows)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn reject_size_forgery(h: &Harness) -> TestResult {
     let before = scope_footprint(h).await?;
     let before_outbox = outbox(h).await?;

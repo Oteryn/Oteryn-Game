@@ -11,6 +11,7 @@ const QUEST: &str = "oteryn:quest.wrath_of_the_emperor_quest";
 const STAGE: &str = "oteryn:quest-progress/chosen/wrath/stage";
 const NPC: &str = "oteryn:npc.zalamon";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc8_wrath_native_opening_exact_materials_crate_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

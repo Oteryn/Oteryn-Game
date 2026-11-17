@@ -13,6 +13,7 @@ fn sqlstate(error: &sqlx::Error) -> Option<String> {
         .map(|c| c.into_owned())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn loyalty_premium_days_project_one_point_per_day_idempotently_for_control_only() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

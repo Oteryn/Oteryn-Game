@@ -10,11 +10,13 @@ use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 const PHASE: &str = "oteryn:quest-progress/qnpcfx/koshei/amulet";
 const CLOCK: &str = "oteryn:quest-progress/qnpcfx/koshei/amulet_started_at";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qnpcfx_koshei_paid_pieces_atomic_replay_and_clock() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-qnpcfx-koshei")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qnpcfx_koshei_mixed_carried_bank_payment_atomic() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-qnpcfx-koshei-bank")

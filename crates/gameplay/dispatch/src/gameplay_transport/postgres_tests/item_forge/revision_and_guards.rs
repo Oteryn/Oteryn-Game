@@ -1,8 +1,18 @@
 //! Retained pending attempts across content cutover, and unreceipted SQL refusals.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::super::fixture::debug;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_items::forge::EXALTED_CORE_KEY;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_pending_attempt_retains_revision_change_refusal_without_spending() -> TestResult {
     super::super::kill_reward_e2e::scenario_thread::run("forge-revision", || {
@@ -10,6 +20,7 @@ fn forge_postgres_pending_attempt_retains_revision_change_refusal_without_spendi
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_sql_rejects_unreceipted_tier_and_core_changes() -> TestResult {
     super::super::kill_reward_e2e::scenario_thread::run("forge-sql-guards", || {
@@ -17,6 +28,7 @@ fn forge_postgres_sql_rejects_unreceipted_tier_and_core_changes() -> TestResult 
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_pending_dust_limit_never_requotes_after_another_paid_upgrade() -> TestResult {
     super::super::kill_reward_e2e::scenario_thread::run("forge-dust-stage", || {
@@ -24,6 +36,9 @@ fn forge_postgres_pending_dust_limit_never_requotes_after_another_paid_upgrade()
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn dust_stage_changed(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -74,6 +89,9 @@ pub(super) async fn dust_stage_changed(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn revision_changed(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -185,6 +203,9 @@ pub(super) async fn revision_changed(
 /// presentation section is length/hash bound (native_gameplay.rs:881–888), so
 /// JSON whitespace changes artifact identity without changing decoded facts or
 /// the Character's accepted training interpretation, content-1.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn activated_dependencies(
     h: &Harness,
     sequence: i64,
@@ -271,6 +292,9 @@ async fn activated_dependencies(
     Ok((controller, deps))
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn sql_guards(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -323,6 +347,9 @@ pub(super) async fn sql_guards(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn denied(h: &Harness, statement: &'static str, item: u8) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
@@ -343,6 +370,9 @@ async fn denied(h: &Harness, statement: &'static str, item: u8) -> TestResult {
     assert_guard(error)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn assert_guard(error: sqlx::Error) -> TestResult {
     let database = error
         .as_database_error()

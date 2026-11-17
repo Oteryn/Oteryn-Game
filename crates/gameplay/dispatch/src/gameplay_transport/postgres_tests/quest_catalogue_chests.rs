@@ -4,6 +4,8 @@ use super::TestResult;
 use serde_json::Value;
 use std::collections::BTreeSet;
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) type CatalogueActivation = (
     crate::content::ContentActivationController,
     crate::content::NativeEntryContentPin,
@@ -14,14 +16,41 @@ pub(super) struct CatalogueChest {
     pub position: (u16, u16, i8),
     pub unique: u16,
     pub servable: bool,
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub appearance: u16,
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub root: String,
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub quantity: u32,
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub contents: Vec<(String, i64, i32)>,
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub texts: Vec<(String, String)>,
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub key_number: Option<i32>,
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub achievement: bool,
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub charges: Vec<(String, i32)>,
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub fluids: Vec<(String, i32)>,
 }
 
@@ -72,7 +101,7 @@ fn cases_including(include: impl Fn(&str) -> bool) -> TestResult<Vec<CatalogueCh
                 continue;
             }
             assert!(found.insert(claim.clone()), "duplicate claim {claim}");
-            for (index, placement) in definition["placements"]
+            for (_index, placement) in definition["placements"]
                 .as_array()
                 .ok_or("claim placements")?
                 .iter()
@@ -92,8 +121,17 @@ fn cases_including(include: impl Fn(&str) -> bool) -> TestResult<Vec<CatalogueCh
                 if crystal.is_some() {
                     served.insert(claim.clone());
                 }
+                #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                 let reward = &placement["reward"];
-                let native = definition["native_contents"]["placements"].get(index);
+                #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
+                let native = definition["native_contents"]["placements"].get(_index);
+                #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                 let (root, quantity, contents) = if let Some(native) = native {
                     let children = native["contents"]
                         .as_array()
@@ -117,7 +155,13 @@ fn cases_including(include: impl Fn(&str) -> bool) -> TestResult<Vec<CatalogueCh
                         Vec::new(),
                     )
                 };
+                #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                 let mut texts = Vec::new();
+                #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                 if let Some(native) = native {
                     if let Some(text) = native["root_text"].as_str() {
                         texts.push((root.clone(), text.into()));
@@ -128,6 +172,9 @@ fn cases_including(include: impl Fn(&str) -> bool) -> TestResult<Vec<CatalogueCh
                         }
                     }
                 }
+                #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                 let key_number = reward["key_binding"]
                     .as_str()
                     .filter(|_| reward.get("container").is_none())
@@ -148,18 +195,45 @@ fn cases_including(include: impl Fn(&str) -> bool) -> TestResult<Vec<CatalogueCh
                     ),
                     unique: u16::try_from(unique)?,
                     servable: crystal.is_some(),
+                    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                     appearance: u16::try_from(
                         placement["appearance_tibia_id"]
                             .as_u64()
                             .ok_or("source appearance")?,
                     )?,
+                    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                     root,
+                    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                     quantity,
+                    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                     contents,
+                    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                     texts,
+                    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                     key_number,
+                    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                     achievement: native.is_some_and(|native| !native["achievement"].is_null()),
+                    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                     charges: expected_charges(&claim),
+                    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+                    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
                     fluids: expected_fluids(&claim),
                 });
             }
@@ -173,12 +247,14 @@ fn cases_including(include: impl Fn(&str) -> bool) -> TestResult<Vec<CatalogueCh
     Ok(cases)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_every_supported_source_placement_use_replay_and_refusal() -> TestResult {
     execute(cases()?)?;
     super::falcon_chests::falcon_chests_postgres_real_use_frozen_draw_refusal_restart_and_fences()
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_dragahs_spellbook_use_replay_and_refusal() -> TestResult {
     let cases: Vec<_> = cases()?
@@ -192,6 +268,7 @@ fn quest_catalogue_chests_dragahs_spellbook_use_replay_and_refusal() -> TestResu
     execute(cases)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_mixed_source_namespaces_use_replay_and_refusal() -> TestResult {
     let cases: Vec<_> = cases()?
@@ -205,6 +282,7 @@ fn quest_catalogue_chests_mixed_source_namespaces_use_replay_and_refusal() -> Te
     execute(cases)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_mixed_binding_requires_all_crystal_sources() -> TestResult {
     let claim = "oteryn:reward-claim.quest.u8_6.wrath_of_the_emperor.chest_items";
@@ -272,6 +350,7 @@ fn quest_catalogue_chests_mixed_binding_requires_all_crystal_sources() -> TestRe
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refusal() -> TestResult {
     // Frozen run-8 claims remain exercised after qualification promotes their
@@ -456,6 +535,9 @@ fn quest_catalogue_chests_a_m_unqualified_source_placements_use_replay_and_refus
 // sweep. Keep every placement and every already-qualified sibling so an early
 // checkpoint describes a whole reward set, rather than a partial failed sweep.
 // Access puzzles, NPC exchanges and outfits remain separate qualification work.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn phase_a_cohort(quests: &[&str]) -> TestResult {
     let coverage: Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -516,6 +598,9 @@ pub(super) fn phase_a_cohort(quests: &[&str]) -> TestResult {
 // Historical SOURCE readiness retains lowering holds even after the native
 // claim owner has been implemented. Qualify those exact standalone contracts
 // against their original claim inventory; never infer a storyline from a chest.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn standalone_claim_cohort(quests: &[&str], test: &str) -> TestResult {
     let mut found = BTreeSet::new();
     for shard in [
@@ -590,6 +675,7 @@ pub(super) fn standalone_claim_cohort(quests: &[&str], test: &str) -> TestResult
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn standalone_claims_bear_berserk_berserker_black_knight_dead_archer() -> TestResult {
     standalone_claim_cohort(
@@ -604,6 +690,7 @@ fn standalone_claims_bear_berserk_berserker_black_knight_dead_archer() -> TestRe
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn standalone_claims_dragon_corpse_tower_edron_emperor_fanfare() -> TestResult {
     standalone_claim_cohort(
@@ -618,6 +705,7 @@ fn standalone_claims_dragon_corpse_tower_edron_emperor_fanfare() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn standalone_claims_fire_axe_fishing_frost_geomancer_ghoul() -> TestResult {
     standalone_claim_cohort(
@@ -632,6 +720,7 @@ fn standalone_claims_fire_axe_fishing_frost_geomancer_ghoul() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn standalone_claims_goblin_inukaya_iron_helmet_katana_lion() -> TestResult {
     standalone_claim_cohort(
@@ -646,6 +735,7 @@ fn standalone_claims_goblin_inukaya_iron_helmet_katana_lion() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn standalone_claims_longsword_mad_mage_medusa_shield_minotaur() -> TestResult {
     standalone_claim_cohort(
@@ -659,6 +749,7 @@ fn standalone_claims_longsword_mad_mage_medusa_shield_minotaur() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_01_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&[
@@ -670,6 +761,7 @@ fn quest_catalogue_chests_phase_a_01_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_02_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&[
@@ -681,6 +773,7 @@ fn quest_catalogue_chests_phase_a_02_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_03_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&[
@@ -692,6 +785,7 @@ fn quest_catalogue_chests_phase_a_03_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_04_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&[
@@ -703,6 +797,7 @@ fn quest_catalogue_chests_phase_a_04_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_05_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&[
@@ -714,6 +809,7 @@ fn quest_catalogue_chests_phase_a_05_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_06_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&[
@@ -725,6 +821,7 @@ fn quest_catalogue_chests_phase_a_06_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_07_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&[
@@ -736,6 +833,7 @@ fn quest_catalogue_chests_phase_a_07_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_08_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&[
@@ -747,6 +845,7 @@ fn quest_catalogue_chests_phase_a_08_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_09_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&[
@@ -758,6 +857,7 @@ fn quest_catalogue_chests_phase_a_09_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_10_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&[
@@ -769,6 +869,7 @@ fn quest_catalogue_chests_phase_a_10_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_11_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&[
@@ -779,6 +880,7 @@ fn quest_catalogue_chests_phase_a_11_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_phase_a_12_use_replay_and_refusal() -> TestResult {
     phase_a_cohort(&["emperor_s_cookies_quest", "life_ring_quest"])
@@ -786,6 +888,7 @@ fn quest_catalogue_chests_phase_a_12_use_replay_and_refusal() -> TestResult {
 
 // These story and outfit sources have the same native reward contract. Their
 // reward receipts do not certify the missing NPC, arena or access continuation.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refusal() -> TestResult
 {
@@ -798,6 +901,7 @@ fn quest_catalogue_chests_botany_arena_beggar_children_cults_use_replay_and_refu
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_replay_and_refusal()
 -> TestResult {
@@ -810,6 +914,7 @@ fn quest_catalogue_chests_dark_trails_dreamer_druid_ferumbras_knowledge_use_repl
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_refusal() -> TestResult
 {
@@ -821,6 +926,7 @@ fn quest_catalogue_chests_hidden_threats_hunter_knight_koshei_use_replay_and_ref
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal() -> TestResult {
     // TibiaWiki Key 3620 identifies the Mintwallin barracks drawer; the donor's
@@ -838,6 +944,7 @@ fn quest_catalogue_chests_mintwallin_prison_key3620_use_replay_and_refusal() -> 
     execute(selected)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_medusa_exact_crystal_reward_use_and_replay() -> TestResult {
     let selected: Vec<_> = cases()?
@@ -848,6 +955,7 @@ fn quest_catalogue_chests_medusa_exact_crystal_reward_use_and_replay() -> TestRe
     execute(selected)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal() -> TestResult {
     let claims: BTreeSet<_> = [
@@ -883,6 +991,9 @@ fn quest_catalogue_chests_full_charge_rewards_use_replay_and_refusal() -> TestRe
     execute(selected)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn expected_charges(claim: &str) -> Vec<(String, i32)> {
     let ids: &[u16] = match claim.strip_prefix("oteryn:reward-claim.") {
         Some("kv.deeperfibula4") => &[3082],
@@ -897,6 +1008,9 @@ fn expected_charges(claim: &str) -> Vec<(String, i32)> {
         .collect()
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn expected_fluids(claim: &str) -> Vec<(String, i32)> {
     match claim.strip_prefix("oteryn:reward-claim.") {
         Some("kv.goblintemple2") => vec![("oteryn:item.tibia.i2874".into(), 9)],
@@ -911,6 +1025,7 @@ fn expected_fluids(claim: &str) -> Vec<(String, i32)> {
     }
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal() -> TestResult {
     let selected: Vec<_> = cases_including(|claim| !expected_charges(claim).is_empty())?
@@ -925,6 +1040,7 @@ fn quest_catalogue_chests_exact_partial_charges_use_replay_and_refusal() -> Test
     execute(selected)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal() -> TestResult {
     let selected: Vec<_> = cases_including(|claim| !expected_fluids(claim).is_empty())?
@@ -939,6 +1055,9 @@ fn quest_catalogue_chests_exact_fluid_subtypes_use_replay_and_refusal() -> TestR
     execute(selected)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn assert_charges(
     pool: &sqlx::PgPool,
     root: [u8; 16],
@@ -1025,6 +1144,9 @@ pub(super) async fn assert_charges(
 
 /// The binder admits a claim only when every source placement is present.
 /// Preserve all sibling selectors even while exercising one clicked chest.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn catalogue_source_world(
     chest: &CatalogueChest,
 ) -> TestResult<crate::map::boot::BundleWorld> {
@@ -1330,6 +1452,9 @@ pub(super) fn catalogue_source_worlds(
     .map_err(super::fixture::debug)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn execute(cases: Vec<CatalogueChest>) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

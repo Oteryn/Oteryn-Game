@@ -17,6 +17,7 @@ use oteryn_protocol_oteryn::npc_service::{
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srv9b_fluids_postgres_buy_sell_subtype_fence_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -36,6 +37,7 @@ fn srv9b_fluids_postgres_buy_sell_subtype_fence_and_replay() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srv9b_charges_postgres_source_purchase_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -12,6 +12,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_megalomania_native_corpses_player_and_creature_steps_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

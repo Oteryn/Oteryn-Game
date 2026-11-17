@@ -1,6 +1,7 @@
 //! Fixed private export bytes, contiguous revisions, exact retry and stale fence.
 use super::TestResult;
 use super::fixture::{Harness, run};
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn game_journal_outbox_fixed_bytes_ack_and_generation_fence() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

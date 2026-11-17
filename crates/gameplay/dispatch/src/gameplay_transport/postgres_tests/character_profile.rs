@@ -13,6 +13,7 @@ use oteryn_protocol_oteryn::{
         profile::{Profile, request},
     },
 };
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn character_profile_postgres_real_dispatch_and_privacy() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

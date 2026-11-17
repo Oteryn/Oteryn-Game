@@ -1,6 +1,7 @@
 //! M39 exercises source offer routing against a real admitted PostgreSQL session.
 use super::*;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m39_any_topic_resumes_an_existing_native_npc_conversation() -> TestResult {
     scenario("qengine-rewards-m39-any-topic")

@@ -5,6 +5,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{self, Callback, Position, W
 use sqlx::Connection;
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn engenc2_nomads_window_current_crates_and_amphora_postgres() -> Result {
     let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {

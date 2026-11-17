@@ -1,6 +1,7 @@
 //! Enter the retained Behemoth habitat, not Cyclopolis's surface marker.
 use super::*;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_behemoth_native_floor_entry_requires_level_eighty_and_current_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

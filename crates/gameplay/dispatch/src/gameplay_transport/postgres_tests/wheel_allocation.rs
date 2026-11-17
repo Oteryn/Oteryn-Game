@@ -121,31 +121,37 @@ fn reply(refused: bool, revision: u64, points: [u16; 36]) -> TestResult<(Command
     ))
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn wheel_allocation_postgres_real_dispatch_refusal_reset_and_relogin_allocation() -> TestResult {
     run_wheel_case(None)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn wheel_allocation_postgres_socket_refusals_replay_and_relogin() -> TestResult {
     run_wheel_case(Some(WheelExtensionCase::Socket))
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn wheel_allocation_postgres_unsocket_refusals_replay_and_relogin() -> TestResult {
     run_wheel_case(Some(WheelExtensionCase::Unsocket))
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn wheel_allocation_postgres_gift_trigger_snapshot_receipts_and_relogin() -> TestResult {
     run_wheel_case(Some(WheelExtensionCase::Gift))
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn wheel_allocation_postgres_atelier_v2_replace_vessel_accepts_refuses_and_replays() -> TestResult {
     run_wheel_case(Some(WheelExtensionCase::ReplaceVessel))
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn wheel_allocation_postgres_capacity_uses_current_allocation_and_live_premium_at_commit()
 -> TestResult {
@@ -169,21 +175,25 @@ enum WheelCombatCase {
     ProtectionZone,
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn wheel_pz_postgres_removal_outside_temple_without_lock() -> TestResult {
     run_wheel_combat_case(WheelCombatCase::Unlocked)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn wheel_pz_postgres_removal_refused_until_pve_expires() -> TestResult {
     run_wheel_combat_case(WheelCombatCase::Pve)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn wheel_pz_postgres_removal_refused_until_pvp_expires() -> TestResult {
     run_wheel_combat_case(WheelCombatCase::Pvp)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn wheel_pz_postgres_removal_in_non_temple_pz_while_in_fight() -> TestResult {
     run_wheel_combat_case(WheelCombatCase::ProtectionZone)

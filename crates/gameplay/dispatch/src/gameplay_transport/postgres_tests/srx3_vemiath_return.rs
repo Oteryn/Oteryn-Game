@@ -1,12 +1,17 @@
 //! Actual physical defeat and source-composed Teleport return; no fabricated terminal row.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{
     TestResult,
     fixture::{Harness, debug},
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::RuntimeScopeRefV1;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{boss_encounter as wire, world_spatial_entities::EntityRef};
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn exercise(
     h: &Harness,
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,

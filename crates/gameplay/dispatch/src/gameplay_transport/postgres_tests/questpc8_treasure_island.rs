@@ -22,6 +22,7 @@ pub(super) fn world() -> TestResult<crate::map::boot::BundleWorld> {
     fixture_world::world()
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc8_treasure_island_paid_ship_map_shovel_rope_explore_and_return() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

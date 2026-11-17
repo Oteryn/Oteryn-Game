@@ -1,85 +1,136 @@
 //! Existing admitted-session transport -> PvP rules -> PostgreSQL -> result bytes and reload.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::appearance_change_postgres::observer_visibility_tests as observer;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, join_two, run};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::durability::character_progression::{
     ExperienceAwardRequest, ExperienceRewardOccurrence,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::foundation::{
     ChannelContentPin, CharacterLease, GameSessionId, MessageType, MovementLocalPosition,
     decode_wire_envelope,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::{SelectedCapabilities, test_command};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::item_fence_of;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{CommandStatus, actor_spell, attack, decode_command_result};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+use oteryn_protocol_oteryn::attack;
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+use oteryn_protocol_oteryn::attack;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use std::time::Duration;
 #[path = "pvp_live/bundle_fixture.rs"]
 mod bundle_fixture;
 #[path = "pvp_live/expert_cases.rs"]
 mod expert_cases;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_live_wire_melee_spell_death_replay_and_reload() -> TestResult {
     super::item_look::large_stack(|| scenario(2))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_live_optional_world_refuses_player_harm_without_durable_writes() -> TestResult {
     super::item_look::large_stack(|| scenario(1))
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_live_protection_zone_refuses_player_harm() -> TestResult {
     super::item_look::large_stack(|| scenario(4))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_live_no_pvp_tile_refuses_player_harm() -> TestResult {
     super::item_look::large_stack(|| scenario(5))
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_live_bundle_melee_spell_death_replay_and_reload() -> TestResult {
     super::item_look::large_stack(|| scenario(6))
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_expert_wire_modes_reach_melee_and_spell_checker() -> TestResult {
     super::item_look::large_stack(|| scenario(7))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_expert_hardcore_locks_red_fist() -> TestResult {
     super::item_look::large_stack(|| scenario(8))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_expert_unselected_capability_refuses_command_and_sends_no_domain() -> TestResult {
     super::item_look::large_stack(|| scenario(9))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_expert_black_skull_switching_and_session_fences() -> TestResult {
     super::item_look::large_stack(|| scenario(10))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_expert_wire_modes_reach_distance_checker() -> TestResult {
     super::item_look::large_stack(|| scenario(11))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_expert_optional_world_ignores_expert_choice() -> TestResult {
     super::item_look::large_stack(|| scenario(12))
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_expert_white_hand_reads_party_and_guild_aggressors() -> TestResult {
     super::item_look::large_stack(|| scenario(13))
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn command(
     client: &mut DuplexStream,
     id: u64,
@@ -102,6 +153,8 @@ async fn command(
         }
     }
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn ack(client: &mut DuplexStream, payload: &[u8]) -> TestResult {
     let id = oteryn_protocol_oteryn::decode_liveness_probe(payload).map_err(debug)?;
     let frame = oteryn_protocol_oteryn::encode_liveness_ack(1, id, 0).map_err(debug)?;
@@ -109,6 +162,8 @@ async fn ack(client: &mut DuplexStream, payload: &[u8]) -> TestResult {
     client.write_all(&frame).await?;
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn wait_live(client: &mut DuplexStream, duration: Duration) -> TestResult {
     let deadline = tokio::time::Instant::now() + duration;
     loop {
@@ -124,6 +179,8 @@ async fn wait_live(client: &mut DuplexStream, duration: Duration) -> TestResult 
         }
     }
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn health(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
@@ -144,6 +201,8 @@ async fn health(
 // The target has no serving connection in this fixture, so its driver must retry death
 // settlement as its production cadence would. The caster's serving cadence shares the
 // max-one durability holder; a busy pass is Retry, not a non-durable death.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn settle_death_when_ready(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
@@ -167,6 +226,8 @@ async fn settle_death_when_ready(
     .await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn melee_fault(
     client: &mut DuplexStream,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -215,6 +276,8 @@ async fn melee_fault(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) fn scenario(mode: i16) -> TestResult {
     // One mechanic uses one database bootstrap at a time on the owner's shared cluster.
     static CASES: std::sync::Mutex<()> = std::sync::Mutex::new(());

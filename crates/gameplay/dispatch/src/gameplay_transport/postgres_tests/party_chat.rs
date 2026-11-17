@@ -1,10 +1,15 @@
 //! Party chat through the real connection, Party owner, PostgreSQL relay and egress custody.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::party_membership;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::bestiary_postgres_harness::{Harness, TestResult, WORLD, debug, id};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::chat::relay::{
     RelayDestination, RelayKey, RelayKeyRing, RelayLine, ReplayWindow, channel_name,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{MessageType, decode_wire_envelope};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     capabilities::SelectedCapabilities,
@@ -13,14 +18,18 @@ use crate::gameplay_transport::{
     },
     tcp_tls::{read_frame, write_frame},
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus,
     chat::{self, ChatDisposition, ChatIntent, ChatLine},
     decode_command_result, encode_client_command,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::{sync::Arc, time::Duration};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn party_chat_postgres_real_wire_members_only_departure_refusal_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -29,6 +38,7 @@ fn party_chat_postgres_real_wire_members_only_departure_refusal_and_replay() -> 
     party_membership::run_chat()
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn command(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -95,6 +105,7 @@ async fn command(
     result
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn check(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -204,6 +215,7 @@ pub(super) async fn check(
     Ok(line)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn check_departed(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut [AdmittedSession],

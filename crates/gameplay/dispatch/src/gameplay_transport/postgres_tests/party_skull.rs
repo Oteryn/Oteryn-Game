@@ -1,5 +1,9 @@
 //! PARTY-SKULL-1 through the actual admitted command router and visibility cadence.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::bestiary_postgres_harness::{Harness, TestResult, debug};
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::bestiary_postgres_harness::{TestResult, debug};
 use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
@@ -9,22 +13,32 @@ use crate::gameplay_transport::{
     },
     tcp_tls::write_frame,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
     party_skull::*, world_spatial_entities::EntityRef,
 };
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use oteryn_protocol_oteryn::{
+    ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
+};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn party_skull_real_dispatch_postgres_end_to_end() -> TestResult {
     super::party_membership::run(true)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn party_skull_pvp_real_dispatch_attribution_counterfactual() -> TestResult {
     super::item_look::large_stack(|| super::pvp_live::scenario(14))
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn aggression(
     h: &Harness,
     targets: &[EntityRef],
@@ -76,6 +90,7 @@ pub(super) async fn icon_snapshot_revision(
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn assert_icons(
     icons: &[PartyIcon],
     targets: &[EntityRef],
@@ -99,6 +114,7 @@ fn assert_icons(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn read_icons(
     client: &mut tokio::io::DuplexStream,
     generation: u64,
@@ -164,6 +180,7 @@ pub(super) async fn read_icons(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn check(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,

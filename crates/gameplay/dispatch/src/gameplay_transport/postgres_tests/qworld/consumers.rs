@@ -1,7 +1,11 @@
 //! Real native rat death settles the shared counter, then unlocks the fenced quest writer.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::super::*;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::AdmittedSession;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
@@ -10,6 +14,7 @@ use oteryn_gameplay_quests::quest::{
     clippy::too_many_arguments,
     reason = "The fixture passes independent owner, actor and occurrence proofs explicitly."
 )]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(crate) async fn qualify(
     h: &Harness,
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -292,7 +297,9 @@ pub(crate) async fn qualify(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 struct NoPremium;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 impl crate::durability::npc_travel::NpcTravelGate for NoPremium {
     async fn travel_permitted(
         &self,
@@ -303,6 +310,7 @@ impl crate::durability::npc_travel::NpcTravelGate for NoPremium {
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn travel_route(key: &str) -> oteryn_gameplay_content::content::npc_catalogue::travel::TravelRoute {
     use oteryn_gameplay_content::content::{ProjectV2TravelDestination, ProjectV2TravelRoute};
     oteryn_gameplay_content::content::npc_catalogue::travel::TravelRoute {

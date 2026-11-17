@@ -4,6 +4,7 @@ use crate::bestiary_postgres_harness::{self as fixture, Harness, debug};
 use crate::gameplay_transport::player_trade::{CheckError, preflight::read_retry};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn player_trade_postgres_busy_holder_read_recovers_without_changing_refusals() -> TestResult {
     let Some(admin) = fixture::configured_admin() else { return Ok(()); };

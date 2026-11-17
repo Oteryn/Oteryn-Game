@@ -11,6 +11,7 @@ const TILE: Position = Position {
     floor: -7,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_floor_profiles_eight_exact_items_survive_custody_drop_and_replay() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

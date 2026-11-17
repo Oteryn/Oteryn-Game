@@ -4,6 +4,7 @@ use super::support::{self, Case, count};
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_protocol_oteryn::{self as protocol, browse_field as wire};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn client_e2e_browse_field() -> TestResult {
     support::scenario(Case::BrowseField)

@@ -1,14 +1,38 @@
 //! P18 command bytes → current composed owner → native rows, receipts and read-back.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness, id};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::ComposedFreshAdmission;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::connection::{AdmittedSession, FreshAdmissionAuthority};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_items::forge::FORGE_SLIVER_KEY;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::{
     CommandStatus,
     item_forge::{Operation, Request},
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use serde_json::Value;
 
 #[path = "item_forge/legacy_budget.rs"]
@@ -23,8 +47,18 @@ mod recovery;
 mod revision_and_guards;
 #[path = "item_forge/support.rs"]
 pub(super) mod support;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use support::{Case, balances, cooldown_elapsed, exchange, gain_dust, request, seed_items};
 
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
+use support::{balances, cooldown_elapsed, exchange, gain_dust, request, seed_items};
+
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_dust_sliver_core_conversion_and_history_replay() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("forge-conversions", || {
@@ -32,6 +66,7 @@ fn forge_postgres_dust_sliver_core_conversion_and_history_replay() -> TestResult
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_dust_limit_native_receipt_history_and_cooldown() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("forge-limit", || {
@@ -39,11 +74,13 @@ fn forge_postgres_dust_limit_native_receipt_history_and_cooldown() -> TestResult
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_dust_limit_cap_refusal_is_retained_without_value_changes() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("forge-cap", || support::scenario(Case::DustCap))
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_resource_refusals_remain_retained_after_refill() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("forge-refusals", || {
@@ -51,11 +88,13 @@ fn forge_postgres_resource_refusals_remain_retained_after_refill() -> TestResult
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_capability_payload_and_session_generation_are_fenced() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("forge-fences", || support::scenario(Case::Fences))
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_concurrent_duplicate_occurrence_applies_exactly_once() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("forge-concurrent", || {
@@ -63,6 +102,7 @@ fn forge_postgres_concurrent_duplicate_occurrence_applies_exactly_once() -> Test
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_conversion_with_full_backpack_refuses_without_spending() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("forge-no-room", || {
@@ -70,6 +110,9 @@ fn forge_postgres_conversion_with_full_backpack_refuses_without_spending() -> Te
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn conversions(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -123,6 +166,9 @@ async fn conversions(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn dust_limit(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -179,6 +225,9 @@ async fn dust_limit(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn dust_cap(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -203,6 +252,9 @@ async fn dust_cap(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn refusals(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -260,6 +312,9 @@ async fn refusals(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn fences(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -365,6 +420,9 @@ async fn fences(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn concurrent(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -396,6 +454,9 @@ async fn concurrent(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn available_reply(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -416,6 +477,9 @@ async fn available_reply(
     .await?
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn no_room(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,

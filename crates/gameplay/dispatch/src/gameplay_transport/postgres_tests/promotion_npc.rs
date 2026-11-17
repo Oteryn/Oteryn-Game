@@ -15,6 +15,7 @@ use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn promotion_npc_postgres_dispatch_purchase_replay_bank_login_and_death() -> TestResult {
     std::thread::Builder::new()

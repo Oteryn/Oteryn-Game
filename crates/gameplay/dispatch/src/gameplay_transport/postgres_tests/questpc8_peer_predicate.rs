@@ -17,6 +17,7 @@ use oteryn_protocol_oteryn::{
 const TRACK: &str = "oteryn:quest-progress/chosen/colours/colour";
 const QUEST: &str = "oteryn:quest.authored.the_colours_of_magic";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn questpc8_peer_predicate_postgres_fences_locked_state_and_no_peer_mutation() -> TestResult {
     let Some(admin) = fixture::configured_admin() else {

@@ -1,21 +1,46 @@
 //! HOUSE-TRANSFER-1 exercises the production composition through framed dispatch.
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::house_scope_handoff::{
     HouseId, HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome, HouseScopeAssignmentRequest,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::runtime_scope_assignment::{ControlActor, OperationKey};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{MessageType, MovementLocalPosition, decode_wire_envelope};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::connection::{
     ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::house_transfer as wire;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const HOUSE: &str = "oteryn:content.house.admiral_s_avenue_1";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn house_transfer_postgres_real_dispatch_entry_exit_recovery_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -29,6 +54,9 @@ fn house_transfer_postgres_real_dispatch_entry_exit_recovery_and_fences() -> Tes
     eprintln!("HOUSE_TRANSFER POSTGRES_CASE_COMPLETED");
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario() -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         return Ok(());
@@ -52,6 +80,7 @@ fn scenario() -> TestResult {
 }
 /// NODEBOOT-1: a same-session resume whose PREPARE meets a busy holder waits for it instead
 /// of closing once it may have written (the node-boot `same-session resume diverged: Closed`).
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn a_same_session_resume_waits_for_a_busy_holder_at_prepare_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -64,6 +93,7 @@ fn a_same_session_resume_waits_for_a_busy_holder_at_prepare_postgres() -> TestRe
         .map_err(|_| "busy-holder resume thread panicked")??;
     Ok(())
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn a_resumed_loss_retries_an_unreadable_history_without_releasing_the_session_postgres()
 -> TestResult {
@@ -77,6 +107,7 @@ fn a_resumed_loss_retries_an_unreadable_history_without_releasing_the_session_po
         .map_err(|_| "resumed-loss thread panicked")??;
     Ok(())
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn c08_conditions_postgres_reconnect_preserves_poison_and_haste() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -90,6 +121,7 @@ fn c08_conditions_postgres_reconnect_preserves_poison_and_haste() -> TestResult 
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn c08_conditions_postgres_reconnect_with_delayed_pre_prepare_reads() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -103,6 +135,7 @@ fn c08_conditions_postgres_reconnect_with_delayed_pre_prepare_reads() -> TestRes
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn a_same_session_resume_keeps_its_item_fence_when_readback_holder_is_busy_postgres() -> TestResult
 {
@@ -117,6 +150,9 @@ fn a_same_session_resume_keeps_its_item_fence_when_readback_holder_is_busy_postg
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn resume_scenario(
     history_read_fails: bool,
     conditions: bool,
@@ -152,6 +188,9 @@ fn resume_scenario(
     }
 }
 /// Drive the real resume until it is pending at the signalled boundary, with a deadline.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn wait_for_resume_barrier(
     mut resume: std::pin::Pin<&mut impl std::future::Future<Output = TestResult<AdmittedSession>>>,
     signal: &tokio::sync::Notify,
@@ -173,6 +212,9 @@ async fn wait_for_resume_barrier(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn resume_case(
     h: &Harness,
     history_read_fails: bool,
@@ -421,6 +463,9 @@ async fn resume_case(
     );
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn install_reconnect_conditions(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     deps: &Dependencies,
@@ -489,6 +534,9 @@ async fn install_reconnect_conditions(
     Ok(snapshot)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn resume_same_session(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     source: crate::foundation::GameSessionId,
@@ -526,6 +574,9 @@ async fn resume_same_session(
     assert_eq!(envelope.message_type(), MessageType::ServerResumeAccepted);
     Ok(admitted)
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn case(h: &Harness) -> TestResult {
     let recovery_source = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
@@ -918,6 +969,9 @@ async fn case(h: &Harness) -> TestResult {
     assert_eq!(consumed, 2);
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn drive(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -1058,6 +1112,9 @@ pub(super) async fn prepare_owned_session(h: &Harness) -> TestResult {
 }
 
 pub(super) struct RecoverySource {
+    #[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
     pub(super) clock: std::sync::Arc<std::sync::atomic::AtomicU64>,
     pub(super) evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
     task: tokio::task::JoinHandle<()>,
@@ -1068,6 +1125,9 @@ impl Drop for RecoverySource {
     }
 }
 impl RecoverySource {
+    #[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
     pub(super) fn stop_peer(&self) { self.task.abort(); }
     pub(super) async fn start(h: &Harness) -> TestResult<Self> {
         Self::start_at(h, None).await
@@ -1225,6 +1285,9 @@ impl RecoverySource {
             }
         });
         Ok(Self {
+            #[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+            #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+            #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
             clock,
             evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource::new(
                 descriptor,
@@ -1257,6 +1320,7 @@ impl RecoverySource {
     /// A separately scoped fresh grant from this registered independent test
     /// producer. The native fresh-admission verifier/publication/commit remain
     /// unchanged; a recovery credential cannot be reused as a fresh grant.
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
     pub(super) fn fresh_token(nonce: u8) -> TestResult<String> {
         use base64::Engine;
         use ed25519_dalek::Signer;
@@ -1295,10 +1359,16 @@ impl RecoverySource {
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 struct DroppedAck {
     io: tokio::io::DuplexStream,
     dropped: bool,
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 impl tokio::io::AsyncRead for DroppedAck {
     fn poll_read(
         mut self: std::pin::Pin<&mut Self>,
@@ -1308,6 +1378,9 @@ impl tokio::io::AsyncRead for DroppedAck {
         std::pin::Pin::new(&mut self.io).poll_read(cx, buf)
     }
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 impl tokio::io::AsyncWrite for DroppedAck {
     fn poll_write(
         mut self: std::pin::Pin<&mut Self>,
@@ -1337,6 +1410,9 @@ impl tokio::io::AsyncWrite for DroppedAck {
         std::pin::Pin::new(&mut self.io).poll_shutdown(cx)
     }
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn lose_ack(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -1374,6 +1450,9 @@ async fn lose_ack(
     }
 }
 /// Takes `root`'s holder at once and keeps it for `hold` in a semantic pass.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn hold_holder(
     root: &crate::durability::DurabilityRoot,
     hold: std::time::Duration,
@@ -1386,7 +1465,13 @@ fn hold_holder(
         })
     })))
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 struct RecoveryIdentifiers(u8);
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 impl crate::gameplay_transport::connection::ConnectionIdentifiers for RecoveryIdentifiers {
     fn game_session_id(&self) -> Option<crate::foundation::GameSessionId> {
         None
@@ -1395,6 +1480,9 @@ impl crate::gameplay_transport::connection::ConnectionIdentifiers for RecoveryId
         crate::foundation::AuthenticatedTransportRefV1::decode(&[self.0; 16]).ok()
     }
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn resume_transfer(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     source: crate::foundation::GameSessionId,
@@ -1461,6 +1549,9 @@ async fn resume_transfer(
     Ok(admitted)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scalar(out: &mut Vec<u8>, tag: u8, mut value: u64) {
     out.push(tag << 3);
     while value >= 128 {
@@ -1469,6 +1560,9 @@ fn scalar(out: &mut Vec<u8>, tag: u8, mut value: u64) {
     }
     out.push(value as u8);
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn bytes(out: &mut Vec<u8>, tag: u8, value: &[u8]) {
     out.push(tag << 3 | 2);
     let mut n = value.len();
@@ -1480,6 +1574,9 @@ fn bytes(out: &mut Vec<u8>, tag: u8, value: &[u8]) {
     out.extend_from_slice(value);
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn transfer_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
@@ -1540,6 +1637,7 @@ fn transfer_bundle(
     .map_err(debug)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn c08_conditions_postgres_logout_fresh_login_preserves_poison_haste_regeneration() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -1561,6 +1659,9 @@ fn c08_conditions_postgres_logout_fresh_login_preserves_poison_haste_regeneratio
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn c08_logout_scenario() -> TestResult {
     let admin = crate::bestiary_postgres_harness::configured_admin().ok_or("PG route required")?;
     let rt = crate::bestiary_postgres_harness::runtime()?;
@@ -1583,6 +1684,9 @@ fn c08_logout_scenario() -> TestResult {
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn c08_logout_case(h: &Harness) -> TestResult {
     use oteryn_gameplay_domain::domain::condition::ConditionValues;
     use oteryn_gameplay_foundation::foundation::condition::{

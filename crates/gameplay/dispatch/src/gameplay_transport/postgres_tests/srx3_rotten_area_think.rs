@@ -4,6 +4,7 @@ use super::{TestResult, reset};
 use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_rotten_area_native_reserved_think_publishes_canonical_icon_and_kv_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

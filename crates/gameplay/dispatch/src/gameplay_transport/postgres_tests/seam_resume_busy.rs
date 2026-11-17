@@ -21,6 +21,7 @@ impl ConnectionIdentifiers for Identifiers {
     }
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn seam_resume_busy_loss_read_preserves_progress_postgres() -> TestResult {
     run(async |admin| {

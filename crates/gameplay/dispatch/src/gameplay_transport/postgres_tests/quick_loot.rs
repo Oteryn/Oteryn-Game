@@ -1,19 +1,28 @@
 //! QUICKLOOT: production router, item owner, replay and real PostgreSQL custody.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, run};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::durability::item_mint::*;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{CommandStatus, MovementLocalPosition};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::quick_loot::*;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quick_loot_postgres_dispatch_assignment_transfer_replay_and_fences() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("quick-loot", scenario)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn request(action: QuickLootAction) -> QuickLootRequest {
     QuickLootRequest {
         action,
@@ -27,15 +36,18 @@ fn request(action: QuickLootAction) -> QuickLootRequest {
     }
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quick_loot_pouch_postgres_dispatch_unlimited_slots_coin_only_and_weight() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("quick-pouch", || scenario_with_pouch(true))
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn scenario() -> TestResult {
     scenario_with_pouch(false)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn scenario_with_pouch(pouch: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "quick_loot", true, false).await?;
@@ -586,6 +598,7 @@ fn scenario_with_pouch(pouch: bool) -> TestResult {
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn wire_requests(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
@@ -627,6 +640,7 @@ async fn wire_requests(
 }
 
 // Fixture provisioning changes one independently checked reach/rights invariant at a time.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn fixture_corpse(
     pool: &sqlx::PgPool,
     corpse: [u8; 16],
@@ -644,6 +658,7 @@ async fn fixture_corpse(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn equip_quiver_via_wire(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     mut admitted: crate::gameplay_transport::connection::AdmittedSession,
@@ -804,6 +819,7 @@ async fn equip_quiver_via_wire(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn fixture_overload_pouch(pool: &sqlx::PgPool, add: bool) -> TestResult {
     let mut tx = pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -826,6 +842,7 @@ async fn fixture_overload_pouch(pool: &sqlx::PgPool, add: bool) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn serve_session(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
@@ -854,6 +871,7 @@ async fn serve_session(
     Ok(output)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn wire_move(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,

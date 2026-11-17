@@ -6,6 +6,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::{goblin_merchant as elevator, world_callbacks::Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qm50_native_elevator_call_ride_and_replay() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

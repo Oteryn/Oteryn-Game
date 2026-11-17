@@ -1,16 +1,24 @@
 //! C11PKG: actual party, persistent standard stances and qualified Ascetic spender damage.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::bestiary_postgres_harness::{Harness, TestResult, debug, id};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::ComposedFreshAdmission;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_gameplay_spell_rules::native_actor_states::StandardStance;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent, SpellTarget};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::{num::NonZeroU32, sync::Arc, time::Duration};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn c11_monk_real_dispatch_ascetic_party_serene_refund_and_stance_reload_postgres() -> TestResult {
     super::party_buffs::run_party_buffs(Some(("c11_monk", "monk")))
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn cast(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     player: (ExactActorRef, GameSessionId),
@@ -51,6 +59,7 @@ async fn cast(
 
 /// Canary 47dfd51f party.cpp:308-350: the strongest living Guiding monk shares
 /// integer-half Mantra with every other party member, without a shared-XP gate.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn assert_guiding_shared_mantra(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     source: (ExactActorRef, GameSessionId),
@@ -185,6 +194,7 @@ async fn assert_guiding_shared_mantra(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn scenario(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -799,6 +809,7 @@ pub(super) async fn scenario(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn amber_equipment_and_cast(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>, h: &Harness,
     player: (ExactActorRef, GameSessionId),

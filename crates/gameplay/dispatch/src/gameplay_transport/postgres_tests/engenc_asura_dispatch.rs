@@ -550,6 +550,9 @@ async fn walk(
     Ok(next_command)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(stage: &'static str, trigger: Position) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -563,6 +566,7 @@ fn run(stage: &'static str, trigger: Position) -> TestResult {
         .map_err(|_| "Asura dispatch thread failed")?
         .map_err(Into::into)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engenc_postgres_native_destroyer_chamber_admission() -> TestResult {
     run(
@@ -574,6 +578,7 @@ fn engenc_postgres_native_destroyer_chamber_admission() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engenc_postgres_native_fire_chamber_admission() -> TestResult {
     run(
@@ -585,6 +590,7 @@ fn engenc_postgres_native_fire_chamber_admission() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engenc_postgres_native_energy_chamber_admission() -> TestResult {
     run(

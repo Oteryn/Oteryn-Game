@@ -4,6 +4,7 @@ use super::TestResult;
 use crate::content::world_reward_claims::{REWARD_CLAIM_SHARDS, UnboundReason, bind_reward_claims};
 use serde_json::Value;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc8_lone_medusa_claim_use_replay_and_refusal() -> TestResult {
     super::quest_catalogue_chests::standalone_claim_cohort(
@@ -12,6 +13,7 @@ fn questpc8_lone_medusa_claim_use_replay_and_refusal() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc8_authored_selector_cannot_impersonate_a_crystal_reward_source() -> TestResult {
     let mut source = None;

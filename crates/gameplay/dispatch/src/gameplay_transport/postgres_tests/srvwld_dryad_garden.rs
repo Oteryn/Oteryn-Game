@@ -1,7 +1,22 @@
 //! W19b: Crystal dryad_garden.lua:7-24 teleports before emitting watersplash.
 use super::TestResult;
 use super::fixture::debug;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::quest_world_callbacks::{local, scenario, wire};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::quest_world_callbacks::{local, wire};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use super::quest_world_callbacks::{local, wire};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::quest_world_callbacks::{local, wire};
 use crate::foundation::ExactActorRef;
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
@@ -13,6 +28,7 @@ use oteryn_protocol_oteryn::world_object::{
     UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srvwld_dryad_garden_enter_teleports_and_publishes_destination_splash() -> TestResult {
     garden(
@@ -25,6 +41,7 @@ fn srvwld_dryad_garden_enter_teleports_and_publishes_destination_splash() -> Tes
     )
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srvwld_dryad_garden_leave_teleports_and_publishes_destination_splash() -> TestResult {
     garden(
@@ -37,6 +54,9 @@ fn srvwld_dryad_garden_leave_teleports_and_publishes_destination_splash() -> Tes
     )
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn garden(name: &'static str, trigger: Position) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

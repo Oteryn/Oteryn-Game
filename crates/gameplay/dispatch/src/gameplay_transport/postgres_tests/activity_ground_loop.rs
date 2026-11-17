@@ -21,6 +21,7 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::item_fence_of;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn activity_ground_loop_postgres_real_drop_pickup_return_isolation_and_retirement() -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {

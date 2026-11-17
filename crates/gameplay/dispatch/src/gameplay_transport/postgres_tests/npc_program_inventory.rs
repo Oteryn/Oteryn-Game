@@ -19,6 +19,7 @@ const DEMERON: &str =
 const HARLAN: &str =
     "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/harlan";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn npc_inventory_selects_real_missing_partial_and_complete_source_branches() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -420,6 +421,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn npc_inventory_raw_demeron_partial_and_complete_selection_is_not_live_custody() -> TestResult {
     use oteryn_gameplay_quests::quest::npc_rules::{

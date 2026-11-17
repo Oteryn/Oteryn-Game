@@ -2,16 +2,19 @@
 use super::TestResult;
 use super::parameter_spell::scenario_in_world;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn p17_exiva_rules_optional_pvp_postgres() -> TestResult {
     exercise(1)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn p17_exiva_rules_open_pvp_postgres() -> TestResult {
     exercise(2)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn p17_exiva_rules_enforced_pvp_postgres() -> TestResult {
     exercise(3)

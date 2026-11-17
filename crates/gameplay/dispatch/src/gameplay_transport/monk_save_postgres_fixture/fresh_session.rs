@@ -81,6 +81,7 @@ async fn prepare_after_runtime_observation(
     Ok(request)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_world_callbacks_stag_fixture_refreshes_security_after_runtime_publication() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run_async(async |admin| {

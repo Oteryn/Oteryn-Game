@@ -15,11 +15,13 @@ use oteryn_protocol_oteryn::{
 use std::sync::Arc;
 use tokio::io::AsyncReadExt;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn seam_second_same_session_resume_has_deterministic_frames_with_busy_holder() -> TestResult {
     resume_frames(false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn seam_resume_waits_for_durable_loss_runtime_publication() -> TestResult {
     resume_frames(true)

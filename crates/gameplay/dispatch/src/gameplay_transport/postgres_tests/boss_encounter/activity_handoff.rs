@@ -1,5 +1,8 @@
 // Migration-0265 storage qualification on an already admitted real connection.
 // Administrative preparations cannot admit an Instance or substitute for a writer.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
 
 #[path = "activity_handoff/concurrency.rs"]
@@ -8,6 +11,9 @@ mod concurrency;
 #[path = "activity_handoff/logout.rs"]
 mod logout;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const ACTIVITY_PARTICIPANT_INSERT: &str = "\
     INSERT INTO game_activity_handoff_participants \
     (handoff_id,world_id,character_id,account_id,origin_channel_id, \
@@ -25,6 +31,9 @@ const ACTIVITY_PARTICIPANT_INSERT: &str = "\
     JOIN game_character_last_positions p ON p.character_id=s.character_id \
     WHERE s.game_session_id=encode($2,'hex')::uuid";
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn activity_provenance_rejection(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     statement: &str,
@@ -61,6 +70,9 @@ async fn activity_provenance_rejection(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn qualify_activity_provenance(
     h: &Harness,
     admitted: AdmittedSession,

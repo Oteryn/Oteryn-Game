@@ -86,6 +86,7 @@ pub(super) async fn drain_through(
                         .map_err(|_| ())?
                 {
                     #[cfg(test)]
+                    #[cfg(feature = "pg-tests-g3")]
                     let before = states
                         .get(runtime, actor, session)
                         .ok_or(())?
@@ -102,6 +103,7 @@ pub(super) async fn drain_through(
                         )
                         .ok_or(())?;
                     #[cfg(test)]
+                    #[cfg(feature = "pg-tests-g3")]
                     {
                         let commits = &mut states.rotten_blood_callbacks.advanced.commits;
                         if commits.len() >= 64 {
@@ -114,7 +116,7 @@ pub(super) async fn drain_through(
                             amount,
                         });
                     }
-                    #[cfg(not(test))]
+                    #[cfg(any(not(test), not(feature = "pg-tests-g3")))]
                     let _ = hit;
                 }
             }

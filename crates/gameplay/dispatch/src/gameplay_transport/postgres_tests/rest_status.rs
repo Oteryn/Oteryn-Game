@@ -4,6 +4,7 @@ use crate::foundation::ChannelContentPin;
 use crate::map::boot::tests::{floor_items, floor_pins, teleport_bundle};
 use oteryn_protocol_oteryn::rest_status::{CAPABILITY_REST_STATUS_V1, RestStatus};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn rest_status_native_owner_projects_food_and_bonuses_and_rejects_stale_session() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

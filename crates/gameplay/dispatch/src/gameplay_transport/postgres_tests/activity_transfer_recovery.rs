@@ -12,6 +12,7 @@ use crate::foundation::{AuthenticatedTransportRefV1, GameSessionState, ScopeOwne
 use crate::gameplay_transport::item_fence_of;
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn activity_transfer_recovery_postgres_nonce_transport_and_first_input() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

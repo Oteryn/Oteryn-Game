@@ -6,6 +6,7 @@ use crate::gameplay_transport::item_ref_admission::generation_item_facts;
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn definition_ready_claims_bind_source_placements_with_native_items() -> TestResult {
     std::thread::Builder::new()
@@ -140,11 +141,13 @@ fn coverage() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn definition_ready_claim_use_and_replay_dispatch_postgres() -> TestResult {
     postgres_scenario(super::quest_callbacks::DefinitionReadyClaim::RuneEmblem)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn definition_ready_claim_bloodherb_use_and_replay_dispatch_postgres() -> TestResult {
     postgres_scenario(super::quest_callbacks::DefinitionReadyClaim::BloodHerb)

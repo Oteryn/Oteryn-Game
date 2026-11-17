@@ -1,19 +1,28 @@
 //! Container sorting through the actual connection router and PostgreSQL item owner.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, run};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, item_look, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::foundation::MovementLocalPosition;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{
     self as protocol,
     container_sort::{Request, SortKey},
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn container_sort_postgres_dispatch_replay_stale_generation_and_conservation() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("container-sort", scenario)
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario() -> TestResult {
     run(async |admin| {
         let harness =
@@ -361,6 +370,7 @@ fn scenario() -> TestResult {
         harness.cleanup().await
     })
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn send(
     client: &mut tokio::io::DuplexStream,
     id: u64,
@@ -387,9 +397,11 @@ async fn send(
         }
     }
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn snapshot(pool: &sqlx::PgPool) -> TestResult<Vec<(String, i64, String, String)>> {
     Ok(sqlx::query_as("SELECT i.item_instance_id::text,i.quantity,i.state_revision::text,COALESCE(e.parent_item_instance_id::text,'') FROM game_item_instances i LEFT JOIN (SELECT item_instance_id,parent_item_instance_id FROM game_item_container_entries UNION ALL SELECT item_instance_id,parent_item_instance_id FROM game_item_nested_entries) e USING(item_instance_id) ORDER BY i.item_instance_id").fetch_all(pool).await?)
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn order(pool: &sqlx::PgPool, table: &str, parent: u8) -> TestResult<Vec<[u8; 16]>> {
     let sql = format!(
         "SELECT item_instance_id::text FROM {table} WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal DESC"
@@ -409,10 +421,12 @@ async fn order(pool: &sqlx::PgPool, table: &str, parent: u8) -> TestResult<Vec<[
         })
         .collect()
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn order_nested(pool: &sqlx::PgPool) -> TestResult<Vec<[u8; 16]>> {
     order(pool, "game_item_nested_entries", 72).await
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn drive<A, B>(
     serve: A,
     exercise: B,

@@ -2,6 +2,7 @@
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug};
 use oteryn_gameplay_quests::quest::kill_objectives as rules;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn elvenbane_source_basement_and_poison_route() -> TestResult {
     super::annihilator_route::elvenbane_source_exploration()

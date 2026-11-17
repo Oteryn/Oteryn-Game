@@ -6,13 +6,23 @@ use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, world_callbacks::Position,
+    wrath_sleeping_dragon as quest,
+};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
     wrath_sleeping_dragon as quest,
 };
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn nx6_wayfarer_real_npc_atomic_finale_replay_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

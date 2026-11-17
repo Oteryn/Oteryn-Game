@@ -1,6 +1,12 @@
 //! Real carried/stash fixtures and committed read-back for the existing wire cases.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::*;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn set_quantity(h: &Harness, input: u8, quantity: i64) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -12,6 +18,9 @@ pub(super) async fn set_quantity(h: &Harness, input: u8, quantity: i64) -> TestR
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn clone_carried(
     h: &Harness,
     source: u8,
@@ -32,6 +41,9 @@ pub(super) async fn clone_carried(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn deepen_gem(h: &Harness) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -47,6 +59,9 @@ async fn deepen_gem(h: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn remove_inventory(h: &Harness) -> TestResult {
     // Fixture retirement, not a production mutation: leave only the real stash
     // balance and bank. No disconnected live bag pretends to be ground custody.
@@ -70,6 +85,9 @@ async fn remove_inventory(h: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn remove_gold(h: &Harness) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -89,6 +107,9 @@ async fn remove_gold(h: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn single_nested_stacks(h: &Harness, source: u8, count: u8) -> TestResult {
     // Each native bag holds fifteen single-item stacks. This crosses the old
     // twenty-input limit without exceeding any real bag's twenty-slot capacity.
@@ -120,6 +141,9 @@ async fn single_nested_stacks(h: &Harness, source: u8, count: u8) -> TestResult 
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn prepare(
     h: &Harness,
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -247,6 +271,9 @@ pub(super) async fn prepare(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn assert_item(h: &Harness, input: u8, quantity: i64, lifecycle: i16) -> TestResult {
     let actual: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(id(input).as_slice()).fetch_one(&h.pool).await?;
@@ -254,6 +281,9 @@ async fn assert_item(h: &Harness, input: u8, quantity: i64, lifecycle: i16) -> T
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn assert_nested(h: &Harness, input: u8, parent: Option<u8>) -> TestResult {
     let actual: Option<String> = sqlx::query_scalar("SELECT parent_item_instance_id::text FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(id(input).as_slice()).fetch_optional(&h.pool).await?;
@@ -271,6 +301,9 @@ async fn assert_nested(h: &Harness, input: u8, parent: Option<u8>) -> TestResult
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn assert_stash_debit(h: &Harness, key: &str, before: i64, amount: i64) -> TestResult {
     let row: (i64, i64, i64, bool, bool) = sqlx::query_as("SELECT e.amount,e.quantity_before,e.quantity_after,e.previous_entry_id IS NOT NULL,e.created_xact_id=r.created_xact_id AND e.created_xact_id=a.created_xact_id AND e.created_xact_id=f.created_xact_id FROM game_character_stash_balances b JOIN game_character_stash_entries e ON e.entry_id=b.last_entry_id JOIN game_atelier_item_records r ON r.character_id=b.character_id AND r.occurrence=encode($3,'hex')::uuid JOIN game_character_atelier_receipts a ON a.character_id=r.character_id AND a.occurrence=r.occurrence JOIN game_item_fee_burns f ON f.transaction_id=r.transaction_id WHERE b.character_id=encode($1,'hex')::uuid AND b.world_id=encode($2,'hex')::uuid AND b.definition_key=$4 AND b.quantity=e.quantity_after")
         .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(180).as_slice()).bind(key)
@@ -283,6 +316,9 @@ async fn assert_stash_debit(h: &Harness, key: &str, before: i64, amount: i64) ->
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn reject_foreign_nested_proof(h: &Harness) -> TestResult {
     let line: serde_json::Value = sqlx::query_scalar(
         "SELECT inputs->0 FROM game_atelier_item_records WHERE occurrence=encode($1,'hex')::uuid",
@@ -323,6 +359,9 @@ async fn reject_foreign_nested_proof(h: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn reject_historical_stash_debit(h: &Harness) -> TestResult {
     let before = scope_footprint(h).await?;
     let mut tx = h.pool.begin().await?;
@@ -359,6 +398,9 @@ async fn reject_historical_stash_debit(h: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn reject_historical_coin_proof(h: &Harness) -> TestResult {
     let before = scope_footprint(h).await?;
     let mut tx = h.pool.begin().await?;
@@ -399,6 +441,9 @@ async fn reject_historical_coin_proof(h: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn assert_result(h: &Harness, case: Case, bank_before: i64) -> TestResult {
     match case {
         Case::NestedReveal | Case::NestedRevealOrder | Case::DeepNestedReveal => {

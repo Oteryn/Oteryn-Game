@@ -324,11 +324,13 @@ fn execute(filled: bool) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn engclaim_native_container_allocation_once_and_cold_replay() -> TestResult {
     execute(true)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn engclaim_native_vault_reward_achievement_once_and_cold_replay() -> TestResult {
     execute(false)

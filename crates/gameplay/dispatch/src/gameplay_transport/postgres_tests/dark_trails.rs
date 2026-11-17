@@ -9,6 +9,7 @@ use crate::gameplay_transport::connection::{
 use oteryn_gameplay_quests::quest::{dark_trails as quest, world_callbacks::Position};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn dark_trails_npc_flow_commits_once_and_fences_conversation_topics() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

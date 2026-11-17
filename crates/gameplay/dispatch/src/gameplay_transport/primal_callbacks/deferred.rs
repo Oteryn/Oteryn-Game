@@ -57,6 +57,24 @@ impl DeferredCallbacks {
     }
     /// Read-only observation of source work that the real native Think enqueued.
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
     pub(super) fn original_deadlines_for_test(&self) -> Vec<(u64, u64)> {
         self.0
             .iter()

@@ -186,6 +186,9 @@ pub(super) fn callback(name: &str) -> TestResult<Callback> {
         })
         .ok_or_else(|| "source room callback".into())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -211,35 +214,43 @@ fn run(name: &'static str) -> TestResult {
     );
     result.map_err(Into::into)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_native_room_morguthis_entry() -> TestResult {
     run("l6-native-room-morguthis-entry")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_native_room_omruc_specific() -> TestResult {
     run("l6-native-room-omruc-specific")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_native_room_omruc_room() -> TestResult {
     run("l6-native-room-omruc-room")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_native_room_rahemos_levers() -> TestResult {
     run("l6-native-room-rahemos-levers")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_native_room_rahemos_room() -> TestResult {
     run("l6-native-room-rahemos-room")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_native_room_vashresamun_specific() -> TestResult {
     run("l6-native-room-vashresamun-specific")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_native_room_vashresamun_specific_preserve() -> TestResult {
     run("l6-native-room-vashresamun-specific-preserve")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_native_room_vashresamun_room() -> TestResult {
     run("l6-native-room-vashresamun-room")

@@ -346,6 +346,7 @@ fn qualify_hazard_monster(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef, 
     );
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn incoming_order_parry_uses_original_native_roll() {
     std::thread::Builder::new()
@@ -504,6 +505,7 @@ fn assign_charms(
     CertainCharms(certain)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn incoming_order_native_hit_gate_shield_lethal_source_and_player_minor() {
     std::thread::Builder::new().name("incoming-order-native".into()).stack_size(64 << 20).spawn(|| {
@@ -596,6 +598,7 @@ fn incoming_order_native_hit_gate_shield_lethal_source_and_player_minor() {
     }).expect("thread").join().expect("scenario");
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn incoming_order_native_condition_ticks_dodge_parry_source_liveness_and_agony() {
     std::thread::Builder::new()
@@ -841,6 +844,7 @@ fn incoming_order_native_condition_ticks_dodge_parry_source_liveness_and_agony()
         .expect("scenario");
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn incoming_order_explicit_native_mana_drain_skips_health_hook_and_retains_replay() {
     std::thread::Builder::new().name("incoming-mana-only".into()).stack_size(64 << 20).spawn(|| {

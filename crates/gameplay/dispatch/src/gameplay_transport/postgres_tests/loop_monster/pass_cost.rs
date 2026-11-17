@@ -1,9 +1,18 @@
 //! MAINRED-NB: measure the real held pass over a channel-sized idle census.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::MovementLocalPosition;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_durability::durability::native_world_read::qualified_combat_tile;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_entities::carrier::{NativeRaidSpawnSpec, RaidSpawnIdentity, RaidSpawnOutcome};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn source_owner_cycle_drives_monsters_without_connection_vitals() -> TestResult {
     run_case(async |harness| {
@@ -52,6 +61,7 @@ fn source_owner_cycle_drives_monsters_without_connection_vitals() -> TestResult 
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn monster_cadence_admits_only_nearby_creatures_in_a_spread_world() -> TestResult {
     run_case(async |harness| {
@@ -157,6 +167,7 @@ fn monster_cadence_admits_only_nearby_creatures_in_a_spread_world() -> TestResul
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn live_join_visibility_projects_only_the_observers_interest_area_postgres() -> TestResult {
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
@@ -220,21 +231,26 @@ fn live_join_visibility_projects_only_the_observers_interest_area_postgres() -> 
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn monster_pass_cost_idle_channel_does_not_query_every_empty_tile() -> TestResult {
     pass_cost(false, false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn monster_pass_cost_spread_channel_batches_exact_empty_tiles() -> TestResult {
     pass_cost(true, false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn monster_pass_cost_spread_passive_census_batches_field_reads() -> TestResult {
     pass_cost(true, true)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn pass_cost(spread: bool, passive: bool) -> TestResult {
     run_case(async move |harness| {
         prepare_current_session(harness).await?;
@@ -418,6 +434,8 @@ fn pass_cost(spread: bool, passive: bool) -> TestResult {
 
 // The existing bundle fixture supplies a thin walkable World, with the same
 // native Content and owner pins as production. Terrain is explicit test DATA.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn spread_dependencies(
     active: &crate::content::ActiveGeneration,
     pin: &crate::content::NativeEntryContentPin,
@@ -519,6 +537,8 @@ fn spread_dependencies(
     Ok((deps, rat))
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn ground_scans(root: &crate::durability::DurabilityRoot) -> TestResult<i64> {
     root.try_issue_semantic_pass().map_err(debug)?.run(|holder, _| {
         Box::pin(async move {

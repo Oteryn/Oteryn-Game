@@ -12,6 +12,7 @@ use std::future::{Future, poll_fn};
 use std::task::Poll;
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn fresh_admission_keeps_bounded_holder_preference_and_releases_it_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

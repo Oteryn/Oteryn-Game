@@ -13,6 +13,7 @@ use crate::gameplay_transport::capabilities::{
 };
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_hatred_real_source_pad_resets_torment_before_native_handoff_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -21,6 +22,7 @@ fn srx3_hatred_real_source_pad_resets_torment_before_native_handoff_postgres() -
     run_hatred_entry(false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_hatred_instance_sorrow_survives_later_source_channel_activation_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

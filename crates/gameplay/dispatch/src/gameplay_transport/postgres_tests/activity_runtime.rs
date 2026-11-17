@@ -1,26 +1,70 @@
 //! The real activity writer, current-session reader and control allocator on PostgreSQL.
 //! Test coordinates/digests are isolated authored fixture data, never gameplay defaults.
 use super::fixture::{self, Harness, debug};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{TestResult, reset};
+
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::activity_handoff::{
     ActivityContentPin, ActivityEnterOutcome, ActivityEnterRequest, ActivityHandoffOwner,
     ActivityParticipant, ActivityRefusal, ActivityReturnOutcome, ActivityReturnReason,
     ActivityReturnRequest,
 };
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use crate::durability::activity_handoff::{
+    ActivityContentPin, ActivityEnterOutcome, ActivityEnterRequest, ActivityHandoffOwner,
+    ActivityParticipant,
+};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::durability::activity_handoff::{
+    ActivityContentPin, ActivityEnterOutcome, ActivityEnterRequest, ActivityHandoffOwner,
+    ActivityParticipant,
+};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::durability::character_last_position::{
     LastPositionCell, LastPositionRecord, LastVitals,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
     RuntimeScopeAssignmentWriter,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{
     AuthenticatedTransportRefV1, CharacterId, ConnectionGeneration, GameSessionId,
     GameSessionState, RuntimeScopeRefV1,
 };
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use crate::foundation::{
+    AuthenticatedTransportRefV1, CharacterId, GameSessionId, RuntimeScopeRefV1,
+};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use crate::foundation::RuntimeScopeRefV1;
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::foundation::{
+    AuthenticatedTransportRefV1, CharacterId, GameSessionId, RuntimeScopeRefV1,
+};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::item_fence_of;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn activity_handoff_postgres_real_enter_return_replay_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -35,6 +79,9 @@ fn activity_handoff_postgres_real_enter_return_replay_and_fences() -> TestResult
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario() -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         eprintln!("ACTIVITY_RUNTIME POSTGRES_CASE_SKIPPED: no configured admin");
@@ -113,6 +160,7 @@ pub(super) async fn allocate_ready_instance(h: &Harness, tag: u8) -> TestResult<
     Ok(scope)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn issue_fixture_content(h: &Harness) -> TestResult<ActivityContentPin> {
     let RuntimeScopeRefV1::Channel {
         world_id,
@@ -136,13 +184,18 @@ pub(super) async fn issue_fixture_content(h: &Harness) -> TestResult<ActivityCon
     Ok(pin)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn session(tag: u8) -> TestResult<GameSessionId> {
     GameSessionId::decode(&fixture::id(tag)).map_err(debug)
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn transport(tag: u8) -> TestResult<AuthenticatedTransportRefV1> {
     AuthenticatedTransportRefV1::decode(&[tag; 16]).map_err(debug)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn retained_rows(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     Ok(sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_activity_handoff_groups), \
@@ -154,6 +207,7 @@ async fn retained_rows(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     .await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn prepare_activity_fixture(
     h: &Harness,
 ) -> TestResult<(super::house_transfer::RecoverySource, ActivityEnterRequest)> {
@@ -236,15 +290,20 @@ pub(super) async fn prepare_activity_fixture(
     Ok((evidence, request))
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) struct EnteredActivityFixture {
     pub(super) fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     pub(super) receipt: crate::durability::activity_handoff::ActivityEnterReceipt,
     pub(super) request: ActivityEnterRequest,
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub(super) evidence: super::house_transfer::RecoverySource,
+    #[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+    pub(super) _evidence: super::house_transfer::RecoverySource,
 }
 
 /// Shared production owner fixture for the real Instance death/Ground cases.
 /// Callers retain this value so its authenticated evidence source stays alive.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn enter_fixture(h: &Harness) -> TestResult<EnteredActivityFixture> {
     let (evidence, request) = prepare_activity_fixture(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -269,10 +328,16 @@ pub(super) async fn enter_fixture(h: &Harness) -> TestResult<EnteredActivityFixt
         fence,
         receipt,
         request,
+        #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
         evidence,
+        #[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+        _evidence: evidence,
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn case(h: &Harness) -> TestResult {
     let (_evidence, request) = prepare_activity_fixture(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;

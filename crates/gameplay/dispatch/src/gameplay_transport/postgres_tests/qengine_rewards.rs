@@ -77,69 +77,85 @@ pub(super) fn scenario(name: &'static str) -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_rewards_pirate_outfit() -> TestResult {
     scenario("qengine-rewards-pirate")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_rewards_knight_outfit() -> TestResult {
     scenario("qengine-rewards-knight")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_rewards_deepling_outfit() -> TestResult {
     scenario("qengine-rewards-deepling")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_rewards_hallowed_ground_exchange() -> TestResult {
     scenario("qengine-rewards-hallowed")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_rewards_outfox_exchange() -> TestResult {
     scenario("qengine-rewards-outfox")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_rewards_backpack_exchange() -> TestResult {
     scenario("qengine-rewards-backpack")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l1_warmaster_crest() -> TestResult {
     scenario("qengine-rewards-l1-warmaster")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l1_wayfarer_cape() -> TestResult {
     scenario("qengine-rewards-l1-wayfarer")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l1_yalaharian_addon_sage() -> TestResult {
     scenario("qengine-rewards-l1-yalaharian")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l1_warmaster_tribal() -> TestResult {
     scenario("qengine-rewards-l1-warmaster-tribal")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l1_wayfarer_hat() -> TestResult {
     scenario("qengine-rewards-l1-wayfarer-hat")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l1_yalaharian_base_palimuth() -> TestResult {
     scenario("qengine-rewards-l1-yalaharian-base-palimuth")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l1_yalaharian_base_palimuth_accepts_villain() -> TestResult {
     scenario("qengine-rewards-l1-yalaharian-base-palimuth-villain")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l1_yalaharian_base_yalahari() -> TestResult {
     scenario("qengine-rewards-l1-yalaharian-base-yalahari")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l1_yalaharian_addon_villain() -> TestResult {
     scenario("qengine-rewards-l1-yalaharian-villain")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l1_legacy_decaying_entitlement_remains_selectable() -> TestResult {
     scenario("qengine-rewards-l1-legacy-decaying")

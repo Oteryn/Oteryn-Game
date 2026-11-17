@@ -46,6 +46,7 @@ enum Case {
     QueuedOrder,
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn delayed_strikes_postgres_death_echo_two_hits() -> TestResult {
     scenario(Plan {
@@ -58,14 +59,17 @@ fn delayed_strikes_postgres_death_echo_two_hits() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn delayed_strikes_postgres_grenade_position_three_seconds() -> TestResult {
     grenade(Case::Grenade, "delayed_grenade")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn delayed_strikes_postgres_grenade_pz_no_cost() -> TestResult {
     grenade(Case::Pz, "delayed_pz")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn delayed_strikes_postgres_grenade_stage_zero_no_cost() -> TestResult {
     grenade(Case::StageZero, "delayed_stage_zero")
@@ -80,10 +84,12 @@ fn grenade(case: Case, tag: &'static str) -> TestResult {
         case,
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn delayed_strikes_postgres_outburst_full_harmony_repeats() -> TestResult {
     outburst(5, "delayed_full")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn delayed_strikes_postgres_outburst_partial_harmony_no_repeat() -> TestResult {
     outburst(4, "delayed_partial")
@@ -98,6 +104,7 @@ fn outburst(harmony: u8, tag: &'static str) -> TestResult {
         case: Case::Outburst(harmony),
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn delayed_strikes_postgres_logout_drops_pending() -> TestResult {
     scenario(Plan {
@@ -110,6 +117,7 @@ fn delayed_strikes_postgres_logout_drops_pending() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn delayed_strikes_postgres_departed_target_does_not_block_timer_lane() -> TestResult {
     scenario(Plan {
@@ -122,6 +130,7 @@ fn delayed_strikes_postgres_departed_target_does_not_block_timer_lane() -> TestR
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn delayed_strikes_postgres_overlapping_callbacks_follow_lane_order() -> TestResult {
     scenario(Plan {

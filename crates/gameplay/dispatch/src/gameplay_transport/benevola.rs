@@ -341,6 +341,30 @@ pub(super) async fn resume(
 #[cfg(test)]
 impl NpcConversations {
     /// Fault injection retains exactly the original invocation after an ambiguous acknowledgement.
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(in crate::gameplay_transport) fn retain_benevola_for_test(
         &self,
         fence: CurrentCharacterItemFence,

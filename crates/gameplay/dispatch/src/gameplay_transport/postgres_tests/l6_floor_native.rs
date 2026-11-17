@@ -24,6 +24,9 @@ pub(super) fn start() -> Position {
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -44,22 +47,27 @@ fn run(name: &'static str) -> TestResult {
     );
     result.map_err(Into::into)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_native_altar_assembly() -> TestResult {
     run("l6-floor-assembly-native")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_native_altar_missing() -> TestResult {
     run("l6-floor-assembly-native-missing")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_native_altar_unbound() -> TestResult {
     run("l6-floor-assembly-native-unbound")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_native_altar_ruby_exact_one() -> TestResult {
     run("l6-floor-assembly-native-ruby-stack")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_native_altar_ruby_unbound() -> TestResult {
     run("l6-floor-assembly-native-ruby-unbound")

@@ -15,6 +15,7 @@ use oteryn_gameplay_quests::quest::{
 };
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m42_utc_cooking_refuses_wrong_fluid_and_commits_exact_typed_recipe() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -40,6 +41,7 @@ fn m42_utc_cooking_refuses_wrong_fluid_and_commits_exact_typed_recipe() -> TestR
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m42_final_menu_and_culinary_master_use_real_typed_receipts() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

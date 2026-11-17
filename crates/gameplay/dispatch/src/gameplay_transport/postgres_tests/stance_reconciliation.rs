@@ -30,16 +30,19 @@ enum Case {
     SupersededStance,
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn stance_readback_after_stamina_revision_pays_once_and_releases_postgres() -> TestResult {
     scenario(Case::UnrelatedRevision)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn stance_readback_after_revision_advance_refuses_retired_owner_postgres() -> TestResult {
     scenario(Case::RetiredOwner)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn stance_readback_refuses_superseded_stance_and_same_key_aba_postgres() -> TestResult {
     scenario(Case::SupersededStance)

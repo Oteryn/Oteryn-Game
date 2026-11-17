@@ -15,6 +15,7 @@ use crate::gameplay_transport::capabilities::{
 use oteryn_protocol_oteryn::boss_encounter as wire;
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn spite_step_instance_survives_channel_activation_advance() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

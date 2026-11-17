@@ -7,6 +7,7 @@ use crate::gameplay_transport::item_fence_of;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_taints_postgres_native_query_private_expiry_and_session_fence() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -131,6 +132,7 @@ fn srx3_taints_postgres_native_query_private_expiry_and_session_fence() -> TestR
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_taints_postgres_census_over_one_work_page_keeps_every_current_player() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -262,6 +264,7 @@ fn srx3_taints_postgres_census_over_one_work_page_keeps_every_current_player() -
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_taints_postgres_visible_grace_keeps_data_without_restoring_input() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

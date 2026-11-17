@@ -4,30 +4,39 @@ use super::{
     fixture::{Harness, debug},
 };
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_treasure_thalas_expiry_grants_one() -> TestResult {
     run("l6-tomb-switch-treasure-expired-12121")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_treasure_diprath_expiry_grants_two() -> TestResult {
     run("l6-tomb-switch-treasure-expired-12122")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_treasure_ashmunrah_expiry_grants_no_personal_progress() -> TestResult {
     run("l6-tomb-switch-treasure-expired-12123")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_treasure_repeat_cycles_do_not_repeat_personal_progress() -> TestResult {
     run("l6-tomb-switch-treasure-repeat-12121")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_treasure_future_lease_grants_no_personal_progress() -> TestResult {
     run("l6-tomb-switch-treasure-fresh-12121")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_treasure_absent_original_actor_grants_no_personal_progress() -> TestResult {
     run("l6-tomb-switch-treasure-offline-12122")
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

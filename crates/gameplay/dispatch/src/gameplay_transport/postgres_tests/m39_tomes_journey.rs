@@ -21,21 +21,25 @@ pub(crate) mod world;
 const FRONTIER: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/";
 const COUNTER: &str = "oteryn:quest-progress/quest/u8_54/the_new_frontier/tomeof_knowledge";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m39a_tomes_twelve_source_books_and_incremental_handins() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m39-tomes")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m39b_tomes_repeatable_paid_xp_and_no_free_reward() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m39-tomes-extra")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m39_tomes_legacy_claim_blocks_a_second_world_reward() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m39-tomes-legacy-first")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m39_tomes_world_claim_blocks_a_second_legacy_reward() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m39-tomes-world-first")

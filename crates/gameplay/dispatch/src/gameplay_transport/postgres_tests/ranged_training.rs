@@ -22,6 +22,7 @@ fn field(out: &mut Vec<u8>, key: u8, mut value: u64) {
     }
     out.push(value as u8);
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn ranged_attack_postgres_dummy_bow_wand_and_rod_train_at_distance_five() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("ranged-dummy", || {

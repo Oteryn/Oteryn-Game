@@ -9,14 +9,19 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 const SOURCE: Position = Position { x:32593, y:31841, floor:-9 };
 pub(super) fn start()->Position {Position{x:32593,y:31842,floor:-9}}
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m07_too_hot_postgres_column_retains_chisel_and_credits_once()->TestResult {
     run("m07/too-hot-column-01")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m07_too_hot_postgres_column_refuses_level79_without_credit()->TestResult {
     run("m07/too-hot-column-01-level79")
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name:&'static str)->TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}
     let begun=std::time::Instant::now();eprintln!("POSTGRES_CASE_STARTED {name}");

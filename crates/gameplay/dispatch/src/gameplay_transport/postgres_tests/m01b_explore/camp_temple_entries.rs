@@ -1,6 +1,7 @@
 //! Entry visits at the retained Porgol camp and Rookgaard goblin temple.
 use super::*;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_camp_temple_iron_helmet_native_camp_entry_credits_once_and_replays() -> TestResult {
     native_case(
@@ -12,6 +13,7 @@ fn m01b_camp_temple_iron_helmet_native_camp_entry_credits_once_and_replays() -> 
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_camp_temple_goblin_native_temple_entry_credits_once_and_replays() -> TestResult {
     native_case(
@@ -23,6 +25,9 @@ fn m01b_camp_temple_goblin_native_temple_entry_credits_once_and_replays() -> Tes
     )
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn native_case(label: &'static str, name: &'static str, x: u16, y: u16, floor: i8) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

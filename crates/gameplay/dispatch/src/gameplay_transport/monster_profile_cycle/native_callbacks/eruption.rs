@@ -9,12 +9,16 @@ use oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::
 #[derive(Debug, Clone)]
 pub(in crate::gameplay_transport) struct EruptionMasterReceipt {
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub master: crate::foundation::ExactActorRef,
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub requested: u32,
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub health_before: i64,
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub health_after: i64,
     pub demon: Option<crate::foundation::ExactActorRef>,
 }
@@ -22,6 +26,7 @@ pub(in crate::gameplay_transport) struct EruptionMasterReceipt {
 struct Pending {
     id: CallbackStageId,
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     caster: crate::foundation::ExactActorRef,
     at: MovementLocalPosition,
     receipt: EruptionMasterReceipt,
@@ -36,6 +41,7 @@ impl EruptionPreludes {
         self.0.iter().any(|entry| entry.id == id && entry.complete)
     }
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub(super) fn receipt(
         &self,
         caster: crate::foundation::ExactActorRef,
@@ -117,16 +123,21 @@ impl EruptionPreludes {
             self.0.push(Pending {
                 id: plan.id(),
                 #[cfg(test)]
+                #[cfg(feature = "pg-tests-g3")]
                 caster,
                 at,
                 receipt: EruptionMasterReceipt {
                     #[cfg(test)]
+                    #[cfg(feature = "pg-tests-g3")]
                     master,
                     #[cfg(test)]
+                    #[cfg(feature = "pg-tests-g3")]
                     requested,
                     #[cfg(test)]
+                    #[cfg(feature = "pg-tests-g3")]
                     health_before: _result.health_before,
                     #[cfg(test)]
+                    #[cfg(feature = "pg-tests-g3")]
                     health_after: _result.health_after,
                     demon: None,
                 },

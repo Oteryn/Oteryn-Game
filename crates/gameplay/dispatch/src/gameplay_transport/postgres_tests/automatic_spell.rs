@@ -10,6 +10,7 @@ use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_chara
 use crate::spell::Vocation;
 use oteryn_simulation_determinism::ExactI64;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn automatic_spell_known_spell_level_up_replay_and_fence_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("automatic-spell", || {

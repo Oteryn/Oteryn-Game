@@ -83,6 +83,9 @@ pub(super) fn world(
         &[appearance],
     )
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -97,48 +100,59 @@ fn run(name: &'static str) -> TestResult {
         .map_err(|_| "M49 scenario thread")?
         .map_err(Into::into)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m49_energy_native_arrival_summons_once() -> TestResult {
     run("m49-energy")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m49_energy_durable_fields_summon_once() -> TestResult {
     run("m49-energy-fields")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m49_missing_durable_energy_field_keeps_corpse_and_boss_absent() -> TestResult {
     run("m49-energy-fields-missing")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m49_fire_native_arrival_summons_once() -> TestResult {
     run("m49-fire")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m49_ice_native_arrival_summons_once() -> TestResult {
     run("m49-ice")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m49_earth_native_arrival_summons_once() -> TestResult {
     run("m49-earth")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m49_missing_charge_keeps_corpse_and_boss_absent() -> TestResult {
     run("m49-fire-missing")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m49_blocked_spawn_recovers_after_charge_revision_changes() -> TestResult {
     run("m49-fire-recover")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m49_unknown_realization_ack_never_duplicates_the_actor() -> TestResult {
     run("m49-fire-ack")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m49_arrival_retires_real_corpse_loot_with_the_root() -> TestResult {
     run("m49-fire-loot")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m49_current_arrival_recovers_after_lost_projection_response() -> TestResult {
     run("m49-fire-response")

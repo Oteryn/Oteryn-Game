@@ -1,11 +1,71 @@
 //! Shared quest fixture: derive one XP-bearing transition from real admitted content.
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use super::TestResult;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use super::fixture::debug;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use oteryn_gameplay_quests::quest::{QuestComparison, QuestStateCatalogue};
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use std::sync::Arc;
 
 pub(super) const TRANSITION: &str =
     "oteryn:quest-transition/quest/u8_6/afathers_burden/quest_log/npc_1";
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 pub(super) fn catalogue() -> TestResult<Arc<QuestStateCatalogue>> {
     let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
         .map_err(debug)?;

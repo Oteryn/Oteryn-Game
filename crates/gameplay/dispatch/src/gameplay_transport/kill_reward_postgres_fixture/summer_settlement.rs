@@ -1,10 +1,46 @@
 //! Actual Summer settlement and staged corpse recovery on the shared owners.
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use super::*;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use sqlx::Row;
 
 #[path = "summer_handoff.rs"]
 mod handoff;
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 pub(super) async fn qualify_summer_settlement(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -274,6 +310,18 @@ pub(super) async fn qualify_summer_settlement(
     Ok(())
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 async fn shift_materialization(h: &Harness, item: [u8; 16], delta: i64) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -285,6 +333,18 @@ async fn shift_materialization(h: &Harness, item: [u8; 16], delta: i64) -> TestR
     Ok(())
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 async fn stage_count(h: &Harness, item: [u8; 16]) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_spell_field_temporal_receipts WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(item.as_slice()).fetch_one(&h.pool).await?)
@@ -292,6 +352,7 @@ async fn stage_count(h: &Harness, item: [u8; 16]) -> TestResult<i64> {
 
 // A distinct executable process reconstructs the recovery seal, database root,
 // node proof and scope lane. Nothing from the parent's timer/queue is passed.
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn summer_corpse_process_restart() -> TestResult {
     let Ok(database) = std::env::var("SUMMER_RESTART_DATABASE") else {
@@ -424,6 +485,18 @@ fn summer_corpse_process_restart() -> TestResult {
     })
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 fn restart(h: &Harness, mode: &str) -> TestResult {
     let options = h.pool.connect_options();
     let database = options.get_database().ok_or("test database")?;

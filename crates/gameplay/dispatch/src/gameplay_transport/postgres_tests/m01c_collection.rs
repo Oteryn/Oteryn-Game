@@ -1,6 +1,12 @@
 //! M01c: imported COLLECT operations retain custody and use the fenced quest owner.
 use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness, debug, run};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+use super::fixture::{Harness, debug};
 use oteryn_gameplay_quests::quest::QuestStateCatalogue;
 use oteryn_gameplay_quests::quest::authored_bindings::Bindings;
 
@@ -19,6 +25,7 @@ const BINDING: &str = r#"{
   }]
 }"#;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m01c_collection_requires_committed_item_move_and_exact_carried_inputs_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -90,6 +97,7 @@ fn m01c_collection_requires_committed_item_move_and_exact_carried_inputs_postgre
     result
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m01c_collection_counts_owned_stacks_without_consumption_and_replays_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m01c-collection")

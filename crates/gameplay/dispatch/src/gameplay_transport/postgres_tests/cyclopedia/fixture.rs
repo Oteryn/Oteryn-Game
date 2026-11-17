@@ -87,12 +87,17 @@ async fn exchange_with_delta(
         .map_err(|error| format!("cyclopedia command {id}/{kind} ended {ended:?}: {error}").into())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(in super::super) fn world(
     deps: &Dependencies,
     generation: &crate::content::ActiveGeneration,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     world_with_subareas(deps, generation, true)
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(in super::super) fn world_with_subareas(
     deps: &Dependencies,
     generation: &crate::content::ActiveGeneration,
@@ -222,6 +227,8 @@ pub(in super::super) fn world_with_subareas(
     )
     .map_err(debug)
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(in super::super) async fn seed(h: &Harness, bundle: [u8; 32]) -> TestResult {
     // Explicit fixture seed, never a product writer. Runtime assertions below use the
     // normal restricted runtime role, including fee audit and revision constraints.
@@ -303,6 +310,9 @@ pub(in super::super) async fn exchange(
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
     exchange_with_delta(owner, admitted, id, kind, payload, false).await
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn exchange_inventory(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,

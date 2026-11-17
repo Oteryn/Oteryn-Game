@@ -3,35 +3,73 @@
 // Keep sorted by module name; insert in order, never append.
 #[path = "equipment_effects_owner_tests/monk_scenario.rs"]
 pub(in crate::gameplay_transport) mod equipment_scenarios;
+#[cfg(feature = "pg-tests-g4")]
 #[path = "first_vocation_vitals_postgres_tests.rs"]
 mod first_vocation_vitals;
-#[path = "../../../../../apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs"]
-mod fixture;
+include!(concat!(env!("OUT_DIR"), "/postgres_fixture_mount.rs"));
 use crate::gameplay_transport::composed_test_owner::fresh_fixture;
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 #[path = "item_look_postgres_tests.rs"]
 mod item_look;
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 #[path = "kill_reward_postgres_e2e_tests.rs"]
 mod kill_reward_e2e;
+#[cfg(feature = "pg-tests-g1")]
 #[path = "logout_postgres_tests.rs"]
 mod logout_e2e;
+#[cfg(feature = "pg-tests-g3")]
 #[path = "map_bundle_domain_postgres_tests.rs"]
 mod map_bundle_domain;
+#[cfg(feature = "pg-tests-g1")]
 #[path = "loop_map_pickup_tests.rs"]
 mod map_pickup;
+#[cfg(any(feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 #[path = "quest_admission_postgres_tests.rs"]
 mod quest_admission;
+#[cfg(feature = "pg-tests-g3")]
 #[path = "quest_chest_postgres_tests.rs"]
 mod quest_chest_postgres_tests;
+#[cfg(feature = "pg-tests-g2")]
 #[path = "quest_log_postgres_tests.rs"]
 mod quest_log_postgres_tests;
+#[cfg(feature = "pg-tests-g2")]
 #[path = "quest_recovery_postgres_tests.rs"]
 mod quest_recovery;
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 #[path = "quest_runtime_fixture.rs"]
 mod quest_runtime_fixture;
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 #[path = "rune_use_bridge_postgres_tests.rs"]
 mod rune_use_bridge;
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 #[path = "tutorial_vitals_postgres_fixture.rs"]
 mod tutorial_vitals_fixture;
+#[cfg(feature = "pg-tests-g3")]
 #[path = "vocationless_vitals_postgres_tests.rs"]
 mod vocationless_vitals;
 
@@ -39,19 +77,162 @@ mod vocationless_vitals;
 // file there instead of another `#[path] mod` line in this shared list.
 include!(concat!(env!("OUT_DIR"), "/postgres_tests_mounts.rs"));
 
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use super::{ComposedFreshAdmission, MonkSave};
+
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    all(
+        feature = "pg-tests-g2",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g3",
+            feature = "pg-tests-g4"
+        ))
+    ),
+    all(
+        feature = "pg-tests-g3",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g4"
+        ))
+    ),
+    all(
+        feature = "pg-tests-g4",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g3"
+        ))
+    )
+))]
+use super::ComposedFreshAdmission;
+
+#[cfg(not(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+)))]
+use super::ComposedFreshAdmission;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
 use crate::gameplay_transport::connection::{
     AdmittedSession, ControllerBinding, FirstEntryOutcome, GraceExpiryResult, SessionContinuity,
 };
+
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(all(
+    feature = "pg-tests-g3",
+    not(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))
+))]
+use crate::gameplay_transport::connection::{
+    AdmittedSession, ControllerBinding, FirstEntryOutcome, SessionContinuity,
+};
+
+#[cfg(not(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+)))]
+use crate::gameplay_transport::connection::{
+    AdmittedSession, ControllerBinding, FirstEntryOutcome, SessionContinuity,
+};
 use crate::gameplay_transport::fresh_evidence::FreshEvidenceSource;
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use fixture::{Harness, debug, fence, id, run};
+
+#[cfg(not(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+)))]
+use fixture::{Harness, debug, fence, id};
 use std::cell::Cell;
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use std::time::Duration;
 use tokio::sync::Mutex;
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use {
     crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId},
+    oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
+};
+
+#[cfg(not(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+)))]
+use {
+    crate::foundation::{ChannelRuntimeV1, GameSessionId},
     oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
 };
 
@@ -89,6 +270,12 @@ pub fn record_save_attempt() {
 pub fn record_not_expired() {
     NOT_EXPIRED.set(NOT_EXPIRED.get() + 1);
 }
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 fn reset() {
     HOST_NOW.set(None);
     SAVES.set(0);
@@ -110,6 +297,12 @@ struct Dependencies {
     achievements: crate::achievement_catalogue::AchievementCatalogue,
     charms: crate::content::charm_source::CanonicalCharmCatalogue,
     admitted: AdmittedSession,
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     actor: ExactActorRef,
 }
 impl Dependencies {
@@ -198,6 +391,12 @@ impl Dependencies {
                 .map_err(debug)?,
             charms: crate::content::charm_source::CanonicalCharmCatalogue::embedded()
                 .map_err(debug)?,
+            #[cfg(any(
+                feature = "pg-tests-g1",
+                feature = "pg-tests-g2",
+                feature = "pg-tests-g3",
+                feature = "pg-tests-g4"
+            ))]
             actor,
             admitted: AdmittedSession {
                 game_session_id: session,
@@ -259,10 +458,22 @@ impl Dependencies {
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, self.combat_room.as_ref());
         owner
     }
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     async fn initialize(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {
         self.initialize_player(owner, self.actor, self.admitted.game_session_id)
             .await;
     }
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     async fn initialize_player(
         &self,
         owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -287,6 +498,12 @@ impl Dependencies {
                 .is_some()
         );
     }
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     async fn loss(&self, harness: &Harness, horizon: i64) -> TestResult<i64> {
         let now: i64 =
             sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -310,11 +527,53 @@ impl Dependencies {
         Ok(now)
     }
 }
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
 async fn revision(h: &Harness) -> TestResult<u64> {
     let value: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     Ok(value.parse()?)
 }
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 async fn receipt_count(h: &Harness) -> TestResult<i64> {
     Ok(
         sqlx::query_scalar("SELECT count(*) FROM game_character_monk_state_receipts")
@@ -323,6 +582,7 @@ async fn receipt_count(h: &Harness) -> TestResult<i64> {
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn boundary_release_retries_not_expired_and_saves_new_remaining_serene() -> TestResult {
     kill_reward_e2e::scenario_thread::run_async(async |admin| {
@@ -403,6 +663,30 @@ fn boundary_release_retries_not_expired_and_saves_new_remaining_serene() -> Test
 
 /// Polls `release` until `reached`, then cancels it and waits for the root holder.
 /// A release that ends first is returned as the error.
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 async fn drive_until<F: std::future::Future>(
     root: &crate::durability::DurabilityRoot,
     release: F,
@@ -438,6 +722,7 @@ async fn drive_until<F: std::future::Future>(
     result
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn boundary_unknown_monk_save_keeps_lease_until_store_recovers() -> TestResult {
     kill_reward_e2e::scenario_thread::run_async(async |admin| {
@@ -506,6 +791,7 @@ fn boundary_unknown_monk_save_keeps_lease_until_store_recovers() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn boundary_terminal_session_fences_actor_save_without_mutation() -> TestResult {
     run(async |admin| {
@@ -549,6 +835,7 @@ fn boundary_terminal_session_fences_actor_save_without_mutation() -> TestResult 
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn boundary_removed_actor_cannot_save_values_from_its_old_slot() -> TestResult {
     run(async |admin| {
@@ -587,6 +874,12 @@ fn boundary_removed_actor_cannot_save_values_from_its_old_slot() -> TestResult {
 }
 
 /// OPS-SAVE-1: tracks the admitted session as the node does after a successful admission read.
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 fn track(owner: &ComposedFreshAdmission<'_, '_, '_>, dependencies: &Dependencies) -> TestResult {
     use crate::gameplay_transport::last_position::AdmissionPosition;
     assert!(owner.track_restored(
@@ -598,6 +891,7 @@ fn track(owner: &ComposedFreshAdmission<'_, '_, '_>, dependencies: &Dependencies
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn shutdown_flush_saves_live_monk_values_and_skips_untracked_actors() -> TestResult {
     run(async |admin| {
@@ -646,6 +940,7 @@ fn shutdown_flush_saves_live_monk_values_and_skips_untracked_actors() -> TestRes
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn shutdown_flush_is_fenced_out_for_a_terminal_session_and_reports_an_unavailable_store()
 -> TestResult {
@@ -699,35 +994,711 @@ fn shutdown_flush_is_fenced_out_for_a_terminal_session_and_reports_an_unavailabl
 /// build, so its next training save commits on that build. The production generation supplies
 /// the training formula and the progression; only its training content revision is the fixture
 /// Character's interpretation (production pairs both as `s3b-content-1`).
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 mod death_ml_loss_composed {
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use super::fixture::{Harness, debug, id, run};
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g4",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g3"
+        ))
+    ))]
+    use super::fixture::debug;
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g3",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    use super::fixture::debug;
+
+    #[cfg(all(
+        feature = "pg-tests-g2",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g3",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    use super::fixture::debug;
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use super::{Dependencies, TestResult, prepare_current_session};
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g4",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g3"
+        ))
+    ))]
+    use super::TestResult;
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g3",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    use super::TestResult;
+
+    #[cfg(all(
+        feature = "pg-tests-g2",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g3",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    use super::TestResult;
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use crate::ability::creature_bite::CreatureBiteVitals;
     use crate::content::ContentActivationController;
     use crate::content::native_gameplay::NativeGameplayInput;
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use crate::durability::character_build::{
         BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildFormula, BuildOccurrence,
         DurableBuildState, convert_vocation,
     };
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g4",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g3"
+        ))
+    ))]
+    use {
+        crate::durability::character_build::BuildCause,
+        crate::durability::character_build::BuildChangeRequest,
+        crate::durability::character_build::BuildCommitOutcome,
+        crate::durability::character_build::BuildOccurrence,
+        crate::durability::character_build::DurableBuildState,
+        crate::durability::character_build::convert_vocation,
+    };
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g4",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g3"
+        ))
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
+    use crate::durability::character_build::BuildFormula;
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g3",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    use {
+        crate::durability::character_build::BuildCause,
+        crate::durability::character_build::BuildChangeRequest,
+        crate::durability::character_build::BuildCommitOutcome,
+        crate::durability::character_build::BuildOccurrence,
+        crate::durability::character_build::DurableBuildState,
+        crate::durability::character_build::convert_vocation,
+    };
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g3",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
+    use crate::durability::character_build::BuildFormula;
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g2",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g3",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    use {
+        crate::durability::character_build::BuildCause,
+        crate::durability::character_build::BuildChangeRequest,
+        crate::durability::character_build::BuildCommitOutcome,
+        crate::durability::character_build::BuildOccurrence,
+        crate::durability::character_build::DurableBuildState,
+        crate::durability::character_build::convert_vocation,
+    };
+
+    #[cfg(all(
+        feature = "pg-tests-g2",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g3",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
+    use crate::durability::character_build::BuildFormula;
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use crate::durability::character_progression::{
         CurrentCharacterGameplayFence, ExperienceAwardRequest, ExperienceCommitOutcome,
         ExperienceRewardOccurrence,
     };
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g4",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g3"
+        ))
+    ))]
+    use crate::durability::character_progression::CurrentCharacterGameplayFence;
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g3",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    use crate::durability::character_progression::CurrentCharacterGameplayFence;
+
+    #[cfg(all(
+        feature = "pg-tests-g2",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g3",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    use crate::durability::character_progression::CurrentCharacterGameplayFence;
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use crate::foundation::{CharacterId, CharacterLease, GameSessionId, WorldId};
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g4",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g3"
+        ))
+    ))]
+    use crate::foundation::{GameSessionId, WorldId};
+
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(all(
+        feature = "pg-tests-g3",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    use crate::foundation::{GameSessionId, WorldId};
+
+    #[cfg(all(
+        feature = "pg-tests-g2",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g3",
+            feature = "pg-tests-g4"
+        ))
+    ))]
+    use crate::foundation::{GameSessionId, WorldId};
     use crate::gameplay_transport::ComposedFreshAdmission;
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use crate::gameplay_transport::actor_spell::TrainingSave;
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use crate::spell::cast::CharacterCastFacts;
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use crate::spell::mana_training::RetainedTrainingCheckpoint;
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use oteryn_gameplay_progression::hit_training::SkillFamily;
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     use oteryn_simulation_determinism::ExactI64;
 
     /// The debug-build death settle chain is deeper than the default test stack (as in the
     /// kill-reward end-to-end case).
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     const SCENARIO_STACK_BYTES: usize = 64 << 20;
     /// The production experience table's level 20 floor.
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     const LEVEL_20_EXPERIENCE: u64 = 98_800;
 
+    #[cfg(feature = "pg-tests-g1")]
     #[test]
     fn composed_owner_death_preserves_build_and_trains_on_postgres() -> TestResult {
         std::thread::Builder::new()
@@ -743,6 +1714,7 @@ mod death_ml_loss_composed {
     /// fence the session has since moved past, so every forced replay is fenced out. The live
     /// death applies the durable receipt, retiring the checkpoint, and respawns; the death is
     /// priced from the build holding the flushed try.
+    #[cfg(feature = "pg-tests-g1")]
     #[test]
     fn composed_live_death_applies_a_committed_but_fenced_checkpoint_on_postgres() -> TestResult {
         std::thread::Builder::new()
@@ -760,6 +1732,7 @@ mod death_ml_loss_composed {
     /// release keeps the dead actor instead of committing the death from the older durable
     /// build, the proven-uncommitted checkpoint is re-fenced to the session's current authority,
     /// and the retried release flushes the try and settles the death priced from it.
+    #[cfg(feature = "pg-tests-g1")]
     #[test]
     fn composed_release_refences_a_rejected_flush_then_settles_on_postgres() -> TestResult {
         std::thread::Builder::new()
@@ -775,6 +1748,7 @@ mod death_ml_loss_composed {
     /// under a fence the session's lease has moved past. The first cadence keeps the actor dead
     /// and re-fences the proven-uncommitted checkpoint to the current authority; the next one
     /// flushes the try, prices the death from it and respawns, so the actor is never stuck.
+    #[cfg(feature = "pg-tests-g1")]
     #[test]
     fn composed_live_death_refences_a_rejected_flush_then_respawns_on_postgres() -> TestResult {
         std::thread::Builder::new()
@@ -788,6 +1762,24 @@ mod death_ml_loss_composed {
 
     /// Which death flush a scenario composes.
     #[derive(Clone, Copy, PartialEq, Eq)]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     enum Case {
         /// The flush saves the pending try under the current fence.
         Clean,
@@ -801,6 +1793,24 @@ mod death_ml_loss_composed {
 
     /// The production manifest's generation, activated for `world`, with its training section
     /// interpreted under `content` (the Character root's content revision).
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     fn production_generation(
         world: WorldId,
         content: &str,
@@ -891,6 +1901,24 @@ mod death_ml_loss_composed {
     }
 
     /// The durable build row, or the death receipt's `before`/`after` columns, as a build.
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     async fn build_row(h: &Harness, sql: &str) -> TestResult<DurableBuildState> {
         let row: (String, i32, i64, Vec<i32>, Vec<i64>) =
             sqlx::query_as(sqlx::AssertSqlSafe(sql.to_owned()))
@@ -909,6 +1937,24 @@ mod death_ml_loss_composed {
         .map_err(debug)
     }
 
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     fn columns(suffix: &str) -> String {
         let families = [
             "fist",
@@ -935,6 +1981,24 @@ mod death_ml_loss_composed {
     }
 
     /// The Character's death receipts.
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     async fn death_receipts(h: &Harness) -> TestResult<i64> {
         Ok(sqlx::query_scalar(
             "SELECT count(*) FROM game_character_death_receipts \
@@ -949,6 +2013,24 @@ mod death_ml_loss_composed {
         clippy::too_many_lines,
         reason = "one end-to-end scenario: setup, the lethal hit, the respawn and its checks"
     )]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     fn scenario(case: Case) -> TestResult {
         run(async move |admin| {
             let name = match case {

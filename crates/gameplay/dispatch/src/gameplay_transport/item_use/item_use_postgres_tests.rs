@@ -84,6 +84,30 @@ fn run_scenario(case: Option<item_use_view_refresh_tests::Case>) -> TestResult {
     run_scenario_items(case, false, false)
 }
 
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 pub(crate) fn run_matching_crystal_consumables() -> TestResult {
     run_scenario_items(None, true, false)
 }

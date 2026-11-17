@@ -6,6 +6,7 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 const QUEST: &str = "oteryn:quest.horse_station_world_change";
 const TRACK: &str = "oteryn:quest-progress/chosen-source/horse_station_world_change/s1";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_horse_station_native_landmark_visit_never_activates_escape_state() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

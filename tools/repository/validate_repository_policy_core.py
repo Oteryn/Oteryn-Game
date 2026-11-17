@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "6b6a5a3101e090663adcbec2b32a268e1f8a57fb
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "1a1f98f8f2df7b981fa6a85f0f4bf3ac218247121ab330bf5348a703ce0b1e0d"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "b3423b858c7cad5c2814cef0708819f41c4b5bb328bae5450d202c2e18a92631"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "8ca7b7e0c78d5f5c8a49cc80feb8e327d2ff7326"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "c83e07358aa5b72ca9e7657717adb48e98acad52"
 EXPECTED_POST_MERGE_RUST_SHA256 = "470b746eca8cad94235ed4f43fdd1de86977ac738421fcaca6dfacfd5ce3c89a"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -562,7 +562,7 @@ def main() -> int:
                 "cargo +1.100.0 run --locked -p oteryn-game-server -- --smoke",
             ),
             "durability_postgres_build": (
-                "    name: Merge Queue / Durability PostgreSQL harness build\n",
+                "    name: Merge Queue / Durability PostgreSQL harness build (${{ matrix.archive }})\n",
                 "    if: needs.candidate.outputs.rust == 'true'\n",
                 "ref: ${{ github.event.merge_group.head_sha || github.sha }}",
                 "BASE_SHA: ${{ needs.candidate.outputs.base_sha }}",
@@ -588,10 +588,18 @@ def main() -> int:
                 "run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs",
                 "run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs",
                 "run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs",
-                'cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"',
+                'cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"',
+                'cargo +1.100.0 nextest archive --locked --build-jobs 1 -p oteryn-gameplay-dispatch --lib --features "pg-tests-$GROUP"',
+                'archive: [base, g1, g2, g3, g4]',
+                'base_sha256: ${{ steps.digest.outputs.base_sha256 }}',
+                'g1_sha256: ${{ steps.digest.outputs.g1_sha256 }}',
+                'g2_sha256: ${{ steps.digest.outputs.g2_sha256 }}',
+                'g3_sha256: ${{ steps.digest.outputs.g3_sha256 }}',
+                'g4_sha256: ${{ steps.digest.outputs.g4_sha256 }}',
+                'name: mq-postgres-test-archives-${{ matrix.archive }}',
                 "NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428",
                 'echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -',
-                "sha256sum head-sha pg-e2e.tar.zst pg-lib.tar.zst > SHA256SUMS",
+                'sha256sum head-sha "${archives[@]}" > SHA256SUMS',
                 "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
                 "          if-no-files-found: error\n",
             ),
@@ -604,8 +612,14 @@ def main() -> int:
                 "NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428",
                 'echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -',
                 "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
-                "ARCHIVES_SHA256: ${{ needs.durability_postgres_build.outputs.archives_sha256 }}",
-                'echo "${ARCHIVES_SHA256}  SHA256SUMS" | sha256sum -c -',
+                'BASE_SHA256: ${{ needs.durability_postgres_build.outputs.base_sha256 }}',
+                'G1_SHA256: ${{ needs.durability_postgres_build.outputs.g1_sha256 }}',
+                'G2_SHA256: ${{ needs.durability_postgres_build.outputs.g2_sha256 }}',
+                'G3_SHA256: ${{ needs.durability_postgres_build.outputs.g3_sha256 }}',
+                'G4_SHA256: ${{ needs.durability_postgres_build.outputs.g4_sha256 }}',
+                'for archive in base g1 g2 g3 g4; do',
+                'pattern: mq-postgres-test-archives-*',
+                'echo "${digest}  SHA256SUMS" | sha256sum -c -',
                 "sha256sum -c SHA256SUMS",
                 'test "$(cat head-sha)" = "$EXPECTED_SHA"',
                 'test "$LABEL" = "$((JOB_INDEX + 1))"',
@@ -615,6 +629,14 @@ def main() -> int:
                 'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \\',
                 "if: ${{ !cancelled() && steps.partition.outcome == 'success' }}",
                 'mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"',
+                'mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib-g1.filters"',
+                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-g1.tar.zst" \\',
+                'mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib-g2.filters"',
+                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-g2.tar.zst" \\',
+                'mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib-g3.filters"',
+                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-g3.tar.zst" \\',
+                'mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib-g4.filters"',
+                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-g4.tar.zst" \\',
                 'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \\',
             ),
             "rust_windows": (

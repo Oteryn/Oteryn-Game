@@ -54,6 +54,7 @@ pub(super) fn source_appearances(
         .ok_or_else(|| "seal source appearances".into())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn engitem_native_seal_paint_preserves_tool_counts_occurrences_and_resets() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -7,6 +7,7 @@ use oteryn_protocol_oteryn::world_object::{
     UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn quest_l7_giant_smithhammer_four_source_states() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

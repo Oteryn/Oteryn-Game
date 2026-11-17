@@ -1,48 +1,642 @@
 //! LOOK-2 through the real composed owner, PostgreSQL admission and `serve_admitted`.
 //! Nested under monk-save tests to share their fresh-admission/recovery fixture.
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use super::fixture::{Harness, debug, id, run};
+
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(all(
+    feature = "pg-tests-g4",
+    not(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))
+))]
+use super::fixture::{Harness, id};
+
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(all(
+    feature = "pg-tests-g3",
+    not(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))
+))]
+use super::fixture::{Harness, id};
+
+#[cfg(all(
+    feature = "pg-tests-g1",
+    not(any(
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))
+))]
+use super::fixture::{Harness, id};
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use super::{Dependencies, TestResult, prepare_current_session, reset};
+
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(all(
+    feature = "pg-tests-g4",
+    not(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))
+))]
+use super::TestResult;
+
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(all(
+    feature = "pg-tests-g3",
+    not(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))
+))]
+use super::TestResult;
+
+#[cfg(all(
+    feature = "pg-tests-g1",
+    not(any(
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))
+))]
+use super::TestResult;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::content::ReferenceItemField;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::content::native_gameplay::test_support::activated_with_loot_tables;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::durability::fresh_admission::FreshAdmissionStore;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::foundation::{
     ChannelContentPin, ChannelRuntimeV1, MessageType, NodeId, decode_wire_envelope,
 };
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::gameplay_transport::capabilities::{
     COMMAND_TYPE_ITEM_LOOK_INTENT, SelectedCapabilities,
 };
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::gameplay_transport::connection::{
     AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
     serve_admitted,
 };
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::map::boot::tests::bundle_with_item_ids;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::map::boot::{BootPins, boot};
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::map::facts::ItemDefinition;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::map::overlay::TilePos;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use oteryn_protocol_oteryn::item_look::{
     ItemLookIntent, ItemLookRefusal, ItemLookResult, ItemLookSelection, ItemLookTarget,
     decode_item_look_result_for, encode_item_look_intent_for,
 };
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use oteryn_protocol_oteryn::item_view::{
     STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
 };
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use oteryn_protocol_oteryn::world_map::{
     MapOrigin, STATE_DOMAIN_WORLD_MAP_VIEW, decode_world_map_snapshot,
 };
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, decode_snapshot_chunk,
     encode_client_command,
 };
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use std::fmt::Write;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use std::future::Future;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use std::task::Poll;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
+
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(all(
+    feature = "pg-tests-g4",
+    not(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))
+))]
+use tokio::io::{AsyncReadExt, DuplexStream};
+
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(all(
+    feature = "pg-tests-g3",
+    not(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))
+))]
+use tokio::io::{AsyncReadExt, DuplexStream};
+
+#[cfg(all(
+    feature = "pg-tests-g1",
+    not(any(
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))
+))]
+use tokio::io::{AsyncReadExt, DuplexStream};
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use tokio::sync::Mutex;
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 const EXTENDED: ItemLookSelection = ItemLookSelection { extended: true };
 
 pub(super) async fn read_frame(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
@@ -52,6 +646,24 @@ pub(super) async fn read_frame(client: &mut DuplexStream) -> TestResult<Vec<u8>>
     Ok(frame)
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef) -> TestResult {
     let mut backpack = None;
     let mut spellbook = None;
@@ -257,6 +869,24 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
     Ok(())
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 async fn serve_looks(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -295,6 +925,7 @@ async fn serve_looks(
     result.ok_or("LOOK client did not finish")?
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn item_look_postgres_composed_owner_serves_near_far_items_creature_player_and_hidden_target()
 -> TestResult {
@@ -310,10 +941,46 @@ pub(super) fn large_stack(scenario: fn() -> TestResult) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 fn scenario() -> TestResult {
     scenario_with_inspection(None)
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 pub(super) fn scenario_with_inspection(inspection: Option<bool>) -> TestResult {
     run(async |admin| {
         reset();

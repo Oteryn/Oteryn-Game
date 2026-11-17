@@ -14,6 +14,7 @@ use oteryn_protocol_oteryn::cyclopedia_character::{
 };
 use sqlx::Row;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn p12c_cyclopedia_combat_postgres_dispatch_snapshot_replay_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

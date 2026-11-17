@@ -1,7 +1,10 @@
 //! Qualify the SQL stamina seam after real wire logout and successor admission.
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use sqlx::PgPool;
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn qualify(pool: &PgPool) -> TestResult {
     let public: bool = sqlx::query_scalar(
         "SELECT has_function_privilege('public', 'game_training_set_stamina(uuid,uuid,integer)', 'EXECUTE')",

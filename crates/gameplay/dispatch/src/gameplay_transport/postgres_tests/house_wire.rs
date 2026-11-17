@@ -148,6 +148,7 @@ fn resume(admitted: &mut AdmittedSession, ended: AdmittedSession) {
     admitted.continuity = ended.continuity;
     admitted.continuity.selected_capabilities = selected;
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn house_wire_postgres_real_dispatch_acl_notice_replay_reload_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

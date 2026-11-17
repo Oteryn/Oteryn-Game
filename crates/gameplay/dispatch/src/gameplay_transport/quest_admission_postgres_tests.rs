@@ -1,17 +1,54 @@
 //! Real composed quest admission and cadence against native PostgreSQL.
 #![allow(clippy::expect_used)]
 
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use std::sync::Arc;
 
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use super::fixture::{Harness, debug, id, run};
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 use crate::foundation::{CommandId, CommandRef};
 
+#[cfg(feature = "pg-tests-g3")]
 #[path = "quest_admission_runtime_role_tests.rs"]
 mod runtime_role;
 
 #[derive(Clone, Copy)]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 enum Case {
     Bound,
     RuntimeRole,
@@ -24,39 +61,53 @@ enum Case {
     UnknownFence,
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quest_admission_pays_pending_xp_once() -> TestResult {
     scenario(Case::Bound)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quest_admission_serializes_competing_transitions_with_a_typed_loser() -> TestResult {
     scenario(Case::Concurrent)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quest_admission_unbound_defers_once_then_bound_pays() -> TestResult {
     scenario(Case::Unbound)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quest_admission_receipt_failure_retries_on_cadence() -> TestResult {
     scenario(Case::FailedReceipt)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quest_admission_replaced_generation_refuses_award() -> TestResult {
     scenario(Case::ReplacedGeneration)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quest_admission_removed_session_is_never_recreated() -> TestResult {
     scenario(Case::Removed)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quest_admission_expired_release_discards_copy_and_retry() -> TestResult {
     scenario(Case::Terminal)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quest_admission_unknown_fence_retains_copy_and_retries() -> TestResult {
     scenario(Case::UnknownFence)
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 fn scenario(case: Case) -> TestResult {
     std::thread::Builder::new()
         .name("quest-admission".into())
@@ -67,6 +118,12 @@ fn scenario(case: Case) -> TestResult {
         .map_err(Into::into)
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 fn execute(case: Case) -> TestResult {
     run(async move |admin| {
         let harness =
@@ -380,10 +437,22 @@ fn execute(case: Case) -> TestResult {
     })
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 async fn counts(harness: &Harness) -> TestResult<(i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT total_experience, (SELECT count(*) FROM game_character_xp_receipts), (SELECT count(*) FROM game_character_quest_xp_obligations) FROM game_character_progression_state").fetch_one(&harness.pool).await?)
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 async fn counts_without_receipts(harness: &Harness) -> TestResult<(i64, i64)> {
     Ok(sqlx::query_as("SELECT total_experience, (SELECT count(*) FROM game_character_quest_xp_obligations) FROM game_character_progression_state").fetch_one(&harness.pool).await?)
 }

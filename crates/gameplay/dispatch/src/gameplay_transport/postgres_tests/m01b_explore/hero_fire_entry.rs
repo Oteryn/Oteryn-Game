@@ -11,6 +11,7 @@ const START: Position = Position {
     floor: -15,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_hero_fire_native_visit_requires_first_survey_evidence_and_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

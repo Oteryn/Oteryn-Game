@@ -6,14 +6,17 @@ use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn w05d_cake_baker_all_carried_equipment_source_caps_and_replays_postgres() -> TestResult {
     case(true, false)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn w05d_cake_baker_all_carried_partial_equipment_extra_postgres() -> TestResult {
     case(false, false)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn w05d_cake_baker_two_hundred_nested_inputs_use_one_compact_audit_postgres() -> TestResult {
     case(false, true)

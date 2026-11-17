@@ -1,8 +1,18 @@
 //! CHARACTER-INFO-1 fenced durable unlock/select, replay and stale generation.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, run};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{TestResult, debug, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::character_info::CharacterTitle;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_title_unlock_and_selection_are_durable_and_referential() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -110,6 +120,7 @@ fn character_title_unlock_and_selection_are_durable_and_referential() -> TestRes
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_info_postgres_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -123,6 +134,9 @@ fn character_info_postgres_real_dispatch() -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn dispatch_scenario() -> TestResult {
     use super::cyclopedia::support::exchange;
     use super::fixture::id;
@@ -343,6 +357,7 @@ fn dispatch_scenario() -> TestResult {
 /// PAR-P12a: the automatic refresh grants a title from its native owner (a 7-day reward
 /// streak) and, in the same transaction, revokes a stored conditional title whose predicate
 /// fails (Cyclopscamper below level 100) together with its selection.
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_titles_refresh_grants_and_revokes_from_native_facts() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

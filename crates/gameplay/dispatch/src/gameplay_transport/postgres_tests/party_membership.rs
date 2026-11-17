@@ -1,8 +1,19 @@
 //! PARTY-1 real admitted transport, native durable writer and reloaded owner.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::bestiary_postgres_harness::{
     self as fixture, CHANNEL, Harness, TestResult, WORLD, debug, id,
 };
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::bestiary_postgres_harness::{
+    TestResult, debug,
+};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{ChannelId, ChannelRuntimeV1, MessageType, WorldId, decode_wire_envelope};
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::foundation::{MessageType, decode_wire_envelope};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     capabilities::SelectedCapabilities,
@@ -12,27 +23,39 @@ use crate::gameplay_transport::{
     },
     tcp_tls::{read_frame, write_frame},
 };
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command, party::*,
     world_spatial_entities::EntityRef,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::time::Duration;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use tokio::{io::AsyncWriteExt, sync::Mutex};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn party_membership_real_dispatch_postgres_end_to_end() -> TestResult {
     run(false)
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn run(partyskull: bool) -> TestResult {
     run_case(partyskull, false, false)
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn run_reference_level() -> TestResult {
     run_case(false, true, false)
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn run_chat() -> TestResult {
     run_case(false, false, true)
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn run_case(partyskull: bool, reference_level: bool, chat: bool) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
@@ -56,6 +79,7 @@ fn run_case(partyskull: bool, reference_level: bool, chat: bool) -> TestResult {
     Ok(())
 }
 #[derive(Clone, Copy)]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) enum Step {
     Query,
     Invite(EntityRef),
@@ -88,6 +112,7 @@ pub(super) async fn read_live_frame(
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn roundtrip(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -202,6 +227,7 @@ pub(super) async fn roundtrip(
     }
     result
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bool) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")

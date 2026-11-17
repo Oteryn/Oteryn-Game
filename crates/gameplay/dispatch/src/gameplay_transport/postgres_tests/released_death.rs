@@ -5,16 +5,19 @@ use crate::foundation::{CharacterId, CharacterLease, GameSessionState};
 use crate::gameplay_transport::actor_spell::{FamiliarActorEnd, FamiliarLogoutSave};
 use crate::gameplay_transport::{FenceHold, FenceStep, TransitionFence};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn grace_expiry_after_released_death_reaches_terminal_release() -> TestResult {
     scenario(Case::Release)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn settle_released_death_true_for_already_durable_death() -> TestResult {
     scenario(Case::AlreadyDurable)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn familiar_logout_save_returns_fenced_out_on_respawn_pending() -> TestResult {
     scenario(Case::Familiar)

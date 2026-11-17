@@ -8,6 +8,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 const KEY: &str = "oteryn:item.tibia.i52824";
 const TILE: Position = Position { x: 7, y: 1, floor: -7 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_stag_source_sword_has_native_custody_and_exact_replay() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() { return Ok(()); }

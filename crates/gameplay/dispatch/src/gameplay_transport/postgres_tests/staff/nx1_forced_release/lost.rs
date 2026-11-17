@@ -1,4 +1,5 @@
 // NX-1 focused staff release case; included in the original test module.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn nx1_staff_captured_kick_rejects_lost_resume_before_generation_mutation_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -16,6 +17,9 @@ fn nx1_staff_captured_kick_rejects_lost_resume_before_generation_mutation_postgr
     );
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn lost_scenario() -> TestResult {
     use crate::foundation::{AuthenticatedTransportRefV1, ControlLossEpochRefV1, GameSessionId};
     use crate::gameplay_transport::connection::{

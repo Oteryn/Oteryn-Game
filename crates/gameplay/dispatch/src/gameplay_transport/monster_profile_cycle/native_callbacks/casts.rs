@@ -176,6 +176,7 @@ fn callback(proposal: &ProfileAbilityProposal) -> bool {
 }
 impl NativeCasts {
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub(super) fn eruption_receipt_for_test(
         &self,
         caster: crate::foundation::ExactActorRef,
@@ -199,10 +200,35 @@ impl NativeCasts {
         })
     }
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(super) fn source_stage_done_for_test(&self, issuer: ExactActorRef) -> Option<Vec<bool>> {
         self.owner.as_ref()?.source_stage_done_for_test(issuer)
     }
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub(super) fn outburst_receipt(
         &self,
         caster: ExactActorRef,

@@ -10,6 +10,7 @@ use crate::durability::item_decay_retire::ActivityGroundRetirement;
 use crate::durability::spell_owner_commit::SpellLane;
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn activity_logout_postgres_real_command_and_server_authority() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

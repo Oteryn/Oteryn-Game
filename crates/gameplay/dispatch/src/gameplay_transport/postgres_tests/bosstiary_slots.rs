@@ -70,6 +70,7 @@ async fn ready(reply: &BossSlotReply) -> TestResult {
         tokio::time::sleep(std::time::Duration::from_millis(reply.ready_at_ms - now)).await;
     }
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn bosstiary_slots_real_dispatch_persistence_unlock_remove_fee_and_boosted_kills_postgres()
 -> TestResult {

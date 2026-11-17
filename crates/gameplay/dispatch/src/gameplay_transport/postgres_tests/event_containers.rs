@@ -18,31 +18,37 @@ use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w19_event_containers_present_wire_atomic_replay_and_refusals() -> TestResult {
     run_scenario("oteryn:item.tibia.i6570", 1, 1)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w19_event_containers_christmas_wire_atomic_replay_and_refusals() -> TestResult {
     run_scenario("oteryn:item.tibia.i6506", 1, 7)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w19_event_containers_special_box_wire_atomic_replay_and_refusals() -> TestResult {
     run_scenario("oteryn:item.tibia.i37457", 2, 1)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w19_event_containers_anniversary_wire_atomic_replay_and_refusals() -> TestResult {
     run_scenario("oteryn:item.tibia.i39710", 2, 14)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w19_event_containers_music_box_soft_boots_mint_equip_and_replay() -> TestResult {
     run_scenario("oteryn:item.tibia.i12045", 1, 1)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w19_event_containers_nested_christmas_wire_atomic_replay_and_refusals() -> TestResult {
     run_scenario_source("oteryn:item.tibia.i6506", 1, 7, true)

@@ -1,26 +1,54 @@
 //! P08 command 378 through the real wire: select, refusals, replay across a reconnect and the
 //! committed selection in the durable row and the session projection.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, run};
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::fixture::debug;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, item_look, prepare_current_session};
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::{TestResult, item_look};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::durability::character_proficiency::ProficiencyDefinitions;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::MovementLocalPosition;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{
     AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
 };
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::gameplay_transport::connection::AdmittedSession;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogue;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{
     self as protocol,
     weapon_proficiency::{SelectPerkReply, SelectPerkRequest, SelectPerkResult},
 };
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use oteryn_protocol_oteryn::{
+    self as protocol,
+};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::num::NonZeroU32;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 const SWORD: &str = "oteryn:item.tibia.i3264";
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 const OTHER_WEAPON: &str = "oteryn:item.tibia.i3289";
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 const GOLD: &str = "oteryn:item.tibia.i3031";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn proficiency_select_perk_wire_refusals_replay_and_durable_selection() -> TestResult {
     std::thread::Builder::new()
@@ -32,6 +60,7 @@ fn proficiency_select_perk_wire_refusals_replay_and_durable_selection() -> TestR
         .map_err(Into::into)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn scenario() -> TestResult {
     run(async |admin| {
         let harness =
@@ -307,6 +336,7 @@ fn scenario() -> TestResult {
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn reply(result: SelectPerkResult, selections: &[Option<u8>]) -> SelectPerkReply {
     SelectPerkReply {
         result,
@@ -314,6 +344,7 @@ fn reply(result: SelectPerkResult, selections: &[Option<u8>]) -> SelectPerkReply
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn current_character(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,
@@ -379,6 +410,7 @@ where
     .await
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn send(
     client: &mut tokio::io::DuplexStream,
     id: u64,

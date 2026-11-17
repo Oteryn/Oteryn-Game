@@ -91,20 +91,26 @@ fn approach(c: Contact) -> Position {
 pub(super) fn start() -> Position {
     approach(CONTACTS[0])
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     super::qengine_rewards::scenario(name)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_paradox_story_native_ordered() -> TestResult {
     run("qengine-rewards-questpc4-paradox-story-ordered")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_paradox_story_native_out_of_order() -> TestResult {
     run("qengine-rewards-questpc4-paradox-story-out-of-order")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_paradox_story_native_lesson_guard_and_replay() -> TestResult {
     run("qengine-rewards-questpc4-paradox-story-lesson-guard")

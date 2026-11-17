@@ -22,6 +22,7 @@ impl NativeMapInitializationProof for MapFixture {
     }
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qn1_environment_field_read_requires_positive_native_map_receipt() -> f::TestResult {
     let Some(admin) = f::configured_admin() else {

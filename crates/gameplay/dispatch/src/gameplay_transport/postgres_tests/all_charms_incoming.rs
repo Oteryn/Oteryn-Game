@@ -342,6 +342,7 @@ fn qualify_hazard_monster(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef, 
     );
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn all25_native_dodge_cancels_real_source_spells_mana_and_attached_conditions() {
     std::thread::Builder::new()
@@ -521,6 +522,7 @@ fn dodge_source_scenario() {
     }
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn all25_native_dodge_cancels_melee_before_block_and_retains_replay() {
     std::thread::Builder::new()

@@ -6,6 +6,7 @@ use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::authored_bindings::Trigger;
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m01a_sven_premium_production_talk_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m01a-sven")

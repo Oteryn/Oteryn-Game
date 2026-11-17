@@ -251,6 +251,7 @@ fn scenario(case: Case) -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_heaven_blossom_quest_1() -> TestResult {
     execute(
@@ -266,6 +267,7 @@ fn qready2_heaven_blossom_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_iron_hammer_quest_1() -> TestResult {
     execute(
@@ -281,6 +283,7 @@ fn qready2_iron_hammer_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_iron_ore_quest_1() -> TestResult {
     execute(
@@ -296,6 +299,7 @@ fn qready2_iron_ore_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_isle_of_the_mists_quest_1() -> TestResult {
     execute(
@@ -311,6 +315,7 @@ fn qready2_isle_of_the_mists_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_lone_medusa_quest_1() -> TestResult {
     execute(
@@ -326,6 +331,7 @@ fn qready2_lone_medusa_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_minotaur_leather_quest_1() -> TestResult {
     execute(
@@ -341,6 +347,7 @@ fn qready2_minotaur_leather_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_mintwallin_cyclops_quest_1() -> TestResult {
     execute(
@@ -356,6 +363,7 @@ fn qready2_mintwallin_cyclops_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_naginata_quest_1() -> TestResult {
     execute(
@@ -371,6 +379,7 @@ fn qready2_naginata_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_nightmare_teddy_quest_1() -> TestResult {
     execute(
@@ -386,6 +395,7 @@ fn qready2_nightmare_teddy_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_noble_armor_quest_1() -> TestResult {
     execute(
@@ -401,6 +411,7 @@ fn qready2_noble_armor_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_noble_armor_quest_2() -> TestResult {
     execute(
@@ -416,6 +427,7 @@ fn qready2_noble_armor_quest_2() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_orc_fortress_quest_1() -> TestResult {
     execute(
@@ -431,6 +443,7 @@ fn qready2_orc_fortress_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_orc_fortress_quest_2() -> TestResult {
     execute(
@@ -446,6 +459,7 @@ fn qready2_orc_fortress_quest_2() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_orc_fortress_quest_3() -> TestResult {
     execute(
@@ -461,6 +475,7 @@ fn qready2_orc_fortress_quest_3() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_plate_armor_quest_1() -> TestResult {
     execute(
@@ -479,6 +494,7 @@ fn qready2_plate_armor_quest_1() -> TestResult {
 
 
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_six_rubies_quest_1() -> TestResult {
     execute(
@@ -494,6 +510,7 @@ fn qready2_six_rubies_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_spike_sword_quest_1() -> TestResult {
     execute(
@@ -509,6 +526,7 @@ fn qready2_spike_sword_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_studded_legs_quest_1() -> TestResult {
     execute(
@@ -524,6 +542,7 @@ fn qready2_studded_legs_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_studded_shield_quest_1() -> TestResult {
     execute(
@@ -539,6 +558,7 @@ fn qready2_studded_shield_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_studded_shield_quest_2() -> TestResult {
     execute(
@@ -554,6 +574,7 @@ fn qready2_studded_shield_quest_2() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready2_throwing_star_quest_1() -> TestResult {
     execute(

@@ -15,6 +15,7 @@ const READY: &str = "oteryn:quest-progress/opticording_sphere/planestrider_defea
 const CLAIMED: &str = "oteryn:quest-progress/opticording_sphere/final_report";
 const COMPLETE: &str = "oteryn:quest-transition/opticording-sphere/planegazer-final-report";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srv6_planegazer_real_npc_exact_finale_sequence_and_title() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

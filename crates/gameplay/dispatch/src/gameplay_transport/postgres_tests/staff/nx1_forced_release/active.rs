@@ -1,4 +1,5 @@
 // NX-1 focused staff release case; included in the original test module.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn nx1_staff_signed_kick_saves_in_fight_and_releases_exact_session_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -16,6 +17,9 @@ fn nx1_staff_signed_kick_saves_in_fight_and_releases_exact_session_postgres() ->
     );
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario() -> TestResult {
     run(async |admin| {
         let signing = Signing::new()?;

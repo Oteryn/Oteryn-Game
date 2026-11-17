@@ -45,6 +45,12 @@ pub(super) struct State {
 
 #[cfg(test)]
 impl NpcConversations {
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(in crate::gameplay_transport) fn fixture_quest_topic(
         &self,
         session: GameSessionId,
@@ -58,6 +64,12 @@ impl NpcConversations {
             .number)
     }
 
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(in crate::gameplay_transport) fn fixture_interrupt_quest_dialogue_commit(
         &self,
         session: GameSessionId,

@@ -9,6 +9,7 @@ use crate::gameplay_transport::capabilities::{
 };
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_greed_actual_source_entry_and_native_minion_chain_postgres() -> TestResult {
     run_source_entry(false)

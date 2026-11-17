@@ -1,10 +1,15 @@
 //! SQL negative controls reuse an actual committed native STEP return and the
 //! exact installed proof trigger. No control changes canonical gameplay rows.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::Harness;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::GameSessionId;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use serde_json::{Value, json};
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn assert_native_step_exit_matrix(
     h: &Harness,
     source: GameSessionId,

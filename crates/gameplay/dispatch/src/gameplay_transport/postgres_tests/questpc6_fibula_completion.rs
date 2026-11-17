@@ -9,10 +9,12 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 const QUEST: &str = "oteryn:quest.deeper_fibula_quest";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc6_fibula_complete_native_path_level_claims_replay_and_paid_repurchase() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-fibula-completion")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc6_fibula_completion_refuses_level_fifty_eight_kills_with_missing_claims() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-fibula-completion-missing-claims")

@@ -167,7 +167,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$OTERYN_TEST_POSTGRES_ADMIN_URL"
-          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --lib \
+          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --lib --features pg-tests-g2 \
             'gameplay_transport::monk_save::postgres_tests::boss_activity::boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger' \
             -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/offline-death-retry-postgres.log"
           grep -Fq 'BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED' "$RUNNER_TEMP/offline-death-retry-postgres.log"

@@ -102,6 +102,7 @@ mod station_entry;
 const ENTRY: &str = "m01b/longsword/s1/entry";
 const COUNTER: &str = "oteryn:quest-progress/chosen-source/longsword_quest/s1";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_explore_native_catalogue_admits_zero_initial_counters_on_postgres() -> TestResult {
     use crate::bestiary_postgres_harness as pg;
@@ -161,6 +162,7 @@ fn m01b_explore_native_catalogue_admits_zero_initial_counters_on_postgres() -> T
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_explore_real_native_steps_credit_exact_anchor_once_and_replay() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -188,6 +190,7 @@ fn m01b_explore_real_native_steps_credit_exact_anchor_once_and_replay() -> TestR
 
 
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_geomancer_real_native_entry_credits_once_and_replays() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -213,6 +216,7 @@ fn m01b_geomancer_real_native_entry_credits_once_and_replays() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_asura_native_entry_requires_current_premium_and_replays() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -238,6 +242,7 @@ fn m01b_asura_native_entry_requires_current_premium_and_replays() -> TestResult 
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_alawar_native_approach_credits_once_without_replacing_portal() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -264,6 +269,7 @@ fn m01b_alawar_native_approach_credits_once_without_replacing_portal() -> TestRe
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_elvenbane_native_entry_credits_once_and_replays() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -289,6 +295,7 @@ fn m01b_elvenbane_native_entry_credits_once_and_replays() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_edron_goblin_native_entry_requires_current_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -314,6 +321,7 @@ fn m01b_edron_goblin_native_entry_requires_current_premium() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_lions_rock_native_entry_requires_current_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

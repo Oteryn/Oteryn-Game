@@ -7,6 +7,7 @@ use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
     run(async |admin| {

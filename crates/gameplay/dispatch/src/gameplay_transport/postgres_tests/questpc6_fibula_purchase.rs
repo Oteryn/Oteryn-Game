@@ -5,16 +5,19 @@ use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc6_fibula_purchase_carried_price_exact_key_replay_and_repurchase() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-fibula-key-coins")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc6_fibula_purchase_bank_price_exact_key_replay_and_repurchase() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-fibula-key-bank")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc6_fibula_purchase_full_backpack_rolls_back_bank_fee_and_key() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-fibula-key-full")

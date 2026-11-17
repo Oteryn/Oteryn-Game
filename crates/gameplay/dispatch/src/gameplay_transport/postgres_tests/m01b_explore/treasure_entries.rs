@@ -1,6 +1,7 @@
 //! Native visits beside retained rewards; stepping never invokes the reward claim.
 use super::*;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_treasure_fishing_box_native_entry_requires_current_premium() -> TestResult {
     native_case(
@@ -12,6 +13,7 @@ fn m01b_treasure_fishing_box_native_entry_requires_current_premium() -> TestResu
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_treasure_berserker_native_entry_requires_current_premium() -> TestResult {
     native_case(
@@ -23,6 +25,9 @@ fn m01b_treasure_berserker_native_entry_requires_current_premium() -> TestResult
     )
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn native_case(label: &'static str, name: &'static str, x: u16, y: u16, floor: i8) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

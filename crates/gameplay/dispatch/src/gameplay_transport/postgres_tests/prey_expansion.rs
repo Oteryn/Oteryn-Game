@@ -33,36 +33,43 @@ fn run_case(case: Case) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn prey_diff_expansion_purchase_reservation_serializes_ids_and_requires_current_fence() -> TestResult {
     run_case(Case::Reservation)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn prey_diff_expansion_purchase_release_requires_retained_definitive_refusal() -> TestResult {
     run_case(Case::Release)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn prey_diff_expansion_malformed_refusal_cannot_delete_reservation_as_runtime_role() -> TestResult {
     run_case(Case::MalformedRelease)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn prey_diff_expansion_grant_replays_exact_receipt_and_refuses_another_operation() -> TestResult {
     run_case(Case::Replay)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn prey_diff_expansion_grant_rejects_forged_binding_and_stale_replay_authority() -> TestResult {
     run_case(Case::Binding)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn prey_diff_expansion_entitlement_receipts_and_outbox_commit_or_roll_back_together() -> TestResult {
     run_case(Case::Atomicity)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn prey_diff_expansion_survives_cold_admission_and_only_next_draw_expands() -> TestResult {
     run_case(Case::Reload)

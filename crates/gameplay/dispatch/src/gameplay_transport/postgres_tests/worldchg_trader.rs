@@ -21,6 +21,7 @@ const YASIR: &str = "oteryn:npc.yasir";
 const SAM: &str = "oteryn:npc.sam";
 const LEATHER: &str = "oteryn:item.tibia.i5878";
 const SWORD: &str = "oteryn:item.tibia.i3264";
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn worldchg_trader_postgres_yasir_current_day_ship_and_receipt_gate() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

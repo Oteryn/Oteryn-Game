@@ -4,18 +4,41 @@
 #[path = "raid_live/cake.rs"]
 mod cake;
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness, debug, id};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::content::channel_content_pin::ChannelContentPin;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::raid_runner::{CommittedRaidAction, RaidCreatureIdentity};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::raid_schedule::RaidWrite;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{ChannelRuntimeV1, NodeId, ScopeOwnershipGeneration};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::map::boot::BundleCollisionIndexExt;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_content::content::ProductionKey;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_encounter_rules::raid::{RaidCatalogue, RaidPosition, SelectedRaid};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_entities::carrier::RaidSpawnOutcome;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn world_src_postgres_flower_month_places_canonical_dryads_and_replays_once() -> TestResult {
     run_case(
@@ -26,21 +49,25 @@ fn world_src_postgres_flower_month_places_canonical_dryads_and_replays_once() ->
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn raids_global_postgres_badger_map_runtime_e2e() -> TestResult {
     run_case("raids_global_badger_e2e", "raid:badger", 100, false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn worldchg_postgres_stampede_map_runtime_e2e() -> TestResult {
     run_case("worldchg_stampede_map", "raid:porthope.stampede", 16, false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn raids_global_postgres_sugar_mommy_map_runtime_boss_death_e2e() -> TestResult {
     run_case("raids_global_boss_e2e", "raid:candia.sugarmommy", 1, true)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn raids_global_postgres_dracola_death_before_later_wave_e2e() -> TestResult {
     run_case(
@@ -51,11 +78,14 @@ fn raids_global_postgres_dracola_death_before_later_wave_e2e() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn nbhold_raid_discovery_and_execution_survive_changing_publication_postgres() -> TestResult {
     run_case("nbhold_raid_publication", "raid:badger", 100, false)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_case(name: &'static str, key: &'static str, expected: usize, boss: bool) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         eprintln!("RAIDS_GLOBAL POSTGRES_CASE_COMPLETED {name} route_less=true");
@@ -90,6 +120,8 @@ fn run_case(name: &'static str, key: &'static str, expected: usize, boss: bool) 
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn seed(
     harness: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -115,6 +147,8 @@ async fn seed(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn scenario(
     harness: &Harness,
     key: &str,

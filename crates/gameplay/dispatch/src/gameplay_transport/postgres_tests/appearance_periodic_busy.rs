@@ -33,17 +33,20 @@ enum Case {
     Authority,
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn appearance_periodic_holder_busy_postgres_keeps_live_peer_and_discards_staged_cursors()
 -> TestResult {
     run_case(Case::Busy)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn appearance_periodic_storage_failure_postgres_still_disconnects() -> TestResult {
     run_case(Case::Storage)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn appearance_periodic_authority_failure_postgres_still_disconnects() -> TestResult {
     run_case(Case::Authority)

@@ -88,6 +88,7 @@ async fn active_count(h: &Harness) -> TestResult<i64> {
     .await?)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn one_character_postgres_commit_refuses_second_and_preserves_incumbent() -> TestResult {
     run(async |admin| {
@@ -131,6 +132,7 @@ fn one_character_postgres_commit_refuses_second_and_preserves_incumbent() -> Tes
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn one_character_postgres_two_nodes_choose_exactly_one() -> TestResult {
     run(async |admin| {
@@ -167,6 +169,7 @@ fn one_character_postgres_two_nodes_choose_exactly_one() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn one_character_postgres_different_accounts_admit_independently() -> TestResult {
     run(async |admin| {
@@ -185,6 +188,7 @@ fn one_character_postgres_different_accounts_admit_independently() -> TestResult
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn one_character_postgres_dispatch_logout_frees_account() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run_async(async |admin| {
@@ -269,6 +273,7 @@ const CHALLENGER: &str = "INSERT INTO game_durability_reconnect_sessions \
      1,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,9999999999,1,1,1,1,1 \
     FROM game_durability_reconnect_sessions WHERE game_session_id=encode($5,'hex')::uuid";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn one_character_postgres_index_cross_scope_and_counterfactual() -> TestResult {
     run(async |admin| {

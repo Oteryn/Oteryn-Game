@@ -33,12 +33,15 @@ pub(super) async fn clock(h: &Harness) -> TestResult<i64> {
     )
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn admit_second_node(
     h: &Harness,
 ) -> TestResult<(NodeIncarnationProof, Dependencies)> {
     admit_second_node_inner(h, false).await
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn admit_existing_second_node(
     h: &Harness,
 ) -> TestResult<(NodeIncarnationProof, Dependencies)> {

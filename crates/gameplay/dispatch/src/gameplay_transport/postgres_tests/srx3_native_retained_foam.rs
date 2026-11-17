@@ -114,6 +114,7 @@ fn enter_retained_stage_area(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_native_foam_older_stage_runs_with_registered_hp0_caster_before_death_postgres() -> TestResult
 {

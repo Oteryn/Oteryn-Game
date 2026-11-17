@@ -26,16 +26,19 @@ enum Scenario {
     GonePrincipal,
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn proficiency_kill_credit_settlement_checkpoint_and_replay() -> TestResult {
     run(Scenario::CheckpointReplay, "proficiency_kill_credit")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn proficiency_kill_credit_fence_read_failure_is_retryable() -> TestResult {
     run(Scenario::FenceReadFailure, "proficiency_fence_failure")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn proficiency_kill_credit_surviving_contributor_when_xp_principal_is_gone() -> TestResult {
     run(Scenario::GonePrincipal, "proficiency_gone_principal")

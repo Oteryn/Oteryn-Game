@@ -6,6 +6,7 @@ use super::{Dependencies, TestResult, reset};
 use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_mirror_actual_auto_attack_publishes_current_character_vocation_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

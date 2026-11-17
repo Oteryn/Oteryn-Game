@@ -6,6 +6,7 @@ use super::fixture::{debug, id};
 
 type Stats = (u64, u64, u32, u32, u32);
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w11_crystal_soul_war_rotten_blood_boss_parity() -> TestResult {
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;

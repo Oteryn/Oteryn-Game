@@ -12,6 +12,7 @@ const AT: Position = Position {
     floor: -5,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m44_native_children_readset_reset_manual_close_reopen_and_stale_timer() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -15,14 +15,19 @@ pub(super) const WINDOW: Position = Position {
     floor: -9,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m02_nomads_native_use_observes_both_live_stacks_postgres() -> TestResult {
     scenario(NAME)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m02_nomads_native_use_refuses_same_counts_in_wrong_order_postgres() -> TestResult {
     scenario("m02/nomads-land/window-wrong-order")
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(name: &'static str) -> TestResult {
     let started = std::time::Instant::now();
     let result = super::kill_reward_e2e::scenario_thread::run(name, move || {

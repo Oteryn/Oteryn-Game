@@ -4,6 +4,7 @@ use crate::durability::fresh_admission::ExpiredLossReleaseV1;
 use crate::foundation::GameSessionState;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, GraceExpiryResult};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn seam_terminal_retirement_retries_offline_ack_after_actor_removal_postgres() -> TestResult {
     kill_reward_e2e::scenario_thread::run_async(async |admin| {
@@ -110,6 +111,7 @@ fn seam_terminal_retirement_retries_offline_ack_after_actor_removal_postgres() -
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn seam_terminal_retirement_keeps_unknown_without_terminal_or_scoped_absence_postgres() -> TestResult
 {

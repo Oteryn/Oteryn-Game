@@ -5,6 +5,7 @@ use crate::foundation::{ChannelId, WorldId};
 use planned_world_reset::reset_fixture;
 use reset_fixture::{publish_ready, set_runtime};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn world_reset_atomic_activation_calendar_house_refusal_and_dispatch_remint() -> TestResult {
     run(async |admin| {

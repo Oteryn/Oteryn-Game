@@ -514,6 +514,24 @@ where
 
 /// Drive the actual STEP router with a production admission snapshot in dispatch regressions.
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
 pub(in crate::gameplay_transport) async fn regression_routed_step<A: FreshAdmissionAuthority>(
     authority: &A,
     mut admitted: AdmittedSession,

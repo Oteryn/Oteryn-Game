@@ -3,13 +3,20 @@ use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::map::view::MapFacts;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
+
+#[cfg(any(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+use oteryn_gameplay_quests::quest::world_callbacks::Callback;
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
 };
 
 const TRACK: &str = "oteryn:quest-progress/questpc7/formal/programme";
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc7_formal_exhibition_display_and_consumptive_accessories() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

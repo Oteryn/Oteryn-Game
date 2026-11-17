@@ -7,6 +7,7 @@ use crate::gameplay_transport::{
     connection::{AdmittedSession, ControlLossResult},
 };
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn forced_reconnectable_push_reads_equipment_on_qualified_ground() -> TestResult {
     super::m25_ahau_exit::push_equipment_scenario()

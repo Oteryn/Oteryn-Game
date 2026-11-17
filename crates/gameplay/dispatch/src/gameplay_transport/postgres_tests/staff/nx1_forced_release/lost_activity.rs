@@ -1,4 +1,5 @@
 // NX-1 focused staff release case; included in the original test module.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn nx1_staff_lost_activity_return_keeps_epoch_proof_and_forces_terminal_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -16,6 +17,9 @@ fn nx1_staff_lost_activity_return_keeps_epoch_proof_and_forces_terminal_postgres
     );
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn record_activity_loss(
     h: &Harness,
     session: crate::foundation::GameSessionId,

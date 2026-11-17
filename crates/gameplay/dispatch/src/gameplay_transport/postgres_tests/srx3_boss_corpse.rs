@@ -9,6 +9,7 @@ use oteryn_gameplay_content::content::ProductionKey;
 use oteryn_gameplay_encounter_rules::raid::RaidCatalogue;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_actual_grand_mother_raid_private_material_reward_chain_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

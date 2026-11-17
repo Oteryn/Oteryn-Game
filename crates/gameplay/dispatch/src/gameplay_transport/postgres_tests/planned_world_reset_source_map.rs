@@ -2,11 +2,13 @@
 use super::*;
 use crate::foundation::{ChannelId, NodeId, WorldId};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn world_reset_source_map_receipt_and_audit_bind_the_active_epoch() -> TestResult {
     scenario(1)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn world_reset_source_map_epoch_zero_keeps_the_legacy_intent_bytes() -> TestResult {
     scenario(0)

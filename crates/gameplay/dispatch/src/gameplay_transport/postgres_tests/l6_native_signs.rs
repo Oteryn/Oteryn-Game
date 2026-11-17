@@ -126,6 +126,9 @@ const CONTROL: Sign = Sign {
     },
 };
 const PREFIX: &str = "oteryn:quest-progress/quest/u7_4/the_ancient_tombs/diprath_sign";
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -147,22 +150,27 @@ fn run(name: &'static str) -> TestResult {
     );
     result.map_err(Into::into)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_signs_ordered() -> TestResult {
     run("l6-native-signs-ordered")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_signs_out_of_order() -> TestResult {
     run("l6-native-signs-out-of-order")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_signs_missing_middle() -> TestResult {
     run("l6-native-signs-missing-middle")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_signs_repeat_and_replay() -> TestResult {
     run("l6-native-signs-repeat")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_signs_unrelated_control() -> TestResult {
     run("l6-native-signs-control")

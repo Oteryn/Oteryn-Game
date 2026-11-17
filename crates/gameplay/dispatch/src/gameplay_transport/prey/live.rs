@@ -56,6 +56,10 @@ impl ChannelSpellStates {
     }
 
     #[cfg(test)]
+    #[cfg(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
     pub(in crate::gameplay_transport) fn house_prey_transfer_observation(
         &self, actor: ExactActorRef, session: GameSessionId,
     ) -> Option<(Vec<u8>, [bool;3], u32, bool)> {
@@ -213,6 +217,9 @@ impl ChannelSpellStates {
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[cfg(test)]
+    #[cfg(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub(in crate::gameplay_transport) async fn flush_prey(&self, session: GameSessionId) -> bool {
         let budget = AdmissionRetryBudget::for_command(self.root);
         self.flush_prey_with_budget(session, &budget).await

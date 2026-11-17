@@ -5,6 +5,7 @@ use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn triangle_tower_source_wall_cycle_over_use_wire() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

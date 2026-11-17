@@ -15,6 +15,7 @@ use std::sync::Arc;
 
 macro_rules! native_case {
     ($name:ident,$creature:literal) => {
+        #[cfg(feature = "pg-tests-g1")]
         #[test]
         fn $name() -> TestResult {
             scenario(stringify!($name), $creature)

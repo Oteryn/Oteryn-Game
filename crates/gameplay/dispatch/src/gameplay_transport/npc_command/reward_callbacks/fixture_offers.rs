@@ -2,6 +2,12 @@
 use super::*;
 
 impl NpcConversations {
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(in crate::gameplay_transport) fn fixture_reward_offers(
         &self,
         source: &str,

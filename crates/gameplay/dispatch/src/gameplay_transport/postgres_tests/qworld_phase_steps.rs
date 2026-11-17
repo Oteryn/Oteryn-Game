@@ -20,10 +20,12 @@ pub(super) const SOURCE: Position = Position {
 };
 const PROGRAMME: &str = "oteryn:quest-progress/questpc7/feaster/programme";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m33_feaster_initial_phase_uses_first_portal_and_live_requirements() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-qworld-phase-0")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m33_feaster_purification_phase_uses_second_portal_and_replays_once() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-qworld-phase-5")

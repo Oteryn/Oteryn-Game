@@ -22,6 +22,7 @@ const OUTFITS: [(&str, [u32; 2], CharacterTitle); 4] = [
     ),
 ];
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn character_title_cosmetics_real_dispatch_requires_compatible_earned_facts() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

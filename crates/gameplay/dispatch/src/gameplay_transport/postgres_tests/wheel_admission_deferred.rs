@@ -3,11 +3,13 @@ use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn wheel_admission_missing_progression_loads_empty_allocation() -> TestResult {
     scenario(false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn wheel_admission_busy_root_retries_on_owner_cadence() -> TestResult {
     scenario(true)

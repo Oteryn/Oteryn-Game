@@ -84,6 +84,7 @@ pub(super) fn request() -> TestResult<BedSleepRequest> {
 
 /// Bounded authored bed pair; the active native qualifier validates these records.
 /// Crystal items.xml:1671-1686 gives pillow/blanket and reciprocal east/west directions.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) fn bed_profiles(
     input: &crate::content::native_gameplay::NativeGameplayInput,
 ) -> TestResult {

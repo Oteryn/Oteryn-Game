@@ -2,6 +2,7 @@
 use super::TestResult;
 use super::fixture::{Harness, run};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc8_state_clock_postgres_exact_deadline_shapes_and_transaction_timestamp() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

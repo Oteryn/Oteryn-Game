@@ -2,12 +2,18 @@
 use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
 };
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_case(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -32,10 +38,12 @@ fn run_case(name: &'static str) -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc7_fiend_personal_tokens_require_actual_native_addons() -> TestResult {
     run_case("questpc7-outfits-fiend")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc7_inquisition_personal_tokens_require_actual_native_addons() -> TestResult {
     run_case("questpc7-outfits-inquisition")

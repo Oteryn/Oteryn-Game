@@ -1,5 +1,9 @@
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::*;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn login(client: &mut tokio::io::DuplexStream, extended: bool) -> TestResult<GuildRoomState> {
     let mut guild = None;
     loop {
@@ -37,6 +41,8 @@ async fn login(client: &mut tokio::io::DuplexStream, extended: bool) -> TestResu
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn send(client: &mut tokio::io::DuplexStream, id: u64, text: &str) -> TestResult {
     let payload = chat::encode_chat_intent(&ChatIntent::Guild {
         text: text.to_owned(),
@@ -55,6 +61,8 @@ pub(super) async fn send(client: &mut tokio::io::DuplexStream, id: u64, text: &s
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn roundtrip(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -191,6 +199,8 @@ pub(super) async fn roundtrip(
     Ok((accepted, ended))
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn member_login(client: &mut tokio::io::DuplexStream) -> TestResult {
     assert!(matches!(
         login(client, true).await?,

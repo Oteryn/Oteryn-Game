@@ -5,6 +5,7 @@ use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn viola_mission_yes_book_handin_is_atomic_and_survives_restart() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -18,6 +19,7 @@ fn viola_mission_yes_book_handin_is_atomic_and_survives_restart() -> TestResult 
     );
     Ok(())
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn viola_mission_yes_nested_book_refuses_full_bag_without_consuming() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -15,6 +15,7 @@ use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use oteryn_world_bundle::writer::*;
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn fixm10_swimming_and_map_traps_postgres() -> TestResult {
     on_thread(|| {
@@ -23,6 +24,7 @@ fn fixm10_swimming_and_map_traps_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn fixm10_swimming_quest_relocation_postgres() -> TestResult {
     on_thread(|| {
@@ -32,11 +34,13 @@ fn fixm10_swimming_quest_relocation_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn underwater_drowning_postgres_step_in_drowns_helmets_protect_step_out_removes() -> TestResult {
     on_thread(|| scenario(None, false))
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn underwater_drowning_postgres_quest_relocation_enters_and_leaves_water() -> TestResult {
     on_thread(|| {
@@ -45,6 +49,7 @@ fn underwater_drowning_postgres_quest_relocation_enters_and_leaves_water() -> Te
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn underwater_drowning_postgres_refused_quest_step_restores_water_state() -> TestResult {
     on_thread(|| {
@@ -53,6 +58,7 @@ fn underwater_drowning_postgres_refused_quest_step_restores_water_state() -> Tes
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn underwater_drowning_postgres_portal_landings_enter_and_leave_water() -> TestResult {
     on_thread(|| scenario(None, true))
@@ -888,6 +894,7 @@ async fn seed_swimming_conditions(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m10_move_yellow_pillow_postgres_real_dispatch() -> TestResult {
     on_thread(|| {

@@ -11,6 +11,30 @@ pub(crate) struct Pause {
 
 thread_local! { static PAUSE: RefCell<Option<Arc<Pause>>> = const { RefCell::new(None) }; }
 
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 pub(crate) fn install() -> Arc<Pause> {
     let pause = Arc::new(Pause::default());
     PAUSE.set(Some(Arc::clone(&pause)));

@@ -5,6 +5,7 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::spell::Vocation;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn vocationless_vitals_admission_keeps_saved_pools_and_combat_reaches_death_postgres() -> TestResult
 {

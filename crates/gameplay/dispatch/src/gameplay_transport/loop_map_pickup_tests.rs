@@ -28,16 +28,19 @@ const SELECTION: ItemMoveSelection = ItemMoveSelection {
     world_interaction: true,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn map_pickup_dispatch_mints_moves_rehides_resends_and_replays_after_a_crash() -> TestResult {
     scenario(true, false, 0)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn map_pickup_dispatch_refusals_write_nothing_and_preserve_the_handle() -> TestResult {
     scenario(false, true, 0)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn map_pickup_dispatch_to_main_backpack_resends_its_tile() -> TestResult {
     scenario(false, false, 0)

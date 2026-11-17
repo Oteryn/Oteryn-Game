@@ -12,6 +12,7 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 #[path = "srx3_megalomania_callbacks/splinter.rs"]
 mod splinter;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_megalomania_actual_source_entry_and_initial_aspect_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

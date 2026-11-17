@@ -669,6 +669,9 @@ async fn relocate(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(name: &str, trigger: Position) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -695,6 +698,7 @@ fn scenario(name: &str, trigger: Position) -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_thais_plate_step_out_restores_stairs() -> TestResult {
     scenario(
@@ -707,6 +711,7 @@ fn qengine_thais_plate_step_out_restores_stairs() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_thais_portal_pair_teleports_and_removes_atomically() -> TestResult {
     scenario(
@@ -719,6 +724,7 @@ fn qengine_thais_portal_pair_teleports_and_removes_atomically() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_triangle_tower_asymmetric_item_cycle() -> TestResult {
     scenario(
@@ -731,6 +737,7 @@ fn qengine_triangle_tower_asymmetric_item_cycle() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_thais_portal_pair_expires_atomically() -> TestResult {
     scenario(
@@ -743,6 +750,7 @@ fn qengine_thais_portal_pair_expires_atomically() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_waterfall_facing_and_splash() -> TestResult {
     for (name, x, y, floor) in [
@@ -756,6 +764,7 @@ fn qengine_waterfall_facing_and_splash() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_annihilator_party_encounter_fail_closed() -> TestResult {
     scenario(
@@ -768,6 +777,7 @@ fn qengine_annihilator_party_encounter_fail_closed() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_l1_world_warmaster_base_wardrobe() -> TestResult {
     scenario(
@@ -780,6 +790,7 @@ fn qengine_l1_world_warmaster_base_wardrobe() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_l1_world_wayfarer_base_wardrobe() -> TestResult {
     scenario(

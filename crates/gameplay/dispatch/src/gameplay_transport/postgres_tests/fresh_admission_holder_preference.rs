@@ -4,6 +4,7 @@ use super::kill_reward_e2e::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult};
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn fresh_admission_waiting_for_the_holder_refuses_background_passes_postgres() -> TestResult {
     use crate::foundation::{AuthenticatedTransportRefV1, CharacterId, GameSessionId};

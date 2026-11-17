@@ -11,6 +11,7 @@ const START: Position = Position {
     floor: -6,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_chakoya_chamber_native_visit_requires_first_survey_kills_and_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

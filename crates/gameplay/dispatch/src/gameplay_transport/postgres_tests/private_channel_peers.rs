@@ -1,18 +1,32 @@
 //! Extra cap-test peers use the same verified fresh-admission owner as the two main nodes.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::ComposedFreshAdmission;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness,debug};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::chat_world_fixture as world;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::durability::fresh_admission::FreshAdmissionStore;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::durability::guild_chat_fixture as historical;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::durability::item_transfer::CurrentCharacterItemFence;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::durability::runtime_scope_assignment::{AssignmentCommand,AssignmentOutcome,AssignmentRequest,ControlActor,OperationKey,RuntimeScopeAssignmentWriter};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::admission_authority_publication::{AdmissionAuthorityGuardKeyV1,AdmissionAuthorityPublicationV1,AdmissionPublicationPreconditionV1};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{AuthenticatedTransportRefV1,GameSessionId,RuntimeScopeRefV1,WorldId};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fresh_fixture::fresh::Source;
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn active_peer(h:&Harness,owner:&ComposedFreshAdmission<'_,'_,'_>,base:CurrentCharacterItemFence,n:u32,world_id:[u8;16],name:&str)->TestResult<CurrentCharacterItemFence> {
     let character=crate::domain::CharacterId::from_bytes(historical::sid(n,1)).map_err(debug)?;
     let account=historical::sid(n,2);

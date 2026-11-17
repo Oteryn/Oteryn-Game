@@ -45,6 +45,7 @@ const APPROACHES: [TilePos; 4] = [
         floor: -15,
     },
 ];
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc8_wrath_four_native_crystals_require_tool_order_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

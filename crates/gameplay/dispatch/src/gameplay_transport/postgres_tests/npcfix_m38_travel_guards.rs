@@ -1,7 +1,13 @@
 //! M38: permission and outstanding fines compose in the existing fenced travel owner.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, run};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::durability::npc_travel::{NpcTravelGate, TravelRefusal};
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::durability::npc_travel::NpcTravelGate;
 
 pub(super) struct NoPremium;
 impl NpcTravelGate for NoPremium {
@@ -14,6 +20,7 @@ impl NpcTravelGate for NoPremium {
     }
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn npcfix_m38_travel_permission_and_clear_fine_are_both_required_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

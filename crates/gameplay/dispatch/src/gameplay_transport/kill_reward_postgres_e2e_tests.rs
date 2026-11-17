@@ -8,18 +8,164 @@
 //! Nested under the monk-save PostgreSQL tests to reuse their fresh-admission fixture.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use super::fixture::{Harness, debug, id, run};
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use super::{TestResult, prepare_current_session};
+
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(all(
+    feature = "pg-tests-g2",
+    not(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))
+))]
+use super::TestResult;
+
+#[cfg(all(
+    feature = "pg-tests-g1",
+    not(any(
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))
+))]
+use super::TestResult;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use crate::gameplay_transport::connection::{
     AdmittedSession, ControllerBinding, FirstEntryOutcome, SessionContinuity,
 };
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use crate::gameplay_transport::kill_reward::DrainOutcome;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use std::time::Duration;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use tokio::sync::Mutex;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use {
     crate::foundation::{
         ChannelId, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId, WorldId,
@@ -28,11 +174,35 @@ use {
 };
 
 /// Thalom cells next to each other, neither in a protection zone.
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 const OPEN_PLAYER: MovementLocalPosition = MovementLocalPosition {
     x: 2,
     y: 11,
     floor: -7,
 };
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 const OPEN_RAT: MovementLocalPosition = MovementLocalPosition {
     x: 1,
     y: 11,
@@ -41,6 +211,18 @@ const OPEN_RAT: MovementLocalPosition = MovementLocalPosition {
 
 /// One owner swing interval is far below this; every pass of the loop advances the owner clock
 /// by it, so each `drain_auto_attacks` finds the next swing due.
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 const PASS: Duration = Duration::from_secs(3);
 
 #[path = "kill_reward_postgres_fixture/scenario_thread.rs"]
@@ -48,8 +230,21 @@ pub(super) mod scenario_thread;
 
 #[path = "kill_reward_postgres_fixture/summer_settlement.rs"]
 mod summer_settlement;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use summer_settlement::qualify_summer_settlement;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres() -> TestResult {
     let started = std::time::Instant::now();
@@ -64,21 +259,76 @@ fn auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres() -> Te
     result
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
 pub(super) fn scenario() -> TestResult {
     scenario_with_decay(None)
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
     scenario_with_charms(reconcile, None)
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 type CharmSamples = Vec<(i64, u32)>;
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 type KillScenarioSettings<'a> = (
     Option<(&'a str, &'a mut CharmSamples)>,
     Option<oteryn_gameplay_content::content::BossPolicy>,
     Option<&'a str>,
 );
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn charm_wire_missing_snapshot_preserves_combat_and_assignment_changes_damage_and_dodge()
 -> TestResult {
@@ -124,6 +374,18 @@ fn charm_wire_missing_snapshot_preserves_combat_and_assignment_changes_damage_an
     })
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 fn scenario_with_charms(
     reconcile: Option<bool>,
     charm: Option<(&str, &mut CharmSamples)>,
@@ -139,10 +401,29 @@ fn scenario_with_charms(
     )
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
 pub(super) fn scenario_with_capacity(reconcile: Option<bool>, capacity: bool) -> TestResult {
     scenario_with_creature(reconcile, capacity, None, false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn summer_radiant_all_six_execute_attacks_through_the_production_owner() -> TestResult {
     scenario_thread::run("summer-radiant-attacks", || {
@@ -160,6 +441,7 @@ fn summer_radiant_all_six_execute_attacks_through_the_production_owner() -> Test
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn summer_acolyte_physical_spell_hits_at_range_through_the_production_owner() -> TestResult {
     scenario_thread::run("summer-acolyte-physical-spell", || {
@@ -167,6 +449,7 @@ fn summer_acolyte_physical_spell_hits_at_range_through_the_production_owner() ->
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn summer_acolyte_ice_area_hits_multiple_players_through_the_production_owner() -> TestResult {
     scenario_thread::run("summer-acolyte-ice-area", || {
@@ -174,6 +457,7 @@ fn summer_acolyte_ice_area_hits_multiple_players_through_the_production_owner() 
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn summer_paragon_holy_target_hits_at_range_through_the_production_owner() -> TestResult {
     scenario_thread::run("summer-paragon-holy-target", || {
@@ -181,6 +465,7 @@ fn summer_paragon_holy_target_hits_at_range_through_the_production_owner() -> Te
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn summer_paragon_fire_area_hits_multiple_players_through_the_production_owner() -> TestResult {
     scenario_thread::run("summer-paragon-fire-area", || {
@@ -188,6 +473,7 @@ fn summer_paragon_fire_area_hits_multiple_players_through_the_production_owner()
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn summer_templar_energy_area_hits_multiple_players_through_the_production_owner() -> TestResult {
     scenario_thread::run("summer-templar-energy-area", || {
@@ -195,6 +481,7 @@ fn summer_templar_energy_area_hits_multiple_players_through_the_production_owner
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn summer_templar_holy_target_hits_at_range_through_the_production_owner() -> TestResult {
     scenario_thread::run("summer-templar-holy-target", || {
@@ -202,6 +489,7 @@ fn summer_templar_holy_target_hits_at_range_through_the_production_owner() -> Te
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn summer_radiant_all_six_kills_settle_and_decay_on_postgres() -> TestResult {
     scenario_thread::run("summer-radiant-settlements", || {
@@ -219,6 +507,7 @@ fn summer_radiant_all_six_kills_settle_and_decay_on_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn summer_corpse_stages_recover_under_a_new_process_and_owner_generation() -> TestResult {
     scenario_thread::run("summer-corpse-handoff", || {
@@ -226,6 +515,24 @@ fn summer_corpse_stages_recover_under_a_new_process_and_owner_generation() -> Te
     })
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
 fn scenario_with_creature(
     reconcile: Option<bool>,
     capacity: bool,
@@ -235,6 +542,24 @@ fn scenario_with_creature(
     scenario_with_creature_at_range(reconcile, capacity, radiant, settle_radiant, false, false)
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
 fn scenario_with_creature_at_range(
     reconcile: Option<bool>,
     capacity: bool,
@@ -254,6 +579,18 @@ fn scenario_with_creature_at_range(
     )
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 fn scenario_with_creature_charmed(
     reconcile: Option<bool>,
     capacity: bool,
@@ -275,6 +612,24 @@ fn scenario_with_creature_charmed(
     )
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 pub(super) fn analyser_scenario() -> TestResult {
     scenario_with_creature_observed(
         None,
@@ -292,6 +647,18 @@ pub(super) fn analyser_scenario() -> TestResult {
     clippy::too_many_arguments,
     reason = "existing composed scenario options plus analyser observation"
 )]
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 fn scenario_with_creature_observed(
     reconcile: Option<bool>,
     capacity: bool,
@@ -1369,6 +1736,7 @@ fn scenario_with_creature_observed(
             drop(seal);
             return harness.cleanup().await;
         }
+        #[cfg(feature = "pg-tests-g4")]
         super::w22a_loot::before_kill(&owner, &harness, actor, session).await?;
         let mut swings = 0;
         loop {
@@ -1649,6 +2017,7 @@ fn scenario_with_creature_observed(
             assert_eq!(gold, u64::try_from(expected_gold)?);
             assert!(owner.analyser_next(admitted).await.is_none());
         }
+        #[cfg(feature = "pg-tests-g4")]
         super::w22a_loot::qualify(&mut owner, &harness).await?;
         if let Some(expected) = daily_expected_loot {
             let actual: Vec<(String,i64)> = sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_item_corpse_container_entries e JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id ORDER BY r.draw_ordinal LIMIT 17").fetch_all(&harness.pool).await?;
@@ -1781,6 +2150,18 @@ fn scenario_with_creature_observed(
     })
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 async fn xp_receipts(harness: &Harness) -> TestResult<i64> {
     Ok(
         sqlx::query_scalar("SELECT count(*) FROM game_character_xp_receipts")
@@ -1789,6 +2170,18 @@ async fn xp_receipts(harness: &Harness) -> TestResult<i64> {
     )
 }
 
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 async fn corpse_receipts(harness: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT count(*) FROM game_item_mint_receipts WHERE loot_purpose_key = $1 \
@@ -1799,6 +2192,7 @@ async fn corpse_receipts(harness: &Harness) -> TestResult<i64> {
     .await?)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn boss_spawn1_respawn_death_and_replay_through_real_dispatch_postgres() -> TestResult {
     scenario_thread::run("boss-spawn1-respawn", || {
@@ -1821,6 +2215,7 @@ fn boss_spawn1_respawn_death_and_replay_through_real_dispatch_postgres() -> Test
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn boss_spawn1_at_reset_death_and_replay_through_real_dispatch_postgres() -> TestResult {
     scenario_thread::run("boss-spawn1-at-reset", || {
@@ -1845,6 +2240,7 @@ fn boss_spawn1_at_reset_death_and_replay_through_real_dispatch_postgres() -> Tes
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w13_boosted_boss_kill_rerolls_equipment_but_not_its_unique_drop_postgres() -> TestResult {
     scenario_thread::run("w13-boosted-boss-unique", || {
@@ -1861,6 +2257,7 @@ fn w13_boosted_boss_kill_rerolls_equipment_but_not_its_unique_drop_postgres() ->
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn daily_boost_real_kill_xp_loot_and_unselected_race_postgres() -> TestResult {
     scenario_thread::run("daily-boost-rewards", || {

@@ -1,12 +1,20 @@
 //! Real ordinary USE cancellation before and after its durable commit.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::durability::item_transfer::CurrentCharacterItemFence;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{ExactActorRef, GameSessionId};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::ComposedFreshAdmission;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::future::Future;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::pin::Pin;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::time::Duration;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
@@ -241,6 +249,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn wait_for_memo(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -254,6 +263,7 @@ async fn wait_for_memo(
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn while_pending<F: Future, U: Future>(
     running: &mut Pin<Box<F>>,
     until: U,
@@ -272,6 +282,7 @@ async fn while_pending<F: Future, U: Future>(
     .await
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn source_state(harness: &Harness, source: [u8; 16]) -> Result<(i64, i16), sqlx::Error> {
     sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(source.as_slice()).fetch_one(&harness.pool).await
@@ -281,6 +292,7 @@ async fn source_state(harness: &Harness, source: [u8; 16]) -> Result<(i64, i16),
 // owner's node, service holder demand after a refused pass: cancellation can
 // retire the sole connection, so polling alone cannot make the root ready.
 // A persistent memo or unrelated save refusal remains a failure.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn reconcile_actor_end(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,

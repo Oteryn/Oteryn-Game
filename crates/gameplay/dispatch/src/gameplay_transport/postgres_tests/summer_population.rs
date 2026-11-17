@@ -12,6 +12,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn summer_population_all_six_radiant_rewards_admit_native_corpses() -> TestResult {
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
@@ -69,6 +70,7 @@ fn summer_population_all_six_radiant_rewards_admit_native_corpses() -> TestResul
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn summer_population_boss_values_use_the_selected_pinned_fallback() -> TestResult {
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
@@ -116,6 +118,7 @@ fn summer_population_boss_values_use_the_selected_pinned_fallback() -> TestResul
 
 /// PAR-W16: the activated Summer boss profiles against Crystal `201189f8`
 /// `data-global/monster/summer_update_2026/bosses/*.lua`: (hp, xp, speed, armor, defense).
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w16_crystal_summer_boss_parity() -> TestResult {
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
@@ -159,6 +162,7 @@ fn w16_crystal_summer_boss_parity() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn summer_population_wayland_has_both_global_placements() -> TestResult {
     let content = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content"));
@@ -197,6 +201,7 @@ fn summer_population_wayland_has_both_global_placements() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn summer_population_all_six_execute_exact_pinned_loot_plans_and_replay() -> TestResult {
     use crate::content::creature_reward::{LootTablesSection, SectionRef};
@@ -292,6 +297,7 @@ fn summer_population_all_six_execute_exact_pinned_loot_plans_and_replay() -> Tes
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn summer_population_npc_placements_greeting_lore_and_stale_actor_on_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("summer-population-pg", scenario)

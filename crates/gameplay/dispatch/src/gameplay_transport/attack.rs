@@ -1294,6 +1294,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(in crate::gameplay_transport) async fn refresh_attack_weapon_at(
         &self,
         actor: ExactActorRef,

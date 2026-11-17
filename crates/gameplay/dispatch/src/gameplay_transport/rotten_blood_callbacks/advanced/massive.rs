@@ -333,6 +333,12 @@ async fn drive_through(
                     return Err(());
                 }
                 #[cfg(test)]
+                #[cfg(any(
+                    feature = "pg-tests-g1",
+                    feature = "pg-tests-g2",
+                    feature = "pg-tests-g3",
+                    feature = "pg-tests-g4"
+                ))]
                 let before = states
                     .get(runtime, target, session)
                     .ok_or(())?
@@ -356,6 +362,12 @@ async fn drive_through(
                         runtime, attack, Some(boss), target, session, &hit, now,
                     );
                     #[cfg(test)]
+                    #[cfg(any(
+                        feature = "pg-tests-g1",
+                        feature = "pg-tests-g2",
+                        feature = "pg-tests-g3",
+                        feature = "pg-tests-g4"
+                    ))]
                     {
                         let commits = &mut states.rotten_blood_callbacks.advanced.massive_commits;
                         if commits.len() >= 64 {

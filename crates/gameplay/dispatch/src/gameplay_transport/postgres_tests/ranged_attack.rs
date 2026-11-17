@@ -17,18 +17,21 @@ const OPEN_RAT: MovementLocalPosition = MovementLocalPosition {
     floor: -7,
 };
 const PASS: Duration = Duration::from_secs(3);
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn ranged_attack_postgres_bow_kills_at_four_consumes_and_reloads() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("ranged-bow", || {
         scenario(3350, 4, true, 100, false, false)
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn ranged_attack_postgres_wand_pays_mana_and_deals_death() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("ranged-wand", || {
         scenario(25760, 3, false, 100, false, false)
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn ranged_attack_postgres_out_of_range_no_ammunition_and_no_mana_are_free() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("ranged-gates", || {
@@ -37,42 +40,49 @@ fn ranged_attack_postgres_out_of_range_no_ammunition_and_no_mana_are_free() -> T
         scenario(25760, 3, false, 0, false, false)
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn ranged_attack_postgres_throwing_breaks_in_the_hand_by_source_chance() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("ranged-throwing", || {
         scenario(3287, 3, false, 100, false, false)
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn ranged_attack_postgres_projectile_wall_refuses_without_cost() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("ranged-wall", || {
         scenario(3350, 6, true, 100, true, false)
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn ranged_attack_postgres_reconcile_spends_once_without_late_damage_or_training() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("ranged-reconcile", || {
         scenario(3350, 4, true, 100, false, true)
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quick_loot_quiver_extra_postgres_selects_compatible_and_consumes_exact_stack() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("quick-quiver-extra", || {
         scenario_with_quiver(3350, 4, true, 100, false, false, Some(10))
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quick_loot_quiver_shield_postgres_selects_compatible_and_consumes_exact_stack() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("quick-quiver-shield", || {
         scenario_with_quiver(3350, 4, true, 100, false, false, Some(6))
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quick_loot_quiver_empty_postgres_refuses_without_cost() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("quick-quiver-empty", || {
         scenario_with_quiver(3350, 4, false, 100, false, false, Some(10))
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quick_loot_quiver_replay_postgres_does_not_spend_twice() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("quick-quiver-replay", || {

@@ -27,6 +27,7 @@ const CITIZENS: [(u16, u32); 17] = [
     (9515, 22),
 ];
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn w23_all_citizen_uniques_and_svargrond_quest_boundary() -> TestResult {
     std::thread::Builder::new()

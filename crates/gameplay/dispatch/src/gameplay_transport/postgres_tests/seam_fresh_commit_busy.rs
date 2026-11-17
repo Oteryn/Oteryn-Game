@@ -5,6 +5,7 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::ReconciliationDisposition;
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn seam_fresh_commit_busy_spell_read_still_sends_accepted_postgres() -> TestResult {
     use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId, MessageType};
@@ -108,6 +109,7 @@ fn seam_fresh_commit_busy_spell_read_still_sends_accepted_postgres() -> TestResu
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn seam_fresh_commit_reconciliation_waits_for_busy_root_postgres() -> TestResult {
     run(async |admin| {

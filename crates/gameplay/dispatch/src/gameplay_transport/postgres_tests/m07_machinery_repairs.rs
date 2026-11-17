@@ -11,6 +11,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 const NAME:&str="m07/machinery-repair-outpost-01";
 const SOURCE:Position=Position{x:32797,y:31731,floor:-7};
 pub(super) fn start()->Position {Position{x:32797,y:31732,floor:-7}}
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m07_machinery_postgres_repair_consumes_exact_budget_and_keeps_walls_solid()->TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}

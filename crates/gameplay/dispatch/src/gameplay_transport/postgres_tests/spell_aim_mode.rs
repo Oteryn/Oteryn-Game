@@ -37,6 +37,7 @@ const RAT_HEALTH: i64 = 10_000;
 const SPELL: &str = "candidate:spell/scorch";
 const MANA: i64 = 8;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn spell_aim_mode_postgres_cursor_wave_hits_the_cursor_direction_from_the_caster() -> TestResult {
     run_case("spell_aim_mode", false)
@@ -44,6 +45,7 @@ fn spell_aim_mode_postgres_cursor_wave_hits_the_cursor_direction_from_the_caster
 
 /// Capability 480: field 5 `aim_mode` CURSOR is refused without the capability and casts the
 /// aimed wave with it, through the negotiated decode of the cast route.
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn spell_aim_mode_postgres_capability_480_aim_mode_cursor_needs_the_capability() -> TestResult {
     run_case("spell_aim_mode_480", true)

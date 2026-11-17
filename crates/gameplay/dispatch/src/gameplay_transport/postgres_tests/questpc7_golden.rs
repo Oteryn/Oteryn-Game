@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
 const TRACK: &str = "oteryn:quest-progress/questpc7/golden/commission";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn questpc7_golden_full_commission_charges_exactly_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

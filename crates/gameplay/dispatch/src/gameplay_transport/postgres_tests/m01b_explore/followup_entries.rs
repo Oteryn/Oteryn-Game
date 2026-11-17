@@ -79,21 +79,27 @@ fn route(name: &str) -> TestResult<Route> {
         .ok_or_else(|| "unbound M01b follow-up".into())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_followup_dragon_corpse_crosses_native_fire_after_first_visit_and_use() -> TestResult {
     run(ROUTES[0])
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_followup_dragon_tower_requires_first_visit_and_ten_kills() -> TestResult {
     run(ROUTES[1])
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_followup_edron_throne_requires_first_visit_ten_kills_and_premium() -> TestResult {
     run(ROUTES[2])
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(r: Route) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -111,6 +117,9 @@ fn run(r: Route) -> TestResult {
     result
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn target(r: Route) -> Position {
     match r.entry {
         StepDirection::South => Position {

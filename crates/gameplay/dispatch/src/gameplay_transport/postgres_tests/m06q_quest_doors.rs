@@ -6,6 +6,7 @@ use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m06q_placed_quest_door_use_wire_requires_durable_storage() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -19,16 +20,19 @@ fn m06q_placed_quest_door_use_wire_requires_durable_storage() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m06_close_quest_door_step_out_wire() -> TestResult {
     closing_case(false, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m06_close_quest_door_step_out_moves_item_wire() -> TestResult {
     closing_case(true, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m06_close_quest_door_step_out_moves_authored_item_wire() -> TestResult {
     closing_case(false, true)
@@ -53,16 +57,19 @@ enum PlayerGroundCase {
     Authored,
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m06_player_ground_move_commits_once_and_updates_observer() -> TestResult {
     player_ground_case(PlayerGroundCase::Move)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m06_player_ground_move_far_or_missing_tile_writes_nothing() -> TestResult {
     player_ground_case(PlayerGroundCase::Refused)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m06_player_ground_move_authored_item_materializes_once_and_replays() -> TestResult {
     player_ground_case(PlayerGroundCase::Authored)
@@ -1077,6 +1084,7 @@ async fn player_ground_state(pool: &sqlx::PgPool) -> Result<serde_json::Value, s
 }
 
 // Crystal door_level.lua:1070 and doors.lua:273: both source doors require level70.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn vampire_shield_placed_level_doors_require_seventy_over_wire() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -16,94 +16,117 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 };
 use oteryn_protocol_oteryn::actor_spell;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_cripple() -> TestResult {
     scenario(true, "cripple")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_chain_callback_cripple() -> TestResult {
     scenario(false, "cripple")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_leech() -> TestResult {
     scenario(true, "leech")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_chain_callback_leech() -> TestResult {
     scenario(false, "leech")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_damage_procs() -> TestResult {
     scenario(true, "batch")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_chain_callback_damage_procs() -> TestResult {
     scenario(false, "batch")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_carnage() -> TestResult {
     scenario(true, "carnage")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_chain_callback_carnage() -> TestResult {
     scenario(false, "carnage")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_fatal_hold() -> TestResult {
     scenario(true, "fatal_hold")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_chain_callback_fatal_hold() -> TestResult {
     scenario(false, "fatal_hold")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_wrong_species() -> TestResult {
     scenario(true, "wrong_species")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_chain_callback_wrong_species() -> TestResult {
     scenario(false, "wrong_species")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_immunity() -> TestResult {
     scenario(true, "immune")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_chain_callback_immunity() -> TestResult {
     scenario(false, "immune")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_lethal_proc() -> TestResult {
     scenario(true, "overpower_lethal")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_assigned_critical() -> TestResult {
     scenario(true, "critical")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_chain_callback_assigned_critical() -> TestResult {
     scenario(false, "critical")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_cripple_immunity() -> TestResult {
     scenario(true, "cripple_immune")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_chain_callback_cripple_immunity() -> TestResult {
     scenario(false, "cripple_immune")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_zero() -> TestResult {
     scenario(true, "zero")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_chain_callback_zero() -> TestResult {
     scenario(false, "zero")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_native_callback_leech_minors() -> TestResult {
     scenario(true, "leech_minors")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all_charms_delayed_chain_callback_leech_minors() -> TestResult {
     scenario(false, "leech_minors")

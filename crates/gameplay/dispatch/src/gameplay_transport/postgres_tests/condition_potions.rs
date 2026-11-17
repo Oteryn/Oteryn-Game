@@ -16,6 +16,7 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn condition_potions_postgres_berserk_buff_expiry_receipt_and_refusals() -> TestResult {
     run_case(
@@ -25,6 +26,7 @@ fn condition_potions_postgres_berserk_buff_expiry_receipt_and_refusals() -> Test
         "q6_berserk",
     )
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn condition_potions_postgres_mastermind_buff_expiry_receipt_and_refusals() -> TestResult {
     run_case(
@@ -34,6 +36,7 @@ fn condition_potions_postgres_mastermind_buff_expiry_receipt_and_refusals() -> T
         "q6_mastermind",
     )
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn condition_potions_postgres_bullseye_buff_expiry_receipt_and_refusals() -> TestResult {
     run_case(
@@ -43,6 +46,7 @@ fn condition_potions_postgres_bullseye_buff_expiry_receipt_and_refusals() -> Tes
         "q6_bullseye",
     )
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn condition_potions_postgres_transcendence_buff_expiry_receipt_and_refusals() -> TestResult {
     // No vocation limit in Crystal: a vocationless Character is a valid consumer.

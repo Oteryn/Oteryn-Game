@@ -1,4 +1,5 @@
 //! I14: newly admitted mana potion and fish use the real wire, durable owner and replay.
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn i14_mana_potion_and_fish_commit_through_wire_dispatch_on_postgres()
 -> crate::bestiary_postgres_harness::TestResult {

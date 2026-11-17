@@ -18,10 +18,12 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 const BONE: &str = "oteryn:quest-progress/quest/u8_1/tibia_tales/into_the_bone_pit";
 #[path = "m39_bone_journey/absence.rs"]
 mod absence;
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m39_bone_pit_full_player_journey() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m39-bone")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m39_bone_pit_lost_sample_journey() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m39-bone-lost")

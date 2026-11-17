@@ -3,6 +3,9 @@ use super::koshei::{relocate, step};
 use super::*;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const NAME: &str = "m01b/grimvale-mini-world-change/s1/entry";
 const QUEST: &str = "oteryn:quest.grimvale_mini_world_change";
 const TRACK: &str = "oteryn:quest-progress/chosen-source/grimvale_mini_world_change/s1";
@@ -12,6 +15,7 @@ const START: Position = Position {
     floor: -7,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_grimvale_native_visit_requires_current_moon_premium_and_reset() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

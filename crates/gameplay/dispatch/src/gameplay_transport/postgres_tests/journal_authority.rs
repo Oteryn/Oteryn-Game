@@ -1,9 +1,12 @@
 //! Independent committed transfer/epoch observations used to reject old exports.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{
     TestResult,
     fixture::{Harness, id},
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::native_admission_source::journal::ReadGameJournalCursorV1;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn change(h: &Harness, s: &ReadGameJournalCursorV1, kind: &str) -> TestResult {
     if kind == "none" {
         return Ok(());
@@ -31,7 +34,9 @@ pub(super) async fn change(h: &Harness, s: &ReadGameJournalCursorV1, kind: &str)
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::durability::journal::ProducerStore;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::native_admission_source::{
     SourceError,
     journal::{
@@ -39,10 +44,12 @@ use crate::native_admission_source::{
         publisher::{JournalOutbox, StoredPublication},
     },
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) struct Losing<'a, 'f, 's> {
     pub store: ProducerStore<'a, 'f, 's>,
     pub h: &'a Harness,
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 impl JournalOutbox for Losing<'_, '_, '_> {
     async fn current(&self, s: &ReadGameJournalCursorV1) -> Result<bool, SourceError> {
         self.store.current(s).await

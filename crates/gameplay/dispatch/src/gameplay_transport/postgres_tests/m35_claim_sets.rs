@@ -12,6 +12,7 @@ use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generatio
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_alawar_dispatch_completes_only_on_last_chest() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -31,6 +32,7 @@ fn m35_alawar_dispatch_completes_only_on_last_chest() -> TestResult {
     Ok(())
 }
 // Crystal 201189f8 chest.lua:2131-2161: these placements share ChestsWine storage.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_dreamer_wine_alternatives_do_not_complete_other_required_groups() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -79,6 +81,7 @@ enum Case {
 }
 
 // Crystal 201189f chest.lua: UID5018 is access; UID6142 is the final Fanfare.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -98,6 +101,7 @@ fn m35_fanfare_access_key_does_not_complete_but_final_chest_does() -> TestResult
     Ok(())
 }
 // Crystal 201189f8 chest.lua: UID6165..6167 are independent corpse rewards.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_griffin_shield_dispatch_requires_all_three_rewards_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -117,6 +121,7 @@ fn m35_griffin_shield_dispatch_requires_all_three_rewards_in_either_order() -> T
     Ok(())
 }
 // Crystal 201189f8 chest.lua: UID6146..6148 are three independent rewards.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_longsword_dispatch_requires_all_three_rewards_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -136,6 +141,7 @@ fn m35_longsword_dispatch_requires_all_three_rewards_in_either_order() -> TestRe
     Ok(())
 }
 // Crystal 201189f8 chest.lua:1850-1864: independent Katana corpse rewards.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_katana_dispatch_requires_both_rewards_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -155,6 +161,7 @@ fn m35_katana_dispatch_requires_both_rewards_in_either_order() -> TestResult {
     Ok(())
 }
 // Crystal 201189f8 chest.lua: Demona Ring's two independent rewards.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_source_pair_demona_ring_requires_both_rewards_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -174,6 +181,7 @@ fn m35_source_pair_demona_ring_requires_both_rewards_in_either_order() -> TestRe
     Ok(())
 }
 // Crystal 201189f8 chest.lua: Double Hero's two independent rewards.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_source_pair_double_hero_requires_both_rewards_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -193,6 +201,7 @@ fn m35_source_pair_double_hero_requires_both_rewards_in_either_order() -> TestRe
     Ok(())
 }
 // Crystal 201189f8 chest.lua: Circle Room's two independent rewards.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_circle_room_dispatch_requires_both_rewards_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -212,6 +221,7 @@ fn m35_circle_room_dispatch_requires_both_rewards_in_either_order() -> TestResul
     Ok(())
 }
 // Crystal 201189f8 chest.lua:1540-1554: independent Crystal Wand rewards.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_crystal_wand_dispatch_requires_both_rewards_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -230,6 +240,7 @@ fn m35_crystal_wand_dispatch_requires_both_rewards_in_either_order() -> TestResu
     println!("M35_CRYSTAL_WAND_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_goblin_temple_dispatch_requires_both_complete_bags_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -248,6 +259,7 @@ fn m35_goblin_temple_dispatch_requires_both_complete_bags_in_either_order() -> T
     println!("M35_GOBLIN_TEMPLE_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_draconia_dispatch_requires_both_complete_bags_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -266,6 +278,7 @@ fn m35_draconia_dispatch_requires_both_complete_bags_in_either_order() -> TestRe
     println!("M35_DRACONIA_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_emperor_cookies_and_key3802_complete_only_after_both_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -284,6 +297,7 @@ fn m35_emperor_cookies_and_key3802_complete_only_after_both_in_either_order() ->
     println!("M35_EMPEROR_COOKIES_POSTGRES_CASE_COMPLETED");
     Ok(())
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_fire_axe_two_floor_rewards_complete_only_after_both_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -303,6 +317,7 @@ fn m35_fire_axe_two_floor_rewards_complete_only_after_both_in_either_order() -> 
     Ok(())
 }
 // Crystal 201189f8 chest.lua:1078-1087: complete bag, not a 200-item necklace stack.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_fire_axe_bag_grants_all_children_without_finishing_on_first_chest() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -317,6 +332,7 @@ fn m35_fire_axe_bag_grants_all_children_without_finishing_on_first_chest() -> Te
     Ok(())
 }
 // Crystal 201189f8 chest.lua:932-947: independent Crown Armor and Crown Shield.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_black_knight_dispatch_requires_both_rewards_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -336,6 +352,7 @@ fn m35_black_knight_dispatch_requires_both_rewards_in_either_order() -> TestResu
     Ok(())
 }
 // Crystal 201189f8 chest.lua:2459-2472: the two final reward storage groups.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m35_koshei_dispatch_requires_legs_and_platinum_in_either_order() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

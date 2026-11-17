@@ -1,13 +1,23 @@
 //! Chosen two-cache potion journey, Premium gates and consolidated gold.
 use super::fixture::{Harness, id};
 use super::questpc8_authored_programmes::{object_target, step, use_target};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{TestResult, quest_world_callbacks};
+
+#[cfg(any(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+use super::TestResult;
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::map::overlay::TilePos;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc8_mastermind_two_native_caches_premium_and_exact_201_gold() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

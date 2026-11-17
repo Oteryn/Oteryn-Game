@@ -1,6 +1,30 @@
 //! Historical source-scene fixtures call the canonical #3036 owner, never a second writer.
 use super::super::ComposedFreshAdmission;
 impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
     pub(in crate::gameplay_transport) async fn drive_shared_soulpits(
         &self,
         now: u64,
@@ -10,6 +34,30 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .drive_soulpit(self, now, global)
             .await
     }
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
     pub(in crate::gameplay_transport) async fn drive_one_soulpit(
         &self,
         registered: &super::super::activity_runtime::RegisteredRuntime<'a>,

@@ -1,7 +1,22 @@
 //! Selected retrieval programmes use native anchors and the existing quest/MINT owners.
 use super::fixture::{Harness, debug, id};
 use super::questpc8_authored_programmes::{object_target, step, use_target};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{TestResult, quest_world_callbacks};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use super::TestResult;
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::TestResult;
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::TestResult;
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -62,6 +77,9 @@ pub(super) fn route(name: &str) -> Option<Route> {
         .into_iter()
         .find(|route| route.name() == name)
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario(route: Route) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -77,14 +95,17 @@ fn scenario(route: Route) -> TestResult {
     );
     Ok(())
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc8_retrieval_voodoo_three_witches_both_boxes_once() -> TestResult {
     scenario(Route::Voodoo)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc8_retrieval_mastermind_two_routes_exact_outputs_once() -> TestResult {
     scenario(Route::Mastermind)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc8_retrieval_kormarak_native_guardian_body_outputs_once() -> TestResult {
     scenario(Route::Kormarak)

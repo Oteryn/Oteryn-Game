@@ -17,6 +17,7 @@ const MATERIALS: [(&str, &str, u32); 8] = [
     ("flexible dragon scale", "scale", 11550),
 ];
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn fathers_burden_eight_handins_cape_experience_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

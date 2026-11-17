@@ -1,9 +1,14 @@
 //! Existing reset/admission APIs, with a fresh session after the reset drain.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::content::QualifiedNativeEntryRoom;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::foundation::admission_authority_publication::*;
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn reset_epochs(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -103,6 +108,7 @@ pub(super) async fn reset_epochs(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn replace(h: &Harness, world: WorldId, channel: ChannelId, generation: u64) -> TestResult {
     use crate::durability::runtime_scope_assignment::*;
     let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
@@ -133,6 +139,7 @@ async fn replace(h: &Harness, world: WorldId, channel: ChannelId, generation: u6
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn admit(h: &Harness, generation: u64) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")

@@ -77,6 +77,7 @@ async fn exchange(
     result.map_err(|error| format!("report command {id} ended {ended:?}: {error}").into())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn support_intake_postgres_real_dispatch_consent_replay_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

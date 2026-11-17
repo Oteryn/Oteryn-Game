@@ -1,6 +1,7 @@
 //! Remaining four literal Tomb portal rooms use the shared native branch proof.
 use super::TestResult;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_tomb_other_native_missing_3953_uses_source_branch() -> TestResult {
     super::l6_tomb_native::run(
@@ -17,6 +18,7 @@ fn l6_tomb_other_native_missing_3953_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_tomb_other_native_present_3953_uses_source_branch() -> TestResult {
     super::l6_tomb_native::run(
@@ -33,6 +35,7 @@ fn l6_tomb_other_native_present_3953_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_tomb_other_native_missing_3954_uses_source_branch() -> TestResult {
     super::l6_tomb_native::run(
@@ -49,6 +52,7 @@ fn l6_tomb_other_native_missing_3954_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_tomb_other_native_present_3954_uses_source_branch() -> TestResult {
     super::l6_tomb_native::run(
@@ -65,6 +69,7 @@ fn l6_tomb_other_native_present_3954_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_tomb_other_native_missing_3955_uses_source_branch() -> TestResult {
     super::l6_tomb_native::run(
@@ -81,6 +86,7 @@ fn l6_tomb_other_native_missing_3955_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_tomb_other_native_present_3955_uses_source_branch() -> TestResult {
     super::l6_tomb_native::run(
@@ -97,6 +103,7 @@ fn l6_tomb_other_native_present_3955_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_tomb_other_native_missing_3956_uses_source_branch() -> TestResult {
     super::l6_tomb_native::run(
@@ -113,6 +120,7 @@ fn l6_tomb_other_native_missing_3956_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_tomb_other_native_present_3956_uses_source_branch() -> TestResult {
     super::l6_tomb_native::run(

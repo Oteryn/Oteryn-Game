@@ -9,6 +9,7 @@ use crate::durability::house_scope_handoff::{
 use crate::durability::runtime_scope_assignment::{ControlActor, OperationKey};
 use crate::foundation::RuntimeScopeRefV1;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn house_runtime_gate_postgres_dispatch_preserves_channel_and_handoff_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -11,6 +11,7 @@ use crate::gameplay_transport::connection::{
 use oteryn_protocol_oteryn::item_view::*;
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn stack_quantity_dispatch_split_merge_drop_replay_and_atomic_refusals() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -24,6 +25,7 @@ fn stack_quantity_dispatch_split_merge_drop_replay_and_atomic_refusals() -> Test
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn boss_activity_item_consumer_postgres_real_dispatch() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

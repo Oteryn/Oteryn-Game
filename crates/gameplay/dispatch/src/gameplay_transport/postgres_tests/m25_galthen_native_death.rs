@@ -10,6 +10,7 @@ use oteryn_gameplay_quests::quest::{
 use std::sync::Arc;
 const QUEST: &str = "oteryn:quest.adventures_of_galthen_quest";
 const TRACK: &str = "oteryn:quest-progress/chosen-source/adventures_of_galthen_quest/";
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m25_galthen_real_native_deaths_require_predecessors_and_never_complete_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m25-galthen-native-deaths")

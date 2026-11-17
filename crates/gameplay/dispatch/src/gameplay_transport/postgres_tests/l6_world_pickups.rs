@@ -2,6 +2,8 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[path = "l6_world_pickups/wire.rs"]
@@ -16,22 +18,29 @@ pub(super) use world::{
 mod reset;
 pub(super) use reset::cycle;
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) const RUBY: Position = Position {
     x: 32437,
     y: 32174,
     floor: -15,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_small_ruby_native_pickup_replay_and_shared_custody() -> TestResult {
     run_case("l6-small-ruby")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_small_ruby_actual_reset_replenishes_and_refuses_old_epoch() -> TestResult {
     run_case("l6-small-ruby-reset")
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_case(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

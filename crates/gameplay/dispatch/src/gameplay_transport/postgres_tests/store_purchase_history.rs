@@ -13,6 +13,7 @@ use std::sync::{Arc, Mutex as SyncMutex};
 
 const SWORD: &str = "store:exercise-sword";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn store_purchase_history_lists_in_game_purchases_newest_first() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -1,6 +1,7 @@
 //! Find the imperial passage key cache before the later locked-chamber stage.
 use super::*;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_emperor_cookies_native_passage_entry_credits_once_and_replays() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

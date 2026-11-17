@@ -2,9 +2,13 @@
 use super::koshei::{relocate, seed_level, step};
 use super::*;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const NAME: &str = "m01b/mad-mage-room/s1/entry";
 const QUEST: &str = "oteryn:quest.mad_mage_room_quest";
 const TRACK: &str = "oteryn:quest-progress/chosen-source/mad_mage_room_quest/s1";
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_prison_native_hall_entry_requires_durable_level_and_replays_once() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -22,14 +22,17 @@ use crate::gameplay_transport::{item_fence_of, item_view::ItemKey};
 use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn a4b_paralyze_rune_postgres_real_dispatch() -> TestResult {
     large_stack(|| utility_rune(3165))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn a4b_convince_rune_postgres_real_dispatch() -> TestResult {
     large_stack(|| utility_rune(3177))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn a4b_chameleon_rune_postgres_real_dispatch() -> TestResult {
     large_stack(|| utility_rune(3178))

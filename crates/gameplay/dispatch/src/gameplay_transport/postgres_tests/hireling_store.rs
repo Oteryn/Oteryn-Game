@@ -2,11 +2,24 @@
 // Assertions inspect native Inbox custody and durable state, not an in-memory substitute.
 #![allow(clippy::expect_used)] // Test fixture invariants use the neighbouring Store harness style.
 use super::store::{platform_balance, platform_answer, platform_intent, platform_bytes};
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness,debug,id,run};
+
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::fixture::{Harness,debug,id};
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies,TestResult,prepare_current_session};
+
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::TestResult;
 use crate::foundation::{CommandStatus,MessageType,decode_wire_envelope};
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::capabilities::{OfferedCapability,SelectedCapabilities};
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::connection::{AdmittedSession,ConnectionEnd,FirstEntryOutcome,IDLE_LIVENESS,serve_admitted};
+
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use crate::gameplay_transport::connection::{AdmittedSession,ConnectionEnd,IDLE_LIVENESS,serve_admitted};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::native_admission_source::descriptor::Operation;
 use crate::native_admission_source::store::{StoreClient,StoreTransport,TransportFailure};
@@ -93,6 +106,7 @@ fn command(seed:u8,offer:u16,price:u64,custom:Option<wire::StoreHirelingCustomiz
     Ok((wire::COMMAND_TYPE_STORE_PURCHASE,bytes))
 }
 fn new_hire(name:&str)->wire::StoreHirelingCustomization {wire::StoreHirelingCustomization{hireling_id:None,name:Some(name.into()),sex:Some(1)}}
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn exercise_sword(seed:u8)->TestResult<(u32,Vec<u8>)> {
     let request=wire::StorePurchaseRequest{purchase_request_id:id(seed),offer_key:"store:exercise-sword".into(),catalog_revision:"451c944aa7b6ab9d27cfce868fcf4949c8996a7b6857cc2641e2c296fd415c8c".into(),price:25,currency:"TIBIA_COIN".into()};
     Ok((wire::COMMAND_TYPE_STORE_PURCHASE,wire::encode_purchase_request(&request).map_err(debug)?))
@@ -103,9 +117,11 @@ async fn purchase(owner:&ComposedFreshAdmission<'_, '_, '_>,admitted:&mut Admitt
 }
 async fn count(harness:&Harness,sql:&'static str)->TestResult<i64> {Ok(sqlx::query_scalar(sql).fetch_one(&harness.pool).await?)}
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) struct HouseStoreProducer(Arc<SyncMutex<Ledger>>);
 
 /// Compose the same test producer before the native capability negotiation and handoff.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn install_house_store(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     world: &[u8; 16],
@@ -122,6 +138,7 @@ pub(super) fn install_house_store(
 /// The lifecycle fixture supplies an actual committed House handoff and STEP.
 /// Reuse the same Platform contract and real Store wire as the Channel cases;
 /// no identity, entitlement or Inbox item is seeded for this scenario.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn house_scenario(
     harness: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -232,34 +249,48 @@ pub(super) async fn house_scenario(
 }
 
 #[derive(Debug,Clone,Copy)]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 enum Case{Hire,Skill,Outfit,Rename,Sex,Uncertain,Refusals,FullInbox,DeliveryRetry,Limit,LocalEncode,Modal}
 #[path="hireling_store/modal.rs"]
 mod modal;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn enabled()->bool {std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_some()}
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn hireling_store_purchase_lamp_once_and_replay()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-hire",||scenario(Case::Hire))}
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn hireling_store_skill_once_and_duplicate_refusal()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-skill",||scenario(Case::Skill))}
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn hireling_store_outfit_once_and_duplicate_refusal()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-outfit",||scenario(Case::Outfit))}
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn hireling_store_rename_once_and_binding_refusal()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-rename",||scenario(Case::Rename))}
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn hireling_store_sex_change_toggles_only_once()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-sex",||scenario(Case::Sex))}
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn hireling_store_uncertain_debit_reserves_entitlement_until_retry()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-uncertain",||scenario(Case::Uncertain))}
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn hireling_store_refusals_do_not_debit_and_release_reservation()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-refusals",||scenario(Case::Refusals))}
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn hireling_store_full_inbox_refuses_before_debit_and_keeps_delivered_replay()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-inbox",||scenario(Case::FullInbox))}
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn hireling_store_paid_lamp_retries_after_prepared_delivery_refusal()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-delivery-retry",||scenario(Case::DeliveryRetry))}
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn hireling_store_uncertain_tenth_hire_reserves_character_limit()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("hireling-store-limit",||scenario(Case::Limit))}
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn storefix_local_encode_refusal_releases_reservation_without_debit()->TestResult {if !enabled(){return Ok(())}super::kill_reward_e2e::scenario_thread::run("storefix-local-encode",||scenario(Case::LocalEncode))}
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(case:Case)->TestResult {
     run(async |admin| {
         let harness=Harness::create_with_admission_seed(admin,"hireling_store",true,false).await?;

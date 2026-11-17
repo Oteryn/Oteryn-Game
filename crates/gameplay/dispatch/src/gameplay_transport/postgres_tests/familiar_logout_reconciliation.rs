@@ -9,38 +9,45 @@ use crate::gameplay_transport::connection::{
 };
 use oteryn_protocol_oteryn::logout::LogoutResult;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn familiar_logout_committed_unknown_retries_logout_without_replaying_write_postgres() -> TestResult
 {
     scenario(true, Finish::Logout)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn familiar_logout_uncommitted_busy_retries_logout_after_proven_absence_postgres() -> TestResult {
     scenario(false, Finish::Logout)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn familiar_logout_committed_unknown_allows_loss_and_grace_without_replay_postgres() -> TestResult {
     scenario(true, Finish::Loss)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn familiar_logout_uncommitted_busy_allows_loss_and_exact_grace_reconciliation_postgres()
 -> TestResult {
     scenario(false, Finish::Loss)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn familiar_logout_reconciliation_keeps_stale_and_terminal_original_postgres() -> TestResult {
     scenario(true, Finish::Terminal)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn familiar_logout_reconciliation_keeps_retired_scope_original_postgres() -> TestResult {
     scenario(true, Finish::RetiredOwner)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn logout_training_refusal_releases_kill_hold_before_retry_postgres() -> TestResult {
     scenario(false, Finish::TrainingRefused)

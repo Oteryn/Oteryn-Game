@@ -1,14 +1,22 @@
 //! ANIMUS-1 durable completion and real command 232 query, replay and current-session fencing.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::cyclopedia::support;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, run};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::CommandStatus;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::animus_mastery::{
     AnimusPage, CAPABILITY_ANIMUS_MASTERY_V1, COMMAND_TYPE_ANIMUS_MASTERY_QUERY, encode_page,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn animus_mastery_completion_replay_reload_and_fence_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -78,6 +86,7 @@ fn animus_mastery_completion_replay_reload_and_fence_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn animus_mastery_postgres_real_dispatch_pages_replay_and_current_fence() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

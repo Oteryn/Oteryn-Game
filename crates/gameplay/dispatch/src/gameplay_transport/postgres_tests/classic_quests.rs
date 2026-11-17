@@ -19,6 +19,7 @@ const ROTTIN: &str = "oteryn:npc.rottin_wood";
 const DAWN: &str = "oteryn:quest-progress/quest/u10_55/dawnport/";
 const TROLL: &str = "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn classic_quests_npc_commands_commit_exact_start_branches_and_fence_topics() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -364,6 +365,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn classic_rottin_disrepair_commits_three_flags_only_after_the_source_offer() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -492,6 +494,7 @@ pub(super) async fn exercise_rottin(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn classic_draconia_real_levers_open_and_restore_the_source_obstacles() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -520,6 +523,7 @@ fn classic_draconia_real_levers_open_and_restore_the_source_obstacles() -> TestR
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn classic_world_steps_use_source_teleports_and_commit_seal_flags_atomically() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

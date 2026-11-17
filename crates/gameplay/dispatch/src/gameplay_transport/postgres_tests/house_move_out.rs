@@ -21,6 +21,7 @@ mod seed;
 #[path = "house_move_out/sale.rs"]
 mod sale;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn house_move_out_postgres_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -156,6 +157,7 @@ fn scenario() -> TestResult {
     scenario_contents(true)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn t135_unbound_contents_go_to_seller_not_depositor() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -172,6 +174,7 @@ fn scenario_contents(bound: bool) -> TestResult {
     scenario_with_furniture(bound, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn t135_move_out_wraps_furniture_before_depot_delivery() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -444,6 +447,7 @@ fn scenario_with_furniture(bound: bool, wrap: bool) -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn house_move_out_postgres_oversized_census() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

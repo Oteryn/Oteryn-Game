@@ -6,6 +6,7 @@ use oteryn_protocol_oteryn::world_object::*;
 
 const PREFIX: &str = "oteryn:reward-claim.quest.u8_1.to_blind_the_enemy.";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn elvenbane_source_treasure_exit_and_journal_via_wire() -> TestResult {
     super::annihilator_route::elvenbane_source_complete()

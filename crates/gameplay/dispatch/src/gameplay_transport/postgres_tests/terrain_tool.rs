@@ -1,94 +1,139 @@
 //! TOOLS-2: ordinary USE → durable terrain transform → replay/reload → database deadline.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness, debug, id, run};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::item_craft::exchange;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::map::view::MapFacts;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn terrain_tool_wire_durable_replay_and_deadline_revert() -> TestResult {
     run_case("oteryn:item.tibia.i3457", 867, 868)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08_machete_cuts_jungle_grass_through_wire_and_recovers_regrowth() -> TestResult {
     run_case("oteryn:item.tibia.i3308", 3696, 3695)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08_machete_cuts_grass_through_wire_and_recovers_regrowth() -> TestResult {
     run_case("oteryn:item.tibia.i3308", 3702, 3701)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08_scythe_harvests_wheat_through_the_wire() -> TestResult {
     run_case_with_decay("oteryn:item.tibia.i3453", 3653, 3651, vec![3652, 3653])
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08_multi_scythe_harvests_wheat_through_the_wire() -> TestResult {
     run_case_with_decay("oteryn:item.tibia.i9596", 3653, 3651, vec![3652, 3653])
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08_scythe_harvests_burning_cane_through_the_wire() -> TestResult {
     run_case_with_decay("oteryn:item.tibia.i3453", 5464, 5463, vec![5470, 5465])
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08_multi_scythe_harvests_burning_cane_through_the_wire() -> TestResult {
     run_case_with_decay("oteryn:item.tibia.i9596", 5464, 5463, vec![5470, 5465])
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08_sickle_harvests_cane_through_the_wire() -> TestResult {
     run_case_with_decay("oteryn:item.tibia.i3293", 5463, 5462, vec![5470, 5465])
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08_multi_crowbar_opens_ape_city_cask_through_the_wire() -> TestResult {
     run_case("oteryn:item.tibia.i9598", 4848, 3134)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08_crowbar_opens_ape_city_cask_through_the_wire() -> TestResult {
     run_case("oteryn:item.tibia.i3304", 4848, 3134)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08b_pick_opens_a_stone_pile_through_the_wire_and_it_decays_back() -> TestResult {
     run_case("oteryn:item.tibia.i3456", 593, 594)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08b_pick_opens_a_loose_stone_pile_through_the_wire_and_it_decays_back() -> TestResult {
     run_case("oteryn:item.tibia.i3456", 606, 615)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08b_pick_opens_a_loose_ice_pile_through_the_wire_and_it_decays_back() -> TestResult {
     run_case("oteryn:item.tibia.i3456", 608, 609)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08b_pick_opens_the_pits_of_inferno_hole_through_the_wire() -> TestResult {
     run_case_with_decay("oteryn:item.tibia.i3456", 7200, 7236, Vec::new())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m08b_pick_opens_the_spike_hole_through_the_wire() -> TestResult {
     run_case_with_decay("oteryn:item.tibia.i3456", 21341, 21342, Vec::new())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_case(tool: &'static str, before: u16, after: u16) -> TestResult {
     run_case_with_decay(tool, before, after, vec![before])
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_case_with_decay(tool: &'static str, before: u16, after: u16, decay: Vec<u16>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -106,20 +151,28 @@ fn run_case_with_decay(tool: &'static str, before: u16, after: u16, decay: Vec<u
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(tool: &str, before: u16, after: u16, decay: &[u16]) -> TestResult {
     scenario_with_voice(tool, before, after, decay, None)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn worldchg_voice_active_gobbler_wire_and_replay() -> TestResult {
     worldchg_voice_case(true)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn worldchg_voice_inactive_gobbler_refuses_without_writes() -> TestResult {
     worldchg_voice_case(false)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn worldchg_voice_case(active: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -141,6 +194,9 @@ fn worldchg_voice_case(active: bool) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario_with_voice(
     tool: &str,
     before: u16,

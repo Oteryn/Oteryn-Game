@@ -46,6 +46,7 @@ const SCENARIO_LIVENESS: LivenessPolicy = LivenessPolicy {
     missed_limit: 3,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> TestResult {
     std::thread::Builder::new()
@@ -56,6 +57,7 @@ fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> Test
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn depot_search_open_lists_depot_stash_inbox_and_distinct_tier_detail() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -73,6 +75,7 @@ fn depot_search_open_lists_depot_stash_inbox_and_distinct_tier_detail() -> TestR
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn depot_search_dispatch_retrieves_all_depot_items_until_no_room_once() -> TestResult {
     std::thread::Builder::new()
@@ -86,6 +89,7 @@ fn depot_search_dispatch_retrieves_all_depot_items_until_no_room_once() -> TestR
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn mail_dispatch_posts_a_carried_letter_into_a_mailbox_once() -> TestResult {
     std::thread::Builder::new()
@@ -99,6 +103,7 @@ fn mail_dispatch_posts_a_carried_letter_into_a_mailbox_once() -> TestResult {
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn depot_search_inbox_parcel_checks_whole_tree_weight_and_exact_capacity() -> TestResult {
     std::thread::Builder::new()
@@ -112,6 +117,7 @@ fn depot_search_inbox_parcel_checks_whole_tree_weight_and_exact_capacity() -> Te
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn stash_session_dispatch_free_stows_withdraws_checks_capacity_and_replays() -> TestResult {
     std::thread::Builder::new()
@@ -122,6 +128,7 @@ fn stash_session_dispatch_free_stows_withdraws_checks_capacity_and_replays() -> 
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn stash_session_dispatch_conserves_and_replays() -> TestResult {
     std::thread::Builder::new()
@@ -143,6 +150,7 @@ fn stash_session_dispatch_conserves_and_replays() -> TestResult {
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn stash_session_dispatch_expired_premium_stows_withdraws_and_replays() -> TestResult {
     std::thread::Builder::new()
@@ -164,6 +172,7 @@ fn stash_session_dispatch_expired_premium_stows_withdraws_and_replays() -> TestR
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn write_text_ground_container_real_dispatch_observes_reach_and_custody() -> TestResult {
     std::thread::Builder::new()
@@ -174,6 +183,7 @@ fn write_text_ground_container_real_dispatch_observes_reach_and_custody() -> Tes
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn write_text_ground_nested_container_real_dispatch_observes_ancestry_and_reach() -> TestResult {
     std::thread::Builder::new()
@@ -184,6 +194,7 @@ fn write_text_ground_nested_container_real_dispatch_observes_ancestry_and_reach(
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn write_text_depot_real_dispatch_revalidates_session_after_page_wait() -> TestResult {
     std::thread::Builder::new()
@@ -194,6 +205,7 @@ fn write_text_depot_real_dispatch_revalidates_session_after_page_wait() -> TestR
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn write_text_ground_real_dispatch_movement_closes_external_views() -> TestResult {
     std::thread::Builder::new()

@@ -10,6 +10,7 @@ use crate::gameplay_transport::{
 };
 use oteryn_protocol_oteryn::{self as protocol, weapon_proficiency_state::State};
 use tokio::io::AsyncWriteExt;
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn weapon_proficiency_state_real_wire_track_revision_slots_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -13,6 +13,24 @@ mod serve;
 use crate::combat_pickup::GroundPickupError;
 use routing::Dispatch;
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
 pub(in crate::gameplay_transport) use serve::regression_routed_step;
 use serve::serve_admitted_actor;
 #[path = "newhaven_travel_transport.rs"]
@@ -999,6 +1017,24 @@ pub(in crate::gameplay_transport) async fn fresh_capability_selection<
 /// House selection remains before its immutable acknowledgement; this helper
 /// neither installs a selection nor widens a transfer/resume.
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
 pub(in crate::gameplay_transport) async fn fresh_current_actor_capability_selection<
     A: FreshAdmissionAuthority,
 >(

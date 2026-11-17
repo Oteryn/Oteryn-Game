@@ -13,6 +13,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 };
 const TRACK: &str = "oteryn:quest-progress/questpc7/hoist/programme";
 const PARENT: &str = "oteryn:quest.the_ice_islands_quest";
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc7_hoist_full_knowledge_control_completion_and_native_binding() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

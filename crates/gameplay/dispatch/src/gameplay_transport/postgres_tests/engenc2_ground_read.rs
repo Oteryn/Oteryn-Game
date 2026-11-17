@@ -7,6 +7,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{
 };
 use sqlx::Connection;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engenc2_ground_postgres_exact_stack_and_owner_lock() -> Result<(), Box<dyn std::error::Error>> {
     tokio::runtime::Builder::new_current_thread()

@@ -12,6 +12,7 @@ const AT: Position = Position {
     floor: -7,
 };
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qready1_native_grinder_spends_each_splinter_and_mints_each_dust_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

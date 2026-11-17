@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::skill_progress::{
     CAPABILITY_SKILL_PROGRESS_V1, COMMAND_TYPE_SKILL_PROGRESS_QUERY, SkillProgressSnapshot,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn skill_progress_postgres_real_dispatch_projection_replay_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

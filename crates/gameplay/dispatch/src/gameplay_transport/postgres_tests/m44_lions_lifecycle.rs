@@ -21,18 +21,24 @@ const PAGODA: TilePos = TilePos {
     floor: -8,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m44_native_lions_first_offering_consumption_progress_and_fenced_pagoda_reset() -> TestResult {
     case("first")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m44_native_lions_later_offering_preserves_existing_progress_and_resets_pagoda() -> TestResult {
     case("later")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m44_native_lions_unknown_commit_reserves_both_objects_until_reconciled() -> TestResult {
     case("first-uncertain")
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn case(phase: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

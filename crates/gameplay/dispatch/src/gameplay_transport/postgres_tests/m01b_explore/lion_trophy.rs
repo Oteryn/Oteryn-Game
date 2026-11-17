@@ -11,6 +11,7 @@ const START: Position = Position {
     floor: -9,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_lion_trophy_requires_own_completed_ice_islands_and_current_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

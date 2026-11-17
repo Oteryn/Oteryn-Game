@@ -49,29 +49,34 @@ enum Case {
     DepartedProcessDrop,
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn activity_player_death_postgres_death_receipt_loss_private_ground_isolation_return_and_retirement()
 -> TestResult {
     run_case(Case::RedSkullDrop)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn activity_player_death_postgres_amulet_burn_replay_and_pending_obligation() -> TestResult {
     run_case(Case::Amulet)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn activity_player_death_postgres_partial_loss_resumes_only_after_proven_owner_loss() -> TestResult
 {
     run_case(Case::InterruptedDrop)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn activity_player_death_postgres_partial_loss_recovers_through_empty_origin_lifecycle()
 -> TestResult {
     run_case(Case::DepartedProcessDrop)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn activity_player_death_postgres_retirement_requires_root_bounds_and_rolls_back_tree() -> TestResult
 {

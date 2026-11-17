@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::appearance;
 use std::future::Future;
 use std::task::Poll;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn appearance_holder_busy_postgres_waits_without_runtime_locks_and_keeps_stale_refusal()
 -> TestResult {

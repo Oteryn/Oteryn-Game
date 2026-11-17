@@ -11,6 +11,7 @@ use crate::gameplay_transport::{ComposedFreshAdmission, connection::*};
 use oteryn_protocol_oteryn::item_view::*;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn dwarven_ring_postgres_equip_suppresses_drunk_pauses_in_backpack_and_expires() -> TestResult {
     std::thread::Builder::new()

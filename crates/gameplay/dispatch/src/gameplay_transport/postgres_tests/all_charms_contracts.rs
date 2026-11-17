@@ -247,6 +247,7 @@ fn evaluate(f: &Fixture, race: &str, event: CharmHookEvent, seed: u32) -> Vec<Ch
         event,
     )
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all25_charms_all75_stages_use_canonical_values_bound_character_and_correct_effect() -> TestResult
 {
@@ -311,6 +312,7 @@ fn all25_charms_all75_stages_use_canonical_values_bound_character_and_correct_ef
     }
     Ok(())
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all25_charms_wrong_hooks_and_secondary_auto_targets_do_not_gain_unrelated_effects() -> TestResult
 {
@@ -454,6 +456,7 @@ fn attributes(f: &Fixture, state: &PlayerSpellState) -> MagnitudeOwnedAttributes
         inactive_extra_stages: None,
     }
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all25_critical_charms_use_actual_assignment_with_intrinsic_critical_and_no_equipment()
 -> TestResult {
@@ -708,6 +711,7 @@ fn enrage_fixture(base_health: i64) -> TestResult<(Fixture, ExactActorRef)> {
     ))
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all25_leech_respects_real_enrage_owner_before_hp_cap_and_without_damage_prey() -> TestResult {
     use crate::ability::{AbilityOccurrence, RevisionSet};
@@ -860,6 +864,7 @@ fn all25_leech_respects_real_enrage_owner_before_hp_cap_and_without_damage_prey(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn all25_secondary_auto_leech_retains_only_assigned_minor_bonus_at_every_stage() -> TestResult {
     use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
@@ -924,6 +929,7 @@ fn all25_secondary_auto_leech_retains_only_assigned_minor_bonus_at_every_stage()
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn incoming_order_enrage_parry_uses_actual_source_survival_for_numb() -> TestResult {
     use crate::player_lethal::{PlayerHitKind, PlayerLethalVitals};

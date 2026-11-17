@@ -23,6 +23,7 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 use sha2::{Digest, Sha256};
 use std::time::{Duration, Instant};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srvgap2_primal_production_entry_cadence_death_settlement_and_return() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run_async(async |admin| scenario(admin).await)

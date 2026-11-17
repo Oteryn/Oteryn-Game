@@ -2,10 +2,16 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 
 pub(super) const NAME: &str = "qengine-rewards-m03-pits";
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) const ENTRY: Position = Position {
     x: 32791,
     y: 32331,
@@ -13,6 +19,7 @@ pub(super) const ENTRY: Position = Position {
 };
 const QUEST: &str = "oteryn:quest.the_pits_of_inferno_quest";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m03_pits_native_step_enforces_live_premium_level_and_replay_postgres() -> TestResult {
     let started = std::time::Instant::now();

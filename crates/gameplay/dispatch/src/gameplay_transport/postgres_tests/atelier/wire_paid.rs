@@ -1,11 +1,44 @@
 //! Real command 424 -> the existing Atelier owner -> asset custody and receipt replay.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{AdmittedSession, FirstEntryOutcome};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{atelier as wire, wheel as wheel_wire};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+use oteryn_protocol_oteryn::atelier as wire;
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+use oteryn_protocol_oteryn::atelier as wire;
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+use oteryn_protocol_oteryn::atelier as wire;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use std::time::{Duration, Instant};
 
 #[path = "wire_paid/audit.rs"]
@@ -24,6 +57,9 @@ mod resources;
 mod wheel_presentation;
 
 #[derive(Clone, Copy, Debug)]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 enum Case {
     Reveal,
     Reshape,
@@ -61,7 +97,13 @@ enum Case {
     ResourcesUnselected,
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 impl Case {
+    #[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
     fn custody(self) -> bool {
         !matches!(
             self,
@@ -76,6 +118,9 @@ impl Case {
         )
     }
 
+    #[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
     fn refuses(self) -> bool {
         matches!(
             self,
@@ -87,6 +132,9 @@ impl Case {
         )
     }
 
+    #[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
     fn stashes(self) -> bool {
         matches!(
             self,
@@ -102,176 +150,213 @@ impl Case {
     }
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_reveal_burns_one_gem_and_charges_once() -> TestResult {
     check(Case::Reveal)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_6214_reshape_burns_fragments_and_replays_once() -> TestResult {
     check(Case::Reshape)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_dismantle_mints_crystal_fragments_once() -> TestResult {
     check(Case::Dismantle)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_dismantle_uses_nested_capacity_when_main_bag_is_full() -> TestResult {
     check(Case::NestedDismantle)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_dismantle_splits_one_yield_between_partial_stacks() -> TestResult {
     check(Case::SplitDismantle)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_full_carried_containers_refuse_dismantle_without_losing_gem() -> TestResult {
     check(Case::FullDismantle)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_dismantle_prefers_managed_partial_stack_over_main_space() -> TestResult {
     check(Case::ManagedDismantle)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_dismantle_searches_managed_subcontainers_before_main_space() -> TestResult {
     check(Case::ManagedNestedDismantle)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_dismantle_falls_back_after_full_managed_subtree() -> TestResult {
     check(Case::ManagedFallbackDismantle)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_managed_fallback_walks_main_subtree_before_ordinary_breadth_first() -> TestResult {
     check(Case::ManagedMainFallbackDismantle)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_resource_balances_are_negotiated_live_and_read_only() -> TestResult {
     check(Case::Resources)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_resource_balances_require_the_negotiated_capability() -> TestResult {
     check(Case::ResourcesUnselected)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_filtered_managed_dismantle_still_uses_ordinary_destination() -> TestResult {
     check(Case::FilteredManagedDismantle)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_retired_switch_domain_is_refused_without_a_write() -> TestResult {
     check(Case::SwitchDomain)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_grade_up_burns_fragments_and_gold_once() -> TestResult {
     check(Case::GradeUp)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_nested_gem_burns_and_replays_once() -> TestResult {
     check(Case::NestedReveal)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_nested_discovery_reaches_the_next_container_level_once() -> TestResult {
     check(Case::DeepNestedReveal)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_last_nested_gem_retires_and_removes_only_its_leaf() -> TestResult {
     check(Case::WholeNestedReveal)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_reveal_follows_carried_container_display_order() -> TestResult {
     check(Case::NestedRevealOrder)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_nested_fragments_upgrade_and_replay_once() -> TestResult {
     check(Case::NestedGrade)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_nested_coins_pay_before_bank_and_make_change_once() -> TestResult {
     check(Case::NestedGold)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_last_nested_coin_stack_retires_and_makes_change_once() -> TestResult {
     check(Case::WholeNestedGold)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_lesser_reveal_reads_seventy_five_nested_coin_stacks() -> TestResult {
     check(Case::ManyNestedCoins)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_large_grade_audit_burns_seventy_five_nested_coin_stacks() -> TestResult {
     check(Case::ManyBurnedCoins)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_stash_fragments_upgrade_and_replay_once() -> TestResult {
     check(Case::StashGrade)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_supreme_stash_fragments_upgrade_and_replay_once() -> TestResult {
     check(Case::SupremeStashGrade)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_grade_uses_carried_fragments_before_stash_remainder() -> TestResult {
     check(Case::MixedStashGrade)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_grade_can_spend_the_last_stash_fragment() -> TestResult {
     check(Case::EmptyStashGrade)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_cmd_424_upgrade_without_a_backpack_debits_supply_stash() -> TestResult {
     check(Case::NoBackpackStashGrade)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_grade_three_consumes_thirty_nested_single_fragments() -> TestResult {
     check(Case::ThirtyFragments)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_insufficient_combined_fragments_preserve_gold_and_custody() -> TestResult {
     check(Case::InsufficientFragments)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_unaffordable_stash_upgrade_preserves_every_fragment() -> TestResult {
     check(Case::InsufficientGold)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn atelier_wire_reveal_does_not_consume_a_stashed_gem() -> TestResult {
     check(Case::StashedReveal)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn wheel_atelier_wire_share_fresh_exhaustion_but_keep_replay_and_queries_open() -> TestResult {
     check(Case::ExAction)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn check(case: Case) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -285,6 +370,9 @@ fn check(case: Case) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn query(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -293,6 +381,9 @@ async fn query(
         .map_err(debug)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn footprint(h: &Harness) -> TestResult<(i64, i64, i64)> {
     Ok(sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_atelier_item_records), \
@@ -309,6 +400,9 @@ async fn footprint(h: &Harness) -> TestResult<(i64, i64, i64)> {
 // A custody case must exercise real qualified input, not an UNKNOWN definition.
 // Read the exact SQL definition/revision through the same native item-facts owner
 // used by custody, before the input is nested or retired into the real stash.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn assert_scope_asset_qualification(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -413,6 +507,9 @@ async fn assert_scope_asset_qualification(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn nest_asset(h: &Harness, input: u8, quantity: i64) -> TestResult {
     // Fixture custody only: the actual command below uses the restricted runtime
     // role. Copy the admitted backpack definition so this is a real native bag.
@@ -446,6 +543,9 @@ async fn nest_asset(h: &Harness, input: u8, quantity: i64) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn stow_asset(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -455,6 +555,9 @@ async fn stow_asset(
     stow_asset_command(owner, admitted, input, quantity, 150).await
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn stow_asset_command(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -505,6 +608,9 @@ pub(super) async fn stow_asset_command(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn scope_footprint(h: &Harness) -> TestResult<serde_json::Value> {
     // Include identities and quantities, not just row counts: a refused operation
     // must not burn/reparent an input or change the stash/bank/character revision.
@@ -530,6 +636,9 @@ async fn scope_footprint(h: &Harness) -> TestResult<serde_json::Value> {
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario(case: Case) -> TestResult {
     run(async move |admin| {
         let h =
@@ -1181,6 +1290,9 @@ fn scenario(case: Case) -> TestResult {
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn query_wheel(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -1205,6 +1317,9 @@ async fn query_wheel(
     .map_err(debug)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn exaction(
     h: &Harness,
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,

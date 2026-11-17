@@ -1,7 +1,13 @@
 //! Administrative storage races before a production handoff writer is enabled.
 //! The enclosing scenario keeps a real admitted connection and checks it afterward.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn prepare_group(h: &Harness, source: &[u8; 16], tag: u8) -> TestResult<[u8; 16]> {
     let handoff = fixture::id(tag);
     let inserted = sqlx::query(
@@ -22,6 +28,9 @@ pub(super) async fn prepare_group(h: &Harness, source: &[u8; 16], tag: u8) -> Te
     Ok(handoff)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn abort_group(h: &Harness, handoff: &[u8; 16]) -> TestResult {
     let changed = sqlx::query(
         "UPDATE game_activity_handoff_groups SET state=3,decided_at=1 \
@@ -34,6 +43,9 @@ pub(super) async fn abort_group(h: &Harness, handoff: &[u8; 16]) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn observed_wait(h: &Harness, waiting: i32, blocking: i32) -> TestResult {
     // Backend identities prove the overlap. A sleep alone is not a race witness.
     tokio::time::timeout(std::time::Duration::from_secs(10), async {
@@ -54,6 +66,9 @@ async fn observed_wait(h: &Harness, waiting: i32, blocking: i32) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn assert_source_refusal(error: sqlx::Error, expected: &str) {
     assert_eq!(
         error.as_database_error().and_then(|e| e.code()).as_deref(),
@@ -65,6 +80,9 @@ fn assert_source_refusal(error: sqlx::Error, expected: &str) {
     );
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn qualify_source_reservations(
     h: &Harness,
     admitted: AdmittedSession,

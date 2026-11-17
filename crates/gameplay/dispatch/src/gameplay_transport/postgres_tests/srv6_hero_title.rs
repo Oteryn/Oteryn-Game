@@ -17,6 +17,7 @@ const MISSION: &str =
 const DOOR: &str =
     "oteryn:quest-progress/crystalserver/quest/u12_40/the_order_of_the_lion/augustin_door";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srv6_hero_title_real_npc_final_report_atomic_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

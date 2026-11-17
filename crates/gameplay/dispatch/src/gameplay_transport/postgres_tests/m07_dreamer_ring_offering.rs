@@ -6,6 +6,7 @@ use oteryn_gameplay_quests::quest::{
     dreamer_death_ring,
     world_callbacks::{Offering, Position},
 };
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m07_ring_real_additem_consumes_once_then_step_resets_shared_trees() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -3,6 +3,7 @@ use super::fixture::{Harness, debug, run};
 use super::{TestResult, reset};
 use crate::foundation::MovementLocalPosition;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_claustrophobic_actual_world_step_starts_source_raid_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

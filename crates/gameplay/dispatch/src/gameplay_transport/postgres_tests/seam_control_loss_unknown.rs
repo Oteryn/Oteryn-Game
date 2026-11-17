@@ -8,6 +8,7 @@ use crate::gameplay_transport::control_loss::{
 };
 use std::sync::{Arc, atomic::Ordering};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn seam_control_loss_unknown_ack_keeps_original_through_six_busy_reads_postgres() -> TestResult {
     kill_reward_e2e::scenario_thread::run_async(async |admin| {
@@ -144,11 +145,13 @@ fn seam_control_loss_unknown_ack_keeps_original_through_six_busy_reads_postgres(
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn seam_control_loss_terminal_before_publication_never_marks_actor_postgres() -> TestResult {
     publication_superseded(true)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn seam_control_loss_retired_owner_before_publication_never_marks_actor_postgres() -> TestResult {
     publication_superseded(false)

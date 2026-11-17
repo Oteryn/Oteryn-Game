@@ -103,6 +103,7 @@ fn pem(label: &str, bytes: &[u8]) -> String {
     format!("-----BEGIN {label}-----\n{body}\n-----END {label}-----\n")
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(in super::super) async fn host(
     node: [u8; 16],
 ) -> TestResult<(

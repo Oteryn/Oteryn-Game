@@ -7,6 +7,7 @@ use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::foundation::{CommandId, CommandRef, MovementLocalPosition, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_source_death_real_malice_lethal_runs_copied_goal_and_preserves_pre_taint_xp_postgres()
 -> TestResult {

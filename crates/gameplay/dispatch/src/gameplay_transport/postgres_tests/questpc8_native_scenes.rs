@@ -3,6 +3,9 @@ use super::fixture::{debug, id};
 use super::{TestResult, quest_world_callbacks};
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::map::{overlay::TilePos, view::MapFacts};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, WorldObjectTarget, decode_use_result, encode_use_intent,
@@ -14,6 +17,7 @@ const LEVER: TilePos = TilePos {
     floor: -14,
 };
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc8_mintwallin_lever_edits_all_walls_once_and_restores_with_floor() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

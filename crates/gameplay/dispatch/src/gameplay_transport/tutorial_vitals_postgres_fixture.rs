@@ -28,6 +28,18 @@ pub(super) async fn admit(
 
 /// Publish the fixture's actual native generation through the existing Content control API.
 /// Admission and Premium then independently compare this SQL evidence with the runtime pin.
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
 pub(super) async fn publish_native_activation(
     h: &super::fixture::Harness,
     pin: &crate::content::NativeEntryContentPin,
@@ -52,6 +64,24 @@ pub(super) async fn publish_native_activation(
 
 /// Normalize only historical fixture asset seeds to the admitted native definitions.
 /// All subsequent admission and item transitions use the restricted runtime role.
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
 pub(super) async fn native_asset_revisions(
     h: &super::fixture::Harness,
     active: &crate::content::ActiveGeneration,

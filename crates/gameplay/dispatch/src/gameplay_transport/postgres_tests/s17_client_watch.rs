@@ -197,10 +197,12 @@ fn scenario(case: u8) -> TestResult {
         }).await }).map_err(|e|e.to_string())
     })?.join().map_err(|_|"CLCAST PostgreSQL thread failed")?.map_err(Into::into)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn s17b_native_observer_map_creatures_effects_and_public_speech_dispatch() -> TestResult {
     scenario(2)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn s17c_native_live_chat_mute_kick_and_persistent_ban_dispatch() -> TestResult {
     scenario(3)

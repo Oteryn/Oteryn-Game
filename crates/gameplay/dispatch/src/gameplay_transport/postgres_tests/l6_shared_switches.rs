@@ -5,18 +5,24 @@ use super::{
 };
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_shared_switch_12121_activation_is_durable_and_replay_safe() -> TestResult {
     run("l6-tomb-switch-12121")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_shared_switch_12122_activation_is_durable_and_replay_safe() -> TestResult {
     run("l6-tomb-switch-12122")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_shared_switch_12123_activation_is_durable_and_replay_safe() -> TestResult {
     run("l6-tomb-switch-12123")
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

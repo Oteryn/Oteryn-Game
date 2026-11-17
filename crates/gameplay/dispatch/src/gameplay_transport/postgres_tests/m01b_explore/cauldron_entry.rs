@@ -6,6 +6,7 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 const QUEST: &str = "oteryn:quest.authored.bewitched";
 const TRACK: &str = "oteryn:quest-progress/authored/bewitched/s1";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_bewitched_native_personal_cauldron_visit_does_not_credit_the_brew() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

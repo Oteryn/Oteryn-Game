@@ -6,27 +6,32 @@ use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
 };
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn newhaven_starter_first_entry_grants_profession_equipment_and_supplies_once_postgres()
 -> TestResult {
     scenario(KitCase::Initial)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn newhaven_starter_extra_placement_rolls_back_entire_kit_postgres() -> TestResult {
     scenario(KitCase::Rollback)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn newhaven_starter_history_registered_legacy_root_progresses_and_keeps_backpack_postgres()
 -> TestResult {
     scenario(KitCase::Legacy)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn newhaven_starter_history_unregistered_legacy_root_refuses_progression_postgres() -> TestResult {
     scenario(KitCase::Unregistered)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn newhaven_starter_live_grant_publishes_inventory_equipment_without_relogin_postgres() -> TestResult
 {

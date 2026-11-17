@@ -196,6 +196,12 @@ static INTERRUPT_AFTER_COMMIT: std::sync::Mutex<Option<(crate::foundation::GameS
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Drop only the acknowledgement of this test's exact committed offering, before
     /// publication. Production reaches the same state on an actual unavailable result.
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(in crate::gameplay_transport) fn fixture_interrupt_dreamer_ring_commit(
         &self,
         session: crate::foundation::GameSessionId,

@@ -534,15 +534,18 @@ fn execute(suffix: &'static str) -> TestResult {
     );
     Ok(())
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn engclaim_m34_kormarak_production_multi_reward_once() -> TestResult {
     execute("kormarak-corpse")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn engclaim_m34_magic_sword_production_chosen_vault_once() -> TestResult {
     execute("magic_sword-north")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn engclaim_m34_mastermind_personal_cache_current_premium_once() -> TestResult {
     execute("mastermind_potion-wall")

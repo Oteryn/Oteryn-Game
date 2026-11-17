@@ -1,6 +1,9 @@
 //! Literal native portal room proofs; no synthetic UID or hidden raw destination.
 use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_tomb_native_missing_3950_uses_source_branch() -> TestResult {
     run(
@@ -17,6 +20,7 @@ fn l6_tomb_native_missing_3950_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_tomb_native_present_3950_uses_source_branch() -> TestResult {
     run(
@@ -33,6 +37,7 @@ fn l6_tomb_native_present_3950_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_tomb_native_missing_3951_uses_source_branch() -> TestResult {
     run(
@@ -49,6 +54,7 @@ fn l6_tomb_native_missing_3951_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_tomb_native_present_3951_uses_source_branch() -> TestResult {
     run(
@@ -65,6 +71,7 @@ fn l6_tomb_native_present_3951_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_tomb_native_missing_3952_uses_source_branch() -> TestResult {
     run(
@@ -81,6 +88,7 @@ fn l6_tomb_native_missing_3952_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_tomb_native_present_3952_uses_source_branch() -> TestResult {
     run(
@@ -97,6 +105,8 @@ fn l6_tomb_native_present_3952_uses_source_branch() -> TestResult {
         },
     )
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn run(name: &'static str, trigger: Position, expected: Position) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

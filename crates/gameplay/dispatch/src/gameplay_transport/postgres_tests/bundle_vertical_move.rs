@@ -1,6 +1,7 @@
 //! GAP-SV8: casts reach the bundle boot's qualified immovable facts, not captured source tiles.
 use super::TestResult;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn bundle_vertical_move_postgres_dispatch_levitate_up_down_and_magic_rope() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

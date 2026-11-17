@@ -4,6 +4,7 @@ use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::ChannelContentPin;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m38d_anna_targuna_production_dispatch_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

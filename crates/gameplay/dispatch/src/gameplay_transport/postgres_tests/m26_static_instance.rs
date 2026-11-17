@@ -15,6 +15,7 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 use std::time::Instant;
 const SPITE_KEY: &str = "oteryn:creature.goshnar_s_spite";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m26_spite_postgres_static_instance_map_needs_no_channel_item_custody() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

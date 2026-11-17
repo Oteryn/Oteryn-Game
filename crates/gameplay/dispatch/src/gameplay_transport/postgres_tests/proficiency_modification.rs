@@ -23,6 +23,7 @@ const ORB: &str = "oteryn:item.tibia.i53695";
 const BAG: u8 = 170;
 const ORBS: u8 = 172;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn proficiency_modification_spends_dust_burns_an_orb_and_clears() -> TestResult {
     std::thread::Builder::new()
@@ -34,9 +35,11 @@ fn proficiency_modification_spends_dust_burns_an_orb_and_clears() -> TestResult 
         .map_err(Into::into)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn scenario() -> TestResult {
     scenario_with_state(false)
 }
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn state_scenario() -> TestResult {
     scenario_with_state(true)
 }

@@ -2,6 +2,7 @@
 use super::*;
 use crate::foundation::WorldId;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn server_save_countdown_reads_the_next_berlin_save_and_stops_while_retiring() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

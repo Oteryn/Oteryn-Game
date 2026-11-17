@@ -1,7 +1,11 @@
 //! WAVE-A/M11: the parameter dispatcher consumes qualified vertical-movement plans.
 //! Pinned source tiles and booted bundle tiles exercise the real parameter dispatcher.
 use super::death_ml_loss_composed::{current_fence, production_generation_with_source};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, run};
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::fixture::{Harness, debug, id};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
@@ -19,6 +23,7 @@ use oteryn_protocol_oteryn::actor_spell_v2::{ParameterSpellCastIntent, PrivateSp
 use serde_json::json;
 use std::num::NonZeroU32;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn vertical_move_postgres_parameter_dispatch_levitate_and_magic_rope() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

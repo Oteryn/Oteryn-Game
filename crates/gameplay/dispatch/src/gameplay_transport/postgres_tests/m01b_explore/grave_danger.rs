@@ -20,6 +20,7 @@ pub(super) const POINTS: [(u16, u16, i8, StepDirection); 12] = [
     (33425, 31413, -13, StepDirection::West),
 ];
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_grave_danger_twelve_native_visits_require_level_premium_and_cannot_be_farmed() -> TestResult
 {

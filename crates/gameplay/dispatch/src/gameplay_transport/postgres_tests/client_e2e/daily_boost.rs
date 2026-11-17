@@ -4,6 +4,7 @@ use super::support::{self, Case, count, exchange};
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_protocol_oteryn::daily_boost as wire;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn client_e2e_daily_boost() -> TestResult {
     support::scenario(Case::DailyBoost)

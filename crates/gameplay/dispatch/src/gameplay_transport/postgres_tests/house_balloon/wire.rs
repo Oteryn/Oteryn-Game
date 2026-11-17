@@ -1,5 +1,7 @@
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::*;
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(in super::super) struct HouseExchange<'a> {
     pub(in super::super) current: Option<std::num::NonZeroU32>,
     pub(in super::super) after: Option<std::num::NonZeroU32>,
@@ -7,6 +9,7 @@ pub(in super::super) struct HouseExchange<'a> {
     pub(in super::super) foreign_after_snapshot: Option<&'a Harness>,
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(in super::super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -295,6 +298,7 @@ pub(in super::super) async fn exchange(
     Ok((admitted, outcome, actual, deltas))
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn rehome_to_foreign_character(h: &Harness) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")

@@ -1,8 +1,47 @@
 //! A selected native callback must apply its damage through the production owner.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness, debug, id, run};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
+use super::fixture::{Harness, debug, id};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::fixture::debug;
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::fixture::debug;
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::fixture::debug;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::map::boot::BundleCollisionIndexExt;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 #[path = "srx3_native_source_cast/uncredited_capacity.rs"]
@@ -173,6 +212,7 @@ async fn diagnose_outburst_death(
     clippy::too_many_arguments,
     reason = "independent actual source play case facts"
 )]
+#[cfg(feature = "pg-tests-g3")]
 fn source_cast_case(
     source_kind: crate::content::bosses::activity_template::PinnedActivitySourceRoom,
     slug: &'static str,
@@ -202,6 +242,7 @@ fn source_cast_case(
     clippy::too_many_arguments,
     reason = "independent actual source play facts plus the physical uncredited-death assertion"
 )]
+#[cfg(feature = "pg-tests-g3")]
 fn source_cast_case_inner(
     source_kind: crate::content::bosses::activity_template::PinnedActivitySourceRoom,
     slug: &'static str,
@@ -486,6 +527,7 @@ fn source_cast_case_inner(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_energy_pulse_actual_native_proposal_applies_source_explosion_postgres() -> TestResult {
     source_cast_case(
@@ -508,6 +550,7 @@ fn srx3_energy_pulse_actual_native_proposal_applies_source_explosion_postgres() 
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_eruption_actual_native_missing_master_aborts_delayed_lua_without_damage_postgres()
 -> TestResult {
@@ -531,6 +574,7 @@ fn srx3_eruption_actual_native_missing_master_aborts_delayed_lua_without_damage_
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_tenebris_actual_native_ultimate_teleports_current_players_and_ladies_postgres() -> TestResult
 {
@@ -558,6 +602,7 @@ fn srx3_tenebris_actual_native_ultimate_teleports_current_players_and_ladies_pos
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_eruption_actual_intrinsic_razzagorn_master_heal_and_demon_postgres() -> TestResult {
     source_cast_case(
@@ -580,6 +625,7 @@ fn srx3_eruption_actual_intrinsic_razzagorn_master_heal_and_demon_postgres() -> 
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_charging_outburst_actual_native_compound_default_global_zero_postgres() -> TestResult {
     source_cast_case(
@@ -602,6 +648,7 @@ fn srx3_charging_outburst_actual_native_compound_default_global_zero_postgres() 
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_outburst_actual_null_death_materializes_empty_uncredited_corpse_postgres() -> TestResult {
     source_cast_case_inner(
@@ -627,6 +674,7 @@ fn srx3_outburst_actual_null_death_materializes_empty_uncredited_corpse_postgres
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_outburst_actual_null_death_runs_copied_heart_vortex_and_current_player_progress_postgres()
 -> TestResult {
@@ -653,6 +701,7 @@ fn srx3_outburst_actual_null_death_runs_copied_heart_vortex_and_current_player_p
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_outburst_full_ground_refusal_reconciles_and_releases_source_owner_postgres() -> TestResult {
     source_cast_case_inner(

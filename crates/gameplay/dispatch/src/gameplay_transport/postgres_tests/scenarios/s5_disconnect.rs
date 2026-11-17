@@ -1,31 +1,47 @@
 //! S5: drop a real connection with an unfinished trade or an unread committed reply.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::{item_forge as forge, market as market_wire, player_trade as trade};
 
 #[derive(Clone, Copy)]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 enum Case {
     Trade,
     Market,
     Depot,
     Forge,
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn s5_disconnect_trade_offer_cannot_be_accepted_by_retired_session() -> TestResult {
     timed("s5-trade", || scenario(Case::Trade))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn s5_disconnect_market_lost_reply_retains_one_escrow() -> TestResult {
     timed("s5-market", || scenario(Case::Market))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn s5_disconnect_depot_lost_reply_retains_one_item() -> TestResult {
     timed("s5-depot", || scenario(Case::Depot))
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn s5_disconnect_forge_lost_reply_retains_one_debit() -> TestResult {
     timed("s5-forge", || scenario(Case::Forge))
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(case: Case) -> TestResult {
     world_scenario!("xmech_s5", |h,
                                  request,
@@ -417,12 +433,18 @@ fn scenario(case: Case) -> TestResult {
         h.cleanup().await
     })
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn gold_in_backpack(h: &Harness) -> TestResult<i64> {
     Ok(gold(&ledger(h).await?))
 }
 
 /// Keep both sockets live throughout offer/counter-offer/first consent. EOF is itself a
 /// production trade cancellation, so reconnecting between offers would never test fencing.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn trade_until_loss(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -598,6 +620,9 @@ async fn trade_until_loss(
     };
     Ok((admitted(end_a)?, admitted(end_b)?, result?))
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn ready(client: &mut tokio::io::DuplexStream) -> TestResult {
     loop {
         let frame = crate::gameplay_transport::tcp_tls::read_frame(client).await?;
@@ -610,6 +635,9 @@ async fn ready(client: &mut tokio::io::DuplexStream) -> TestResult {
         }
     }
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn trade_send(
     client: &mut tokio::io::DuplexStream,
     id: u64,

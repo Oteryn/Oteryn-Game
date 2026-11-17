@@ -6,6 +6,7 @@ use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::durability::creature_source_items::SpiteGlobalFireCallback;
 use crate::foundation::MovementLocalPosition;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_weeping_actual_death_step_outfit_and_later_item_replay_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -489,6 +490,7 @@ async fn weeping_corpse_from_actual_death(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_spite_private_registration_uses_actual_ready_scope_before_entry_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -655,12 +657,14 @@ fn srx3_spite_private_registration_uses_actual_ready_scope_before_entry_postgres
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_spite_actual_player_step_consumes_once_with_fifty_six_second_clock_postgres() -> TestResult
 {
     spite_source_step_case(false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_spite_cancelled_field_cleanup_retains_original_translation_postgres() -> TestResult {
     spite_source_step_case(true)
@@ -1102,16 +1106,19 @@ fn spite_source_step_case(cancel_during_cleanup: bool) -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_spite_registered_global_fire_uses_real_scope_without_creature_postgres() -> TestResult {
     registered_global_case(false, false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_spite_registered_global_reserves_current_native_expiry_target_postgres() -> TestResult {
     registered_global_case(true, false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_spite_registered_global_original_five_second_expiry_removes_current_fire_postgres()
 -> TestResult {
@@ -1504,6 +1511,7 @@ fn registered_global_case(reserve_target: bool, expire: bool) -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_spite_registered_global_qualifies_actual_published_world_without_private_alias()
 -> TestResult {
@@ -1544,6 +1552,7 @@ fn srx3_spite_registered_global_qualifies_actual_published_world_without_private
     result
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_spite_registered_world_owner_emits_one_selected_field_without_a_boss_after_fourteen_seconds_postgres()
 -> TestResult {

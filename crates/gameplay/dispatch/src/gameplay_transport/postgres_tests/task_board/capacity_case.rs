@@ -1,12 +1,24 @@
 //! Task Board must not make the shared quest copy unreadable at its existing limits.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::{
     QUESTSTATE0_RL_01, QUESTSTATE0_RL_05, QUESTSTATE0_RL_08_STATES, QUESTSTATE0_RL_08_TRACKS,
     monk_shrines,
 };
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const FIXTURE_PREFIX: &str = "oteryn:taskboard-capacity-fixture/";
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn seed_boundary(
     harness: &Harness,
     tracks: usize,
@@ -45,6 +57,9 @@ async fn seed_boundary(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn remove_boundary(harness: &Harness) -> TestResult {
     let mut tx = harness.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -61,11 +76,17 @@ async fn remove_boundary(harness: &Harness) -> TestResult {
 }
 
 /// Snapshot all affected value families, excluding the newly retained refusal.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn values(harness: &Harness) -> TestResult<serde_json::Value> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_object('revision',r.character_revision::text,'progression',to_jsonb(p),'board',(SELECT to_jsonb(b) FROM game_character_task_boards b WHERE b.character_id=r.character_id),'tracks',(SELECT jsonb_object_agg(t.track_key,to_jsonb(t)) FROM game_character_quest_tracks t WHERE t.character_id=r.character_id),'states',(SELECT jsonb_object_agg(s.quest_key,to_jsonb(s)) FROM game_character_quest_states s WHERE s.character_id=r.character_id),'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY i.item_instance_id) FROM game_item_instances i WHERE i.world_id=r.world_id),'quest_receipts',(SELECT count(*) FROM game_character_quest_receipts q WHERE q.character_id=r.character_id),'xp_obligations',(SELECT count(*) FROM game_character_quest_xp_obligations q WHERE q.character_id=r.character_id),'item_grants',(SELECT count(*) FROM game_task_board_item_grants),'stash_sources',(SELECT count(*) FROM game_task_board_stash_sources),'fee_proofs',(SELECT count(*) FROM game_task_board_fee_proofs),'mint_reservations',(SELECT count(*) FROM game_reward_claim_inbox_mint_reservations),'item_audits',(SELECT count(*) FROM game_item_audit_outbox),'stash_audits',(SELECT count(*) FROM game_character_stash_audit_outbox)) FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) WHERE r.character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).fetch_one(&harness.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn global_quest_capacity(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,

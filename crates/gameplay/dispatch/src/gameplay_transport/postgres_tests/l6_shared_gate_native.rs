@@ -155,30 +155,39 @@ const LEVERS_12123: &[Lever] = &[
         ordinal: 2,
     },
 ];
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_gate_closed_50135() -> TestResult {
     run("l6-tomb-gate-native-closed-50135")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_gate_open_50135() -> TestResult {
     run("l6-tomb-gate-native-open-50135")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_gate_closed_50137() -> TestResult {
     run("l6-tomb-gate-native-closed-50137")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_gate_open_50137() -> TestResult {
     run("l6-tomb-gate-native-open-50137")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_gate_closed_50138() -> TestResult {
     run("l6-tomb-gate-native-closed-50138")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_gate_open_50138() -> TestResult {
     run("l6-tomb-gate-native-open-50138")
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -207,6 +216,9 @@ fn position_of(p: Point) -> Position {
         floor: -(p.2 as i8),
     }
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn position(name: &str) -> TestResult<Position> {
     Ok(position_of(spec(name)?.trigger))
 }

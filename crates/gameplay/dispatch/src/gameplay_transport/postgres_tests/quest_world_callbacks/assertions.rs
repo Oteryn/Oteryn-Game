@@ -1,5 +1,9 @@
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::*;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_world_callbacks_real_use_opens_all_walls_and_toggle_restores_collision() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -36,6 +40,7 @@ fn quest_world_callbacks_real_use_opens_all_walls_and_toggle_restores_collision(
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_world_callbacks_real_step_checks_storage_and_teleports() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -54,6 +59,7 @@ fn quest_world_callbacks_real_step_checks_storage_and_teleports() -> TestResult 
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_world_callbacks_real_paradox_step_consumes_the_four_skulls() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -72,6 +78,7 @@ fn quest_world_callbacks_real_paradox_step_consumes_the_four_skulls() -> TestRes
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_world_callbacks_multi_item_lever_consumes_all_altars_and_grants_atomically() -> TestResult
 {
@@ -91,6 +98,7 @@ fn quest_world_callbacks_multi_item_lever_consumes_all_altars_and_grants_atomica
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_world_callbacks_source_binding_and_visible_collision_batch_are_atomic() -> TestResult {
     use crate::map::view::MapFacts;

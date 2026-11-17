@@ -14,6 +14,7 @@ use std::sync::Arc;
 const QUEST: &str = "oteryn:quest.authored.draccoon_herald_outfits_quest";
 const TRACK: &str = "oteryn:quest-progress/authored-engine/phase";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn authored_bindings_npc_delivery_and_carried_use_dispatch_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-bindings")

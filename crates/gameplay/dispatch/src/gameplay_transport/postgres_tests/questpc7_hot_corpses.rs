@@ -3,6 +3,7 @@ use super::fixture::Harness;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc7_hot_native_bat_chicken_corpse_inputs() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

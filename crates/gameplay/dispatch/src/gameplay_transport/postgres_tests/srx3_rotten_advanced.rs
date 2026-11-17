@@ -8,6 +8,7 @@ use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
 use oteryn_protocol_oteryn::boss_encounter as wire;
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_vemiath_actual_source_native_effects_postgres() -> TestResult {
     scenario(
@@ -22,6 +23,7 @@ fn srx3_vemiath_actual_source_native_effects_postgres() -> TestResult {
         false,
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_chagorz_actual_source_native_effects_postgres() -> TestResult {
     scenario(
@@ -36,6 +38,7 @@ fn srx3_chagorz_actual_source_native_effects_postgres() -> TestResult {
         false,
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_bakragore_actual_source_native_effects_postgres() -> TestResult {
     scenario(
@@ -50,6 +53,7 @@ fn srx3_bakragore_actual_source_native_effects_postgres() -> TestResult {
         false,
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_vemiath_actual_source_teleport_exit_return_postgres() -> TestResult {
     scenario(
@@ -64,6 +68,7 @@ fn srx3_vemiath_actual_source_teleport_exit_return_postgres() -> TestResult {
         true,
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qmrevfix_rotten_control_lost_players_block_placement_and_allow_children_postgres() -> TestResult
 {
@@ -160,6 +165,7 @@ pub(super) fn footprints(
         Extra::Footprints,
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_vemiath_actual_source_portal_step_postgres() -> TestResult {
     scenario_with_step(
@@ -175,6 +181,7 @@ fn srx3_vemiath_actual_source_portal_step_postgres() -> TestResult {
         Extra::PortalStep,
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_vemiath_original_portal_due_precedes_death_and_late_mint_postgres() -> TestResult {
     scenario_with_step(

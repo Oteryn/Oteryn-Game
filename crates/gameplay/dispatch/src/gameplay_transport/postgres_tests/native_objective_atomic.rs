@@ -8,11 +8,13 @@ use oteryn_gameplay_quests::quest::{
     kill_objectives as rules,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn native_objective_and_xp_share_one_postgres_transaction() -> TestResult {
     super::annihilator_route::native_objective_atomicity()
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn stale_native_objective_capture_is_terminal_on_xp_replay() -> TestResult {
     super::annihilator_route::native_objective_stale_capture()

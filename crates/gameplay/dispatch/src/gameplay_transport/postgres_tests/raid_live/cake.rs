@@ -1,7 +1,12 @@
 //! Real Cake raid placement, physical machine step, durable extraction and replay.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::MovementLocalPosition;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn w05d_cake_real_raid_step_extracts_without_kill_and_replays_postgres() -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
@@ -35,6 +40,8 @@ fn w05d_cake_real_raid_step_extracts_without_kill_and_replays_postgres() -> Test
         .map_err(|_| "Cake extraction thread")??;
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn scenario(h: &Harness) -> TestResult {
     let started = std::time::Instant::now();
     super::super::reset();
@@ -384,6 +391,8 @@ async fn scenario(h: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn seed_cake(
     harness: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -412,6 +421,8 @@ async fn seed_cake(
 
 /// Test-only open geometry at real donor coordinates, with canonical Terrain
 /// identities and facts. Fixture-local Terrain compact ids never mint Item identities.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn cake_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,

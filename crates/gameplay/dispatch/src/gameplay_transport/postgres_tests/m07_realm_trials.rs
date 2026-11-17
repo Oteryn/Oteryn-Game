@@ -11,6 +11,7 @@ const NAME:&str="m07/realm-trial";
 const BEGIN:Position=Position{x:33080,y:32582,floor:-3};
 const CONTROL:Position=Position{x:33080,y:32583,floor:-3};
 pub(super) fn start()->Position {Position{x:33079,y:32583,floor:-3}}
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m07_realm_postgres_retained_key_multifloor_clear_and_independent_resets()->TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}

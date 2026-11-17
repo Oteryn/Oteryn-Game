@@ -632,7 +632,7 @@ jobs:
           cargo +1.100.0 run --locked -p oteryn-game-server -- --smoke
 
   durability_postgres_build:
-    name: Merge Queue / Durability PostgreSQL harness build
+    name: Merge Queue / Durability PostgreSQL harness build (${{ matrix.archive }})
     needs: candidate
     if: needs.candidate.outputs.rust == 'true'
     runs-on: ubuntu-24.04
@@ -640,9 +640,17 @@ jobs:
     permissions:
       contents: read
     outputs:
-      archives_sha256: ${{ steps.digest.outputs.archives_sha256 }}
+      base_sha256: ${{ steps.digest.outputs.base_sha256 }}
+      g1_sha256: ${{ steps.digest.outputs.g1_sha256 }}
+      g2_sha256: ${{ steps.digest.outputs.g2_sha256 }}
+      g3_sha256: ${{ steps.digest.outputs.g3_sha256 }}
+      g4_sha256: ${{ steps.digest.outputs.g4_sha256 }}
+    strategy:
+      fail-fast: true
+      matrix:
+        archive: [base, g1, g2, g3, g4]
     # No database here: this job verifies registered-target custody and compiles the PostgreSQL test set
-    # once into two nextest archives; the durability_postgres partitions only run them.
+    # in separate archive jobs; the durability_postgres partitions only run them.
     steps:
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -711,6 +719,7 @@ jobs:
       # Every registered target present at the candidate is archived exactly once; any target removed
       # or renamed against the protected base fails here, before anything is compiled.
       - name: Archive registered PostgreSQL E2E targets
+        if: matrix.archive == 'base'
         shell: bash
         env:
           BASE_SHA: ${{ needs.candidate.outputs.base_sha }}
@@ -817,27 +826,44 @@ jobs:
       # Library tests that need PostgreSQL skip in the Rust Linux lib shards, which have no database;
       # this archive holds exactly the library tests the partitions run against the service.
       - name: Archive PostgreSQL-backed library tests
+        if: matrix.archive == 'base'
         run: |
           set -euo pipefail
-          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
+          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
+      - name: Archive PostgreSQL dispatch group
+        if: matrix.archive != 'base'
+        env:
+          GROUP: ${{ matrix.archive }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pg-archives"
+          cargo +1.100.0 nextest archive --locked --build-jobs 1 -p oteryn-gameplay-dispatch --lib --features "pg-tests-$GROUP" \
+            --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-$GROUP.tar.zst"
 
       - name: Record archive digests and candidate
         id: digest
         env:
           HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
+          ARCHIVE: ${{ matrix.archive }}
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/pg-archives"
           printf '%s\n' "$HEAD_SHA" > head-sha
-          sha256sum head-sha pg-e2e.tar.zst pg-lib.tar.zst > SHA256SUMS
+          if [[ "$ARCHIVE" == base ]]; then
+            archives=(pg-e2e.tar.zst pg-lib.tar.zst)
+          else
+            [[ "$ARCHIVE" =~ ^g[1-4]$ ]]
+            archives=("pg-lib-$ARCHIVE.tar.zst")
+          fi
+          sha256sum head-sha "${archives[@]}" > SHA256SUMS
           ls -l
-          echo "archives_sha256=$(sha256sum SHA256SUMS | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "${ARCHIVE}_sha256=$(sha256sum SHA256SUMS | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       # The archives are already zstd-compressed and only live for this run's partitions.
       - name: Upload PostgreSQL test archives
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: mq-postgres-test-archives
+          name: mq-postgres-test-archives-${{ matrix.archive }}
           path: ${{ runner.temp }}/pg-archives/
           if-no-files-found: error
           retention-days: 1
@@ -852,7 +878,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
-    # Each partition runs a disjoint planned share of both archives built once by durability_postgres_build;
+    # Each partition runs a disjoint planned share of the archives built by durability_postgres_build;
     # together the twenty-four run every registered E2E target and PostgreSQL-backed library test exactly once.
     # These jobs install no toolchain and restore no cache: they cannot compile.
     strategy:
@@ -907,20 +933,38 @@ jobs:
       - name: Download PostgreSQL test archives
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: mq-postgres-test-archives
-          path: ${{ runner.temp }}/pg-archives
+          pattern: mq-postgres-test-archives-*
+          merge-multiple: false
+          path: ${{ runner.temp }}/pg-download
 
       - name: Verify archives were built for this candidate
         env:
           EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
-          ARCHIVES_SHA256: ${{ needs.durability_postgres_build.outputs.archives_sha256 }}
+          BASE_SHA256: ${{ needs.durability_postgres_build.outputs.base_sha256 }}
+          G1_SHA256: ${{ needs.durability_postgres_build.outputs.g1_sha256 }}
+          G2_SHA256: ${{ needs.durability_postgres_build.outputs.g2_sha256 }}
+          G3_SHA256: ${{ needs.durability_postgres_build.outputs.g3_sha256 }}
+          G4_SHA256: ${{ needs.durability_postgres_build.outputs.g4_sha256 }}
         run: |
           set -euo pipefail
-          cd "$RUNNER_TEMP/pg-archives"
-          [[ "$ARCHIVES_SHA256" =~ ^[0-9a-f]{64}$ ]]
-          echo "${ARCHIVES_SHA256}  SHA256SUMS" | sha256sum -c -
-          sha256sum -c SHA256SUMS
-          test "$(cat head-sha)" = "$EXPECTED_SHA"
+          mkdir -p "$RUNNER_TEMP/pg-archives"
+          for archive in base g1 g2 g3 g4; do
+            key="${archive^^}_SHA256"
+            digest="${!key}"
+            [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
+            dir="$RUNNER_TEMP/pg-download/mq-postgres-test-archives-$archive"
+            (
+              cd "$dir"
+              echo "${digest}  SHA256SUMS" | sha256sum -c -
+              sha256sum -c SHA256SUMS
+              test "$(cat head-sha)" = "$EXPECTED_SHA"
+            )
+            if [[ "$archive" == base ]]; then files=(pg-e2e.tar.zst pg-lib.tar.zst); else files=("pg-lib-$archive.tar.zst"); fi
+            for file in "${files[@]}"; do
+              grep -Fq "  $file" "$dir/SHA256SUMS"
+              mv -- "$dir/$file" "$RUNNER_TEMP/pg-archives/$file"
+            done
+          done
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
 
       # Count slices leave a few multi-minute tests wherever their names fall, so one partition ran
@@ -942,7 +986,7 @@ jobs:
           test "$LABEL" = "$((JOB_INDEX + 1))"
           plan="$RUNNER_TEMP/pg-plan"
           mkdir -p "$plan"
-          for archive in pg-e2e pg-lib; do
+          for archive in pg-e2e pg-lib pg-lib-g1 pg-lib-g2 pg-lib-g3 pg-lib-g4; do
             cargo-nextest nextest list --archive-file "$RUNNER_TEMP/pg-archives/$archive.tar.zst" \
               --workspace-remap "$GITHUB_WORKSPACE" --message-format json > "$plan/$archive.json"
           done
@@ -966,7 +1010,7 @@ jobs:
           # Each partition runs the E2E share and then the library share, so the load carries over
           # from one archive to the next instead of starting both plans on the same partitions.
           priorities, load = [], [0] * total
-          for archive in ('pg-e2e', 'pg-lib'):
+          for archive in ('pg-e2e', 'pg-lib', 'pg-lib-g1', 'pg-lib-g2', 'pg-lib-g3', 'pg-lib-g4'):
               listing = json.loads((plan / f'{archive}.json').read_text())
               cases = sorted(
                   (suite['binary-id'], name)
@@ -1015,6 +1059,54 @@ jobs:
           mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"
           if (( ${#filters[@]} == 0 )); then exit 0; fi
           cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
+            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+            --no-fail-fast "${filters[@]}"
+
+      - name: Run PostgreSQL dispatch group 4
+        if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # Copy the run output to a log so a failure step can list every failed test of this partition.
+          exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
+          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib-g4.filters"
+          if (( ${#filters[@]} == 0 )); then exit 0; fi
+          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-g4.tar.zst" \
+            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+            --no-fail-fast "${filters[@]}"
+
+      - name: Run PostgreSQL dispatch group 3
+        if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # Copy the run output to a log so a failure step can list every failed test of this partition.
+          exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
+          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib-g3.filters"
+          if (( ${#filters[@]} == 0 )); then exit 0; fi
+          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-g3.tar.zst" \
+            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+            --no-fail-fast "${filters[@]}"
+
+      - name: Run PostgreSQL dispatch group 2
+        if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # Copy the run output to a log so a failure step can list every failed test of this partition.
+          exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
+          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib-g2.filters"
+          if (( ${#filters[@]} == 0 )); then exit 0; fi
+          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-g2.tar.zst" \
+            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+            --no-fail-fast "${filters[@]}"
+
+      - name: Run PostgreSQL dispatch group 1
+        if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # Copy the run output to a log so a failure step can list every failed test of this partition.
+          exec > >(tee -a "$RUNNER_TEMP/pg-nextest.log") 2>&1
+          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib-g1.filters"
+          if (( ${#filters[@]} == 0 )); then exit 0; fi
+          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib-g1.tar.zst" \
             --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
             --no-fail-fast "${filters[@]}"
 

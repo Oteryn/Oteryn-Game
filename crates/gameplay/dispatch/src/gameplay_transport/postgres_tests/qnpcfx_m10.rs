@@ -8,10 +8,12 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 use oteryn_protocol_oteryn::presentation::{CAPABILITY_PRESENTATION_V1, PresentationEventKind};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qnpcfx_m10_oldrak_repeatable_payment_items_and_npc_magic() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-qnpcfx-m10-oldrak")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qnpcfx_m10_inquisition_five_real_interviews_progress_and_player_magic() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-qnpcfx-m10-inquisition")

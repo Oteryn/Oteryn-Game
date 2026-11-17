@@ -6,6 +6,9 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -13,14 +16,17 @@ fn scenario(name: &'static str) -> TestResult {
     eprintln!("POSTGRES_CASE_STARTED {name}");
     super::qengine_rewards::scenario(name)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_paradox_native_first_grass_stair() -> TestResult {
     scenario("qengine-rewards-questpc4-native-tower-first")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_paradox_native_second_exact_levers_ladder() -> TestResult {
     scenario("qengine-rewards-questpc4-native-tower-second")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn l6_paradox_native_third_ghoul_switch_and_plate() -> TestResult {
     scenario("qengine-rewards-questpc4-native-tower-third")

@@ -1,19 +1,25 @@
 //! T172: real admitted party dispatch projects only nearby vitals.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::bestiary_postgres_harness::{TestResult, debug};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities},
     connection::{AdmittedSession, FirstEntryOutcome, SessionContinuity},
     party_command::SessionPartyView,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::party::*;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn party_list_real_dispatch_range_and_legacy_gate_postgres() -> TestResult {
     super::party_buffs::run_party_list()
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn check(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     players: &[(

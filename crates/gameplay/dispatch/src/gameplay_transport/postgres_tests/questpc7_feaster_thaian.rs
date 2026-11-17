@@ -3,6 +3,7 @@ use super::fixture::{Harness,debug};
 use super::{AdmittedSession,ComposedFreshAdmission,TestResult};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 const KEY:&str="oteryn:creature.thaian";
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc7_feaster_thaian_native_admission_preserves_source_facts() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none(){return Ok(());}

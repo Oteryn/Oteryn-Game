@@ -5,16 +5,46 @@ use super::{
 };
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
 use crate::foundation::{CommandId, CommandRef};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
     QuestTransition,
     world_callbacks::{Callback, Position},
+};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+    QuestTransition,
+    world_callbacks::Callback,
+};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+    QuestTransition,
+    world_callbacks::Callback,
+};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+    QuestTransition,
+    world_callbacks::Callback,
 };
 use std::sync::Arc;
 const TRACK: &str = "oteryn:quest-track/fixture-tomb-room/raise";
 const QUEST: &str = "oteryn:quest.fixture-tomb-room-raise";
 const SEED: &str = "oteryn:quest-transition/fixture-tomb-room-seed";
 const APPLY: &str = "oteryn:quest-callback/fixture-tomb-room-raise";
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -44,22 +74,27 @@ fn run(name: &'static str) -> TestResult {
     );
     result.map_err(Into::into)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_room_raise_lower() -> TestResult {
     run("l6-room-raise-lower")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_room_raise_equal() -> TestResult {
     run("l6-room-raise-equal")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_room_raise_higher() -> TestResult {
     run("l6-room-raise-higher")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_room_raise_refusal() -> TestResult {
     run("l6-room-raise-refusal")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_room_raise_extreme() -> TestResult {
     run("l6-room-raise-extreme")

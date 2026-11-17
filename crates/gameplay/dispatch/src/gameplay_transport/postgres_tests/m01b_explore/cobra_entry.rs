@@ -11,6 +11,7 @@ const START: Position = Position {
     floor: -7,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_grave_danger_cobra_native_visit_requires_twelve_graves_and_both_boss_stages() -> TestResult
 {

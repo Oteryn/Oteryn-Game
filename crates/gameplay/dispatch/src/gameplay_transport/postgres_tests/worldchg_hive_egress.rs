@@ -1,17 +1,27 @@
 //! Native Hive USE proves safe egress without a live scent or open stage.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, run};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::content::channel_content_pin::ChannelContentPin;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::ChannelRuntimeV1;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::FirstEntryOutcome;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_gameplay_world::map::view::MapFacts;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 const TRIGGER: Position = Position {
     x: 33598,
     y: 31228,
     floor: -1,
 };
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn worldchg_hive_native_gate_closed_stage_and_missing_scent_allow_egress_only() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -19,10 +29,12 @@ fn worldchg_hive_native_gate_closed_stage_and_missing_scent_allow_egress_only() 
     }
     super::kill_reward_e2e::scenario_thread::run("worldchg-hive-egress", scenario)
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn scenario() -> TestResult {
     scenario_with_bindings(false)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn scenario_with_bindings(prove_bindings: bool) -> TestResult {
     let callback = oteryn_gameplay_quests::quest::hive_access::callbacks()
         .into_iter()

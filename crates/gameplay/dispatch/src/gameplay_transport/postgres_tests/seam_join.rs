@@ -2,6 +2,7 @@
 use super::*;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn seam_join_tracker_snapshot_retries_busy_holder_without_progression() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -60,6 +61,7 @@ fn seam_join_tracker_snapshot_retries_busy_holder_without_progression() -> TestR
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn seam_join_spell_catalog_retries_busy_holder_without_losing_knowledge() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("seam-spell-catalog", || {
@@ -121,6 +123,7 @@ fn seam_join_spell_catalog_retries_busy_holder_without_losing_knowledge() -> Tes
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn seam_join_named_entities_retry_busy_holder_before_chat_open() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("seam-named-entities", || {
@@ -174,6 +177,7 @@ fn seam_join_named_entities_retry_busy_holder_before_chat_open() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn seam_input_house_transfer_guard_retries_busy_holder_before_dispatch() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("seam-house-input", || {

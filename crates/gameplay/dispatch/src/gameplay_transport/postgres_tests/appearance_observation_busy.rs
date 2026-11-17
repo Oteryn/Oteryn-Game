@@ -8,6 +8,7 @@ use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_protocol_oteryn::appearance;
 use std::{future::Future, task::Poll};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn appearance_observation_retries_busy_holder_with_bounded_current_runtime_checks() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

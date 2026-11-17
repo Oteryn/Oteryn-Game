@@ -8,6 +8,7 @@ use oteryn_gameplay_quests::quest::{
 };
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srvgap1108_quest_item_disguise_fenced_use_restores_on_exact_exit_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

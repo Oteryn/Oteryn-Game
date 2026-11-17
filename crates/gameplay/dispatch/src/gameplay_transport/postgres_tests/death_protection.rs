@@ -5,6 +5,7 @@ use crate::domain::CharacterId;
 use crate::durability::pvp_death_consequences::{PvpContributorKind, PvpDeathContributor};
 use crate::gameplay_transport::death_ml_loss_postgres::death as death_request;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn death_protection_postgres_projects_exact_committed_consumption_and_replays() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

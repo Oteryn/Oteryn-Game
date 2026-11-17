@@ -2,6 +2,7 @@
 use super::*;
 use crate::gameplay_transport::connection::{ControlLossResult, FreshAdmissionAuthority};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn seam_closed_session_becomes_reconnectable() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

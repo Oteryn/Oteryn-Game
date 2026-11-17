@@ -6,6 +6,7 @@ use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_gameplay_items::{item_cosmetics, novelty_items};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn reaudit_usable_item_actions() -> TestResult {
     // Enumerate the retired C4 set independently of the main owners' selection code.

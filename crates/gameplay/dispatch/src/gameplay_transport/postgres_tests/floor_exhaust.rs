@@ -14,6 +14,7 @@ use std::num::NonZeroU32;
 /// The composed session scenario outgrows the default test thread stack.
 const SCENARIO_STACK_BYTES: usize = 64 << 20;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn floor_exhaust_postgres_real_session_step_then_aggressive_cast() -> TestResult {
     std::thread::Builder::new()

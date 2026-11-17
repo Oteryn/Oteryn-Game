@@ -4,21 +4,27 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::world_callbacks::Callback;
 use oteryn_protocol_oteryn::world_spatial::*;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qm03_native_inferno_step_refuses_without_live_premium() -> TestResult {
     scenario("qm03/pits")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qm03_native_inferno_step_commits_with_live_premium() -> TestResult {
     scenario("qm03/pits-premium")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qm03_native_anniversary_use_requires_live_blessings_promotion_and_premium() -> TestResult {
     scenario("qm03/anniversary-premium")
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

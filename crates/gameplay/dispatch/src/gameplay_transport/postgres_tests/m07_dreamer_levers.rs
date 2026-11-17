@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 const NAME: &str = "m07/dreamer-lever-north";
 const CONTROL: Position = Position { x:32761, y:32289, floor:-14 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m07_dreamer_native_lever_conditional_walls_and_distinct_deadlines_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() { return Ok(()); }

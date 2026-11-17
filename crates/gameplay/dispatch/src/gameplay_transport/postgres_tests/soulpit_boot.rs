@@ -2,11 +2,13 @@
 use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn soulpit_empty_world_runtime_role_boot_cadence_postgres() -> TestResult {
     scenario(false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn soulpit_boot_read_contention_does_not_retire_channel_postgres() -> TestResult {
     scenario(true)

@@ -19,16 +19,19 @@ const AT: Position = Position {
     floor: -15,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn authored_world_use_item_delivery_is_atomic_and_replay_bound_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-world-rewards")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn authored_world_full_backpack_rolls_back_reward_and_quest_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-world-rewards-full")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn authored_native_boot_recipe_admission_dispatch_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-native-admission")

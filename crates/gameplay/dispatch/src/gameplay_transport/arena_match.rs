@@ -162,6 +162,10 @@ fn credited_victory(
 }
 
 #[cfg(test)]
+#[cfg(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(in crate::gameplay_transport) fn pit_exit_open(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
@@ -172,6 +176,10 @@ pub(in crate::gameplay_transport) fn pit_exit_open(
 }
 
 #[cfg(test)]
+#[cfg(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(in crate::gameplay_transport) fn expire_pit(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: GameSessionId,
@@ -266,6 +274,10 @@ pub(in crate::gameplay_transport) fn tick(
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Exercise real database expiry quickly; production always uses donor600s.
     #[cfg(test)]
+    #[cfg(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
     pub(in crate::gameplay_transport) fn regression_arena_pit_time(
         &self,
         millis: u64,

@@ -28,18 +28,22 @@ impl Case {
         matches!(self, Self::NestedCarriedPlant)
     }
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn ice_seed_use_materialized_ground_pot_wire_receipt_and_absolute_chain() -> TestResult {
     run_case(Case::GroundPlant)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn ice_seed_preserves_materialized_ground_plant_and_grants_once() -> TestResult {
     run_case(Case::GroundPreserve)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn ice_seed_from_open_nested_container_plants_carried_pot() -> TestResult {
     run_case(Case::NestedCarriedPlant)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn ice_seed_preserves_carried_plant_without_mutating_its_identity() -> TestResult {
     run_case(Case::CarriedPreserve)

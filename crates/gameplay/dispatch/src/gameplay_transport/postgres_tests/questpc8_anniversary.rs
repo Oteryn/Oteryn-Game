@@ -1,10 +1,19 @@
 //! Chosen seasonal route: real native deaths, actual corpse collection and exact owned input.
 use super::fixture::{Harness, debug, id};
 use super::questpc8_authored_programmes::{object_target, step, use_target};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{TestResult, quest_world_callbacks};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4")))))]
+use super::TestResult;
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
@@ -12,6 +21,7 @@ use oteryn_protocol_oteryn::world_spatial::StepDirection;
 #[path = "questpc8_anniversary/world.rs"]
 mod fixture_world;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc8_anniversary_thirty_native_rag_drops_five_pinatas_and_once_only_backpack() -> TestResult
 {

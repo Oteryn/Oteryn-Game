@@ -1,4 +1,5 @@
 //! GUILD-WAR-1 migration qualification mounted with the dispatch PostgreSQL suite.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn guild_war_schema_is_embedded_for_dispatch() {
     let migration =
@@ -9,6 +10,7 @@ fn guild_war_schema_is_embedded_for_dispatch() {
     assert!(migration.contains("death_occurrence_id UUID PRIMARY KEY"));
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn guild_war_frag_and_end_writes_are_mounted_with_dispatch() {
     let writer = include_str!(concat!(
@@ -33,11 +35,13 @@ use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::guild_war::*;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn guild_war_postgres_real_dispatch_declare_accept_replay_and_frag_limit() -> TestResult {
     threaded_scenario(true)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn guild_war_postgres_real_dispatch_outside_kill_and_end_time() -> TestResult {
     threaded_scenario(false)

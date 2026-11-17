@@ -1,25 +1,45 @@
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::super::fixture::{Harness, debug, id, join_two};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::super::item_look::read_frame;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{Case, FIELD, TestResult};
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::ComposedFreshAdmission;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{
     AdmittedSession, ConnectionEnd, LivenessPolicy, serve_admitted,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{self as protocol, CommandStatus, MessageType};
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+use oteryn_protocol_oteryn::{self as protocol};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use protocol::browse_field::{BrowseFieldIntent, COMMAND_TYPE_BROWSE_FIELD_INTENT, encode_browse_field_intent};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use protocol::container_tree::{
     COMMAND_TYPE_CONTAINER_VIEW_INTENT, ContainerViewIntent, ContainerViewOutcome, ContainerViews,
     STATE_DOMAIN_CONTAINER_VIEWS, decode_container_view_result, decode_container_views_for,
     encode_container_view_intent,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use protocol::item_view::{
     CharacterInventory, ItemHandle, ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome,
     ItemMoveSelection, WorldTilePosition, decode_character_inventory_with_equip_drop,
     decode_item_move_result_with_equip_drop, encode_item_move_intent_for,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use protocol::world_spatial::{StepDirection, StepDisposition};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 const SELECTION: ItemMoveSelection = ItemMoveSelection {
     equip_drop: true,
     container_tree: true,
@@ -27,11 +47,13 @@ const SELECTION: ItemMoveSelection = ItemMoveSelection {
 };
 // The deadline bounds the scenario. Liveness is tested elsewhere and must not
 // disconnect a test client while it checks committed PostgreSQL rows.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 const LIVENESS: LivenessPolicy = LivenessPolicy {
     interval: std::time::Duration::from_secs(600),
     missed_limit: 3,
 };
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn exercise(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -69,6 +91,7 @@ pub(super) async fn exercise(
     result
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn transfers(
     client: &mut DuplexStream,
     inventory: &CharacterInventory,
@@ -126,6 +149,7 @@ async fn transfers(
     Ok(payload)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn navigation(client: &mut DuplexStream, inventory: &CharacterInventory, harness: &Harness) -> TestResult {
     let bag = inventory.entries.iter().find(|entry| entry.count.get() == 1)
         .ok_or("carried bag")?.handle;
@@ -175,6 +199,7 @@ async fn navigation(client: &mut DuplexStream, inventory: &CharacterInventory, h
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn paging(client: &mut DuplexStream, harness: &Harness) -> TestResult {
     browse(client, 1, BrowseFieldIntent::Open { position: FIELD }).await?;
     let first = views(client).await?;
@@ -194,6 +219,7 @@ async fn paging(client: &mut DuplexStream, harness: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn autowalk(client: &mut DuplexStream, harness: &Harness) -> TestResult {
     let far = WorldTilePosition { x: 9, ..FIELD };
     browse(client, 1, BrowseFieldIntent::Open { position: far }).await?;
@@ -211,6 +237,7 @@ async fn autowalk(client: &mut DuplexStream, harness: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn replay(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -237,6 +264,7 @@ pub(super) async fn replay(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn snapshot(client: &mut DuplexStream) -> TestResult<CharacterInventory> {
     let mut inventory = None;
     loop {
@@ -257,6 +285,7 @@ async fn snapshot(client: &mut DuplexStream) -> TestResult<CharacterInventory> {
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn send(client: &mut DuplexStream, command_id: u64, command_type: u32, payload: &[u8]) -> TestResult {
     let frame = protocol::encode_client_command(1, &protocol::ClientCommandValue { command_id, command_type, payload }).map_err(debug)?;
     client.write_u32(u32::try_from(frame.len())?).await?;
@@ -264,6 +293,7 @@ async fn send(client: &mut DuplexStream, command_id: u64, command_type: u32, pay
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn result(client: &mut DuplexStream, command_id: u64) -> TestResult<Vec<u8>> {
     loop {
         let bytes = read_frame(client).await?;
@@ -277,6 +307,7 @@ async fn result(client: &mut DuplexStream, command_id: u64) -> TestResult<Vec<u8
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn views(client: &mut DuplexStream) -> TestResult<ContainerViews> {
     loop {
         let bytes = read_frame(client).await?;
@@ -290,43 +321,51 @@ async fn views(client: &mut DuplexStream) -> TestResult<ContainerViews> {
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn browse(client: &mut DuplexStream, command_id: u64, intent: BrowseFieldIntent) -> TestResult {
     send(client, command_id, COMMAND_TYPE_BROWSE_FIELD_INTENT, &encode_browse_field_intent(&intent).map_err(debug)?).await?;
     assert_eq!(decode_container_view_result(&result(client, command_id).await?).map_err(debug)?, ContainerViewOutcome::Opened);
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn container(client: &mut DuplexStream, command_id: u64, intent: ContainerViewIntent, expected: ContainerViewOutcome) -> TestResult {
     send(client, command_id, COMMAND_TYPE_CONTAINER_VIEW_INTENT, &encode_container_view_intent(&intent).map_err(debug)?).await?;
     assert_eq!(decode_container_view_result(&result(client, command_id).await?).map_err(debug)?, expected);
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn move_payload(source: ItemHandle, destination: ItemMoveDestination) -> TestResult<Vec<u8>> {
     encode_item_move_intent_for(&ItemMoveIntent { source, destination }, SELECTION).map_err(debug)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn move_command(client: &mut DuplexStream, command_id: u64, payload: &[u8], expected: ItemMoveOutcome) -> TestResult {
     send(client, command_id, protocol::item_view::COMMAND_TYPE_ITEM_MOVE_INTENT, payload).await?;
     assert_eq!(decode_item_move_result_with_equip_drop(&result(client, command_id).await?, true).map_err(debug)?, expected);
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn step(client: &mut DuplexStream, command_id: u64, direction: StepDirection) -> TestResult {
     send(client, command_id, 1, &protocol::world_spatial::encode_step_intent(direction)).await?;
     assert_eq!(protocol::world_spatial::decode_step_result(&result(client, command_id).await?).map_err(debug)?, StepDisposition::Moved);
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn receipts(harness: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_item_loop_move_receipts").fetch_one(&harness.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn custody(harness: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid), quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1")
         .bind(id(71).as_slice()).bind(id(72).as_slice()).fetch_one(&harness.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn bag_custody(harness: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid), (SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid), quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1")
         .bind(id(72).as_slice()).fetch_one(&harness.pool).await?)

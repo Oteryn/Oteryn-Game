@@ -24,16 +24,19 @@ fn old_revision() -> String {
     super::store::sha256(&serde_json::to_vec(&document).expect("canonical catalogue"))
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn prey_diff_store_accepted_purchase_resumes_after_catalogue_change_without_another_debit() -> TestResult {
     run_case(true, false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn prey_diff_store_lost_platform_answer_reconciles_original_id_after_catalogue_change() -> TestResult {
     run_case(false, false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn storefix_prey_local_encode_refusal_releases_reservation_without_debit() -> TestResult {
     run_case(false, true)

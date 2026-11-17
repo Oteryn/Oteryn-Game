@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::world_spatial::{COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
 use oteryn_protocol_oteryn::world_object::{UseDisposition,decode_use_result};
 const TRACK:&str="oteryn:quest-progress/questpc7/hydra/programme";
 const KILLS:&str="oteryn:quest-progress/questpc7/hydra/kills";
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc7_hydra_requires_personal_native_nest_pickup() -> TestResult {
  if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none(){return Ok(());}

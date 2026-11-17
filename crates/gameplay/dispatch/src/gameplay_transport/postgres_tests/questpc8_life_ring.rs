@@ -9,6 +9,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc8_life_ring_pick_descent_exact_rewards_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

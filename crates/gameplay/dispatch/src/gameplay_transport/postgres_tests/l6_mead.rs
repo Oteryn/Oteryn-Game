@@ -10,6 +10,7 @@ use oteryn_gameplay_quests::quest::{
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 const NAME: &str = "l6/waterskin-of-mead";
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_mead_native_barrel_requires_mission_and_mints_complete_filled_bag() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

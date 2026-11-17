@@ -1,6 +1,7 @@
 //! Literal UID9234 on synthetic source geometry; real STEP restores only missing trees.
 use super::TestResult;
 use oteryn_gameplay_quests::quest::{dreamer_death_ring, world_callbacks::Position};
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m07_death_ring_real_step_restores_only_missing_trees_and_replays() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

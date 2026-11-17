@@ -1,27 +1,54 @@
 //! Canonical PostgreSQL 17.6: genuine fresh sessions, real swings, queue and kill drain.
 #![allow(clippy::expect_used)]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::bestiary_postgres_harness::{
     self as fixture, CHANNEL, Harness, TestResult, WORLD, debug, id,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{
     ChannelId, ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition, PartyAction, WorldId,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     connection::{AdmittedSession, FirstEntryOutcome, SessionContinuity},
     kill_reward::DrainOutcome,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use std::time::Duration;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use tokio::sync::Mutex;
 
 /// Swing draws come from the content-pinned decision root, so any content change reshuffles
 /// how many 3-second passes a kill takes. The budget only bounds the loop; every assertion
 /// on who hit, who earned and how awards serialize is unchanged.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const REAL_SWING_PASSES: u32 = 256;
 
 #[derive(Clone, Copy)]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) enum Case {
     Stamina,
     Offence,
@@ -68,7 +95,13 @@ pub(super) enum Case {
     T94,
     CharmSecondary,
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 impl Case {
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     fn forge(self) -> bool {
         matches!(
             self,
@@ -87,6 +120,9 @@ impl Case {
     /// Cases that settle a shared kill need the second member's committed activity. Its
     /// real swings are staged before the leader's, so the content-seeded draws can never
     /// let the leader kill the rat before the ally has landed a hit.
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     fn staged_ally(self) -> bool {
         matches!(
             self,
@@ -99,92 +135,113 @@ impl Case {
         )
     }
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_real_dispatch_equal_split() -> TestResult {
     run(Case::Shared)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_real_dispatch_prey_then_stamina() -> TestResult {
     run(Case::Modifiers)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_real_dispatch_inactive_member_disables_sharing() -> TestResult {
     run(Case::Inactive)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_concurrent_replay_and_recovered_sequencers_do_not_award_twice() -> TestResult {
     run(Case::Replay)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_real_dispatch_leader_pz_disables_sharing() -> TestResult {
     run(Case::Pz)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_real_dispatch_last_member_failure_rolls_back_all_awards() -> TestResult {
     run(Case::Rollback)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_real_dispatch_concurrent_kills_serialize_character_awards() -> TestResult {
     run(Case::Concurrent)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_real_dispatch_exhausted_share_is_not_redistributed() -> TestResult {
     run(Case::Exhausted)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_real_dispatch_preserves_foreign_damage_share() -> TestResult {
     run(Case::Foreign)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_real_dispatch_stale_member_lease_cannot_award() -> TestResult {
     run(Case::Stale)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_real_dispatch_lethal_first_hit_qualifies_activity() -> TestResult {
     run(Case::OneHit)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn party_xp_real_dispatch_contended_absent_pz_row_defers_without_awards() -> TestResult {
     run(Case::PzContention)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn task_board_real_dispatch_shared_member_without_damage_and_replay() -> TestResult {
     run(Case::TaskBoardParty)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn task_board_real_dispatch_all_damage_contributors_and_replay() -> TestResult {
     run(Case::TaskBoardForeign)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn bounty_talisman_real_dispatch_damage_life_and_equipped_active_bounty_gates() -> TestResult {
     run(Case::TaskBoardTalisman)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn task_board_real_dispatch_party_credit_without_progression_binding() -> TestResult {
     run(Case::TaskBoardUnbound)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn task_board_real_dispatch_shared_member_selects_after_prior_leader_death_settles() -> TestResult {
     run(Case::TaskBoardPrechange)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn task_board_real_dispatch_interleaved_principals_keep_death_order_and_final_bonus() -> TestResult
 {
     run(Case::TaskBoardOrdered)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn run(case: Case) -> TestResult {
     // Without the PostgreSQL route the case skips, as the other dispatch PostgreSQL tests do.
     if fixture::configured_admin().is_none() {
@@ -230,6 +287,9 @@ pub(super) fn run(case: Case) -> TestResult {
         .map_err(|_| "party XP PG thread panicked")?
         .map_err(Into::into)
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn scenario(
     h: &Harness,
     case: Case,
@@ -1647,7 +1707,13 @@ async fn scenario(
 
 #[path = "party_xp/support.rs"]
 mod support;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) use support::initialize_build;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use support::join_two;
 
 #[path = "party_xp/task_board.rs"]
@@ -1655,6 +1721,7 @@ mod task_board;
 
 #[path = "party_xp/t94.rs"]
 mod t94;
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn t94_guild_season_real_kill_dispatch_membership_cut() -> TestResult {
     let started = std::time::Instant::now();

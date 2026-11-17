@@ -1,6 +1,9 @@
 //! Exercise the real ambient owner against the retained Elemental Spheres fire map.
 use super::{ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
 #[path = "qn1_elemental_world_pin/arrival.rs"]
@@ -14,36 +17,45 @@ mod reset;
 #[path = "qn1_elemental_world_pin/soil.rs"]
 mod soil;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qn1_elemental_world_pass_accepts_native_bundle_pin() -> TestResult {
     run("qn1-elemental-world-pin")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qn1_elemental_live_drop_consumes_corpse_and_projects_native_boss() -> TestResult {
     run("qn1-elemental-arrival")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qn1_elemental_soil_use_consumes_one_replays_and_recovers_decay() -> TestResult {
     run("qn1-elemental-soil")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qn1_elemental_energy_soil_creates_field_without_replacing_altar() -> TestResult {
     run("qn1-elemental-energy-soil")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qn1_elemental_energy_field_retires_once_through_world_reset() -> TestResult {
     run("qn1-elemental-energy-reset")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn elemental_energy_soil_tile_cap_returns_not_possible() -> TestResult {
     run("qn1-elemental-energy-cap")
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

@@ -8,6 +8,7 @@ use crate::gameplay_transport::connection::{
 /// How far the clock steps back after the loss decision. Within the resume's retry window.
 const CLOCK_STEP_SECONDS: i64 = 2;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn seam_resume_survives_a_clock_step_back_after_the_loss_decision() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -7,16 +7,19 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn annihilator_source_route_genuine_party_entry() -> TestResult {
     run(Route::Entry)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn annihilator_source_route_native_combat_clearance() -> TestResult {
     run(Route::Combat)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn annihilator_source_route_earned_reward_exit_and_reentry() -> TestResult {
     run(Route::Complete)

@@ -8,6 +8,7 @@ use crate::gameplay_transport::npc_voice::NpcVoiceCycle;
 use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeechMode};
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn nx4_source_npc_voice_reaches_chat_once_per_channel_think_on_postgres() -> TestResult {
     source_voice_case("oteryn:npc.captain_bluebear", "Captain Bluebear", "Passages to Carlin, Ab'Dendriel")

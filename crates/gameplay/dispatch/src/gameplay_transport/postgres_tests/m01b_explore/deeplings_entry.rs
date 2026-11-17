@@ -10,6 +10,7 @@ const START: Position = Position {
     floor: -9,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_deeplings_native_survey_requires_current_counter_world_and_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

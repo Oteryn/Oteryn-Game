@@ -1,7 +1,16 @@
 //! A successful claim cannot acknowledge a token without the existing ledger.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::task_board::full::{BountyStatus, BountyTask};
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn missing_participant(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
@@ -53,6 +62,9 @@ pub(super) async fn missing_participant(
 /// Stage an already completed offer from the production generator. For the boundary case
 /// only, the historical ledger tail and its balance are staged together; every
 /// subsequent claim runs with the normal source, continuity and receipt guards.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn completed_fixture(
     harness: &Harness,
     balance: Option<i64>,
@@ -94,11 +106,17 @@ pub(super) async fn completed_fixture(
 
 /// Compare actual value owners, including their append-only participants. Command
 /// refusals may add their own receipt, but cannot change any of these values.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn value_snapshot(harness: &Harness) -> TestResult<serde_json::Value> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_object('character_revision',(SELECT character_revision FROM game_character_roots WHERE character_id=p.character_id),'progression',to_jsonb(p),'board',b.body,'tracks',(SELECT jsonb_object_agg(track_key,value) FROM game_character_quest_tracks WHERE character_id=p.character_id),'tokens',(SELECT to_jsonb(t) FROM game_character_bounty_reroll_tokens t WHERE t.character_id=p.character_id AND t.world_id=b.world_id),'token_entries',(SELECT count(*) FROM game_character_bounty_reroll_token_entries WHERE character_id=p.character_id),'token_sources',(SELECT count(*) FROM game_task_board_token_sources WHERE character_id=p.character_id),'quest_receipts',(SELECT count(*) FROM game_character_quest_receipts WHERE character_id=p.character_id),'xp_receipts',(SELECT count(*) FROM game_character_xp_receipts WHERE character_id=p.character_id),'xp_obligations',(SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=p.character_id)) FROM game_character_progression_state p JOIN game_character_task_boards b USING(character_id) WHERE p.character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).fetch_one(&harness.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn overflow_and_replay(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
@@ -124,6 +142,9 @@ pub(super) async fn overflow_and_replay(
     Ok(refused)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn bigint_boundary(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
@@ -197,11 +218,17 @@ pub(super) async fn bigint_boundary(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn token_balance(harness: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT balance FROM game_character_bounty_reroll_tokens WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
         .bind(id(41).as_slice()).bind(id(42).as_slice()).fetch_one(&harness.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn token_entries(harness: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT count(*) FROM game_character_bounty_reroll_token_entries WHERE character_id=encode($1,'hex')::uuid",

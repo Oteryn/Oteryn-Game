@@ -9,6 +9,7 @@ use sha2::{Digest, Sha384};
 
 const TRACK: &str = "oteryn:quest-progress/questpc7/friends/program";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc7_friends_full_route_and_repeatable_unlocked_services() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

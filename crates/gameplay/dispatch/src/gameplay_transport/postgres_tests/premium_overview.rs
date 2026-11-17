@@ -57,6 +57,7 @@ async fn wire(
     assert_eq!(status, CommandStatus::Accepted);
     Overview::decode(&bytes).ok_or_else(|| "Premium codec".into())
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn t165_premium_overview_real_dispatch_account_privacy_expiry_and_leases() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

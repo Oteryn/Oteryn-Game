@@ -4,6 +4,7 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_spirit_three_retained_wills_unlock_only_confession() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -3,6 +3,7 @@ use super::fixture::Harness;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc8_venore_supplies_mint_and_carry_without_invented_charges() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

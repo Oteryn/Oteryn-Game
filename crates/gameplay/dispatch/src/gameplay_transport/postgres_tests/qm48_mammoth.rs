@@ -13,6 +13,7 @@ const AT: Position = Position {
 const MISSION: &str = "oteryn:quest-progress/quest/u8_0/barbarian_test/mission03";
 const KEY: &str = "oteryn:quest-callback/qm48/mammoth";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qm48_mammoth_live_drunk_refusal_expiry_cleanse_commit_replay() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

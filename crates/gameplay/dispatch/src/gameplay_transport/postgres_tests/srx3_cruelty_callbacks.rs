@@ -10,11 +10,13 @@ use crate::gameplay_transport::capabilities::{
 use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_cruelty_actual_source_entry_and_native_defense_chain_postgres() -> TestResult {
     run_source_entry(false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_cruelty_canceled_before_names_drains_original_source_use_postgres() -> TestResult {
     run_source_entry_case(
@@ -23,6 +25,7 @@ fn srx3_cruelty_canceled_before_names_drains_original_source_use_postgres() -> T
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_cruelty_canceled_after_write_reconciles_source_effect_once_postgres() -> TestResult {
     run_source_entry_case(
@@ -31,6 +34,7 @@ fn srx3_cruelty_canceled_after_write_reconciles_source_effect_once_postgres() ->
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_cruelty_completed_handoff_retry_preserves_source_effect_once_postgres() -> TestResult {
     run_source_entry_case(

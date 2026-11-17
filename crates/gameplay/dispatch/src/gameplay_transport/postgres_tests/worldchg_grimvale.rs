@@ -22,6 +22,7 @@ const DESTINATION: Position = Position {
     floor: -10,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn worldchg_grimvale_native_entry_requires_current_moon_without_quest_writes() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -30,6 +31,7 @@ fn worldchg_grimvale_native_entry_requires_current_moon_without_quest_writes() -
     super::kill_reward_e2e::scenario_thread::run("worldchg-grimvale", scenario)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario() -> TestResult {
     scenario_with_bindings(false)
 }
@@ -425,6 +427,7 @@ async fn receipt_count(h: &Harness) -> TestResult<i64> {
     .await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn producer_world(
     callback: &Callback,
     trigger: Position,
@@ -570,26 +573,31 @@ fn producer_world(
     .map_err(debug)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn worldchg_grimvale_final_native_wave_projects_actual_source_portal() -> TestResult {
     run_producer(false, false, false, false, false, false, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn5_feroxa_final_opens_portal_when_boss_spawn_is_blocked() -> TestResult {
     run_producer(true, false, false, false, false, false, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn5_feroxa_timed_native_maps_ignore_pending_delivery_and_reject_stale_reset() -> TestResult {
     run_producer(false, true, false, false, false, false, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn5_feroxa_spectators_return_to_saved_positions_once_on_both_source_timers() -> TestResult {
     run_producer(false, true, true, false, false, false, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn5_feroxa_map_phase_retires_actual_ground_once_with_world_event_audit() -> TestResult {
     run_producer(false, true, false, true, false, false, false)
@@ -597,12 +605,14 @@ fn qn5_feroxa_map_phase_retires_actual_ground_once_with_world_event_audit() -> T
 
 // Crystal final() teleports every player in the area, including one whose
 // client connection dropped; the portal still opens.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn grimvale_final_opens_portal_with_control_lost_spectator_in_square() -> TestResult {
     run_producer_proofs(ProducerProofs { block_spawn: false, prove_phases: false, prove_spectators: false, prove_clear: false, prove_stage: false, prove_batches: false, prove_handoff: false, large_tree: false, control_lost: true })
 }
 
 // The saved spectator return is a forced source teleport too.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn feroxa_return_applies_for_control_lost_actor() -> TestResult {
     run_producer_proofs(ProducerProofs { block_spawn: false, prove_phases: true, prove_spectators: true, prove_clear: false, prove_stage: false, prove_batches: false, prove_handoff: false, large_tree: false, control_lost: true })
@@ -611,30 +621,36 @@ fn feroxa_return_applies_for_control_lost_actor() -> TestResult {
 // Crystal201189f8 data-global/lib/quests/grimvale.lua:25-38 retains the same
 // actual 22761 ingress and 33419,31539,10 landing as the pinned9f5a72c donor.
 // The personal entry stage is the explicit chosen Oteryn recipe, not source completion.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn5_grimvale_authored_entry_commits_through_real_movement_once() -> TestResult {
     run_producer(false, false, false, false, true, false, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn5_feroxa_crowded_corpses_clear_in_bounded_recoverable_batches() -> TestResult {
     run_producer(false, true, false, true, false, true, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn5_feroxa_new_owner_clears_previous_owner_corpse_custody() -> TestResult {
     run_producer(false, true, false, true, false, false, true)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool, prove_stage: bool, prove_batches: bool, prove_handoff: bool) -> TestResult {
     run_producer_proofs(ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff, large_tree: false, control_lost: false })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn5_feroxa_oversized_tree_keeps_root_live_until_bounded_leaves_commit() -> TestResult {
     run_producer_proofs(ProducerProofs { block_spawn: false, prove_phases: true, prove_spectators: false, prove_clear: true, prove_stage: false, prove_batches: false, prove_handoff: false, large_tree: true, control_lost: false })
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run_producer_proofs(proofs: ProducerProofs) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -656,9 +672,13 @@ fn run_producer_proofs(proofs: ProducerProofs) -> TestResult {
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::durability::raid_runner::CommittedRaidAction;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_content::content::ProductionKey;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_encounter_rules::raid::{RaidCatalogue, RaidPosition, SelectedRaid};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn producer_seed(
     harness: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -684,6 +704,7 @@ async fn producer_seed(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 struct ProducerProofs {
     block_spawn: bool,
     prove_phases: bool,
@@ -696,6 +717,7 @@ struct ProducerProofs {
     control_lost: bool,
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestResult {
     let ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff, large_tree, control_lost } = proofs;
     use crate::foundation::{NodeId, ScopeOwnershipGeneration};
@@ -1523,6 +1545,7 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn move_spectator(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
@@ -1539,6 +1562,7 @@ async fn move_spectator(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn seed_feroxa_clear_item(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -1566,6 +1590,7 @@ async fn seed_feroxa_clear_item(
 
 /// Trusted fixture baseline is minted through the real corpse and loot owners.
 /// The tested World phase then retires those exact physical identities.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn mint_feroxa_clear_corpse(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -1640,6 +1665,7 @@ async fn mint_feroxa_clear_corpse(
     Ok((corpse, loot))
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn assert_feroxa_recovery(h: &Harness, reject_forged: bool) -> TestResult {
     let mut tx = h.pool.begin().await?;
     crate::durability::spell_item_transaction::verify_spell_item_chain(&mut tx)
@@ -1687,6 +1713,7 @@ async fn assert_feroxa_recovery(h: &Harness, reject_forged: bool) -> TestResult 
 }
 
 // Trusted imported tree custody; every identity was minted by the real corpse owners.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn import_feroxa_large_tree(h: &Harness, corpses: &[([u8; 16], Vec<[u8; 16]>)]) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;

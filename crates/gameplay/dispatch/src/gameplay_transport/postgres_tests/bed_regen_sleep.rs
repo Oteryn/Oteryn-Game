@@ -45,6 +45,7 @@ impl FreshAdmissionAuthority for SleepOwner<'_, '_, '_> {
     }
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn bed_regen_sleep_dispatch_captures_food_soul_and_vitals_atomically_postgres() -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {

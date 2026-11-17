@@ -9,6 +9,7 @@ use crate::durability::npc_travel::TravelRefusal;
 const A: &str = "oteryn:service.travel.m38_origin_a/travora";
 const B: &str = "oteryn:service.travel.m38_origin_b/travora";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn npcfix_m38_return_origin_is_rechecked_at_quote_and_commit_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -9,16 +9,19 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 };
 use oteryn_protocol_oteryn::actor_spell::{STATE_DOMAIN_ACTOR_VITALS, decode_actor_vitals};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn bed_regen_admission_wire_replay_and_restart_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("bed-regen-wire", || scenario(false))
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn bed_regen_freed_bed_limits_only_sleep_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("bed-regen-freed", || scenario(true))
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn gr_soul_001_bed_admission_uses_current_account_premium_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("bed-regen-soul", || {

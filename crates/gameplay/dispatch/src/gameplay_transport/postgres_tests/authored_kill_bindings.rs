@@ -13,11 +13,13 @@ const PHASE: &str = "oteryn:quest-progress/authored-kills/phase";
 const COUNT: &str = "oteryn:quest-progress/authored-kills/count";
 const STEP: &str = "oteryn:quest-transition/native-kills/authored-engine-rat";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn authored_bindings_native_kill_threshold_completion_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-kills")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn authored_bindings_queued_kill_burst_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-kills-burst")

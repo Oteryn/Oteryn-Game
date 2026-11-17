@@ -37,16 +37,19 @@ enum Case {
     MissingCapability,
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn house_podium_dispatch_query_set_projection_roundtrip_postgres() -> TestResult {
     postgres_case("house_podium_roundtrip", Case::Roundtrip)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn house_podium_dispatch_refusals_leave_display_unchanged_postgres() -> TestResult {
     postgres_case("house_podium_refusals", Case::Refusals)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn house_podium_dispatch_without_capability_150_is_rejected_postgres() -> TestResult {
     postgres_case("house_podium_without_capability", Case::MissingCapability)

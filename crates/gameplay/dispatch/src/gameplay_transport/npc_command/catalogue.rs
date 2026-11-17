@@ -1033,6 +1033,12 @@ pub(super) fn follow_end(
 // Test-only observation of the topic produced by the normal command path.
 #[cfg(test)]
 impl NpcConversations {
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(in crate::gameplay_transport) fn catalogue_topic_for_test(
         &self,
         session: GameSessionId,

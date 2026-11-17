@@ -8,6 +8,7 @@ use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_smelly_actual_native_callback_damages_top_player_after500ms_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -1,7 +1,11 @@
 //! Real reserved onThink -> addEvent -> scoped Item transaction -> current expiry.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{TestResult, fixture::Harness};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::RuntimeScopeRefV1;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn exercise(
     h: &Harness,
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -54,6 +58,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn assert_dynamic_teleport(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
     use crate::durability::DurabilityError;
     use crate::durability::spell_item_transaction::{

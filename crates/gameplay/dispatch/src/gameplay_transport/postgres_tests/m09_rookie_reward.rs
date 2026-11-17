@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 const MISSION: &str = "oteryn:quest-progress/quest/u9_1/the_rookie_guard/mission11";
 const REWARD: &str = "oteryn:quest-reward/m09-rookie-mission11";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m09_rookie_guard_two_rewards_once_and_replay() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m09-rookie")

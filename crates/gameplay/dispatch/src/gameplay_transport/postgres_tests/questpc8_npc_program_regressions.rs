@@ -4,25 +4,45 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::quest_state::{QuestTransitionOutcome, npc_program::NpcProgramRequest};
 use crate::foundation::{CommandId, CommandRef};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_quests::quest::{
     npc_rules::NpcRuleTrigger,
     world_callbacks::Position,
 };
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use oteryn_gameplay_quests::quest::npc_rules::NpcRuleTrigger;
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use oteryn_gameplay_quests::quest::npc_rules::NpcRuleTrigger;
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use oteryn_gameplay_quests::quest::npc_rules::NpcRuleTrigger;
+
 const FATHER: &str = "oteryn:quest.a_father_s_burden_quest";
 const FATHER_ACCEPT: &str =
     "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction() -> TestResult {
     father_case(false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn catalogue_npc_father_legacy_hash_preserves_defaults_and_restart_receipts() -> TestResult {
     father_case(true)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn father_case(legacy: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -400,6 +420,7 @@ pub(super) async fn exercise_father(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -424,6 +445,7 @@ fn catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic() -> TestResult
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn hero_of_rathleton_pipe_greeting_commits_access_once_and_replays() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

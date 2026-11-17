@@ -9,6 +9,7 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTr
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_gameplay_quests::quest::rotten_blood as rules;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn rotten_blood_postgres_literal_altar_consumption_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -27,6 +28,7 @@ fn rotten_blood_postgres_literal_altar_consumption_and_replay() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn rotten_blood_postgres_npc_detour_coin_bank_fee_atomicity_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

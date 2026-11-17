@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc7_grave_whole_native_journey_and_reward() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

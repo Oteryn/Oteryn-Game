@@ -127,7 +127,14 @@ fn validate(mechanics: &[Mechanic]) -> Result<(), String> {
 
 pub(super) fn generate(root: &Path, out: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let directory = root.join("mechanics");
-    println!("cargo:rerun-if-changed={}", directory.display());
+    println!(
+        "cargo:rerun-if-changed={}\ncargo:rerun-if-changed={}",
+        directory.display(),
+        root.join(
+            "../../../apps/game-server/tests/support/character_revision_sequencer_postgres_cases.rs"
+        )
+        .display(),
+    );
     let mut paths = std::fs::read_dir(&directory)?
         .map(|entry| entry.map(|entry| entry.path()))
         .collect::<Result<Vec<_>, _>>()?;

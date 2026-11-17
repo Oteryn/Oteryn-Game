@@ -20,6 +20,7 @@ fn rewards(claims: &[&str]) -> TestResult {
     quest_catalogue_chests::execute(selected)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc7_story_rewards_use_replay_and_refusal() -> TestResult {
     rewards(&[
@@ -41,6 +42,7 @@ fn questpc7_story_rewards_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc7_formorgar_books_use_replay_and_refusal() -> TestResult {
     rewards(&[
@@ -49,6 +51,7 @@ fn questpc7_formorgar_books_use_replay_and_refusal() -> TestResult {
     ])
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc7_giant_smithhammer_rewards_use_replay_and_refusal() -> TestResult {
     let cases = quest_catalogue_chests::cases()?;

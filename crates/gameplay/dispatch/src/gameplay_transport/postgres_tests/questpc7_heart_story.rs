@@ -3,6 +3,7 @@ use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn questpc7_heart_whole_native_breaches_and_rewards() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

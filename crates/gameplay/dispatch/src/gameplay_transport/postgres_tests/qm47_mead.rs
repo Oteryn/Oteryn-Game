@@ -1,6 +1,9 @@
 //! M47 drives the fenced world writer, preserving the command receipt on replay.
 use super::TestResult;
 use super::fixture::{Harness, debug};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::quest_world_callbacks::scenario;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
@@ -9,10 +12,17 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTr
 use crate::durability::quest_world_callback::QuestWorldContext;
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::AdmittedSession;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
+
+#[cfg(any(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+use oteryn_gameplay_quests::quest::world_callbacks::Callback;
 use oteryn_gameplay_quests::quest::{QuestStateCatalogue, barbarian_mead as mead, world_callbacks};
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m47_postgres_mead_roll_is_fenced_and_exactly_replayed() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

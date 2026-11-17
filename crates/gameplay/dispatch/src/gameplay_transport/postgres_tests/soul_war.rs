@@ -1,18 +1,53 @@
 //! W11 Soul War: real command7 NPC dispatch, native XP receipt descendants and reload.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness, debug, id, run};
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::fixture::debug;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult, prepare_current_session, reset};
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::durability::character_progression::CurrentCharacterGameplayFence;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::quest_state::soul_war::{
     SoulWarCommand, apply_soul_war_kill_in_transaction, soul_war_experience_in_transaction,
 };
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::durability::quest_state::soul_war::{
+    apply_soul_war_kill_in_transaction, soul_war_experience_in_transaction,
+};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{CommandId, CommandRef};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::ComposedFreshAdmission;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::soul_war::{
     SoulWarBoss, SoulWarRefusal, TAINT_DURATION_SECONDS,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn soul_war_postgres_native_taints_xp_reset_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -21,11 +56,14 @@ fn soul_war_postgres_native_taints_xp_reset_and_replay() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("soul-war-durable", scenario)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn soul_war_postgres_mixed_and_all_expired_terminal_replay() -> TestResult {
     super::party_xp::run(super::party_xp::Case::SoulWarTerminal)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn current(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,
@@ -35,6 +73,9 @@ async fn current(
         .ok_or_else(|| "Soul War current fence".into())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn command(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,
@@ -57,6 +98,9 @@ async fn command(
     result.map_err(debug)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn place_npc(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
@@ -112,6 +156,9 @@ async fn place_npc(
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn talk(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
@@ -152,6 +199,8 @@ async fn talk(
 /// A test-side projection of a native captured death. The physical capture owner
 /// supplies these values; no client command carries or selects them.
 #[derive(Clone)]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) struct CapturedEndgameDeath<K = [u8; 52]> {
     pub death_key: K,
     pub occurrence: [u8; 16],
@@ -164,6 +213,8 @@ pub(super) struct CapturedEndgameDeath<K = [u8; 52]> {
 
 /// Existing native XP/death seam for source identities captured by another mounted
 /// fixture. This does not bypass or make a claim about physical corpse admission.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn settle_captured_endgame_death<K: AsRef<[u8]>>(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     pool: &sqlx::PgPool,
@@ -302,6 +353,9 @@ pub(super) async fn settle_captured_endgame_death<K: AsRef<[u8]>>(
 
 /// Source-side fixture enters the real atomic XP owner and native Quest consumer;
 /// raw boss/participant values are never exposed as client command payloads.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn kill(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     pool: &sqlx::PgPool,
@@ -346,6 +400,9 @@ async fn kill(
 /// Uses the existing two-player fresh-admission fixture. Every completion flag
 /// is earned through the native XP owner; only the historical first-taint clock
 /// is seeded administratively to exercise expiry during an admitted encounter.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn terminal_expiry_case(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     pool: &sqlx::PgPool,
@@ -601,6 +658,9 @@ pub(super) async fn terminal_expiry_case(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn read_state(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,
@@ -616,6 +676,9 @@ async fn read_state(
         .map_err(debug)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn expire_clock(pool: &sqlx::PgPool, character: crate::domain::CharacterId) -> TestResult {
     let mut tx = pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -628,6 +691,9 @@ async fn expire_clock(pool: &sqlx::PgPool, character: crate::domain::CharacterId
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn terminal_failure(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     request: crate::durability::endgame_terminal::EndgameFailureRequest,
@@ -649,6 +715,9 @@ async fn terminal_failure(
     result.map_err(debug)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn terminal_decision(
     pool: &sqlx::PgPool,
     attempt: &[u8; 32],
@@ -657,10 +726,14 @@ async fn terminal_decision(
         .bind(attempt.as_slice()).fetch_one(pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario() -> TestResult {
     scenario_with_outfit(false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qengine_l13_revenant_parent_and_accessories() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -678,6 +751,9 @@ fn qengine_l13_revenant_parent_and_accessories() -> TestResult {
     result
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
     run(async |admin| {
         reset();
@@ -1363,6 +1439,9 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn reward_delivery(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,

@@ -1,7 +1,13 @@
 //! Selected library journey: real NPC discussions, owned component conversion and captured Oberon death.
 use super::fixture::{Harness, debug, id};
 use super::questpc8_authored_programmes::{object_target, step, use_target};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{TestResult, quest_world_callbacks};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4")))))]
+use super::TestResult;
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     connection::{AdmittedSession, FreshAdmissionAuthority},
@@ -16,6 +22,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 #[path = "questpc8_secret_library/world.rs"]
 mod fixture_world;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc8_secret_library_raft_research_fiddle_gail_oberon_and_access() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

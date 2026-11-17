@@ -7,8 +7,12 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget, en
 
 const GOLD: &str = "oteryn:item.tibia.i3031";
 const PLATINUM: &str = "oteryn:item.tibia.i3035";
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const NAME: &str = "qengine-rewards-questpc4-puzzle-predicate-srv7-m02";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srv7_m02_real_ground_order_guards_framed_world_use_without_consumption() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() { return Ok(()); }

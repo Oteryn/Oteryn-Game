@@ -2,6 +2,7 @@
 use super::TestResult;
 use super::fixture::{Harness, id, run};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_rotten_tagged_instance_death_receipt_namespace_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

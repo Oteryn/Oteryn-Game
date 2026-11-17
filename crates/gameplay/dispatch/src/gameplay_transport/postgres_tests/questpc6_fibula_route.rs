@@ -2,6 +2,7 @@
 use super::fixture::{debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn questpc6_fibula_source_expertise_level_gate_refusal_and_replay() -> TestResult {
     super::m06_keys::source_key_door(32212, 32435, -10, 1050)

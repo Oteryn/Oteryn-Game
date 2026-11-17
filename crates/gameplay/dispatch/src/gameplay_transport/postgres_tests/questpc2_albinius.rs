@@ -9,16 +9,19 @@ const TRACK: &str = "oteryn:quest-progress/quest/u11_02/forgotten_knowledge/tome
 const TOME: &str = "oteryn:item.tibia.i23986";
 const OTHER_BOOK: &str = "oteryn:item.tibia.i2848";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc2_albinius_four_tomes_and_another_book_cannot_pay_the_contribution() -> TestResult {
     super::qengine_rewards::scenario("questpc2-albinius-four-tomes")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc2_albinius_five_tomes_commit_with_progress_and_preserve_other_books() -> TestResult {
     super::qengine_rewards::scenario("questpc2-albinius-five-tomes")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc2_albinius_combined_offer_and_confirmation_preserve_source_if_order() -> TestResult {
     super::qengine_rewards::scenario("questpc2-albinius-combined")

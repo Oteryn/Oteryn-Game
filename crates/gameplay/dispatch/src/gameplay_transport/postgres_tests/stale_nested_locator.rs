@@ -17,22 +17,27 @@ enum Mutation {
     FullViewShrink,
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn f32_parent_stack_merge() -> TestResult {
     scenario(|| exercise(Mutation::Merge))
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn f32_parent_sibling_removal() -> TestResult {
     scenario(|| exercise(Mutation::Remove))
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn f32_parent_reorder_sort() -> TestResult {
     scenario(|| exercise(Mutation::Sort))
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn f32_nested_close_reopen() -> TestResult {
     scenario(|| exercise(Mutation::Reopen))
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn f32_full_view_boundary_shrink() -> TestResult {
     scenario(|| exercise(Mutation::FullViewShrink))

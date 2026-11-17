@@ -2,6 +2,7 @@
 use super::{TestResult, quest_world_callbacks};
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc8_voodoo_three_native_witches_two_boxes_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

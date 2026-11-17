@@ -9,6 +9,7 @@ use crate::gameplay_transport::capabilities::{
 };
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_primal_real_instance_ranged_ammunition_consumes_once_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

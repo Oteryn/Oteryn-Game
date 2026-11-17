@@ -7,6 +7,7 @@ use crate::gameplay_transport::connection::FirstEntryOutcome;
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::character_info::CharacterTitle;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srv6_title_task_board_real_dispatch_boundaries_reload_and_fence() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -4,6 +4,7 @@ use super::kill_reward_e2e::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::gameplay_transport::connection::FirstEntryOutcome;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn first_entry_training_content_mismatch_is_not_holder_contention_postgres() -> TestResult {
     run(async |admin| {

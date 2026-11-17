@@ -20,6 +20,7 @@ const BOSS: &str = "oteryn:boss.mimar_haffar";
 const GOLD: &str = "oteryn:item.tibia.i3031";
 const MOONSILVER_HELMET: &str = "oteryn:item.tibia.i53229";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn boss_pity_postgres_victory_counts_and_first_drop_ends_the_tracker() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

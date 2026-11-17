@@ -21,6 +21,7 @@ const MACHINES: [(u16, u16, u8); 9] = [
     (33015, 32138, 1),
     (33022, 32147, 3),
 ];
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn questpc8_venore_native_daily_circuit_and_exact_repeat_boundary() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

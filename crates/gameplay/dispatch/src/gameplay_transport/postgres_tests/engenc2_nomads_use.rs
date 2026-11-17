@@ -8,27 +8,33 @@ use crate::gameplay_transport::connection::{
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::sync::Arc;
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engenc2_nomads_native_use_refuses_missing_ground_before_quest_receipt() -> TestResult {
     scenario(Scenario::Window)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engenc2_nomads_flat_source_crate_materializes_once_postgres() -> TestResult {
     scenario(Scenario::Crate)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engenc2_nomads_amphora_ground_relocation_refuses_inventory_postgres() -> TestResult {
     scenario(Scenario::Amphora)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engenc2_nomads_native_amphora_push_dispatch_postgres() -> TestResult {
     scenario(Scenario::SourceAmphora)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engenc2_nomads_actual_catalogue_selects_ground_and_replays_after_layout_drift_postgres()
 -> TestResult {
     scenario(Scenario::Selection)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engenc2_nomads_pending_original_survives_ground_drift_postgres() -> TestResult {
     scenario(Scenario::SelectionInterrupted)

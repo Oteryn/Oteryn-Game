@@ -4,6 +4,7 @@ use super::support::{self, Case, exchange};
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_protocol_oteryn::store as wire;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn client_e2e_store() -> TestResult {
     support::scenario(Case::Store)

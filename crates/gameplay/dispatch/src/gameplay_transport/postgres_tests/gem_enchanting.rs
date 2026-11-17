@@ -13,6 +13,7 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn gemx_shrine_stack_wire_atomic_replay_and_refusals() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -26,6 +27,7 @@ fn gemx_shrine_stack_wire_atomic_replay_and_refusals() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn gemx_weapon_and_ammunition_wire_atomic_replay() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -507,6 +509,7 @@ async fn exchange(
     Ok((admitted, result, actual))
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn gemx_native_output_closure_includes_stacks_elements_and_charges() -> TestResult {
     use crate::content::ReferenceItemField as F;

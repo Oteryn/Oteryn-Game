@@ -76,6 +76,7 @@ async fn exchange(
     result.map_err(|error| format!("team finder command {id} ended {ended:?}: {error}").into())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn team_finder_leader_listing_create_edit_remove_survives_relog_through_the_wire() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

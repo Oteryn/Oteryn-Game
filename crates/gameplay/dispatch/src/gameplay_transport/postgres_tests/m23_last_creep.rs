@@ -27,6 +27,7 @@ pub(super) fn start() -> Position {
     }
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m23_last_creep_eight_disguises_matching_portals_and_returns_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

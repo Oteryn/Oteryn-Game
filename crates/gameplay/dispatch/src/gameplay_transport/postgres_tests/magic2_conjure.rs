@@ -16,11 +16,13 @@ use std::num::NonZeroU32;
 const BLANK: &str = "oteryn:item.tibia.i3147";
 const MISSILE: &str = "oteryn:item.tibia.i3198";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn magic2_conjure_postgres_full_bag_rolls_back_then_merges_mints_and_replays() -> TestResult {
     large_stack(|| scenarios(&[(true, false)]))
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn magic2_conjure_postgres_missing_bag_rolls_back_and_missing_reagent_is_terminal() -> TestResult {
     large_stack(|| scenarios(&[(false, true), (false, false)]))

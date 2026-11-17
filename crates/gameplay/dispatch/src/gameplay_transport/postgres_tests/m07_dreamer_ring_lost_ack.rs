@@ -9,6 +9,7 @@ use oteryn_gameplay_quests::quest::{
 
 pub(super) const NAME: &str = "m07-ring-offering-lost-ack";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn lost_ack_dreamer_ring_replay_republishes_trees() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

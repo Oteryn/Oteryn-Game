@@ -30,6 +30,12 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 pub(super) use tests::purchase_fixture;
 /// Explicit registration from a genuine independent trusted clock owner. SystemTime, database
 /// receipt time and a readiness field with guessed zero uncertainty cannot implement this port.

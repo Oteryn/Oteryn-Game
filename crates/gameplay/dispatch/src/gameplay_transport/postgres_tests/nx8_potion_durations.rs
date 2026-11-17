@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::potion_durations::{
     CAPABILITY_POTION_DURATIONS_V1, COMMAND_TYPE_POTION_DURATIONS_QUERY, PotionDurations,
 };
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn nx8_potion_durations_postgres_online_offline_xp_sources_and_expiry() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run_async(async |admin| {

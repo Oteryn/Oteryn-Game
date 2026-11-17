@@ -8,6 +8,7 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::map::boot::{BootPins, boot, tests as bundle_fixture};
 use crate::map::facts::ItemDefinition;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qmech_m21_postgres_map_container_source_view() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -343,6 +344,7 @@ fn source_view(nested: bool, immovable: bool) -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qmech_m21_postgres_nested_key_pickup() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -372,6 +374,7 @@ fn qmech_m21_postgres_nested_key_pickup() -> TestResult {
 #[path = "qmech_m22_captured_stack/postgres.rs"]
 mod captured_stack;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qmech_m21_postgres_immovable_source_without_native_custody_policy() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -394,6 +397,7 @@ fn qmech_m21_postgres_immovable_source_without_native_custody_policy() -> TestRe
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qmech_m21_postgres_shared_ruby_real_reset() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

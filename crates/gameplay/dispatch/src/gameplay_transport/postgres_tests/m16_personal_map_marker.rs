@@ -13,6 +13,7 @@ use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 const PREFIX: &str = "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/";
 const QUEST: &str = "oteryn:quest.targuna_quest";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m16_sterling_commits_personal_marker_and_delivers_delta_and_reconnect_snapshot() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

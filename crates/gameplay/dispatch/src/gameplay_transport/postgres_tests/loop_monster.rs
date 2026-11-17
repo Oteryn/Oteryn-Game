@@ -1,10 +1,52 @@
 //! LOOP-MONSTER-1 through the real Channel dispatcher and configured PostgreSQL 17.6.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness, debug, id};
+
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::fixture::{debug, id};
+
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use super::fixture::{debug, id};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::{Dependencies, TestResult};
+
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use super::{Dependencies, TestResult};
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementLocalPosition};
 #[path = "loop_monster/fixture.rs"]
 pub(super) mod fixture;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use fixture::{cell, dependencies, next_pass, run_case};
+
+#[cfg(any(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
+use fixture::{cell, dependencies, run_case};
+
+#[cfg(any(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
+use {
+    fixture::cell,
+    fixture::dependencies,
+};
+
+#[cfg(any(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+use {
+    fixture::cell,
+    fixture::dependencies,
+};
 #[path = "loop_monster/item_scope.rs"]
 mod item_scope;
 #[path = "loop_monster/pass_cost.rs"]
@@ -18,6 +60,7 @@ mod summon_transaction;
 #[path = "loop_monster/unknown_bundle_field.rs"]
 mod unknown_bundle_field;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn current_owner_spawn_home_walkback_and_leash_use_actual_source_cell() -> TestResult {
     run_case(async |harness| {
@@ -159,15 +202,18 @@ fn current_owner_spawn_home_walkback_and_leash_use_actual_source_cell() -> TestR
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn current_owner_summon_transaction_map_and_one_pass_use_actual_item_scope() -> TestResult {
     run_case(async |harness| summon_transaction::scenario(harness, false, false).await)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn activated_outer_source_summon_rejects_inner_catalog_and_registers_once() -> TestResult {
     run_case(async |harness| summon_transaction::scenario(harness, true, false).await)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn current_owner_summon_registration_failure_rolls_back_and_replays_the_refusal() -> TestResult {
     run_case(async |harness| summon_transaction::scenario(harness, false, true).await)

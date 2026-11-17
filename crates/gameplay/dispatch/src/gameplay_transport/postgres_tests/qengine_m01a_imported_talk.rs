@@ -13,11 +13,13 @@ use std::sync::Arc;
 const QUEST: &str = "oteryn:quest.in_service_of_yalahar_quest";
 const TRACK: &str = "oteryn:quest-progress/m01a/yalahar-talk";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m01a_imported_recipe_native_talk_dispatch_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-imported-talk")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m01a_multi_npc_talk_stage_is_atomic_and_replay_bound_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-authored-imported-talk-group")

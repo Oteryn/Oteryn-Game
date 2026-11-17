@@ -6,6 +6,7 @@ use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand}
 use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w05d_cake_bites_use_native_map_and_commit_exact_world_receipts() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

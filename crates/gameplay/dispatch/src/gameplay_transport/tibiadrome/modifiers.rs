@@ -11,6 +11,30 @@ use oteryn_gameplay_entities::runtime_actor_carrier::tibiadrome_modifiers::{
     DromeModifier, DromeModifierEffect as Effect, DromeModifierState, DromeParticipant,
 };
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g1"),
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 pub(in crate::gameplay_transport) use test_context::select as select_test_modifier;
 pub(super) struct ModifierOwner {
     state: DromeModifierState,

@@ -3,6 +3,7 @@
 use crate::bestiary_postgres_harness::{Harness, TestResult, configured_admin, id, runtime};
 use serde_json::{Value, json};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn forge_live_atomic_postgres_cases() -> TestResult {
     let Some(admin) = configured_admin() else {

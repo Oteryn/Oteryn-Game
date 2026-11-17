@@ -13,14 +13,17 @@ fn execute(ground: bool, missing: bool) -> TestResult {
     );
     result
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn s06_glider_seven_carried_pieces_are_atomic_and_replayed() -> TestResult {
     execute(false, false)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn s06_glider_missing_one_piece_never_spends() -> TestResult {
     execute(false, true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn s06_glider_ground_trigger_preserves_source_and_consumes_carried_recipe() -> TestResult {
     execute(true, false)

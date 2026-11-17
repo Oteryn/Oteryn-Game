@@ -6,16 +6,21 @@ use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m09_treasure_telescope_once_and_replay() -> TestResult {
     run("m09-treasure-telescope")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m09_treasure_three_ingots_once_and_replay() -> TestResult {
     run("m09-treasure-ingots")
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

@@ -1,18 +1,23 @@
 //! NX-8 S13c: a live party query publishes effects of every local party member.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::bestiary_postgres_harness::{TestResult, debug};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities},
     connection::{AdmittedSession, FirstEntryOutcome, SessionContinuity},
     party_command::SessionPartyView,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::party::*;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn party_member_effects_real_query_durations_and_legacy_gate_postgres() -> TestResult {
     super::party_buffs::run_party_buffs(None)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn check(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     players: &[(

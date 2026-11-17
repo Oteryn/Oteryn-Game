@@ -1,6 +1,7 @@
 //! Investigate the retained pipe-room approach before the later dungeon access door.
 use super::*;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_hero_native_voice_approach_requires_current_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

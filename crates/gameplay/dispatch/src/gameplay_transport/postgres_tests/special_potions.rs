@@ -1,19 +1,42 @@
 //! Crystal 201189f8 potions.lua:21-26,36-42,57,62,78-110,141-147.
 //! Real USE frames, actual player condition owner, fenced PostgreSQL burn and flask.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, run};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::fixture::debug;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, prepare_current_session, reset};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::domain::condition::{ConflictKey, DotElement};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::ChannelContentPin;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{
     ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use oteryn_protocol_oteryn::CommandStatus;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, decode_use_result, encode_item_use_intent,
 };
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use oteryn_protocol_oteryn::world_object::{
+    UseTarget, encode_item_use_intent,
+};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::num::{NonZeroU32, NonZeroU64};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use std::num::NonZeroU32;
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 
@@ -152,16 +175,19 @@ pub(super) async fn exchange(
     Ok((admitted, status, result, actual))
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn antidote_potion_postgres_use_cures_poison_flask_cooldown_replay() -> TestResult {
     run_case(7644)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn magic_shield_potion_postgres_use_capacity_expiry_requirements_replay() -> TestResult {
     run_case(35563)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn run_case(item: u32) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -181,6 +207,7 @@ fn run_case(item: u32) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn inventory_fingerprint(h: &Harness) -> TestResult<String> {
     Ok(sqlx::query_scalar(
         "SELECT jsonb_agg(to_jsonb(i) ORDER BY item_instance_id)::text FROM game_item_instances i",
@@ -189,11 +216,13 @@ async fn inventory_fingerprint(h: &Harness) -> TestResult<String> {
     .await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn potion_progress(h: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT COALESCE((SELECT progress FROM game_character_achievement_progress WHERE character_id=encode($1,'hex')::uuid AND achievement_key='oteryn:achievement/potion_addict'),0)")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn scenario(item: u32, vocation: &'static str, level: u32) -> TestResult {
     run(async move |admin| {
         reset();

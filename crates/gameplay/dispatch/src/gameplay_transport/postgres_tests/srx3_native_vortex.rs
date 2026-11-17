@@ -129,6 +129,7 @@ fn source_map_case() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_vortex_actual_native_callback_transforms_and_restores_current_source_ground_postgres()
 -> TestResult {

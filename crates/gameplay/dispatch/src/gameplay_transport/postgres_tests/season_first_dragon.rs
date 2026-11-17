@@ -33,6 +33,7 @@ const EXIT: MovementLocalPosition = MovementLocalPosition {
     y: 30994,
     floor: 14,
 };
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m18_selected_first_dragon_native_instance_timeout_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -531,6 +532,7 @@ fn scenario(victory: bool) -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m18_selected_first_dragon_native_victory_completes_once_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

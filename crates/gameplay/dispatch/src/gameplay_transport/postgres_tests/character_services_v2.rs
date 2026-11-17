@@ -5,43 +5,53 @@ use crate::native_admission_source::character_commands::{Decision, Input};
 use crate::native_admission_source::character_services_v2::CharacterCommandIntentV2;
 use serde_json::{Value, json};
 use sqlx::Row;
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_services_v2_postgres_repeatable_rename_delete_cancel_finalize_and_projection()
 -> TestResult {
     scenario(false, "char_services_decisions", false)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_services_v2_postgres_cancel_finalizer_race_has_one_winner() -> TestResult {
     scenario(true, "char_services_race", false)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_services_v2_postgres_independent_service_and_lcfa_acknowledgements() -> TestResult {
     scenario(false, "char_services_projection", true)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_services_v2_review_oversize_is_terminal() -> TestResult {
     scenario(false,"char_services_review_oversize",false)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_services_v2_review_resync_uses_current_owner() -> TestResult {
     scenario(false,"char_services_review_owner",false)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_services_v2_review_same_epoch_quarantine_survives() -> TestResult {
     scenario(false,"char_services_review_quarantine",false)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_services_v2_review_migration_has_no_root_index_build() -> TestResult {
     scenario(false,"char_services_review_migration",false)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_services_v2_review_receipt_replays_with_security_peer_down() -> TestResult {
     scenario(false,"char_services_review_replay",false)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_services_v2_review_finalizer_skips_busy_oldest() -> TestResult {
     scenario(false,"char_services_review_finalizer",false)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_services_v2_review_tombstones_do_not_occupy_portfolio() -> TestResult {
     scenario(false,"char_services_review_portfolio",false)

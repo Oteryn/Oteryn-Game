@@ -224,11 +224,23 @@ pub(super) mod postgres_tests;
 /// A scoped simulation clock, shared by cloned owners but isolated by Channel
 /// state. Real I/O, SQL deadlines and movement pacing retain their real clocks.
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 pub(super) struct TestOwnerClock {
     states: std::sync::Arc<super::channel_states::ChannelSessionStates>,
     previous: u64,
 }
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 impl Drop for TestOwnerClock {
     fn drop(&mut self) {
         self.states
@@ -238,6 +250,12 @@ impl Drop for TestOwnerClock {
 }
 #[cfg(test)]
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(super) fn freeze_owner_clock_for_test(&self) -> TestOwnerClock {
         let value = self.owner_now().get().saturating_add(1);
         let previous = self

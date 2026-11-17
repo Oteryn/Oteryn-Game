@@ -10,14 +10,17 @@ use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w19_blueberry_harvest_wire_atomic_replay_and_regrowth() -> TestResult {
     run_case(3699, true)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w19_ice_flower_harvest_wire_yield_replay_and_restart() -> TestResult {
     run_case(13842, true)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w19_ice_flower_harvest_wire_no_seed_cannot_reroll() -> TestResult {
     run_case(13842, false)
@@ -29,6 +32,7 @@ enum ThawingSource {
     Ordinary,
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn worldchg_thawing_daily_added_use_yield_replay_restart() -> TestResult {
     run_case_with_source(
@@ -40,6 +44,7 @@ fn worldchg_thawing_daily_added_use_yield_replay_restart() -> TestResult {
         }),
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn worldchg_thawing_inactive_daily_source_refuses_without_value() -> TestResult {
     run_case_with_source(
@@ -51,6 +56,7 @@ fn worldchg_thawing_inactive_daily_source_refuses_without_value() -> TestResult 
         }),
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn worldchg_thawing_stale_epoch_refuses_without_value() -> TestResult {
     run_case_with_source(
@@ -62,6 +68,7 @@ fn worldchg_thawing_stale_epoch_refuses_without_value() -> TestResult {
         }),
     )
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn worldchg_thawing_ordinary_flower_at_daily_coordinate_is_not_day_gated() -> TestResult {
     run_case_with_source(13842, true, Some(ThawingSource::Ordinary))

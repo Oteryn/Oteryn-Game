@@ -6,10 +6,12 @@ use crate::foundation::{MovementLocalPosition, RuntimeScopeRefV1};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_protocol_oteryn::{boss_encounter as boss, world_spatial as movement};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m25_ahau_native_step_exit_returns_exact_current_instance_participant_postgres() -> TestResult {
     scenario(false)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m25_ahau_player_push_exit_returns_only_pushed_participant_postgres() -> TestResult {
     scenario(true)

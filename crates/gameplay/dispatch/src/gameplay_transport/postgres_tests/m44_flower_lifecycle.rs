@@ -19,18 +19,24 @@ const CELL: TilePos = TilePos {
     y: 32352,
     floor: -5,
 };
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m44_native_flower_initial_harvest_and_reharvest_after_exact_regrowth() -> TestResult {
     case("initial")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m44_native_flower_reharvest_preserves_higher_quest_progress() -> TestResult {
     case("later")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m44_native_flower_unknown_commit_reserves_source_and_reconciles_one_grant() -> TestResult {
     case("uncertain")
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn case(phase: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

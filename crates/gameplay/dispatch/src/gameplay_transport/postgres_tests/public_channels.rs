@@ -11,6 +11,7 @@ use sqlx::Row;
 use std::{sync::Arc, time::Duration};
 use tokio::{io::AsyncWriteExt, sync::Mutex};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn public_channels_postgres_control_roles_help_mutation_replay_and_revocation() -> TestResult {
     let Some(admin) = fixture::configured_admin() else { return Ok(()); };

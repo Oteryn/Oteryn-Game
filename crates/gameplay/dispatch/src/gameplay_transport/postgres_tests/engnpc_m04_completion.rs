@@ -18,6 +18,7 @@ use oteryn_gameplay_quests::quest::{
 };
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn engnpc_m04_completion_is_atomic_canonical_and_replay_safe() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

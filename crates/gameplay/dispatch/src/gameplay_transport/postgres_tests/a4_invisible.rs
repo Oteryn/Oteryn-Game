@@ -17,11 +17,13 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 use oteryn_gameplay_domain::domain::condition::ConflictKey;
 use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent, SpellTarget};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn a4_invisible_postgres_real_dispatch() -> TestResult {
     invisibility_case::<false>()
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn a4_invisible_postgres_other_player_cannot_see_or_target_caster() -> TestResult {
     invisibility_case::<true>()

@@ -1,35 +1,67 @@
 //! REWARD-CHEST-WIRE-1: USE on a carried reward bag → real composed owner → one atomic
 //! consume/mint → durable rows; replay of the consumed bag and a capacity refusal.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, run};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::item_craft::exchange;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority, UseCommand};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::item_view::ItemKey;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_items::reward_bag::{reward_bag_conversion, reward_bag_draw};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget, encode_item_use_intent};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn reward_bag_use_wire_atomic_replay_and_capacity_refusal() -> TestResult {
     run_scenario("oteryn:item.tibia.i43895", None)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn reward_bag_desire_use_wire_atomic_replay_and_stale_generation() -> TestResult {
     run_scenario("oteryn:item.tibia.i34109", None)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn reward_bag_primal_quiver_use_wire_atomic_replay_and_stale_generation() -> TestResult {
     run_scenario("oteryn:item.tibia.i39546", Some(("oteryn:item.tibia.i39150", 1)))
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn surprise_bag_use_wire_atomic_replay_and_stale_generation() -> TestResult {
     run_scenario("oteryn:item.tibia.i6570", None)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn surprise_bag_quantity_endpoints_and_special_rewards_use_wire() -> TestResult {
     run_scenarios(vec![
@@ -42,6 +74,7 @@ fn surprise_bag_quantity_endpoints_and_special_rewards_use_wire() -> TestResult 
     ])
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn anniversary_box_outcomes_use_wire_and_replay() -> TestResult {
     run_scenarios([
@@ -50,6 +83,7 @@ fn anniversary_box_outcomes_use_wire_and_replay() -> TestResult {
     ].into_iter().map(|key| (key, None)).collect())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn event_present_and_box_outcomes_use_wire_and_replay() -> TestResult {
     run_scenarios([
@@ -63,7 +97,13 @@ fn event_present_and_box_outcomes_use_wire_and_replay() -> TestResult {
     ].into_iter().map(|key| (key, None)).collect())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 type RewardBagCase = (&'static str, Option<(&'static str, u32)>);
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 struct RewardBagContent {
     world: crate::foundation::WorldId,
     room: crate::content::QualifiedNativeEntryRoom,
@@ -72,10 +112,16 @@ struct RewardBagContent {
     pin: crate::content::NativeEntryContentPin,
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run_scenario(bag_key: &'static str, forced_reward: Option<(&'static str, u32)>) -> TestResult {
     run_scenarios(vec![(bag_key, forced_reward)])
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run_scenarios(cases: Vec<RewardBagCase>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -101,6 +147,9 @@ fn run_scenarios(cases: Vec<RewardBagCase>) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn with_case_deadline(
     bag_key: &str,
     case: impl std::future::Future<Output = TestResult>,
@@ -113,6 +162,7 @@ async fn with_case_deadline(
         .map_err(|error| format!("reward bag {bag_key}: {error}").into())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn reward_bag_unreachable_case_reports_its_deadline() -> TestResult {
     tokio::runtime::Builder::new_current_thread()
@@ -132,6 +182,9 @@ fn reward_bag_unreachable_case_reports_its_deadline() -> TestResult {
         })
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario(
     bag_key: &str,
     forced_reward: Option<(&str, u32)>,

@@ -4,14 +4,17 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l12_dragon_slayer_native_trial_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l12-dragon-slayer-story")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l12_cave_explorer_native_trial_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l12-cave-explorer-story")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn qengine_l12_fire_fighter_native_trial_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l12-fire-fighter-story")
@@ -384,6 +387,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn queued_deaths(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
@@ -401,6 +405,7 @@ pub(super) async fn queued_deaths(
     Ok(targets)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn capture_deaths(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,

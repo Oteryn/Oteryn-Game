@@ -8,6 +8,7 @@ use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use crate::gameplay_transport::guild_chat::wire;
 use oteryn_protocol_oteryn::chat::{ChatRoomSet, private_channel::ChatChannelList};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn private_channel_initial_list_recovers_after_busy_admission() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

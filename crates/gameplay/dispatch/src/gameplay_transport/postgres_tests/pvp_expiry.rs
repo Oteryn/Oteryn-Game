@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pvp_world_cleanup_uses_the_current_composed_channel_owner() -> TestResult {
     run(async |admin| {

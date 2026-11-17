@@ -307,6 +307,7 @@ fn claim_case(
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_adorned_uh_rune_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -338,6 +339,7 @@ fn qready1_adorned_uh_rune_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_barbarian_axe_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -378,6 +380,7 @@ fn qready1_barbarian_axe_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_battle_axe_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -409,6 +412,7 @@ fn qready1_battle_axe_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_blood_herb_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -440,6 +444,7 @@ fn qready1_blood_herb_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_captain_iglues_treasure_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -471,6 +476,7 @@ fn qready1_captain_iglues_treasure_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_circle_room_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -511,6 +517,7 @@ fn qready1_circle_room_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_combat_knife_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -542,6 +549,7 @@ fn qready1_combat_knife_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_crusader_helmet_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -573,6 +581,7 @@ fn qready1_crusader_helmet_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_crystal_wand_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -613,6 +622,7 @@ fn qready1_crystal_wand_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_darashia_dragon_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -644,6 +654,7 @@ fn qready1_darashia_dragon_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_dark_armor_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -675,6 +686,7 @@ fn qready1_dark_armor_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_demona_ring_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -715,6 +727,7 @@ fn qready1_demona_ring_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_double_hero_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -755,6 +768,7 @@ fn qready1_double_hero_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_doublet_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -786,6 +800,7 @@ fn qready1_doublet_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_elephant_tusk_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -817,6 +832,7 @@ fn qready1_elephant_tusk_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_explorer_brooch_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -848,6 +864,7 @@ fn qready1_explorer_brooch_quest_exact_reward_once() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qready1_griffin_shield_quest_exact_reward_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

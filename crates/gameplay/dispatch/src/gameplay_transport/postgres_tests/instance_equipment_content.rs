@@ -13,6 +13,7 @@ use crate::foundation::{
     CommandId, CommandRef, ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn instance_equipment_retains_content_after_origin_activation_postgres() -> TestResult {
     let Ok(_admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {

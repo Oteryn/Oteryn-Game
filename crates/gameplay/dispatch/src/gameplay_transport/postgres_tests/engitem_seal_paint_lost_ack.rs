@@ -14,6 +14,7 @@ use oteryn_protocol_oteryn::world_object::{
 
 pub(super) const NAME: &str = "engitem-native-seal-paint-lost-ack";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn lost_ack_ice_islands_painting_replay_keeps_selected_tool_binding() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

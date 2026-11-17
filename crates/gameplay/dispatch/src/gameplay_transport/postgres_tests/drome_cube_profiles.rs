@@ -8,6 +8,7 @@ use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
 use oteryn_gameplay_items::concoctions::ALL;
 use oteryn_gameplay_items::drome_cube::DROME_CUBE_KEY;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn drome_cube_native_generation_profiles_cover_the_source_and_every_reward() -> Result<(), String> {
     std::thread::Builder::new()

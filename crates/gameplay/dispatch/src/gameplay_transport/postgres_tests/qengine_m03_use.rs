@@ -14,6 +14,7 @@ pub(super) const ENTRY: Position = Position {
 };
 const QUEST: &str = "oteryn:quest.25_years_of_tibia_quest";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m03_time_machine_native_use_live_guards_replay_and_free_return_postgres() -> TestResult {
     let started = std::time::Instant::now();

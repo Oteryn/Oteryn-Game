@@ -1,6 +1,10 @@
 //! Literal source USE callbacks must select the clicked object above ground.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::*;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -67,6 +71,7 @@ fn quest_world_callbacks_literal_use_accepts_clicked_nonzero_ordinal() -> TestRe
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -107,10 +112,16 @@ fn quest_world_callbacks_read_only_stag_uses_gate_without_quest_writes() -> Test
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn position((x, y, floor): (u16, u16, i8)) -> Position {
     Position { x, y, floor }
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn exercise(callback: Callback, appearance: u16, ordinal: u8, stage: Option<i64>) -> TestResult {
     let started = std::time::Instant::now();
     let trigger = callback.selector.position.ok_or("position")?;

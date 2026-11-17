@@ -31,6 +31,7 @@ impl ItemLoopContent for EntryContent<'_> {
     }
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn quest_chest_use_dispatch_mints_once_refreshes_and_pays_xp_once() -> TestResult {
     std::thread::Builder::new()

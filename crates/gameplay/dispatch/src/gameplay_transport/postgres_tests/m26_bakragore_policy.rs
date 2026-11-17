@@ -7,6 +7,7 @@ use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::GameSessionId;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m26_bakragore_postgres_fenced_catalogue_preserves_source_cooldown() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

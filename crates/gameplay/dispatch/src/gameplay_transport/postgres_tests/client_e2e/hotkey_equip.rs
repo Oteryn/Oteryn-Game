@@ -4,6 +4,7 @@ use super::support::{self, Case, count};
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_protocol_oteryn::{self as protocol, hotkey_equip as wire};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn client_e2e_hotkey_equip() -> TestResult {
     support::scenario(Case::HotkeyEquip)

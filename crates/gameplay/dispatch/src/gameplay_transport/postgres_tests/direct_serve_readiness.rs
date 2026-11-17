@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug, run};
 use super::{TestResult, maintain_ready};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn direct_postgres_retired_holder_is_replaced() -> TestResult {
     std::thread::Builder::new()

@@ -6,6 +6,7 @@ use oteryn_gameplay_quests::tutorial::{
     TutorialEvent, TutorialStep, corruptor_items, tutorial_transition,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn tutorial_corruptor_death_forcefield_rearm_has_no_vocationless_kit() -> TestResult {
     std::thread::Builder::new()

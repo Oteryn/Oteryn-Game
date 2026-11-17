@@ -24,6 +24,7 @@ const RAT_CELL: crate::foundation::MovementLocalPosition =
         floor: -7,
     };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn prey_diff_real_kill_values_committed_quantities_and_replay_keeps_one_history_measurement()
 -> TestResult {

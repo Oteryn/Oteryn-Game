@@ -5,6 +5,7 @@ use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
 use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn nx2_arena_status_postgres_wire_receipt_and_generation_fence() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

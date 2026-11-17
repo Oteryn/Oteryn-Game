@@ -10,6 +10,7 @@ const QUEST: &str = "oteryn:quest.goblin_merchant_quest";
 const ROOT: &str = "oteryn:quest-progress/questpc7/goblin/";
 const TOOLS: [(u32, i64); 5] = [(17668, 3), (17669, 1), (17670, 1), (17671, 1), (17676, 1)];
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc7_goblin_six_jobs_and_exact_paid_tools() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -209,6 +210,7 @@ const SIGN_SITES: [Position; 3] = [
 ];
 const SIGN_DECOY: Position = Position { x: 33055, y: 32089, floor: -7 };
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc7_goblin_three_personal_sign_sites() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
@@ -287,6 +289,7 @@ pub(super) async fn exercise_signs(
 
 
 const POND: Position = Position { x: 33134, y: 32093, floor: -10 };
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc7_goblin_exact_pond_consumes_rat_urine_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
@@ -328,6 +331,7 @@ pub(super) async fn exercise_pond(owner: &mut ComposedFreshAdmission<'_, '_, '_>
 }
 
 const TRUNKS: [Position; 3] = [Position{x:33101,y:32047,floor:-10}, Position{x:33143,y:32051,floor:-10}, Position{x:33136,y:32076,floor:-10}];
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc7_goblin_three_trunks_retain_the_source_hammer() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
@@ -373,6 +377,7 @@ pub(super) async fn exercise_trunks(owner:&mut ComposedFreshAdmission<'_, '_, '_
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc7_goblin_five_native_stalkers_credit_exact_deaths() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
@@ -425,6 +430,7 @@ pub(super) async fn exercise_stalkers(owner:&mut ComposedFreshAdmission<'_, '_, 
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc7_goblin_perfume_source_items_admit_without_free_grants() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }

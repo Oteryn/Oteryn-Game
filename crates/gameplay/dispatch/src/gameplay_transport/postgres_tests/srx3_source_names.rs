@@ -11,6 +11,7 @@ use crate::gameplay_transport::source_names::{SourceNameRole, creature_named};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_source_names_detached_sql_reproves_two_players_npc_registered_dead_creature_postgres()
 -> TestResult {

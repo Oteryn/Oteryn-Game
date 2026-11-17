@@ -92,6 +92,7 @@ impl FreshAdmissionAuthority for DepartingPeer<'_, '_, '_, '_> {
     }
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn appearance_census_departure_race_keeps_live_connection_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -1,14 +1,21 @@
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::content::channel_content_pin::ChannelContentPin;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{ChannelRuntimeV1, MovementLocalPosition};
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::{
     capabilities::SelectedCapabilities,
     connection::{FreshAdmissionAuthority, UseCommand},
     item_view::{ItemKey, ItemViewContinuity, SessionItemView},
 };
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::loop_training::*;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use std::time::Duration;
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn field(out: &mut Vec<u8>, key: u8, mut value: u64) {
     out.push(key);
     while value >= 128 {
@@ -17,6 +24,7 @@ fn field(out: &mut Vec<u8>, key: u8, mut value: u64) {
     }
     out.push(value as u8);
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload() -> TestResult {
     std::thread::Builder::new()
@@ -27,6 +35,7 @@ fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn loop_training_postgres_exercise_terminal_readback_never_rebases_live_state() -> TestResult {
     std::thread::Builder::new()
@@ -37,6 +46,7 @@ fn loop_training_postgres_exercise_terminal_readback_never_rebases_live_state() 
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn loop_training_postgres_node_boot_offline_settlement_and_replay() -> TestResult {
     std::thread::Builder::new()
@@ -47,6 +57,7 @@ fn loop_training_postgres_node_boot_offline_settlement_and_replay() -> TestResul
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn loop_training_postgres_statue_logout_checks_player_tile_and_pinned_map() -> TestResult {
     std::thread::Builder::new()
@@ -62,6 +73,7 @@ fn loop_training_postgres_statue_logout_checks_player_tile_and_pinned_map() -> T
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "nologout_statue", true, false).await?;
@@ -273,6 +285,7 @@ fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
     run(async |admin| {
         let tag = if terminal_readback {

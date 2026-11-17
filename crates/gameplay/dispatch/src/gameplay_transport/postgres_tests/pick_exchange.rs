@@ -79,21 +79,25 @@ const PRESENT_CASE: ExchangeCase = ExchangeCase {
     tag: "present_exchange",
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn present_exchange_seymour_atomic_confirmation_refusal_and_replay() -> TestResult {
     execute(&PRESENT_CASE, false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn pick_exchange_atomic_confirmation_refusal_and_replay() -> TestResult {
     execute(&PICK_CASE, false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn obsidian_knife_uzgod_atomic_exchange_cooldown_and_replay() -> TestResult {
     execute(&KNIFE_CASE, false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn present_exchange_seymour_filled_box_is_preserved() -> TestResult {
     execute(&PRESENT_CASE, true)

@@ -16,38 +16,47 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 };
 use oteryn_protocol_oteryn::actor_spell;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn all_charms_outgoing_ordinary_cripple_real_cast() -> TestResult {
     scenario(false, "cripple", 3)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn all_charms_outgoing_native_cripple_real_cast() -> TestResult {
     scenario(true, "cripple", 3)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn all_charms_outgoing_ordinary_cripple_native_immunity() -> TestResult {
     scenario(false, "cripple_immune", 3)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn all_charms_outgoing_native_cripple_native_immunity() -> TestResult {
     scenario(true, "cripple_immune", 3)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn all_charms_outgoing_ordinary_cripple_condition_refusal() -> TestResult {
     scenario(false, "cripple_refusal", 3)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn all_charms_outgoing_native_cripple_condition_refusal() -> TestResult {
     scenario(true, "cripple_refusal", 3)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn all_charms_outgoing_ordinary_cripple_primary_kill() -> TestResult {
     scenario(false, "cripple_primary_kill", 3)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn all_charms_outgoing_native_cripple_primary_kill() -> TestResult {
     scenario(true, "cripple_primary_kill", 3)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn all_charms_outgoing_ordinary_child_has_no_leech() -> TestResult {
     scenario(false, "leech", 3)
@@ -55,8 +64,10 @@ fn all_charms_outgoing_ordinary_child_has_no_leech() -> TestResult {
 
 macro_rules! damage_cases {
     ($(($ordinary:ident, $native:ident, $charm:literal)),+ $(,)?) => { $(
+        #[cfg(feature = "pg-tests-g3")]
         #[test]
         fn $ordinary() -> TestResult { scenario(false, $charm, 3) }
+        #[cfg(feature = "pg-tests-g3")]
         #[test]
         fn $native() -> TestResult { scenario(true, $charm, 3) }
     )+ };

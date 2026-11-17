@@ -10,6 +10,7 @@ use crate::native_admission_source::store::StoreClient;
 use oteryn_protocol_oteryn::store as wire;
 use std::sync::{Arc, Mutex as SyncMutex};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn cosmetic_tokens_real_dispatch_debits_character_and_unlocks_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -18,6 +19,7 @@ fn cosmetic_tokens_real_dispatch_debits_character_and_unlocks_once() -> TestResu
     super::kill_reward_e2e::scenario_thread::run("cosmetic-tokens", || scenario(true))
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn cosmetic_tokens_real_dispatch_coin_payment_grants_and_replays() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

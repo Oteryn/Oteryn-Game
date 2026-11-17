@@ -127,6 +127,9 @@ pub(in crate::gameplay_transport::monk_save::postgres_tests) async fn initialize
     Ok(actor)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn qualify(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     observer: ExactActorRef,

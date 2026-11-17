@@ -24,6 +24,7 @@ mod restart;
 #[path = "mining/wire.rs"]
 mod wire;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn mining_pick_refining_commits_and_replays_through_real_wire_on_postgres() -> TestResult {
     let Some(admin) = configured_admin() else {

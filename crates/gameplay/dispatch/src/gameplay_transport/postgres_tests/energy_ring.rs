@@ -7,6 +7,7 @@ use crate::gameplay_transport::{ComposedFreshAdmission, connection::*};
 use oteryn_protocol_oteryn::item_view::*;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn energy_ring_postgres_dispatch_equip_damage_pause_and_expiry() -> TestResult {
     std::thread::Builder::new()

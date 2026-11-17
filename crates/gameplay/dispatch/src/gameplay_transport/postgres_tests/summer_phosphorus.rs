@@ -5,6 +5,7 @@ use crate::content::channel_content_pin::ChannelContentPin;
 use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn summer_phosphorus_curse_postgres_real_dispatch() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run_async(async |admin| {

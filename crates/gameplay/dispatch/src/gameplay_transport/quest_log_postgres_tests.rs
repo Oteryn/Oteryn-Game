@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::quest_log::{
 };
 use oteryn_protocol_oteryn::{MessageType, decode_snapshot_chunk, decode_wire_envelope};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn quest_log_real_session_source_serves_selected_domain_16_only() -> TestResult {
     std::thread::Builder::new()

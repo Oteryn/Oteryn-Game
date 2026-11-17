@@ -1,7 +1,12 @@
 //! P11 assertions shared by the real fishing/gathering and NPC arrival scenarios.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, id};
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const GATHERING: [(&str, i64); 4] = [
     ("oteryn:achievement/here_fishy_fishy", 250),
     ("oteryn:achievement/exquisite_taste", 250),
@@ -9,12 +14,16 @@ const GATHERING: [(&str, i64); 4] = [
     ("oteryn:achievement/ashes_to_dust", 500),
 ];
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn seed_progress(h: &Harness, key: &str, progress: i64) -> TestResult {
     sqlx::query("INSERT INTO game_character_achievement_progress(character_id,achievement_key,progress) VALUES(encode($1,'hex')::uuid,$2,$3)")
         .bind(id(41).as_slice()).bind(key).bind(progress).execute(&h.pool).await?;
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn seed_gathering(h: &Harness) -> TestResult {
     for (key, total) in GATHERING {
         seed_progress(h, key, total - 1).await?;
@@ -23,6 +32,7 @@ pub(super) async fn seed_gathering(h: &Harness) -> TestResult {
 }
 
 /// Return the first provenance as well, so replay must preserve the event and timestamp.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn assert_progress(
     h: &Harness,
     key: &str,
@@ -46,6 +56,9 @@ pub(super) async fn assert_progress(
     Ok(requests.into_iter().next())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn assert_gathering(
     h: &Harness,
     earned: Option<&str>,

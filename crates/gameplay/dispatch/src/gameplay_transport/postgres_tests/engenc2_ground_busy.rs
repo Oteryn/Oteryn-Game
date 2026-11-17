@@ -8,6 +8,7 @@ use sqlx::Connection;
 
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn engenc2_ground_busy_item_refuses_without_poisoning_quest_transaction() -> Result {
     let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {

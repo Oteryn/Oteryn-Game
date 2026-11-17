@@ -23,6 +23,7 @@ impl oteryn_gameplay_social::cast::preferences::PreferencesStore for Preferences
         })
     }
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn s17_persistent_ban_survives_cast_restart_and_is_owner_scoped() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

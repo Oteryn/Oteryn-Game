@@ -12,6 +12,7 @@ use oteryn_gameplay_quests::quest::{
 };
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn engenc2_fugue_native_death_settles_kesar_and_resets_attempt_postgres() -> TestResult {
     scenario("engenc2-fugue", "fugue")

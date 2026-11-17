@@ -8,6 +8,7 @@ use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
 use oteryn_protocol_oteryn::boss_encounter as wire;
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_outburst_actual_source_bosslever_enters_private_native_party_room_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

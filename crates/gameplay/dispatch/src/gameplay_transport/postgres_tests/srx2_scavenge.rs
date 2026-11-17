@@ -10,6 +10,7 @@ use crate::gameplay_transport::connection::UseCommand;
 use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx2_scavenge_production_use_minted_corpse_atomic_replay_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

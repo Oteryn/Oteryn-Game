@@ -1,12 +1,17 @@
 //! Canary livestream.cpp:249,260: real control caller starts/stops a session-only cast.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{
     Dependencies, TestResult,
     fixture::{Harness, debug, run},
     prepare_current_session,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::cast::Message;
 #[path = "s17_client/settings_host.rs"]
 pub(super) mod settings_host;
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn s17a_client_start_stop_dispatch_commits_audit_and_rejects_stale_revision() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

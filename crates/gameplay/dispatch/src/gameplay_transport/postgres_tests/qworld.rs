@@ -1,10 +1,14 @@
 //! Shared world-change occurrence through reset and the real admitted dispatch path.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
 #[path = "qworld/consumers.rs"]
 pub(super) mod consumers;
 #[path = "qworld/rules.rs"]
 pub(super) mod rules;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qworld_postgres_occurrence_dispatch_and_restart() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

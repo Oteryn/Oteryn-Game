@@ -2,6 +2,7 @@
 use super::TestResult;
 use oteryn_gameplay_quests::quest::{dreamer_fire_bug, world_callbacks::Position};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m07_dreamer_fire_bug_retains_input_and_resets_shared_entrance() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -18,6 +19,7 @@ fn m07_dreamer_fire_bug_retains_input_and_resets_shared_entrance() -> TestResult
 
 /// The admitted ignition scenario also proves the bundle Channel frame arm
 /// (`bundle_channel_frame_admission`) against the real retained proof.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn dreamer_ignition_accepts_bundle_channel_frame() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

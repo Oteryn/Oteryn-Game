@@ -23,6 +23,7 @@ const SPITE_KEY: &str = "oteryn:creature.goshnar_s_spite";
 use oteryn_protocol_oteryn::boss_encounter as wire;
 use std::time::{Duration, Instant};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m26_spite_production_entry_fight_quest_reward_custody_and_return() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

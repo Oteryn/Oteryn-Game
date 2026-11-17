@@ -6,30 +6,39 @@ use super::{
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_gameplay_world::map::view::MapFacts;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_timer_expired_12121_restores_source_lever() -> TestResult {
     run("l6-tomb-switch-timer-expired-12121")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_timer_expired_12122_restores_source_lever() -> TestResult {
     run("l6-tomb-switch-timer-expired-12122")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_timer_expired_12123_restores_source_lever() -> TestResult {
     run("l6-tomb-switch-timer-expired-12123")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_timer_future_does_not_restore_early() -> TestResult {
     run("l6-tomb-switch-timer-fresh-12121")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_timer_repeated_cycles_keep_source_policy() -> TestResult {
     run("l6-tomb-switch-timer-repeat-12121")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_switch_timer_future_occurrence_is_rejected_by_pg() -> TestResult {
     run("l6-tomb-switch-timer-forged-12121")
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

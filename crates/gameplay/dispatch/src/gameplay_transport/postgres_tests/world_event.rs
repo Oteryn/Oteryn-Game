@@ -1,21 +1,29 @@
 //! Real reset finalization -> admitted command bytes -> receipt -> result -> restart.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::foundation::{
     ChannelId, MessageType, ScopeOwnershipGeneration, WorldId, decode_wire_envelope,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{
     ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::world_event as wire;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[path = "world_event/reset_fixture.rs"]
 mod event_fixture;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
     let started = std::time::Instant::now();
@@ -39,6 +47,7 @@ fn world_event_postgres_real_dispatch_reset_restart_and_fences() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w05d_halloween_calendar_reaches_real_reset_query_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -52,6 +61,7 @@ fn w05d_halloween_calendar_reaches_real_reset_query_and_replay() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w05d_christmas_real_npc_present_replay_and_permanent_claim() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -70,6 +80,7 @@ fn w05d_christmas_real_npc_present_replay_and_permanent_claim() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w05d_cake_real_baker_burns_only_remaining_goal_and_replays() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -88,18 +99,27 @@ fn w05d_cake_real_baker_burns_only_remaining_goal_and_replays() -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) fn scenario(epochs: u64) -> TestResult {
     scenario_run(epochs, None, false, None)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn scenario_with_consumers(epochs: u64, consumers: bool) -> TestResult {
     scenario_run(epochs, None, consumers, None)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn scenario_with_native_deaths(epochs: u64, creature: &'static str, active: bool) -> TestResult {
     scenario_run(epochs, None, false, Some((creature, active)))
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_deaths: Option<(&'static str, bool)>) -> TestResult {
     run(async move |admin| {
         reset();
@@ -509,6 +529,7 @@ fn scenario_run(epochs: u64, seasonal: Option<&str>, consumers: bool, native_dea
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn receipt_count(h: &Harness) -> TestResult<i64> {
     Ok(
         sqlx::query_scalar("SELECT count(*) FROM game_world_event_query_receipts")
@@ -517,6 +538,7 @@ async fn receipt_count(h: &Harness) -> TestResult<i64> {
     )
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -567,7 +589,9 @@ async fn exchange(
     Ok(results)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 struct T94Bootstrap;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 impl crate::native_admission_source::account_characters::EpochFence for T94Bootstrap {
     fn read(
         &mut self,
@@ -582,6 +606,7 @@ impl crate::native_admission_source::account_characters::EpochFence for T94Boots
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn set_seasonal_runtime(
     deps: &mut Dependencies,
     world: WorldId,
@@ -628,6 +653,7 @@ fn set_seasonal_runtime(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn santa_present_scenario(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -809,6 +835,7 @@ async fn santa_present_scenario(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn cake_baker_scenario(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,

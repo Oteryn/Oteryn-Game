@@ -6,6 +6,7 @@ use crate::gameplay_transport::primal_menace::{spawn_creature, spawn_fungosaurus
 use oteryn_gameplay_encounters::bosses::hazard_primal::primal_menace_think as rules;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn primal_menace_postgres_native_cadence_spawns_and_retires_actual_beasts() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

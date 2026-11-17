@@ -5,11 +5,13 @@ use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAut
 use oteryn_protocol_oteryn::wheel as wire;
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn seam_missing_progression_wheel_query_keeps_connection() -> TestResult {
     scenario(false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn seam_busy_admission_wheel_query_keeps_connection() -> TestResult {
     scenario(true)

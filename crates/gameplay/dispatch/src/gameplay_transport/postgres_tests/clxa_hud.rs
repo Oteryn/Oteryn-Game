@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::cyclopedia_character::{
     CAPABILITY_CYCLOPEDIA_CHARACTER_V1, COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn clxa_hud_postgres_general_stats_preserve_skill_values_and_stamina_boundaries() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

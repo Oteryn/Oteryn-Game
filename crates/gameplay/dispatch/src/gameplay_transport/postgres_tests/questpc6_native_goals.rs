@@ -9,6 +9,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
 const COUNTER: &str = "oteryn:quest-progress/fibula/cavern_kills";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc6_fibula_native_cavern_goals_capture_replay_refusals_and_cap_eight() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-fibula-native-goals")

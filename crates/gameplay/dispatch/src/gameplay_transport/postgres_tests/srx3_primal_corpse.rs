@@ -4,6 +4,7 @@
 use super::TestResult;
 use super::fixture::{Harness, run};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_primal_corpse_source_chain_policy_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -33,6 +34,7 @@ fn srx3_primal_corpse_source_chain_policy_postgres() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_w11_corpse_source_chain_policy_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -99,6 +101,7 @@ fn srx3_w11_corpse_source_chain_policy_postgres() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_rotten_ambient_corpse_source_chain_policy_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -155,6 +158,7 @@ fn srx3_rotten_ambient_corpse_source_chain_policy_postgres() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_all52_source_corpse_policy_exact_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

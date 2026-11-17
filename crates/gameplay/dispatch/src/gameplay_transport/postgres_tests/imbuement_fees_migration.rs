@@ -3,6 +3,7 @@ use super::TestResult;
 use super::fixture::{Harness, run};
 use sqlx::Acquire;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn imbuement_fee_migration_preserves_history_and_rejects_new_legacy_fees() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

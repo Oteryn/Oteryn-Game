@@ -70,6 +70,7 @@ impl NativeCallbackState {
         self.casts.source_parent_status_for_test(issuer)
     }
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub(in crate::gameplay_transport) fn time_guardian_cast_position_for_test(
         &self,
         actor: crate::foundation::ExactActorRef,
@@ -682,6 +683,7 @@ impl NativeCallbacks {
         clippy::expect_used,
         reason = "tests read only after the current source turn releases its lease"
     )]
+    #[cfg(feature = "pg-tests-g3")]
     pub(in crate::gameplay_transport) fn eruption_master_receipt_for_test(
         &self,
         caster: crate::foundation::ExactActorRef,
@@ -693,6 +695,7 @@ impl NativeCallbacks {
             .eruption_receipt_for_test(caster)
     }
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub(in crate::gameplay_transport) fn outburst_cast_receipt_for_test(
         &self,
         caster: ExactActorRef,
@@ -735,6 +738,30 @@ impl NativeCallbacks {
         Ok(self.owner.try_lock().map_err(|_| ())?.next_due_time())
     }
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(in crate::gameplay_transport) async fn enable_omrafir_declared_think_review_for_test(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -747,6 +774,30 @@ impl NativeCallbacks {
         Ok(())
     }
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(in crate::gameplay_transport) async fn omrafir_terminal_failure_for_test(
         &self,
         actor: ExactActorRef,
@@ -802,6 +853,30 @@ impl NativeCallbacks {
             .source_cast_status_for_test(issuer)
     }
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(in crate::gameplay_transport) async fn source_stage_done_for_test(
         &self,
         issuer: ExactActorRef,
@@ -817,6 +892,7 @@ impl NativeCallbacks {
         clippy::expect_used,
         reason = "tests read only after dropping the current owner lease"
     )]
+    #[cfg(feature = "pg-tests-g3")]
     pub(in crate::gameplay_transport) fn time_guardian_cast_position_for_test(
         &self,
         actor: crate::foundation::ExactActorRef,

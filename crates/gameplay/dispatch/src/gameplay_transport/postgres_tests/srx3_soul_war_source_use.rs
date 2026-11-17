@@ -10,23 +10,27 @@ use oteryn_protocol_oteryn::world_object::{
     UseDisposition, UseIntent, UseTarget, WorldObjectTarget,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_soul_war_sanity_wrong_native_target_commits_cooldown_without_burn_postgres() -> TestResult {
     sanity_use_case(None)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_soul_war_sanity_prewrite_loss_retains_no_value_and_completes_ingress_postgres() -> TestResult
 {
     sanity_use_case(Some(RecoveryPoint::BeforeWriteWithLoss))
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_soul_war_sanity_canceled_commit_reconciles_original_receipt_after_loss_postgres()
 -> TestResult {
     sanity_use_case(Some(RecoveryPoint::AfterWriteWithLoss))
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_soul_war_sanity_completed_handoff_retry_completes_original_ingress_postgres() -> TestResult
 {

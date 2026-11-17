@@ -5,7 +5,13 @@ use super::quest_world_callbacks::wire;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::{unnatural_selection as dance, world_callbacks::Position};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+use oteryn_gameplay_quests::quest::unnatural_selection as dance;
 use oteryn_protocol_oteryn::world_spatial::{
     self as codec, StepDirection as Dir, StepDisposition as D,
 };
@@ -13,6 +19,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 #[path = "m40_native_dance/rollout.rs"]
 mod rollout;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m40_native_diagonal_dance_full_sequence_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -1,6 +1,7 @@
 //! The Katana route starts at its accessible key cache, before the locked reward room.
 use super::*;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_katana_native_key_route_entry_credits_once_without_claiming_key() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

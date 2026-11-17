@@ -61,6 +61,7 @@ async fn enter(
     track(owner, dependencies)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn nbeof_logout_busy_holder_postgres() -> TestResult {
     run(async |admin| {
@@ -174,6 +175,7 @@ fn nbeof_logout_busy_holder_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn nbeof_lifecycle_reads_keep_holder_preference_postgres() -> TestResult {
     run(async |admin| {
@@ -313,6 +315,7 @@ fn nbeof_lifecycle_reads_keep_holder_preference_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn nbeof_training_readback_waits_without_replaying_write_postgres() -> TestResult {
     run(async |admin| {
@@ -501,6 +504,7 @@ fn nbeof_training_readback_waits_without_replaying_write_postgres() -> TestResul
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn nbeof_logout_wire_postgres() -> TestResult {
     run(async |admin| {
@@ -587,6 +591,7 @@ fn nbeof_logout_wire_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn logout_commits_terminal_saves_the_position_and_retires_the_actor() -> TestResult {
     run(async |admin| {
@@ -654,6 +659,7 @@ fn logout_commits_terminal_saves_the_position_and_retires_the_actor() -> TestRes
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn logout_in_fight_is_refused_and_changes_nothing() -> TestResult {
     run(async |admin| {
@@ -751,6 +757,7 @@ fn logout_in_fight_is_refused_and_changes_nothing() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn logout_of_a_superseded_controller_is_busy_and_lifts_its_fence() -> TestResult {
     run(async |admin| {
@@ -832,6 +839,7 @@ fn logout_of_a_superseded_controller_is_busy_and_lifts_its_fence() -> TestResult
 /// An earlier logout attempt whose familiar actor-end save stayed unknown retains it. The later
 /// logout and the closed connection's loss each settle it from the durable record first (here
 /// it was never written), so neither waits for the next actor end to supersede it.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn a_retained_familiar_logout_save_neither_blocks_a_later_logout_nor_the_loss() -> TestResult {
     run(async |admin| {
@@ -941,6 +949,7 @@ fn a_retained_familiar_logout_save_neither_blocks_a_later_logout_nor_the_loss() 
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn an_uncommitted_unknown_logout_becomes_an_ordinary_loss() -> TestResult {
     run(async |admin| {
@@ -995,6 +1004,7 @@ fn an_uncommitted_unknown_logout_becomes_an_ordinary_loss() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn a_committed_logout_whose_acknowledgement_was_lost_is_reconciled_from_the_row() -> TestResult {
     run(async |admin| {
@@ -1066,6 +1076,7 @@ fn a_committed_logout_whose_acknowledgement_was_lost_is_reconciled_from_the_row(
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn a_transport_other_than_the_current_one_never_releases() -> TestResult {
     run(async |admin| {

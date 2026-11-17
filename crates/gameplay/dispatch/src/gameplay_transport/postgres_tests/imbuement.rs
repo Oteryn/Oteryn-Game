@@ -1,12 +1,49 @@
 //! IMBUE-WIRE-1 and PARITY-IMBUE-FORGE-WIRE-1: command 85 -> real composed dispatch -> durable
 //! item owner read, and the shrine apply and clear writers.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness, debug, id, run};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::fixture::debug;
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::fixture::debug;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::TestResult;
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use crate::gameplay_transport::ComposedFreshAdmission;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::connection::{
     AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
+    serve_admitted,
+};
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use crate::gameplay_transport::connection::{
+    AdmittedSession, ConnectionEnd, IDLE_LIVENESS,
+    serve_admitted,
+};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use crate::gameplay_transport::connection::{
+    AdmittedSession, ConnectionEnd, IDLE_LIVENESS,
     serve_admitted,
 };
 use oteryn_protocol_oteryn::CommandStatus;
@@ -15,18 +52,30 @@ use oteryn_protocol_oteryn::item_view::*;
 use std::num::NonZeroU32;
 use tokio::io::AsyncWriteExt;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const SWORD: &str = "oteryn:item.tibia.i3264";
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const SHRINE: &str = "oteryn:item.tibia.i25060";
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const CRYSTAL: &str = "oteryn:item.tibia.i3043";
 /// Strike tier 1 consumes 20 protective charms (Canary `imbuements.xml`).
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const CHARM: &str = "oteryn:item.tibia.i11444";
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const ETCHER: &str = "oteryn:item.tibia.i51443";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn imbuement_wire_dispatch_reads_the_carried_item_and_fails_closed_without_writes() -> TestResult {
     spawn(false, false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn imbuement_wire_dispatch_applies_and_clears_at_a_shrine_in_one_fenced_transaction() -> TestResult
 {
@@ -40,6 +89,7 @@ fn imbuement_wire_dispatch_applies_and_clears_at_a_shrine_in_one_fenced_transact
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn imbuement_elapsed_dispatch_pauses_expires_replays_and_reloads() -> TestResult {
     spawn(true, true)
@@ -50,6 +100,9 @@ mod catalogue;
 #[path = "imbuement/elapsed.rs"]
 mod elapsed;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn spawn(shrine: bool, elapsed: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -62,6 +115,7 @@ fn spawn(shrine: bool, elapsed: bool) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn t174_shrine_dispatch_exposes_all_48_scroll_recipes() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -77,10 +131,15 @@ fn t174_shrine_dispatch_exposes_all_48_scroll_recipes() -> TestResult {
 
 /// The test map holds the sword's bag at x 6, where the actor stands, and at x 7 either a
 /// loose gold coin or an imbuing shrine.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn details_scenario() -> TestResult {
     scenario(false, false, true, false)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(shrine: bool, elapsed: bool, details: bool, catalogue: bool) -> TestResult {
     run(async move |admin| {
         let name = if details {
@@ -300,6 +359,8 @@ fn scenario(shrine: bool, elapsed: bool, details: bool, catalogue: bool) -> Test
 
 /// Without a shrine in reach the window still opens, but apply and clear are
 /// `REQUIREMENT_NOT_MET` and nothing is written.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn out_of_reach(
     harness: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -371,6 +432,8 @@ async fn out_of_reach(
 
 /// Beside a shrine: the item gates, one apply that consumes the charms and burns 7,500 gold,
 /// its replay, a clear that burns 15,000 gold, and refusals that roll back.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn at_the_shrine(
     harness: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -576,6 +639,8 @@ async fn at_the_shrine(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn exchange_item_use(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     target_ref: NonZeroU32,
@@ -684,6 +749,8 @@ async fn exchange_item_use(
 }
 
 /// One accepted command and its result, on the session the previous command left.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn step(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     sword_ref: NonZeroU32,
@@ -706,6 +773,8 @@ async fn step(
 }
 
 /// The gold value of the live coins.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn coin_value(harness: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT COALESCE(sum(quantity * CASE definition_production_key \
@@ -718,6 +787,8 @@ async fn coin_value(harness: &Harness) -> TestResult<i64> {
     .await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn charms(harness: &Harness) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT COALESCE(sum(quantity), 0)::bigint FROM game_item_instances \
@@ -729,6 +800,8 @@ async fn charms(harness: &Harness) -> TestResult<i64> {
 }
 
 /// Imbuement rows, item quantities and lifecycles: no command may change any of them.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn snapshot(harness: &Harness) -> TestResult<(Vec<(i16, i16, i64)>, Vec<(i64, i16)>)> {
     let imbuements = sqlx::query_as(
         "SELECT slot, tier, remaining_ms FROM game_item_imbuements ORDER BY item_instance_id, slot",
@@ -745,6 +818,8 @@ async fn snapshot(harness: &Harness) -> TestResult<(Vec<(i16, i16, i64)>, Vec<(i
 
 /// Only fixture construction bypasses triggers, as in `seed_main_backpack`: one stored
 /// imbuement on the sword (entry id 71) in slot 0.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn seed_imbuement(harness: &Harness) -> TestResult {
     let mut tx = harness.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")

@@ -87,6 +87,7 @@ async fn result(client: &mut tokio::io::DuplexStream) -> TestResult<(CommandStat
     }
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn house_transfer_guard_busy_budget_preserves_connection_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("house-guard-deferred", || {

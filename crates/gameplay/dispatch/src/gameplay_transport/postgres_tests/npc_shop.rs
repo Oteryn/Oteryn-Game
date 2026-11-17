@@ -1,46 +1,69 @@
 //! NPC-TRADE-SELLALL-1: command 97 bytes through `serve_admitted`, the composed NPC trade owner
 //! and runtime-role PostgreSQL: LOOK writes nothing, SELL_ALL sells every carried stack once.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::fixture::{self, Harness, debug, id, run};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::item_look::seed_main_backpack;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, prepare_current_session, reset};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::content::native_gameplay::test_support::activated_with_loot_tables;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::content::{
     NpcDataCatalogue, ProjectV2DefinitionRef, ProjectV2Family, ProjectV2ServiceOffer,
     ProjectV2ServiceOfferDirection, npc_catalogue_preproduction_limits,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::foundation::{
     ChannelContentPin, MessageType, MovementFacing, NpcPlacement, NpcPlacementTable,
     NpcPlacements, decode_wire_envelope,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{
     AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS,
     UseCommand, serve_admitted,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::npc_shop::NpcShopStep;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::npc_talk::{NpcTalkBook, NpcTalkEntry};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::npc_service::{
     CAPABILITY_NPC_SERVICE_V1, COMMAND_TYPE_NPC_TALK_INTENT, NpcIntentDisposition, NpcTalkIntent,
     NpcTradeSide, encode_npc_talk_intent,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::npc_shop::{
     CAPABILITY_NPC_SHOP_V1, COMMAND_TYPE_NPC_SHOP, NpcShopAction, NpcShopIntent, NpcShopResult,
     decode_npc_shop_result, encode_npc_shop_intent,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use std::sync::Arc;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use tokio::io::AsyncWriteExt;
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 const MEAT: &str = "oteryn:item.tibia.i3577";
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 const FISH: &str = "oteryn:item.tibia.i3578";
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 const TRADER: &str = "oteryn:npc.alice";
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 const RASHID: &str = "oteryn:npc.rashid";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn npc_shop_postgres_real_wire_look_sell_all_replay_and_nothing_left() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -57,6 +80,7 @@ fn npc_shop_postgres_real_wire_look_sell_all_replay_and_nothing_left() -> TestRe
 /// One connection: when `greet` names two CommandIds, the real NPC_TALK "hi" and "trade" open
 /// the conversation and its window first, as every connection starts without one; then the
 /// command 97 under `command_id`. Answers that command's result.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -150,6 +174,7 @@ async fn exchange(
 }
 
 /// Row counts of the trade record, its lines, the outbox and the live item instances.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn footprint(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     Ok(sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_npc_trades),(SELECT count(*) FROM game_npc_trade_lines),\
@@ -161,6 +186,7 @@ async fn footprint(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
 }
 
 /// Live backpack entries as (key, quantity), lowest ordinal first.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn carried(h: &Harness) -> TestResult<Vec<(String, i64)>> {
     Ok(sqlx::query_as(
         "SELECT i.definition_production_key,i.quantity FROM game_item_container_entries e \
@@ -172,10 +198,13 @@ async fn carried(h: &Harness) -> TestResult<Vec<(String, i64)>> {
     .await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario() -> TestResult {
     run_shop_scenario(false)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
     run(async move |admin| {
         reset();

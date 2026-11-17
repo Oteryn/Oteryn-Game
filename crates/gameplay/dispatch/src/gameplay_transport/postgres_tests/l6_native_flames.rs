@@ -25,6 +25,9 @@ const GOAL: Position = Position {
     floor: -14,
 };
 const START_IDS: &[u32] = &[417, 417, 417, 417, 417, 423, 417];
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -45,22 +48,27 @@ fn run(name: &'static str) -> TestResult {
     );
     result.map_err(Into::into)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_native_flames_missing_last() -> TestResult {
     run("l6-native-flames-missing-last")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_native_flames_missing_middle() -> TestResult {
     run("l6-native-flames-missing-middle")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_native_flames_all_seven() -> TestResult {
     run("l6-native-flames-all")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_native_flames_unordered() -> TestResult {
     run("l6-native-flames-unordered")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_native_flames_repeat_and_replay() -> TestResult {
     run("l6-native-flames-repeat")

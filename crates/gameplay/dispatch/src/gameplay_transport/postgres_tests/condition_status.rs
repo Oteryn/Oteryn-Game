@@ -5,6 +5,7 @@ use oteryn_protocol_oteryn::condition_status::{
     CAPABILITY_CONDITION_STATUS_V1, COMMAND_TYPE_CONDITION_STATUS_QUERY, ConditionStatus,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn condition_status_postgres_real_dispatch_food_clear_and_current_lease_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

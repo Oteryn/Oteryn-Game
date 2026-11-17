@@ -8,6 +8,7 @@ use crate::durability::item_mint::BakragoreDeathLoot;
 use crate::foundation::{CommandId, CommandRef, MovementLocalPosition, RuntimeScopeRefV1};
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_murcion_empty_copied_death_has_proven_uncredited_corpse_postgres() -> TestResult {
     super::srx3_rotten_advanced::copied_death(
@@ -23,6 +24,7 @@ fn srx3_murcion_empty_copied_death_has_proven_uncredited_corpse_postgres() -> Te
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_ichgahal_empty_copied_death_has_proven_uncredited_corpse_postgres() -> TestResult {
     super::srx3_rotten_advanced::copied_death(
@@ -38,6 +40,7 @@ fn srx3_ichgahal_empty_copied_death_has_proven_uncredited_corpse_postgres() -> T
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_vemiath_copied_death_has_proven_uncredited_corpse_postgres() -> TestResult {
     super::srx3_rotten_advanced::copied_death(
@@ -53,6 +56,7 @@ fn srx3_vemiath_copied_death_has_proven_uncredited_corpse_postgres() -> TestResu
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_chagorz_copied_death_preserves_credited_corpse_owner_postgres() -> TestResult {
     super::srx3_rotten_advanced::copied_death(
@@ -68,6 +72,7 @@ fn srx3_chagorz_copied_death_preserves_credited_corpse_owner_postgres() -> TestR
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_bakragore_uncredited_death_retains_actual_first_think_essence_postgres() -> TestResult {
     super::srx3_rotten_advanced::copied_death(
@@ -83,6 +88,7 @@ fn srx3_bakragore_uncredited_death_retains_actual_first_think_essence_postgres()
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_bakragore_credited_death_retains_actual_first_think_essence_postgres() -> TestResult {
     super::srx3_rotten_advanced::copied_death(
@@ -98,6 +104,7 @@ fn srx3_bakragore_credited_death_retains_actual_first_think_essence_postgres() -
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_bakragore_full_reward_queue_finishes_copied_death_without_mint_or_xp_postgres() -> TestResult
 {

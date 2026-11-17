@@ -1,9 +1,15 @@
 //! Reward prerequisites are authoritative and precede every progress/value effect.
 use super::fixture::{Harness, debug, id};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_case(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -28,14 +34,17 @@ fn run_case(name: &'static str) -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc7_reward_requirements_refuse_missing_native_premium() -> TestResult {
     run_case("questpc7-eligibility-no-premium")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc7_reward_requirements_current_premium_and_low_level() -> TestResult {
     run_case("questpc7-eligibility-current")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc7_reward_requirements_high_level_and_readonly_parent() -> TestResult {
     run_case("questpc7-eligibility-high")

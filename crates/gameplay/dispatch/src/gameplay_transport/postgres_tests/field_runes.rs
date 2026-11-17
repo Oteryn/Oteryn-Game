@@ -32,6 +32,7 @@ use oteryn_protocol_oteryn::world_spatial::{
 use oteryn_protocol_oteryn::{CommandStatus, decode_command_result, decode_snapshot_chunk};
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_all_profiles_use_the_existing_caster() -> TestResult {
     large_stack(|| {
@@ -83,6 +84,7 @@ fn field_runes_all_profiles_use_the_existing_caster() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn nbroute_field_step_busy_holder_postgres() -> TestResult {
     large_stack(|| {
@@ -102,6 +104,7 @@ fn nbroute_field_step_busy_holder_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_player_contact_ticks_and_incidental_skull() -> TestResult {
     large_stack(|| {
@@ -121,6 +124,7 @@ fn field_runes_postgres_player_contact_ticks_and_incidental_skull() -> TestResul
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_player_contact_recovers_committed_damage() -> TestResult {
     large_stack(|| {
@@ -136,6 +140,7 @@ fn field_runes_postgres_player_contact_recovers_committed_damage() -> TestResult
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_safe_wall_unknown_commit_never_repeats_movement() -> TestResult {
     large_stack(|| {
@@ -153,11 +158,13 @@ fn field_runes_postgres_safe_wall_unknown_commit_never_repeats_movement() -> Tes
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_safe_fire_stays_safe_after_creator_loss_through_decay() -> TestResult {
     large_stack(|| run(async |admin| field_case(admin, 3188, 1, 21465, true, false, true).await))
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_real_dispatch_casts_fields_walls_and_bombs() -> TestResult {
     large_stack(|| {
@@ -180,6 +187,7 @@ fn field_runes_postgres_real_dispatch_casts_fields_walls_and_bombs() -> TestResu
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_real_dispatch_casts_blocking_and_safe_barriers() -> TestResult {
     large_stack(|| {
@@ -197,6 +205,7 @@ fn field_runes_postgres_real_dispatch_casts_blocking_and_safe_barriers() -> Test
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_secret_agent_tool_removes_wild_growth() -> TestResult {
     large_stack(|| {
@@ -216,11 +225,13 @@ fn field_runes_postgres_secret_agent_tool_removes_wild_growth() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_missing_extension_cannot_pay_or_create() -> TestResult {
     large_stack(|| run(async |admin| field_case(admin, 3164, 0, 2135, false, false, false).await))
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_protection_zone_refuses_fields_and_barriers_without_payment() -> TestResult
 {
@@ -234,6 +245,7 @@ fn field_runes_postgres_protection_zone_refuses_fields_and_barriers_without_paym
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_destroy_field_removes_listed_field_and_refuses_without_payment()
 -> TestResult {
@@ -259,6 +271,7 @@ fn field_runes_postgres_destroy_field_removes_listed_field_and_refuses_without_p
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_destroy_field_visible_screen_and_los() -> TestResult {
     large_stack(|| {
@@ -374,6 +387,7 @@ fn equipped_hit(scenario: Scenario, output: u32, ordinal: u32) -> u32 {
     damage - damage / 2
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_equipped_step_tick_charges_and_mantra() -> TestResult {
     large_stack(|| {
@@ -407,6 +421,7 @@ fn field_runes_postgres_equipped_step_tick_charges_and_mantra() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_equipped_step_unknown_commit() -> TestResult {
     large_stack(|| {
@@ -531,6 +546,7 @@ fn equipped_generation(
     Ok((controller, pin))
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_player_legality_and_death() -> TestResult {
     large_stack(|| {
@@ -563,6 +579,7 @@ fn field_runes_postgres_player_legality_and_death() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_zone_tick_suppression() -> TestResult {
     large_stack(|| {
@@ -575,6 +592,7 @@ fn field_runes_postgres_zone_tick_suppression() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_player_death_and_source_loss() -> TestResult {
     large_stack(|| {
@@ -591,6 +609,7 @@ fn field_runes_postgres_player_death_and_source_loss() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_periodic_unknown_commit() -> TestResult {
     large_stack(|| {
@@ -607,6 +626,7 @@ fn field_runes_postgres_periodic_unknown_commit() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_caster_entry_respects_world_type() -> TestResult {
     large_stack(|| {
@@ -619,6 +639,7 @@ fn field_runes_postgres_caster_entry_respects_world_type() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_creature_entry_and_residual_tick() -> TestResult {
     large_stack(|| {
@@ -638,6 +659,7 @@ fn field_runes_postgres_creature_entry_and_residual_tick() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn field_runes_postgres_energy_and_poison_hit_players_and_creatures() -> TestResult {
     large_stack(|| {

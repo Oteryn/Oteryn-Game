@@ -15,6 +15,7 @@ mod npc;
 #[path = "monk_shrines/rewards.rs"]
 mod rewards;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn monk_shrine_selectors_match_the_real_world_source_tiles() -> TestResult {
     let root = std::path::Path::new(concat!(
@@ -67,6 +68,7 @@ fn monk_shrine_selectors_match_the_real_world_source_tiles() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn monk_shrines_real_use_persists_once_and_checks_each_level() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -91,6 +93,7 @@ fn monk_shrines_real_use_persists_once_and_checks_each_level() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn monk_shrine_full_backpack_keeps_entitlement_until_retry() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -109,6 +112,7 @@ fn monk_shrine_full_backpack_keeps_entitlement_until_retry() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn monk_shrine_capacity_keeps_entitlement_until_retry() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -6,6 +6,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
 const TRACK: &str = "oteryn:quest-progress/questpc7/tokens/programme";
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn questpc7_hunting_for_tokens_exact_twenty_and_once_only_abacus() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }

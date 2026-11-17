@@ -11,6 +11,7 @@ use crate::gameplay_transport::npc_voice::NpcVoiceCycle;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn s10_wandering_postgres_moves_within_source_radius_and_pauses_for_customers() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

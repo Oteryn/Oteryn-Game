@@ -1,5 +1,6 @@
 //! The Quest writer reads immutable personal marks with the runtime role.
 use super::{TestResult, fixture::{Harness, run}};
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn review5_runtime_role_can_lock_personal_map_marks() -> TestResult {
     std::thread::Builder::new().stack_size(64 << 20).spawn(|| {

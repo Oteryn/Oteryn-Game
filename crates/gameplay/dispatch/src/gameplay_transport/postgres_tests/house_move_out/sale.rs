@@ -5,6 +5,7 @@ use oteryn_protocol_oteryn::house_sale as sale;
 mod setup;
 #[path = "charged.rs"]
 mod charged;
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn t135_house_transfer_catalogue_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

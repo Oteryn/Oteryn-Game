@@ -32,6 +32,7 @@ fn journey(case: &'static str, required: &[&str]) -> TestResult {
     super::qengine_rewards::scenario(case)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questl2_djinn_efreet_full_player_journey() -> TestResult {
     journey(
@@ -44,6 +45,7 @@ fn questl2_djinn_efreet_full_player_journey() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questl2_djinn_marid_full_player_journey() -> TestResult {
     journey(

@@ -1,13 +1,31 @@
 //! MARKET-1: installed migration and real depot-admitted command route.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, run};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::content::channel_content_pin::ChannelContentPin;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAuthority};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::map::boot::{BootPins, boot, tests as bundle_fixture};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::map::facts::ItemDefinition;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::market::*;
 // Only decode projection rows; production replies have a fixed code prefix.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn projected_rows(bytes: &[u8]) -> TestResult<Vec<([u8; 16], u64)>> {
     fn varint(bytes: &[u8], at: &mut usize) -> TestResult<u64> {
         let mut value = 0;
@@ -54,6 +72,8 @@ fn projected_rows(bytes: &[u8]) -> TestResult<Vec<([u8; 16], u64)>> {
     Ok(rows)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn routed_market(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
@@ -65,6 +85,8 @@ async fn routed_market(
         .collect::<TestResult<Vec<_>>>()?;
     routed_market_payloads(owner, admitted, requests).await
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn market_transport(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
@@ -86,6 +108,8 @@ async fn market_transport(
     client.read_to_end(&mut output).await?;
     Ok((label, output))
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn routed_market_payloads(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
@@ -131,6 +155,7 @@ async fn routed_market_payloads(
     Ok(replies)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn market_postgres_settlement_replay_and_conservation() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -143,6 +168,7 @@ fn market_postgres_settlement_replay_and_conservation() -> TestResult {
         .map_err(|_| "market scenario panicked")??;
     Ok(())
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn market_postgres_placement_projection_bounds_and_thirty_day_expiry() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -162,6 +188,7 @@ fn market_postgres_placement_projection_bounds_and_thirty_day_expiry() -> TestRe
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn reaudit_market_population() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -180,6 +207,8 @@ fn reaudit_market_population() -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
     run(async |admin| {
         let harness =
@@ -1278,6 +1307,8 @@ pub(super) fn scenario(bounds: bool, population: bool) -> TestResult {
         harness.cleanup().await
     })
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn uuid(text: &str) -> TestResult<[u8; 16]> {
     let hex = text.replace('-', "");
     let mut out = [0; 16];
@@ -1286,10 +1317,13 @@ fn uuid(text: &str) -> TestResult<[u8; 16]> {
     }
     Ok(out)
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn snapshot(h: &Harness) -> TestResult<String> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_array((SELECT jsonb_agg(to_jsonb(b) ORDER BY account_id) FROM game_account_bank_balances b),(SELECT jsonb_agg(to_jsonb(i) ORDER BY item_instance_id) FROM game_item_instances i),(SELECT jsonb_agg(to_jsonb(o) ORDER BY offer_id) FROM game_market_offers o),(SELECT jsonb_agg(to_jsonb(l) ORDER BY item_instance_id) FROM game_item_character_inbox_locations l),(SELECT jsonb_agg(to_jsonb(l) ORDER BY item_instance_id) FROM game_item_market_escrow_locations l))::text").fetch_one(&h.pool).await?)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn market_postgres_migration_diagnostic() -> TestResult {
     run(async |admin| {
@@ -1327,16 +1361,21 @@ fn market_postgres_migration_diagnostic() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn market_postgres_expiry_recovery_returns_buy_escrow_once() -> TestResult {
     expiry_recovery(false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn market_postgres_expiry_clears_pending_match() -> TestResult {
     expiry_recovery(true)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn expiry_recovery(pending_match: bool) -> TestResult {
     run(async move |admin| {
         let h = Harness::create_with_admission_seed(admin, "market_expiry", true, false).await?;
@@ -1393,6 +1432,7 @@ fn expiry_recovery(pending_match: bool) -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn market_postgres_buy_funds_refusal_replays_without_value_rows() -> TestResult {
     run(async |admin| {

@@ -7,6 +7,7 @@ use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 const STAGE: &str = "oteryn:quest-progress/chosen/colours/stage";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc8_colours_native_envelope_and_self_marking_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -4,6 +4,7 @@ use super::{Dependencies, TestResult, prepare_current_session, track};
 use crate::durability::DurabilityRoot;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn background_position_batch_completes_both_passes_with_foreground_demand_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("background-position-operation", || {
@@ -67,6 +68,7 @@ fn background_position_batch_completes_both_passes_with_foreground_demand_postgr
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn background_quest_sweep_yields_between_sessions_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("background-quest-sweep", || {
@@ -161,6 +163,7 @@ fn background_quest_sweep_yields_between_sessions_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn background_expired_quest_timer_executes_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("background-expired-quest-timer", || {
@@ -172,6 +175,7 @@ fn background_expired_quest_timer_executes_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn background_empty_grizzly_ordinary_boss_respawns_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("background-ordinary-boss", || {
@@ -224,6 +228,7 @@ fn background_empty_grizzly_ordinary_boss_respawns_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn background_timed_sessions_rotate_within_bounded_grants_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("background-timed-rotation", || {

@@ -16,27 +16,32 @@ use oteryn_protocol_oteryn::world_object::{
     decode_use_intent_target, encode_item_use_intent,
 };
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_soulpit_native_use_scope_barrier_and_spawn_postgres() -> TestResult {
     native_soulpit_scenario(false, false, false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_soulpit_committed_entry_pending_physical_transfer_never_becomes_leave_postgres()
 -> TestResult {
     native_soulpit_scenario(true, false, false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_soulpit_living_native_grace_avatar_remains_in_encounter_postgres() -> TestResult {
     native_soulpit_scenario(false, true, false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_soulpit_native_early_exit_retires_private_encounter_postgres() -> TestResult {
     native_soulpit_scenario(false, false, true)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_soulpit_native_entry_delivers_source_teleport_effect_postgres() -> TestResult {
     native_soulpit_scenario_with_entry_cue(false, false, false, true)

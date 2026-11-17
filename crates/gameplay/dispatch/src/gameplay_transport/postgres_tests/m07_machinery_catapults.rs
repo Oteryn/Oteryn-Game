@@ -3,13 +3,18 @@ use super::TestResult;
 use crate::content::native_gameplay::NativeGameplayState;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 const SOURCE:Position=Position{x:32909,y:31733,floor:-7};
 pub(super) fn start()->Position {Position{x:32910,y:31733,floor:-7}}
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m07_machinery_postgres_catapult_retains_tool_checks_level_and_resets()->TestResult {
     super::m07_machinery_burn::run("m07/machinery-catapult-01",SOURCE)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m07_machinery_postgres_catapult_refuses_level49_without_credit_or_tool_charge()->TestResult {
     super::m07_machinery_burn::run("m07/machinery-catapult-01-level49",SOURCE)

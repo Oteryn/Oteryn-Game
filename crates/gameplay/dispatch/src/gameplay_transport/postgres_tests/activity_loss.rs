@@ -37,6 +37,7 @@ fn test_assignment_scope_key(scope: RuntimeScopeRefV1) -> [u8; 33] {
     key
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn activity_origin_postgres_actual_session_loss_and_offline_recovery() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

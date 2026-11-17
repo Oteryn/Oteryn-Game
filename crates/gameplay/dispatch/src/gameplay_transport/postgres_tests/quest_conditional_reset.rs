@@ -13,14 +13,17 @@ const QUEST: &str = "oteryn:quest/conditional-reset";
 const TRACK: &str = "oteryn:quest-progress/conditional-reset/flag";
 const TRANSITION: &str = "oteryn:quest-transition/conditional-reset";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_conditional_reset_changes_only_exact_matching_value_and_replays() -> TestResult {
     scenario(1, "conditional-reset-match")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_conditional_reset_preserves_absent_initial_flag_and_replays() -> TestResult {
     scenario(-1, "conditional-reset-absent")
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_conditional_reset_preserves_later_flag_and_replays() -> TestResult {
     scenario(2, "conditional-reset-later")

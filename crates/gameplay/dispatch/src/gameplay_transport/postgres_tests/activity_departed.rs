@@ -2,50 +2,71 @@
 //! The successor is offline; only a separately authenticated fresh admission
 //! obtains new control. Fixture content and initial inventory remain explicit.
 use super::fixture::{Harness, debug, id};
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult};
+
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::activity_handoff::ActivityHandoffOwner;
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
 use crate::durability::fresh_admission::FreshAdmissionStore;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::item_loop_move::{
     ItemLoopContent, LoopDestination, LoopGround, LoopMoveRequest,
 };
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::item_mint::TypedDefinitionRef;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::item_transfer::{
     ItemDefinitionFacts, ItemStackClass, ItemWeightLookup, ItemWeightRefused,
 };
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, AssignmentState, ControlActor,
     NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
 };
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::spell_owner_commit::SpellLane;
 use crate::foundation::admission_authority_publication::AdmissionAuthorityGuardStateV1;
 use crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{
     AuthenticatedTransportRefV1, CharacterId, CommandId, CommandRef, GameSessionId,
     GameSessionState, RuntimeScopeRefV1, ScopeOwnershipGeneration,
 };
+
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use crate::foundation::{
+    AuthenticatedTransportRefV1, CharacterId, GameSessionId, RuntimeScopeRefV1,
+};
 use crate::gameplay_transport::item_fence_of;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn activity_departed_postgres_origin_lifecycle_releases_for_fresh_admission_and_retires_ground()
 -> TestResult {
     run(false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn activity_departed_postgres_committed_return_survives_cancel_and_empty_registry() -> TestResult {
     run(true)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn activity_departed_postgres_ended_registration_retires_active_assignment_ground() -> TestResult {
     run_with_departure(false, true)
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(cancel_commit: bool) -> TestResult {
     run_with_departure(cancel_commit, false)
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_with_departure(cancel_commit: bool, registration_ended: bool) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         eprintln!("ACTIVITY_DEPARTED POSTGRES_CASE_SKIPPED: no configured admin");
@@ -83,6 +104,7 @@ fn run_with_departure(cancel_commit: bool, registration_ended: bool) -> TestResu
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn scenario(h: &Harness, cancel_commit: bool, registration_ended: bool) -> TestResult {
     let entered = super::activity_runtime::enter_fixture(h).await?;
     let source = entered.fence;
@@ -404,6 +426,7 @@ async fn scenario(h: &Harness, cancel_commit: bool, registration_ended: bool) ->
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn cancel_after_committed_return(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult {
@@ -512,6 +535,7 @@ pub(super) async fn fresh_after_release(
     Ok(current)
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn bind_origin_capabilities(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     origin: RuntimeScopeRefV1,
@@ -531,6 +555,7 @@ fn bind_origin_capabilities(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn restart_origin(
     h: &Harness,
     deps: &Dependencies,
@@ -703,6 +728,7 @@ async fn restart_origin(
     Ok((node, generation))
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn revoke(h: &Harness, scope: RuntimeScopeRefV1) -> TestResult {
     let RuntimeScopeRefV1::Instance {
         world_id,
@@ -738,10 +764,12 @@ async fn revoke(h: &Harness, scope: RuntimeScopeRefV1) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn census(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT (SELECT count(*) FROM game_activity_runtime_returns),(SELECT count(*) FROM game_durability_reconnect_sessions),(SELECT count(*) FROM game_item_audit_outbox),(SELECT count(*) FROM game_item_ground_locations)").fetch_one(&h.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn seed_private_ground(
     h: &Harness,
     authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
@@ -800,7 +828,9 @@ async fn seed_private_ground(
 
 // Same two explicit fixture definitions as activity_ground_loop; no production
 // Item or encounter defaults are introduced by this isolated fixture extension.
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 struct Content([u8; 32]);
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 impl ItemWeightLookup for Content {
     fn generation_digest(&self) -> [u8; 32] {
         self.0
@@ -811,6 +841,7 @@ impl ItemWeightLookup for Content {
             .ok_or(ItemWeightRefused::Unknown)
     }
 }
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 impl ItemLoopContent for Content {
     fn loop_content_digest(&self) -> [u8; 32] {
         self.0

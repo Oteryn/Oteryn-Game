@@ -56,6 +56,7 @@ fn award(tag: u8, declaration: &str) -> TestResult<ExperienceAwardRequest<2>> {
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn low_level_declaration_postgres_migrates_state_preserves_receipt_and_next_award() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("low-level-declaration", || {

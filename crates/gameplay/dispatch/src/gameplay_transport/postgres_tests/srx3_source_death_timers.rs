@@ -7,12 +7,14 @@ use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
 use crate::foundation::{CommandId, CommandRef, MovementLocalPosition, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_source_death_actual_malice_notice_runs_older_cage_timer_at_real_now_postgres() -> TestResult
 {
     run_malice_source_death_timers(false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_source_death_runs_original_taint_check_before_later_malice_callback_postgres() -> TestResult
 {

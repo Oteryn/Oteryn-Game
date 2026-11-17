@@ -7,6 +7,7 @@ use crate::durability::character_stash::StashCatalogueEntry;
 use crate::foundation::WorldId;
 use oteryn_protocol_oteryn::stash::StashFilter;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn stash_global_filter_precedes_pagination_and_stock_order_is_stable() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -1,6 +1,9 @@
 //! Real party authority and admitted router, reused by the existing membership scenario.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::bestiary_postgres_harness::{TestResult, debug};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{MessageType, decode_wire_envelope};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     capabilities::{BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities},
@@ -9,12 +12,15 @@ use crate::gameplay_transport::{
     },
     tcp_tls::write_frame,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
     party_effects::*, world_spatial_entities::EntityRef,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn party_effects_real_dispatch_postgres_membership_and_shared_eligibility() -> TestResult {
     let started = std::time::Instant::now();
@@ -36,6 +42,7 @@ fn party_effects_real_dispatch_postgres_membership_and_shared_eligibility() -> T
     );
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn check(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -146,6 +153,7 @@ pub(super) async fn check(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn check_buffs(
     h: &crate::bestiary_postgres_harness::Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,

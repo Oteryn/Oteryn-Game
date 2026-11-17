@@ -1,12 +1,24 @@
 //! P12a: command 113 observes the existing Charm and Bosstiary owners, then persists titles
 //! under the current session fence. Fixture seeds retain complete Bestiary receipt chains.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::cyclopedia::support::exchange;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, id, run};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::fixture::{Harness, id};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, debug, prepare_current_session, reset};
+
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::TestResult;
 use crate::domain::bestiary::BestiaryRace;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::CommandStatus;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::character_info::CharacterTitle;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn character_title_native_sources_real_dispatch_and_reload() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -37,6 +49,7 @@ pub(super) fn source_limits() -> crate::content::ProjectEvidenceLimits {
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn catalogue() -> TestResult<Vec<(BestiaryRace, u32)>> {
     let mut rows = crate::content::canonical_bestiary_rows(source_limits()).map_err(debug)?;
     // Minimize fixture receipts using the admitted rewards; no product threshold is invented.
@@ -47,6 +60,7 @@ fn catalogue() -> TestResult<Vec<(BestiaryRace, u32)>> {
     Ok(rows)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn completion_prefix(rows: &[(BestiaryRace, u32)], required: u32) -> TestResult<usize> {
     let mut points = 0;
     rows.iter()
@@ -109,11 +123,13 @@ pub(super) async fn seed_completed(h: &Harness, races: &[(BestiaryRace, u32)]) -
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn title_count(h: &Harness, title: CharacterTitle) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND title=$2")
         .bind(id(41).as_slice()).bind(i16::from(title.id())).fetch_one(&h.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn title_command(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
@@ -123,6 +139,7 @@ async fn title_command(
     exchange(owner, admitted, command, 113, payload).await
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn charm_command(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
@@ -136,6 +153,7 @@ async fn charm_command(
     wire::decode_charm_progression_reply(&bytes).map_err(debug)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn scenario() -> TestResult {
     use crate::gameplay_transport::capabilities::{
         PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,

@@ -8,6 +8,7 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::GameSessionId;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn s15a_fresh_login_is_no_monster_target_for_ten_seconds_postgres() -> TestResult {
     std::thread::Builder::new()

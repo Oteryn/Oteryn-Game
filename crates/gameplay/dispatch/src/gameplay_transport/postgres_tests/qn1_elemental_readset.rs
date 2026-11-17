@@ -1,6 +1,7 @@
 //! M49's database admission predicate is independent of the live Rust map proof.
 use crate::bestiary_postgres_harness as f;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn qn1_elemental_readset_postgres_rejects_incomplete_and_substituted_rings() -> f::TestResult {
     let Some(admin) = f::configured_admin() else {

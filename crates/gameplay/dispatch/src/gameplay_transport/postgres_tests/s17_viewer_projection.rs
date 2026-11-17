@@ -9,6 +9,7 @@ use crate::{
     map::boot::tests::{DOOR_AT, door_world},
 };
 use oteryn_protocol_oteryn::cast::{Envelope, Message, PublicMedia};
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn s17_viewer_map_uses_casters_committed_map_without_changing_actor() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

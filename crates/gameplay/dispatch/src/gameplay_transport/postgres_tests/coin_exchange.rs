@@ -15,6 +15,7 @@ use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn coin_exchange_postgres_dispatch_rates_refusals_replay_and_custody() -> TestResult {
     std::thread::Builder::new()
@@ -552,6 +553,7 @@ async fn nest_last_purse(h: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn coin_use_postgres_wire_atomic_replay_and_refusals() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -784,6 +786,7 @@ async fn report_coin_use_failure(
     );
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn coin_converter_postgres_charges_burn_toggle_and_tick() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -973,6 +976,7 @@ fn converter_scenario() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn coin_converter_unknown_commit_does_not_decline_ownership() -> TestResult {
     std::thread::Builder::new().stack_size(64 << 20)

@@ -7,6 +7,9 @@ use crate::foundation::MovementLocalPosition;
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use oteryn_protocol_oteryn::world_spatial::{
@@ -24,6 +27,7 @@ const LANDING: MovementLocalPosition = MovementLocalPosition {
     floor: 10,
 };
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc8_life_ring_bridge_moves_occupants_with_all_six_cells() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

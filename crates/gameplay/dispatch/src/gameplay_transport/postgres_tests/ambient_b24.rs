@@ -6,6 +6,7 @@ use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPositi
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_protocol_oteryn::presentation::PresentationEventKind;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn reaudit_ambient_sounds_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

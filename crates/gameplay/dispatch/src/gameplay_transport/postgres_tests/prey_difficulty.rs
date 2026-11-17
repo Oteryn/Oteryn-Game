@@ -1,14 +1,32 @@
 //! PREY-DIFF production dispatch and durable transition qualification.
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::prey as wire;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::CommandStatus;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use sqlx::Row;
 
 #[derive(Clone, Copy)]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 enum Case { Tier, Daily, PickAgain, Checkpoint, LapsedCheckpoint, History }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_case(case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         eprintln!("PREY_DIFF POSTGRES_CASE_COMPLETED route_less");
@@ -20,13 +38,22 @@ fn run_case(case: Case) -> TestResult {
     eprintln!("PREY_DIFF POSTGRES_CASE_COMPLETED");
     Ok(())
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test] fn prey_diff_set_tier_preserves_list_and_refuses_locked_or_above_level() -> TestResult { run_case(Case::Tier) }
+#[cfg(feature = "pg-tests-g1")]
 #[test] fn prey_diff_offers_survive_reload_exclude_three_slots_and_reset_without_charging_exhaustion() -> TestResult { run_case(Case::Daily) }
+#[cfg(feature = "pg-tests-g1")]
 #[test] fn prey_diff_pick_again_debits_once_and_refuses_unoffered_occupied_locked_or_unfunded() -> TestResult { run_case(Case::PickAgain) }
+#[cfg(feature = "pg-tests-g1")]
 #[test] fn prey_diff_chosen_race_checkpoint_is_independent_per_slot() -> TestResult { run_case(Case::Checkpoint) }
+#[cfg(feature = "pg-tests-g1")]
 #[test] fn prey_diff_checkpoint_preserves_admitted_activity_after_premium_lapses() -> TestResult { run_case(Case::LapsedCheckpoint) }
+#[cfg(feature = "pg-tests-g1")]
 #[test] fn prey_diff_end_history_commits_measured_counters_with_transition() -> TestResult { run_case(Case::History) }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(case: Case) -> TestResult {
     run(async |admin| {
         reset();
@@ -311,6 +338,9 @@ fn scenario(case: Case) -> TestResult {
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn assert_paid_slot_binding(
     owner: &ComposedFreshAdmission<'_, '_, '_>, h: &Harness, admitted: AdmittedSession,
     catalogue: &crate::durability::prey::PreyCatalogue, request: &wire::Request,
@@ -352,6 +382,9 @@ async fn assert_paid_slot_binding(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn assert_runtime_history_protection(h: &Harness) -> TestResult {
     // Force this one deferred guard before rolling back. The older generic receipt
     // guard remains enabled, but cannot mask a missing lifetime/counter invariant.
@@ -383,6 +416,7 @@ async fn assert_runtime_history_protection(h: &Harness) -> TestResult {
 }
 
 #[derive(Default)]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) struct HistoryCounters {
     pub(super) consumed: i64,
     pub(super) wildcards: i64,
@@ -393,11 +427,13 @@ pub(super) struct HistoryCounters {
     pub(super) pick_gold: i64,
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn selected_at(h: &Harness, slot: u8) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT selected_at_unix_ms FROM game_character_prey_slots WHERE character_id=encode($1,'hex')::uuid AND slot=$2")
         .bind(id(41).as_slice()).bind(i16::from(slot)).fetch_one(&h.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn assert_history(
     h: &Harness, slot: &wire::Slot, catalogue: &crate::durability::prey::PreyCatalogue,
     started: i64, reason: &str, counters: HistoryCounters,
@@ -431,6 +467,9 @@ pub(super) async fn assert_history(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn send(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession, request: &wire::Request) -> TestResult<wire::Reply> {
     let bytes = wire::encode_request(request).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
@@ -438,33 +477,57 @@ async fn send(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &mut Admitte
     assert_eq!(results[0].0, CommandStatus::Accepted);
     wire::decode_reply(&results[0].1).map_err(debug)
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn rejected(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: &mut AdmittedSession, request: &wire::Request) -> TestResult {
     let bytes = wire::encode_request(request).map_err(debug)?;
     let command = admitted.continuity.next_command_id;
     assert_eq!(super::prey::exchange(owner, admitted, &[(command, &bytes)]).await?[0].0, CommandStatus::Rejected); Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn unlock_all(h: &Harness) -> TestResult {
     for slot in [2_i16,3] {
         sqlx::query("INSERT INTO game_account_prey_unlocks(account_id,world_id,unlock_kind,target,source,claiming_character_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'PREY_SLOT_PERMANENT',$4,'STORE_CLAIM',encode($3,'hex')::uuid) ON CONFLICT DO NOTHING").bind(id(40).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(slot).execute(&h.pool).await?;
     }
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn activity(owner: &ComposedFreshAdmission<'_, '_, '_>, actor: crate::foundation::ExactActorRef, session: crate::foundation::GameSessionId, creature: &str, now: u64) {
     let runtime = owner.runtime.lock().await;
     owner.states.spell_states.lock().await.prey_activity(&runtime, actor, session, crate::gameplay_transport::prey::PreyActivity {
         creature, kind: oteryn_gameplay_progression::prey::PreyActivityKind::DealtDamage, now,
     });
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 struct NoPremium;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 impl crate::durability::character_wheel::WheelPremiumGate for NoPremium {
     async fn allocation_permitted(&self, _: &mut sqlx::Transaction<'_,sqlx::Postgres>, _: [u8;16]) -> Result<bool,crate::durability::DurabilityError> { Ok(false) }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 struct AssertedPremium(bool);
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 impl crate::durability::character_wheel::WheelPremiumGate for AssertedPremium {
     async fn allocation_permitted(&self, _: &mut sqlx::Transaction<'_,sqlx::Postgres>, _: [u8;16]) -> Result<bool,crate::durability::DurabilityError> { Ok(self.0) }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn trusted(
     owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: AdmittedSession, occurrence: [u8;16],
     mutation: crate::durability::prey::PreyMutation,
@@ -482,6 +545,9 @@ async fn trusted(
     Ok(result.0)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn seed_coins(h: &Harness, native: &oteryn_gameplay_content::content::native_gameplay::NativeGameplayState) -> TestResult {
             let index = native.item_index().ok_or("items")?;
             let mut tx = h.pool.begin().await?;

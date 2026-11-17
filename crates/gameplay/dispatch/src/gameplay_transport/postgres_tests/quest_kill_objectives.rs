@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_kill_objectives_postgres_content_and_native_authority() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

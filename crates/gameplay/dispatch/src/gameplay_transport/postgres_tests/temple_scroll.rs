@@ -68,36 +68,43 @@ impl crate::durability::item_use::temple_scroll::TempleLanding for Occupied {
     }
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn temple_scroll_teleports_home_and_is_consumed() -> TestResult {
     on_big_stack("temple_scroll_teleport", Case::Teleport)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn temple_scroll_refused_with_logout_block() -> TestResult {
     on_big_stack("temple_scroll_logout_block", Case::LogoutBlock)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn temple_scroll_kept_when_the_temple_landing_is_taken_at_commit() -> TestResult {
     on_big_stack("temple_scroll_no_landing", Case::NoLanding)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn temple_scroll_vanishes_through_the_item_deadline_owner() -> TestResult {
     on_big_stack("temple_scroll_expired", Case::Expired)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn temple_scroll_vanishes_in_every_custody_of_an_offline_character() -> TestResult {
     on_big_stack("temple_scroll_offline", Case::Offline)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn temple_scroll_backlog_of_online_scrolls_never_holds_back_stored_ones() -> TestResult {
     on_big_stack("temple_scroll_backlog", Case::Backlog)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn temple_scroll_on_instance_ground_leaves_with_the_instance() -> TestResult {
     std::thread::Builder::new()

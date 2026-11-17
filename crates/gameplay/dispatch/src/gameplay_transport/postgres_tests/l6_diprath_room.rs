@@ -73,6 +73,9 @@ const SWITCHES: &[Switch] = &[
 pub(super) fn start() -> TestResult<Position> {
     super::l6_native_signs::start()
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -93,14 +96,17 @@ fn run(name: &'static str) -> TestResult {
     );
     result.map_err(Into::into)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_diprath_room_closed_six_switches_seven_signs() -> TestResult {
     run("l6-diprath-room-closed")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_diprath_room_shared_seven_without_signs() -> TestResult {
     run("l6-diprath-room-shared")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn l6_diprath_room_personal_eight_without_switches() -> TestResult {
     run("l6-diprath-room-personal")

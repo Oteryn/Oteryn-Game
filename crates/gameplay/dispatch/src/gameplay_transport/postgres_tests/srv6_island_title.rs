@@ -7,12 +7,19 @@ use crate::durability::character_progression::{
     ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
 };
 use crate::foundation::MovementLocalPosition;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4")))))]
+use oteryn_gameplay_quests::quest::world_callbacks::Callback;
 use oteryn_protocol_oteryn::character_info::CharacterTitle;
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 const VISITED: &str = "oteryn:quest-progress/schrodingers_island/visited";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srv6_robinson_crusoe_real_step_and_title_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

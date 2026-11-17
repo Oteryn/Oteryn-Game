@@ -4,6 +4,7 @@ use super::kill_reward_e2e::scenario_thread::run_async as run;
 use super::{Dependencies, TestResult};
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn fresh_admission_completes_while_other_owners_share_the_holder_postgres() -> TestResult {
     use crate::foundation::{AuthenticatedTransportRefV1, CharacterId, GameSessionId};
@@ -105,6 +106,7 @@ fn fresh_admission_completes_while_other_owners_share_the_holder_postgres() -> T
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn fresh_spell_repair_becomes_playable_without_reconnect_postgres() -> TestResult {
     use crate::foundation::{AuthenticatedTransportRefV1, GameSessionId, MessageType};

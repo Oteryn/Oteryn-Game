@@ -20,6 +20,7 @@ use oteryn_protocol_oteryn::chat::private_channel_extended::{
 };
 use oteryn_protocol_oteryn::chat::{self, ChatDisposition, ChatIntent};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn private_channel_participants_and_notices_follow_join_leave_and_exclusion() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

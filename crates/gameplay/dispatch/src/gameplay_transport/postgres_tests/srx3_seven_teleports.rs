@@ -127,10 +127,12 @@ fn source_teleport_case(maxxen: bool) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_maxxen_actual_native_callback_teleports_in_source_rectangle_postgres() -> TestResult {
     source_teleport_case(true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_zamulosh_actual_native_callback_teleports_to_source_anchor_postgres() -> TestResult {
     source_teleport_case(false)

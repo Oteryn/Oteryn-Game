@@ -15,6 +15,7 @@ use crate::gameplay_transport::npc_trade_command::{derived, occurrence};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn worldchg_yeo_native_repeatable_ten_shrimp_one_gloo_atomic_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

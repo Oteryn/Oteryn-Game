@@ -1,5 +1,6 @@
 //! Multiple top-level chest rewards must retain atomic claim, quest and replay semantics.
 use super::TestResult;
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn w15b_multiple_top_level_items_real_dispatch_once_and_replay() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -15,6 +16,7 @@ fn w15b_multiple_top_level_items_real_dispatch_once_and_replay() -> TestResult {
     result
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn w15b_multiple_top_level_items_one_free_slot_refuses_atomically() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -22,6 +22,7 @@ use oteryn_protocol_oteryn::{
 use std::{future::Future, sync::Arc, time::Duration};
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn private_messages_postgres_cross_node_wire_delivery_replay_and_world_boundary() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

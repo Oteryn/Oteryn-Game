@@ -1,6 +1,10 @@
 //! Current native stash, recursive carried custody and the shared bounded history.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_conversion_consumes_carried_and_stashed_slivers_once() -> TestResult {
     super::super::kill_reward_e2e::scenario_thread::run("forge-stash", || {
@@ -8,6 +12,7 @@ fn forge_postgres_conversion_consumes_carried_and_stashed_slivers_once() -> Test
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_conversion_consumes_materials_in_recursive_carried_custody() -> TestResult {
     super::super::kill_reward_e2e::scenario_thread::run("forge-nested", || {
@@ -15,6 +20,7 @@ fn forge_postgres_conversion_consumes_materials_in_recursive_carried_custody() -
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_postgres_history_keeps_shared_thousand_entries_and_fifty_entry_pages() -> TestResult {
     super::super::kill_reward_e2e::scenario_thread::run("forge-history-bound", || {
@@ -22,6 +28,9 @@ fn forge_postgres_history_keeps_shared_thousand_entries_and_fifty_entry_pages() 
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn stash(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -71,6 +80,9 @@ pub(super) async fn stash(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn nested(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -119,6 +131,9 @@ pub(super) async fn nested(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn history_bound(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,

@@ -11,17 +11,20 @@ use crate::gameplay_transport::connection::{FirstEntryOutcome, UseCommand};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn soulpit_native_item_use_entry_return_and_animus_query_postgres() -> TestResult {
     scenario(false, 32)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn soulpit_production_owner_spawns_native_wave_and_timeout_returns_without_mastery_postgres()
 -> TestResult {
     scenario(true, 32)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn soulpit_native_entry_refuses_insufficient_wave_capacity_without_burning_core_postgres()
 -> TestResult {

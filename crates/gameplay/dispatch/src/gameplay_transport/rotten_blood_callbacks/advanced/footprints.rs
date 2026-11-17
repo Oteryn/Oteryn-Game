@@ -25,6 +25,24 @@ impl super::super::RottenBloodCallbacks {
 }
 impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(crate) async fn drain_rotten_movement_callbacks(&self) {
         let Some(permit) = self.spell_lane_permit().await else {
             return;

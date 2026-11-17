@@ -1,8 +1,12 @@
 //! W18: the real House rotation owner resets the source's non-stopping timer.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::durability::consume_transform::{ConsumeTransformRequest, HouseActionContext};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{CommandId, CommandRef};
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 const CYCLE: [(u32, i64, u32); 8] = [
     (35949, 200_000, 35950),
     (35950, 1_000, 35951),
@@ -14,6 +18,7 @@ const CYCLE: [(u32, i64, u32); 8] = [
     (35972, 1_000, 35969),
 ];
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn scenario(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -237,11 +242,13 @@ pub(super) async fn scenario(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn timed(h: &Harness, item: [u8; 16]) -> TestResult<Value> {
     Ok(sqlx::query_scalar("SELECT to_jsonb(t) FROM game_item_timed_states t WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(item.as_slice()).fetch_one(&h.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn near_expiry_scenario(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -317,6 +324,7 @@ pub(super) async fn near_expiry_scenario(
     );
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn wrap_scenario(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,

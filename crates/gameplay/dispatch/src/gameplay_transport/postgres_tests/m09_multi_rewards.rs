@@ -9,11 +9,13 @@ const TRACK: &str = "oteryn:quest-progress/quest/u8_1/tower_defence_quest/questl
 const REWARD: &str = "oteryn:quest-npc/tower-defence/reward";
 const NPC: &str = "oteryn:npc.bunny_bonecrusher";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m09_tower_defence_four_rewards_once_and_replay() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m09-tower-once")
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m09_tower_defence_three_free_slots_reject_whole_reward() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m09-tower-full")

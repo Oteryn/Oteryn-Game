@@ -69,10 +69,12 @@ fn case(mode: bool) -> TestResult {
         })
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn game_journal_queue_claims_rescan_and_persistent_quarantine() -> TestResult {
     case(true)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn game_journal_account_closure_and_ordinary_expiry_have_distinct_fences() -> TestResult {
     case(false)

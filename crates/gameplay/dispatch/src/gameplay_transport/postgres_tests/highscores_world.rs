@@ -39,6 +39,7 @@ fn result(reply: HighscoresReply) -> TestResult<HighscoresResult> {
     };
     wire::decode_highscores_result(&bytes).map_err(debug)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn highscores_world_reads_keep_session_authority_and_show_me_uses_filter_position() -> TestResult {
     run_async(async |admin| {

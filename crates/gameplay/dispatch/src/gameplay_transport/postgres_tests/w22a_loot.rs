@@ -1,27 +1,51 @@
 //! W22a: the real auto-attack kill drains large and nested loot plans through SQL custody guards.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::TestResult;
+#[cfg(feature = "pg-tests-g4")]
 use super::fixture::{Harness, debug, id};
+#[cfg(feature = "pg-tests-g4")]
 use super::kill_reward_e2e::{scenario, scenario_thread};
+#[cfg(feature = "pg-tests-g4")]
 use crate::gameplay_transport::ComposedFreshAdmission;
+#[cfg(feature = "pg-tests-g4")]
 use serde_json::{Value, json};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::cell::Cell;
 
 #[derive(Clone, Copy)]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 enum Case {
+    #[cfg(feature = "pg-tests-g4")]
     Large,
+    #[cfg(feature = "pg-tests-g4")]
     Nested,
+    #[cfg(feature = "pg-tests-g4")]
     Outside,
+    #[cfg(feature = "pg-tests-g4")]
     ChargedSubtype,
+    #[cfg(feature = "pg-tests-g4")]
     FluidSubtype,
+    #[cfg(feature = "pg-tests-g4")]
     Gut,
+    #[cfg(feature = "pg-tests-g4")]
     DuplexOn,
+    #[cfg(feature = "pg-tests-g4")]
     DuplexOff,
+    #[cfg(feature = "pg-tests-g4")]
     DuplexOfflineIgnored,
+    #[cfg(feature = "pg-tests-g4")]
     DuplexOnlineSpent,
+    #[cfg(feature = "pg-tests-g4")]
     BoostedBossUnique,
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 thread_local! { static CASE: Cell<Option<Case>> = const { Cell::new(None) }; }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w22a_configured_loot_rate_scales_the_table_used_by_death_settlement() -> TestResult {
     // Crystal 201189f8 `data/libs/functions/functions.lua:68-70`: RATE_LOOT multiplies the
@@ -45,6 +69,7 @@ fn w22a_configured_loot_rate_scales_the_table_used_by_death_settlement() -> Test
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w22a_more_than_sixteen_entries_drop_into_the_kill_corpse() -> TestResult {
     scenario_thread::run("w22a-large", || {
@@ -52,6 +77,7 @@ fn w22a_more_than_sixteen_entries_drop_into_the_kill_corpse() -> TestResult {
         scenario()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w22a_nested_container_drop_mints_its_children_inside_the_container() -> TestResult {
     scenario_thread::run("w22a-nested", || {
@@ -59,6 +85,7 @@ fn w22a_nested_container_drop_mints_its_children_inside_the_container() -> TestR
         scenario()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w22a_charged_loot_with_a_subtype_mints_with_its_full_charges() -> TestResult {
     scenario_thread::run("w22a-charged-subtype", || {
@@ -66,6 +93,7 @@ fn w22a_charged_loot_with_a_subtype_mints_with_its_full_charges() -> TestResult 
         scenario()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w22a_fluid_loot_with_a_subtype_mints_the_filled_container() -> TestResult {
     scenario_thread::run("w22a-fluid-subtype", || {
@@ -73,6 +101,7 @@ fn w22a_fluid_loot_with_a_subtype_mints_the_filled_container() -> TestResult {
         scenario()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w22b_gut_widens_creature_product_rolls_on_the_real_kill_path() -> TestResult {
     scenario_thread::run("w22b-gut", || {
@@ -80,6 +109,7 @@ fn w22b_gut_widens_creature_product_rolls_on_the_real_kill_path() -> TestResult 
         scenario()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w22c_wealth_duplex_rolls_the_kill_loot_once_more() -> TestResult {
     scenario_thread::run("w22c-duplex-on", || {
@@ -87,6 +117,7 @@ fn w22c_wealth_duplex_rolls_the_kill_loot_once_more() -> TestResult {
         scenario()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w22c_a_kill_without_wealth_duplex_rolls_its_loot_once() -> TestResult {
     scenario_thread::run("w22c-duplex-off", || {
@@ -94,6 +125,7 @@ fn w22c_a_kill_without_wealth_duplex_rolls_its_loot_once() -> TestResult {
         scenario()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w22b_wealth_duplex_ignores_wall_clock_time_spent_offline() -> TestResult {
     scenario_thread::run("w22b-duplex-offline", || {
@@ -101,6 +133,7 @@ fn w22b_wealth_duplex_ignores_wall_clock_time_spent_offline() -> TestResult {
         scenario()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w22b_wealth_duplex_ends_after_one_online_hour() -> TestResult {
     scenario_thread::run("w22b-duplex-online-spent", || {
@@ -108,6 +141,7 @@ fn w22b_wealth_duplex_ends_after_one_online_hour() -> TestResult {
         scenario()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w22a_mint_into_a_container_outside_the_kill_corpse_is_refused() -> TestResult {
     scenario_thread::run("w22a-outside", || {
@@ -118,21 +152,27 @@ fn w22a_mint_into_a_container_outside_the_kill_corpse_is_refused() -> TestResult
 
 /// W13: the next scenario kills a boosted boss whose table holds a unique amulet, a ring and
 /// gold, each at 100%.
+#[cfg(feature = "pg-tests-g4")]
 pub(super) fn boosted_boss_unique_case() {
     CASE.set(Some(Case::BoostedBossUnique));
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
     let Some(case) = CASE.get() else {
         return Ok(None);
     };
+    #[cfg(feature = "pg-tests-g4")]
     let mut section: Value = serde_json::from_slice(include_bytes!(
         "../../../../../../tools/content-schema/native-gameplay/loot-tables.json"
     ))?;
+    #[cfg(feature = "pg-tests-g4")]
     let entry = |id: u32| {
         json!({"item": {"family":"Item", "key":format!("oteryn:item.tibia.i{id}"),
         "revision":"definition-r1"}, "min_count":1, "max_count":1, "probability_ppm":1_000_000})
     };
+    #[cfg(feature = "pg-tests-g4")]
     let table = section["tables"]
         .as_array_mut()
         .ok_or("tables")?
@@ -140,10 +180,13 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
         .find(|row| row["identity"]["key"] == "oteryn:loot.creature.rat")
         .ok_or("rat table")?;
     match case {
+        #[cfg(feature = "pg-tests-g4")]
         Case::Large => table["entries"] = Value::Array(vec![entry(3031); 20]),
+        #[cfg(feature = "pg-tests-g4")]
         Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent => {
             table["entries"] = Value::Array(vec![entry(3031); DUPLEX_BASE_ENTRIES]);
         }
+        #[cfg(feature = "pg-tests-g4")]
         Case::ChargedSubtype => {
             // A stone skin amulet (5 charges) whose loot names its subtype, as donor content
             // derives it from the charges (`register_monster_type.lua`).
@@ -151,6 +194,7 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
             amulet["subtype"] = json!(5);
             table["entries"] = json!([amulet]);
         }
+        #[cfg(feature = "pg-tests-g4")]
         Case::FluidSubtype => {
             // Crystal 201189f8 `data/libs/functions/container.lua:48-52`: a vial entry with a
             // sub-type is minted holding that fluid (1, water); one without stays empty.
@@ -174,17 +218,20 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
                 })),
             }
         }
+        #[cfg(feature = "pg-tests-g4")]
         Case::BoostedBossUnique => {
             let mut amulet = entry(3081);
             amulet["unique"] = json!(true);
             table["entries"] = json!([entry(3031), amulet, entry(3051)]);
         }
+        #[cfg(feature = "pg-tests-g4")]
         Case::Gut => {
             // Twenty minotaur leathers, a client "Creature Products" item, at 80% each.
             let mut leather = entry(5878);
             leather["probability_ppm"] = json!(GUT_PROBABILITY_PPM);
             table["entries"] = Value::Array(vec![leather; 20]);
         }
+        #[cfg(feature = "pg-tests-g4")]
         Case::Nested | Case::Outside => {
             table["algorithm"] = json!("NestedGroups");
             let mut bag = entry(2871);
@@ -194,14 +241,19 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
             table["entries"] = json!([bag]);
         }
     }
+    #[cfg(feature = "pg-tests-g4")]
     Ok(Some(serde_json::to_vec(&section)?))
 }
 
+#[cfg(feature = "pg-tests-g4")]
 const GUT_PROBABILITY_PPM: u32 = 800_000;
+#[cfg(feature = "pg-tests-g4")]
 const DUPLEX_BASE_ENTRIES: usize = 5;
+#[cfg(feature = "pg-tests-g4")]
 const DUPLEX_KEY: &str = "oteryn:item.tibia.i36727";
 
 /// W22b: the loot owner holds Gut at stage 3 (12%) on the rat before the kill.
+#[cfg(feature = "pg-tests-g4")]
 pub(super) async fn before_kill(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -254,6 +306,7 @@ pub(super) async fn before_kill(
 
 /// W22c: a carried Wealth Duplex stack of two is used through the real USE path. The replayed
 /// command and a second use inside the cooldown burn nothing more.
+#[cfg(feature = "pg-tests-g4")]
 async fn use_wealth_duplex(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -342,6 +395,7 @@ async fn use_wealth_duplex(
 /// W22b: the activation is moved two hours into the past on the wall clock. With `online`
 /// the current session is moved back as well, so those two hours were spent online; without
 /// it the Character was offline for them. Also proves the terminal stamp ends a session's span.
+#[cfg(feature = "pg-tests-g4")]
 async fn age_wealth_duplex(
     h: &Harness,
     session: crate::foundation::GameSessionId,
@@ -395,6 +449,7 @@ async fn age_wealth_duplex(
 }
 
 /// The draw ordinals the rat's table plans at this death, with `gut` on its creature products.
+#[cfg(feature = "pg-tests-g4")]
 fn planned_ordinals(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     death: crate::combat::LootPlanDeathKey,
@@ -425,6 +480,7 @@ fn planned_ordinals(
         .collect())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 async fn gut_widened_the_roll(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -457,6 +513,7 @@ async fn gut_widened_the_roll(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 pub(super) async fn qualify(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -549,6 +606,7 @@ pub(super) async fn qualify(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 async fn outside_container_is_refused(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,

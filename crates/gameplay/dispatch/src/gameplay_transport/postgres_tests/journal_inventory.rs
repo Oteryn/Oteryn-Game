@@ -1,13 +1,27 @@
 //! Independently seeded historical custody; these fixtures do not call the exporter.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{
     TestResult,
     fixture::{Harness, debug, id},
 };
+
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::native_admission_source::journal::{
     ItemRow, ItemsPage, ItemsPayload, PublishGameJournalRecordV1,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use sha2::{Digest, Sha256};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use sqlx::Row;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn seed(h: &Harness) -> TestResult {
     let mut tx = h.pool.begin().await?;
     // Historical fixture restoration only, matching the repository's custody
@@ -35,6 +49,8 @@ pub(super) async fn seed(h: &Harness) -> TestResult {
     tx.commit().await?;
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn uuid(n: u8) -> TestResult<String> {
     Ok(crate::foundation::CharacterId::decode(&id(n))
         .map_err(debug)?
@@ -49,6 +65,8 @@ fn uuid(n: u8) -> TestResult<String> {
             s
         }))
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn assert_export(records: &[Vec<u8>]) -> TestResult {
     assert_eq!(records.len(), 3);
     let begin = PublishGameJournalRecordV1::decode(&records[0])?;
@@ -102,6 +120,7 @@ pub(super) fn assert_export(records: &[Vec<u8>]) -> TestResult {
     assert_eq!((end.page_count, end.item_count), (1, 6));
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn runtime_role(root: &crate::durability::DurabilityRoot) -> TestResult {
     let mut connection = root.try_acquire_ready()?;
     sqlx::query("SET ROLE oteryn_game_runtime")
@@ -122,6 +141,8 @@ pub(super) async fn runtime_role(root: &crate::durability::DurabilityRoot) -> Te
     ));
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn world(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
@@ -164,6 +185,8 @@ pub(super) fn world(
     )
     .map_err(debug)
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn assert_runtime_helpers(h: &Harness) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL ROLE oteryn_game_runtime")

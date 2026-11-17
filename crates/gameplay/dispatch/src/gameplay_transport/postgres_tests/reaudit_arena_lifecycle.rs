@@ -6,6 +6,7 @@ use super::fixture::{Harness, debug, id};
 #[path = "reaudit_arena_lifecycle/source.rs"]
 mod source_map;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn reaudit_arena_lifecycle() -> TestResult {
     // Existing command 436, additive action 6, Drome operation 1 (status).
@@ -17,6 +18,7 @@ fn reaudit_arena_lifecycle() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn reaudit_arena_lifecycle_postgres_rotation_rank_rewards_and_replay() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -34,6 +36,7 @@ fn reaudit_arena_lifecycle_postgres_rotation_rank_rewards_and_replay() -> TestRe
     );
     Ok(())
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srvenc_tibiadrome_postgres_raffle_awards_one_fifth_of_large_rotation() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -337,6 +340,7 @@ fn scenario(large_rotation: bool) -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn reaudit_arena_lifecycle_postgres_real_wave_and_exempt_death() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -354,6 +358,7 @@ fn reaudit_arena_lifecycle_postgres_real_wave_and_exempt_death() -> TestResult {
     );
     Ok(())
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srvenc_tibiadrome_postgres_exploding_corpse_hits_current_health_once() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -372,6 +377,7 @@ fn srvenc_tibiadrome_postgres_exploding_corpse_hits_current_health_once() -> Tes
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srvenc_tibiadrome_postgres_grace_expiry_clears_temporary_status_before_save() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -403,33 +409,39 @@ enum Physical {
     SomersaultFx,
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srvenc_tibiadrome_postgres_source_hall_refuses_unqualified_native_pool() -> TestResult {
     run_physical_regression(Physical::Source)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srvenc_tibiadrome_postgres_native_kills_before_deadline_survive_delayed_observation()
 -> TestResult {
     run_physical_regression(Physical::DelayedObservation)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srvenc_tibiadrome_postgres_native_victory_credits_before_reserved_corpse_effects() -> TestResult
 {
     run_physical_regression(Physical::PendingCorpseEffects)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srvenc_tibiadrome_postgres_three_native_waves_command_catchup_counts_each_once() -> TestResult {
     run_physical_regression(Physical::ThreeWaveCommandCatchup)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srvenc_tibiadrome_postgres_cadence_credits_higher_personal_start_once() -> TestResult {
     run_physical_regression(Physical::SharedLowerWave)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_drome_sealed_melee_somersault_publishes_both_native_teleport_cues_postgres() -> TestResult {
     run_physical_regression(Physical::SomersaultFx)

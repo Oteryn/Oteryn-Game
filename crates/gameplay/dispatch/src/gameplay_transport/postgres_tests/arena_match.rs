@@ -1,15 +1,25 @@
 //! SV15: real command-436 connection, production combat, fee and complete backpack MINT.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, run};
+
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use super::fixture::Harness;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::ComposedFreshAdmission;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::{
     AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::arena::{self as wire, ArenaAction as A, ArenaDisposition as D};
 #[path = "arena_match/fixture.rs"]
 pub(super) mod fixture;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn arena_match_real_connection_status_and_full_match() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -26,6 +36,7 @@ fn arena_match_real_connection_status_and_full_match() -> TestResult {
     eprintln!("M51 POSTGRES_CASE_COMPLETED: 30 real opponents, fee, reward, replay, exit, reload");
     Ok(())
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn arena_match_credited_portal_timeout_restores_pillar() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -41,6 +52,7 @@ fn arena_match_credited_portal_timeout_restores_pillar() -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn command(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -58,6 +70,7 @@ async fn command(
     assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
     wire::decode_match_result(&bytes).map_err(debug)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m51_postgres_native_portals_complete_all_ten_pits_and_reward() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -77,6 +90,7 @@ fn m51_postgres_native_portals_complete_all_ten_pits_and_reward() -> TestResult 
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m51_postgres_native_recreated_pillars_complete_all_ten_pits_and_reward() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -98,10 +112,12 @@ fn m51_postgres_native_recreated_pillars_complete_all_ten_pits_and_reward() -> T
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario(funded: bool, expire: bool) -> TestResult {
     scenario_route_with_expiry(funded, None, expire)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -122,6 +138,7 @@ fn m51_postgres_native_departure_cancels_without_a_leave_command() -> TestResult
 }
 
 #[derive(Clone, Copy)]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 enum NativeScenario {
     Portals,
     RecreatedPillars,
@@ -130,6 +147,7 @@ enum NativeScenario {
     ResetMonsters,
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m51_postgres_native_timeout_kicks_and_persists_without_a_status_command() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -148,6 +166,7 @@ fn m51_postgres_native_timeout_kicks_and_persists_without_a_status_command() -> 
     assert!(started.elapsed().as_secs_f64() > 0.01);
     Ok(())
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m51_postgres_native_entry_resets_only_monsters_inside_source_box() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -169,12 +188,15 @@ fn m51_postgres_native_entry_resets_only_monsters_inside_source_box() -> TestRes
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario_path(funded: bool, native_portals: bool) -> TestResult {
     scenario_route(funded, native_portals.then_some(NativeScenario::Portals))
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario_route(funded: bool, route: Option<NativeScenario>) -> TestResult {
     scenario_route_with_expiry(funded, route, false)
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expire: bool) -> TestResult {
     let native_portals = route.is_some();
     let leave_early = matches!(route, Some(NativeScenario::Departure));
@@ -907,6 +929,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
 
 
 // Positive setup uses the same fenced quest writer, never a raw state insert.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn finish_barbarian_test(owner: &ComposedFreshAdmission<'_, '_, '_>, session: crate::foundation::GameSessionId) -> TestResult {
     use oteryn_gameplay_quests::quest::{QuestStateCatalogue, QuestTrack, QuestTransition, QuestEffect, QuestComparison, QuestEffectKind};
     use crate::durability::quest_state::{QuestCause, QuestTransitionRequest, QuestTransitionOutcome};

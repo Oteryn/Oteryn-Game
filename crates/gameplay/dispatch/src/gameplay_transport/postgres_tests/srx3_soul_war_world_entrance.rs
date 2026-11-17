@@ -3,6 +3,7 @@ use super::fixture::{Harness, debug, run};
 use super::{TestResult, reset};
 use crate::foundation::MovementLocalPosition;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_soul_war_actual_world_hunt_entry_rejects_missing_quest_access_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

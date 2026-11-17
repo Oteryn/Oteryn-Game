@@ -26,6 +26,7 @@ impl PreferencesStore for Access {
     }
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn s17c_observer_postgres_busy_join_renew_and_ban_wait_without_retrying_storage() -> TestResult {
     large_stack(|| {
@@ -90,6 +91,7 @@ fn s17c_observer_postgres_busy_join_renew_and_ban_wait_without_retrying_storage(
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn nbcast_busy_observer_retry_preserves_consent_lease_postgres() -> TestResult {
     large_stack(|| {

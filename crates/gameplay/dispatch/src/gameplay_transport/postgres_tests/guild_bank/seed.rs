@@ -23,11 +23,15 @@ pub(in super::super) async fn balance(
     tx.commit().await?;
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(in super::super) async fn financial_snapshot(h: &Harness) -> TestResult<String> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_array((SELECT jsonb_agg(to_jsonb(b) ORDER BY account_id) FROM game_account_bank_balances b),(SELECT jsonb_agg(to_jsonb(b) ORDER BY guild_id) FROM game_guild_bank_balances b),(SELECT jsonb_agg(to_jsonb(b) ORDER BY entry_id) FROM game_account_bank_entries b),(SELECT jsonb_agg(to_jsonb(b) ORDER BY entry_id) FROM game_guild_bank_entries b),(SELECT jsonb_agg(to_jsonb(b) ORDER BY guild_id) FROM game_guild_disband_claims b),(SELECT jsonb_agg(to_jsonb(b) ORDER BY operation_id,owner) FROM game_guild_bank_event_outbox b))::text").fetch_one(&h.pool).await?)
 }
 
 /// Retained custody from the existing Market owner is part of shared credit headroom.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(in super::super) async fn retained_market_custody(h: &Harness) -> TestResult {
     sqlx::query("INSERT INTO game_market_books(world_id,definition_key) VALUES(encode($1,'hex')::uuid,'oteryn:item.tibia.i3031')")
         .bind(id(42).as_slice()).execute(&h.pool).await?;

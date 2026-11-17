@@ -50,8 +50,80 @@ mod house_transfer;
 mod movement_equipment;
 pub(in crate::gameplay_transport) use familiar_cast::{FamiliarActorEnd, FamiliarLogoutSave};
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 pub(in crate::gameplay_transport) use familiar_cast::{
     FamiliarFenceRead, PreparedFamiliarLogout, familiar_end_proven, familiar_end_read,
+};
+
+#[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    all(
+        feature = "pg-tests-g2",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g3",
+            feature = "pg-tests-g4"
+        ))
+    ),
+    all(
+        feature = "pg-tests-g3",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g4"
+        ))
+    ),
+    all(
+        feature = "pg-tests-g4",
+        not(any(
+            feature = "pg-tests-g1",
+            feature = "pg-tests-g2",
+            feature = "pg-tests-g3"
+        ))
+    )
+))]
+pub(in crate::gameplay_transport) use familiar_cast::{
+    FamiliarFenceRead, familiar_end_proven, familiar_end_read,
+};
+
+#[cfg(test)]
+#[cfg(not(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+)))]
+pub(in crate::gameplay_transport) use familiar_cast::{
+    FamiliarFenceRead, familiar_end_proven, familiar_end_read,
 };
 #[path = "familiar_defense.rs"]
 mod familiar_defense;
@@ -77,6 +149,30 @@ mod spell_periodic;
 #[path = "training_save.rs"]
 mod training_save;
 #[cfg(test)]
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g2"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g3"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g4"
+))]
+#[cfg(any(
+    not(feature = "pg-tests-g4"),
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3"
+))]
 pub(in crate::gameplay_transport) use training_save::TRAINING_READBACK_BARRIER;
 pub(in crate::gameplay_transport) use training_save::TrainingSave;
 #[path = "actor_spell_commit.rs"]
@@ -1863,6 +1959,30 @@ struct NativeSourceMemo<T> {
 impl ChannelSpellStates {
     /// Reads the canonical committed source receipts; creates no test vitals owner.
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
     pub(crate) fn mushroom_damage_receipts_for_test(
         &self,
         actor: ExactActorRef,

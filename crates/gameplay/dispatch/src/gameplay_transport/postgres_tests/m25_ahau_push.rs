@@ -7,6 +7,7 @@ use crate::gameplay_transport::{
     connection::{AdmittedSession, ControllerBinding, FreshAdmissionAuthority, SessionContinuity},
 };
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn m25_push_peer_uses_genuine_fresh_admission_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

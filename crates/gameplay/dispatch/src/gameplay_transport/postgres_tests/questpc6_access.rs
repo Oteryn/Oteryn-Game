@@ -3,6 +3,7 @@
 use super::TestResult;
 use oteryn_gameplay_quests::quest::world_callbacks::{Position, Trigger};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc6_reward_caches_fibula_demon_devil_draconia() -> TestResult {
     let started = std::time::Instant::now();
@@ -21,6 +22,7 @@ fn questpc6_reward_caches_fibula_demon_devil_draconia() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc6_draconia_both_levers_open_and_restore_their_passages() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -58,6 +60,7 @@ fn questpc6_draconia_both_levers_open_and_restore_their_passages() -> TestResult
 
 // The only non-claim interaction in the original Fibula source is the well's
 // action15005. Exercise its selector through transport without fixture callbacks.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc6_deeper_fibula_well_literal_use_preserves_quest_state() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -347,6 +350,7 @@ fn stateless_callback(name: &str, trigger: Position, destination: Position) -> T
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc6_cults_orc_passages_preserve_progress_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -371,6 +375,7 @@ fn questpc6_cults_orc_passages_preserve_progress_and_replay() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc6_dreamers_challenge_exit_and_maze_passages_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -433,6 +438,7 @@ fn pos((x, y, floor): (u16, u16, i8)) -> Position {
 
 // Qualify the original source contract without silently promoting the separate
 // chosen recipe's additional dragon-kill progression to production readiness.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc6_source_deeper_fibula_well_and_complete_reward_inventory() -> TestResult {
     use std::collections::BTreeSet;
@@ -505,6 +511,7 @@ fn questpc6_source_deeper_fibula_well_and_complete_reward_inventory() -> TestRes
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc6_source_narrative_caches_children_cults_dark_trails_dreamer_druid() -> TestResult {
     let started = std::time::Instant::now();

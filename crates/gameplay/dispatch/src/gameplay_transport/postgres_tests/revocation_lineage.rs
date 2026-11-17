@@ -11,6 +11,7 @@ use std::sync::{Arc, Mutex};
 
 type Stage = Arc<Mutex<&'static str>>;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn revocation_activity_successor_lineage_and_controller_fences_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

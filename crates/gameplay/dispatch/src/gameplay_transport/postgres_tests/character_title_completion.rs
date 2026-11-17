@@ -8,6 +8,7 @@ use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::character_info::CharacterTitle;
 use std::collections::BTreeSet;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn character_title_class_and_boss_completion_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

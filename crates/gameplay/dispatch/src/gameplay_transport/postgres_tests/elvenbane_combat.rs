@@ -3,11 +3,13 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult, fixture::debug}
 use crate::map::view::MapFacts;
 use oteryn_protocol_oteryn::attack::*;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn elvenbane_source_native_dragon_earned_via_wire() -> TestResult {
     super::annihilator_route::elvenbane_source_combat()
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn elvenbane_source_all_six_defenders_earned_via_wire() -> TestResult {
     super::annihilator_route::elvenbane_source_defenders()

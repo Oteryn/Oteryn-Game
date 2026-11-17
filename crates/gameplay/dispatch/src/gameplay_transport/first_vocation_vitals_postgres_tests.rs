@@ -17,6 +17,7 @@ use oteryn_simulation_determinism::{ExactI64, SemanticTimeMicros};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn first_vocation_vitals_dispatch_refills_pools_once_and_restores_after_restart_postgres()
 -> TestResult {
@@ -25,6 +26,7 @@ fn first_vocation_vitals_dispatch_refills_pools_once_and_restores_after_restart_
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn first_vocation_vitals_old_full_pools_refill_to_new_maxima_after_restart_postgres() -> TestResult
 {

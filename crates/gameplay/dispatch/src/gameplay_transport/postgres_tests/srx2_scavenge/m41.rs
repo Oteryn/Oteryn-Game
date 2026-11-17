@@ -9,6 +9,7 @@ mod skinning;
 #[path = "m41/story.rs"]
 mod story;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m41_stag_self_skinning_provenance_and_npc_achievement_finales_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

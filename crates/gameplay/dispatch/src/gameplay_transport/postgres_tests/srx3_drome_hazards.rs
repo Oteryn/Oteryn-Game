@@ -1,6 +1,7 @@
 //! Real command436 persists the full current-owner projection before immutable replay.
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use super::*;
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_drome_postgres_large_hazard_receipt_and_exact_replay() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::{
     CommandStatus,
     cyclopedia_character::{COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB, protection},
 };
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn cyclopedia_protection_forecast_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -6,6 +6,7 @@ use crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogu
 use oteryn_protocol_oteryn::{self as protocol, weapon_proficiency::ProficiencyPage};
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn proficiency_browse_postgres_pinned_catalogue_live_xp_and_session_fence() -> TestResult {
     std::thread::Builder::new()

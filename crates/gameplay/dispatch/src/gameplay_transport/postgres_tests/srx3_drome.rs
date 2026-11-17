@@ -1,6 +1,7 @@
 //! SRX-3: the accepted arena rules count completed zero-based waves.
 use super::TestResult;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_drome_postgres_wave_zero_real_dispatch_and_native_combat() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -19,6 +20,7 @@ fn srx3_drome_postgres_wave_zero_real_dispatch_and_native_combat() -> TestResult
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_drome_postgres_reaching_wave_300_ends_without_spawning_it() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -39,6 +41,7 @@ fn srx3_drome_postgres_reaching_wave_300_ends_without_spawning_it() -> TestResul
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_drome_postgres_public_entry_refuses_unqualified_pool_and_room() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -1,6 +1,9 @@
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::server_modal::{Answer, Reply};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn server_modal_hireling_store_selection_dispatches_cancel_rename_and_sex_once() -> TestResult {
     if !enabled() {
@@ -11,6 +14,7 @@ fn server_modal_hireling_store_selection_dispatches_cancel_rename_and_sex_once()
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn scenario(
     harness: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -209,6 +213,7 @@ pub(super) async fn scenario(
     result
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn exchange(
     client: &mut tokio::io::DuplexStream,
     next: &mut u64,

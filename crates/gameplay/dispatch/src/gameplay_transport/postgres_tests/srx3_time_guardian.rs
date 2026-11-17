@@ -23,6 +23,7 @@ const ICE: MovementLocalPosition = MovementLocalPosition {
     floor: 13,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_time_guardian_actual_native_callback_swaps_distinct_source_actors_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

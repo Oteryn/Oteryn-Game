@@ -62,27 +62,33 @@ enum Case {
     NonCorpse,
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn utility_runes_convince_real_dispatch_assigns_master_and_charges_creature_mana() -> TestResult {
     scenario(Case::Convince)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn utility_runes_convince_real_dispatch_refuses_non_convinceable() -> TestResult {
     scenario(Case::NotConvinceable)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn utility_runes_convince_real_dispatch_refuses_summon_limit() -> TestResult {
     scenario(Case::SummonLimit)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn utility_runes_animate_real_dispatch_owns_skeleton_and_consumes_corpse() -> TestResult {
     scenario(Case::Animate)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn utility_runes_animate_real_dispatch_refuses_non_corpse() -> TestResult {
     scenario(Case::NonCorpse)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn utility_runes_animate_real_dispatch_refuses_black_skull() -> TestResult {
     scenario(Case::AnimateBlackSkull)
@@ -651,14 +657,17 @@ enum WorldItemCase {
     House,
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn utility_runes_postgres_chameleon_item_outfit_lasts_200_seconds() -> TestResult {
     large_stack(|| run(async |admin| utility_case(admin, WorldItemCase::Chameleon).await))
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn utility_runes_postgres_chameleon_refuses_creature_on_movable_item_tile() -> TestResult {
     large_stack(|| run(async |admin| utility_case(admin, WorldItemCase::Creature).await))
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn utility_runes_postgres_chameleon_refuses_empty_and_immovable_targets() -> TestResult {
     large_stack(|| {
@@ -670,6 +679,7 @@ fn utility_runes_postgres_chameleon_refuses_empty_and_immovable_targets() -> Tes
         })
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn utility_runes_postgres_disintegrate_removes_movable_items_and_allows_pz() -> TestResult {
     large_stack(|| {
@@ -681,6 +691,7 @@ fn utility_runes_postgres_disintegrate_removes_movable_items_and_allows_pz() -> 
         })
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn utility_runes_postgres_disintegrate_refuses_house_target_without_payment() -> TestResult {
     large_stack(|| run(async |admin| utility_case(admin, WorldItemCase::House).await))

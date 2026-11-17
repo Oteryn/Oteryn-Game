@@ -18,6 +18,7 @@ mod provenance;
 #[path = "soulpit_lifecycle/completion_atomicity.rs"]
 mod completion_atomicity;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn soulpit_entry_requires_atomic_shared_handoff_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

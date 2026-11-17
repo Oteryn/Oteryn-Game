@@ -1,24 +1,32 @@
 //! SPELL-AUGMENT-1: framed ordinary cast with a real PostgreSQL equipment read.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{TestResult, debug};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::content::*;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::WorldId;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use sha2::{Digest, Sha256};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn item_spell_augments_postgres_equipped_healing_cooldown_unequip_and_replay() -> TestResult {
     super::parameter_spell::scenario(4)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn item_spell_augments_postgres_damage_critical_leech_and_replay() -> TestResult {
     super::parameter_spell::scenario(5)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn dmg2_postgres_equipment_spell_leech_without_augment_and_replay() -> TestResult {
     super::parameter_spell::scenario(6)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn activate(
     world: WorldId,
     equipment_leech: bool,

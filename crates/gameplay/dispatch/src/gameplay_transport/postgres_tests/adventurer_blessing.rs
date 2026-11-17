@@ -198,46 +198,56 @@ fn boundary(
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn adventurer_blessing_pvp_level_20() -> TestResult {
     boundary(20, true, 2, false, false, true)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn adventurer_blessing_pvp_level_21() -> TestResult {
     boundary(21, true, 2, false, false, true)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn adventurer_blessing_pvp_level_22() -> TestResult {
     boundary(22, true, 2, false, false, true)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn adventurer_blessing_does_not_protect_pve() -> TestResult {
     boundary(20, false, 2, false, false, true)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn adventurer_blessing_stays_forfeited() -> TestResult {
     boundary(20, true, 2, true, false, true)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn adventurer_blessing_is_open_only() -> TestResult {
     boundary(20, true, 3, false, false, true)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn adventurer_blessing_red_skull_does_not_override_loss() -> TestResult {
     boundary(20, true, 2, false, true, true)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn adventurer_blessing_unprotected_pvp_preserves_trained_build_and_d58_xp_loss() -> TestResult {
     boundary(22, true, 2, false, false, false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn adventurer_blessing_first_level_21_is_permanent_after_delevel() -> TestResult {
     permanence(true)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn adventurer_blessing_death_history_keeps_it_lost_after_delevel() -> TestResult {
     permanence(false)

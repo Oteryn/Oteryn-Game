@@ -227,32 +227,38 @@ fn omrafir_attachment_case(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_omrafir_actual_native_beam_installs_shared_marker_and_fires_after_four_seconds_postgres()
 -> TestResult {
     omrafir_case(false, None, false)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_omrafir_review_declared_think_explodes_and_reforms_after_original_retirement_postgres()
 -> TestResult {
     omrafir_case(true, None, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_omrafir_actual_native_exact_stone_wall_heal_postgres() -> TestResult {
     omrafir_case(false, Some(true), false)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_omrafir_actual_native_rosha_no_exact_wall_does_not_heal_callback_postgres() -> TestResult {
     omrafir_case(false, Some(false), false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_omrafir_review_declared_terminal_undefined_type_records_source_failure_postgres()
 -> TestResult {
     omrafir_case(true, None, true)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_omrafir_unattached_think_event_is_inactive_in_production_postgres() -> TestResult {
     omrafir_attachment_case(true, None, false, false)

@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::loyalty_skills::{
     CAPABILITY_LOYALTY_SKILLS_V1, COMMAND_TYPE_LOYALTY_SKILLS_QUERY, LoyaltySkills,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn loyalty_skills_postgres_real_dispatch_projection_replay_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -237,6 +238,7 @@ fn scenario() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn loyalty_skills_postgres_current_instance_reads_its_projection_and_rejects_origin_authority()
 -> TestResult {

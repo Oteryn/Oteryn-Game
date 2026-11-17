@@ -5,6 +5,7 @@ use crate::domain::CharacterId;
 use crate::durability::pvp_death_consequences::{PvpContributorKind, PvpDeathContributor};
 use crate::gameplay_transport::death_ml_loss_postgres::death as death_request;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn pvp_death_dispatch_commits_points_marks_and_skull_state_together() -> TestResult {
     run(async |admin| {

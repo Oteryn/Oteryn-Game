@@ -7,6 +7,7 @@ use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use quest_world_callbacks::{local, wire};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc7_formorgar_hoist_read_only_step() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

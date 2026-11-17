@@ -321,20 +321,24 @@ fn run_ground_case(corrupted: bool, followup: bool) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_gaz_minion_actual_player_lethal_creates_nightmare_vortex_postgres() -> TestResult {
     run_ground_case(false, false)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_corrupted_soul_actual_player_lethal_first_vortex_has_no_expiry_postgres() -> TestResult {
     run_ground_case(true, false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_gaz_minion_actual_two_deaths_expire_current_item_not_original_uuid_postgres() -> TestResult
 {
     run_ground_case(false, true)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_corrupted_soul_actual_transform_chain_and_existing28_expiry_postgres() -> TestResult {
     run_ground_case(true, true)

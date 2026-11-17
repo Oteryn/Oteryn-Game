@@ -8,8 +8,16 @@ use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::map::overlay::TilePos;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestTransition, world_callbacks::Position,
+};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+use oteryn_gameplay_quests::quest::{
+    QuestComparison, QuestEffect, QuestEffectKind, QuestTransition,
 };
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
@@ -19,6 +27,7 @@ const STAGE: &str = "oteryn:quest-progress/chosen/wrath/stage";
 const MAG: &str = "oteryn:quest-progress/chosen/wrath/magistrati";
 const NOBLE: &str = "oteryn:quest-progress/chosen/wrath/nobles";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc8_wrath_imperial_hunt_native_exact_quotas_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

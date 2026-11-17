@@ -54,26 +54,31 @@ fn scenario(case: Case) -> TestResult {
         .map_err(Into::into)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn drome_cube_full_retry_same_reward_lost_ack_replay_and_restart() -> TestResult {
     scenario(Case::FullRetry)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn drome_cube_consumed_handle_replays_after_reconnect_and_emits_the_reward_text() -> TestResult {
     scenario(Case::HandleReplay)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn drome_cube_tops_up_the_existing_output_stack_in_one_transaction() -> TestResult {
     scenario(Case::ExistingStack)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn drome_cube_two_commands_compete_for_the_last_unit_without_a_second_reward() -> TestResult {
     scenario(Case::ConcurrentLastUnit)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn kooldown_aid_lost_ack_replays_once_and_keeps_its_durable_cooldown() -> TestResult {
     scenario(Case::KooldownAid)

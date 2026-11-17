@@ -1,18 +1,58 @@
 //! Pinned source selectors -> literal USE -> existing once-claim owner -> full
 //! container custody, key/achievement facts, replay and atomic refusal.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness, debug, id, run};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::quest_callbacks::{source_world, wire_use_targets, wire_uses};
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+use super::quest_callbacks::source_world;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::content::channel_content_pin::ChannelContentPin;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::item_mint::TypedDefinitionRef;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::reward_claim_mint::RewardClaimMintRequest;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::connection::FirstEntryOutcome;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::CommandStatus;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 #[derive(Clone, Copy)]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 enum Case {
     Authored,
     Bear,
@@ -32,6 +72,9 @@ enum Case {
     Catalogue,
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn execute(case: Case, marker: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -46,23 +89,28 @@ fn execute(case: Case, marker: &'static str) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_authored_placement_without_legacy_uid_mints_once_and_replays() -> TestResult {
     execute(Case::Authored, "QUESTPC8_AUTHORED_PLACEMENT")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_container_chests_bear_bag_once_and_replay() -> TestResult {
     execute(Case::Bear, "W15B_BEAR_CONTAINER")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_container_chests_key_attributes_are_atomic() -> TestResult {
     execute(Case::Key, "W15B_KEY_CONTAINER")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_container_chests_annihilator_choices_share_storage_and_achievement() -> TestResult {
     execute(Case::Choice, "W15B_STORAGE_CHOICE")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn annihilator_reward_door_tracks_the_real_shared_claim() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -70,6 +118,7 @@ fn annihilator_reward_door_tracks_the_real_shared_claim() -> TestResult {
     }
     execute(Case::ChoiceDoor, "ANNIHILATOR_REWARD_DOOR")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn annihilator_captured_startup_chests_share_the_real_claim() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -77,26 +126,32 @@ fn annihilator_captured_startup_chests_share_the_real_claim() -> TestResult {
     }
     execute(Case::ChoiceCaptured, "ANNIHILATOR_CAPTURED_CHESTS")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_container_chests_authored_book_text_survives_replay() -> TestResult {
     execute(Case::Text, "W15B_TEXT_CONTAINER")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_container_chests_leaf_text_is_frozen_and_replayed() -> TestResult {
     execute(Case::RootText, "W15B_LEAF_TEXT")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_container_chests_crystal_key3002_is_minted_once() -> TestResult {
     execute(Case::CrystalKey, "W15B_CRYSTAL_KEY")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_container_chests_full_definition_charges_mint_one_instance() -> TestResult {
     execute(Case::FullCharge, "W15B_FULL_CHARGES")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_container_chests_full_backpack_writes_no_pending_claim() -> TestResult {
     execute(Case::Full, "W15B_CONTAINER_FULL")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_container_chests_capacity_counts_every_child_before_reservation() -> TestResult {
     execute(Case::Weight, "W15B_CONTAINER_WEIGHT")
@@ -104,19 +159,25 @@ fn quest_container_chests_capacity_counts_every_child_before_reservation() -> Te
 
 // Crystal 201189f:data-global/startup/tables/chest.lua:799-819. The three
 // independent storage claims must survive both command and cold-owner replay.
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_demon_helmet_chests_steel_boots_once_and_replay() -> TestResult {
     execute(Case::DemonBoots, "QUESTS3_DEMON_BOOTS")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_demon_helmet_chests_demon_helmet_once_and_replay() -> TestResult {
     execute(Case::DemonHelmet, "QUESTS3_DEMON_HELMET")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn quest_demon_helmet_chests_demon_shield_once_and_replay() -> TestResult {
     execute(Case::DemonShield, "QUESTS3_DEMON_SHIELD")
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn definition(key: &str) -> TypedDefinitionRef {
     TypedDefinitionRef {
         family: "Item".into(),
@@ -125,10 +186,16 @@ fn definition(key: &str) -> TypedDefinitionRef {
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(case: Case) -> TestResult {
     scenario_case(case, None, None, None)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn catalogue_scenario(
     chest: &super::quest_catalogue_chests::CatalogueChest,
     activation: &super::quest_catalogue_chests::CatalogueActivation,
@@ -136,6 +203,9 @@ pub(super) fn catalogue_scenario(
     catalogue_scenario_with_template(chest, activation, None)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn catalogue_scenario_with_template(
     chest: &super::quest_catalogue_chests::CatalogueChest,
     activation: &super::quest_catalogue_chests::CatalogueActivation,
@@ -144,6 +214,9 @@ pub(super) fn catalogue_scenario_with_template(
     scenario_case(Case::Catalogue, Some(chest), Some(activation), template)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario_case(
     case: Case,
     catalogue: Option<&super::quest_catalogue_chests::CatalogueChest>,

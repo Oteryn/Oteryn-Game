@@ -1,20 +1,27 @@
 //! Personal native deaths are admitted against the current durable world occurrence.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTransition,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qworld_native_fury_death_requires_active_world_and_credits_once() -> TestResult {
     run("fury")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qworld_native_werewolf_death_requires_full_moon_and_credits_once() -> TestResult {
     run("werewolf")
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn run(creature: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -32,6 +39,8 @@ pub(super) fn run(creature: &'static str) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenarios(creature: &'static str) -> TestResult {
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     for active in [false, true] {
@@ -57,6 +66,7 @@ fn scenarios(creature: &'static str) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn exercise(
     h: &Harness,
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
@@ -259,6 +269,7 @@ pub(super) async fn exercise(
 // The fixture admits encounter actors directly, so it must also perform the
 // native spawn owner's exact dead-slot retirement after settlement finishes.
 // Retained death projections survive slot reuse and still fence replay.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn retire_settled(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     targets: &[crate::foundation::ExactActorRef],
@@ -284,6 +295,7 @@ async fn retire_settled(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn count(h: &Harness, track: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar(
         "SELECT coalesce((SELECT value FROM game_character_quest_tracks WHERE track_key=$1),0)",

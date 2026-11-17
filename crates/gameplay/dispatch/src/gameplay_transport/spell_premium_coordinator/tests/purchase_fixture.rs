@@ -1,6 +1,18 @@
 //! Reuse the native gate's private clock and evidence; no second fixture implementation.
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 use super::*;
 
+#[cfg(any(
+    feature = "pg-tests-g1",
+    feature = "pg-tests-g2",
+    feature = "pg-tests-g3",
+    feature = "pg-tests-g4"
+))]
 pub(in crate::gameplay_transport) fn current(
     account: [u8; 16],
 ) -> (

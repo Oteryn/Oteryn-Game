@@ -6,6 +6,7 @@ use crate::durability::character_authority::ReconciledCharacterAuthority;
 
 const PREFIX: &str = "oteryn:quest-progress/quest/u11_50/dangerous_depths/";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc2_gnomus_ordnance_requires_live_confirmation_and_commits_initial_tracks() -> TestResult {
     super::qengine_rewards::scenario("questpc2-gnomus-ordnance")

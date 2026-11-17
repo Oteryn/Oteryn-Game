@@ -2,6 +2,7 @@
 use super::TestResult;
 use super::fixture::{Harness, run};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn questpc8_fluid_outputs_preserve_exact_subtype_and_legacy_plan_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

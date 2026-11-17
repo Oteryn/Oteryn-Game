@@ -367,15 +367,18 @@ fn scenario(which: u8) -> TestResult {
         .map_err(|_| "Profile-B test thread failed")?
         .map_err(Into::into)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn profile_b_durable_fence_repeat_purchase_and_restart() -> TestResult {
     scenario(0)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn profile_b_concurrent_answers_and_hints_are_monotonic() -> TestResult {
     scenario(1)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn profile_b_premium_hint_fences_late_snapshot_and_restart() -> TestResult {
     scenario(2)

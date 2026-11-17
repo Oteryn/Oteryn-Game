@@ -450,6 +450,7 @@ fn scenario(
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w05b_daily_gate_real_step_uses_selected_native_ids_and_refuses_unqualified_fury() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -543,6 +544,7 @@ fn w05b_daily_gate_real_step_uses_selected_native_ids_and_refuses_unqualified_fu
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w05b_fury_offday_exit_keeps_city_return_without_enabling_the_entrance() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

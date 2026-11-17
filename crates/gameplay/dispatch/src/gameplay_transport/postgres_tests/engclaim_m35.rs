@@ -292,10 +292,12 @@ fn execute(quest: &'static str) -> TestResult {
     );
     Ok(())
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engclaim_m35_circle_room_all_claims_cold_owner_and_once_completion() -> TestResult {
     execute("oteryn:quest.circle_room_quest")
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engclaim_m35_crystal_wand_all_claims_cold_owner_and_once_completion() -> TestResult {
     execute("oteryn:quest.crystal_wand_quest")

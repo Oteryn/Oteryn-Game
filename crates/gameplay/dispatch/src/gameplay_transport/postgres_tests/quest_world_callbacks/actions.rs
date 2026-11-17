@@ -281,6 +281,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_world_callbacks_qcb3_real_dispatch_actions() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -306,6 +307,7 @@ fn quest_world_callbacks_qcb3_real_dispatch_actions() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn quest_world_callbacks_qcb3_target_swap_with_consumption_and_teleport() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -62,6 +62,7 @@ fn pin(template: &QualifiedActivityRoomTemplate) -> ActivityContentPin {
     }
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srvenc_boss_publication_postgres_scopes_replay_conflict_and_current_reader() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

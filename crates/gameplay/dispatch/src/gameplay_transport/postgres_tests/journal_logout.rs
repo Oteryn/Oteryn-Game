@@ -84,18 +84,22 @@ enum Change {
     Receipt,
     AfterCursor,
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn game_journal_logout_changed_epoch_has_no_capture_or_delivery() -> TestResult {
     run_case(true, true, Change::Epoch)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn game_journal_logout_obsolete_cut_has_no_capture_or_delivery() -> TestResult {
     run_case(true, true, Change::OwnershipCut)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn game_journal_logout_mismatched_receipt_has_no_capture_or_delivery() -> TestResult {
     run_case(true, true, Change::Receipt)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn game_journal_logout_authority_lost_after_cursor_selection() -> TestResult {
     run_case(true, true, Change::AfterCursor)
@@ -111,14 +115,17 @@ fn run_case(enabled: bool, approved: bool, change: Change) -> TestResult {
         scenario(enabled, approved, change, stage)
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn game_journal_logout_captures_durable_rows_and_publishes_replay() -> TestResult {
     case(true, true)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn game_journal_logout_flag_off_has_no_outbox_or_publication() -> TestResult {
     case(false, true)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn game_journal_logout_unapproved_cut_never_fabricates_empty_snapshot() -> TestResult {
     case(true, false)

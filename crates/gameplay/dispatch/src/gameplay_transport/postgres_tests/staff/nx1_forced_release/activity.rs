@@ -1,4 +1,5 @@
 // NX-1 focused staff release case; included in the original test module.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn nx1_staff_activity_return_requires_current_transport_and_signed_decision_postgres() -> TestResult
 {
@@ -17,6 +18,9 @@ fn nx1_staff_activity_return_requires_current_transport_and_signed_decision_post
     );
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn activity_scenario(lost: bool) -> TestResult {
     use crate::durability::activity_handoff::{
         ActivityHandoffOwner, ActivityRefusal, ActivityReturnOutcome, ActivityReturnReason,

@@ -5,12 +5,16 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::foundation::{CommandId, CommandRef};
 use crate::map::overlay::TilePos;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
 const TRACK: &str = "oteryn:quest-progress/chosen/mystery-of-the-valley/stage";
 const QUEST: &str = "oteryn:quest.authored.mystery_of_the_valley_quest";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc8_mystery_assembly_consumes_all_three_or_none() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -15,6 +15,7 @@ const DEMERON: &str = "oteryn:npc.second_in_command_demeron";
 const STAG: &str =
     "oteryn:quest-progress/crystalserver/quest/u15_20/the_order_of_the_stag/questline";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn catalogue_npc_source_acceptance_is_atomic_and_replay_bound() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -377,6 +378,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn catalogue_npc_delayed_end_runs_in_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -435,6 +437,7 @@ pub(super) async fn exercise_end(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn catalogue_npc_calendar_month_runs_in_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -507,6 +510,7 @@ pub(super) async fn exercise_calendar(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn catalogue_npc_general_xp_handin_runs_in_real_dispatch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -647,16 +651,21 @@ const FATHER: &str = "oteryn:quest.a_father_s_burden_quest";
 const FATHER_ACCEPT: &str =
     "oteryn:quest-npc/a_father_s_burden_quest/tereban_functions/mission-accept";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn catalogue_npc_father_fresh_acceptance_is_one_eleven_track_transaction() -> TestResult {
     father_case(false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn catalogue_npc_father_legacy_hash_preserves_defaults_and_restart_receipts() -> TestResult {
     father_case(true)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn father_case(legacy: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -1034,6 +1043,7 @@ pub(super) async fn exercise_father(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -1058,6 +1068,7 @@ fn catalogue_npc_scoped_a_m_starts_are_source_ordered_and_atomic() -> TestResult
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn hero_of_rathleton_pipe_greeting_commits_access_once_and_replays() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

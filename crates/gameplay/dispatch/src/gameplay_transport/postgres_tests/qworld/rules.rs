@@ -1,8 +1,12 @@
 //! Current-occurrence schedule decisions and immutable payload recovery proof.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::super::*;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_world_change::rules::{Counter, Definition, Schedule};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use sha2::{Digest, Sha256};
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(crate) async fn qualify(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -182,6 +186,7 @@ pub(crate) async fn qualify(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn definition(key: &str, schedule: Schedule, counter: Option<Counter>) -> Definition {
     Definition {
         key: key.into(),

@@ -163,6 +163,7 @@ pub(super) fn source_world_with_bundle(
     ))
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_published_world_callback_context_requires_exact_current_world_pins() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

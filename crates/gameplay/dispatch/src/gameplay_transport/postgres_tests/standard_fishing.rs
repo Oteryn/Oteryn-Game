@@ -9,6 +9,7 @@ use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, WorldObjectTarget, encode_item_use_intent,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m09_standard_fishing_wire_consumes_bait_and_replays_without_duplicate_fish() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -249,64 +250,79 @@ fn scenario() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m09_gathering_wire_mutates_corpse_and_grants_inventory_once() -> TestResult {
     run_gathering(5908, 5969, Some(4012), Some(5878), true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m09_gathering_wire_failed_skinning_marks_corpse() -> TestResult {
     run_gathering(5908, 5969, Some(4012), None, true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m09_gathering_wire_marble_tier_removes_rock_and_grants_figurine() -> TestResult {
     run_gathering(5908, 10426, None, Some(10428), true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m09_gathering_wire_dusting_grants_demon_dust() -> TestResult {
     run_gathering(5942, 5995, Some(4098), Some(5906), true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m09_gathering_wire_ice_sculpture_stays_on_map() -> TestResult {
     run_gathering(5908, 7441, Some(7442), None, true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m09_gathering_wire_failed_ice_removes_block() -> TestResult {
     run_gathering(5942, 7441, None, None, true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m09_gathering_wire_ice_hole_catches_rare_fish() -> TestResult {
     run_gathering(3483, 7236, Some(7237), Some(7158), true)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m09_gathering_wire_mechanical_sewer_water_reaches_complete_classifier() -> TestResult {
     run_gathering(9306, 4597, Some(4609), Some(9307), true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m09_gathering_wire_mechanical_water_outside_sewers_returns_nothing_to_use() -> TestResult {
     run_gathering_at(9306, 4597, Some(4597), None, false, false)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m09_gathering_wire_failed_catch_keeps_hole_and_bait() -> TestResult {
     run_gathering(3483, 7236, Some(7236), None, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn p11_ice_fishing_second_rare_species_grants_exquisite_taste() -> TestResult {
     run_gathering(3483, 7236, Some(7237), Some(3580), true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn p11_ice_fishing_third_rare_species_grants_exquisite_taste() -> TestResult {
     run_gathering(3483, 7236, Some(7237), Some(7159), true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn p11_ice_fishing_common_fish_counts_here_fishy_fishy() -> TestResult {
     run_gathering(3483, 7236, Some(7237), Some(3578), true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn p11_mechanical_ice_fishing_grants_exquisite_taste() -> TestResult {
     run_gathering(9306, 7236, Some(7237), Some(7158), true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn p11_failed_dusting_marks_corpse_without_advancing_ashes_to_dust() -> TestResult {
     run_gathering(5942, 5995, Some(4098), None, true)

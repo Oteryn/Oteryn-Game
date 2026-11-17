@@ -6,30 +6,39 @@ use super::{
 use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_switch_present_12121() -> TestResult {
     run("l6-tomb-switch-native-present-12121")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_switch_control_12121() -> TestResult {
     run("l6-tomb-switch-native-control-12121")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_switch_present_12122() -> TestResult {
     run("l6-tomb-switch-native-present-12122")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_switch_control_12122() -> TestResult {
     run("l6-tomb-switch-native-control-12122")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_switch_present_12123() -> TestResult {
     run("l6-tomb-switch-native-present-12123")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_native_switch_control_12123() -> TestResult {
     run("l6-tomb-switch-native-control-12123")
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -51,6 +60,9 @@ fn run(name: &'static str) -> TestResult {
     );
     result.map_err(Into::into)
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn position(name: &str) -> TestResult<Position> {
     let (p, _) = case(name)?;
     Ok(Position {

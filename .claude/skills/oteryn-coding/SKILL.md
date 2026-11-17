@@ -88,6 +88,8 @@ Beyond it:
 
 ## Tests
 
+- Dispatch PostgreSQL cases require `--features pg-tests-all` (or `pg-tests-g1` through `pg-tests-g4`); assign every new PG test module to the smallest group by source lines.
+
 - New test files go in the auto-mounted directories listed in `oteryn-dev`
   `references/mechanic.md`; name each test after the behaviour it proves.
 - A test that drives a full connection, dispatch scenario or PostgreSQL case

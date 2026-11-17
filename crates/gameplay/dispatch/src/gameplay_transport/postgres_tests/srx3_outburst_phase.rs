@@ -122,6 +122,7 @@ fn outburst_phase_case() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_outburst_actual_reserved_native_think_advances_source_phase_postgres() -> TestResult {
     outburst_phase_case()

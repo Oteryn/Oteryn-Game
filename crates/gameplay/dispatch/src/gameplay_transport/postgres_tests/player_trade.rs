@@ -1,7 +1,15 @@
 //! TRADE-WIRE-1: two independently admitted sessions, real ingress and atomic native writer.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult, fixture::join_two};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::bestiary_postgres_harness::{self as fixture, CHANNEL, Harness, WORLD, debug, id};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{ChannelId, ChannelRuntimeV1, MessageType, WorldId};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::{
     SeamRooms,
     capabilities::SelectedCapabilities,
@@ -11,32 +19,45 @@ use crate::gameplay_transport::{
     },
     tcp_tls::{read_frame, write_frame},
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, decode_state_delta,
     decode_wire_envelope, encode_client_command, item_view,
     player_trade::{self as wire, Intent, ResultCode},
     world_spatial_entities::EntityRef,
 };
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use tokio::{io::AsyncWriteExt, sync::Mutex};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn player_trade_postgres_two_real_sessions_atomic_replay_and_cancellation() -> TestResult {
     run_scenario(false)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn player_trade_postgres_offer_waits_for_busy_holder() -> TestResult {
     run_scenario_with_offer_contention(false, true)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn player_trade_postgres_counter_look_and_accept_retain_foreground_priority() -> TestResult {
     run_scenario_with_read_priority(false, false, true)
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn run_scenario(inspection: bool) -> TestResult {
     run_scenario_with_offer_contention(inspection, false)
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_scenario_with_offer_contention(inspection: bool, offer_contention: bool) -> TestResult {
     run_scenario_with_read_priority(inspection, offer_contention, false)
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_scenario_with_read_priority(
     inspection: bool,
     offer_contention: bool,
@@ -63,6 +84,8 @@ fn run_scenario_with_read_priority(
         .map_err(|_| "trade wire thread panicked")??;
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn seed(h: &Harness, character: [u8; 16], bag: u8, leaf: u8, key: &str) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -80,6 +103,8 @@ async fn seed(h: &Harness, character: [u8; 16], bag: u8, leaf: u8, key: &str) ->
     tx.commit().await?;
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn scenario(
     h: &Harness,
     inspection: bool,
@@ -914,6 +939,8 @@ async fn scenario(
 }
 // Exercise the real read-only owner under ordinary command reservations. The existing
 // scenario above also runs the full TCP ingress, replay and durable exchange path.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn read_priority_case(
     h: &Harness,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -1036,6 +1063,8 @@ async fn read_priority_case(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn reserved_trade_command(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -1069,6 +1098,8 @@ async fn reserved_trade_command(
     Ok(result)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn trade_command_handoff(
     root: &crate::durability::DurabilityRoot,
     command: impl std::future::Future<Output = TestResult<ResultCode>>,
@@ -1109,6 +1140,8 @@ async fn trade_command_handoff(
     Ok(result)
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 struct Peer {
     writer: std::sync::Arc<Mutex<tokio::io::WriteHalf<tokio::io::DuplexStream>>>,
     frames: tokio::sync::mpsc::Receiver<std::io::Result<Vec<u8>>>,
@@ -1119,12 +1152,18 @@ struct Peer {
     trade_revision: u64,
     sequence: u64,
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 impl Drop for Peer {
     fn drop(&mut self) {
         self.reader.abort();
     }
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 impl Peer {
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     async fn open(stream: tokio::io::DuplexStream) -> TestResult<Self> {
         let (mut read, write) = tokio::io::split(stream);
         let writer = std::sync::Arc::new(Mutex::new(write));
@@ -1177,6 +1216,8 @@ impl Peer {
         }
         Ok(peer)
     }
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     async fn read(&mut self) -> TestResult<Vec<u8>> {
         let frame = self.frames.recv().await.ok_or("peer reader ended")??;
         let envelope = decode_wire_envelope(&frame).map_err(debug)?;
@@ -1186,10 +1227,14 @@ impl Peer {
         }
         Ok(frame)
     }
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     async fn close(&mut self) -> TestResult {
         self.writer.lock().await.shutdown().await?;
         Ok(())
     }
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     async fn send(
         &mut self,
         id: u64,
@@ -1217,6 +1262,8 @@ impl Peer {
             self.capture(&frame)?;
         }
     }
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     fn capture(&mut self, frame: &[u8]) -> TestResult {
         let e = decode_wire_envelope(frame).map_err(debug)?;
         if e.message_type() == MessageType::StateDelta {
@@ -1234,6 +1281,8 @@ impl Peer {
         }
         Ok(())
     }
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     async fn command(&mut self, kind: u32, payload: &[u8]) -> TestResult<Vec<u8>> {
         let r = self.send(self.next, kind, payload).await?;
         self.next += 1;
@@ -1247,12 +1296,16 @@ impl Peer {
         );
         Ok(r.1)
     }
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     async fn trade(&mut self, intent: Intent) -> TestResult<Vec<u8>> {
         let r = self
             .command(78, &wire::encode_intent(intent).map_err(debug)?)
             .await?;
         Ok(r)
     }
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     async fn trade_state(&mut self, state: &wire::State) -> TestResult {
         let expected = wire::encode_state(state).map_err(debug)?;
         while self.last_trade.as_ref() != Some(&expected) {
@@ -1261,6 +1314,8 @@ impl Peer {
         }
         Ok(())
     }
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     async fn inventory(&mut self, definition: std::num::NonZeroU32) -> TestResult {
         while self.last_inventory.as_ref().is_none_or(|i| {
             i.entries

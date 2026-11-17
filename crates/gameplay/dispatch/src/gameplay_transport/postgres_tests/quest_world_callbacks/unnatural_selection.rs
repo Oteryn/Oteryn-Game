@@ -18,6 +18,7 @@ use std::sync::Arc;
 
 const ACHIEVEMENT: &str = "oteryn:achievement/talented_dancer";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn unnatural_dance_postgres_full_wire_route_achievement_replay_stale_and_native_gate() -> TestResult
 {

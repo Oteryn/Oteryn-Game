@@ -50,6 +50,7 @@ const PASS: Duration = Duration::from_secs(3);
 const RAT: &str = "oteryn:creature.rat";
 const BOSS: &str = "oteryn:creature.ferumbras";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn cyclopedia_tracker_postgres_dispatch_kill_refresh_and_restart() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

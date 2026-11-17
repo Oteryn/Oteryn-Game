@@ -20,6 +20,7 @@ use oteryn_simulation_determinism::ExactI64;
 use oteryn_world_bundle::writer::*;
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn dawnport_trial_tiles_switch_all_five_vocations_and_back_and_refuse_level_twenty_postgres()
 -> TestResult {

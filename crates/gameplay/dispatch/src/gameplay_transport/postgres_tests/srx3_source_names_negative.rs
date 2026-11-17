@@ -2,6 +2,7 @@
 use super::*;
 use crate::gameplay_transport::connection::ControlLossResult;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_source_names_zero_match_requires_current_negative_admission_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -8,6 +8,7 @@ use std::future::{Future, poll_fn};
 use std::task::Poll;
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_soul_war_native_attack_suffix_survives_physical_cancellation_postgres() -> TestResult {
     super::srx3_cruelty_callbacks::run_source_entry(true)

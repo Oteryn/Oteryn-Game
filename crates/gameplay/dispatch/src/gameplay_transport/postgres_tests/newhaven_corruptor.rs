@@ -13,6 +13,7 @@ use oteryn_protocol_oteryn::quick_loot::{QuickLootAction, QuickLootRequest};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::time::{Duration, Instant};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn newhaven_corruptor_all_five_vocations_kill_loot_take_equip() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -31,6 +32,7 @@ fn newhaven_corruptor_all_five_vocations_kill_loot_take_equip() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn newhaven_corruptor_ordinary_loot_is_frozen_across_stamina_boundary() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -47,6 +49,7 @@ fn newhaven_corruptor_ordinary_loot_is_frozen_across_stamina_boundary() -> TestR
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -64,6 +67,7 @@ fn newhaven_corruptor_low_stamina_and_double_loot_keep_one_guaranteed_set() -> T
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn newhaven_corruptor_lifecycle_recovers_original_corpse_and_child_custody() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -818,6 +822,7 @@ async fn qualify_lifecycle(
 
 // The process receives only a database name and recovery-store locator. It
 // reconstructs its own root, seal, node proof and lane; no parent timer survives.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn newhaven_corruptor_lifecycle_process_restart() -> TestResult {
     let Ok(database) = std::env::var("NEWHAVEN_RESTART_DATABASE") else {

@@ -1,7 +1,11 @@
 //! Exact carried-key absence selects the source post-boss fallback through real STEP.
 use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_tomb_carried_missing_3950_uses_source_fallback() -> TestResult {
     run(
@@ -13,6 +17,7 @@ fn l6_tomb_carried_missing_3950_uses_source_fallback() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_tomb_carried_missing_3951_uses_source_fallback() -> TestResult {
     run(
@@ -24,6 +29,7 @@ fn l6_tomb_carried_missing_3951_uses_source_fallback() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_tomb_carried_missing_3952_uses_source_fallback() -> TestResult {
     run(
@@ -36,6 +42,7 @@ fn l6_tomb_carried_missing_3952_uses_source_fallback() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_tomb_carried_present_3950_debits_exact_key() -> TestResult {
     run(
@@ -47,6 +54,7 @@ fn l6_tomb_carried_present_3950_debits_exact_key() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_tomb_carried_present_3951_debits_exact_key() -> TestResult {
     run(
@@ -58,6 +66,7 @@ fn l6_tomb_carried_present_3951_debits_exact_key() -> TestResult {
         },
     )
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_tomb_carried_present_3952_debits_exact_key() -> TestResult {
     run(
@@ -172,6 +181,9 @@ pub(super) async fn verify(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run(name: &'static str, fallback: Position) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

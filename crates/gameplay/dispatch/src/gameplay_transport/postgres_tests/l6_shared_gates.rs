@@ -41,30 +41,39 @@ pub(super) fn spec(unique: u16) -> TestResult<(u16, u16, Position)> {
         _ => return Err("unknown source gate".into()),
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_shared_gate_closed_50135_uses_exact_threshold() -> TestResult {
     run("l6-tomb-gate-closed-50135")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_shared_gate_open_50135_uses_exact_threshold() -> TestResult {
     run("l6-tomb-gate-open-50135")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_shared_gate_closed_50137_uses_exact_threshold() -> TestResult {
     run("l6-tomb-gate-closed-50137")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_shared_gate_open_50137_uses_exact_threshold() -> TestResult {
     run("l6-tomb-gate-open-50137")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_shared_gate_closed_50138_uses_exact_threshold() -> TestResult {
     run("l6-tomb-gate-closed-50138")
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn l6_shared_gate_open_50138_uses_exact_threshold() -> TestResult {
     run("l6-tomb-gate-open-50138")
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

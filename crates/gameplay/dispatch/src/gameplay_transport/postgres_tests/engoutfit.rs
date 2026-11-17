@@ -2,26 +2,31 @@
 use super::TestResult;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn engoutfit_battle_mage_atomic_outfit_and_addons() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l2-battle-mage-story")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn engoutfit_beggar_atomic_outfit_and_addons() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l6-beggar-female-story")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn engoutfit_assassin_atomic_outfit_and_addons() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l7-assassin-story")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn engoutfit_deepling_atomic_addon() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-deepling")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn engoutfit_source_outfits_are_durable_and_replay_safe() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -303,6 +308,7 @@ pub(super) async fn exercise_source(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn engoutfit_source_outfits_rollback_when_insert_is_suppressed() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -328,6 +334,7 @@ fn engoutfit_source_outfits_rollback_when_insert_is_suppressed() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn engoutfit_rock_steady_collection_commits_exact_handins_and_weapon() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

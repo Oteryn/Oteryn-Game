@@ -5,6 +5,7 @@ use oteryn_gameplay_quests::quest::world_callbacks::{Offering, Position};
 
 const IDS: [u32; 6] = [43501, 43502, 43503, 43504, 43899, 43900];
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn rotten_source_items_materialize_into_exact_character_custody() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

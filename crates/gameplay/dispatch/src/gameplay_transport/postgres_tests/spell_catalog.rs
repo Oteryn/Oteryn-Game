@@ -4,6 +4,7 @@ use super::tutorial_vitals_fixture::admit;
 use super::{Dependencies, TestResult, prepare_current_session};
 use std::collections::BTreeSet;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn spell_catalog_granted_spell_is_learned_after_rejoin_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("spell-catalog-rejoin", || {
@@ -65,6 +66,7 @@ fn spell_catalog_granted_spell_is_learned_after_rejoin_postgres() -> TestResult 
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn spell_catalog_projection_preserves_native_runes_costs_and_indices() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("spell-catalog-projection", || {

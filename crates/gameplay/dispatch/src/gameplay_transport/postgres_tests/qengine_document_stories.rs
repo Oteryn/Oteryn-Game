@@ -2,10 +2,12 @@
 use super::fixture::Harness;
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_l10_brotherhood_complete_document_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l10-documents-brotherhood-story")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qengine_l10_nightmare_complete_document_story() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-l10-documents-nightmare-story")

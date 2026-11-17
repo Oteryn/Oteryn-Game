@@ -306,10 +306,12 @@ async fn backpack_child_snapshot(h: &Harness) -> TestResult<Vec<(String, String)
         .bind(id(71).as_slice()).fetch_all(&h.pool).await?)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn player_death_dispatch_drops_backpack_and_recovers() -> TestResult {
     scenario(Case::default())
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn player_death_dispatch_burns_amulet_and_recovers() -> TestResult {
     scenario(Case {
@@ -317,6 +319,7 @@ fn player_death_dispatch_burns_amulet_and_recovers() -> TestResult {
         ..Case::default()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn player_death_dispatch_red_skull_drops_amulet_and_backpack() -> TestResult {
     scenario(Case {
@@ -326,6 +329,7 @@ fn player_death_dispatch_red_skull_drops_amulet_and_backpack() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn player_death_dispatch_black_skull_full_loss() -> TestResult {
     scenario(Case {
@@ -334,6 +338,7 @@ fn player_death_dispatch_black_skull_full_loss() -> TestResult {
         ..Case::default()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn player_death_dispatch_five_blessings_preserve_amulet_and_items() -> TestResult {
     scenario(Case {
@@ -342,6 +347,7 @@ fn player_death_dispatch_five_blessings_preserve_amulet_and_items() -> TestResul
         ..Case::default()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn player_death_dispatch_no_vocation_preserves_amulet_and_items() -> TestResult {
     scenario(Case {
@@ -350,6 +356,7 @@ fn player_death_dispatch_no_vocation_preserves_amulet_and_items() -> TestResult 
         ..Case::default()
     })
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn player_death_dispatch_reconnect_resumes_partial_drops_before_respawn() -> TestResult {
     scenario(Case {
@@ -360,6 +367,7 @@ fn player_death_dispatch_reconnect_resumes_partial_drops_before_respawn() -> Tes
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn player_death_dispatch_one_blessing_uses_canonical_draw() -> TestResult {
     scenario(Case {

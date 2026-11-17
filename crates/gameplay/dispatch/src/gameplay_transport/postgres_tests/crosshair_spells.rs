@@ -41,6 +41,7 @@ struct Plan {
 /// The rat's health before every cast: far above any one hit, so the health lost is the damage.
 const RAT_HEALTH: i64 = 10_000;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn crosshair_spells_postgres_paladin_barrages_hit_position_target() -> TestResult {
     scenario(Plan {
@@ -57,6 +58,7 @@ fn crosshair_spells_postgres_paladin_barrages_hit_position_target() -> TestResul
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn crosshair_spells_postgres_monk_thousand_fist_blows_hits_position_target() -> TestResult {
     scenario(Plan {

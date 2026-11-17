@@ -100,6 +100,7 @@ async fn channel_snapshot(
     Ok(payload)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn premchan_entry_uses_premium_owner_and_releases_failed_attempts() -> TestResult {
     // The composed admission future overflows the default test-thread stack.

@@ -395,14 +395,17 @@ fn case(protected: bool, stale: bool) -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn idle_kick_postgres_router_saves_final_position_and_terminal_release() -> TestResult {
     large_stack(false, false)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn idle_kick_postgres_router_no_logout_tile_prevents_release() -> TestResult {
     large_stack(true, false)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn idle_kick_postgres_router_stale_transport_cannot_release() -> TestResult {
     large_stack(false, true)

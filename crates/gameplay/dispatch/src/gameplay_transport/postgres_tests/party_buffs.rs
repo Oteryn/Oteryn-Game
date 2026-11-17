@@ -1,45 +1,59 @@
 //! S13c: production party conditions reach only nearby members, including the caster.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::bestiary_postgres_harness::{
     self as fixture, CHANNEL, Harness, TestResult, WORLD, debug, id,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::{
     ChannelId, ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition, PartyAction, WorldId,
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
     connection::{AdmittedSession, FirstEntryOutcome, SessionContinuity},
 };
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_gameplay_domain::domain::condition::ConditionValues;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use std::time::Duration;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use tokio::sync::Mutex;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn party_buffs_real_dispatch_applies_values_and_duration_only_in_range_postgres() -> TestResult {
     run_party_buffs(None)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn heal_party_real_dispatch_members_values_duration_postgres() -> TestResult {
     run_party_buffs(Some(("heal_party", "druid")))
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn enchant_party_real_dispatch_members_values_duration_postgres() -> TestResult {
     run_party_buffs(Some(("enchant_party", "sorcerer")))
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn train_party_real_dispatch_members_values_duration_postgres() -> TestResult {
     run_party_buffs(Some(("train_party", "knight")))
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn run_party_list() -> TestResult {
     run_case(None, true)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn run_party_buffs(extra: Option<(&'static str, &'static str)>) -> TestResult {
     run_case(extra, false)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn run_case(extra: Option<(&'static str, &'static str)>, party_list: bool) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
@@ -69,6 +83,7 @@ fn run_case(extra: Option<(&'static str, &'static str)>, party_list: bool) -> Te
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn open_party_world(
     world: WorldId,
     channel: ChannelId,
@@ -126,6 +141,7 @@ fn open_party_world(
     .map_err(debug)?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -579,6 +595,7 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) ->
     }
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn initialize_build(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,
@@ -590,6 +607,7 @@ pub(super) async fn initialize_build(
 )> {
     initialize_build_at_experience(owner, session, vocation, seed, 16_000_000).await
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn initialize_build_at_experience(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     session: crate::foundation::GameSessionId,

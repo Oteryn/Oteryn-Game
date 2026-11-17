@@ -6,6 +6,7 @@ use crate::durability::character_authority::ReconciledCharacterAuthority;
 
 const PREFIX: &str = "oteryn:quest-progress/quest/u8_2/the_inquisition_quest/";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc2_henricus_recruitment_and_first_mission_are_topic_fenced_and_atomic() -> TestResult {
     super::qengine_rewards::scenario("questpc2-henricus-start")

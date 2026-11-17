@@ -3,6 +3,7 @@ use super::TestResult;
 use super::fixture::{Harness, id};
 use sha2::Digest;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn engworldchg_grimvale_binding_restart_and_native_step_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -13,6 +14,7 @@ fn engworldchg_grimvale_binding_restart_and_native_step_postgres() -> TestResult
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn engworldchg_hive_binding_reset_and_native_use_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

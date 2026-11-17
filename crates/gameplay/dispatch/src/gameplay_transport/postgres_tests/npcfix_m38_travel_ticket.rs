@@ -11,6 +11,7 @@ use oteryn_gameplay_quests::quest::{
     QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn npcfix_m38_travel_ticket_requires_an_unexpired_server_purchase_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

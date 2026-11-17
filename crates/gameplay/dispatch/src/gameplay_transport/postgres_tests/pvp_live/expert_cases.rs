@@ -1,12 +1,22 @@
 //! Command 103 through the actual admitted serving loop, fenced SQL facts and combat owners.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::foundation::ExactActorRef;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use attack::AttackIntentDisposition::{Ok as Accepted, Rejected};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::pvp_expert::{
     COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT, ExpertFightModes, ExpertMode,
     decode_expert_fight_modes, encode_expert_fight_modes,
 };
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn modes(expert: ExpertMode) -> ExpertFightModes {
     ExpertFightModes {
         modes: attack::FightModes {
@@ -17,6 +27,8 @@ fn modes(expert: ExpertMode) -> ExpertFightModes {
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn set(client: &mut DuplexStream, id: u64, state: ExpertFightModes) -> TestResult {
     let result = command(
         client,
@@ -32,6 +44,8 @@ async fn set(client: &mut DuplexStream, id: u64, state: ExpertFightModes) -> Tes
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn delta(client: &mut DuplexStream, expected: ExpertFightModes) -> TestResult {
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
@@ -57,6 +71,8 @@ async fn delta(client: &mut DuplexStream, expected: ExpertFightModes) -> TestRes
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn target(
     client: &mut DuplexStream,
     id: u64,
@@ -78,6 +94,8 @@ async fn target(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 pub(super) async fn drive(
     client: &mut DuplexStream,
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,

@@ -14,6 +14,7 @@ async fn call(owner:&crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '
  let bytes=wire::encode(&r).map_err(debug)?;let (status,result)=super::cyclopedia::support::exchange(owner,session,id,wire::COMMAND,&bytes).await?;
  assert_eq!(status,oteryn_protocol_oteryn::CommandStatus::Accepted);Ok(serde_json::from_str(&wire::decode_reply(&result).map_err(debug)?)?)
 }
+#[cfg(feature = "pg-tests-g4")]
 #[test]fn coin_market_postgres_real_wire_reserve_partial_fill_replay_restart_and_gold_conservation()->TestResult{
  if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none(){return Ok(());}
  std::thread::Builder::new().stack_size(256<<20).spawn(||scenario(false).map_err(|e|e.to_string()))?.join().map_err(|_|"coin scenario panicked")??;Ok(())
@@ -245,6 +246,7 @@ async fn seed_gold(h:&Harness,accounts:impl IntoIterator<Item=([u8;16],[u8;16],u
 }
 
 #[path="coin_market/gift.rs"]mod gifts;
+#[cfg(feature = "pg-tests-g4")]
 #[test]fn coin_transfer_postgres_real_caller_quote_fence_cross_world_lost_ack_and_replay()->TestResult{
  if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none(){return Ok(());}
  std::thread::Builder::new().stack_size(256<<20).spawn(||scenario(true).map_err(|e|e.to_string()))?.join().map_err(|_|"gift scenario panicked")??;Ok(())

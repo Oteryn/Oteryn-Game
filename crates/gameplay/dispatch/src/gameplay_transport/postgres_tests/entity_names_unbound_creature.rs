@@ -7,11 +7,13 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 };
 use oteryn_protocol_oteryn::{MessageType, decode_snapshot_chunk, decode_wire_envelope};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn entity_names_baseline_selects_v1_and_sends_unbound_creature() -> TestResult {
     run_scenario(false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn entity_names_native_gameplay_selects_v2_and_sends_bound_names() -> TestResult {
     run_scenario(true)

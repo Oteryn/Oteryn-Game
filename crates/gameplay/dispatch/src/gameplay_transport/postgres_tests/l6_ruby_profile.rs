@@ -1,6 +1,7 @@
 //! The source timer policy must be admitted before the ruby can transform a helmet.
 use super::{ComposedFreshAdmission, TestResult, fixture::Harness};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_ruby_profile_admits_exact_helmet_absolute_policy() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -10,6 +10,7 @@ use crate::gameplay_transport::npc_talk::NpcTalkBook;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn s10_travel_postgres_source_keywords_and_free_arrival() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

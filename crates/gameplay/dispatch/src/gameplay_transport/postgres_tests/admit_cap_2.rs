@@ -82,6 +82,7 @@ const FIELD_OFFER: &[OfferedCapability] = &[
     },
 ];
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn admit_cap_2_postgres_real_wire_refuses_missing_requirements_and_commits_field_once() -> TestResult
 {

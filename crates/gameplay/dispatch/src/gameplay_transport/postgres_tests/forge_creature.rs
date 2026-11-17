@@ -1,46 +1,76 @@
 //! FORGECREATURE: existing real attacks, multi-recipient settlement, replay and capped dust.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::party_xp::{self, Case};
+
+#[cfg(any(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
+use super::party_xp::Case;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::bestiary_postgres_harness::{Harness, TestResult, debug, id};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{ExactActorRef, GameSessionId};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::ComposedFreshAdmission;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn forge_creature_postgres_real_dispatch_party_cap_and_replay() -> TestResult {
     party_xp::run(Case::ForgeReplay)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn forge_creature_postgres_real_dispatch_premium_gate_and_replay() -> TestResult {
     party_xp::run(Case::ForgeFree)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn forge_creature_postgres_real_dispatch_idle_party_member_gets_no_dust() -> TestResult {
     party_xp::run(Case::ForgeIdle)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn forge_creature_postgres_real_dispatch_free_players_still_loot_slivers() -> TestResult {
     party_xp::run(Case::ForgeAllFree)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn forge_creature_postgres_real_dispatch_shared_xp_disabled_still_awards_dust() -> TestResult {
     party_xp::run(Case::ForgeNoShared)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn forge_creature_postgres_real_dispatch_stale_lease_awards_nothing() -> TestResult {
     party_xp::run(Case::ForgeStale)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn forge_creature_postgres_real_dispatch_member_failure_rolls_back_dust_and_xp() -> TestResult {
     party_xp::run(Case::ForgeRollback)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn forge_creature_postgres_real_dispatch_party_range_excludes_distant_member() -> TestResult {
     party_xp::run(Case::ForgeFar)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn forge_creature_postgres_real_dispatch_foreign_contributor_gets_full_dust() -> TestResult {
     party_xp::run(Case::ForgeForeign)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn prepare(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -118,6 +148,9 @@ pub(super) async fn prepare(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn assert_receipts(h: &Harness, case: Case) -> TestResult {
     let awarded_xp: i64 = sqlx::query_scalar(
         "SELECT COALESCE(sum(xp_awarded),0)::BIGINT FROM game_party_kill_xp_members",
@@ -175,10 +208,16 @@ pub(super) async fn assert_receipts(h: &Harness, case: Case) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn ledger(h: &Harness) -> TestResult<Vec<(Vec<u8>, i64, i64, i64, i64)>> {
     Ok(sqlx::query_as("SELECT uuid_send(entry_id),amount,lost_amount,balance_before,balance_after FROM game_character_forge_dust_entries ORDER BY entry_id LIMIT 4").fetch_all(&h.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn assert_no_gain(h: &Harness) -> TestResult {
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_forge_dust_entries WHERE cause_occurrence_id<>encode($1,'hex')::uuid")
         .bind(id(200).as_slice()).fetch_one(&h.pool).await?;
@@ -189,6 +228,7 @@ pub(super) async fn assert_no_gain(h: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn elite_dust_real_party_shared_off_excludes_non_damaging_member() -> TestResult {
     party_xp::run(Case::EliteNoShared)

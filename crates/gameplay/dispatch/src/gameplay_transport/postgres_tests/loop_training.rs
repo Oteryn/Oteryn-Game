@@ -1,10 +1,16 @@
 //! LOOP-TRAIN-1: real composed admission/dispatch against the registered PostgreSQL library tree.
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness, debug, id, run};
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::connection::FirstEntryOutcome;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_progression::loop_training::TrainingRates;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn loop_training_postgres_admission_marker_replay_and_restart() -> TestResult {
     std::thread::Builder::new()
@@ -14,6 +20,7 @@ fn loop_training_postgres_admission_marker_replay_and_restart() -> TestResult {
         .map_err(|_| "loop training PG panic")??;
     Ok(())
 }
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario() -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "loop_training", true, false).await?;
@@ -105,6 +112,7 @@ mod exercise;
 #[path = "loop_training/world.rs"]
 mod world;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn loop_training_postgres_missing_progression_is_atomic_with_settlement() -> TestResult {
     std::thread::Builder::new().stack_size(64<<20).spawn(||run(async |admin| {

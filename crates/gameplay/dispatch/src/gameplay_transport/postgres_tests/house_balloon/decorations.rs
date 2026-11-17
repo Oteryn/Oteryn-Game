@@ -1,6 +1,8 @@
 //! W18 actual native House item-owner regression cases, sharing the admitted fixture.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::*;
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn scenario(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,

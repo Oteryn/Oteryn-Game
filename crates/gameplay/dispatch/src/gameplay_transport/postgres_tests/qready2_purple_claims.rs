@@ -249,6 +249,7 @@ fn scenario(case: Case) -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qready2_purple_tome_quest_1() -> TestResult {
     execute(
@@ -264,6 +265,7 @@ fn qready2_purple_tome_quest_1() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qready2_purple_tome_quest_2() -> TestResult {
     execute(
@@ -279,6 +281,7 @@ fn qready2_purple_tome_quest_2() -> TestResult {
     )
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qready2_purple_tome_quest_3() -> TestResult {
     execute(

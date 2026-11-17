@@ -27,6 +27,7 @@ const POSITION: MovementLocalPosition = MovementLocalPosition {
     floor: 7,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn echo_warden_all_damagers_first_species_replay_and_real_scroll_custody_postgres() -> TestResult {
     let started = std::time::Instant::now();

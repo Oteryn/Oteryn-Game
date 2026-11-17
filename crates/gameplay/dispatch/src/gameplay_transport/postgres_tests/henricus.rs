@@ -15,6 +15,7 @@ use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn henricus_postgres_dispatch_purchase_refusals_and_replay() -> TestResult {
     std::thread::Builder::new()
@@ -410,6 +411,7 @@ fn scenario(partial: bool) -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn henricus_postgres_dispatch_partial_ownership_refuses_without_charge() -> TestResult {
     std::thread::Builder::new()

@@ -5,33 +5,48 @@ use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::map::view::{MapFacts,placement_key};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback,Position,Offering};
 use oteryn_protocol_oteryn::world_object::{UseDisposition,WorldObjectTarget};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const NAME:&str="m07/lion-strength";
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const SOURCE:Position=Position{x:33137,y:32291,floor:-8};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m07_lion_strength_postgres_exact_consumption_counter_and_pagoda_reset()->TestResult {
     run(NAME,SOURCE)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m07_lion_tears_postgres_exact_consumption_counter_and_pagoda_reset()->TestResult {
     run("m07/lion-tears",Position{x:33154,y:32279,floor:-8})
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m07_lion_well_postgres_repeatable_exact_reward_and_command_replay()->TestResult {
     run("m07/lion-well",Position{x:33137,y:32351,floor:-6})
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m07_lion_beauty_postgres_exact_consumption_counter_and_pagoda_reset()->TestResult {
     run("m07/lion-beauty",Position{x:33138,y:32369,floor:-8})
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m07_lion_flower_west_postgres_bloom_reset_and_repeatable_pickup()->TestResult {
     run("m07/lion-flower-west",Position{x:33133,y:32359,floor:-6})
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m07_lion_flower_east_postgres_bloom_reset_and_repeatable_pickup()->TestResult {
     run("m07/lion-flower-east",Position{x:33157,y:32364,floor:-6})
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run(name:&'static str,source:Position)->TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}
     let started=std::time::Instant::now();eprintln!("POSTGRES_CASE_STARTED {name}");

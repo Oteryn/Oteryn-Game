@@ -4,6 +4,7 @@ use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_cerebellum_native_callback_heals_brain_head_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

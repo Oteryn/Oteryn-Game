@@ -181,6 +181,7 @@ async fn quantity(h: &Harness, item: &str) -> TestResult<i64> {
         .bind(item).fetch_one(&h.pool).await?)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn engworldchg_guarded_wood_exchange_real_dispatch_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

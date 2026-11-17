@@ -1,26 +1,37 @@
 //! Real command routing, fenced custody, replay and durable equipment reload.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, id, run};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, item_look, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::MovementLocalPosition;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::connection::FirstEntryOutcome;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::{self as protocol, item_view::ItemMoveOutcome};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_equip_postgres_dispatch_toggle_replay_and_durable_reload() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-equip", || scenario(false))
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_equip_postgres_worn_item_toggles_with_spare_carried() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-equip-spare", || scenario(true))
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn scenario(spare: bool) -> TestResult {
     scenario_options(spare, false, false, false, None, false)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_equip_postgres_feared_refuses_without_mutation() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-equip-feared", || {
@@ -28,6 +39,7 @@ fn hotkey_equip_postgres_feared_refuses_without_mutation() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_equip_postgres_nested_source_is_atomic_and_durable() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-equip-nested", || {
@@ -35,6 +47,7 @@ fn hotkey_equip_postgres_nested_source_is_atomic_and_durable() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_equip_postgres_first_started_copy_beats_unused_and_later_started() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-equip-started", || {
@@ -42,6 +55,7 @@ fn hotkey_equip_postgres_first_started_copy_beats_unused_and_later_started() -> 
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_equip_postgres_nested_exchange_has_one_receipt_and_exact_edges() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-equip-nested-swap", || {
@@ -49,6 +63,7 @@ fn hotkey_equip_postgres_nested_exchange_has_one_receipt_and_exact_edges() -> Te
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_equip_postgres_nested_exchange_full_main_refuses_atomically() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-equip-nested-full", || {
@@ -56,6 +71,7 @@ fn hotkey_equip_postgres_nested_exchange_full_main_refuses_atomically() -> TestR
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_equip_postgres_nested_search_with_equipped_extra_quiver() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-equip-extra-quiver", || {
@@ -63,6 +79,7 @@ fn hotkey_equip_postgres_nested_search_with_equipped_extra_quiver() -> TestResul
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn scenario_options(
     spare: bool,
     feared: bool,
@@ -82,6 +99,7 @@ fn scenario_options(
     )
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn coalescing_scenario() -> TestResult {
     scenario_options_impl(
         false,
@@ -95,6 +113,7 @@ pub(super) fn coalescing_scenario() -> TestResult {
 }
 
 #[derive(Clone, Copy)]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) enum ScenarioMode {
     Normal,
     Coalescing,
@@ -112,6 +131,7 @@ pub(super) enum ScenarioMode {
     },
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_equip_postgres_pouch_source_replay_and_foreign_refusal() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-pouch", || {
@@ -128,6 +148,7 @@ fn hotkey_equip_postgres_pouch_source_replay_and_foreign_refusal() -> TestResult
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_equip_postgres_managed_destination_replay() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-managed", || {
@@ -143,10 +164,12 @@ fn hotkey_equip_postgres_managed_destination_replay() -> TestResult {
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn swap_scenario(mode: ScenarioMode) -> TestResult {
     scenario_options_impl(false, false, false, false, None, false, mode)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 fn scenario_options_impl(
     spare: bool,
     feared: bool,
@@ -908,6 +931,7 @@ fn scenario_options_impl(
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 struct PausedCoalescingClock<'a> {
     // Dropping the sender releases the worker on success, error and panic.
     _release: std::sync::mpsc::Sender<()>,
@@ -915,7 +939,9 @@ struct PausedCoalescingClock<'a> {
     paused: &'a std::cell::Cell<bool>,
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 impl<'a> PausedCoalescingClock<'a> {
+    #[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
     async fn new(paused: &'a std::cell::Cell<bool>) -> TestResult<Self> {
         let (release, released) = std::sync::mpsc::channel();
         let (ready, started) = tokio::sync::oneshot::channel();
@@ -936,6 +962,7 @@ impl<'a> PausedCoalescingClock<'a> {
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 impl Drop for PausedCoalescingClock<'_> {
     fn drop(&mut self) {
         if self.paused.replace(false) {
@@ -944,10 +971,12 @@ impl Drop for PausedCoalescingClock<'_> {
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn equipped_count(pool: &sqlx::PgPool) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn send(
     client: &mut tokio::io::DuplexStream,
     id: u64,
@@ -979,6 +1008,7 @@ async fn send(
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn drive<A, B>(
     serve: A,
     exercise: B,

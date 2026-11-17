@@ -12,6 +12,7 @@ const POINTS: [(u16, u16, i8, StepDirection); 4] = [
     (33054, 32468, -11, StepDirection::West),
 ];
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_koshei_four_native_visits_require_level_and_cannot_be_farmed() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

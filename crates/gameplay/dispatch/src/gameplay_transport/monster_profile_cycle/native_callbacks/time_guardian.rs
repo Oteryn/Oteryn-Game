@@ -30,6 +30,7 @@ struct Pending {
     key: u64,
     // Descriptive only; firing never requires this original issuer alive.
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     actor: crate::foundation::ExactActorRef,
     parking: MovementLocalPosition,
     old: MovementLocalPosition,
@@ -75,6 +76,7 @@ async fn exists(
 }
 impl NativeTimeGuardian {
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub(super) fn cast_position_for_test(
         &self,
         actor: crate::foundation::ExactActorRef,
@@ -342,6 +344,7 @@ impl NativeTimeGuardian {
                     self.pending.push(Pending {
                         key,
                         #[cfg(test)]
+                        #[cfg(feature = "pg-tests-g3")]
                         actor: p.issuer,
                         parking,
                         old: snapshot.position,

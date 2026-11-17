@@ -7,6 +7,7 @@ use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
 const QUEST: &str = "oteryn:quest.authored.a_pirate_s_death_to_me";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m01a_pirates_death_production_talk_dispatch_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m01a-production-pirate-talk")

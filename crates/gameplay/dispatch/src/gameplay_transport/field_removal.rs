@@ -267,6 +267,30 @@ pub(super) mod faults {
     pub(in crate::gameplay_transport) const REMOVAL: u8 = 0;
     pub(in crate::gameplay_transport) const PLAYER: u8 = 1;
     thread_local! {static ARMED:RefCell<Option<(u8,bool,oneshot::Sender<()>)>>=const{RefCell::new(None)};}
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g4"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3"
+    ))]
     pub(in crate::gameplay_transport) fn arm(family: u8, after: bool) -> oneshot::Receiver<()> {
         let (sender, receiver) = oneshot::channel();
         ARMED.with_borrow_mut(|slot| {

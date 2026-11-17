@@ -3,6 +3,7 @@ use super::fixture::{Harness, debug, run};
 use super::tutorial_vitals_fixture::admit;
 use super::{Dependencies, TestResult, prepare_current_session};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn reaudit_starting_progression_first_entry_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -76,6 +77,7 @@ fn reaudit_starting_progression_first_entry_postgres() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn reaudit_starting_progression_vocations_and_departure_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

@@ -1,8 +1,13 @@
 //! Synthetic citizenship tile and two temples through the real bundle loader.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, fence, id, run};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, prepare_current_session, reset};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::ability::creature_bite::CreatureBiteVitals;
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::foundation::{CharacterLease, MovementLocalPosition};
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::world_spatial::StepDirection;
 
 pub(super) fn towns() -> oteryn_world_bundle::subarea::Table {
@@ -52,33 +57,39 @@ pub(super) fn towns() -> oteryn_world_bundle::subarea::Table {
     }
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn citizen_tile_persists_town_death_uses_temple_and_reconnect_keeps_it() -> TestResult {
     on_large_stack(None)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn p20_login_path_moves_an_ended_premium_area_citizen_to_the_thais_temple() -> TestResult {
     on_large_stack(Some(PremiumEntry::Stored))
 }
 
 #[derive(Clone, Copy)]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 enum PremiumEntry {
     Stored,
     Respawn,
     Arrival,
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn p20_ended_premium_consumes_pending_respawn_with_relocation() -> TestResult {
     on_large_stack(Some(PremiumEntry::Respawn))
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn p20_ended_premium_consumes_pending_arrival_with_relocation() -> TestResult {
     on_large_stack(Some(PremiumEntry::Arrival))
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn on_large_stack(p20: Option<PremiumEntry>) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -88,6 +99,7 @@ fn on_large_stack(p20: Option<PremiumEntry>) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario(p20: Option<PremiumEntry>) -> TestResult {
     run(async |admin| {
         reset();
@@ -325,13 +337,17 @@ fn scenario(p20: Option<PremiumEntry>) -> TestResult {
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 const P20_NOW: i64 = 1_790_812_800_000_000;
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 struct P20Clock(std::sync::Mutex<Option<crate::premium::TrustedNow>>);
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 impl crate::gameplay_transport::spell_premium_coordinator::clock_registration::Registered
     for P20Clock
 {
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 impl crate::gameplay_transport::spell_premium_coordinator::RegisteredPremiumClock for P20Clock {
     fn read_current_window(&self) -> Option<crate::premium::TrustedNow> {
         *self.0.lock().expect("clock")
@@ -339,6 +355,7 @@ impl crate::gameplay_transport::spell_premium_coordinator::RegisteredPremiumCloc
 }
 
 /// P20: delivered Premium reads with a trusted clock and the durable latch.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn premium_reads(
     h: &Harness,
 ) -> (
@@ -364,6 +381,7 @@ fn premium_reads(
 }
 
 /// P20: Crystal 201189f8 `data-global/scripts/creaturescripts/others/login.lua:8-15`.
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn premium_ended<'a>(
     h: &Harness,
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'a, '_, '_>,
@@ -626,6 +644,7 @@ async fn premium_ended<'a>(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn revisions(h: &Harness) -> TestResult<(u64, u64)> {
     let (root, progression): (String, String) = sqlx::query_as(
         "SELECT r.character_revision::text,p.character_revision::text \
@@ -637,6 +656,7 @@ async fn revisions(h: &Harness) -> TestResult<(u64, u64)> {
     .await?;
     Ok((root.parse()?, progression.parse()?))
 }
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn world(world: crate::foundation::WorldId) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{

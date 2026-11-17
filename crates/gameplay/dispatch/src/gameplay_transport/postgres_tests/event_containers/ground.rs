@@ -16,11 +16,13 @@ impl Case {
     }
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w19_ground_event_container_anniversary_defers_to_sp04() -> TestResult {
     run_case(Case::Anniversary)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn w19_ground_event_container_special_defers_to_sp04() -> TestResult {
     run_case(Case::Special)

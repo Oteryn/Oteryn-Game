@@ -6,7 +6,13 @@ use crate::map::view::{MapFacts,placement_key};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback,NativeSelector,Offering,Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition,WorldObjectTarget};
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const NAME:&str="m07/machinery-ballista-01";
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 const SOURCE:Position=Position{x:32824,y:31708,floor:-7};
 pub(super) fn start(name:&str)->Position {
     if name.starts_with("m07/machinery-catapult-") {return super::m07_machinery_catapults::start();}
@@ -14,14 +20,18 @@ pub(super) fn start(name:&str)->Position {
     Position{x:32824,y:31709,floor:-7}
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m07_machinery_postgres_ballista_retains_tool_checks_level_and_resets()->TestResult {
     run(NAME,SOURCE)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m07_machinery_postgres_ballista_refuses_level49_without_credit_or_tool_charge()->TestResult {
     run("m07/machinery-ballista-01-level49",SOURCE)
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn run(name:&'static str,source:Position)->TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}
     let begun=std::time::Instant::now();eprintln!("POSTGRES_CASE_STARTED {name}");

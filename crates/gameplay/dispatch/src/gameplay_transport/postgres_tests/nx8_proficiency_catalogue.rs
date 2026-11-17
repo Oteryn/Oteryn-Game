@@ -10,6 +10,7 @@ use oteryn_protocol_oteryn::weapon_proficiency::ProficiencyCataloguePage;
 use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn nx8_proficiency_catalogue_projects_all_tracks_and_live_experience() -> TestResult {
     std::thread::Builder::new()

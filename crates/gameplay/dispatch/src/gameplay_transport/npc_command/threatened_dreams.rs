@@ -17,6 +17,12 @@ static INTERRUPT_AFTER_COMMIT: std::sync::Mutex<Option<(GameSessionId, u64)>> =
 impl NpcConversations {
     /// Drop only the acknowledgement of this test's exact completed command.
     /// Production retains the same Pending on an actual unavailable result.
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(in crate::gameplay_transport) fn fixture_interrupt_threatened_commit(
         &self,
         session: GameSessionId,

@@ -1,12 +1,26 @@
 //! W05d: a scheduled rate event reaches the production kill settle (experience and loot) only
 //! inside its window; both edges are inclusive.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_foundation::scheduled_events::{Schedule, test_clock};
 
 /// 2030-01-01T00:00:00Z and 2030-01-02T23:59:59Z.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 const START: i64 = 1_893_456_000;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 const END: i64 = 1_893_628_799;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario_at(now: i64) -> TestResult {
     let schedule = Schedule::parse(
         r#"{"events":[{"name":"w05d","startdate":"01/01/2030","enddate":"01/02/2030",
@@ -17,6 +31,7 @@ fn scenario_at(now: i64) -> TestResult {
     super::kill_reward_e2e::scenario()
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn w05d_event_scales_real_kill_xp_and_loot_only_inside_its_window_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("w05d-event-rates", || {
@@ -28,6 +43,7 @@ fn w05d_event_scales_real_kill_xp_and_loot_only_inside_its_window_postgres() -> 
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn sv09_double_loot_two_complete_rolls_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("sv09-double-loot", || {
@@ -43,6 +59,7 @@ fn sv09_double_loot_two_complete_rolls_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn sv10_overlapping_events_compose_like_crystal_on_real_kills_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("sv10-overlap", || {
@@ -71,6 +88,8 @@ fn sv10_overlapping_events_compose_like_crystal_on_real_kills_postgres() -> Test
     })
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
     let rate = oteryn_gameplay_foundation::scheduled_events::current_rates().loot;
     if rate < 200 || !rate.is_multiple_of(100) {
@@ -94,6 +113,8 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
     Ok(Some(serde_json::to_vec(&section)?))
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn expected(
     table: &mut crate::combat::LootTableDefinition,
     base: &crate::combat::LootTableDefinition,
@@ -108,6 +129,8 @@ pub(super) fn expected(
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) fn verify(actual: &[(String, i64)]) {
     let rate = oteryn_gameplay_foundation::scheduled_events::current_rates().loot;
     if rate >= 200 && rate.is_multiple_of(100) {

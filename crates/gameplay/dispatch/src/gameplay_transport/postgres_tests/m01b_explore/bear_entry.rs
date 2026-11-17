@@ -1,6 +1,7 @@
 //! Descend into the outer Bear Room basement before the retained stone and key door.
 use super::*;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_bear_native_basement_entry_credits_once_before_key_and_stone() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

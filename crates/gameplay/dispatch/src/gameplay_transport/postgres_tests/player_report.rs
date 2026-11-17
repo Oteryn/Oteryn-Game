@@ -21,6 +21,7 @@ use tokio::io::AsyncWriteExt;
 /// report_no, kind, reported id hex, reported name, comment and reporter x/y/floor.
 type ReportRow = (i64, i16, Option<String>, Option<String>, String, i32, i32, i16);
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn player_report_postgres_real_wire_queue_replay_refusals_and_fences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

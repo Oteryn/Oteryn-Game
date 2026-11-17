@@ -48,6 +48,7 @@ impl FreshAdmissionAuthority for HouseOwner<'_, '_, '_> {
     }
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn bed_sleep_successful_real_dispatch_commits_the_native_owner() -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
@@ -94,6 +95,7 @@ fn bed_sleep_successful_real_dispatch_commits_the_native_owner() -> TestResult {
 }
 
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn c10_production_bed_sleep_logout_fresh_login_saved_rest_postgres() -> TestResult {
     let started = std::time::Instant::now();

@@ -1,6 +1,7 @@
 //! Source-exact Giant Smithhammer lever, including both no-op combinations.
 use super::TestResult;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc7_giant_smithhammer_asymmetric_lever_all_four_states() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

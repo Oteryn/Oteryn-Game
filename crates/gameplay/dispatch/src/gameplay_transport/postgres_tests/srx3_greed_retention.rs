@@ -9,6 +9,7 @@ use std::sync::Arc;
 use std::task::Poll;
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_greed_original_callbacks_survive_timer_and_transform_cancellation_postgres() -> TestResult {
     super::srx3_greed_callbacks::run_source_entry(true)

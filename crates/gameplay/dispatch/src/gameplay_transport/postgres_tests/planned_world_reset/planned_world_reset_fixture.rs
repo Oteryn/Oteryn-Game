@@ -3,6 +3,8 @@ use super::*;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{ChannelId, WorldId};
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(crate) use oteryn_gameplay_durability::durability::world_reset::test_support::seed_retiring;
 
 pub(crate) async fn replace(
@@ -47,6 +49,9 @@ pub(crate) async fn replace(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(crate) fn set_runtime(
     deps: &mut Dependencies,
     world: WorldId,

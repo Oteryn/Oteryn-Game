@@ -1314,6 +1314,30 @@ pub(super) fn activity_continuity(source: SessionContinuity) -> SessionContinuit
 pub(in crate::gameplay_transport) mod srx3_faults {
     use std::cell::Cell;
     thread_local! { static AFTER_SOULPIT_COMMIT: Cell<bool> = const { Cell::new(false) }; }
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
     pub(in crate::gameplay_transport) fn stop_after_soulpit_commit_once() {
         AFTER_SOULPIT_COMMIT.set(true);
     }

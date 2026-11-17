@@ -12,6 +12,11 @@ category = "gameplay"
 release-role = "production"
 
 [features]
+pg-tests-g1 = []
+pg-tests-g2 = []
+pg-tests-g3 = []
+pg-tests-g4 = []
+pg-tests-all = ["pg-tests-g1", "pg-tests-g2", "pg-tests-g3", "pg-tests-g4"]
 # Disposable node-boot builds only; absent from production binaries.
 qualification-clock = ["oteryn-gameplay-world/qualification-clock"]
 test-support = ["dep:ed25519-dalek", "oteryn-gameplay-encounters/test-support", "oteryn-gameplay-entities/test-support"]

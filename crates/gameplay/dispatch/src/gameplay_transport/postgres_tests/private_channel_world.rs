@@ -12,6 +12,7 @@ use oteryn_protocol_oteryn::chat::{self,ChatDisposition,ChatIntent,ChatLine};
 use oteryn_protocol_oteryn::chat::private_channel::PrivateChannelIntent as Intent;
 use std::{future::Future,sync::Arc,time::Duration};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn private_channel_postgres_world_lifecycle_fences_atomic_replay_and_epoch() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }

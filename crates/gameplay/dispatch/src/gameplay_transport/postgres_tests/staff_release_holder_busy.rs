@@ -7,6 +7,7 @@ use crate::gameplay_transport::connection::{
     ControlLossResult, FreshAdmissionAuthority, GraceExpiryResult,
 };
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn staff_release_poll_waits_for_busy_holder_on_lost_session_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

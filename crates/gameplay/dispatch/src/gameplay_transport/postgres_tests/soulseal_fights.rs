@@ -14,18 +14,22 @@ pub(super) enum Mode {
     Rollback,
     Insufficient,
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn t114_soulseal_real_dispatch_spends_once_and_admits_solo() -> TestResult {
     run(Mode::Spend)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn t114_soulseal_refused_capacity_preserves_seals() -> TestResult {
     run(Mode::Capacity)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn t114_soulseal_failed_successor_rolls_back_payment() -> TestResult {
     run(Mode::Rollback)
 }
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn t114_soulseal_insufficient_balance_cannot_create_encounter() -> TestResult {
     run(Mode::Insufficient)

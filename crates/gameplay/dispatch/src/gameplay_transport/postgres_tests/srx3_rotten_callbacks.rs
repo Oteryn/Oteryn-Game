@@ -1,31 +1,72 @@
 //! Actual pinned Murcion entry and native scheduler; no invented boss/catalogue.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::fixture::{Harness, debug, run};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::srx3_activity_source_fixture::{SourceScene, install_scene, prepare_player};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use super::{Dependencies, TestResult, reset};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4")))))]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+use super::{Dependencies, TestResult};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4")))))]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use super::TestResult;
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4")))))]
+#[cfg(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use super::TestResult;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::foundation::{MovementLocalPosition, RuntimeScopeRefV1};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4")))))]
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+use crate::foundation::MovementLocalPosition;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use crate::map::boot::BundleCollisionIndexExt;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_murcion_actual_source_entry_native_think_spawns_owned_children_postgres() -> TestResult {
     run_murcion_source_entry(false, false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_murcion_published_whole_world_entry_native_children_postgres() -> TestResult {
     run_murcion_source_entry(true, false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_murcion_native_mushroom_fuse_removes_original_children_postgres() -> TestResult {
     run_murcion_source_entry(false, true)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_murcion_native_mushroom_normal_damage_and_effects_postgres() -> TestResult {
     run_murcion_source_entry_checks(
@@ -39,6 +80,7 @@ fn srx3_murcion_native_mushroom_normal_damage_and_effects_postgres() -> TestResu
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_murcion_native_mushroom_retry_keeps_original_cohort_and_damage_postgres() -> TestResult {
     run_murcion_source_entry_checks(
@@ -52,6 +94,7 @@ fn srx3_murcion_native_mushroom_retry_keeps_original_cohort_and_damage_postgres(
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_murcion_actual_native_lethal_retains_canonical_source_death_notice_postgres() -> TestResult
 {
@@ -66,6 +109,7 @@ fn srx3_murcion_actual_native_lethal_retains_canonical_source_death_notice_postg
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_murcion_native_death_barrier_runs_only_originally_eligible_mushroom_fuse_postgres()
 -> TestResult {
@@ -80,6 +124,7 @@ fn srx3_murcion_native_death_barrier_runs_only_originally_eligible_mushroom_fuse
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_ichgahal_actual_source_entry_native_think_spawns_owned_children_postgres() -> TestResult {
     run_murcion_source_entry_checks(
@@ -93,6 +138,7 @@ fn srx3_ichgahal_actual_source_entry_native_think_spawns_owned_children_postgres
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 fn retain_murcion_native_lethal(
     runtime: &mut crate::foundation::ChannelRuntimeV1,
     caster: crate::foundation::ExactActorRef,
@@ -168,6 +214,7 @@ fn retain_murcion_native_lethal(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 fn run_murcion_source_entry(published_world: bool, mushroom_fuse: bool) -> TestResult {
     run_murcion_source_entry_checks(
         PinnedActivitySourceRoom::Murcion,
@@ -180,6 +227,7 @@ fn run_murcion_source_entry(published_world: bool, mushroom_fuse: bool) -> TestR
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 fn run_murcion_source_entry_checks(
     source_room: PinnedActivitySourceRoom,
     published_world: bool,
@@ -747,6 +795,7 @@ fn run_murcion_source_entry_checks(
     result
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_rotten_native_corpse_free_children_keep_normal_experience_postgres() -> TestResult {
     run_rotten_native_lethal_cases(&[
@@ -758,17 +807,20 @@ fn srx3_rotten_native_corpse_free_children_keep_normal_experience_postgres() -> 
     ])
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_rotten_actual_native_hunter_death_materializes_source_corpse_postgres() -> TestResult {
     run_rotten_native_lethal_cases(&[(65003, "oteryn:creature.bloated_man_maggot", 21570, 1)])
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_soul_war_actual_ordinary_capacity48_death_postgres() -> TestResult {
     // Bony Sea Devil: exact native17328XP and pinned XML corpse33797 capacity48.
     run_rotten_native_lethal_cases(&[(65008, "oteryn:creature.bony_sea_devil", 17328, 1)])
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_soul_war_actual_plain_child_corpse_materialization_postgres() -> TestResult {
     run_rotten_native_lethal_cases(&[
@@ -779,6 +831,7 @@ fn srx3_soul_war_actual_plain_child_corpse_materialization_postgres() -> TestRes
     ])
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_plain_corpse_retirement_uses_actual_source_lifetime_postgres() -> TestResult {
     run_rotten_native_lethal_cases_with_timer(
@@ -787,6 +840,7 @@ fn srx3_plain_corpse_retirement_uses_actual_source_lifetime_postgres() -> TestRe
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_hateful_soul_plain_corpse_has_no_invented_expiry_postgres() -> TestResult {
     run_rotten_native_lethal_cases_with_timer(
@@ -795,11 +849,13 @@ fn srx3_hateful_soul_plain_corpse_has_no_invented_expiry_postgres() -> TestResul
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_symbol_of_hatred_actual_plain_corpse_postgres() -> TestResult {
     run_rotten_native_lethal_cases(&[(65010, "oteryn:creature.symbol_of_hatred", 0, 1)])
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_mortal_essence_plain_corpse_enters_native_ground_custody_postgres() -> TestResult {
     run_rotten_native_lethal_case_checks(
@@ -810,6 +866,7 @@ fn srx3_mortal_essence_plain_corpse_enters_native_ground_custody_postgres() -> T
     )
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_symbol_native_corpse_actual_step_fuses_remorse_and_ground_removal_postgres() -> TestResult {
     run_rotten_native_lethal_case_checks(
@@ -820,10 +877,14 @@ fn srx3_symbol_native_corpse_actual_step_fuses_remorse_and_ground_removal_postgr
     )
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run_rotten_native_lethal_cases(cases: &[(u16, &'static str, u64, i64)]) -> TestResult {
     run_rotten_native_lethal_cases_with_timer(cases, None)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run_rotten_native_lethal_cases_with_timer(
     cases: &[(u16, &'static str, u64, i64)],
     check_timer: Option<Option<i64>>,
@@ -831,6 +892,8 @@ fn run_rotten_native_lethal_cases_with_timer(
     run_rotten_native_lethal_case_checks(cases, check_timer, false, false)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run_rotten_native_lethal_case_checks(
     cases: &[(u16, &'static str, u64, i64)],
     check_timer: Option<Option<i64>>,
@@ -1184,6 +1247,8 @@ fn run_rotten_native_lethal_case_checks(
 /// This test drives the ordinary Player movement producer. The old current
 /// Ground read is retained solely to replay the exact already committed writer
 /// after the physical Item has gone; it never grants a fresh mutation.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn exercise_remorse_step(
     h: &Harness,
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -1363,6 +1428,8 @@ async fn exercise_remorse_step(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 async fn create_second_symbol_corpse(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &crate::gameplay_transport::connection::AdmittedSession,
@@ -1488,6 +1555,7 @@ async fn create_second_symbol_corpse(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_primal_actual_instance_publishes_current_hazard_source_icon_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

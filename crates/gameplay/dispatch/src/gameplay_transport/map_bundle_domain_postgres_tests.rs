@@ -24,6 +24,7 @@ fn door_target(digest: [u8; 32], expected_revision: u64) -> WorldObjectTarget {
     }
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn a_bundle_world_owner_requires_18_and_never_holds_domain_2_state() -> TestResult {
     run(async |admin| {

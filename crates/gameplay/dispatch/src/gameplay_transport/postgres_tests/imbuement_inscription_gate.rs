@@ -4,6 +4,7 @@
 use super::fixture::{Harness, run};
 use super::TestResult;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn inscription_receipt_accepts_only_the_atomic_action_shape() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -23,6 +24,7 @@ fn inscription_receipt_accepts_only_the_atomic_action_shape() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn albinius_gate_relations_are_migrated_together() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -6,6 +6,7 @@ use crate::foundation::{FoundationProtocolError, GameSessionState};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, GraceExpiryResult};
 use crate::gameplay_transport::session_ingress::{CommandAction, SessionCommandStream};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn f25_full_command_ingress_does_not_block_terminal_cleanup() -> TestResult {
     // Match neighboring composed-owner fixtures: debug futures need a larger stack.

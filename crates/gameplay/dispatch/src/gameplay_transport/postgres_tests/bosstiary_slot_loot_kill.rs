@@ -218,11 +218,13 @@ async fn seed_exact_1250(h: &Harness) -> TestResult<String> {
     equipped_other.ok_or("seeded nemesis boss".into())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn bosstiary_slot_loot_bonus_adds_exact_equipment_roll_to_native_kill_postgres() -> TestResult {
     run_case(true)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn bosstiary_slot_loot_bonus_unassigned_boss_gets_no_extra_roll_postgres() -> TestResult {
     run_case(false)

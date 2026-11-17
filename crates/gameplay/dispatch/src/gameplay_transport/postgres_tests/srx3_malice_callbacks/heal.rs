@@ -114,6 +114,7 @@ fn inside_current_cage_area(
         )))
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_heal_malice_native_defense_heals_named_boss_and_dispels_nearby_player_postgres()
 -> TestResult {

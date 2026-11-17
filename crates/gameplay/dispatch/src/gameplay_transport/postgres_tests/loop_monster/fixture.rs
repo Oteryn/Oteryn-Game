@@ -3,6 +3,8 @@ use super::*;
 use crate::content::channel_content_pin::ChannelContentPin;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn run_case(
     body: impl AsyncFnOnce(&Harness) -> TestResult + Send + 'static,
 ) -> TestResult {
@@ -170,6 +172,8 @@ pub(super) fn dependencies_with_capacity(
     Ok((deps, rat))
 }
 
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn next_pass(
     owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult {

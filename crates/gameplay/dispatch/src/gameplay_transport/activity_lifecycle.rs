@@ -12,6 +12,24 @@ use std::collections::BTreeSet;
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Every lifecycle step, the durable traversals included, as the tests drive it directly.
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
     pub(super) async fn activity_lifecycle_pass(&self) -> Result<(), ()> {
         self.activity_lifecycle_pass_with(true).await
     }

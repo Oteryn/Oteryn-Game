@@ -63,41 +63,49 @@ fn run_case(case: Case) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn team_finder_members_request_single_pending_and_durable_replay() -> TestResult {
     run_case(Case::Request)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn team_finder_members_cancel_deletes_only_the_applicant_entry() -> TestResult {
     run_case(Case::Cancel)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn team_finder_members_invite_records_status_two_without_party_membership() -> TestResult {
     run_case(Case::Invite)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn team_finder_members_accept_uses_party_invite_then_normal_accept_and_capacity() -> TestResult {
     run_case(Case::Accept)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn team_finder_members_deny_preserves_status_until_cancellation() -> TestResult {
     run_case(Case::Deny)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn team_finder_members_remove_cascades_requests_and_rejects_retained_handle() -> TestResult {
     run_case(Case::Remove)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn team_finder_members_real_logout_closes_advertisement_but_retains_template() -> TestResult {
     run_case(Case::Logout)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn team_finder_members_refuses_malformed_wrong_owner_unknown_handle_and_stale_fence() -> TestResult
 {

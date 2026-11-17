@@ -6,23 +6,43 @@ use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::quest_state::{QuestTransitionOutcome, npc_program::NpcProgramRequest};
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::{npc_rules::NpcRuleTrigger, world_callbacks::Position};
+
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+use oteryn_gameplay_quests::quest::npc_rules::NpcRuleTrigger;
+
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(all(feature = "pg-tests-g3", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))))]
+use oteryn_gameplay_quests::quest::npc_rules::NpcRuleTrigger;
+
+#[cfg(all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))))]
+use oteryn_gameplay_quests::quest::npc_rules::NpcRuleTrigger;
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 
 const NPC: &str = "oteryn:npc.maris_mistrock";
 const TRACK: &str = "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/way_to_beregar";
 const RULE: &str = "oteryn:quest-npc/the_hidden_city_of_beregar_quest/maris_mistrock/hidden-path";
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn npcfix_m38_mistrock_source_dialogue_commits_once_and_replays_postgres() -> TestResult {
     run_case("npcfix-m38-mistrock")
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn npcfix_m38_mistrock_requires_current_premium_postgres() -> TestResult {
     run_case("npcfix-m38-mistrock-free")
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_case(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

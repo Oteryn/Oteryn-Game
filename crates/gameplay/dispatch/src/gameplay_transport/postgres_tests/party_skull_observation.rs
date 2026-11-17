@@ -227,6 +227,7 @@ fn observe(trace: Trace) -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn party_icons_require_both_real_observations_in_either_order() -> TestResult {
     for trace in [Trace::ResultFirst, Trace::DeltaFirst, Trace::ProbeBetween] {
@@ -235,6 +236,7 @@ fn party_icons_require_both_real_observations_in_either_order() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn party_icons_reject_wrong_command_generation_and_revision() -> TestResult {
     for (trace, message) in [
@@ -252,6 +254,7 @@ fn party_icons_reject_wrong_command_generation_and_revision() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn party_icons_never_complete_from_unrelated_or_single_observations() -> TestResult {
     for trace in [
@@ -274,6 +277,7 @@ fn party_icons_never_complete_from_unrelated_or_single_observations() -> TestRes
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 #[should_panic(expected = "party icon values")]
 fn party_icons_reject_wrong_query_payload_values() {
@@ -281,6 +285,7 @@ fn party_icons_reject_wrong_query_payload_values() {
     assert!(result.is_ok());
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 #[should_panic(expected = "party icon values")]
 fn party_icons_reject_wrong_pushed_payload_values() {

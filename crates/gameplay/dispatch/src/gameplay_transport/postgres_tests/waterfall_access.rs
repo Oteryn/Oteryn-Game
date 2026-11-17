@@ -2,6 +2,7 @@
 use super::TestResult;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn waterfall_source_selectors_match_native_map() -> TestResult {
     let root = std::path::Path::new(concat!(
@@ -48,6 +49,7 @@ fn waterfall_source_selectors_match_native_map() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn waterfall_access_steps_preserve_quest_state() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

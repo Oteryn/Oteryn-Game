@@ -5,16 +5,19 @@ use crate::durability::activity_handoff::{ActivityEnterOutcome, ActivityHandoffO
 use crate::durability::soulpit::{SoulpitEntryRequest, SoulpitParticipantFact};
 use crate::foundation::{CommandId, CommandRef};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_soulpit_shared_entry_commits_core_and_successor_atomically_postgres() -> TestResult {
     exercise_shared_soulpit_entry(false, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_soulpit_last_native_exit_terminalizes_encounter_postgres() -> TestResult {
     exercise_shared_soulpit_entry(true, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx3_soulpit_reserved_activity_key_requires_core_context_postgres() -> TestResult {
     exercise_shared_soulpit_entry(false, true)

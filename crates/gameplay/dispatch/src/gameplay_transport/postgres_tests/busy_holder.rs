@@ -9,6 +9,7 @@ use crate::gameplay_transport::connection::FirstEntryOutcome;
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use std::time::Duration;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn a_committed_actor_enters_after_a_busy_holder_is_returned_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("first-entry-busy-holder", || {
@@ -54,6 +55,7 @@ fn a_committed_actor_enters_after_a_busy_holder_is_returned_postgres() -> TestRe
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn trade_open_retains_foreground_demand_until_its_name_reads_complete_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("trade-open-busy-holder", || {
@@ -116,6 +118,7 @@ fn trade_open_retains_foreground_demand_until_its_name_reads_complete_postgres()
 
 /// Every step refreshes the session's PvP locks from durable state first; a step that met a
 /// background pass on the holder was rejected (the node-boot use-wire `step_blocked` stage).
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("pvp-refresh-busy-holder", || {
@@ -159,6 +162,7 @@ fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("activity-input-busy-holder", || {

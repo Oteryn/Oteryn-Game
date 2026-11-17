@@ -58,10 +58,52 @@ pub(super) struct Mushrooms {
 }
 impl Mushrooms {
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g3"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g4"
+    ))]
     pub(super) fn pause_after_player_commit_for_test(&mut self) {
         self.pause_after_player_commit = true;
     }
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g1"),
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
+    #[cfg(any(
+        not(feature = "pg-tests-g2"),
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(super) fn progress_for_test(&self) -> Option<super::MushroomProgressForTest> {
         self.tracked.iter().find_map(|tracked| {
             let pending = tracked.pending.as_ref()?;
@@ -70,6 +112,7 @@ impl Mushrooms {
                 original_due: tracked.owner.explode_at(1)?.checked_mul(1000)?,
                 cursor: pending.cursor,
                 total: pending.hits.len(),
+                #[cfg(feature = "pg-tests-g4")]
                 players: pending
                     .hits
                     .iter()

@@ -5,6 +5,7 @@ use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn soulpit_shared_entry_uses_current_trusted_gm_group_not_forged_hint_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

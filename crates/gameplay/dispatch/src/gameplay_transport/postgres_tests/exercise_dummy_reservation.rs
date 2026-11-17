@@ -5,6 +5,7 @@ use super::*;
 use crate::durability::exercise_training::ExerciseDummyKey;
 use crate::foundation::WorldId;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exercise_dummy_reservation_postgres_one_trainer_release_and_lease_expiry() -> TestResult {
     std::thread::Builder::new()

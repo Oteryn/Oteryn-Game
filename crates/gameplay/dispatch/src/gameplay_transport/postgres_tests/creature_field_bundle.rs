@@ -11,6 +11,7 @@ use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntr
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn creature_field_bundle_pickupable_stack_keeps_current_zone_and_residual_ticks_postgres()
 -> TestResult {

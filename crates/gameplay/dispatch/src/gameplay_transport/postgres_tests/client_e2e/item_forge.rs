@@ -4,6 +4,7 @@ use super::support::{self, Case, count, exchange};
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_protocol_oteryn::item_forge as wire;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn client_e2e_item_forge() -> TestResult {
     support::scenario(Case::ItemForge)

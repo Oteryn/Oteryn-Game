@@ -5,6 +5,7 @@
 //! replayed step answers from its stored outcome without moving value a second time.
 use super::full_world_support::*;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn full_world_chain_survives_relogin_and_replays_move_no_value_on_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("full-world-e2e", scenario)

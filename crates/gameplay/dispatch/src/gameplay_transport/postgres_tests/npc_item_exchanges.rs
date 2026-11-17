@@ -16,6 +16,7 @@ use std::sync::Arc;
 
 const PREFIX: &str = "oteryn:quest-progress/quest/u8_5/hot_cuisine_quest/";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn npc_item_exchanges_consume_exact_recipes_with_one_receipt_and_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

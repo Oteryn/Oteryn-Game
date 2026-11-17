@@ -4,6 +4,7 @@ use super::*;
 const QUEST: &str = "oteryn:quest.authored.chakoya_iceberg_mini_world_change";
 const TRACK: &str = "oteryn:quest-progress/authored/chakoya_iceberg_mini_world_change/s1";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_chakoya_native_personal_iceberg_entry_requires_current_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

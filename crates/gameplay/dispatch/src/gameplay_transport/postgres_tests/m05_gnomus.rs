@@ -4,13 +4,20 @@ use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::quest_state::{QuestTransitionOutcome, npc_program::NpcProgramRequest};
 use crate::foundation::{CommandId, CommandRef};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::{npc_rules::NpcRuleTrigger, world_callbacks::Position};
+
+#[cfg(any(all(feature = "pg-tests-g1", not(any(feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g2", not(any(feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))), all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3")))))]
+use oteryn_gameplay_quests::quest::npc_rules::NpcRuleTrigger;
 
 const QUEST: &str = "oteryn:quest.dangerous_depths_quest";
 const PREFIX: &str = "oteryn:quest-progress/quest/u11_50/dangerous_depths/gnomes/";
 const RULE: &str = "oteryn:quest-npc/dangerous_depths/gnomus/measurements-report";
 const NPC: &str = "oteryn:npc.gnomus";
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m05_gnomus_dispatch_commits_item_points_deadline_and_bound_replay() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

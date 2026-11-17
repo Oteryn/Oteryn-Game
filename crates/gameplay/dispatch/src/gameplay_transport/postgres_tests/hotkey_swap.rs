@@ -2,6 +2,7 @@
 use super::TestResult;
 use super::hotkey_equip::{ScenarioMode, swap_scenario};
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_swap_postgres_two_hander_displaces_both_hands() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-two-hands", || {
@@ -12,6 +13,7 @@ fn hotkey_swap_postgres_two_hander_displaces_both_hands() -> TestResult {
         })
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_swap_postgres_shield_displaces_two_hander() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-shield", || {
@@ -22,6 +24,7 @@ fn hotkey_swap_postgres_shield_displaces_two_hander() -> TestResult {
         })
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_swap_postgres_one_hander_displaces_two_hander() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-one-hand", || {
@@ -32,6 +35,7 @@ fn hotkey_swap_postgres_one_hander_displaces_two_hander() -> TestResult {
         })
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_swap_postgres_full_backpack_refuses_both_hands_atomically() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-hands-full", || {
@@ -42,6 +46,7 @@ fn hotkey_swap_postgres_full_backpack_refuses_both_hands_atomically() -> TestRes
         })
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_swap_postgres_ammunition_goes_to_quiver() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-ammo", || {
@@ -51,6 +56,7 @@ fn hotkey_swap_postgres_ammunition_goes_to_quiver() -> TestResult {
         })
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_swap_postgres_full_quiver_refuses_atomically() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-ammo-full", || {
@@ -60,6 +66,7 @@ fn hotkey_swap_postgres_full_quiver_refuses_atomically() -> TestResult {
         })
     })
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn hotkey_swap_postgres_ammunition_requires_quiver() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-ammo-absent", || {

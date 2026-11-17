@@ -4,6 +4,7 @@ use super::{Dependencies,TestResult,prepare_current_session};
 use crate::gameplay_transport::{capabilities::SelectedCapabilities,connection::FreshAdmissionAuthority,item_view::ItemKey};
 use oteryn_protocol_oteryn::mail::{MailIntent,MailOutcome,encode_intent};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn srx1_write_once_document_production_dispatch_replay_and_read_only_postgres()->TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none(){return Ok(());}

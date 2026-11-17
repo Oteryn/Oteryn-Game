@@ -10,6 +10,7 @@ use oteryn_gameplay_quests::quest::{
 };
 const QUEST: &str = "oteryn:quest.qm55_observer_event";
 const TRACK: &str = "oteryn:quest-progress/qm55/observer";
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn qm55_live_quest_log_refreshes_on_save_without_character_mutation() -> TestResult {
     std::thread::Builder::new()

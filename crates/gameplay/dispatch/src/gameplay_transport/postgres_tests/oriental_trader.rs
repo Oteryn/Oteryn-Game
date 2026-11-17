@@ -32,6 +32,7 @@ const ACHIEVEMENT: &str = "oteryn:achievement/si_ariki";
 
 type Replies = Vec<(CommandStatus, Vec<u8>)>;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn oriental_trader_catalogue_ariki_sale_and_achievement_once() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

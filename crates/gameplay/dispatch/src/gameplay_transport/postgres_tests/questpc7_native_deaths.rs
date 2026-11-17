@@ -11,6 +11,7 @@ const CREATURE: &str = "oteryn:creature.corym_charlatan";
 const COUNTER: &str = "oteryn:quest-progress/questpc7/hidden/kills";
 const GUARDIAN: MovementLocalPosition = MovementLocalPosition { x:33080, y:32015, floor:13 };
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc7_native_objectives_spawn_once_and_credit_exact_lethal_occurrences() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
@@ -203,6 +204,7 @@ pub(super) async fn lethal_creature(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc7_hidden_full_native_route_and_atomic_valuables() -> TestResult {
  if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none(){return Ok(());}

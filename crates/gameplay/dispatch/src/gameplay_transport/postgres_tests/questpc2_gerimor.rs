@@ -18,6 +18,7 @@ const CULTS: [(&str, &str); 7] = [
     ("humans", "humans"),
 ];
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn questpc2_gerimor_seven_assignments_require_exact_selection_and_live_confirmation() -> TestResult {
     super::qengine_rewards::scenario("questpc2-gerimor-assignments")

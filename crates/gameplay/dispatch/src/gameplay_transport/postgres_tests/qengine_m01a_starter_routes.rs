@@ -6,6 +6,7 @@ use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_gameplay_quests::quest::authored_bindings::Trigger;
 use oteryn_protocol_oteryn::npc_service::NpcIntentDisposition;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01a_rafzan_baxter_emilie_production_talk_routes_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m01a-starter-routes")

@@ -23,6 +23,7 @@ const AT: Position = Position {
     floor: -7,
 };
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m47_native_use_commits_random_outcome_feedback_blackout_and_replays() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

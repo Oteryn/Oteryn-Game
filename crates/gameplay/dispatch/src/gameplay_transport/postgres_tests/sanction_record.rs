@@ -50,6 +50,7 @@ fn sqlstate(result: Result<i16, sqlx::Error>) -> Option<String> {
         .map(|c| c.into_owned())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn sanction_record_postgres_projection_is_idempotent_and_the_read_is_own_and_fenced() -> TestResult
 {

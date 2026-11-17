@@ -15,16 +15,21 @@ pub(super) const TRIGGER: Position = Position {
 pub(super) const TRACK: &str =
     "oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/sewer_pipe03";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_reusable_tool_preserves_instance_and_refuses_missing_tool() -> TestResult {
     run_case("l6-reusable-tool")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn l6_reusable_multitool_preserves_instance_and_refuses_missing_tool() -> TestResult {
     run_case("l6-reusable-tool-multitool")
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn run_case(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());

@@ -20,6 +20,7 @@ use oteryn_protocol_oteryn::{
         achievements::{AchievementPage, AchievementRequest},
     },
 };
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn character_achievement_metadata_postgres_real_dispatch_and_privacy() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

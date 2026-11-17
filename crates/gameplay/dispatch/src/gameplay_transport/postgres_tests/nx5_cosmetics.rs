@@ -1,24 +1,29 @@
 //! NX-5 uses the authored production manifest through the real ordinary-USE route.
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn nx5_outfit_items_unlock_catalogue_addons_and_replay_once() -> super::TestResult {
     super::item_cosmetics::nx5_production_case(0)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn nx5_mount_parts_unlock_the_production_appearance_catalogue_once() -> super::TestResult {
     super::item_cosmetics::nx5_production_case(1)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn nx5_ot_only_addon_doll_is_refused_with_populated_cosmetics() -> super::TestResult {
     super::item_cosmetics::nx5_production_case(2)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn nx5_mount_token_unlocks_the_production_catalogue_and_replays_once() -> super::TestResult {
     super::item_cosmetics::nx5_production_case(3)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn nx5_every_global_item_rule_qualifies_against_source_bound_production_cosmetics()
 -> super::TestResult {

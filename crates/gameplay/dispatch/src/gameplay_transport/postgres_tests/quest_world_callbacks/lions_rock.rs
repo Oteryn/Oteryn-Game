@@ -12,6 +12,7 @@ const ENTRY: &str = "oteryn:quest-callback/lions-rock-inner-sanctum-entry";
 const QUESTLINE: &str = "oteryn:quest-progress/quest/u10_70/lions_rock/questline";
 const REFUSAL: &str = "You have to pass the Lion's Tests to enter the inner sanctum!";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn lions_rock_postgres_entry_refusal_has_one_message_and_no_state_change() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

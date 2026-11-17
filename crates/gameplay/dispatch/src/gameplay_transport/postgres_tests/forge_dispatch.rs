@@ -13,6 +13,7 @@ use crate::gameplay_transport::connection::{
 use oteryn_protocol_oteryn::{self as protocol, CommandStatus, item_forge::Request};
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn forge_dispatch_native_limit_history_replay_and_stale_generation() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("forge-dispatch", scenario)

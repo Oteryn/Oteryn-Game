@@ -107,23 +107,28 @@ async fn access(h: &Harness, character: [u8; 16]) -> TestResult<Option<String>> 
     .fetch_optional(&h.pool)
     .await?)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn guildhall_postgres_real_dispatch_split_escrow() -> TestResult {
     run_scenario(0, false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn guildhall_postgres_real_dispatch_disband_owned() -> TestResult {
     run_scenario(1, false)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn guildhall_postgres_real_dispatch_disposition_release_routing() -> TestResult {
     run_scenario(1, true)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn guildhall_postgres_real_dispatch_disband_bid() -> TestResult {
     run_scenario(2, false)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn guildhall_postgres_real_dispatch_catalogue_activation() -> TestResult {
     run_scenario(3, false)

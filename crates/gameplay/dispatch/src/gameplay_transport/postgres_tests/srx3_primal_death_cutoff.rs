@@ -10,17 +10,20 @@ use crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
 use oteryn_protocol_oteryn::boss_encounter as wire;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_primal_actual_source_deferred_tasks_precede_physical_death_cutoff_postgres() -> TestResult {
     run_actual_primal_core_cutoff(false, false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_primal_actual_queued_pod_expiry_precedes_core_without_sweeping_future_postgres()
 -> TestResult {
     run_actual_primal_core_cutoff(true, false)
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_primal_actual_normal_map_sql_wait_releases_runtime_owner_postgres() -> TestResult {
     run_actual_primal_core_cutoff(true, true)

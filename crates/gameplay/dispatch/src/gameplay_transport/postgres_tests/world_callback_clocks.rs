@@ -21,11 +21,13 @@ const AT: Position = Position {
     floor: -15,
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn world_callback_clock_mint_cooldown_and_replay_dispatch_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-world-clock")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn world_callback_clock_full_bag_rolls_back_timestamp_dispatch_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-world-clock-full")

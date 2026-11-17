@@ -55,6 +55,7 @@ fn refused(result: Result<GemVessels, sqlx::Error>) -> bool {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn gem_vessel_migration_converts_legacy_domain_cells_like_the_server() -> TestResult {
     run(async |admin| {

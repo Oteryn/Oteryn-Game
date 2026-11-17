@@ -1,6 +1,7 @@
 //! The Edron lair entry is approached from its clear western approach to the outer entry.
 use super::*;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn m01b_fire_axe_native_entry_keeps_level_sixty_and_current_premium() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

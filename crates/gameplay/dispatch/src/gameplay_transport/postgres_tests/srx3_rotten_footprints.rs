@@ -6,6 +6,7 @@ use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSess
 use oteryn_protocol_oteryn::world_spatial::{StepDirection as D, StepDisposition};
 use sqlx::Row;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_vemiath_actual_source_movement_footprint_postgres() -> TestResult {
     super::srx3_rotten_advanced::footprints(
@@ -18,6 +19,7 @@ fn srx3_vemiath_actual_source_movement_footprint_postgres() -> TestResult {
         "oteryn:creature.vemiath",
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_chagorz_actual_source_movement_footprint_postgres() -> TestResult {
     super::srx3_rotten_advanced::footprints(
@@ -30,6 +32,7 @@ fn srx3_chagorz_actual_source_movement_footprint_postgres() -> TestResult {
         "oteryn:creature.chagorz",
     )
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn srx3_bakragore_actual_source_movement_footprint_postgres() -> TestResult {
     super::srx3_rotten_advanced::footprints(
@@ -198,6 +201,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn review3_footprint_timer_requalifies_after_instance_restart() -> TestResult {
     super::srx3_rotten_advanced::footprints_restart()

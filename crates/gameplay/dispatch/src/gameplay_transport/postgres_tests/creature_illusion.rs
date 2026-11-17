@@ -16,6 +16,7 @@ use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent,
 use oteryn_protocol_oteryn::actor_spell_v2::{ParameterSpellCastIntent, PrivateSpellEffect};
 use oteryn_protocol_oteryn::appearance::{EntityRef, Look};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn creature_illusion_parameter_dispatch_outfit_duration_and_refusals_postgres() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

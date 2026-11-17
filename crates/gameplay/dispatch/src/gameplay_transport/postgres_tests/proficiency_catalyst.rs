@@ -18,6 +18,7 @@ const UNITS: u8 = 162;
 const WEAPON: u8 = 163;
 const COIN: u8 = 164;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn proficiency_catalyst_burns_one_unit_with_one_receipt() -> TestResult {
     std::thread::Builder::new()
@@ -211,6 +212,7 @@ async fn seed_bag(h: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn proficiency_catalyst_unknown_commit_does_not_decline_ownership() -> TestResult {
     std::thread::Builder::new()

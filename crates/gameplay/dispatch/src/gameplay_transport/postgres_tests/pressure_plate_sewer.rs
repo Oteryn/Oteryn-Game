@@ -13,36 +13,45 @@ use oteryn_protocol_oteryn::world_spatial::{
     StepDirection, StepDisposition, decode_step_result, encode_step_intent,
 };
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn devil_helmet_pressure_plate_creates_sewer_then_removes_it_on_exit_and_replay() -> TestResult {
     scenario("devil-helmet-sewer")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn devil_helmet_pressure_plate_preserves_existing_sewer_until_exit() -> TestResult {
     scenario("devil-helmet-sewer-existing")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn devil_helmet_pressure_plate_ignores_unrelated_unique_id() -> TestResult {
     scenario("devil-helmet-sewer-unrelated")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn devil_helmet_pressure_plate_created_sewer_accepts_native_use_and_replay() -> TestResult {
     scenario("devil-helmet-sewer-use")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn devil_helmet_pressure_plate_existing_sewer_accepts_native_use_and_replay() -> TestResult {
     scenario("devil-helmet-sewer-use-existing")
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn devil_helmet_pressure_plate_sewer_refuses_missing_landing() -> TestResult {
     scenario("devil-helmet-sewer-use-blocked")
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
 fn scenario(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

@@ -38,6 +38,12 @@ pub(super) fn corpse_facts(
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(in crate::gameplay_transport) async fn drain_elemental_altar_bosses(&self) {
         let Some(permit) = self.spell_lane_permit().await else {
             return;
@@ -62,6 +68,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .await;
     }
     #[cfg(test)]
+    #[cfg(any(
+        feature = "pg-tests-g1",
+        feature = "pg-tests-g2",
+        feature = "pg-tests-g3",
+        feature = "pg-tests-g4"
+    ))]
     pub(super) async fn realize_elemental_altar_bosses(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,

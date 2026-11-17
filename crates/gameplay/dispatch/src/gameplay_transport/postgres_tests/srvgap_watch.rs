@@ -5,6 +5,7 @@ use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand}
 use crate::gameplay_transport::item_view::ItemKey;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srvgap_watch_use_reports_world_time() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

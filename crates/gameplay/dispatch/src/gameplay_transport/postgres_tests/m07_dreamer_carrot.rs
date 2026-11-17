@@ -3,14 +3,19 @@
 use super::TestResult;
 use oteryn_gameplay_quests::quest::{dreamer_carrot, world_callbacks::Position};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m07_carrot_premium_entry_consumes_exactly_one_and_replays() -> TestResult {
     trial("m07-carrot-premium")
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m07_carrot_free_account_keeps_its_offering_and_gets_source_refusal() -> TestResult {
     trial("m07-carrot-free")
 }
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn trial(name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());

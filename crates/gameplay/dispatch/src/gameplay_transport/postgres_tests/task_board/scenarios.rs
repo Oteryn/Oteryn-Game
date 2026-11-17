@@ -1,12 +1,36 @@
 //! Stateful production-owner cases called by the admitted-connection scenario.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::character_progression::CharacterProgressionError;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::quest_state::QuestCause;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::task_board::{TaskBoardCatalogue, TaskBoardCommand};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::{CommandId, CommandRef, ConnectionGeneration};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_gameplay_quests::quest::task_board::full::TaskBoardAction;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use std::sync::Arc;
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn inactive_death_without_calendar(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
@@ -91,6 +115,9 @@ pub(super) async fn inactive_death_without_calendar(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) fn full_request(action: u8, selection: u16, race: &str) -> Vec<u8> {
     wire::full::encode_request(&wire::full::Request {
         action,
@@ -100,6 +127,9 @@ pub(super) fn full_request(action: u8, selection: u16, race: &str) -> Vec<u8> {
     .expect("full request")
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn full_board(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -119,6 +149,9 @@ pub(super) async fn full_board(
     wire::full::decode_reply(&replies[0].2).map_err(debug)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn fixture_level(harness: &Harness, level: i64, experience: i64) -> TestResult {
     let mut tx = harness.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -130,6 +163,9 @@ pub(super) async fn fixture_level(harness: &Harness, level: i64, experience: i64
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn fixture_board_data(
     harness: &Harness,
 ) -> TestResult<oteryn_gameplay_quests::quest::task_board::full::TaskBoardData> {
@@ -142,6 +178,9 @@ pub(super) async fn fixture_board_data(
     Ok(serde_json::from_value(body)?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn fixture_track(harness: &Harness, key: &str, value: i64) -> TestResult {
     let mut tx = harness.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
@@ -155,6 +194,9 @@ pub(super) async fn fixture_track(harness: &Harness, key: &str, value: i64) -> T
 
 /// The full reset pipeline has independent owner tests. This fixture supplies its
 /// next committed epoch, then exercises Task Board's production period reader.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn fixture_next_reset(harness: &Harness) -> TestResult {
     let mut tx = harness.pool.begin().await?;
     sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) SELECT e.world_id,e.reset_epoch+1,e.target_digest,e.map_revision,e.server_digest,e.client_digest,e.frame_digest,e.calendar,e.calendar_revision,e.activated_at+interval '7 days',to_char(((e.activated_at+interval '7 days') AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM') FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid")
@@ -165,6 +207,9 @@ pub(super) async fn fixture_next_reset(harness: &Harness) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn expansion_case(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
@@ -313,6 +358,9 @@ pub(super) async fn expansion_case(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn delivery_cases(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
@@ -446,6 +494,9 @@ pub(super) async fn delivery_cases(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn owned_units(harness: &Harness, key: &str) -> TestResult<i64> {
     Ok(sqlx::query_scalar("SELECT COALESCE((SELECT sum(quantity) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1),0)::bigint+COALESCE((SELECT sum(quantity) FROM game_character_stash_balances WHERE definition_key=$1),0)::bigint")
         .bind(key).fetch_one(&harness.pool).await?)
@@ -453,11 +504,17 @@ async fn owned_units(harness: &Harness, key: &str) -> TestResult<i64> {
 
 /// Compare each source independently: an unchanged total alone could conceal a
 /// partial move between carried custody, nested depot custody and stash revisions.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn delivery_custody_snapshot(harness: &Harness, key: &str) -> TestResult<serde_json::Value> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_object('items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY i.item_instance_id) FROM game_item_instances i WHERE i.definition_production_key=$1),'carried',(SELECT jsonb_agg(to_jsonb(c) ORDER BY c.item_instance_id) FROM game_item_container_entries c JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key=$1),'nested',(SELECT jsonb_agg(to_jsonb(n) ORDER BY n.item_instance_id) FROM game_item_nested_entries n JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key=$1),'depot',(SELECT jsonb_agg(to_jsonb(d) ORDER BY d.item_instance_id) FROM game_item_character_depot_locations d JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key=$1),'inbox',(SELECT jsonb_agg(to_jsonb(b) ORDER BY b.item_instance_id) FROM game_item_character_inbox_locations b JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key=$1),'stash_balances',(SELECT jsonb_agg(to_jsonb(s) ORDER BY s.definition_revision) FROM game_character_stash_balances s WHERE s.definition_key=$1),'stash_entries',(SELECT jsonb_agg(to_jsonb(s) ORDER BY s.entry_id) FROM game_character_stash_entries s WHERE s.definition_key=$1))")
         .bind(key).fetch_one(&harness.pool).await?)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn item_shop_and_talisman_cases(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
@@ -668,6 +725,9 @@ pub(super) async fn item_shop_and_talisman_cases(
 /// Historical fixture custody is seeded with guards disabled; production removal
 /// below must supply fresh proof under the normal runtime role. The shortage case
 /// puts the missing units in Inbox, which must remain inaccessible to delivery.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 async fn fixture_delivery_units(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,

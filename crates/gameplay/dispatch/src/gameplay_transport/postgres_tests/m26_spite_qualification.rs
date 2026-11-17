@@ -6,6 +6,7 @@ use crate::durability::activity_handoff::{ActivityContentPin, ActivityHandoffOwn
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::GameSessionId;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn m26_spite_postgres_production_source_room_qualification_and_publication() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

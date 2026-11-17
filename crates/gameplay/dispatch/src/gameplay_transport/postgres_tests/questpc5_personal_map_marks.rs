@@ -10,6 +10,7 @@ use oteryn_protocol_oteryn::{
 use std::sync::Arc;
 const KEY: &str = "oteryn:quest-reward/targuna/sterling-mark-treasure";
 const PREFIX: &str = "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/long_lost_treasure/";
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn questpc5_personal_map_query_reproves_controller_and_reads_postgres_facts() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-questpc5-personal-map-query")

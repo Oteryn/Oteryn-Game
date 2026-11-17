@@ -8,21 +8,25 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget,
 const KEY: &str = "oteryn:quest-reward/cursed-crystal/protect-ears";
 const TRACK: &str = "oteryn:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe";
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m56_cursed_crystal_exact_self_wax_consumption_and_protection_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m56-wax")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m56_cursed_crystal_wax_outside_crystal_area_is_preserved_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m56-wax-outside")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m56_cursed_crystal_wax_at_area_corner_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m56-wax-corner")
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn m56_cursed_crystal_wax_one_tile_beyond_area_is_preserved_postgres() -> TestResult {
     super::qengine_rewards::scenario("qengine-rewards-m56-wax-edge-outside")

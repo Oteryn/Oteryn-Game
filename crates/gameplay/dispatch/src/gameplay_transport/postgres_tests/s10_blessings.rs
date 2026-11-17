@@ -11,6 +11,7 @@ use crate::gameplay_transport::npc_talk::NpcTalkBook;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn s10_blessings_postgres_nonpremium_and_phoenix_stages() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -29,6 +30,7 @@ fn s10_blessings_postgres_nonpremium_and_phoenix_stages() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn s10_blessings_enforced_pvp_postgres_refuses_purchase() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -47,6 +49,7 @@ fn s10_blessings_enforced_pvp_postgres_refuses_purchase() -> TestResult {
     Ok(())
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn s10_twist_postgres_accepts_amulet_carried_in_backpack() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {

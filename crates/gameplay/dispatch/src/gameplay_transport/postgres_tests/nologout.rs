@@ -15,6 +15,7 @@ use oteryn_protocol_oteryn::{
 };
 use tokio::io::AsyncWriteExt;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn news_9019_hive_style_underground_nologout_reaches_real_dispatch_postgres() -> TestResult {
     // The composed dispatch future needs the same stack as neighboring wire scenarios.

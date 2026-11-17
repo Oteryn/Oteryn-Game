@@ -1,16 +1,24 @@
 //! Staff enrichment failures must not disconnect ordinary admitted players.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn staff_refresh_without_gameplay_fence_keeps_non_staff_session_connected() -> TestResult {
     run_case(false)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn staff_refresh_status_error_keeps_non_staff_session_connected() -> TestResult {
     run_case(true)
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn run_case(status_error: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -20,6 +28,9 @@ fn run_case(status_error: bool) -> TestResult {
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn scenario(status_error: bool) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "staff_refresh", true, false).await?;

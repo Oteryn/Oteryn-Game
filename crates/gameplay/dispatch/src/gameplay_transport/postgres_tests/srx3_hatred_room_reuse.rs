@@ -16,6 +16,7 @@ use oteryn_protocol_oteryn::boss_encounter as wire;
 
 const HATRED: &str = "oteryn:creature.goshnar_s_hatred";
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn hatred_room_reused_after_refused_lever_accepts_its_helper_roster() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

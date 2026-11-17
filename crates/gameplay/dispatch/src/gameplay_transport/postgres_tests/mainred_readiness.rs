@@ -11,6 +11,7 @@ use std::future::{Future, poll_fn};
 use std::task::Poll;
 use std::time::{Duration, Instant};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn mainred_resume_projections_wait_for_real_holder_postgres() -> TestResult {
     run(async |admin| {
@@ -93,6 +94,7 @@ fn mainred_resume_projections_wait_for_real_holder_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn mainred_progression_reopens_retired_holder_postgres() -> TestResult {
     run(async |admin| {
@@ -151,6 +153,7 @@ fn mainred_progression_reopens_retired_holder_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn mainred_admission_retry_replenishes_retired_holder_postgres() -> TestResult {
     run(async |admin| {
@@ -186,6 +189,7 @@ fn mainred_admission_retry_replenishes_retired_holder_postgres() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn mainred_fresh_house_probe_replenishes_retired_holder_postgres() -> TestResult {
     run(async |admin| {

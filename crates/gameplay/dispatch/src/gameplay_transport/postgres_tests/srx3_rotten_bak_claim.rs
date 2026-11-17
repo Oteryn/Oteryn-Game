@@ -1,6 +1,9 @@
 //! A source global phase is decided at FIRST think, never on room entry.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::{TestResult, fixture::Harness};
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use crate::foundation::RuntimeScopeRefV1;
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn assert_mask(h: &Harness, scope: RuntimeScopeRefV1, rows: i64) -> TestResult {
     let RuntimeScopeRefV1::Instance { instance_id, .. } = scope else {
         return Err("actual Bakragore source Instance".into());

@@ -3,6 +3,7 @@
 use super::TestResult;
 use super::fixture::{Harness, id, run};
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_elder_generic_terminal_refuses_direct_and_nested_contents_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

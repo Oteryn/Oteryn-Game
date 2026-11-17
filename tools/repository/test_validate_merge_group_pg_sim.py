@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "8ca7b7e0c78d5f5c8a49cc80feb8e327d2ff7326"
+APPROVED = "c83e07358aa5b72ca9e7657717adb48e98acad52"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -161,8 +161,8 @@ def _postgres_cache_consumer_regressions() -> None:
     assert "    needs: [candidate, durability_postgres_build]\n" in block
     for forbidden in ("rustup ", "cargo +", "cargo build", "cargo test", "actions/cache/"):
         assert forbidden not in block, forbidden
-    assert block.count('--workspace-remap "$GITHUB_WORKSPACE" --tool-config-file') == 2
-    assert block.count('--no-fail-fast "${filters[@]}"') == 2
+    assert block.count('--workspace-remap "$GITHUB_WORKSPACE" --tool-config-file') == 6
+    assert block.count('--no-fail-fast "${filters[@]}"') == 6
 
 
 def _atlas_queue_canaries(original: str, core) -> None:
@@ -517,7 +517,7 @@ def main() -> int:
             mutations += 1
     for command in (
         '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"',
-        '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"',
+        '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"',
         "        run: cargo +1.100.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
         "        run: cargo +1.100.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
     ):
@@ -530,13 +530,21 @@ def main() -> int:
             assert validate(original.replace(command, replacement, 1)) != 0
             mutations += 1
 
+    for fragment in (
+        '        archive: [base, g1, g2, g3, g4]',
+        'cargo +1.100.0 nextest archive --locked --build-jobs 1 -p oteryn-gameplay-dispatch --lib --features "pg-tests-$GROUP"',
+    ):
+        assert fragment in original
+        assert validate(original.replace(fragment, "", 1)) != 0
+        mutations += 1
+
     for name, target in REGISTERED_POSTGRES_TARGETS:
         marker = f"          run_registered_target {name} {target}"
         assert original.count(marker) == 1
         assert validate(original.replace(marker, "", 1)) != 0
         mutations += 1
 
-    for archive in ("pg-e2e", "pg-lib"):
+    for archive in ("pg-e2e", "pg-lib", "pg-lib-g1", "pg-lib-g2", "pg-lib-g3", "pg-lib-g4"):
         run = f'          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/{archive}.tar.zst" \\'
         plan = f'          mapfile -t filters < "$RUNNER_TEMP/pg-plan/{archive}.filters"'
         assert original.count(run) == 1, run

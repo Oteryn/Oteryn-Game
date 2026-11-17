@@ -30,6 +30,7 @@ pub(super) struct AdmittedSoulpit {
     pub(super) destination: CurrentCharacterGameplayFence,
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn soulpit_shared_entry_debits_core_and_commits_real_instance_session_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -48,6 +49,7 @@ fn soulpit_shared_entry_debits_core_and_commits_real_instance_session_postgres()
     })
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn soulpit_terminal_return_requires_checkpoint_and_interrupt_never_grants_mastery_postgres()
 -> TestResult {

@@ -9,6 +9,7 @@ use crate::gameplay_transport::capabilities::{
 };
 use oteryn_protocol_oteryn::boss_encounter as wire;
 
+#[cfg(feature = "pg-tests-g4")]
 #[test]
 fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_bound_postgres()
 -> TestResult {

@@ -1,20 +1,34 @@
 //! Real Character producer -> periodic connection authority -> durable release -> quarantine.
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::fixture::{Harness, debug, id};
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::kill_reward_e2e::scenario_thread::run_async as run;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::{Dependencies, TestResult, prepare_current_session, reset, track};
+
+#[cfg(all(feature = "pg-tests-g4", not(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
+use super::{TestResult, prepare_current_session};
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::character_command::account_deletion::{Config, Intent};
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::fresh_admission::FreshAdmissionStore;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::durability::native_admission_source::{
     DescriptorRegistration, FreshStoreProvenance, NativeSourceOperation, NativeSourceSubject,
     SourceObservation,
 };
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::GameSessionState;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::native_admission_source::{
     account_closure::{LifecycleObservation, LifecycleRequest},
     character_commands::{Decision, Input},
 };
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn account_deletion_dispatch_kicks_retires_and_quarantines() -> TestResult {
     run(async |admin| {
@@ -544,16 +558,19 @@ fn account_deletion_dispatch_kicks_retires_and_quarantines() -> TestResult {
     })
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn account_deletion_dispatch_existing_market_credit_drains_while_closing() -> TestResult {
     market_drain_case(true)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn account_deletion_dispatch_expired_market_escrow_drains_while_closing() -> TestResult {
     market_drain_case(false)
 }
 
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 fn market_drain_case(held: bool) -> TestResult {
     run(async move |admin| {
         let started = std::time::Instant::now();

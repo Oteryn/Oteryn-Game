@@ -16,6 +16,7 @@ pub(in crate::gameplay_transport) struct OutburstCastReceipt {
     pub caster: ExactActorRef,
     pub replacement: Option<ExactActorRef>,
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub global_health: u64,
     pub synchronized_health: Option<i64>,
     pub committed_null_lethal: bool,
@@ -105,6 +106,7 @@ impl OutburstCasts {
     }
 
     #[cfg(test)]
+    #[cfg(feature = "pg-tests-g3")]
     pub(super) fn receipt(&self, caster: ExactActorRef) -> Option<OutburstCastReceipt> {
         self.0
             .iter()
@@ -259,6 +261,7 @@ impl OutburstCasts {
                     caster: plan.proposal().issuer,
                     replacement: None,
                     #[cfg(test)]
+                    #[cfg(feature = "pg-tests-g3")]
                     global_health: globals.source_health(),
                     synchronized_health: None,
                     committed_null_lethal: false,
@@ -347,6 +350,7 @@ impl OutburstCasts {
         }
         if p.prepared_at != Some(now) {
             #[cfg(test)]
+            #[cfg(feature = "pg-tests-g3")]
             eprintln!(
                 "SRX3_CHARGING_POSTLUDE_CLOCK prepared={:?} current={now}",
                 p.prepared_at
@@ -455,6 +459,7 @@ impl OutburstCasts {
                 // Known Game.createMonster failure continues the original Lua event.
                 Err(error) => {
                     #[cfg(test)]
+                    #[cfg(feature = "pg-tests-g3")]
                     eprintln!("SRX3_CHARGING_SOURCE_BIRTH_REFUSAL {error:?}");
                     let _ = error;
                 }

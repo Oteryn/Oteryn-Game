@@ -5,6 +5,7 @@ use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPositi
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget};
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn4_cursed_crystal_two_ingredients_atomic_replay_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
@@ -17,6 +18,7 @@ fn qn4_cursed_crystal_two_ingredients_atomic_replay_postgres() -> TestResult {
         .map_err(|_| "quest craft panic")??;
     Ok(())
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn qn4_cursed_crystal_final_recipe_progress_and_selected_input_replay_postgres() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {

@@ -1,56 +1,75 @@
 //! Settings travel through the real admitted transport; Find Person consumes the result.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use super::*;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use crate::foundation::ExactActorRef;
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 use oteryn_protocol_oteryn::exiva::COMMAND_TYPE_EXIVA_SETTINGS;
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exiva_settings_allow_all_postgres() -> TestResult {
     scenario(7)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exiva_settings_player_list_postgres() -> TestResult {
     scenario(8)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exiva_settings_guild_postgres() -> TestResult {
     scenario(9)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exiva_settings_party_postgres() -> TestResult {
     scenario(10)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exiva_settings_vip_postgres() -> TestResult {
     scenario(11)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exiva_settings_denied_postgres() -> TestResult {
     scenario(12)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exiva_settings_own_guild_postgres() -> TestResult {
     scenario(13)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exiva_settings_active_war_optional_pvp_postgres() -> TestResult {
     scenario(14)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exiva_settings_active_war_open_pvp_postgres() -> TestResult {
     scenario(15)
 }
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exiva_settings_active_war_reverse_optional_pvp_postgres() -> TestResult {
     scenario(16)
 }
 
+#[cfg(feature = "pg-tests-g3")]
 #[test]
 fn exiva_settings_named_client_list_postgres() -> TestResult {
     scenario(17)
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
 pub(super) async fn exercise(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,

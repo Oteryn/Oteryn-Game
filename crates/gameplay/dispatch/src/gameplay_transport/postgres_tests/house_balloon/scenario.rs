@@ -1,5 +1,7 @@
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 use super::*;
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     super::super::reset();
     let (before_key, after_key) = match case {
@@ -583,6 +585,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
 
 // A named House retains its Channel carrier actor ref. Capability 12 must
 // nevertheless observe that actor through the actual House equipment owner.
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn assert_house_equipment_observation(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
@@ -626,14 +629,17 @@ async fn assert_house_equipment_observation(
     Ok(())
 }
 
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn item(h: &Harness) -> TestResult<Value> {
     Ok(sqlx::query_scalar("SELECT to_jsonb(i) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(id(71).as_slice()).fetch_one(&h.pool).await?)
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn custody(h: &Harness) -> TestResult<Value> {
     Ok(sqlx::query_scalar("SELECT jsonb_build_object('container',(SELECT to_jsonb(e) FROM game_item_container_entries e WHERE item_instance_id=encode($1,'hex')::uuid),'nested',(SELECT to_jsonb(n) FROM game_item_nested_entries n WHERE item_instance_id=encode($1,'hex')::uuid),'equipment',(SELECT to_jsonb(s) FROM game_character_equipment_slots s WHERE item_instance_id=encode($1,'hex')::uuid),'house',(SELECT to_jsonb(h) FROM game_item_house_interior_locations h WHERE item_instance_id=encode($1,'hex')::uuid),'provenance',(SELECT to_jsonb(p) FROM game_item_house_reclaim_provenance p WHERE item_instance_id=encode($1,'hex')::uuid))")
         .bind(id(71).as_slice()).fetch_one(&h.pool).await?)
 }
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn receipts(h: &Harness) -> TestResult<i64> {
     Ok(
         sqlx::query_scalar("SELECT count(*) FROM game_item_consume_transform_records")

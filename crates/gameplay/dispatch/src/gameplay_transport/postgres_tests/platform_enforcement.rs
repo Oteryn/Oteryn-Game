@@ -714,23 +714,28 @@ fn scenario(which: u8) -> TestResult {
         }).map_err(|e|e.to_string())
     })?.join().map_err(|_|"enforcement test thread failed")?.map_err(Into::into)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn platform_enforcement_apply_replace_revoke_expire() -> TestResult {
     scenario(0)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn platform_mute_blocks_chat_until_expiry_or_revoke() -> TestResult {
     scenario(1)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn platform_enforcement_concurrent_commands_are_serialized() -> TestResult {
     scenario(2)
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn platform_enforcement_storage_privileges_and_immutable_binding() -> TestResult {
     scenario(3)
 }
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn platform_enforcement_without_session_is_on_next_admission() -> TestResult {
     scenario(4)
@@ -948,6 +953,7 @@ async fn pull_to_ack(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> T
     assert_eq!(requests[4], latest);
     Ok(())
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn pull_to_ack_end_to_end() -> TestResult {
     scenario(5)
@@ -1041,7 +1047,9 @@ async fn pending_runtime_restart(h: &Harness, a: &ReconciledCharacterAuthority<'
     }
     Ok(())
 }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn platform_enforcement_pending_expiry_finishes_after_restart() -> TestResult { scenario(6) }
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 fn platform_enforcement_pending_runtime_finishes_all_intents() -> TestResult { scenario(7) }

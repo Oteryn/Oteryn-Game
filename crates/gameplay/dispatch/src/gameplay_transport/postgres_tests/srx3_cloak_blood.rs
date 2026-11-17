@@ -8,11 +8,13 @@ use super::{Dependencies, TestResult, reset};
 use crate::foundation::MovementLocalPosition;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_cloak_accepted_q6a_actual_normal_player_hit_mints_blood_once_postgres() -> TestResult {
     cloak_case(false)
 }
 
+#[cfg(feature = "pg-tests-g1")]
 #[test]
 fn srx3_cloak_blood_step_unknown_commit_delivers_hp_once_postgres() -> TestResult {
     cloak_case(true)

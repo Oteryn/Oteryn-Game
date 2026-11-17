@@ -228,6 +228,10 @@ pub(super) mod test_clock {
     pub(in crate::gameplay_transport) fn get() -> Option<Option<(u64, u64)>> {
         NOW.get()
     }
+    #[cfg(any(feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g3"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g4"))]
+    #[cfg(any(not(feature = "pg-tests-g4"), feature = "pg-tests-g1", feature = "pg-tests-g2", feature = "pg-tests-g3"))]
     pub(in crate::gameplay_transport) fn set_enforcement(enabled: bool) {
         ENFORCEMENT.set(Some(enabled));
     }

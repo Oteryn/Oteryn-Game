@@ -4,6 +4,7 @@ use super::support::{self, Case, count, exchange};
 use crate::gameplay_transport::{ComposedFreshAdmission, connection::AdmittedSession};
 use oteryn_protocol_oteryn::hireling as wire;
 
+#[cfg(feature = "pg-tests-g2")]
 #[test]
 #[ignore = "CLIENT-E2E-1: Hireling Query cannot reach durable read; position.is_some() == dismiss rejects Query (None,false), crates/gameplay/durability/src/durability/house_hireling.rs:14"]
 fn client_e2e_hireling() -> TestResult {

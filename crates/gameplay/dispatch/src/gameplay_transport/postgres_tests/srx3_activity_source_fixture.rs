@@ -18,12 +18,16 @@ pub(super) struct SourceScene {
 /// Consume retained source units around one native owner cycle. Each selected
 /// unit must change real owner/Item state: a stalled unit fails immediately,
 /// rather than retrying it or advancing its original deadline.
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn drive_native_cycle(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
     settle_native_work(owner).await?;
     native_cycle(owner).await;
     settle_native_work(owner).await
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn native_cycle(owner: &ComposedFreshAdmission<'_, '_, '_>) {
     owner.drain_rotten_movement_callbacks().await;
     let _ = owner.drain_native_ai_timers().await;
@@ -33,6 +37,8 @@ async fn native_cycle(owner: &ComposedFreshAdmission<'_, '_, '_>) {
     owner.drain_rotten_portal_callbacks().await;
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 pub(super) async fn settle_native_work(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
     loop {
         let (pending, before) = native_work_state(owner).await?;
@@ -48,6 +54,8 @@ pub(super) async fn settle_native_work(owner: &ComposedFreshAdmission<'_, '_, '_
     }
 }
 
+#[cfg(any(not(feature = "pg-tests-g1"), feature = "pg-tests-g2", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
+#[cfg(any(not(feature = "pg-tests-g2"), feature = "pg-tests-g1", feature = "pg-tests-g3", feature = "pg-tests-g4"))]
 async fn native_work_state(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult<(bool, String)> {
