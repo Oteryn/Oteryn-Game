@@ -140,7 +140,10 @@ async fn vendor(players: &mut [Bot<'_, '_>], world: &BundleWorld) -> TestResult<
         .npcs
         .iter()
         .find(|npc| npc.key == "oteryn:npc.sam")
-        .ok_or("authored Sam absent; source:content/npcs/definitions/index.json:1")?;
+        // The bundle NPC table holds only placed NPCs (world-bundle-compiler
+        // compile.rs realize_npcs); Sam's candidate cell 32361,32198,7 is in the
+        // compiled region 126,125 but Sam is not in the placement scope.
+        .ok_or("CONTENT_GAP authored Sam has no Npc.Placement in the node-boot bundle; oteryn:npc.sam absent from tools/content-schema/npc-authoring/npc_placement_scope.json:4 npcs; candidate tools/content-schema/npc-authoring/samples/promotion-candidates-v1.json oteryn:npc.sam x32361_y32198_z7")?;
     let mut actors = Vec::new();
     let mut reserved = BTreeSet::new();
     for index in 0..players.len() {
