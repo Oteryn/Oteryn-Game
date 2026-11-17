@@ -608,17 +608,33 @@ pub(super) async fn logout_retrying_busy(
     usize,
     bool,
 )> {
+    logout_retrying_busy_observed(client, None).await
+}
+
+pub(super) async fn logout_retrying_busy_observed(
+    client: &mut oteryn_dev_client::DevClientSession,
+    mut observe: Option<&mut dyn FnMut(usize, &str)>,
+) -> TestResult<(
+    Option<oteryn_protocol_oteryn::logout::LogoutResult>,
+    String,
+    usize,
+    bool,
+)> {
     use oteryn_protocol_oteryn::logout::LogoutResult;
 
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
     let mut attempts = 0;
     loop {
         attempts += 1;
-        let outcome = client
-            .session_mut()
-            .logout()
-            .await
-            .map_err(|error| format!("logout attempt {attempts} failed: {error}"))?;
+        let outcome = client.session_mut().logout().await.map_err(|error| {
+            if let Some(observe) = observe.as_mut() {
+                observe(attempts, &format!("command_error={error}"));
+            }
+            format!("logout attempt {attempts} failed: {error}")
+        })?;
+        if let Some(observe) = observe.as_mut() {
+            observe(attempts, &format!("reply={outcome:?}"));
+        }
         if outcome.result != Some(LogoutResult::Busy) {
             return Ok((outcome.result, format!("{outcome:?}"), attempts, false));
         }
@@ -626,7 +642,12 @@ pub(super) async fn logout_retrying_busy(
             return Ok((outcome.result, format!("{outcome:?}"), attempts, true));
         }
         client.service_liveness(Duration::from_millis(250)).await
-            .map_err(|error| format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}"))?;
+            .map_err(|error| {
+                if let Some(observe) = observe.as_mut() {
+                    observe(attempts, &format!("busy_liveness_error={error}"));
+                }
+                format!("logout Busy retry liveness failed after attempt {attempts}: {outcome:?}; error={error}")
+            })?;
     }
 }
 

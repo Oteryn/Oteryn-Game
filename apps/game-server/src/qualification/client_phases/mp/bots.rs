@@ -149,7 +149,13 @@ async fn connect_bot(bot: &mut Bot<'_, '_>, tag: u8, stage: &str) -> TestResult 
 async fn logout_at(bot: &mut Bot<'_, '_>, stage: &str) -> TestResult {
     bot.progress(stage, "begin")?;
     let result = logout(bot).await;
-    bot.contextualize(stage, result)?;
+    let result = bot.contextualize(stage, result);
+    if result.is_err() {
+        // A failed exchange poisons the protocol session. Drop its transport;
+        // release_all still proves durable release for every Character below.
+        bot.session = None;
+    }
+    result?;
     bot.progress(stage, "pass")?;
     Ok(())
 }
@@ -359,9 +365,13 @@ async fn logout(bot: &mut Bot<'_, '_>) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(930);
     verdict::Harness::global().bounded_wait(deadline, "MP-combat-logout");
     let mut activity_due = tokio::time::Instant::now();
+    let context = bot.context("logout-attempt");
+    let mut observe = |attempt, detail: &str| {
+        evidence(&format!("MP_BOT MP01 {context} attempt={attempt} {detail}"))
+    };
     tokio::time::timeout_at(deadline, async {
         loop {
-            let (result, reply, attempts, busy_timed_out) = logout_retrying_busy(bot.client()?).await?;
+            let (result, reply, attempts, busy_timed_out) = logout_retrying_busy_observed(bot.client()?, Some(&mut observe)).await?;
             match result {
                 Some(LogoutResult::Accepted) => { bot.session = None; return Ok(()); }
                 Some(LogoutResult::InFight { .. }) => {
