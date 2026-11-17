@@ -59,13 +59,24 @@ fn endpoint(world: &BundleWorld, from: TilePos, path: &[WalkAction]) -> TestResu
     })
 }
 
-fn compiled_town() -> TestResult<&'static (BundleWorld, oteryn_world_bundle::npc::Table)> {
+fn compiled_town() -> TestResult<&'static (
+    BundleWorld,
+    oteryn_world_bundle::npc::Table,
+    oteryn_world_bundle::spawn::Table,
+)> {
     static TOWN_WORLD: std::sync::OnceLock<
-        Result<(BundleWorld, oteryn_world_bundle::npc::Table), String>,
+        Result<
+            (
+                BundleWorld,
+                oteryn_world_bundle::npc::Table,
+                oteryn_world_bundle::spawn::Table,
+            ),
+            String,
+        >,
     > = std::sync::OnceLock::new();
     TOWN_WORLD
         .get_or_init(|| {
-            (|| -> TestResult<(BundleWorld, oteryn_world_bundle::npc::Table)> {
+            (|| -> TestResult<(BundleWorld, oteryn_world_bundle::npc::Table, oteryn_world_bundle::spawn::Table)> {
                 use oteryn_world_bundle_compiler::{bundle::BuildClass, compile, source};
                 let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
                 // The same compile-regions inputs and equivalence proof as node boot.
@@ -96,14 +107,14 @@ fn compiled_town() -> TestResult<&'static (BundleWorld, oteryn_world_bundle::npc
                     .map(|byte| format!("{byte:02x}"))
                     .collect::<String>()
                     .into();
-                let npcs = oteryn_world_bundle::bundle::visit(&compiled.bytes, |_, _| Ok(()))?.npcs;
+                let metadata = oteryn_world_bundle::bundle::visit(&compiled.bytes, |_, _| Ok(()))?;
                 let world = boot_world(
                     compiled.bytes,
                     &pin,
                     WorldId::decode(&v7(1, 2))?,
                     ChannelId::decode(&v7(1, 3))?,
                 )?;
-                Ok((world, npcs))
+                Ok((world, metadata.npcs, metadata.spawns))
             })()
             .map_err(|error| error.to_string())
         })
@@ -114,7 +125,7 @@ fn compiled_town() -> TestResult<&'static (BundleWorld, oteryn_world_bundle::npc
 #[test]
 fn qualification_nbroute_compiled_town() -> TestResult {
     on_route_thread(|| {
-        let (world, npcs) = compiled_town()?;
+        let (world, npcs, spawns) = compiled_town()?;
         assert!(
             world.base().tile(TOWN.x, TOWN.y, -7).is_some(),
             "compiled floor is native -z"
@@ -154,6 +165,14 @@ fn qualification_nbroute_compiled_town() -> TestResult {
             y: 32239,
             floor: -7,
         };
+        assert!(
+            (0..=u8::MAX).any(|ordinal| world
+                .base()
+                .tile(shrine.x, shrine.y, shrine.floor)
+                .and_then(|tile| tile.appearance(ordinal))
+                == Some(25803)),
+            "production shrine missing from compiled town"
+        );
         // The donor shrine has unpass=true. P10 uses an adjacent PZ tile, never
         // walks onto the shrine itself or changes its collision to reach it.
         assert!(!world.enterable(shrine));
@@ -171,6 +190,18 @@ fn qualification_nbroute_compiled_town() -> TestResult {
         ];
         // A failed/finished preceding hunt can leave the next row downstairs.
         // Exercise PZ exit, shrine approach and cleanup from those saved positions too.
+        for rat in rats {
+            assert!(
+                spawns.sources.iter().any(|source| source.floor == rat.floor
+                    && source.points.iter().any(|point| point.x == rat.x
+                        && point.y == rat.y
+                        && spawns
+                            .creatures
+                            .get(point.creature as usize)
+                            .is_some_and(|entry| entry.key == "oteryn:creature.rat"))),
+                "production rat missing from compiled town at {rat:?}"
+            );
+        }
         for from in [
             TOWN,
             TilePos {
@@ -180,6 +211,17 @@ fn qualification_nbroute_compiled_town() -> TestResult {
             },
             rats[0],
             rats[1],
+            endpoint(
+                world,
+                TOWN,
+                &spawn_route(world, TOWN, spawns, "oteryn:creature.rat").ok_or("rat route")?,
+            )?,
+            endpoint(
+                world,
+                TOWN,
+                &spawn_route(world, TOWN, spawns, "oteryn:creature.poison_spider")
+                    .ok_or("spider route")?,
+            )?,
         ] {
             for target in rats {
                 let path = route_toward(world, from, target, |at| at == target)
@@ -226,3 +268,98 @@ fn qualification_nbroute_compiled_town() -> TestResult {
 
 #[path = "nbroute_transport_tests.rs"]
 mod transport;
+
+#[test]
+fn qualification_nbroute_compiled_near_temple_returns() -> TestResult {
+    on_route_thread(|| {
+        let (world, _, spawns) = compiled_town()?;
+        for creature in ["oteryn:creature.rat", "oteryn:creature.poison_spider"] {
+            let path = spawn_route(world, TOWN, spawns, creature)
+                .ok_or_else(|| format!("missing {creature} path"))?;
+            let landed = endpoint(world, TOWN, &path)?;
+            evidence(&format!(
+                "nbroute_spawn creature={creature} landed={landed:?}"
+            ));
+            assert!(
+                route_toward(world, landed, TOWN, |p| p == TOWN).is_some(),
+                "no post-encounter return from {landed:?}"
+            );
+            assert!(
+                spawn_route(world, landed, spawns, "oteryn:creature.rat").is_some(),
+                "no post-encounter rat route from {landed:?}"
+            );
+        }
+        let mut queue = VecDeque::from([TOWN]);
+        let mut seen = std::collections::BTreeSet::from([TOWN]);
+        while let Some(at) = queue.pop_front() {
+            let actions = [
+                StepDirection::North,
+                StepDirection::East,
+                StepDirection::South,
+                StepDirection::West,
+            ]
+            .into_iter()
+            .map(WalkAction::Step)
+            .chain(walk_uses(world, at));
+            for action in actions {
+                if let Some(next) = destination(world, at, action)
+                    && next.x.abs_diff(TOWN.x) <= 10
+                    && next.y.abs_diff(TOWN.y) <= 10
+                    && next.floor.abs_diff(TOWN.floor) <= 2
+                    && seen.insert(next)
+                {
+                    queue.push_back(next);
+                }
+            }
+        }
+        for at in seen {
+            assert!(
+                route_toward(world, at, TOWN, |p| p == TOWN).is_some(),
+                "no temple return from {at:?}"
+            );
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn qualification_nbroute_preflight_shared_respawn_return() -> TestResult {
+    on_route_thread(|| {
+        let (world, _, _) = compiled_town()?;
+        let towns = &world.base().subareas;
+        let home = towns
+            .default_town
+            .and_then(|id| towns.town(id))
+            .and_then(|town| town.temple)
+            .ok_or("home temple")?;
+        let home = TilePos {
+            x: home.x,
+            y: home.y,
+            floor: home.floor,
+        };
+        assert_eq!(
+            home,
+            TilePos {
+                x: 32536,
+                y: 32514,
+                floor: -7
+            }
+        );
+        assert!(home.y.abs_diff(TOWN.y) > 160);
+        assert!(route_toward(world, home, TOWN, |at| at == TOWN).is_none());
+        assert!(
+            route_toward(world, home, "outside Newhaven PZ", |at| world
+                .base()
+                .tile(at.x, at.y, at.floor)
+                .is_some_and(|tile| !tile.protection_zone()))
+            .is_none()
+        );
+        assert!(
+            respawn_return_plan(world, TOWN).is_err(),
+            "must refuse before deliberately stranding the shared Character"
+        );
+        // Staying at the real native home requires no fake relocation.
+        assert_eq!(respawn_return_plan(world, home)?, home);
+        Ok(())
+    })
+}

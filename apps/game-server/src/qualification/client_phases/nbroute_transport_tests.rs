@@ -36,7 +36,7 @@ fn spatial(at: TilePos) -> Vec<u8> {
 #[test]
 fn qualification_nbroute_map_use_crosses_tls_without_capability_15() -> TestResult {
     on_route_thread(|| {
-        let (world, _) = compiled_town()?;
+        let (world, _, _) = compiled_town()?;
         let path = route_toward(world, TOWN, "rat descent", |at| {
             at.floor == -8 && at.x == 32368 && at.y == 32240
         })

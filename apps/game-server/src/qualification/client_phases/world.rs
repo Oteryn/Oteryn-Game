@@ -534,6 +534,55 @@ fn plan_route(
     None
 }
 
+// A deliberate death must leave a real walking return for the shared Character.
+fn respawn_return_plan(world: &BundleWorld, return_to: TilePos) -> TestResult<TilePos> {
+    let towns = &world.base().subareas;
+    let home = towns
+        .default_town
+        .and_then(|id| towns.town(id))
+        .and_then(|town| town.temple)
+        .ok_or("compiled world has no default home temple")?;
+    let home = TilePos {
+        x: home.x,
+        y: home.y,
+        floor: home.floor,
+    };
+    if route_toward(world, home, return_to, |at| at == return_to).is_none() {
+        return Err(route_gap(world, ActorPosition { x: i32::from(home.x), y: i32::from(home.y), floor: -i16::from(home.floor) }, return_to,
+            "C20d respawn prerequisite blocked: native hometown has no player-walk return to the shared entry; deliberate death not attempted; initial spawn override does not change citizenship").into());
+    }
+    Ok(home)
+}
+
+// Preserve the actual seam in the GAP itself: hosted summaries may omit the
+// separate route_failed line, and later rows admit the saved post-row position.
+fn route_gap(
+    world: &BundleWorld,
+    position: ActorPosition,
+    target: impl std::fmt::Debug,
+    message: &str,
+) -> String {
+    let start = tile(position).map_or_else(
+        |error| format!("invalid {position:?}: {error}"),
+        |at| format!("{at:?}"),
+    );
+    let digest = world
+        .base()
+        .digest()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let start_tile = tile(position).ok().and_then(|at| {
+        world
+            .base()
+            .tile(at.x, at.y, at.floor)
+            .map(|tile| (tile.walkable(), tile.protection_zone(), world.enterable(at)))
+    });
+    format!(
+        "{message}; start={start} target={target:?} planner_bundle_sha256={digest} start_tile_walkable_pz_enterable={start_tile:?}"
+    )
+}
+
 /// Use the production floor resolver over the production bundle's collision facts.
 fn destination(
     world: &BundleWorld,
@@ -770,6 +819,10 @@ fn town_route_retry_delay(
 ) -> Option<Duration> {
     (disposition == StepDisposition::Rejected && stationary && attempt <= 5)
         .then_some(Duration::from_millis(500))
+}
+
+pub(super) fn hunt_observation_wait(until: tokio::time::Instant) {
+    verdict::Harness::global().bounded_wait(until, "rat-hunt-corpse");
 }
 
 async fn walk(
@@ -3288,17 +3341,20 @@ pub(super) async fn connect_character(
         deadline: Duration::from_secs(20),
     })
     .await?;
+    evidence(&format!(
+        "route_admission fixture={index} tag={tag} start={:?}",
+        tile(client.world_spatial().actor_position)?
+    ));
     verdict::Harness::global().progress("admission");
     Ok(client)
 }
 
-async fn travel_to_spawn(
-    client: &mut oteryn_dev_client::DevClientSession,
+fn spawn_route(
     world: &BundleWorld,
+    from: TilePos,
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
-) -> TestResult {
-    let from = tile(client.world_spatial().actor_position)?;
+) -> Option<Vec<WalkAction>> {
     let points: Vec<_> = spawns
         .sources
         .iter()
@@ -3310,7 +3366,7 @@ async fn travel_to_spawn(
                 .is_some_and(|entry| entry.key == creature)
         })
         .collect();
-    let path = route_toward(world, from, (creature, "adjacent non-PZ spawn"), |at| {
+    route_toward(world, from, (creature, "adjacent non-PZ spawn"), |at| {
         !world
             .base()
             .tile(at.x, at.y, at.floor)
@@ -3319,7 +3375,23 @@ async fn travel_to_spawn(
                 at.floor == *floor && at.x.abs_diff(point.x) <= 1 && at.y.abs_diff(point.y) <= 1
             })
     })
-    .ok_or_else(|| format!("no reachable {creature} spawn within town route budget"))?;
+}
+
+async fn travel_to_spawn(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+) -> TestResult {
+    let from = tile(client.world_spatial().actor_position)?;
+    let path = spawn_route(world, from, spawns, creature).ok_or_else(|| {
+        route_gap(
+            world,
+            client.world_spatial().actor_position,
+            creature,
+            &format!("no reachable {creature} spawn within town route budget"),
+        )
+    })?;
     walk(client, world, &path).await?;
     for _ in 0..32 {
         let here = client.world_spatial().actor_position;

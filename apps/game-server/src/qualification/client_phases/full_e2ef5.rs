@@ -93,7 +93,7 @@ pub(super) async fn run(clients: &SeamClients<'_>, world: &BundleWorld) {
                 let back = route_toward(world, tile(client.world_spatial().actor_position)?, TOWN, |at| {
                     at == TOWN
                 })
-                .ok_or("E2EF5 return route unavailable")?;
+                .ok_or_else(|| route_gap(world, client.world_spatial().actor_position, TOWN, "E2EF5 return route unavailable"))?;
                 walk(&mut client, world, &back).await?;
                 logout(&mut client).await
             }
@@ -972,7 +972,7 @@ pub(super) async fn rune_cleanup(client: &mut DevClientSession, world: &BundleWo
         let path = route_toward(world, tile(client.world_spatial().actor_position)?, TOWN, |at| {
             at == TOWN
         })
-        .ok_or("rune journey return route unavailable")?;
+        .ok_or_else(|| route_gap(world, client.world_spatial().actor_position, TOWN, "rune journey return route unavailable"))?;
         walk(client, world, &path).await
     }
     .await;
@@ -1873,7 +1873,7 @@ async fn combat_access(
             .tile(at.x, at.y, at.floor)
             .is_some_and(|tile| !tile.protection_zone())
     })
-    .ok_or("no ordinary walk route out of PZ for combat spell access")?;
+    .ok_or_else(|| route_gap(world, client.world_spatial().actor_position, "outside PZ", "no ordinary walk route out of PZ for combat spell access"))?;
     walk(client, world, &path).await?;
     let spell = book.spoken(words).ok_or("combat spell absent")?.spell;
     spell_ready(client, spell).await?;
@@ -2982,7 +2982,7 @@ async fn non_pz(client: &mut DevClientSession, world: &BundleWorld) -> TestResul
             .tile(at.x, at.y, at.floor)
             .is_some_and(|tile| !tile.protection_zone())
     })
-    .ok_or("companion: no player walk route outside PZ")?;
+    .ok_or_else(|| route_gap(world, client.world_spatial().actor_position, "outside PZ", "companion: no player walk route outside PZ"))?;
     walk(client, world, &path).await
 }
 async fn summon_rat(

@@ -314,7 +314,7 @@ fn resting_tiles(world: &BundleWorld, start: TilePos) -> TestResult<(TilePos, Ti
         }
     }
     evidence(&format!("route_failed start={start:?} target=production-reward-shrine-with-PZ-approach-and-outside-return planner=P10"));
-    Err("P10 player route blocked: no reachable production reward shrine with a PZ approach and outside return route in the 160-tile town window".into())
+    Err(route_gap(world, ActorPosition { x:i32::from(start.x), y:i32::from(start.y), floor:-i16::from(start.floor) }, "production reward shrine with PZ approach and outside return", "P10 player route blocked: no reachable production reward shrine with a PZ approach and outside return route in the 160-tile town window").into())
 }
 
 async fn resting_walk(
@@ -871,12 +871,7 @@ async fn temple_respawn(
         }
         // This unprovisioned Character has made no citizenship change. The bundle's
         // configured hometown fixes the expected temple BEFORE observing the death.
-        let towns = &world.base().subareas;
-        let home = towns
-            .default_town
-            .and_then(|id| towns.town(id))
-            .and_then(|town| town.temple)
-            .ok_or("compiled world has no default home temple")?;
+        let home = respawn_return_plan(world, TOWN)?;
         let temple = ActorPosition {
             x: i32::from(home.x),
             y: i32::from(home.y),
@@ -967,7 +962,7 @@ async fn temple_respawn(
         let path = route_toward(world, tile(client.world_spatial().actor_position)?, TOWN, |at| {
             at == TOWN
         })
-        .ok_or("E2EF6 return route unavailable")?;
+        .ok_or_else(|| route_gap(world, client.world_spatial().actor_position, TOWN, "E2EF6 return route unavailable"))?;
         walk(&mut client, world, &path).await
     }
     .await;

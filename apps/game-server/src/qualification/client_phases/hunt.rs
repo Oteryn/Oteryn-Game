@@ -34,6 +34,9 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
         return Err(format!("hunt attack: {attack:?}").into());
     }
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
+    // This existing combat observation budget can exceed the row's idle
+    // watchdog. Preserve it without extending the hunt or outer row deadline.
+    client_world::hunt_observation_wait(deadline);
     let mut damaged = false;
     let mut last_position = target.position;
     let corpse = loop {
