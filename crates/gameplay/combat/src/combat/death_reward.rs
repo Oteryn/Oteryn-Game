@@ -1199,11 +1199,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn worldchg_actual_corpse_plan_still_refuses_thirty_one_entries() {
+    fn worldchg_actual_corpse_plan_still_refuses_one_entry_over_the_corpse_capacity() {
         // An admitted source corpse may declare36slots, while this independent
-        // execution budget continues to cap actual planned loot at30entries.
+        // execution budget caps actual planned loot at the corpse capacity
+        // (48 since CORPSE48, owner 2026-11-17; it was 30).
         assert!(check_corpse_container_capacity(20).is_ok());
-        assert!(check_corpse_container_capacity(31).is_err());
+        assert!(check_corpse_container_capacity(49).is_err());
     }
 
     #[test]
@@ -1331,7 +1332,8 @@ mod tests {
             .find(|facts| facts.item.key == "oteryn:item.tibia.i21893")
             .expect("source corpse facts");
         assert_eq!(seacrest.container_capacity, Some(36));
-        assert!(check_corpse_container_capacity(31).is_err());
+        assert!(check_corpse_container_capacity(36).is_ok());
+        assert!(check_corpse_container_capacity(49).is_err());
         Ok(())
     }
 
@@ -1377,6 +1379,23 @@ mod tests {
     }
 
     #[test]
+    fn corpse_plans_of_thirty_one_to_forty_eight_entries_fit_the_corpse() {
+        // CORPSE48 (owner 2026-11-17): Tibia Global corpses hold 48 entries
+        // (Canary items.xml containersize=48); hellgorak's base table reaches 48.
+        for entries in 31..=48 {
+            assert_eq!(
+                check_corpse_container_capacity(entries),
+                Ok(()),
+                "{entries}"
+            );
+        }
+        assert_eq!(
+            check_corpse_container_capacity(49),
+            Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
+        );
+    }
+
+    #[test]
     fn corpse_container_capacity_limits_direct_entries() {
         // W22a's total plan includes descendants. Direct corpse entries still
         // obey SUMMER decision 20's capacity, independently of that plan ceiling.
@@ -1386,7 +1405,8 @@ mod tests {
             ),
             Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
         );
-        assert_eq!(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 30);
+        // CORPSE48 (owner 2026-11-17): the accepted bound is 48 (it was 30).
+        assert_eq!(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 48);
         assert!(check_corpse_container_capacity(0).is_ok());
         assert!(check_corpse_container_capacity(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX).is_ok());
         assert_eq!(

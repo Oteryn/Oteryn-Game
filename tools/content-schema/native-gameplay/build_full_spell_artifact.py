@@ -492,7 +492,7 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARA
 
 
 def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path) -> list[dict]:
-    """Current named drops and the owner-approved native30 corpse projection.
+    """Current named drops and the corpse's source48 capacity (CORPSE48, owner 2026-11-17).
 
     Crystal201189f8 the_corruptor.lua:68-77 supplies chance/count fields; current
     Wiki names resolve its four stale Item IDs (QUESTPC newhaven proposal).
@@ -532,8 +532,8 @@ def corruptor_loot_projection(tables: dict, facts: dict, item_definitions: Path)
         capacity = container.get('value', {}).get('capacity', {}) if container.get('state') == 'KNOWN' else {}
         fact['materializable'] = True
         fact['container_capacity'] = capacity['value'] if capacity.get('state') == 'KNOWN' else None
-        if item in (52113, 52114, 52115) and fact['container_capacity'] != 30:
-            raise ValueError('Corruptor corpse requires the explicit native30 projection')
+        if item in (52113, 52114, 52115) and fact['container_capacity'] != 48:
+            raise ValueError('Corruptor corpse requires its source48 capacity')
         if item == 52116 and fact['container_capacity'] is not None:
             raise ValueError('Corruptor final decay stage is not a container')
     return [facts[f'oteryn:item.tibia.i{item}']['item'] for item in selected]

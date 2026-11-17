@@ -174,8 +174,9 @@ pub use oteryn_protocol_oteryn::chat::{
 /// `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
-    ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
-    decode_character_inventory_with_equip_drop, encode_character_inventory_with_equip_drop,
+    ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_CORPSE_CONTAINER_48_ENTRIES,
+    MAX_OPEN_CONTAINER_ENTRIES, OpenContainer, decode_character_inventory_with_equip_drop,
+    encode_character_inventory_with_equip_drop,
 };
 use oteryn_protocol_oteryn::logout;
 mod server_messages;

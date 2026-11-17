@@ -50,7 +50,7 @@ use oteryn_protocol_oteryn::item_view::{
     EquipmentSlot, EquippedItem, ItemEntry, ItemHandle, MAX_LIVE_ITEM_HANDLES, OpenContainer,
     SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1, SNAPSHOT_TYPE_OPEN_CONTAINER_V1,
     STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
-    encode_character_inventory_with_appearances, encode_open_container_with_appearances,
+    encode_character_inventory_with_appearances, encode_open_container_for,
 };
 use oteryn_protocol_oteryn::world_map::MAX_MAP_VIEW_HANDLES;
 use std::collections::HashMap;
@@ -269,6 +269,8 @@ pub struct ItemHandleTable {
     house_capacity_v2: bool,
     /// Capability 18 is selected: the bound adds `MAPW-RL-04`.
     map_view: bool,
+    /// Capability 512 is selected: the bound adds the 18 extra domain-11 entries.
+    corpse_48: bool,
     slots: Vec<Slot>,
     free: Vec<u32>,
     by_key: KeyMap<ItemKey, u32>,
@@ -301,6 +303,12 @@ impl ItemHandleTable {
         self
     }
 
+    /// The table of a session that selected capability 512.
+    pub const fn with_corpse_container_48(mut self) -> Self {
+        self.corpse_48 = true;
+        self
+    }
+
     pub const fn with_browse_field(mut self) -> Self {
         self.container_tree = true;
         self.browse_field = true;
@@ -317,6 +325,11 @@ impl ItemHandleTable {
             MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE
         } else {
             MAX_LIVE_ITEM_HANDLES
+        };
+        let base = if self.corpse_48 {
+            base + oteryn_protocol_oteryn::item_view::MAX_CORPSE_CONTAINER_48_EXTRA_HANDLES
+        } else {
+            base
         };
         if self.map_view {
             base + MAX_MAP_VIEW_HANDLES
@@ -552,6 +565,8 @@ pub struct SessionItemView {
     /// Capability 12 is selected: domain 9 shows the equipment.
     equip_drop: bool,
     appearances: bool,
+    /// Capability 512 is selected: domain 11 shows up to 48 corpse entries, otherwise 30.
+    corpse_48: bool,
     /// WRITE-1: the last depot box opened by this connection. Observation data only:
     /// a text compositor must recheck locker reach and custody under its retained lane.
     /// Like container-tree views, this is deliberately absent from continuity.
@@ -577,6 +592,7 @@ impl SessionItemView {
             carried_open: continuity.open_corpse,
             equip_drop: false,
             appearances: false,
+            corpse_48: false,
             open_depot: None,
             depot_items: Vec::new(),
         }
@@ -626,6 +642,22 @@ impl SessionItemView {
 
     pub const fn appearances(&self) -> bool {
         self.appearances
+    }
+
+    /// Capability 512 is selected: domain 11 shows up to 48 corpse entries.
+    pub const fn with_corpse_container_48(mut self) -> Self {
+        self.corpse_48 = true;
+        self.table = self.table.with_corpse_container_48();
+        self
+    }
+
+    /// The corpse entries this session is shown: a session without capability 512 sees only the
+    /// first 30, so it can neither receive nor take an entry beyond the legacy bound.
+    fn shown_entries(&self, mut entries: Vec<ViewItem>) -> Vec<ViewItem> {
+        entries.truncate(
+            oteryn_protocol_oteryn::item_view::max_open_container_entries(self.corpse_48),
+        );
+        entries
     }
 
     pub const fn equip_drop(&self) -> bool {
@@ -862,6 +894,7 @@ impl SessionItemView {
             ),
             _ => (None, Vec::new()),
         };
+        let entries = self.shown_entries(entries);
         if next == self.open && entries == self.open_entries {
             return Ok(None);
         }
@@ -968,6 +1001,7 @@ impl SessionItemView {
         open: Option<OpenCorpse>,
         entries: Vec<ViewItem>,
     ) -> Result<Vec<u8>, ItemViewError> {
+        let entries = self.shown_entries(entries);
         let keys: Vec<ItemKey> = open
             .iter()
             .map(|open| open.key)
@@ -982,7 +1016,7 @@ impl SessionItemView {
                 .map(|item| self.entry(item))
                 .collect::<Result<_, _>>()?,
         };
-        match encode_open_container_with_appearances(&view, self.appearances) {
+        match encode_open_container_for(&view, self.appearances, self.corpse_48) {
             Ok(payload) => {
                 self.open = open;
                 self.open_entries = entries;

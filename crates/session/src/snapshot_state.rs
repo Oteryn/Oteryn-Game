@@ -130,10 +130,12 @@ impl SnapshotState {
                     if item_selected =>
                 {
                     state.open_container = Some(
-                        item_view::decode_open_container_with_appearances(
+                        item_view::decode_open_container_for(
                             domain.payload,
                             selected_capabilities
                                 .contains(&item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+                            selected_capabilities
+                                .contains(&item_view::CAPABILITY_CORPSE_CONTAINER_48_V1),
                         )
                         .map_err(SessionError::ItemView)?,
                     );
