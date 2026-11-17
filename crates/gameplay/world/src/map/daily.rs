@@ -65,7 +65,8 @@ impl Projection {
         let mut needed = BTreeMap::new();
         let positions: std::collections::BTreeSet<_> =
             daily.items.iter().map(|(_, p)| *p).collect();
-        if daily.items.len() > 14 || positions.len() != daily.items.len() {
+        // Thawing places 15 Ice Flowers on global (TibiaWiki rev 890265).
+        if daily.items.len() > 15 || positions.len() != daily.items.len() {
             return Err(refusal("daily item bounds or duplicate placement"));
         }
         for (appearance, (x, y, z)) in &daily.items {
