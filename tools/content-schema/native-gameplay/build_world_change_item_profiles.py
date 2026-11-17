@@ -17,6 +17,7 @@ import tarfile
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = Path(__file__).with_name("world-change-item-profiles.json")
 IDS = frozenset({4103, 4104, 2576, 12059, 12060, 13853, 13854, 13855, 13856, 12065, 12063, 12061, 12062, 21803, 21804, 12077, 21805, 22059, 21812, 22074, 5963, 12368, 12369, 14163, 14164, 21893, 21894, 21895, 21896, 3990, 13974, 13976, 14255, 14018, 14020, 14051, 14052, 14053, 14054, 14055, 14064, 21752, 14074, 3583})
+THORNFIRE_BUCKETS = frozenset({12722, 12819})
 RESERVED = 12064
 SCHEMA = "OTERYN_NATIVE_WORLD_CHANGE_ITEM_PROFILES/v1"
 CORPUS = "tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz"
@@ -61,7 +62,7 @@ def read_xml(source_root: Path) -> bytes:
         return stream.read()
 
 
-def build(source_root: Path = ROOT) -> dict:
+def build(source_root: Path = ROOT, *, item_ids=IDS) -> dict:
     # --source-root lets a sparse authoring checkout read immutable full source inputs.
     # OUTPUT always remains beside this script, never under the source-root override.
     sys.path.insert(0, str(source_root / "tools/content-schema/native-gameplay"))
@@ -79,16 +80,16 @@ def build(source_root: Path = ROOT) -> dict:
     objects = native.engine_items.load_appearance_objects(appearance_raw)
     if RESERVED in objects or xml[RESERVED].get("name") != "RESERVED SPRITE":
         raise ValueError("WORLD_CHANGE_RESERVED_SPRITE_SOURCE")
-    if IDS - set(xml) or IDS - set(objects):
+    if item_ids - set(xml) or item_ids - set(objects):
         raise ValueError("WORLD_CHANGE_SOURCE_ITEM_MISSING")
     physical = {row["server_item_id"]: row for row in
-                native.policies(appearance_raw, xml_raw, IDS)}
+                native.policies(appearance_raw, xml_raw, item_ids)}
     binding_raw = native.BINDINGS.read_bytes()
     bindings = native.binding_index(binding_raw)
     records = [native.profile(number, xml[number], objects[number], physical[number],
-                              bindings, None) for number in sorted(IDS)]
+                              bindings, None) for number in sorted(item_ids)]
     bound = native.bind_profiles({"schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
-                                  "records": records}, bindings, IDS)
+                                  "records": records}, bindings, item_ids)
     # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
     sys.path.insert(0, str(source_root / "tools/content-migration"))
     importlib.import_module("import_cyclopedia_global").apply_profile_weights(
@@ -110,7 +111,7 @@ def build(source_root: Path = ROOT) -> dict:
              "xml_attributes": native.attrs(xml[number]),
              "appearance_flags": objects[number]["flags"],
              "projected_physical": physical[number]}
-            for number in sorted(IDS)
+            for number in sorted(item_ids)
         ],
         "records": bound["records"],
     }

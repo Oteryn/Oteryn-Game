@@ -66,9 +66,13 @@ def validate(overlay):
     return records
 
 
-def admit(root, generated, profile_path, manifest_path, order, canonical):
+def admit(root, generated, profile_path, manifest_path, order, canonical, *, include_thornfire=False):
     overlay = json.loads((root / PATH).read_bytes())
     records = validate(overlay)
+    if include_thornfire:
+        # The two bucket policies use the same pinned XML and appearance inputs.
+        from build_world_change_item_profiles import THORNFIRE_BUCKETS, build
+        records += build(root, item_ids=THORNFIRE_BUCKETS)["records"]
     document = json.loads(generated[profile_path])
     present = {row["production_definition"]["production_key"]: row for row in document["records"]}
     additions = []

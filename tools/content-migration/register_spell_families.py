@@ -567,7 +567,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     import engclaim_item_profiles
     engclaim_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import world_change_profiles
-    world_change_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    world_change_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'],
+                                NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes,
+                                include_thornfire=True)
     # Source loot custody completion follows established Item owners. In
     # particular3081/3097 retain TIMED-CONTENT-1's amulet/ring authoring;
     # the bounded yield overlay fills only proven UNKNOWN custody fields.
