@@ -33,3 +33,8 @@ merge-gate-3263 exists". These runs cannot establish a test hang.
 Governance validation and all 135 agent-tool unit tests passed for this
 notes-only checkpoint. The local baseline is still compiling workspace
 dependencies.
+
+The cold local baseline reached the client dependency build after more than
+12 minutes, with no test launched and no cgroup OOM events. Peak cgroup
+memory was 12,035,960,832 bytes so far. This is local compilation time and
+cannot be compared directly with the hosted warm-cache step duration.
