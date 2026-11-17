@@ -556,6 +556,7 @@ impl NpcRuleCatalog {
                                 | "oteryn:quest.the_hidden_city_of_beregar_quest"
                                 | "oteryn:quest.the_order_of_the_stag_quest"
                                 | "oteryn:quest.tower_defence_quest"
+                                | "oteryn:quest.troll_sabotage_quest"
                         )
                 });
                 let authored = Self::from_json_documents(AUTHORED_NPC_RULE_PROGRAMS)?;

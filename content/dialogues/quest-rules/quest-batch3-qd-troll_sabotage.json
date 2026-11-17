@@ -1,0 +1,211 @@
+{
+  "schema": 1,
+  "quest": "oteryn:quest.troll_sabotage_quest",
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "initial": 0,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jerom.lua:67-83"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.chief_grarkharok",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "keywords": [
+        "kill",
+        "hurt",
+        "pain"
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 1
+        }
+      ],
+      "reply": [
+        "Hrhrhrhr! Me no fear of human! Me Chief Grarkharok!!"
+      ],
+      "key": "oteryn:quest-npc/troll_sabotage_quest/grarkharok/threat",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chief_grarkharok.lua:73-77"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.chief_grarkharok",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "keywords": [
+        "lady",
+        "queen",
+        "woman",
+        "cave",
+        "house"
+      ],
+      "topics": [
+        1
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 2
+        }
+      ],
+      "reply": [
+        "You help?? Human know troll lady for Grarkharok??"
+      ],
+      "key": "oteryn:quest-npc/troll_sabotage_quest/grarkharok/lady",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chief_grarkharok.lua:78-84"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.chief_grarkharok",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "keywords": [
+        "yes"
+      ],
+      "topics": [
+        2
+      ],
+      "effects": [
+        {
+          "kind": "set_topic",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "What name of troll lady??"
+      ],
+      "key": "oteryn:quest-npc/troll_sabotage_quest/grarkharok/yes",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chief_grarkharok.lua:85-88"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.chief_grarkharok",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "op": "eq",
+          "value": 1
+        }
+      ],
+      "match_player_name": true,
+      "topics": [
+        3
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "value": 2
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i7754",
+          "count": 1
+        },
+        {
+          "kind": "set_topic",
+          "value": 0
+        }
+      ],
+      "reply": [
+        "|PLAYERNAME|?!? Sound good! Bring troll lady to Grarkharok!! Here, give troll lady! Take take! Bring lady to Grarkharok for make tribe!! Now GO!"
+      ],
+      "key": "oteryn:quest-npc/troll_sabotage_quest/grarkharok/name",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/chief_grarkharok.lua:106-110"
+      ]
+    },
+    {
+      "quest": "oteryn:quest.troll_sabotage_quest",
+      "npc": "oteryn:npc.jerom",
+      "trigger": "say",
+      "guards": [
+        {
+          "kind": "storage",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "op": "eq",
+          "value": 2
+        }
+      ],
+      "keywords": [
+        "mission",
+        "quest"
+      ],
+      "effects": [
+        {
+          "kind": "take_item",
+          "item": "oteryn:item.tibia.i7754",
+          "count": 1
+        },
+        {
+          "kind": "give_item",
+          "item": "oteryn:item.tibia.i646",
+          "count": 1
+        },
+        {
+          "kind": "set",
+          "track": "oteryn:quest-progress/quest/u8_2/troll_sabotage_quest/questline",
+          "value": 3
+        }
+      ],
+      "reply": [
+        "Thank you sooo much <sniffs>. Well, you know I lost everything, but recently I found this strange rope here. I don't need it, here take it!"
+      ],
+      "completes": true,
+      "key": "oteryn:quest-npc/troll_sabotage_quest/jerom/necklace",
+      "sources": [
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/npc/jerom.lua:67-79"
+      ]
+    }
+  ],
+  "source_files": [
+    {
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/chief_grarkharok.lua",
+      "sha256": "4e2c0d750d572355b89e4b2cad56e2def8cff3e527ea666bc6aece91a538df09"
+    },
+    {
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/npc/jerom.lua",
+      "sha256": "8f300ec0a5d3e609aee8772993cb8df06d4c1d510c432c662f706969690535b3"
+    }
+  ]
+}
