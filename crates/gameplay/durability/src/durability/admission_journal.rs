@@ -80,6 +80,8 @@ pub(super) enum JournalBackend {
 }
 
 impl JournalBackend {
+    /// Diagnostics only: the holder owner is reported at the caller's site, not here.
+    #[track_caller]
     pub(super) fn try_issue_root(&self) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
         match self {
             #[cfg(any(test, feature = "test-support"))]
@@ -176,6 +178,8 @@ impl AdmissionReconnectJournal {
         }
     }
 
+    /// Diagnostics only: the holder owner is reported at the caller's site, not here.
+    #[track_caller]
     pub(super) fn try_issue_root_pass(
         &self,
     ) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
