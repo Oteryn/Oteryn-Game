@@ -41,6 +41,9 @@ impl DurabilityRoot {
         epoch: u64,
         draw: u8,
     ) -> Result<bool, DurabilityError> {
+        if epoch == 0 || draw >= 30 || !matches!(scope, crate::foundation::RuntimeScopeRefV1::Channel { .. }) {
+            return Ok(false);
+        }
         let recovery = authority.record_for(self).map_err(|_| DurabilityError::InvalidStoredState)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?
@@ -48,17 +51,13 @@ impl DurabilityRoot {
                 let mut tx = begin_semantic_transaction(holder, deadline).await?;
                 assert_recovery_fence(&mut tx, &recovery).await?;
                 lock_admission_relations(&mut tx).await?;
-                if !crate::durability::character_progression::assert_runtime_scope_fence(
+                let world = scope.world_id();
+                let current: bool = sqlx::query_scalar(
+                    "SELECT game_world_reset_map_epoch_current(encode($1,'hex')::uuid,$2::text::numeric)",
+                ).bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_one(&mut *tx).await?;
+                if !current || !crate::durability::character_progression::assert_runtime_scope_fence(
                     &mut tx, scope, generation, &node,
                 ).await? {
-                    return Ok(false);
-                }
-                let world = scope.world_id();
-                let current: Option<String> = sqlx::query_scalar(
-                    "SELECT reset_epoch::text FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid
-                     AND NOT EXISTS(SELECT 1 FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING')",
-                ).bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-                if current.as_deref() != Some(epoch.to_string().as_str()) {
                     return Ok(false);
                 }
                 let loose: Option<i64> = sqlx::query_scalar(
