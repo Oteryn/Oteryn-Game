@@ -19,6 +19,10 @@ pub struct SettingsState {
     pub(super) screenshot_runtime: super::screenshot::ScreenshotRuntime,
     pub(super) screenshot_requested: bool,
     pub(super) window_actions: std::collections::VecDeque<&'static str>,
+    /// Deferred sidebar toggles belong only to the session that received the hotkey.
+    #[cfg(bevy_shell)]
+    pub(super) skills_toggles:
+        Vec<std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>>,
     pending_chat_mode: Option<bool>,
     /// The play session (by its mailbox) whose chat mode was restored, and the mode last seen.
     chat_mode_seen: Option<(usize, oteryn_client_ui::chat::ComposerMode)>,

@@ -28,6 +28,7 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
     app.add_plugins((MinimalPlugins, AssetPlugin::default()))
         .init_asset::<Image>()
         .init_asset::<Font>()
+        .init_resource::<crate::bevy_shell::game_ui::hud_panes::SidebarWidgets>()
         .init_resource::<InputFocus>()
         .init_resource::<ButtonInput<KeyCode>>()
         .insert_non_send(owner)

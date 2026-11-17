@@ -107,6 +107,7 @@ pub struct Minimap {
     // Read by the native Windows marker editor.
     #[allow(dead_code)]
     pub editor_open: bool,
+    pub(super) pending_edit: Option<(i32, i32, i16)>,
     editor: Option<Editor>,
     pub own: (i32, i32, i16),
     pub feedback: String,
@@ -130,6 +131,7 @@ impl Default for Minimap {
             zoom: 1,
             tracking: true,
             editor_open: false,
+            pending_edit: None,
             editor: None,
             own: (0, 0, -7),
             feedback: String::new(),
@@ -175,6 +177,7 @@ impl Minimap {
     }
 
     pub fn bind_world(&mut self, world: &str) {
+        self.pending_edit = None;
         // Native admission calls this even when another Character enters the same World.
         self.quest_marks = Default::default();
         self.quest_markers.clear();
@@ -236,6 +239,7 @@ impl Minimap {
             map.header.reset_epoch,
         );
         if self.binding != Some(binding) {
+            self.pending_edit = None;
             if let Err(error) = self.save() {
                 self.feedback = error.to_string();
             }
