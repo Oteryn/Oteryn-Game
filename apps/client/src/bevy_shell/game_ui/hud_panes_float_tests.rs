@@ -301,3 +301,27 @@ fn text_spawned_while_docked_follows_the_floating_window_zoom() -> TestResult {
     assert_eq!(size(&app)?, base, "docked text returns to its size");
     Ok(())
 }
+
+#[test]
+fn sidebar_toggles_raised_bosstiary_closed() -> TestResult {
+    use crate::bevy_shell::ui::{Control, toolbar::grid::ControlButton};
+    let mut app = floating_app("bosstiary-toggle")?;
+    super::super::super::bosstiary::install(&mut app);
+    let button = entity_with::<ControlButton>(&mut app, |button| {
+        matches!(button, ControlButton::Grid(Control::Panel("bosstiary")))
+    })?;
+    activate(&mut app, button);
+    settle(&mut app);
+    let open = |app: &App| {
+        app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .panel_visible("bosstiary")
+    };
+    assert!(open(&app));
+    activate(&mut app, button);
+    settle(&mut app);
+    assert!(!open(&app));
+    Ok(())
+}

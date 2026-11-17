@@ -7,9 +7,15 @@ use crate::{
 use bevy::asset::AssetPlugin;
 use oteryn_client_ui::inspection::{self as wire, catalogue};
 
-#[test]
-fn cyclopedia_items_reaches_catalogue_and_renders_confirmed_details()
--> Result<(), Box<dyn std::error::Error>> {
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+type CatalogueWindow = (
+    App,
+    crate::play::PlayLink,
+    tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
+    crate::play::Outbox,
+);
+
+fn catalogue_window() -> Result<CatalogueWindow, Box<dyn std::error::Error>> {
     let (link, mut receiver, outbox) = play_channel();
     outbox.bevy_market_initialize(true);
     link.use_shared_frontend();
@@ -81,6 +87,54 @@ fn cyclopedia_items_reaches_catalogue_and_renders_confirmed_details()
     app.update();
     assert!(visible(&mut app).contains("Confirmed sword"));
     assert!(visible(&mut app).contains("Attack: 30"));
+    Ok((app, link, receiver, outbox))
+}
+
+#[test]
+fn cyclopedia_items_rejects_invalid_search_for_all_filters() -> TestResult {
+    let (mut app, _link, mut receiver, _outbox) = catalogue_window()?;
+    app.world_mut()
+        .query_filtered::<&mut EditableText, With<Search>>()
+        .single_mut(app.world_mut())?
+        .editor_mut()
+        .set_text(&format!("{}x", "é".repeat(128)));
+    for action in [
+        Action::Browse,
+        Action::Next,
+        Action::Category(true),
+        Action::Category(false),
+    ] {
+        click(&mut app, action)?;
+        assert!(receiver.try_recv().is_err(), "invalid search submitted");
+    }
+    Ok(())
+}
+
+#[test]
+fn wire_limit_preserves_catalogue_filters() -> TestResult {
+    let (mut app, link, mut receiver, _outbox) = catalogue_window()?;
+    let original = link.inspection_panel();
+    app.world_mut()
+        .query_filtered::<&mut EditableText, With<Search>>()
+        .single_mut(app.world_mut())?
+        .editor_mut()
+        .set_text(&"x".repeat(65));
+    for action in [
+        Action::Category(false),
+        Action::Category(true),
+        Action::Next,
+        Action::Browse,
+    ] {
+        click(&mut app, action)?;
+        assert_eq!(link.inspection_panel(), original);
+        assert!(receiver.try_recv().is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_items_reaches_catalogue_and_renders_confirmed_details() -> TestResult {
+    let (mut app, link, mut receiver, outbox) = catalogue_window()?;
     click(&mut app, Action::Select(42))?;
     let confirmed = link.inspection_panel().reply.ok_or("confirmed catalogue")?;
     click(&mut app, Action::Details)?;
@@ -221,5 +275,92 @@ fn click(app: &mut App, action: Action) -> Result<(), Box<dyn std::error::Error>
         .ok_or("catalogue button")?;
     app.world_mut().trigger(Activate { entity });
     app.update();
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_items_pages_selected_item_drop_sources() -> TestResult {
+    drop_sources_pages(false)
+}
+
+#[test]
+fn drop_sources_continue_after_inventory_inspection() -> TestResult {
+    drop_sources_pages(true)
+}
+
+fn drop_sources_pages(inspect_between_pages: bool) -> TestResult {
+    let (mut app, link, mut receiver, outbox) = catalogue_window()?;
+    click(&mut app, Action::Select(42))?;
+    let confirmed = link.inspection_panel().reply.ok_or("confirmed catalogue")?;
+    for (caption, after) in [("Drop sources", 0), ("Next drop sources", 10)] {
+        let entity = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
+            .ok_or("drop source button")?;
+        assert!(app.world().get::<InteractionDisabled>(entity).is_none());
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        let PlayCommand::ServerMechanic(command) = receiver.try_recv()? else {
+            return Err("drop source request".into());
+        };
+        assert_eq!(
+            wire::decode_request(&command.payload).map_err(|e| format!("{e:?}"))?,
+            wire::Request::CatalogueQuery(catalogue::Query::Drops {
+                reference: 42,
+                after
+            })
+        );
+        let mut page = confirmed.clone();
+        if after == 0 {
+            page.items[0]
+                .attributes
+                .push(("Catalogue drop next".into(), "10".into()));
+        }
+        link.bevy_item_details_response(
+            &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+                command_id: 3,
+                server_sequence: 3,
+                status: oteryn_client_runtime::server_mechanic::CommandStatus::Accepted,
+                payload: wire::encode_reply(&page).map_err(|e| format!("{e:?}"))?,
+            },
+        );
+        if after == 0 && inspect_between_pages {
+            let item = oteryn_session::ItemEntry {
+                handle: 7.try_into()?,
+                item_definition_ref: 42.try_into()?,
+                appearance_id: 0,
+                count: 1.try_into()?,
+                sub_type: 0,
+            };
+            crate::play::PlayLink::bevy_items_fixture(
+                &outbox,
+                Some(oteryn_session::CharacterInventory {
+                    main_backpack: None,
+                    entries: vec![item],
+                    equipment: vec![],
+                }),
+                Some(Default::default()),
+                false,
+                true,
+            );
+            assert!(link.inventory_select(item.handle));
+            assert!(link.inspect_selected_item());
+            assert!(matches!(
+                receiver.try_recv()?,
+                PlayCommand::ServerMechanic(_)
+            ));
+            link.bevy_item_details_response(
+                &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+                    command_id: 4,
+                    server_sequence: 4,
+                    status: oteryn_client_runtime::server_mechanic::CommandStatus::Accepted,
+                    payload: wire::encode_reply(&confirmed).map_err(|e| format!("{e:?}"))?,
+                },
+            );
+        }
+        app.update();
+    }
     Ok(())
 }

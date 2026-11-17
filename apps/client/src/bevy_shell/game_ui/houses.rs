@@ -23,6 +23,7 @@ struct HouseWindow {
     generation: Option<u64>,
     open: bool,
     root: Option<Entity>,
+    redraw: bool,
     model: Option<Panel>,
     fields: [String; 7],
     request: Option<usize>,
@@ -89,7 +90,7 @@ fn project(
     skin: Res<Skins>,
     mut state: ResMut<HouseWindow>,
     mut focus: ResMut<InputFocus>,
-    fields: Query<(), With<Field>>,
+    fields: Query<(&Field, &EditableText)>,
 ) {
     if state.generation != Some(owner.generation()) || owner.play.is_none() {
         state.open = false;
@@ -106,12 +107,20 @@ fn project(
         .filter(|_| state.open)
         .map(|play| play.link.house_panel());
     if let Some(panel) = &projected
+        && !state.redraw
         && state.model.as_ref() == Some(&panel.model)
         && state.fields == panel.fields
         && state.ownership == ownership
     {
         return;
     }
+    // Ownership review and map controls can redraw the same form. Only carry its
+    // editors across that presentation change while the underlying house is unchanged.
+    let rebuilding = state.root.is_some();
+    let same_house = projected
+        .as_ref()
+        .is_some_and(|panel| state.model.as_ref() == Some(&panel.model));
+    state.redraw = false;
     if let Some(root) = state.root.take() {
         if focus.get().is_some_and(|entity| fields.contains(entity)) {
             focus.clear();
@@ -121,6 +130,7 @@ fn project(
     state.model = None;
     state.request = None;
     let Some(panel) = projected else {
+        state.feedback.clear();
         return;
     };
     let mut message = oteryn_client_ui::house::panel_text(&panel.model);
@@ -138,11 +148,21 @@ fn project(
     }
     message.push_str(&state.feedback);
     state.ownership = ownership;
+    let mut editors = panel.fields.clone();
+    if rebuilding {
+        for (field, text) in &fields {
+            if (same_house || !matches!(field.0, 2 | 4 | 6))
+                && panel.fields[field.0] == state.fields[field.0]
+            {
+                editors[field.0] = text.value().to_string();
+            }
+        }
+    }
     let root = build(
         &mut commands,
         &skin,
         owner.generation(),
-        &panel.fields,
+        &editors,
         &panel.model,
         &message,
     );
@@ -174,7 +194,7 @@ fn activate(
     }
     if control.selection == Some(CLOSE_MAP) {
         state.map = false;
-        state.model = None;
+        state.redraw = true;
     } else if let Some(selection) = control.selection {
         state.request = Some(selection);
     } else {
@@ -227,7 +247,7 @@ fn finish(
         }
         state.map = !play.link.house_map(&values[2]).is_empty();
         state.review = None;
-        state.model = None;
+        state.redraw = true;
         return;
     }
     if selection >= 20 {
@@ -284,9 +304,10 @@ fn finish(
             }
             _ => {}
         }
-        state.model = None;
+        state.redraw = true;
     } else {
         submit(&play.link, model, &state.fields, values, selection);
+        state.model = None;
         state.review = None;
     }
 }

@@ -14,7 +14,7 @@ use bevy::{
     ui::InteractionDisabled,
     ui_widgets::{Activate, ScrollArea, TextInput},
 };
-use oteryn_client_ui::inspection::Panel;
+use oteryn_client_ui::inspection::{Panel, Request, catalogue};
 use oteryn_client_ui_bevy as source;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -24,6 +24,8 @@ enum Action {
     Category(bool),
     Select(u32),
     Details,
+    DropSources,
+    NextDropSources,
     Prices,
     Close,
 }
@@ -40,6 +42,7 @@ struct State {
     overlay: Option<Entity>,
     snapshot: Option<(u64, Panel, String)>,
     serial: u64,
+    drop_owner: Option<(u64, u32)>,
     pending: Option<(Entity, Control)>,
 }
 pub(super) fn install(app: &mut App) {
@@ -84,18 +87,24 @@ fn project(
     parents: Query<&ChildOf>,
     search: Query<&EditableText, With<Search>>,
 ) {
-    let model = owner
+    let generation = owner.generation();
+    let snapshot = owner
         .play
         .as_ref()
         .filter(|_| owner.phase == Phase::Playing)
-        .map(|play| {
-            (
-                play.link.inspection_panel(),
-                play.link.item_catalogue_text(),
-            )
-        })
-        .filter(|(p, _)| p.catalogue_open);
-    let snapshot = model.map(|(panel, text)| (owner.generation(), panel, text));
+        .and_then(|play| {
+            let panel = play.link.inspection_panel();
+            if let Some(Request::CatalogueQuery(catalogue::Query::Drops { reference, .. })) =
+                panel.last_request
+            {
+                state.drop_owner = Some((generation, reference));
+            } else if panel.catalogue_drop_next.is_none() {
+                state.drop_owner = None;
+            }
+            panel
+                .catalogue_open
+                .then(|| (generation, panel, play.link.item_catalogue_text()))
+        });
     if state.snapshot == snapshot {
         return;
     }
@@ -139,7 +148,16 @@ fn project(
         serial,
         action: Action::Close,
     };
-    let overlay = build(&mut commands, &skin, panel, text, &search_value, control);
+    let continuation = drop_query(panel, *generation, state.drop_owner);
+    let overlay = build(
+        &mut commands,
+        &skin,
+        panel,
+        text,
+        &search_value,
+        control,
+        continuation.is_some(),
+    );
     state.serial = serial;
     state.overlay = Some(overlay);
 }
@@ -150,6 +168,7 @@ fn build(
     details: &str,
     search_value: &str,
     control: Control,
+    can_continue_drops: bool,
 ) -> Entity {
     let overlay = commands
         .spawn((
@@ -253,6 +272,12 @@ fn build(
             !panel.categories().is_empty(),
         ),
         (Action::Details, "Item details", selected),
+        (Action::DropSources, "Drop sources", selected),
+        (
+            Action::NextDropSources,
+            "Next drop sources",
+            can_continue_drops,
+        ),
         (Action::Prices, "Market prices", selected),
         (Action::Close, "Close", true),
     ] {
@@ -344,6 +369,17 @@ fn activate(
         state.pending = Some((event.entity, *control));
     }
 }
+fn drop_query(
+    panel: &Panel,
+    generation: u64,
+    owner: Option<(u64, u32)>,
+) -> Option<catalogue::Query> {
+    let reference = panel.catalogue_definition.parse().ok()?;
+    let after = panel.catalogue_drop_next?;
+    (owner == Some((generation, reference)) && panel.catalogue.contains_key(&reference))
+        .then_some(catalogue::Query::Drops { reference, after })
+}
+
 fn finish(
     guard: ModalGuard,
     search: Query<&EditableText, With<Search>>,
@@ -383,6 +419,24 @@ fn finish(
             play.link.item_catalogue_select(id);
         }
         Action::Details => play.link.item_catalogue_request(6),
+        Action::DropSources => play.link.item_catalogue_request(7),
+        Action::NextDropSources => {
+            if let Some(query @ catalogue::Query::Drops { reference, .. }) =
+                drop_query(&panel, control.generation, state.drop_owner)
+            {
+                if matches!(
+                    panel.last_request,
+                    Some(Request::CatalogueQuery(catalogue::Query::Drops { .. }))
+                ) {
+                    play.link.item_catalogue_request(8);
+                } else {
+                    // Item Details replaced last_request. Consume the retained row cursor
+                    // before submitting it so a refused reply cannot leave it reusable.
+                    play.link.item_catalogue_select(reference);
+                    play.link.inspect(Request::CatalogueQuery(query));
+                }
+            }
+        }
         Action::Prices => {
             play.link.item_catalogue_request(9);
             if let Ok(definition) = panel.catalogue_definition.parse() {
@@ -404,9 +458,12 @@ fn finish(
                     state.pending = Some((entity, control));
                     return;
                 }
-                changed = search.value().to_string() != panel.search;
-                play.link
-                    .item_catalogue_filter(&search.value().to_string(), &panel.category);
+                let value = search.value().to_string();
+                if catalogue::items(0, 0, &value).is_err() {
+                    return;
+                }
+                changed = value != panel.search;
+                play.link.item_catalogue_filter(&value, &panel.category);
             }
             let action = match control.action {
                 Action::Next if !changed => 1,

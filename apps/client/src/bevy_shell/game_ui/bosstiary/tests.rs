@@ -152,6 +152,8 @@ fn bosstiary_hazard_buttons_query_and_raise_the_server_hazard_level()
         app.world_mut().trigger(Activate { entity });
         Ok(())
     };
+    app.world_mut()
+        .spawn((super::super::GameModal, Node::default(), GlobalZIndex(149)));
     press(&mut app, Intent::HazardQuery)?;
     let PlayCommand::Feature(query) = commands.try_recv()? else {
         return Err("hazard query missing".into());
@@ -370,25 +372,7 @@ fn bosstiary_entry_track_kills_toggle_adds_and_removes_the_boss_on_the_tracker()
         crate::bevy_shell::ui::Control::Panel("bosstiary"),
     );
     assert!(matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == 133));
-    let entry =
-        |key: &str, name: &str, kills| oteryn_client_runtime::boss_encounter::catalogue::Entry {
-            key: key.into(),
-            name: name.into(),
-            category: 1,
-            kills,
-            thresholds: [5, 10, 20],
-            points: [10, 30, 60],
-            look: 1,
-            object: false,
-        };
-    let page = oteryn_client_runtime::boss_encounter::catalogue::Page {
-        next: None,
-        points: 10,
-        entries: vec![
-            entry("oteryn:creature.ferumbras", "Ferumbras", 1),
-            entry("oteryn:creature.morgaroth", "Morgaroth", 0),
-        ],
-    };
+    let page = two_boss_page();
     outbox.bevy_bosstiary_result(&accepted(page.encode().ok_or("catalogue")?));
     // The login join snapshot of domain 98: nothing tracked yet.
     outbox.bevy_cyclopedia_tracker_push(
@@ -471,5 +455,74 @@ fn bosstiary_entry_track_kills_toggle_adds_and_removes_the_boss_on_the_tracker()
         },
     );
     assert!(window_text(&mut app).contains("The server refused the tracker action"));
+    Ok(())
+}
+
+fn two_boss_page() -> oteryn_client_runtime::boss_encounter::catalogue::Page {
+    let entry =
+        |key: &str, name: &str, kills| oteryn_client_runtime::boss_encounter::catalogue::Entry {
+            key: key.into(),
+            name: name.into(),
+            category: 1,
+            kills,
+            thresholds: [5, 10, 20],
+            points: [10, 30, 60],
+            look: 1,
+            object: false,
+        };
+    oteryn_client_runtime::boss_encounter::catalogue::Page {
+        next: None,
+        points: 10,
+        entries: vec![
+            entry("oteryn:creature.ferumbras", "Ferumbras", 1),
+            entry("oteryn:creature.morgaroth", "Morgaroth", 0),
+        ],
+    }
+}
+
+#[test]
+fn catalogue_page_controls_preserve_selected_boss() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    let mut owner = HostOwner::new(None)?;
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_bosstiary_initialize();
+    let view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    owner.phase = Phase::Playing;
+    crate::bevy_shell::ui::toolbar::open_toolbar(
+        &mut owner,
+        crate::bevy_shell::ui::Control::Panel("bosstiary"),
+    );
+    assert!(matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == 133));
+    let page = two_boss_page();
+    outbox.bevy_bosstiary_result(&accepted(page.encode().ok_or("catalogue")?));
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        oteryn_client_ui_bevy::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .insert_non_send(owner)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    for intent in [Intent::CatalogueNext, Intent::CatalogueRefresh] {
+        click(&mut app, Kind::Request(intent))?;
+        assert!(window_text(&mut app).contains("Selected boss: Ferumbras"));
+    }
+    assert!(matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == 133));
+    outbox.bevy_bosstiary_result(&accepted(page.encode().ok_or("catalogue")?));
+    click(&mut app, Kind::Request(Intent::Enter))?;
+    let PlayCommand::Feature(enter) = commands.try_recv()? else {
+        return Err("enter boss room".into());
+    };
+    assert_eq!(
+        enter.payload,
+        oteryn_client_runtime::boss_encounter::encode_boss_key("oteryn:creature.ferumbras")
+            .map_err(|e| format!("{e:?}"))?
+    );
     Ok(())
 }

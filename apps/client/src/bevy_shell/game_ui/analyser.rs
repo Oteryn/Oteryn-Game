@@ -327,9 +327,6 @@ fn project(
         {
             if *tool == Tool::Party {
                 play.link.analyser_party_refresh();
-            } else if *tool == Tool::Bosses {
-                play.link
-                    .boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::Refresh);
             }
             windows.push(widgets::build(
                 &mut commands,
@@ -344,6 +341,11 @@ fn project(
         else {
             continue;
         };
+        if window.needs_cooldowns && !play.link.boss_encounter_panel().pending {
+            play.link
+                .boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::Refresh);
+            window.needs_cooldowns = false;
+        }
         if let Some(caption) = window.tracker_filter {
             commands
                 .entity(caption)

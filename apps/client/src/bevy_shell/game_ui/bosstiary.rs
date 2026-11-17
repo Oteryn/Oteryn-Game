@@ -289,11 +289,44 @@ fn track_toggles(
         commands.entity(root).add_child(row);
     }
 }
+/// Bosstiary is an ordinary sidebar window. Its controls can sit above an
+/// existing dialog without turning the window itself into a gameplay fence.
+#[derive(bevy::ecs::system::SystemParam)]
+struct WindowAccess<'w, 's> {
+    guard: super::modal::ModalGuard<'w, 's>,
+    windows: Query<'w, 's, &'static GlobalZIndex, With<Window>>,
+    parents: Query<'w, 's, &'static ChildOf>,
+    modals: Query<'w, 's, (Entity, &'static GlobalZIndex), With<super::GameModal>>,
+    nodes: Query<'w, 's, (&'static Node, Option<&'static Visibility>)>,
+}
+
+impl WindowAccess<'_, '_> {
+    fn allows(&self, entity: Entity) -> bool {
+        if self.guard.allows(entity) {
+            return true;
+        }
+        for ancestor in std::iter::once(entity).chain(self.parents.iter_ancestors(entity)) {
+            if self.nodes.get(ancestor).is_ok_and(|(node, visibility)| {
+                node.display == Display::None || visibility == Some(&Visibility::Hidden)
+            }) {
+                return false;
+            }
+            if let Ok(window) = self.windows.get(ancestor) {
+                return self
+                    .modals
+                    .iter()
+                    .any(|(modal, depth)| depth.0 < window.0 && self.guard.allows(modal));
+            }
+        }
+        false
+    }
+}
+
 fn track(
     event: On<Activate>,
     toggles: Query<&TrackToggle>,
     owner: NonSend<HostOwner>,
-    guard: super::modal::ModalGuard,
+    guard: WindowAccess,
 ) {
     let Ok(toggle) = toggles.get(event.entity) else {
         return;
@@ -317,7 +350,7 @@ fn activate(
     event: On<Activate>,
     controls: Query<&Action>,
     owner: NonSend<HostOwner>,
-    guard: super::modal::ModalGuard,
+    guard: WindowAccess,
 ) {
     let Ok(action) = controls.get(event.entity) else {
         return;
@@ -329,13 +362,6 @@ fn activate(
         && let Some(play) = &owner.play
     {
         match action.kind {
-            Kind::Request(
-                intent @ (Intent::Catalogue | Intent::CatalogueNext | Intent::CatalogueRefresh),
-            ) => {
-                play.link
-                    .boss_encounter_browse("", BossCategory::All, false);
-                play.link.boss_encounter_request(intent);
-            }
             Kind::Request(intent) => play.link.boss_encounter_request(intent),
             Kind::Boss(previous) => {
                 play.link

@@ -212,15 +212,30 @@ fn house_browser_opens_owned_and_incoming_catalogue() -> TestResult {
 fn house_browser_reviews_and_confirms_transfer() -> TestResult {
     house_window_action("Review transfer", 3, "200")
 }
+#[test]
+fn house_browser_clears_ownership_error_on_reopen() -> TestResult {
+    house_window_action("Review move-out", 2, "invalid")
+}
+#[test]
+fn house_acl_reply_replaces_pending_member_draft() -> TestResult {
+    house_window_action("Load guests", 4, "")
+}
+#[test]
+fn house_handoff_clears_unsent_access_drafts() -> TestResult {
+    house_window_action("Handoff", 4, "old member")
+}
 fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestResult {
     use crate::{
         combat_input::PlayCommand,
         play::{PlayView, play_channel},
     };
     use bevy::input::keyboard::{Key as LogicalKey, KeyboardInput};
-    let (link, mut receiver, _) = play_channel();
+    let (link, mut receiver, outbox) = play_channel();
     link.use_shared_frontend();
     link.bevy_house_list_fixture();
+    if caption == "Handoff" {
+        link.house_edit(2, String::new());
+    }
     if caption == "Review transfer" {
         use oteryn_client_runtime::{
             house::house_sale as wire,
@@ -316,35 +331,166 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
             "missing house list descriptor: {expected}"
         );
     }
-    let save = app
-        .world_mut()
-        .query::<(&Text, &ChildOf)>()
-        .iter(app.world())
-        .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
-        .ok_or("save button")?;
+    let button = |app: &mut App, caption: &str| {
+        app.world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
+            .ok_or("house button")
+    };
+    let save = button(
+        &mut app,
+        if caption == "Handoff" {
+            "Query"
+        } else {
+            caption
+        },
+    )?;
     for (field, mut text) in app
         .world_mut()
         .query::<(&super::super::houses::Field, &mut EditableText)>()
         .iter_mut(app.world_mut())
     {
+        if caption == "Handoff" && field.0 == 2 {
+            text.editor_mut().set_text("3");
+        }
         if field.0 == field_index {
             text.editor_mut().set_text(value);
         }
         if caption == "Review transfer" {
+            if field.0 == 2 {
+                text.editor_mut().set_text("1");
+            }
             if field.0 == 4 {
                 text.editor_mut().set_text("Mira Vale");
             }
             if field.0 == 5 {
-                text.editor_mut().set_text("2027-01-20 12:00:00 UTC");
+                text.editor_mut().set_text("invalid date");
             }
         }
         if field.0 == 6 {
             text.editor_mut().set_text("CONFIRM");
         }
     }
+    if caption == "Handoff" {
+        use oteryn_session::{
+            AppliedDelta, GatedSnapshot, SessionEvent,
+            activity_scope::{ActivityScope, ActivityScopeSnapshot, encode_activity_scope},
+        };
+        let mut id = [1; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        let mut successor = id;
+        successor[15] = 2;
+        let payload = encode_activity_scope(&ActivityScopeSnapshot {
+            handoff: id,
+            source_session: id,
+            session: successor,
+            scope: ActivityScope::Instance {
+                world: id,
+                instance: id,
+            },
+            scope_generation: 1,
+            connection_generation: 1,
+            lease_generation: 2,
+            selection: vec![49, 117],
+            requires_ack: false,
+        })
+        .map_err(|e| format!("{e:?}"))?;
+        outbox.push(vec![SessionEvent::GatedSnapshotReplaced(AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: GatedSnapshot {
+                domain_id: 99,
+                snapshot_type: 1,
+                revision: 1,
+                payload,
+            },
+        })]);
+        app.update();
+        let mut cleared = Vec::new();
+        for (field, text) in app
+            .world_mut()
+            .query::<(&super::super::houses::Field, &EditableText)>()
+            .iter(app.world())
+        {
+            if matches!(field.0, 2 | 4 | 6) {
+                assert_eq!(text.value(), "");
+                cleared.push(field.0);
+            }
+        }
+        cleared.sort_unstable();
+        assert_eq!(cleared, [2, 4, 6]);
+        return Ok(());
+    }
     app.world_mut().trigger(Activate { entity: save });
     app.update();
+    if caption == "Review move-out" {
+        let has_error = |app: &mut App| {
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0.contains("Select an ownership row"))
+        };
+        app.update();
+        assert!(has_error(&mut app));
+        let entity = button(&mut app, "Close")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        press_h(&mut app);
+        let entity = button(&mut app, caption)?;
+        assert!(!has_error(&mut app));
+
+        for (field, mut text) in app
+            .world_mut()
+            .query::<(&super::super::houses::Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            if field.0 == 2 {
+                text.editor_mut().set_text("invalid");
+            }
+        }
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        app.update();
+        assert!(has_error(&mut app));
+        app.world_mut().non_send_mut::<HostOwner>().close();
+        app.update();
+        let (link, _commands, _outbox) = play_channel();
+        link.use_shared_frontend();
+        link.bevy_house_list_fixture();
+        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        view.use_shared_frontend();
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.phase = crate::bevy_shell::owner::Phase::Playing;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+        press_h(&mut app);
+        button(&mut app, caption)?;
+        assert!(!has_error(&mut app));
+        return Ok(());
+    }
     if caption == "Review transfer" {
+        app.update();
+        for (field, mut text) in app
+            .world_mut()
+            .query::<(&super::super::houses::Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            match field.0 {
+                2 => assert_eq!(text.value(), "1"),
+                3 => assert_eq!(text.value(), "200"),
+                4 => assert_eq!(text.value(), "Mira Vale"),
+                5 => {
+                    assert_eq!(text.value(), "invalid date");
+                    text.editor_mut().set_text("2027-01-20 12:00:00 UTC");
+                }
+                _ => {}
+            }
+        }
+        let retry = button(&mut app, caption)?;
+        app.world_mut().trigger(Activate { entity: retry });
+        app.update();
         assert!(receiver.try_recv().is_err(), "review sends no mutation");
         app.update();
         assert!(
@@ -369,6 +515,58 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
     let PlayCommand::Feature(command) = receiver.try_recv()? else {
         return Err("house intent".into());
     };
+    if caption == "Load guests" {
+        use oteryn_client_runtime::{
+            house,
+            raw_feature::{CommandStatus, GatedCommandResult},
+        };
+        app.update();
+        for (field, mut text) in app
+            .world_mut()
+            .query::<(&super::super::houses::Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            if field.0 == 4 {
+                text.editor_mut().set_text("intervening edit");
+            }
+        }
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .bevy_house_ownership_result(
+                &command,
+                &GatedCommandResult {
+                    command_id: 1,
+                    server_sequence: 1,
+                    status: CommandStatus::Accepted,
+                    payload: house::encode_house_acl_snapshot(&house::HouseAclSnapshot {
+                        revision: 8,
+                        members: vec![],
+                    })
+                    .map_err(|e| format!("{e:?}"))?,
+                },
+            );
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<(&super::super::houses::Field, &EditableText)>()
+                .iter(app.world())
+                .any(|(field, text)| field.0 == 4 && text.value() == "")
+        );
+        return Ok(());
+    }
+    if matches!(caption, "Bid" | "Save guests") {
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<(&super::super::houses::Field, &EditableText)>()
+                .iter(app.world())
+                .any(|(field, text)| field.0 == 6 && text.value() == "")
+        );
+    }
     let expected_kind = if matches!(caption, "Owned / incoming" | "Review transfer") {
         oteryn_client_runtime::house::house_sale::COMMAND
     } else {
