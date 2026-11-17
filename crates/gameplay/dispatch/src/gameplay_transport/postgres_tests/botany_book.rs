@@ -123,9 +123,14 @@ async fn scenario(admin: String) -> TestResult {
         )
         .map_err(debug)?;
     admitted.item_fence = item_fence_of(current);
+    let supported = [4, 6, 15, 92, 450];
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[4, 6, 15, 92, 450])
+        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &supported)
             .ok_or("item use and server modal capabilities")?;
+    assert_eq!(
+        admitted.continuity.selected_capabilities.as_slice(),
+        supported
+    );
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
         let end = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await;
@@ -158,10 +163,16 @@ async fn scenario(admin: String) -> TestResult {
             use_with_position: None,
         })
         .map_err(debug)?;
-        for (command_id, command_type, payload) in [
-            (1, COMMAND_TYPE_USE_INTENT, intent.as_slice()),
-            (2, COMMAND_TYPE_SERVER_MODAL_QUERY, &[][..]),
-        ] {
+        let first = admitted.continuity.next_command_id;
+        for (offset, (command_type, payload)) in [
+            (COMMAND_TYPE_SERVER_MODAL_QUERY, &[][..]),
+            (COMMAND_TYPE_USE_INTENT, intent.as_slice()),
+            (COMMAND_TYPE_SERVER_MODAL_QUERY, &[][..]),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let command_id = first + u64::try_from(offset)?;
             let frame = encode_client_command(
                 admitted.continuity.connection_generation,
                 &ClientCommandValue {
@@ -186,6 +197,8 @@ async fn scenario(admin: String) -> TestResult {
                         decode_use_result(result.payload).map_err(debug)?,
                         UseDisposition::Committed
                     );
+                } else if offset == 0 {
+                    assert_eq!(Reply::decode(result.payload)?, Reply::None);
                 } else {
                     let Reply::Dialog(dialog) = Reply::decode(result.payload)? else {
                         return Err("expected a TextWindow after USE".into());
@@ -193,6 +206,7 @@ async fn scenario(admin: String) -> TestResult {
                     assert_eq!(dialog.title, "Text");
                     assert_eq!(dialog.message, text);
                     assert!(dialog.choices.is_empty());
+                    assert_eq!(dialog.buttons, vec![(1, "Ok".into())]);
                 }
                 break;
             }
@@ -209,6 +223,10 @@ async fn scenario(admin: String) -> TestResult {
         end,
         crate::gameplay_transport::connection::ConnectionEnd::AdmittedThenDisconnected(_)
     ));
+    let stored: (String, String) = sqlx::query_as(
+        "SELECT text, text_revision::text FROM game_item_texts WHERE item_instance_id=encode($1,'hex')::uuid",
+    ).bind(id(71).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(stored, (text.to_owned(), "1".into()));
     drop(owner);
     drop(authority);
     drop(seal);
