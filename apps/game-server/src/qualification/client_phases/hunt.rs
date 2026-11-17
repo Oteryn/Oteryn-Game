@@ -1,7 +1,7 @@
 //! Hunt through network attack, visibility, corpse USE and item-move replies.
 use super::*;
 pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<()> {
-    use oteryn_dev_client::{EntityDetail, EntityKind};
+    use oteryn_dev_client::EntityKind;
     if !client
         .selected_capabilities()
         .contains(&oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
@@ -26,6 +26,27 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
         })
         .copied()
         .ok_or("hunt route has no visible monster")?;
+    hunt_target(client, target).await
+}
+
+pub(super) async fn hunt_target(
+    client: &mut oteryn_dev_client::DevClientSession,
+    target: oteryn_dev_client::WorldSpatialEntity,
+) -> TestResult {
+    use oteryn_dev_client::{EntityDetail, EntityKind};
+    let health = match target.detail {
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => health_percent,
+        _ => return Err("hunt target lacks health".into()),
+    };
+    let existing: Vec<_> = client
+        .world_entities()
+        .into_iter()
+        .flat_map(|entities| entities.iter())
+        .filter(|entry| entry.kind == EntityKind::Corpse)
+        .map(|entry| entry.entity)
+        .collect();
+    client.take_events();
     let attack = client
         .session_mut()
         .attack_target(Some(&target.entity))
@@ -48,14 +69,16 @@ pub(super) async fn hunt(client: &mut oteryn_dev_client::DevClientSession) -> Te
                 {
                     last_position = updated.position;
                 }
-                damaged |= delta.value.update.iter().any(|entry| entry.entity == target.entity && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100));
+                damaged |= delta.value.update.iter().any(|entry| entry.entity == target.entity && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } | EntityDetail::ActorWithIcons { health_percent, .. } if health_percent < health));
             }
         }
         if let Some(corpse) = client
             .world_entities()
             .and_then(|entities| {
                 entities.iter().find(|entry| {
-                    entry.kind == EntityKind::Corpse && entry.position == last_position
+                    entry.kind == EntityKind::Corpse
+                        && entry.position == last_position
+                        && !existing.contains(&entry.entity)
                 })
             })
             .copied()

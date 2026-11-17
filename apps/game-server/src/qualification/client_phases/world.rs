@@ -1989,11 +1989,49 @@ fn boot_world(
 }
 
 fn tile(position: ActorPosition) -> TestResult<TilePos> {
+    let basis = if position.floor < 0 {
+        spatial_basis::Basis::Native
+    } else {
+        spatial_basis::Basis::Legacy
+    };
+    served_tile(position, basis)
+}
+
+fn actor_tile(client: &mut oteryn_dev_client::DevClientSession) -> TestResult<TilePos> {
+    let position = client.world_spatial().actor_position;
+    served_tile(position, spatial_basis::current(client)?)
+}
+
+fn served_tile(position: ActorPosition, basis: spatial_basis::Basis) -> TestResult<TilePos> {
+    let floor = match basis {
+        spatial_basis::Basis::Native => position.floor,
+        spatial_basis::Basis::Legacy => position
+            .floor
+            .checked_neg()
+            .ok_or("legacy floor overflow")?,
+    };
+    if !(-15..=0).contains(&floor) {
+        return Err("position outside the serving spatial basis".into());
+    }
     Ok(TilePos {
         x: u16::try_from(position.x)?,
         y: u16::try_from(position.y)?,
-        floor: -i8::try_from(position.floor)?,
+        floor: i8::try_from(floor)?,
     })
+}
+
+#[cfg(test)]
+#[test]
+fn qualification_route_origin_projects_native_and_legacy_floor() -> TestResult {
+    let tile = TilePos {
+        x: 12,
+        y: 34,
+        floor: -7,
+    };
+    for basis in [spatial_basis::Basis::Native, spatial_basis::Basis::Legacy] {
+        assert_eq!(served_tile(basis.position(tile), basis)?, tile);
+    }
+    Ok(())
 }
 
 /// Plan from immutable production map facts; only replies to real STEP commands prove travel.
@@ -2001,6 +2039,16 @@ fn route(
     world: &BundleWorld,
     from: TilePos,
     goal: impl Fn(TilePos) -> bool,
+) -> Option<Vec<StepDirection>> {
+    route_with_edges(from, goal, |at, direction| {
+        destination(world, at, direction)
+    })
+}
+
+fn route_with_edges(
+    from: TilePos,
+    goal: impl Fn(TilePos) -> bool,
+    edge: impl Fn(TilePos, StepDirection) -> Option<TilePos>,
 ) -> Option<Vec<StepDirection>> {
     let mut queue = VecDeque::from([from]);
     let mut parents = BTreeMap::from([(from, None)]);
@@ -2021,7 +2069,7 @@ fn route(
             StepDirection::South,
             StepDirection::West,
         ] {
-            let Some(next) = destination(world, at, direction) else {
+            let Some(next) = edge(at, direction) else {
                 continue;
             };
             if next.x.abs_diff(from.x) > 160
@@ -2071,7 +2119,7 @@ async fn return_to_protection_zone(
     client: &mut oteryn_dev_client::DevClientSession,
     world: &BundleWorld,
 ) -> TestResult<TilePos> {
-    let from = tile(client.world_spatial().actor_position)?;
+    let from = actor_tile(client)?;
     let path = reach_route(client, world, from, |at| return_protection_zone(world, at))
         .await?
         .map_err(|failure| {
@@ -2080,7 +2128,7 @@ async fn return_to_protection_zone(
             )
         })?;
     walk(client, world, &path).await?;
-    let at = tile(client.world_spatial().actor_position)?;
+    let at = actor_tile(client)?;
     if !return_protection_zone(world, at) {
         return Err(
             format!("profile return did not reach a protection-zone temple: at={at:?}").into(),
@@ -2148,7 +2196,7 @@ pub(super) async fn reach_route(
     loop {
         client.service_liveness(Duration::from_millis(1)).await?;
         client.take_events(); // Canonical session stores retain the applied observations.
-        let observed = tile(client.world_spatial().actor_position)?;
+        let observed = actor_tile(client)?;
         if observed != origin {
             origin = observed;
         }
@@ -2161,7 +2209,7 @@ pub(super) async fn reach_route(
         .await?;
         client.service_liveness(Duration::from_millis(1)).await?;
         client.take_events();
-        let observed = tile(client.world_spatial().actor_position)?;
+        let observed = actor_tile(client)?;
         if observed == origin {
             return Ok(path);
         }
@@ -2233,62 +2281,16 @@ async fn reach_route_serviced(
     }))
 }
 
-const REACH_SEARCH_NODES: usize = 3_000_000;
-const REACH_CHUNK: usize = 20_000;
-
-/// Like `route` without its 160-tile and two-floor window: it searches the whole bundle (stairs,
-/// ladders and floor changes included) up to `REACH_SEARCH_NODES` tiles. The search yields to the
-/// connection every `REACH_CHUNK` expansions so liveness is served and the harness sees progress.
-/// `Ok(Err(searched))` means the goal is not reachable (or the cap was hit) after `searched` tiles.
-pub(super) async fn reach_route(
-    client: &mut oteryn_dev_client::DevClientSession,
-    world: &BundleWorld,
-    from: TilePos,
-    goal: impl Fn(TilePos) -> bool,
-) -> TestResult<Result<Vec<StepDirection>, usize>> {
-    let mut queue = VecDeque::from([from]);
-    let mut parents = BTreeMap::from([(from, None)]);
-    let mut expanded = 0usize;
-    while let Some(at) = queue.pop_front() {
-        if goal(at) {
-            let mut path = Vec::new();
-            let mut cursor = at;
-            while let Some(Some((previous, direction))) = parents.get(&cursor) {
-                path.push(*direction);
-                cursor = *previous;
-            }
-            path.reverse();
-            return Ok(Ok(path));
-        }
-        if parents.len() > REACH_SEARCH_NODES {
-            break;
-        }
-        expanded += 1;
-        if expanded.is_multiple_of(REACH_CHUNK) {
-            verdict::Harness::global().progress("route-search");
-            client.service_liveness(Duration::from_millis(1)).await?;
-        }
-        for direction in [
-            StepDirection::North,
-            StepDirection::East,
-            StepDirection::South,
-            StepDirection::West,
-        ] {
-            let Some(next) = destination(world, at, direction) else {
-                continue;
-            };
-            if parents.contains_key(&next) {
-                continue;
-            }
-            parents.insert(next, Some((at, direction)));
-            queue.push_back(next);
-        }
-    }
-    Ok(Err(parents.len()))
-}
-
 /// Use the production floor resolver over the production bundle's collision facts.
 fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> Option<TilePos> {
+    landing(world, from, direction).map(|(at, _)| at)
+}
+
+fn landing(
+    world: &BundleWorld,
+    from: TilePos,
+    direction: StepDirection,
+) -> Option<(TilePos, bool)> {
     use crate::map::floor::{Ground, resolve_landing};
     use crate::movement::CardinalStep;
     let direction = match direction {
@@ -2316,15 +2318,19 @@ fn destination(world: &BundleWorld, from: TilePos, direction: StepDirection) -> 
         },
         None => Ground::Absent,
     };
+    let teleported = std::cell::Cell::new(false);
     let next = resolve_landing(
         world.floors(),
         ground,
-        |_| true,
+        |_| {
+            teleported.set(true);
+            true
+        },
         (i32::from(from.x), i32::from(from.y), -i32::from(from.floor)),
         direction,
     )
     .ok()?;
-    position(next)
+    Some((position(next)?, teleported.get()))
 }
 
 fn near_locker(world: &BundleWorld, at: TilePos) -> bool {
@@ -2406,6 +2412,7 @@ async fn walk(
 ) -> TestResult {
     for &direction in path {
         let before = client.world_spatial().actor_position;
+        let basis = spatial_basis::current(client)?;
         let mut outcome = client.step_retrying(direction).await?;
         for attempt in 1..=6 {
             if outcome.disposition != StepDisposition::Rejected
@@ -2415,7 +2422,7 @@ async fn walk(
             }
             evidence(&format!(
                 "town_route step_rejected attempt={attempt} direction={direction:?} from={before:?} expected={:?} actual={:?}",
-                destination(world, tile(before)?, direction),
+                destination(world, served_tile(before, basis)?, direction),
                 client.world_spatial().actor_position,
             ));
             let Some(delay) = town_route_retry_delay(
@@ -2431,14 +2438,14 @@ async fn walk(
         if outcome.disposition != StepDisposition::Moved || outcome.world_spatial_delta.is_none() {
             return Err(format!(
                 "town route step {direction:?} from={before:?} expected={:?} actual={:?}: {outcome:?}",
-                destination(world, tile(before)?, direction),
+                destination(world, served_tile(before, basis)?, direction),
                 client.world_spatial().actor_position,
             )
             .into());
         }
         verdict::Harness::global().progress("walk");
         let after = client.world_spatial().actor_position;
-        if Some(tile(after)?) != destination(world, tile(before)?, direction) {
+        if Some(actor_tile(client)?) != destination(world, served_tile(before, basis)?, direction) {
             return Err(format!(
                 "town step changed position unexpectedly: {before:?} -> {after:?}"
             )
@@ -5131,8 +5138,21 @@ async fn travel_to_spawn(
     spawns: &oteryn_world_bundle::spawn::Table,
     creature: &str,
 ) -> TestResult {
-    let from = tile(client.world_spatial().actor_position)?;
-    let points: Vec<_> = spawns
+    approach_spawn_target(client, world, spawns, creature)
+        .await?
+        .ok_or_else(|| format!("no reachable live {creature}").into())
+        .map(|_| ())
+}
+
+async fn approach_spawn_target(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &BundleWorld,
+    spawns: &oteryn_world_bundle::spawn::Table,
+    creature: &str,
+) -> TestResult<Option<oteryn_dev_client::WorldSpatialEntity>> {
+    let from = actor_tile(client)?;
+    let (name, _) = full_gold::creature_profile(creature)?;
+    let authored: BTreeSet<_> = spawns
         .sources
         .iter()
         .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
@@ -5142,78 +5162,85 @@ async fn travel_to_spawn(
                 .get(point.creature as usize)
                 .is_some_and(|entry| entry.key == creature)
         })
-        .collect();
-    let authored: BTreeSet<TilePos> = points
-        .iter()
         .map(|(floor, point)| TilePos {
             x: point.x,
             y: point.y,
-            floor: *floor,
+            floor,
         })
         .collect();
     if authored.is_empty() {
-        return Err(format!("the served bundle authors no {creature} spawn point").into());
+        return Ok(None);
     }
-    let path = reach_route(client, world, from, |at| {
-        !world
+    let outside = |at: TilePos| {
+        world
             .base()
             .tile(at.x, at.y, at.floor)
-            .is_none_or(|tile| tile.protection_zone())
+            .is_some_and(|tile| !tile.protection_zone())
+    };
+    let near = |at: TilePos, target: TilePos| {
+        at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) == 1
+    };
+    let Ok(path) = reach_route(client, world, from, |at| {
+        outside(at)
             && (-1i16..=1).any(|dx| {
                 (-1i16..=1).any(|dy| {
                     at.x.checked_add_signed(dx)
                         .zip(at.y.checked_add_signed(dy))
                         .is_some_and(|(x, y)| {
-                            authored.contains(&TilePos {
-                                x,
-                                y,
-                                floor: at.floor,
-                            })
+                            (dx != 0 || dy != 0)
+                                && authored.contains(&TilePos {
+                                    x,
+                                    y,
+                                    floor: at.floor,
+                                })
                         })
                 })
             })
     })
     .await?
-    .map_err(|searched| {
-        format!(
-            "no walkable route from {from:?} to any of {} authored {creature} spawn points \
-             (searched {searched} tiles, cap {REACH_SEARCH_NODES})",
-            authored.len()
-        )
-    })?;
+    else {
+        return Ok(None);
+    };
     walk(client, world, &path).await?;
     for _ in 0..32 {
-        let here = client.world_spatial().actor_position;
+        let basis = spatial_basis::current(client)?;
+        let here = actor_tile(client)?;
         let target = client
             .world_entities()
             .and_then(|entities| {
                 entities
                     .iter()
                     .filter(|entry| {
-                        entry.kind == oteryn_dev_client::EntityKind::Creature
-                            && entry.position.floor == here.floor
+                        full_gold::creature_matches(entry, name)
+                            && entry.position.floor == basis.floor(here.floor)
                     })
                     .min_by_key(|entry| {
                         entry
                             .position
                             .x
-                            .abs_diff(here.x)
-                            .max(entry.position.y.abs_diff(here.y))
+                            .abs_diff(i32::from(here.x))
+                            .max(entry.position.y.abs_diff(i32::from(here.y)))
                     })
             })
-            .copied()
-            .ok_or("spawn route has no visible creature")?;
-        let target = tile(target.position)?;
-        let path = route(world, tile(here)?, |at| {
-            at.floor == target.floor && at.x.abs_diff(target.x).max(at.y.abs_diff(target.y)) <= 1
-        })
-        .ok_or("visible creature unreachable")?;
-        let Some(direction) = path.first() else {
-            return Ok(());
-        };
-        walk(client, world, &[*direction]).await?;
+            .copied();
+        if let Some(target) = target {
+            let at = served_tile(target.position, basis)?;
+            if near(here, at) && outside(here) {
+                return Ok(Some(target));
+            }
+            if let Some(direction) = route(world, here, |position| {
+                outside(position) && near(position, at)
+            })
+            .and_then(|path| path.first().copied())
+            {
+                walk(client, world, &[direction]).await?;
+                continue;
+            }
+        }
+        client.service_liveness(Duration::from_millis(250)).await?;
+        client.take_events();
     }
-    Err("could not approach a live creature within the route budget".into())
+    Ok(None)
 }
 
 pub(crate) fn smoke() -> TestResult {

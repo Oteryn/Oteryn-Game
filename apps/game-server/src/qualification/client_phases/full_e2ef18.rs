@@ -1,6 +1,6 @@
 //! E2EF18 C14: ordinary combat progression, skill training, spell learning and reload.
 use super::*;
-use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind};
+use oteryn_dev_client::{DevClientSession, EntityDetail};
 use oteryn_protocol_oteryn::{
     attack::AttackIntentDisposition,
     cyclopedia_character::{self as character, CharacterTab, GeneralStats},
@@ -71,7 +71,9 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
     let result = tokio::time::timeout(Duration::from_secs(600), journey(&mut row, clients))
         .await
-        .unwrap_or_else(|_| Err("step=journey observed=timeout-600s need=responsive-combat-progression".into()));
+        .unwrap_or_else(|_| {
+            Err("step=journey observed=timeout-600s need=responsive-combat-progression".into())
+        });
     row.finish(&result);
 }
 
@@ -85,13 +87,17 @@ async fn stats(client: &mut DevClientSession) -> TestResult<GeneralStats> {
         )
         .await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("step=general-stats observed={reply:?} need=accepted-GeneralStats").into());
+        return Err(
+            format!("step=general-stats observed={reply:?} need=accepted-GeneralStats").into(),
+        );
     }
     if general_stats::validate(&reply.payload, general_stats::selected(client)).is_err()
         || reply.payload.first() != Some(&(CharacterTab::GeneralStats as u8))
         || reply.payload[33] > 1
     {
-        return Err("step=general-stats observed=malformed-frame need=negotiated-GeneralStats".into());
+        return Err(
+            "step=general-stats observed=malformed-frame need=negotiated-GeneralStats".into(),
+        );
     }
     let mut skills = [0; 7];
     for (slot, bytes) in skills
@@ -130,7 +136,9 @@ async fn skills(client: &mut DevClientSession) -> TestResult<SkillProgressSnapsh
         )
         .await?;
     if reply.status != CommandStatus::Accepted {
-        return Err(format!("step=skill-progress observed={reply:?} need=accepted-capability-279").into());
+        return Err(
+            format!("step=skill-progress observed={reply:?} need=accepted-capability-279").into(),
+        );
     }
     SkillProgressSnapshot::decode(&reply.payload)
         .ok_or_else(|| "step=skill-progress observed=malformed-frame need=160-byte-snapshot".into())
@@ -140,94 +148,78 @@ async fn progress(client: &mut DevClientSession) -> TestResult<Progress> {
     Ok(Progress {
         stats: stats(client).await?,
         skills: skills(client).await?,
-        vitals: *client.actor_vitals().ok_or("step=vitals observed=missing-frame")?,
+        vitals: *client
+            .actor_vitals()
+            .ok_or("step=vitals observed=missing-frame")?,
     })
 }
 
-fn rat_spawns() -> TestResult<Vec<TilePos>> {
+fn qualification_world(
+    clients: &SeamClients<'_>,
+) -> TestResult<(&'static BundleWorld, oteryn_world_bundle::spawn::Table)> {
     let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
-    let metadata = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?;
-    let mut positions: Vec<_> = metadata
-        .spawns
-        .sources
-        .iter()
-        .flat_map(|source| source.points.iter().map(move |point| (source.floor, point)))
-        .filter(|(_, point)| {
-            metadata
-                .spawns
-                .creatures
-                .get(point.creature as usize)
-                .is_some_and(|creature| creature.key == "oteryn:creature.rat")
-        })
-        .map(|(floor, point)| TilePos {
-            x: point.x,
-            y: point.y,
-            floor,
-        })
-        .collect();
-    positions.sort_by_key(|position| (position.x.abs_diff(TOWN.x) + position.y.abs_diff(TOWN.y), position.floor));
-    positions.dedup();
-    if positions.is_empty() {
-        return Err("step=spawn-selection observed=no-rat-in-bundle need=weak-creature-spawn".into());
-    }
-    Ok(positions)
-}
-
-fn qualification_world(clients: &SeamClients<'_>) -> TestResult<&'static BundleWorld> {
-    let bytes = std::fs::read(required("NODE_BOOT_WORLD_BUNDLE")?)?;
+    let spawns = oteryn_world_bundle::bundle::visit(&bytes, |_, _| Ok(()))?.spawns;
     let pin = serde_json::from_slice(&std::fs::read(required("NODE_BOOT_WORLD_PIN")?)?)?;
-    load_world(
+    let world = load_world(
         bytes,
         &pin,
         WorldId::decode(&clients.world)?,
         ChannelId::decode(&clients.channel)?,
-    )
+    )?;
+    Ok((world, spawns))
 }
 
-async fn approach_rat(
-    client: &mut DevClientSession,
-    world: &BundleWorld,
-    positions: &[TilePos],
-) -> TestResult<oteryn_dev_client::WorldSpatialEntity> {
-    let path = route(world, tile(client.world_spatial().actor_position)?, |at| {
-        world.base().tile(at.x, at.y, at.floor).is_some_and(|cell| !cell.protection_zone())
-            && positions.iter().any(|spawn| {
-                spawn.floor == at.floor && spawn.x.abs_diff(at.x).max(spawn.y.abs_diff(at.y)) <= 1
-            })
-    })
-    .ok_or("step=walk-to-weak-spawn observed=no-route-within-160-tiles need=reachable-rat")?;
-    walk(client, world, &path).await?;
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
-    loop {
-        let here = client.world_spatial().actor_position;
-        if let Some(target) = client.world_entities().and_then(|entities| {
-            entities.iter().find(|entry| {
-                entry.kind == EntityKind::Creature
-                    && entry.position.floor == here.floor
-                    && entry.position.x.abs_diff(here.x).max(entry.position.y.abs_diff(here.y)) <= 1
-            })
-        }) {
-            return Ok(*target);
-        }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("step=walk-to-weak-spawn observed=no-adjacent-creature-frame need=spawn-respawn".into());
-        }
-        client.service_liveness(Duration::from_millis(100)).await?;
-        client.take_events();
+async fn rat_experience(client: &mut DevClientSession) -> TestResult<u64> {
+    use oteryn_protocol_oteryn::daily_boost as wire;
+
+    const RAT: &str = "oteryn:creature.rat";
+    let (_, base) = full_gold::creature_profile(RAT)?;
+    if !client
+        .selected_capabilities()
+        .contains(&wire::CAPABILITY_DAILY_BOOST_V1)
+    {
+        return Ok(base);
     }
+    let reply = client
+        .session_mut()
+        .gated_command(
+            wire::CAPABILITY_DAILY_BOOST_V1,
+            wire::COMMAND_TYPE_DAILY_BOOST_QUERY,
+            &[],
+        )
+        .await?;
+    let mut panel = oteryn_dev_client::client_ui::daily_boost::DailyBoostPanel::default();
+    oteryn_dev_client::client_ui::daily_boost::apply_result(&mut panel, &reply);
+    let boost = panel
+        .boost
+        .ok_or("step=exact-kill-experience observed=missing-daily-boost")?;
+    if boost.creature_key == RAT {
+        return base
+            .checked_mul(2)
+            .ok_or_else(|| "step=exact-kill-experience observed=boost-overflow".into());
+    }
+    Ok(base)
 }
 
 async fn kill(
     client: &mut DevClientSession,
     target: oteryn_dev_client::WorldSpatialEntity,
 ) -> TestResult {
-    let reply = client.session_mut().attack_target(Some(&target.entity)).await?;
+    let reply = client
+        .session_mut()
+        .attack_target(Some(&target.entity))
+        .await?;
     if reply.disposition != AttackIntentDisposition::Ok {
-        return Err(format!("step=melee-attack observed={reply:?} need=accepted-adjacent-attack").into());
+        return Err(
+            format!("step=melee-attack observed={reply:?} need=accepted-adjacent-attack").into(),
+        );
     }
     let before_health = match target.detail {
-        EntityDetail::Actor { health_percent, .. } => health_percent,
-        _ => return Err("step=melee-attack observed=target-without-health need=actor-frame".into()),
+        EntityDetail::Actor { health_percent, .. }
+        | EntityDetail::ActorWithIcons { health_percent, .. } => health_percent,
+        _ => {
+            return Err("step=melee-attack observed=target-without-health need=actor-frame".into());
+        }
     };
     let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
     let mut damaged = false;
@@ -237,20 +229,29 @@ async fn kill(
             if let oteryn_dev_client::SessionEvent::WorldSpatialEntities(delta) = event {
                 damaged |= delta.value.update.iter().any(|entry| {
                     entry.entity == target.entity
-                        && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } if health_percent < before_health)
+                        && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } | EntityDetail::ActorWithIcons { health_percent, .. } if health_percent < before_health)
                 });
             }
         }
-        if client.world_entities().is_some_and(|entities| entities.get(&target.entity).is_none()) {
+        if client
+            .world_entities()
+            .is_some_and(|entities| entities.get(&target.entity).is_none())
+        {
             break;
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=melee-kill observed=timeout damage-frame={damaged} need=creature-death").into());
+            return Err(format!(
+                "step=melee-kill observed=timeout damage-frame={damaged} need=creature-death"
+            )
+            .into());
         }
     }
     let stopped = client.session_mut().attack_target(None).await?;
     if !damaged || stopped.disposition != AttackIntentDisposition::Ok {
-        return Err(format!("step=melee-kill observed=damage-{damaged}/stop-{stopped:?} need=damage-and-stop").into());
+        return Err(format!(
+            "step=melee-kill observed=damage-{damaged}/stop-{stopped:?} need=damage-and-stop"
+        )
+        .into());
     }
     Ok(())
 }
@@ -273,6 +274,72 @@ fn learned(
         .entries)
 }
 
+fn carry_capacity_grew(before: Option<u64>, after: Option<u64>) -> bool {
+    matches!((before, after), (Some(before), Some(after)) if before > 0 && after > before)
+}
+
+async fn fixture_request(
+    client: &mut DevClientSession,
+    arguments: &'static [&'static str],
+) -> TestResult<String> {
+    let socket = required("NODE_BOOT_CONTROL_SOCKET")?;
+    let script = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../tools/qualification/node_boot/provision.py");
+    let session = uuid_text(client.join_snapshot().game_session_id.as_bytes());
+    let task = tokio::task::spawn_blocking(move || -> Result<String, String> {
+        let output = std::process::Command::new("sudo")
+            .args(["-n", "python3"])
+            .arg(script)
+            .args(["--socket", &socket, "--session", &session])
+            .args(arguments)
+            .output()
+            .map_err(|error| error.to_string())?;
+        if !output.status.success() {
+            return Err(format!(
+                "C14 fixture command refused: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            ));
+        }
+        String::from_utf8(output.stdout).map_err(|error| error.to_string())
+    });
+    wait_fixture_command(task, async || {
+        client.service_liveness(Duration::from_millis(50)).await?;
+        client.take_events();
+        Ok(())
+    })
+    .await
+}
+
+async fn carry_capacity(client: &mut DevClientSession, expected_level: u32) -> TestResult<u64> {
+    let answer = fixture_request(client, &["--capacity"]).await?;
+    let mut tokens = answer.split_ascii_whitespace();
+    let kind = tokens.next();
+    let level = tokens.next().and_then(|value| value.parse().ok());
+    let capacity = tokens.next().and_then(|value| value.parse::<u64>().ok());
+    match capacity {
+        Some(capacity)
+            if kind == Some("capacity")
+                && level == Some(expected_level)
+                && capacity > 0
+                && tokens.next().is_none() =>
+        {
+            Ok(capacity)
+        }
+        _ => Err(format!(
+            "step=level-and-maxima observed={answer:?} expected-level={expected_level}"
+        )
+        .into()),
+    }
+}
+
+fn exact_kill_award(delta: u64, expected: Option<u64>) -> bool {
+    delta > 0 && expected == Some(delta)
+}
+
+fn automatic_unlocks_observed(expected: &[u32], newly_learned: &[u32]) -> bool {
+    !expected.is_empty() && expected.iter().all(|index| newly_learned.contains(index))
+}
+
 async fn ordinary_logout(client: &mut DevClientSession) -> TestResult {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(180);
     loop {
@@ -285,121 +352,217 @@ async fn ordinary_logout(client: &mut DevClientSession) -> TestResult {
                 client.service_liveness(Duration::from_millis(250)).await?;
                 client.take_events();
             }
-            _ => return Err(format!("step=logout observed={reply:?} need=accepted-after-lock").into()),
+            _ => {
+                return Err(
+                    format!("step=logout observed={reply:?} need=accepted-after-lock").into(),
+                );
+            }
         }
     }
 }
 
 async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
-    let world = qualification_world(clients)?;
-    let positions = rat_spawns()?;
+    let (world, spawns) = qualification_world(clients)?;
     let mut client = connect_character(clients, 0xe2, 0).await?;
+    let (_, vocation) = provisioning::e2ef1::fixture_spell_facts(&mut client).await?;
+    if vocation == crate::spell::Vocation::None {
+        // Setup ends before any baseline is sampled. A live kill must cross the authored
+        // unlock threshold and publish the full award across it.
+        fixture_request(&mut client, &["--profile", "combat-progression"]).await?;
+        ordinary_logout(&mut client).await?;
+        drop(client);
+        client = connect_character(clients, 0xe4, 0).await?;
+        evidence("E2EF18_SETUP C14 fixture=combat-progression before-baseline");
+    }
     let old_session = client.join_snapshot().game_session_id;
     let baseline = progress(&mut client).await?;
+    let mut capacity = carry_capacity(&mut client, baseline.stats.level).await?;
     let spells_before = learned(&mut client)?;
+    let (_, vocation) = provisioning::e2ef1::fixture_spell_facts(&mut client).await?;
+    let book = native_spell_book()?;
+    let eligible_at_level = |spell: &crate::spell::SpellDefinition| {
+        !spell.learning_required && spell.vocations.contains(&vocation)
+    };
+    let unlock_level = book
+        .spells
+        .iter()
+        .enumerate()
+        .filter(|(index, spell)| {
+            !book.inactive_aliases.contains(index)
+                && eligible_at_level(spell)
+                && spell.level > baseline.stats.level
+        })
+        .map(|(_, spell)| spell.level)
+        .min()
+        .ok_or("step=automatic-spell-learning observed=no-authored-future-unlock")?;
+    let mut expected_unlocks = Vec::new();
+    for (index, spell) in book.spells.iter().enumerate() {
+        if !book.inactive_aliases.contains(&index)
+            && eligible_at_level(spell)
+            && spell.level == unlock_level
+        {
+            expected_unlocks.push(u32::try_from(index + 1)?);
+        }
+    }
+    let rat_experience = rat_experience(&mut client).await?;
 
     let own = client
         .world_entities()
-        .and_then(|entities| entities.iter().find(|entry| entry.entity.identity == *entities.own_identity()))
+        .and_then(|entities| {
+            entities
+                .iter()
+                .find(|entry| entry.entity.identity == *entities.own_identity())
+        })
         .copied()
         .ok_or("step=non-attackable-refusal observed=own-entity-absent")?;
-    let refusal = client.session_mut().attack_target(Some(&own.entity)).await?;
+    let refusal = client
+        .session_mut()
+        .attack_target(Some(&own.entity))
+        .await?;
     if refusal.disposition == AttackIntentDisposition::Ok {
-        return Err("step=non-attackable-refusal observed=accepted-player-self need=refusal".into());
+        return Err(
+            "step=non-attackable-refusal observed=accepted-player-self need=refusal".into(),
+        );
     }
-    row.pass("non-attackable-refusal", format!("reply={:?}", refusal.disposition));
+    row.pass(
+        "non-attackable-refusal",
+        format!("reply={:?}", refusal.disposition),
+    );
 
     let mut previous = baseline;
-    let mut exact_xp = None;
-    let mut levelled = None;
     let deadline = tokio::time::Instant::now() + Duration::from_secs(420);
-    while levelled.is_none() {
-        let target = approach_rat(&mut client, world, &positions).await?;
-        row.pass("walk-to-weak-spawn", format!("target={:?}", target.entity));
-        kill(&mut client, target).await?;
-        let after = progress(&mut client).await?;
-        let delta = after.stats.experience.checked_sub(previous.stats.experience).ok_or(
-            "step=exact-kill-experience observed=experience-regressed need=positive-delta",
-        )?;
-        if delta == 0 {
-            return Err("step=exact-kill-experience observed=zero-delta need=creature-experience".into());
-        }
-        if let Some(expected) = exact_xp {
-            if delta != expected {
-                return Err(format!("step=exact-kill-experience observed={delta} expected={expected} need=stable-exact-rat-award").into());
+    let progression = tokio::time::timeout_at(deadline, async {
+        while previous.stats.level < unlock_level {
+            let target = approach_spawn_target(&mut client, world, &spawns, "oteryn:creature.rat")
+                .await?.ok_or("step=walk-to-weak-spawn observed=no-reachable-adjacent-rat")?;
+            row.pass("walk-to-weak-spawn", format!("target={:?}", target.entity));
+            kill(&mut client, target).await?;
+            let after = progress(&mut client).await?;
+            let delta = after.stats.experience.checked_sub(previous.stats.experience)
+                .ok_or("step=exact-kill-experience observed=experience-regressed")?;
+            // This character starts without Premium, active Prey, or personal XP boosts.
+            let expected = oteryn_gameplay_characters::hunting_experience::hunting_experience(
+                i64::try_from(rat_experience)?, 0, 0, i32::from(after.stats.stamina_minutes),
+                false, previous.stats.level,
+            ).map_err(|_| "step=exact-kill-experience observed=invalid-xp-inputs")?;
+            if !exact_kill_award(delta, Some(u64::try_from(expected)?)) {
+                return Err(format!("step=exact-kill-experience observed={delta} expected={expected}").into());
             }
-        } else {
-            exact_xp = Some(delta);
             row.pass("exact-kill-experience", format!("creature=oteryn:creature.rat delta={delta}"));
+            if melee_progress(&baseline.skills, &after.skills) {
+                row.pass("melee-skill-progress", format!("before={:?} after={:?}", baseline.skills.skills, after.skills.skills));
+            }
+            if after.stats.level != previous.stats.level {
+                let grown = carry_capacity(&mut client, after.stats.level).await?;
+                if after.stats.level != previous.stats.level + 1
+                    || after.vitals.max_health <= previous.vitals.max_health
+                    || after.vitals.max_mana < previous.vitals.max_mana
+                    || !carry_capacity_grew(Some(capacity), Some(grown))
+                {
+                    return Err(format!("step=level-and-maxima observed=before-{previous:?}/after-{after:?} capacity={capacity}=>{grown} need=level+1-vital-and-capacity-growth").into());
+                }
+                row.pass("level-and-maxima", format!("level={}=>{} health={}=>{} mana={}=>{} capacity_centi_oz={capacity}=>{grown}",
+                    previous.stats.level, after.stats.level, previous.vitals.max_health, after.vitals.max_health,
+                    previous.vitals.max_mana, after.vitals.max_mana));
+                capacity = grown;
+            }
+            previous = after;
+            client.take_events();
         }
-        if melee_progress(&baseline.skills, &after.skills) {
-            row.pass("melee-skill-progress", format!("before={:?} after={:?}", baseline.skills.skills, after.skills.skills));
-        }
-        if after.stats.level > baseline.stats.level {
-            levelled = Some(after);
-        }
-        previous = after;
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!("step=level-and-maxima observed=timeout level={} xp={} need=next-level", after.stats.level, after.stats.experience).into());
-        }
+        Ok::<_, Box<dyn std::error::Error>>(previous)
+    }).await.map_err(|_| "step=level-and-maxima observed=timeout-420s")??;
+    if tokio::time::Instant::now() >= deadline {
+        return Err("step=level-and-maxima observed=timeout-420s".into());
     }
-    let reached = levelled.ok_or("step=level-and-maxima observed=no-level")?;
-    if reached.stats.level != baseline.stats.level + 1
-        || reached.vitals.max_health <= baseline.vitals.max_health
-        || reached.vitals.max_mana < baseline.vitals.max_mana
-    {
-        return Err(format!("step=level-and-maxima observed=before-{baseline:?}/after-{reached:?} need=level+1-and-vital-maxima").into());
-    }
-    evidence(&format!("E2EF18_OBSERVATION C14 level-and-vitals level={}=>{} health={}=>{} mana={}=>{} capacity=absent-from-server-frame", baseline.stats.level, reached.stats.level, baseline.vitals.max_health, reached.vitals.max_health, baseline.vitals.max_mana, reached.vitals.max_mana));
+    let reached = progression;
 
     let spells_after = learned(&mut client)?;
-    let eligible: Vec<_> = spells_after
+    let newly_learned: Vec<_> = spells_after
         .iter()
         .filter(|spell| {
-            spell.level == reached.stats.level
-                && spell.learned
+            spell.learned
                 && !spells_before
                     .iter()
                     .any(|before| before.cast_index == spell.cast_index && before.learned)
         })
-        .map(|spell| spell.name.as_str())
+        .map(|spell| spell.cast_index)
         .collect();
-    let next = spells_after.iter().filter(|spell| !spell.learned && spell.level > reached.stats.level).map(|spell| spell.level).min();
-    if spells_after
-        .iter()
-        .any(|spell| spell.level == reached.stats.level && !spell.learned)
-        && eligible.is_empty()
-    {
-        return Err(format!("step=automatic-spell-learning observed=no-learned-level-{}-spell need=catalog-delta", reached.stats.level).into());
+    if !automatic_unlocks_observed(&expected_unlocks, &newly_learned) {
+        return Err(format!("step=automatic-spell-learning observed={newly_learned:?} expected={expected_unlocks:?} level={unlock_level}").into());
     }
-    row.pass("automatic-spell-learning", if eligible.is_empty() { format!("no-unlock-at-level-{} next-required-level={next:?}", reached.stats.level) } else { format!("new-level-spells={eligible:?}") });
+    row.pass(
+        "automatic-spell-learning",
+        format!("new-level-spells={expected_unlocks:?}"),
+    );
 
     ordinary_logout(&mut client).await?;
     drop(client);
     let mut fresh = connect_character(clients, 0xe3, 0).await?;
     let persisted = progress(&mut fresh).await?;
+    let persisted_capacity = carry_capacity(&mut fresh, persisted.stats.level).await?;
     if fresh.join_snapshot().game_session_id == old_session
         || persisted.stats.experience != reached.stats.experience
         || persisted.stats.level != reached.stats.level
         || persisted.skills != reached.skills
+        || persisted.vitals.max_health != reached.vitals.max_health
+        || persisted.vitals.max_mana != reached.vitals.max_mana
+        || persisted_capacity != capacity
     {
         return Err(format!("step=fresh-admission-persistence observed={persisted:?} expected={reached:?} need=durable-xp-level-skills").into());
     }
     let persisted_spells = learned(&mut fresh)?;
-    if spells_after.iter().filter(|spell| spell.learned).any(|spell| !persisted_spells.iter().any(|saved| saved.cast_index == spell.cast_index && saved.learned)) {
+    let persisted_indices: Vec<_> = persisted_spells
+        .iter()
+        .filter(|spell| spell.learned)
+        .map(|spell| spell.cast_index)
+        .collect();
+    if !automatic_unlocks_observed(&expected_unlocks, &persisted_indices)
+        || spells_after
+            .iter()
+            .filter(|spell| spell.learned)
+            .any(|spell| !persisted_indices.contains(&spell.cast_index))
+    {
         return Err("step=fresh-admission-persistence observed=learned-spell-missing need=durable-known-spells".into());
     }
-    row.pass("fresh-admission-persistence", format!("xp={} level={} skill-progress-retained", persisted.stats.experience, persisted.stats.level));
+    row.pass(
+        "fresh-admission-persistence",
+        format!(
+            "xp={} level={} skill-progress-retained",
+            persisted.stats.experience, persisted.stats.level
+        ),
+    );
     ordinary_logout(&mut fresh).await?;
 
-    // Capacity has no field in ActorVitalsV1 or either native progression reply. Do not
-    // silently claim it: this failure is reached only after the complete live lifecycle.
-    Err("step=level-and-maxima observed=capacity-field-absent-in-server-frames need=server-reported-carry-capacity-delta;source:crates/protocol-oteryn/src/actor_spell.rs:128".into())
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn level_and_maxima_requires_observed_carry_capacity_growth() {
+        assert!(carry_capacity_grew(Some(58_000), Some(60_000)));
+        assert!(!carry_capacity_grew(Some(58_000), Some(58_000)));
+        assert!(!carry_capacity_grew(Some(58_000), Some(57_000)));
+        assert!(!carry_capacity_grew(None, Some(60_000)));
+        assert!(!carry_capacity_grew(Some(58_000), None));
+    }
+
+    #[test]
+    fn first_kill_requires_the_authored_award() {
+        assert!(!exact_kill_award(11, None));
+        assert!(!exact_kill_award(11, Some(10)));
+        assert!(exact_kill_award(10, Some(10)));
+    }
+
+    #[test]
+    fn automatic_learning_requires_every_authored_unlock() {
+        assert!(!automatic_unlocks_observed(&[], &[]));
+        assert!(!automatic_unlocks_observed(&[11, 12], &[]));
+        assert!(!automatic_unlocks_observed(&[11, 12], &[11]));
+        assert!(automatic_unlocks_observed(&[11, 12], &[11, 12]));
+    }
 
     #[test]
     fn melee_progress_accepts_only_melee_family_growth() {

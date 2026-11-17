@@ -12,7 +12,7 @@ fn request(bytes: &[u8]) -> Option<([u8; 16], &str)> {
     let session = parse_operation_id(session.as_bytes())?;
     matches!(
         profile,
-        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk"
+        "explorer" | "knight" | "paladin" | "sorcerer" | "druid" | "monk" | "combat-progression"
     )
     .then_some((session, profile))
 }
@@ -71,6 +71,81 @@ pub(super) async fn prepare(
             "rejected"
         }
     }
+}
+
+/// Observe the effective carried-weight limit from the same owner as inventory transfers.
+pub(super) async fn carry_capacity(
+    root: &DurabilityRoot,
+    proof: &NodeIncarnationProof,
+    config: &NodeConfig,
+    premium: Option<&crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator>,
+    bytes: &[u8],
+) -> String {
+    let Some(session) = bytes
+        .strip_prefix(b"capacity ")
+        .and_then(parse_operation_id)
+    else {
+        return "rejected".into();
+    };
+    if !config.qualification_fixture {
+        return "rejected".into();
+    }
+    match observe_carry_capacity(root, proof, config, premium, session).await {
+        Ok((level, capacity)) => format!("capacity {level} {capacity}"),
+        Err(_) => "rejected".into(),
+    }
+}
+
+async fn observe_carry_capacity(
+    root: &DurabilityRoot,
+    proof: &NodeIncarnationProof,
+    config: &NodeConfig,
+    premium: Option<&crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator>,
+    session: [u8; 16],
+) -> Result<(u32, u64), Box<dyn std::error::Error>> {
+    use crate::durability::fresh_admission::FreshAdmissionStore;
+    use crate::durability::item_transfer::{
+        CurrentCharacterItemFence, read_qualification_carry_capacity,
+    };
+    use crate::durability::spell_item_transaction::begin_spell_owner_transaction;
+    use crate::foundation::GameSessionId;
+
+    let session = GameSessionId::decode(&session)?;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(8);
+    let mut holder = qualification_build::retry_holder(
+        Some(root),
+        deadline,
+        |error| matches!(error, DurabilityError::RootUnavailable),
+        async || root.try_acquire_ready(),
+    )
+    .await?;
+    let mut tx = begin_spell_owner_transaction(&mut holder, deadline.into_std()).await?;
+    let current = FreshAdmissionStore::from_root(root.clone())
+        .current_session_in_transaction(&mut tx, session)
+        .await?;
+    let scope = current.current_runtime_scope();
+    if Some(*scope.world_id().as_bytes()) != super::super::uuid_bytes(&config.scope.world_id)
+        || scope.channel_id().map(|id| *id.as_bytes())
+            != super::super::uuid_bytes(&config.scope.channel_id)
+    {
+        return Err("qualification capacity scope mismatch".into());
+    }
+    let lease = current.current_character_lease();
+    let fence = CurrentCharacterItemFence {
+        character_id: crate::domain::CharacterId::from_bytes(*lease.character_id().as_bytes())
+            .map_err(|error| format!("qualification capacity character: {error:?}"))?,
+        game_session_id: session,
+        connection_generation: current.current_connection_generation(),
+        character_lease_generation: lease.generation(),
+        runtime_scope: scope,
+        scope_ownership_generation: current.current_scope_generation(),
+    };
+    let observed = read_qualification_carry_capacity(&mut tx, proof, &fence, |account| {
+        premium.is_some_and(|owner| owner.view(account).premium_gate().premium_current())
+    })
+    .await?;
+    tx.commit().await?;
+    Ok(observed)
 }
 
 /// The live Channel owner and the room the `spawn` command places creatures in.
@@ -342,6 +417,33 @@ async fn prepare_build(
         .progression()
         .ok_or("qualification progression unavailable")?;
     let policy = progression.policy_for(profile_revision, ruleset_revision, content_revision)?;
+    let combat_progression = profile == "combat-progression";
+    let (vocation, level) = if combat_progression {
+        let book = native.spell_book();
+        let unlock = book
+            .spells
+            .iter()
+            .enumerate()
+            .filter(|(index, spell)| {
+                !book.inactive_aliases.contains(index)
+                    && !spell.learning_required
+                    && spell.level > 1
+                    && spell.vocations.contains(&crate::spell::Vocation::Sorcerer)
+            })
+            .map(|(_, spell)| spell.level)
+            .min()
+            .ok_or("qualification progression fixture has no authored spell unlock")?;
+        ("sorcerer", unlock - 1)
+    } else {
+        (
+            if profile == "explorer" {
+                "knight"
+            } else {
+                profile
+            },
+            100,
+        )
+    };
     let context = policy.context.clone();
     qualification_build::prepare_character_with_policy_until(
         root,
@@ -349,21 +451,21 @@ async fn prepare_build(
         proof,
         &current,
         qualification_build::QualificationBuildSpec {
-            vocation: if profile == "explorer" {
-                "knight"
-            } else {
-                profile
-            },
-            level: 100,
+            vocation,
+            level,
             context,
             xp_occurrence: uuid_v7()?,
             build_occurrence: uuid_v7()?,
         },
         policy,
+        combat_progression,
         deadline,
     )
     .await?;
-    prepare_items(root, authority, proof, &current, native, deadline).await
+    if !combat_progression {
+        prepare_items(root, authority, proof, &current, native, deadline).await?;
+    }
+    Ok(())
 }
 
 // Fixture claims use the ordinary fenced/audited reward owner, never SQL item

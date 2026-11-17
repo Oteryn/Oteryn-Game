@@ -19,8 +19,9 @@ use crate::durability::character_progression::{
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionAuthoritySnapshot};
+use oteryn_simulation_determinism::ExactI64;
 #[cfg(test)]
-use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+use oteryn_simulation_determinism::RoundingMode;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -188,11 +189,16 @@ pub(super) async fn prepare_character_with_policy<const N: usize>(
         current,
         spec,
         policy,
+        false,
         tokio::time::Instant::now() + std::time::Duration::from_secs(15),
     )
     .await
 }
 
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fixture setup binds the actual owners and served policy"
+)]
 pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -200,6 +206,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     current: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
     spec: QualificationBuildSpec<'_>,
     policy: FiniteProgressionPolicy<String, N>,
+    before_level_up: bool,
     deadline: tokio::time::Instant,
 ) -> TestResult {
     if !PLAYABLE_VOCATIONS.contains(&spec.vocation) || !(1..=1000).contains(&spec.level) {
@@ -273,12 +280,28 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
     if policy.context != context {
         return Err("qualification policy context mismatch".into());
     }
-    let experience = policy
+    let floor = policy
         .thresholds
         .iter()
         .find(|threshold| threshold.level == level)
         .ok_or("qualification level absent from the served progression policy")?
         .minimum_experience;
+    let experience = if before_level_up {
+        let next = policy
+            .thresholds
+            .iter()
+            .find(|threshold| threshold.level == level + 1)
+            .ok_or("qualification next level absent from the served progression policy")?;
+        let just_before = next
+            .minimum_experience
+            .get()
+            .checked_sub(1)
+            .filter(|amount| *amount >= floor.get())
+            .ok_or("qualification next level threshold is invalid")?;
+        ExactI64::new(just_before)
+    } else {
+        floor
+    };
     let mut fence = CurrentCharacterGameplayFence {
         character_id: character,
         game_session_id: current.current_game_session_id(),
@@ -320,7 +343,7 @@ pub(super) async fn prepare_character_with_policy_until<const N: usize>(
         .await
         .map_err(debug)?;
     }
-    if level > 1 {
+    if experience.get() > 0 {
         retry_holder(Some(root), deadline, progression_busy, async || {
             slot.commit_experience(
                 root,

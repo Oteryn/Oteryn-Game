@@ -2917,6 +2917,7 @@ async fn control_loop(
     config: &NodeConfig,
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
     spawn: Option<qualification_fixture::SpawnOwners<'_>>,
+    premium: Option<&crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -2951,6 +2952,11 @@ async fn control_loop(
                     .to_owned(),
                     "character_bootstrap",
                 ),
+                Some(request) if request.starts_with(b"capacity ") => (
+                    qualification_fixture::carry_capacity(root, proof, config, premium, &request)
+                        .await,
+                    "ops_qualification_capacity",
+                ),
                 Some(request) if request.starts_with(b"spawn ") => (
                     qualification_fixture::spawn(
                         root, authority, proof, config, native, spawn, &request,
@@ -2974,6 +2980,9 @@ async fn control_loop(
                 _ => ("rejected".to_owned(), "character_bootstrap"),
             };
             match event_name {
+                "ops_qualification_capacity" => {
+                    event_traced("event=ops_qualification_capacity result=served", connection);
+                }
                 "ops_health" => event_traced("event=ops_health result=served", connection),
                 "ops_diagnose" => {
                     event_traced("event=ops_diagnose result=served", connection);

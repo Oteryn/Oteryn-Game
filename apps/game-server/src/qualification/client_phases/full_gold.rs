@@ -59,7 +59,7 @@ pub(super) fn allowance(needed: u64) -> Duration {
 }
 
 /// The `records` of every `<dir>/<prefix>*.json`, each unwrapped to its declaration/definition.
-fn records(dir: &str, prefix: &str) -> TestResult<Vec<serde_json::Value>> {
+pub(super) fn records(dir: &str, prefix: &str) -> TestResult<Vec<serde_json::Value>> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
         .join(dir);
@@ -83,6 +83,34 @@ fn records(dir: &str, prefix: &str) -> TestResult<Vec<serde_json::Value>> {
         }
     }
     Ok(found)
+}
+
+pub(super) fn creature_profile(key: &str) -> TestResult<(&'static str, u64)> {
+    static PROFILES: std::sync::OnceLock<Result<serde_json::Value, String>> =
+        std::sync::OnceLock::new();
+    let profiles = PROFILES
+        .get_or_init(|| {
+            let input = native_input().map_err(|error| error.to_string())?;
+            serde_json::from_slice(&input.creature_profiles.bytes)
+                .map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(String::as_str)?;
+    let profile = profiles["records"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .find(|record| record["profile"]["target"]["key"].as_str() == Some(key))
+        .map(|record| &record["profile"]["data"]["profile"])
+        .ok_or_else(|| format!("creature profile missing for {key}"))?;
+    Ok((
+        profile["details"]["display_name"]
+            .as_str()
+            .ok_or("creature name absent")?,
+        profile["experience"]
+            .as_u64()
+            .ok_or("creature experience absent")?,
+    ))
 }
 
 /// Creatures of the bundle's spawns (never bosses) the level can safely kill, best gold per
@@ -285,12 +313,15 @@ async fn loot_coins(client: &mut DevClientSession) -> TestResult {
         .map(|&(id, _)| reference(id))
         .collect::<TestResult<_>>()?;
     for _ in 0..8 {
-        let Some(handle) = client.open_container().and_then(|view| {
-            view.entries
-                .iter()
-                .find(|entry| coins.contains(&entry.item_definition_ref))
-                .map(|entry| entry.handle)
-        }) else {
+        let view = client
+            .open_container()
+            .ok_or("gold-loot-corpse-view-missing")?;
+        let Some(handle) = view
+            .entries
+            .iter()
+            .find(|entry| coins.contains(&entry.item_definition_ref))
+            .map(|entry| entry.handle)
+        else {
             return Ok(());
         };
         let before = coin_value(client)?;
@@ -313,7 +344,42 @@ async fn loot_coins(client: &mut DevClientSession) -> TestResult {
         }
         verdict::Harness::global().progress("gold-loot");
     }
+    if client
+        .open_container()
+        .ok_or("gold-loot-corpse-view-missing")?
+        .entries
+        .iter()
+        .any(|entry| coins.contains(&entry.item_definition_ref))
+    {
+        return Err("gold-loot-coins-remain-after-move-budget".into());
+    }
     Ok(())
+}
+
+fn earning_complete(reached: bool, expired: bool) -> Result<bool, &'static str> {
+    if expired {
+        return Err("gold-earning-budget");
+    }
+    Ok(reached)
+}
+
+fn purchase_observed(items: u64, wanted: u64, gold: u64, expected_gold: u64) -> bool {
+    items == wanted && gold == expected_gold
+}
+
+fn selected_species(creature: bool, observed: Option<&str>, expected: &str) -> bool {
+    creature && observed.is_some_and(|name| name.eq_ignore_ascii_case(expected))
+}
+
+pub(super) fn creature_matches(entry: &oteryn_dev_client::WorldSpatialEntity, name: &str) -> bool {
+    selected_species(
+        entry.kind == EntityKind::Creature,
+        entry
+            .display_name
+            .as_ref()
+            .and_then(|value| value.as_str().ok()),
+        name,
+    )
 }
 
 /// Hunt the best-paying reachable creature and loot its gold until the character carries
@@ -329,13 +395,17 @@ pub(super) async fn earn(
 ) -> TestResult<u64> {
     let started = tokio::time::Instant::now();
     let start_gold = coin_value(client)?;
-    let level = level(client).await?;
+    let setup_limit = started + Duration::from_secs(SETUP_SECONDS);
+    let level = tokio::time::timeout_at(setup_limit, level(client))
+        .await
+        .map_err(|_| format!("{row}: gold-earning-budget during level query"))??;
     let ranked = candidates(spawns, level)?;
     if ranked.is_empty() && needed > start_gold {
         return Err(format!("{row}: no spawned creature pays coin gold at level {level}").into());
     }
     let mut unreachable = BTreeSet::new();
-    let mut deadline = None;
+    let mut deadline = setup_limit;
+    let mut selected = false;
     let mut kills = 0u64;
     loop {
         let observed = coin_value(client)?;
@@ -344,39 +414,46 @@ pub(super) async fn earn(
             observed.saturating_sub(start_gold),
             started.elapsed().as_secs()
         ));
-        if observed >= needed {
+        if earning_complete(
+            observed >= needed,
+            tokio::time::Instant::now() >= deadline,
+        ).map_err(|reason| format!("{row}: {reason} observed={observed} needed={needed} kills={kills} level={level}"))? {
             return Ok(observed);
-        }
-        if deadline.is_some_and(|limit| tokio::time::Instant::now() >= limit) {
-            return Err(format!(
-                "{row}: gold-earning-budget observed={observed} needed={needed} kills={kills} level={level}"
-            )
-            .into());
         }
         let mut picked = None;
         for (index, candidate) in ranked.iter().enumerate() {
             if unreachable.contains(&index) {
                 continue;
             }
-            match travel_to_spawn(client, world, spawns, &candidate.key).await {
-                Ok(()) => {
-                    picked = Some(candidate);
+            let travel = tokio::time::timeout_at(
+                deadline,
+                approach_spawn_target(client, world, spawns, &candidate.key),
+            )
+            .await
+            .map_err(|_| format!("{row}: gold-earning-budget during spawn approach"))?;
+            match travel {
+                Ok(Some(target)) => {
+                    picked = Some((candidate, target));
                     break;
                 }
-                Err(error) => {
+                Ok(None) => {
                     evidence(&format!(
-                        "{row}_GOLD skip creature={} observed={error}",
+                        "{row}_GOLD creature={} observed=no-reachable-live-target",
                         candidate.key
                     ));
                     unreachable.insert(index);
                 }
+                Err(error) => return Err(error),
             }
         }
-        let candidate =
+        let (candidate, target) =
             picked.ok_or_else(|| format!("{row}: no reachable gold creature at level {level}"))?;
-        if deadline.is_none() {
-            let budget = candidate.budget(needed.saturating_sub(observed));
-            deadline = Some(tokio::time::Instant::now() + budget);
+        if !selected {
+            let budget = candidate.budget(needed.saturating_sub(start_gold));
+            deadline = started
+                .checked_add(budget)
+                .ok_or("gold-earning-budget overflow")?;
+            selected = true;
             evidence(&format!(
                 "{row}_GOLD target creature={} health={} expected_milli_gold_per_kill={} kill_s={} level={level} budget_s={}",
                 candidate.key,
@@ -386,11 +463,12 @@ pub(super) async fn earn(
                 budget.as_secs()
             ));
         }
-        let hunted = async {
-            client_hunt::hunt(client).await?;
+        let hunted = tokio::time::timeout_at(deadline, async {
+            client_hunt::hunt_target(client, target).await?;
             loot_coins(client).await
-        }
-        .await;
+        })
+        .await
+        .map_err(|_| format!("{row}: gold-earning-budget during hunt/loot"))?;
         hunted.map_err(|error| {
             verdict::record_error(verdict::IndexedError::as_error(&error));
             verdict::context(
@@ -443,7 +521,7 @@ pub(super) async fn buy(
     use oteryn_dev_client::client_runtime::npc_shop;
     let key = reference(id)?;
     let sellers: BTreeSet<String> = offers(id)?.into_iter().map(|(seller, _)| seller).collect();
-    let here = tile(client.world_spatial().actor_position)?;
+    let here = actor_tile(client)?;
     let (seller, path) =
         npcs.npcs
             .iter()
@@ -459,6 +537,7 @@ pub(super) async fn buy(
             .min_by_key(|(_, path)| path.len())
             .ok_or_else(|| format!("reachable-seller-absent:item={id}"))?;
     walk(client, world, &path).await?;
+    let basis = spatial_basis::current(client)?;
     let actor = client
         .world_entities()
         .and_then(|view| {
@@ -467,31 +546,25 @@ pub(super) async fn buy(
                     && seller.placements.iter().any(|p| {
                         entry.position.x == i32::from(p.x)
                             && entry.position.y == i32::from(p.y)
-                            && entry.position.floor == -i16::from(p.floor)
+                            && entry.position.floor == basis.floor(p.floor)
                     })
             })
         })
         .map(|entry| entry.entity)
         .ok_or("seller-entity-absent")?;
-    for text in ["hi", "trade"] {
-        let reply = npc_shop::talk(
-            client.session_mut(),
-            &npc::NpcTalkIntent {
-                npc_actor: actor,
-                text: text.into(),
-            },
-        )
-        .await?;
-        if reply != npc::NpcIntentDisposition::Ok {
-            return Err(format!("trade-talk:{text}:reply={reply:?}").into());
+    full_e2ef20::send_npc_talk(client, actor, "hi").await?;
+    let sequence = full_e2ef20::send_npc_talk(client, actor, "trade").await?;
+    let window = full_e2ef20::wait_for_event(client, Duration::from_secs(2), |event| match event {
+        SessionEvent::NpcTradeWindow(delta)
+            if delta.server_sequence > sequence
+                && delta.value.open.is_some_and(|(npc, _)| npc == actor) =>
+        {
+            Some(delta.value)
         }
-    }
-    let delta = client
-        .session_mut()
-        .read_gated_delta(npc::STATE_DOMAIN_NPC_TRADE_WINDOW, 1)
-        .await?;
-    let window =
-        npc::decode_npc_trade_window(&delta.payload).map_err(|e| format!("trade-window:{e:?}"))?;
+        _ => None,
+    })
+    .await?
+    .ok_or("trade-window-not-observed")?;
     let (index, offer) = window
         .offers
         .iter()
@@ -500,6 +573,11 @@ pub(super) async fn buy(
         .ok_or("live-offer-absent")?;
     let before = count(client, key)?;
     let gold_before = coin_value(client)?;
+    let total_price = u64::from(offer.unit_price) * u64::from(quantity);
+    let expected_gold = gold_before.checked_sub(total_price).ok_or_else(|| {
+        format!("trade-buy:item={id}:backpack-coins={gold_before}:price={total_price}")
+    })?;
+    client.take_events();
     let reply = npc_shop::buy(
         client.session_mut(),
         &npc::NpcTradeIntent {
@@ -521,23 +599,34 @@ pub(super) async fn buy(
     }
     let wanted = before + u64::from(offer.count) * u64::from(quantity);
     let deadline = tokio::time::Instant::now() + Duration::from_secs(6);
-    loop {
-        for event in client.take_events() {
-            if let SessionEvent::Inventory(delta) = event
-                && count(client, key)? == wanted
-            {
-                verdict::Harness::global().progress("gold-buy");
-                return Ok(delta.server_sequence);
+    let observed = tokio::time::timeout_at(deadline, async {
+        loop {
+            for event in client.take_events() {
+                if let SessionEvent::Inventory(delta) = event
+                    && purchase_observed(
+                        count(client, key)?,
+                        wanted,
+                        coin_value(client)?,
+                        expected_gold,
+                    )
+                {
+                    return Ok::<_, Box<dyn std::error::Error>>(delta.server_sequence);
+                }
             }
+            client.service_liveness(Duration::from_millis(25)).await?;
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err(format!(
-                "inventory-delta-timeout:item={key}:observed={}:wanted={wanted}",
-                count(client, key)?
-            )
-            .into());
+    })
+    .await;
+    match observed {
+        Ok(Ok(sequence)) if tokio::time::Instant::now() < deadline => {
+            verdict::Harness::global().progress("gold-buy");
+            Ok(sequence)
         }
-        client.service_liveness(Duration::from_millis(25)).await?;
+        Ok(Err(error)) => Err(error),
+        _ => Err(format!(
+            "inventory-delta-timeout:item={key}:observed={}:wanted={wanted}:gold={}:expected_gold={expected_gold}",
+            count(client, key)?, coin_value(client)?
+        ).into()),
     }
 }
 
@@ -564,4 +653,32 @@ pub(super) async fn equip(
         return Err(format!("equip:item={key}:slot={slot:?}:reply={reply:?}").into());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mixed_spawn_requires_the_ranked_species() {
+        assert!(selected_species(true, Some("Rat"), "Rat"));
+        assert!(!selected_species(true, Some("Troll"), "Rat"));
+        assert!(!selected_species(true, None, "Rat"));
+        assert!(!selected_species(false, Some("Rat"), "Rat"));
+    }
+
+    #[test]
+    fn earning_budget_rejects_a_late_balance() {
+        assert_eq!(earning_complete(true, true), Err("gold-earning-budget"));
+        assert_eq!(earning_complete(true, false), Ok(true));
+        assert_eq!(earning_complete(false, false), Ok(false));
+    }
+
+    #[test]
+    fn buy_evidence_requires_delivery_and_exact_payment() {
+        assert!(purchase_observed(3, 3, 70, 70));
+        assert!(!purchase_observed(3, 3, 100, 70));
+        assert!(!purchase_observed(3, 3, 69, 70));
+        assert!(!purchase_observed(2, 3, 70, 70));
+    }
 }

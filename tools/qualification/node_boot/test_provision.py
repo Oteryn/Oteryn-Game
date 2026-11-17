@@ -6,6 +6,7 @@ from pathlib import Path
 import socket
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 SPEC = importlib.util.spec_from_file_location(
@@ -121,6 +122,19 @@ class SpawnTests(unittest.TestCase):
         ):
             with self.assertRaises(ValueError):
                 PROVISION.spawn("/nonexistent.sock", session, key)
+
+
+class CapacityTests(unittest.TestCase):
+    def test_current_session_and_capacity_are_bound_to_the_request(self):
+        with patch.object(PROVISION, "_request", return_value=b"capacity 2 60000\n") as request:
+            self.assertEqual(PROVISION.carry_capacity("control.sock", SESSION), "capacity 2 60000")
+            request.assert_called_once_with("control.sock", f"capacity {SESSION}\n", 64)
+
+    def test_capacity_rejects_missing_or_malformed_observation(self):
+        for answer in (b"rejected\n", b"capacity 2 0\n", b"capacity 2 60000\nextra"):
+            with self.subTest(answer=answer), patch.object(PROVISION, "_request", return_value=answer):
+                with self.assertRaisesRegex(RuntimeError, "node refused qualification capacity"):
+                    PROVISION.carry_capacity("control.sock", SESSION)
 
 
 if __name__ == "__main__":
