@@ -2,8 +2,9 @@
 //!
 //! Concrete player scenario derived from the C01 audit/matrix row and the
 //! ATTACK owner (`gameplay_transport/attack.rs`):
-//! 1. Admit the provisioned node-boot character, walk through the compiled
-//!    world to an authored rat, and require a genuinely equipped hand weapon.
+//! 1. Admit the provisioned node-boot character, earn the price by rat hunting, walk to a
+//!    catalogue seller, buy and equip a club and leather armour, then walk through the compiled
+//!    world to an authored rat and require the equipped hand weapon and armour slots.
 //! 2. For offensive, balanced, and defensive mode, send SET_FIGHT_MODES with
 //!    STAND and then CHASE; after every accepted reply require the exact combat
 //!    state delta, send ATTACK_TARGET, and observe a lower target-HP delta.
@@ -21,6 +22,18 @@ use super::*;
 use oteryn_dev_client::{DevClientSession, EntityDetail, EntityKind, SessionEvent};
 use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, ChaseMode, FightMode, FightModes};
 use std::collections::BTreeSet;
+
+const CLUB: u32 = 3270;
+const LEATHER_ARMOR: u32 = 3361;
+
+/// Gold the missing equipment costs at the dearest catalogue seller: the row's own need.
+fn needed_gold(purchases: &[(u32, oteryn_protocol_oteryn::item_view::EquipmentSlot)]) -> TestResult<u64> {
+    let mut total = 0u64;
+    for &(id, _) in purchases {
+        total = total.checked_add(full_gold::price(id, 1)?).ok_or("purchase-total-overflow")?;
+    }
+    Ok(total)
+}
 
 const CASES: &[&str] = &[
     "offensive-stand", "offensive-chase", "balanced-stand", "balanced-chase",
@@ -54,7 +67,9 @@ impl Row {
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {
     let mut row = Row::new();
-    let result = match verdict::indexed_timeout(Duration::from_secs(900), verdict::observe(journey(&mut row, clients))).await {
+    // Earning the club and armour is real rat hunting; its budget joins the 900 s of combat.
+    let earning = full_gold::budget(needed_gold(&[(CLUB, oteryn_protocol_oteryn::item_view::EquipmentSlot::RightHand), (LEATHER_ARMOR, oteryn_protocol_oteryn::item_view::EquipmentSlot::Armor)]).unwrap_or_default());
+    let result = match verdict::indexed_timeout(earning + Duration::from_secs(900), verdict::observe(journey(&mut row, clients))).await {
         Ok(result) => result,
         Err(_) => Err("step=journey observed=timeout need=responsive-combat-lifecycle".into()),
     };
@@ -185,6 +200,26 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let world = load_world(bytes, &pin, WorldId::decode(&clients.world)?, ChannelId::decode(&clients.channel)?)?;
     let mut client = connect_world(clients, 0xc1).await?;
     use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+    // A fresh character wears nothing: earn the catalogue price by hunting, walk to a seller,
+    // BUY a hand weapon and body armour, and ITEM_MOVE each into its equipment slot.
+    let hand_slots = [EquipmentSlot::RightHand, EquipmentSlot::LeftHand];
+    let armor_slots = [EquipmentSlot::Head, EquipmentSlot::Armor, EquipmentSlot::Legs, EquipmentSlot::Feet];
+    let worn = |client: &DevClientSession, slots: &[EquipmentSlot]| -> TestResult<bool> {
+        Ok(client.inventory().ok_or("step=equipment observed=inventory-absent")?
+            .equipment.iter().any(|entry| slots.contains(&entry.slot)))
+    };
+    let mut purchases = Vec::new();
+    if !worn(&client, &hand_slots)? { purchases.push((CLUB, EquipmentSlot::RightHand)); }
+    if !worn(&client, &armor_slots)? { purchases.push((LEATHER_ARMOR, EquipmentSlot::Armor)); }
+    if !purchases.is_empty() {
+        let needed = needed_gold(&purchases)?;
+        full_gold::earn(&mut client, world, &metadata.spawns, "C01", needed).await?;
+        for &(id, slot) in &purchases {
+            let sequence = full_gold::buy(&mut client, world, &metadata.npcs, id, 1).await?;
+            full_gold::equip(&mut client, provisioning::item_reference(&provisioning::item_index()?, id)?, slot).await?;
+            evidence(&format!("C01_CHECK equipment bought-and-equipped item={id} slot={slot:?} purchase_sequence={sequence}"));
+        }
+    }
     let equipment = &client
         .inventory()
         .ok_or("step=equipment observed=inventory-absent")?

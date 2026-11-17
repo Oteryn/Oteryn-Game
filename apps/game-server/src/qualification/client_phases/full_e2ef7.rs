@@ -5550,17 +5550,30 @@ async fn earn_gold_inner(
     world: &BundleWorld,
     required: u64,
 ) -> TestResult {
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(150);
+    let started = tokio::time::Instant::now();
+    let start_gold = player_gold(client).await?;
+    // Honest budget: the rat kills the missing gold takes at the ordinary yield floor.
+    let budget = full_gold::budget(required.saturating_sub(start_gold));
+    let deadline = started + budget;
+    let mut hunts = 0u64;
     loop {
         let served = player_gold(client).await?;
+        evidence(&format!(
+            "E2EF7_GOLD observed={served} needed={required} gained={} hunts={hunts} elapsed_s={} budget_s={}",
+            served.saturating_sub(start_gold),
+            started.elapsed().as_secs(),
+            budget.as_secs()
+        ));
         if served >= required {
             return Ok(());
         }
         if tokio::time::Instant::now() >= deadline {
-            return Err(format!("player-money-acquisition-blocked:required-gold={required};served-bank-plus-carried={served};ordinary-hunt-budget=150s").into());
+            return Err(format!("player-money-acquisition-blocked:required-gold={required};served-bank-plus-carried={served};ordinary-hunt-budget={}s;hunts={hunts}", budget.as_secs()).into());
         }
         let hunt = acquisition_step("hunt", hunt_one_inner(client, world, Some(deadline))).await;
         hunt.map_err(|e|format!("player-money-acquisition-blocked:required-gold={required};served-bank-plus-carried={served};ordinary-hunt={e}"))?;
+        hunts += 1;
+        verdict::Harness::global().progress("gold");
     }
 }
 fn verify_gold_payment(before: u64, after: u64, charge: u64) -> TestResult {
