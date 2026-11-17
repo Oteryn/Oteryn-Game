@@ -9,6 +9,22 @@ pub(super) async fn hunt_creature(
     client: &mut oteryn_dev_client::DevClientSession,
     creature: Option<&str>,
 ) -> TestResult<()> {
+    hunt_with_safety(client, creature, None).await
+}
+
+pub(super) async fn hunt_newhaven(
+    client: &mut oteryn_dev_client::DevClientSession,
+    world: &crate::map::boot::BundleWorld,
+    creature: &str,
+) -> TestResult<()> {
+    hunt_with_safety(client, Some(creature), Some(world)).await
+}
+
+async fn hunt_with_safety(
+    client: &mut oteryn_dev_client::DevClientSession,
+    creature: Option<&str>,
+    newhaven: Option<&crate::map::boot::BundleWorld>,
+) -> TestResult<()> {
     use oteryn_dev_client::{EntityDetail, EntityKind};
     if !client
         .selected_capabilities()
@@ -50,7 +66,11 @@ pub(super) async fn hunt_creature(
     // loses it out of melee range.
     let modes = oteryn_protocol_oteryn::attack::FightModes {
         fight_mode: oteryn_protocol_oteryn::attack::FightMode::Offensive,
-        chase: oteryn_protocol_oteryn::attack::ChaseMode::Chase,
+        chase: if newhaven.is_some() {
+            oteryn_protocol_oteryn::attack::ChaseMode::Stand
+        } else {
+            oteryn_protocol_oteryn::attack::ChaseMode::Chase
+        },
         secure: true,
     };
     let chase = client.session_mut().set_fight_modes(&modes).await?;
@@ -68,10 +88,14 @@ pub(super) async fn hunt_creature(
     eprintln!("[DBG-hunt] equip={:?} vitals={:?}", client.inventory().map(|i| i.equipment.iter().map(|e| format!("{e:?}").chars().take(160).collect::<String>()).collect::<Vec<_>>()), client.actor_vitals()); // [DBG-hunt]
     let deadline = tokio::time::Instant::now() + Duration::from_secs(120);
     let mut damaged = false;
+    let mut killed = false;
     let mut last_position = target.position;
     let mut dbg_tick = tokio::time::Instant::now(); // [DBG-hunt]
     let corpse = loop {
         client.service_liveness(Duration::from_millis(100)).await?;
+        if newhaven.is_some() && client_world::newhaven_hunt_died(client) {
+            return Err("newhaven hunt died".into());
+        }
         let me = client.world_spatial().actor_position;
         if me.floor != position.floor
             || me.x.abs_diff(position.x).max(me.y.abs_diff(position.y)) > 50
@@ -93,6 +117,13 @@ pub(super) async fn hunt_creature(
                     .find(|entry| entry.entity == target.entity)
                 {
                     last_position = updated.position;
+                    killed |= matches!(
+                        updated.detail,
+                        EntityDetail::Actor {
+                            health_percent: 0,
+                            ..
+                        }
+                    );
                 }
                 damaged |= delta.value.update.iter().any(|entry| entry.entity == target.entity && matches!(entry.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100));
             }
@@ -107,6 +138,13 @@ pub(super) async fn hunt_creature(
         } // [DBG-hunt]
         if let Some(current) = current {
             last_position = current.position;
+            killed |= matches!(
+                current.detail,
+                EntityDetail::Actor {
+                    health_percent: 0,
+                    ..
+                }
+            );
             damaged |= matches!(current.detail, EntityDetail::Actor { health_percent, .. } if health_percent < 100);
         }
         if let Some(corpse) = client
@@ -123,11 +161,36 @@ pub(super) async fn hunt_creature(
         {
             break corpse;
         }
+        if let Some(world) = newhaven {
+            let alive = current.is_some_and(|entry| {
+                matches!(entry.detail,
+                EntityDetail::Actor { health_percent, .. } if health_percent > 0)
+            });
+            let low_health = client
+                .actor_vitals()
+                .is_some_and(|v| u64::from(v.health) * 2 < u64::from(v.max_health));
+            if alive && (low_health || client_world::newhaven_adjacent_creatures(client) > 1) {
+                client_world::newhaven_retreat(client, world).await?;
+                return Err("newhaven hunt recovered; retry one footman".into());
+            }
+        }
         if tokio::time::Instant::now() >= deadline {
             let me = client.world_spatial().actor_position;
             let seen: Vec<String> = client.world_entities().map(|e| e.iter().filter(|x| x.kind != EntityKind::Player).map(|x| format!("{:?}@{},{},{}", x.kind, x.position.x, x.position.y, x.position.floor)).collect()).unwrap_or_default();
             let still = client.world_entities().is_some_and(|e| e.get(&target.entity).is_some());
             eprintln!("[DBG-hunt] damaged={damaged} me={me:?} start={:?} last={last_position:?} still={still:?} seen={seen:?}", target.position);
+            if newhaven.is_some() {
+                client.session_mut().attack_target(None).await?;
+                let cause = client_world::newhaven_hunt_cause(
+                    client
+                        .actor_vitals()
+                        .ok_or("Newhaven hunt vitals missing")?
+                        .health,
+                    client_world::newhaven_hunt_died(client),
+                    killed || (damaged && !still),
+                );
+                return Err(format!("newhaven hunt {cause}").into());
+            }
             return Err("hunt produced no corpse before deadline".into());
         }
     };
