@@ -21,7 +21,7 @@ const COLUMNS: u16 = 5;
 
 /// The grid buttons shown until the player picks their own set in the button manager: the
 /// Tibia Global `controlButtonsOptions` defaults in their order, each mapped to the Oteryn
-/// feature that serves it (`tibia.*` ids are Tibia buttons Oteryn has no feature for yet).
+/// feature that serves it (`tibia.*` ids are the [`EXTRA`] buttons with no toolbar entry).
 pub(in crate::bevy_shell) const DEFAULT: &[&str] = &[
     "shell.skills",            // skillsWidget
     "battle",                  // battleListWidget
@@ -49,14 +49,42 @@ pub(in crate::bevy_shell) const DEFAULT: &[&str] = &[
     "tibia.friends",           // friendsDialog
     "rewards",                 // rewardWallDialog
 ];
-/// Tibia default buttons without an Oteryn feature: shown, but disabled.
-pub(in crate::bevy_shell) const MISSING: &[(&str, &str)] = &[
-    ("tibia.boss_slots", "Boss Slots"),
-    ("tibia.friends", "Friends"),
-    ("tibia.imbuement_tracker", "Imbuement Tracker"),
-    ("tibia.lens_help", "Lens Help"),
-    ("tibia.player_guide", "Player Guide"),
-    ("tibia.prey_widget", "Prey Widget"),
+/// A Tibia control button with no toolbar entry, opening the Oteryn view that serves it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(in crate::bevy_shell) enum Extra {
+    /// Lens help mode (features/local-lens-help).
+    LensHelp,
+    /// The guide pages in the Notices window (feature_dialogs/guide.rs).
+    PlayerGuide,
+    /// The prey window (game_ui/prey.rs).
+    PreyWidget,
+    /// The equipped-item imbuement tracker (game_ui/imbuement_tracker.rs).
+    ImbuementTracker,
+    /// The boss slots of the Bosstiary window (game_ui/bosstiary.rs).
+    BossSlots,
+    /// The Account Friends form (features/0043-vip/account.rs).
+    Friends,
+}
+impl Extra {
+    pub(in crate::bevy_shell) fn id(self) -> &'static str {
+        EXTRA
+            .iter()
+            .find(|entry| entry.2 == self)
+            .map_or("", |entry| entry.0)
+    }
+}
+/// The [`Extra`] buttons: grid id, label and view.
+pub(in crate::bevy_shell) const EXTRA: &[(&str, &str, Extra)] = &[
+    ("tibia.boss_slots", "Boss Slots", Extra::BossSlots),
+    ("tibia.friends", "Friends", Extra::Friends),
+    (
+        "tibia.imbuement_tracker",
+        "Imbuement Tracker",
+        Extra::ImbuementTracker,
+    ),
+    ("tibia.lens_help", "Lens Help", Extra::LensHelp),
+    ("tibia.player_guide", "Player Guide", Extra::PlayerGuide),
+    ("tibia.prey_widget", "Prey Widget", Extra::PreyWidget),
 ];
 /// Entries that sit in the fixed columns instead of the grid.
 const FIXED: &[&str] = &["shell.options", "store"];
@@ -65,8 +93,7 @@ const FIXED: &[&str] = &["shell.options", "store"];
 #[derive(Component, Clone, Copy, Debug)]
 pub(in crate::bevy_shell) enum ControlButton {
     Grid(Control),
-    /// A Tibia button whose feature Oteryn does not have yet.
-    Missing(&'static str),
+    Extra(Extra),
     Store,
     Options,
     Logout,
@@ -163,7 +190,7 @@ pub(in crate::bevy_shell) fn spawn(commands: &mut Commands, skins: &Skins, regio
             .observe(activate);
         commands.entity(grid).add_child(button);
     }
-    for &(id, label) in MISSING {
+    for &(_, label, extra) in EXTRA {
         let button = art::spawn(
             commands,
             &skins.font,
@@ -171,11 +198,10 @@ pub(in crate::bevy_shell) fn spawn(commands: &mut Commands, skins: &Skins, regio
             &short(label),
             Vec2::splat(BUTTON),
         );
-        commands.entity(button).insert((
-            ControlButton::Missing(id),
-            bevy::ui::InteractionDisabled,
-            BackgroundColor(Color::srgba(0., 0., 0., 0.5)),
-        ));
+        commands
+            .entity(button)
+            .insert((ControlButton::Extra(extra), bevy::ui_widgets::Button))
+            .observe(activate);
         commands.entity(grid).add_child(button);
     }
     commands.entity(left).add_children(&[store, grid]);
@@ -266,7 +292,38 @@ fn activate(
         ControlButton::Grid(control) => {
             open_toolbar(&mut owner, control);
         }
-        ControlButton::Missing(_) => {}
+        ControlButton::Extra(extra) => open_extra(&mut owner, extra),
+    }
+}
+
+fn open_extra(owner: &mut HostOwner, extra: Extra) {
+    match extra {
+        Extra::PlayerGuide => {
+            open_toolbar(owner, Control::Notices);
+        }
+        Extra::PreyWidget => {
+            open_toolbar(owner, Control::Shortcut("prey"));
+        }
+        Extra::BossSlots => {
+            if !owner.settings.preferences.panel_visible("bosstiary") {
+                open_toolbar(owner, Control::Panel("bosstiary"));
+            }
+            if let Some(play) = &owner.play {
+                play.link.boss_encounter_request(
+                    oteryn_client_ui::boss_encounter::Intent::SlotsDetailed,
+                );
+            }
+        }
+        Extra::LensHelp | Extra::ImbuementTracker | Extra::Friends => {
+            let Some(play) = &owner.play else { return };
+            match extra {
+                Extra::LensHelp => {
+                    play.link.lens_toggle();
+                }
+                Extra::ImbuementTracker => play.link.open_imbue_tracker(),
+                _ => play.link.account_friends_open(),
+            }
+        }
     }
 }
 
@@ -286,7 +343,7 @@ pub(in crate::bevy_shell) fn project(
             };
             let id = match button {
                 ControlButton::Grid(control) => control.id(),
-                ControlButton::Missing(id) => id,
+                ControlButton::Extra(extra) => extra.id(),
                 _ => continue,
             };
             let rank = enabled.iter().position(|enabled| enabled == id);

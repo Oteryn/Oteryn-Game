@@ -205,23 +205,6 @@ fn one_fixed_right_sidebar_holds_the_panel_then_the_default_widgets() -> TestRes
             "control-wheel",
         ]
     );
-    // Tibia default buttons without an Oteryn feature are shown but disabled.
-    let missing: Vec<bool> = app
-        .world_mut()
-        .query::<(
-            &crate::bevy_shell::ui::toolbar::grid::ControlButton,
-            Has<bevy::ui::InteractionDisabled>,
-        )>()
-        .iter(app.world())
-        .filter(|(button, _)| {
-            matches!(
-                button,
-                crate::bevy_shell::ui::toolbar::grid::ControlButton::Missing(_)
-            )
-        })
-        .map(|(_, disabled)| disabled)
-        .collect();
-    assert_eq!(missing, [true; 6]);
 
     let titles: Vec<&str> = Widget::ALL.iter().map(|widget| widget.title()).collect();
     assert_eq!(
@@ -440,6 +423,54 @@ fn control_buttons_toggle_the_sidebar_widgets() -> TestResult {
     assert_eq!(
         frame_node(&mut app, Widget::BattleList)?.display,
         Display::None
+    );
+    let _ = std::fs::remove_file(path);
+    Ok(())
+}
+#[test]
+fn tibia_control_buttons_open_their_oteryn_windows() -> TestResult {
+    use crate::bevy_shell::ui::toolbar::grid::{ControlButton, Extra};
+    let path = preferences("extra-controls");
+    let _ = std::fs::remove_file(&path);
+    let mut app = playing_app(path.clone())?;
+    let press = |app: &mut App, extra: Extra| -> TestResult {
+        let entity = entity_with::<ControlButton>(
+            app,
+            |button| matches!(button, ControlButton::Extra(found) if *found == extra),
+        )?;
+        assert!(
+            !app.world()
+                .entity(entity)
+                .contains::<bevy::ui::InteractionDisabled>()
+        );
+        activate(app, entity);
+        Ok(())
+    };
+    fn link<T>(
+        app: &App,
+        read: impl Fn(&crate::play::PlayLink) -> T,
+    ) -> Result<T, Box<dyn std::error::Error>> {
+        let owner = app.world().non_send::<HostOwner>();
+        Ok(read(&owner.play.as_ref().ok_or("play")?.link))
+    }
+    press(&mut app, Extra::LensHelp)?;
+    assert!(link(&app, |link| link.lens_active())?);
+    link(&app, |link| link.lens_toggle())?;
+    press(&mut app, Extra::PreyWidget)?;
+    assert!(link(&app, |link| link.prey_panel().open)?);
+    press(&mut app, Extra::ImbuementTracker)?;
+    assert!(link(&app, |link| link.imbue_panel().tracker_open)?);
+    press(&mut app, Extra::PlayerGuide)?;
+    assert!(link(&app, |link| link.notices_panel().open)?);
+    press(&mut app, Extra::Friends)?;
+    assert!(link(&app, |link| link.vip_panel().account_open)?);
+    press(&mut app, Extra::BossSlots)?;
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .panel_visible("bosstiary")
     );
     let _ = std::fs::remove_file(path);
     Ok(())

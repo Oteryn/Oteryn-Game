@@ -92,7 +92,7 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
                 .get::<super::super::grid::ControlButton>(entity)?
             {
                 super::super::grid::ControlButton::Grid(control) => control.id(),
-                super::super::grid::ControlButton::Missing(id) => id,
+                super::super::grid::ControlButton::Extra(extra) => extra.id(),
                 _ => return None,
             };
             let node = app.world().get::<Node>(entity)?;
